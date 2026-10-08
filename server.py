@@ -877,6 +877,36 @@ def models_from_comfy(kind: str) -> list[str]:
 
 
 _LM_CKPT = {"at": 0.0, "by_file": {}, "ok": False}
+_LOOPBACK = {"127.0.0.1", "localhost", "::1"}
+_REACH: dict = {}
+
+
+def manager_url_for(host_header: str, path: str) -> str:
+    """LoRA Manager 的網址，要是「開這一頁的裝置」連得到的那個。
+
+    ComfyUI 在本機（127.0.0.1）時，手機走 Tailscale 開網頁得用這台的位址連 ComfyUI；
+    但 ComfyUI 預設只聽 127.0.0.1（沒加 --listen），那樣手機點了也打不開 —— 這時回空字串，
+    畫面上的 LoRA Manager 連結就藏起來，「詳情」改開 Civitai。結果快取一分鐘。"""
+    base = comfy_base().rstrip("/")
+    u = urllib.parse.urlparse(base)
+    host = (host_header or "").strip()
+    req_host = host[1:].split("]")[0] if host.startswith("[") else host.rsplit(":", 1)[0] if host.count(":") == 1 else host
+    if (u.hostname or "") not in _LOOPBACK or not req_host or req_host in _LOOPBACK:
+        return base + path
+    port = u.port or (443 if u.scheme == "https" else 80)
+    key = (req_host, port)
+    hit = _REACH.get(key)
+    if not hit or time.time() - hit[1] > 60:
+        try:
+            socket.create_connection((req_host, port), timeout=1.5).close()
+            ok = True
+        except OSError:
+            ok = False
+        hit = _REACH[key] = (ok, time.time())
+    if not hit[0]:
+        return ""
+    shown = f"[{req_host}]" if ":" in req_host else req_host
+    return f"{u.scheme}://{shown}:{port}{path}"
 
 
 def lm_checkpoints() -> dict:
@@ -3147,7 +3177,10 @@ class Handler(BaseHTTPRequestHandler):
         self.wfile.write(body)
 
     def _serve_loras(self) -> None:
-        self._json(200, lora_scan.list_loras(), cache_control="private, no-cache", conditional=True)
+        data = lora_scan.list_loras()
+        if data.get("manager"):
+            data = {**data, "manager": manager_url_for(self.headers.get("Host") or "", "/loras")}
+        self._json(200, data, cache_control="private, no-cache", conditional=True)
 
     def _serve_checkpoints(self) -> None:
         try:
@@ -3163,7 +3196,7 @@ class Handler(BaseHTTPRequestHandler):
                 "current": resolve_ckpt(None, items),
                 "items": items,
                 # ComfyUI 有 LoRA Manager：畫面上「用 LoRA Manager 管理」連到它的 checkpoint 頁。
-                "manager": lora_scan.lm_manager_url().rsplit("/", 1)[0] + "/checkpoints" if _LM_CKPT["ok"] else "",
+                "manager": manager_url_for(self.headers.get("Host") or "", "/checkpoints") if _LM_CKPT["ok"] else "",
             },
         )
 
