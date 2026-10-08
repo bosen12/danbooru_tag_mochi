@@ -13,7 +13,8 @@ The public application release [v1.0](https://github.com/bosen12/danbooru_tag_mo
 - Resolve aliased LoRA roots so preferred subfolders retain ComfyUI model names and previews on macOS and Windows.
 - The intro and tutorial films use text-card placeholders before card-art downloads finish; an empty manifest no longer prevents playback. Image-only collections omit missing sources.
 - Windows test diagnostics use UTF-8, and launcher fixtures isolate both ProgramFiles and ProgramW6432.
-- Added contribution instructions, issue forms, this changelog, verification evidence and English/Traditional Chinese community post drafts.
+- Added contribution instructions, issue forms, this changelog and verification evidence.
+- Community post drafts are kept locally and excluded from the public repository.
 
 ### Tested scope and limitations
 

@@ -1,6 +1,6 @@
 # Release verification — 2026-10-08
 
-This record combines local readiness verification and successful remote CI after publishing the updates to main. The existing v1.0 tag predates these fixes. Community drafts have not been posted.
+This record combines local readiness verification and successful remote CI after publishing the updates to main. The existing v1.0 tag predates these fixes.
 
 ## Local automated checks
 
@@ -71,4 +71,4 @@ Optional first-time LoRA Manager/pip installation and pose-model downloads still
 
 ## 維護者核對
 
-本次已驗證本機核心測試、中英文瀏覽器、公開卡圖下載，以及 RTX 5070 Ti 的實機生圖／作品儲存。最新程式修正已推送，Linux／Windows／macOS 與中英文瀏覽器 CI 全數通過；首次 LoRA 套件安裝和姿勢模型下載尚未以全新 ComfyUI 實測。v1.0 已公開，這批修正屬該標籤之後的 main 更新，社群文案尚未發布。社群文案在 [COMMUNITY_POSTS.md](../COMMUNITY_POSTS.md)。
+本次已驗證本機核心測試、中英文瀏覽器、公開卡圖下載，以及 RTX 5070 Ti 的實機生圖／作品儲存。最新程式修正已推送，Linux／Windows／macOS 與中英文瀏覽器 CI 全數通過；首次 LoRA 套件安裝和姿勢模型下載尚未以全新 ComfyUI 實測。v1.0 已公開，這批修正屬該標籤之後的 main 更新。

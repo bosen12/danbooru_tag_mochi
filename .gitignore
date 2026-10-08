@@ -24,3 +24,6 @@ web/cards/
 # Local development browser dependencies
 node_modules/
 package-lock.json
+
+# Private community post drafts, kept on the maintainer machine
+/COMMUNITY_POSTS.md

@@ -24,7 +24,7 @@ Mochi 目前以 GPLv3（GPL-3.0-only）發布，見 LICENSE 與 NOTICE。新 GPL
 
 ## 只屬於這個 repo 的檔（在這邊改）
 
-`README.md`（**英文在上、中文在下**）、`CLAUDE.md`、`start.bat`、`start.sh`、`.gitignore`、`.gitattributes`、`LICENSE`、`.github/`、`CONTRIBUTING.md`、`CHANGELOG.md`、`COMMUNITY_POSTS.md`、`docs/RELEASE_VERIFICATION.md`。
+`README.md`（**英文在上、中文在下**）、`CLAUDE.md`、`start.bat`、`start.sh`、`.gitignore`、`.gitattributes`、`LICENSE`、`.github/`、`CONTRIBUTING.md`、`CHANGELOG.md`、`docs/RELEASE_VERIFICATION.md`。
 
 - CI（GitHub Actions）：Linux Python 3.9／3.13、Windows／macOS Python 3.13 跑編譯與 `tests/run.py`；另一個 Linux 工作跑兩套 Playwright 中英文瀏覽器測試。手動 dispatch 另跑完整歷史引擎回歸。新增頁面或唯讀 API 時加進 smoke test 的清單。新 CI 必須推送後才有遠端結果，不能拿舊版綠燈當作新版證明。
 
@@ -35,3 +35,7 @@ Mochi 目前以 GPLv3（GPL-3.0-only）發布，見 LICENSE 與 NOTICE。新 GPL
 ## 第一次使用的準備
 
 `start.bat`／`start.sh` 只開伺服器；卡面下載、LoRA Manager、放大模型、姿勢參考、烘焙卡面都在伺服器背景做（`setup_tasks.py`，從上游同步），網頁左下角的面板（`web/setup-panel.js`）顯示進度和詢問。不要把這些步驟加回啟動檔：那樣又會變成要啟動兩次。
+
+## 本機社群草稿
+
+`COMMUNITY_POSTS.md` 是維護者的本機草稿，已加入 `.gitignore`；保留在本機，不要提交或推送。
