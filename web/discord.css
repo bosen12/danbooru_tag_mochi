@@ -1,0 +1,392 @@
+/* Discord 設定面板（web/discord.js 長出來的 DOM，class 沿用排字匣的 tg-*）。
+ * 排字匣的樣式在 web/boot.css，用的是那邊的 token；這裡照同一個骨架，換成墨池的墨色、朱色和節奏。 */
+
+/* 頂欄那顆鈕：右上角小點＝每張成圖自動送開著。 */
+.dc-btn .dc-dot {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: transparent;
+  transition: background var(--dur-short) var(--ease-out);
+}
+
+.dc-btn .dc-dot[data-on="1"] {
+  background: var(--color-good);
+  box-shadow: 0 0 0 2px var(--color-paper);
+}
+
+.tg-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 150;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-lg);
+  padding-top: max(var(--space-lg), env(safe-area-inset-top));
+  padding-bottom: max(var(--space-lg), env(safe-area-inset-bottom));
+  background: var(--color-scrim);
+  backdrop-filter: blur(6px);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.tg-modal.open {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transition: opacity var(--dur-short) var(--ease-out);
+}
+
+.tg-modal.open.is-closing {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--dur-micro) var(--ease-exit);
+}
+
+.tg-inner {
+  width: min(520px, 100%);
+  max-height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: var(--color-paper-2);
+  color: var(--color-ink);
+  border: 1px solid var(--color-rule);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lift);
+  transform: translateY(10px) scale(0.985);
+  opacity: 0;
+}
+
+.tg-modal.open .tg-inner {
+  transform: none;
+  opacity: 1;
+  transition:
+    transform var(--dur-medium) var(--ease-out),
+    opacity var(--dur-short) var(--ease-out);
+}
+
+.tg-modal.open.is-closing .tg-inner {
+  transform: translateY(6px) scale(0.99);
+  opacity: 0;
+  transition:
+    transform var(--dur-micro) var(--ease-exit),
+    opacity var(--dur-micro) var(--ease-exit);
+}
+
+.tg-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  padding: var(--space-md) var(--space-md) var(--space-sm);
+  border-bottom: 1px solid var(--color-rule-2);
+}
+
+.tg-head h2 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: var(--text-lg);
+  line-height: 1.2;
+}
+
+.tg-state {
+  margin: var(--space-2xs) 0 0;
+  font-size: var(--text-xs);
+  color: var(--color-muted);
+  overflow-wrap: anywhere;
+}
+
+.tg-state[data-ok="1"] {
+  color: var(--color-good);
+}
+
+.tg-body {
+  padding: var(--space-md);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.tg-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2xs);
+}
+
+.tg-field > span {
+  font-size: var(--text-sm);
+  color: var(--color-ink-2);
+}
+
+.tg-field input {
+  font: inherit;
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  min-height: 44px;
+  padding: 0 var(--space-sm);
+  border: 1px solid var(--color-rule);
+  border-radius: var(--radius-sm);
+  background: var(--color-paper);
+  color: var(--color-ink);
+}
+
+.tg-field input::placeholder {
+  color: var(--color-muted);
+}
+
+.tg-field input:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 1px;
+}
+
+.tg-field em {
+  font-style: normal;
+  font-size: var(--text-xs);
+  color: var(--color-muted);
+  line-height: 1.5;
+}
+
+/* 選了另一種接法但還沒存：這行要跳出來，不然混在灰字裡沒人看到。 */
+.tg-field em[data-pending="1"] {
+  color: var(--color-accent);
+}
+
+.tg-field code {
+  font-family: var(--font-mono);
+  color: var(--color-ink-2);
+}
+
+#dc-modal .row {
+  display: flex;
+  gap: var(--space-xs);
+}
+
+/* 面板裡的按鈕：排字匣那邊是 .ghost／.primary／.seg，這裡穿上墨池 .btn 的衣服。 */
+#dc-modal :is(.ghost, .primary, .seg) {
+  --btn-bg: var(--color-paper-3);
+  --btn-ink: var(--color-ink);
+  --btn-edge: var(--color-rule);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-xs);
+  min-height: 40px;
+  padding: var(--space-xs) var(--space-md);
+  border: 1px solid var(--btn-edge);
+  border-radius: var(--radius-sm);
+  background: var(--btn-bg);
+  color: var(--btn-ink);
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: var(--text-sm);
+  line-height: 1;
+  cursor: pointer;
+  transition:
+    transform var(--dur-short) var(--ease-settle),
+    background-color var(--dur-micro) var(--ease-out),
+    border-color var(--dur-micro) var(--ease-out);
+}
+
+#dc-modal .primary {
+  --btn-bg: var(--color-accent-2);
+  --btn-ink: var(--color-accent-ink);
+  --btn-edge: var(--color-accent);
+}
+
+#dc-modal .seg {
+  flex: 1 1 0;
+}
+
+#dc-modal .seg[aria-pressed="true"] {
+  --btn-bg: var(--color-paper-4);
+  --btn-edge: var(--color-ink-2);
+}
+
+#dc-modal :is(.ghost, .primary, .seg):active:not(:disabled) {
+  transform: translateY(1px) scale(0.98);
+}
+
+#dc-modal :is(.ghost, .primary, .seg):disabled {
+  opacity: 0.42;
+  cursor: not-allowed;
+}
+
+#dc-modal :is(.ghost, .primary, .seg):focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  #dc-modal :is(.ghost, .seg):hover:not(:disabled, :active) {
+    border-color: var(--color-ink-2);
+  }
+  #dc-modal .primary:hover:not(:disabled) {
+    --btn-bg: var(--color-accent-3);
+  }
+}
+
+#dc-modal .tg-close {
+  width: 38px;
+  min-height: 38px;
+  padding: 0;
+  flex: 0 0 auto;
+  background: transparent;
+}
+
+/* 自動送的開關 */
+.same-switch.tg-switch {
+  appearance: none;
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  min-height: 48px;
+  padding: var(--space-xs) var(--space-sm);
+  border: 1px solid var(--color-rule);
+  border-radius: var(--radius-sm);
+  background: var(--color-paper-3);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition:
+    border-color var(--dur-short) var(--ease-out),
+    background var(--dur-short) var(--ease-out);
+}
+
+.same-switch.tg-switch.is-on {
+  border-color: var(--color-good);
+  background: color-mix(in oklab, var(--color-good) 14%, var(--color-paper-3));
+}
+
+.tg-switch .same-knob {
+  position: relative;
+  flex: 0 0 auto;
+  width: 36px;
+  height: 20px;
+  border-radius: 99px;
+  background: var(--color-paper-4);
+  transition: background var(--dur-short) var(--ease-out);
+}
+
+.tg-switch.is-on .same-knob {
+  background: var(--color-good);
+}
+
+.tg-switch .same-knob i {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  display: block;
+  width: 16px;
+  height: 16px;
+  border-radius: 99px;
+  background: var(--color-ink);
+  transition: transform var(--dur-short) var(--ease-out);
+}
+
+.tg-switch.is-on .same-knob i {
+  transform: translateX(16px);
+}
+
+.tg-switch .same-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.tg-switch .same-copy strong {
+  font-size: var(--text-sm);
+  font-weight: 500;
+  line-height: 1.2;
+}
+
+.tg-switch .same-copy em {
+  font-style: normal;
+  font-size: var(--text-xs);
+  color: var(--color-muted);
+  line-height: 1.4;
+}
+
+.tg-switch:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.tg-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+  align-items: center;
+}
+
+.tg-msg {
+  margin: 0;
+  min-height: 1.2em;
+  font-size: var(--text-xs);
+  color: var(--color-muted);
+  overflow-wrap: anywhere;
+}
+
+.tg-msg[data-kind="ok"] {
+  color: var(--color-good);
+}
+
+.tg-msg[data-kind="err"] {
+  color: var(--color-accent);
+}
+
+.tg-stats {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: var(--space-2xs) var(--space-sm);
+  margin: 0;
+  padding-top: var(--space-sm);
+  border-top: 1px solid var(--color-rule-2);
+  font-size: var(--text-xs);
+}
+
+.tg-stats dt {
+  color: var(--color-muted);
+  white-space: nowrap;
+}
+
+.tg-stats dd {
+  margin: 0;
+  color: var(--color-ink);
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+.tg-stats .tg-err {
+  color: var(--color-accent);
+}
+
+@media (max-width: 640px) {
+  .tg-modal {
+    padding: var(--space-md);
+  }
+  .tg-inner {
+    width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tg-inner,
+  .tg-modal.open .tg-inner,
+  .tg-modal.open.is-closing .tg-inner {
+    transition: none;
+    transform: none;
+  }
+  .tg-switch .same-knob i {
+    transition: none;
+  }
+}

@@ -1,0 +1,44 @@
+{
+  "name": "墨池",
+  "short_name": "墨池",
+  "description": "排字匣的卡牌版：挑牌、抽牌、送 ComfyUI 生圖。",
+  "lang": "zh-Hant",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0f1217",
+  "theme_color": "#0f1217",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "疊印台",
+      "url": "fuse.html"
+    },
+    {
+      "name": "卡冊",
+      "url": "book.html"
+    },
+    {
+      "name": "作品冊",
+      "url": "album.html"
+    }
+  ]
+}

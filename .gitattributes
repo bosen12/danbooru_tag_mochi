@@ -1,0 +1,6 @@
+* text=auto eol=lf
+# cmd.exe misreads goto labels in LF-only batch files.
+*.bat text eol=crlf
+*.woff2 binary
+*.webp binary
+*.png binary

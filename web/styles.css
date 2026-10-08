@@ -1,0 +1,5576 @@
+/* Hallmark · pre-emit critique: P5 H4 E4 S5 R4 V4 */
+/* Hallmark · route: custom (tuned) · genre: atmospheric · structure: workbench · theme: 墨池
+ * paper: oklch(15.5% 0.012 250) · accent: oklch(60% 0.19 33) · display: Chiron Hei HK · body: Noto Sans TC
+ * axes: dark / grotesk-sans / warm-on-cool · motion: drop into the pool, cards deal under each print
+ */
+@import url("tokens.css");
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  /* 開彈窗鎖捲動時捲軸會消失：留著它的位置，版面才不會往右跳。 */
+  scrollbar-gutter: stable;
+  /* 大螢幕整體放大一點：1440 寬以下維持 16px，往上慢慢長，到 1920（24 吋 1080p）是 18px。
+   * 字、間距、欄寬、牌都是 rem 或跟著欄寬走，會一起長。不用 CSS zoom：zoom 之後 JS 寫進去的
+   * 座標（拖曳、飛牌、浮空卡、FLIP）全部會被再放大一次，實測 100px 落在 115px。 */
+  font-size: clamp(1rem, 0.625rem + 0.4167vw, 1.125rem);
+}
+
+/* 捲軸平常隱形，滑鼠移到那一塊才浮出來（Mac 接滑鼠、Windows 的捲軸都是實心佔位的那種）。
+   會捲的區塊另外用 scrollbar-gutter 把位置留好：捲軸出現或消失時，裡面的東西不會被擠得左右跳。 */
+html,
+body * {
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+}
+
+html:hover,
+body *:hover {
+  scrollbar-color: var(--color-rule) transparent;
+}
+
+html,
+body {
+  margin: 0;
+  overflow-x: clip;
+  background: var(--color-paper);
+  color: var(--color-ink);
+  font-family: var(--font-body);
+  line-height: 1.55;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+body {
+  min-height: 100dvh;
+  background:
+    radial-gradient(ellipse 50% 40% at 62% 18%, var(--color-pool-soft), transparent 70%),
+    var(--color-paper);
+}
+
+button,
+input,
+select {
+  font: inherit;
+  color: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+img {
+  display: block;
+  max-width: 100%;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  font-family: var(--font-display);
+  font-style: normal;
+  font-weight: 800;
+  line-height: 1.15;
+  margin: 0;
+  overflow-wrap: anywhere;
+  min-width: 0;
+}
+
+p {
+  margin: 0;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* ---------- 按鈕 ---------- */
+
+.btn,
+.mast-tools .ghost {
+  --btn-bg: var(--color-paper-3);
+  --btn-ink: var(--color-ink);
+  --btn-edge: var(--color-rule);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-xs);
+  min-height: 40px;
+  padding: var(--space-xs) var(--space-md);
+  border: 1px solid var(--btn-edge);
+  border-radius: var(--radius-sm);
+  background: var(--btn-bg);
+  color: var(--btn-ink);
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: var(--text-sm);
+  white-space: nowrap;
+  line-height: 1;
+  transition:
+    transform var(--dur-short) var(--ease-settle),
+    background-color var(--dur-micro) var(--ease-out),
+    border-color var(--dur-micro) var(--ease-out),
+    box-shadow var(--dur-short) var(--ease-out);
+}
+
+/* ---------- 按下去：像鉛字壓進紙裡 ----------
+ * 按住：往下沉一點、縮一點，邊緣內側吃進一圈陰影（壓痕）。放開：用 settle 曲線彈回來，稍微過頭再落定。
+ * 放開的同時，按下去的那一點暈開一圈墨（motion.js 的 initMotion 放 --px/--py、加 .is-inking）。
+ * 其他可以按的東西要同一種手感：加 class="pressable"（或 data-press）。不要用 .press：疊印台的印刷機外框就叫 .press。 */
+:where(.btn, .mast-tools .ghost, .pressable, [data-press]) {
+  position: relative;
+}
+
+.btn:active:not(:disabled),
+.mast-tools .ghost:active,
+.pressable:active:not(:disabled),
+[data-press]:active:not(:disabled) {
+  transform: translateY(1px) scale(0.97);
+  box-shadow: inset 0 1px 3px var(--color-shade);
+  transition-duration: var(--dur-micro);
+  transition-timing-function: var(--ease-out);
+}
+
+@property --ink-r {
+  syntax: "<length>";
+  inherits: false;
+  initial-value: 0px;
+}
+
+.btn::after,
+.mast-tools .ghost::after,
+.pressable::after,
+[data-press]::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+  background: radial-gradient(
+    circle at var(--px, 50%) var(--py, 50%),
+    color-mix(in oklch, currentColor 30%, transparent) 0,
+    color-mix(in oklch, currentColor 12%, transparent) calc(var(--ink-r) * 0.7),
+    transparent var(--ink-r)
+  );
+}
+
+.is-inking::after {
+  animation: ink-bloom var(--dur-xl) var(--ease-out);
+}
+
+@keyframes ink-bloom {
+  0% {
+    --ink-r: 4px;
+    opacity: 1;
+  }
+  100% {
+    --ink-r: var(--ink-reach, 160px);
+    opacity: 0;
+  }
+}
+
+/* 狀態換過去（aria-pressed 開／關）：蓋一下章，看得出這一下有生效。 */
+.is-seated {
+  animation: seat var(--dur-medium) var(--ease-settle);
+}
+
+@keyframes seat {
+  0% {
+    transform: scale(0.94);
+  }
+  100% {
+    transform: none;
+  }
+}
+
+/* 這一下不行（沒有東西可做、條件不夠）：輕輕搖頭，不是什麼都沒發生。 */
+.is-refused {
+  animation: refuse var(--dur-medium) var(--ease-out);
+}
+
+@keyframes refuse {
+  0%,
+  100% {
+    translate: 0;
+  }
+  25% {
+    translate: -3px;
+  }
+  55% {
+    translate: 2px;
+  }
+  80% {
+    translate: -1px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .btn:active:not(:disabled),
+  .mast-tools .ghost:active,
+  .pressable:active:not(:disabled),
+  [data-press]:active:not(:disabled) {
+    transform: none;
+  }
+  .is-inking::after,
+  .is-seated,
+  .is-refused {
+    animation: none;
+  }
+}
+
+.btn:disabled {
+  opacity: 0.42;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.btn-primary {
+  --btn-bg: var(--color-accent-2);
+  --btn-ink: var(--color-accent-ink);
+  --btn-edge: var(--color-accent);
+}
+
+.btn-pool {
+  --btn-bg: var(--color-pool-2);
+  --btn-ink: var(--color-ink);
+  --btn-edge: var(--color-pool);
+}
+
+.btn-ghost {
+  --btn-bg: transparent;
+}
+
+.btn-small {
+  min-height: 32px;
+  padding: var(--space-2xs) var(--space-sm);
+  font-size: var(--text-xs);
+}
+
+.btn[aria-pressed="true"] {
+  --btn-bg: var(--color-paper-4);
+  --btn-edge: var(--color-ink-2);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  /* 按住的時候不要再被 hover 抬起來：壓下去就是壓下去。 */
+  .btn:hover:not(:disabled, :active),
+  .mast-tools .ghost:hover:not(:active) {
+    transform: translateY(-1px);
+    border-color: var(--color-ink-2);
+  }
+  .btn-primary:hover:not(:disabled) {
+    --btn-bg: var(--color-accent-3);
+    border-color: var(--color-accent);
+  }
+}
+
+.btn .count {
+  font-family: var(--font-mono);
+  font-weight: 500;
+  opacity: 0.85;
+}
+
+/* LoRA／模型大面板（web/lora.css，三個版本共用、視覺鎖在暗房那套）自己定了一套時間和曲線。
+ * 在 web6 裡把它們接到同一套 token：面板的開合、列的進場跟整頁同一種節奏。顏色不動。 */
+:root {
+  --root-ease-out: var(--ease-out);
+  --root-ease-exit: var(--ease-exit);
+  --root-ease-settle: var(--ease-settle);
+}
+body :is(.lora-modal, .lora-preview-tip, .tw-tip, .lora-toast, .lora-tarot, .shortcuts-overlay, .shot-viewer) {
+  --ease-out: var(--root-ease-out);
+  --ease-in: var(--root-ease-exit);
+  --ease-entrance: var(--root-ease-out);
+  --ease-spring: var(--root-ease-settle);
+  --d-micro: var(--dur-micro);
+  --d-exit: var(--dur-micro);
+  --d-ui: var(--dur-short);
+  --d-pop: var(--dur-medium);
+}
+
+/* 沒打開的整頁面板是 display:flex，只靠 visibility 藏起來，載入時仍會整棵排版。
+ * 收起內容之後第一格的字盒不變；加上 .open 才恢復排版。 */
+body :is(.lora-modal, .lora-tarot, .shortcuts-overlay):not(.open) {
+  content-visibility: hidden;
+}
+
+/* 模型、workflow 選好了不用強調色描邊（web/lora.css 給三個版本共用，這裡只蓋 web6）：
+ * 桅杆上最亮的東西應該是「現在要做的事」，強調色留給付印／抽並生圖。 */
+body #ckpt-pick-btn.has,
+body #wf-pick-btn.has {
+  border-color: var(--color-rule);
+}
+
+/* ---------- 桅杆 ---------- */
+
+.mast {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-xs) var(--space-md);
+  padding: var(--space-xs) var(--space-md);
+  /* 半透明會讓底下捲過去的按鈕字透上來跟字標疊在一起（手機上最明顯）。以前靠 88% 底色加一層
+   * 毛玻璃擋；但它黏在頂端，每捲一格都要重算背後的模糊，生圖時跟 ComfyUI 搶顯示卡。
+   * 改成 96% 的底色，字一樣透不上來，捲動不必再算模糊。 */
+  background: color-mix(in oklch, var(--color-paper) 96%, transparent);
+  border-bottom: 1px solid var(--color-rule-2);
+}
+
+.wordmark {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-xs);
+  font-size: var(--text-xl);
+  letter-spacing: 0.06em;
+}
+
+.mast-primary,
+.mast-controls {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  gap: var(--space-sm);
+}
+
+.mast-controls {
+  margin-left: auto;
+}
+
+.page-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2xs);
+  padding: var(--space-3xs);
+  border: 1px solid var(--color-rule-2);
+  border-radius: var(--radius-sm);
+  background: var(--color-paper-2);
+  white-space: nowrap;
+  /* 整個導覽一個堆疊層：墨底（z 0）滑過另一個標籤時，所有的字（z 1）都在它上面。 */
+  isolation: isolate;
+}
+
+.page-switch a {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  padding: 0 var(--space-sm);
+  border-radius: var(--radius-xs);
+  color: var(--color-ink-2);
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: var(--text-sm);
+  text-decoration: none;
+}
+
+.page-switch a[aria-current="page"] {
+  color: var(--color-ink);
+}
+
+/* 字自己一層、排在墨底上面。不靠墨底的 z-index: -1：換版時墨底在動畫裡會被提升成獨立的
+ * 合成層，擷取桅杆的即時畫面時它跑到字上面，「疊印台」三個字整段被蓋住。 */
+.page-switch-label {
+  position: relative;
+  z-index: 1;
+}
+
+.page-switch-ink {
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--color-paper-4);
+}
+
+.page-switch a:hover,
+.mast-extra:hover {
+  color: var(--color-ink);
+}
+
+.mast-extra {
+  color: var(--color-muted);
+  font-size: var(--text-xs);
+  text-decoration-color: var(--color-rule);
+  text-underline-offset: var(--space-2xs);
+  white-space: nowrap;
+}
+
+.mast-extra + .mast-extra {
+  margin-left: var(--space-xs);
+}
+
+.wordmark small {
+  font-family: var(--font-body);
+  font-weight: 400;
+  font-size: var(--text-xs);
+  color: var(--color-muted);
+  letter-spacing: 0;
+}
+
+.segmented {
+  display: inline-flex;
+  padding: 2px;
+  border-radius: var(--radius-sm);
+  background: var(--color-paper-2);
+  border: 1px solid var(--color-rule-2);
+}
+
+.segmented {
+  position: relative;
+}
+
+/* 右上角的圖示鈕（工作流、聲音）：只有圖示，名字在 title／aria-label。 */
+#wf-pick-btn .gen-pick-label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+#wf-pick-btn,
+.icon-btn {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  min-width: 36px;
+  padding-inline: 8px;
+}
+
+#wf-pick-btn .wf-ico,
+.icon-btn svg {
+  display: block;
+}
+
+/* 用了自己的工作流：右上角一顆小點。 */
+#wf-pick-btn.is-custom::after {
+  content: "";
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--color-accent);
+}
+
+.icon-btn[aria-pressed="false"] {
+  color: var(--color-ink-3, var(--color-ink-2));
+}
+
+.rule-steppers {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs) var(--space-sm);
+}
+
+/* 選到的那一格底下一塊會滑的底（見 motion.js）：換選項時滑過去，不是這格亮、那格暗。 */
+.seg-thumb {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 0;
+  border-radius: var(--radius-xs);
+  background: var(--color-paper-4);
+  pointer-events: none;
+  transition:
+    transform var(--dur-short) var(--ease-out),
+    width var(--dur-short) var(--ease-out),
+    background-color var(--dur-short) var(--ease-out);
+}
+
+.segmented[data-kind="rating"] .seg-thumb[data-v="explicit"] {
+  background: var(--color-accent-3);
+}
+
+.segmented.has-thumb > button {
+  position: relative;
+  z-index: 1;
+}
+
+.segmented.has-thumb > button[aria-checked="true"] {
+  background: transparent;
+}
+
+.segmented button {
+  min-height: 32px;
+  padding: 0 var(--space-sm);
+  border: 0;
+  border-radius: var(--radius-xs);
+  background: transparent;
+  color: var(--color-ink-2);
+  font-size: var(--text-sm);
+  white-space: nowrap;
+}
+
+.segmented button[aria-checked="true"] {
+  background: var(--color-paper-4);
+  color: var(--color-ink);
+  font-weight: 700;
+}
+
+.segmented[data-kind="rating"] button[data-v="explicit"][aria-checked="true"] {
+  background: var(--color-accent-3);
+  color: var(--color-accent-ink);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .segmented button:hover {
+    color: var(--color-ink);
+  }
+}
+
+.segmented button:active {
+  transform: translateY(1px);
+}
+
+/* 聲音關著：圖示變淡（墨池、疊印台同一顆）。 */
+#sound-btn[aria-pressed="false"] {
+  color: var(--color-muted);
+}
+
+.mast-tools {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  margin-left: 0;
+}
+
+.ping {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2xs);
+  font-size: var(--text-xs);
+  color: var(--color-muted);
+  white-space: nowrap;
+}
+
+.ping i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-muted);
+}
+
+.ping[data-ok="1"] i {
+  background: var(--color-good);
+}
+
+.ping[data-ok="0"] i {
+  background: var(--color-accent);
+}
+
+.mast-tools .ghost .gen-pick-label {
+  max-width: 11em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mast-tools .ghost svg {
+  width: 16px;
+  height: 16px;
+}
+
+.mast-tools .keys-btn {
+  display: none;
+}
+
+/* 手機：桅杆不黏在頂上（141px，佔掉快五分之一的螢幕，往下做事時一直壓著），跟疊印台一樣捲走。
+ * 再窄一點：字標的副標、連線燈的字收起來，燈還在（字給螢幕閱讀器），省下一整排。 */
+@media (max-width: 44rem) {
+  .mast {
+    position: static;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-2xs);
+  }
+  .mast-primary,
+  .mast-controls {
+    width: 100%;
+  }
+  .mast-controls {
+    overflow-x: auto;
+    scrollbar-width: none;
+    overscroll-behavior-x: contain;
+  }
+  .mast-controls::-webkit-scrollbar {
+    display: none;
+  }
+  .mast-controls > *,
+  .mast-tools > * {
+    flex: none;
+  }
+}
+
+@media (max-width: 34rem) {
+  .mast {
+    gap: var(--space-xs) var(--space-2xs);
+    padding-inline: var(--space-sm);
+  }
+  .wordmark small {
+    display: none;
+  }
+  .mast-primary,
+  .mast-controls {
+    gap: var(--space-xs);
+  }
+  .page-switch a {
+    min-height: 30px;
+    padding: 0 var(--space-xs);
+    font-size: var(--text-xs);
+  }
+  .mast-extra {
+    margin-left: auto;
+  }
+  /* 第二排不要橫向捲：捲出去的工具和連線燈看不到、也不知道還有。LoRA、模型改成只留圖示
+   * （文字給螢幕閱讀器，滑鼠停上去仍有 title），整排就放得下。
+   * 疊印台多一顆「規則」，375 寬還是差三十幾 px（音效鈕被切掉、連線燈跑到畫面外、整頁能左右滑）：
+   * 放不下時工具整排換到下一行，按鈕不縮小。墨池放得下就還是一行。 */
+  .mast-controls {
+    overflow-x: visible;
+    flex-wrap: wrap;
+    row-gap: var(--space-xs);
+  }
+  .mast-tools .ghost .gen-pick-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  .mast-tools :is(#lora-pick-btn, #ckpt-pick-btn, #wf-pick-btn) {
+    min-width: 36px;
+    padding-inline: var(--space-xs);
+  }
+  .mast-tools .ghost.icon-btn {
+    min-width: 36px;
+    padding-inline: var(--space-xs);
+  }
+  .mast-controls,
+  .mast-tools {
+    column-gap: var(--space-2xs);
+  }
+  .mast-tools .keys-btn {
+    display: none;
+  }
+  .mast .segmented button {
+    min-height: 30px;
+    /* 8px 的話墨池那排差 2px 放不下、被擠成三排；6px 字還是有呼吸，按鈕仍有 40px 寬。 */
+    padding: 0 6px;
+    font-size: var(--text-xs);
+  }
+  .mast-tools .ghost {
+    min-height: 34px;
+    padding-inline: var(--space-sm);
+  }
+  .mast-tools .ghost .gen-pick-label {
+    max-width: 6.5em;
+  }
+  .ping span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+}
+
+/* ---------- 版面 ---------- */
+
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-md);
+  padding: var(--space-md);
+}
+
+@media (min-width: 64rem) {
+  .layout {
+    /* 中英文字盒一樣寬（牌寬 96px 起跳見 .lib-grid）：一排三張，卡面插畫看得清楚。 */
+    grid-template-columns: minmax(20rem, 26rem) minmax(0, 1fr);
+    align-items: start;
+  }
+  .library {
+    position: sticky;
+    top: 64px;
+    max-height: calc(100dvh - 64px - var(--space-md));
+  }
+}
+
+/* 字盒、合成池是排版桌上的兩塊區域，不是兩張浮起來的卡片：不包圓角框、不墊底，
+ * 跟疊印台一樣用細線分區（區塊頂上一條、桌機的字盒右邊一條）。 */
+.panel {
+  border: 0;
+  border-top: 1px solid var(--color-rule-2);
+  border-radius: 0;
+  background: transparent;
+}
+
+@media (min-width: 64rem) {
+  .layout > .library.panel {
+    border-top: 0;
+    border-right: 1px solid var(--color-rule-2);
+    padding-right: var(--space-sm);
+  }
+  .layout > .work.panel,
+  .layout > main .work.panel {
+    border-top: 0;
+  }
+}
+
+.panel-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-xs);
+  padding: var(--space-sm) var(--space-md) 0;
+}
+
+.panel-head h2 {
+  font-size: var(--text-lg);
+}
+
+.panel-head p {
+  font-size: var(--text-xs);
+  color: var(--color-muted);
+}
+
+/* ---------- 字盒 ---------- */
+
+.library {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.library > * {
+  flex: none;
+}
+
+.library .lib-grid {
+  flex: 1 1 auto;
+  /* aspect-ratio + overflow:hidden 的格子在可捲動的格線裡最小高度會變 0，列要照內容撐開 */
+  grid-auto-rows: max-content;
+}
+
+.lib-search {
+  margin: var(--space-sm) var(--space-md) 0;
+  display: flex;
+  gap: var(--space-xs);
+}
+
+.lib-search input {
+  flex: 1;
+  min-width: 0;
+  min-height: 38px;
+  padding: 0 var(--space-sm);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-rule);
+  background: var(--color-paper);
+  color: var(--color-ink);
+}
+
+.lib-search input::placeholder {
+  color: var(--color-muted);
+}
+
+.lib-search input:hover {
+  border-color: var(--color-ink-2);
+}
+
+.lib-search input:focus-visible {
+  border-color: var(--color-focus);
+}
+
+.suit-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2xs);
+  padding: var(--space-sm) var(--space-md) 0;
+}
+
+.suit-tab {
+  --suit: var(--color-ink-2);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2xs);
+  min-height: 32px;
+  padding: 0 var(--space-xs);
+  border: 1px solid var(--color-rule);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--color-ink-2);
+  font-size: var(--text-xs);
+  white-space: nowrap;
+}
+
+.suit-tab b {
+  display: inline-grid;
+  place-items: center;
+  width: 1.4em;
+  height: 1.4em;
+  border-radius: 50%;
+  background: var(--suit);
+  color: var(--color-stock-ink);
+  font-family: var(--font-display);
+}
+
+.suit-tab[aria-pressed="true"] {
+  border-color: var(--color-ink-2);
+  background: var(--color-paper-4);
+  color: var(--color-ink);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .suit-tab:hover {
+    color: var(--color-ink);
+    border-color: var(--color-ink-2);
+  }
+}
+
+.suit-tab:active {
+  transform: translateY(1px);
+}
+
+/* 小分類：跟疊印台一樣換行排開，一眼看完，不必左右捲（以前一排擠不下，後面幾個要往右捲才找得到）。 */
+.group-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2xs);
+  padding: var(--space-xs) var(--space-md) var(--space-xs);
+}
+
+.group-chip {
+  flex: none;
+  min-height: 28px;
+  padding: 0 var(--space-xs);
+  border: 1px solid var(--color-rule-2);
+  border-radius: var(--radius-xs);
+  background: var(--color-paper);
+  color: var(--color-muted);
+  font-size: var(--text-xs);
+  white-space: nowrap;
+}
+
+/* 晶片前面的一字章：跟牌面書脊底下的章同一個字，看牌就知道要點哪一顆。 */
+.chip-seal {
+  display: inline-grid;
+  place-items: center;
+  width: 1.25em;
+  height: 1.25em;
+  margin-right: 0.3em;
+  border: 1px solid currentColor;
+  border-radius: 2px;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.9em;
+  line-height: 1;
+}
+
+.group-chip {
+  display: inline-flex;
+  align-items: center;
+}
+
+/* 同一家族的細分類收成一串（地點：住家 浴場泳池 …），家族名只寫一次。
+   整串是一個 flex 項目，換行時跟著家族名走，不會把家族名孤零零留在上一行。 */
+.chip-run {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2xs);
+  max-width: 100%;
+  padding-left: var(--space-2xs);
+  border-left: 2px solid var(--color-rule-2);
+}
+
+.chip-fam {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding-right: 2px;
+  color: var(--color-ink-2);
+  font-size: var(--text-xs);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.chip-fam::after {
+  content: "：";
+  font-weight: 400;
+}
+
+/* 一串後面接著單獨的籤（鏡頭那串後面的「視線」）：拉開一點，不要看起來像同一串。
+   手機上每串自己一行，單獨的籤排在串與串之間。 */
+.chip-run {
+  margin-right: var(--space-sm);
+}
+
+@media (max-width: 34rem) {
+  .chip-run {
+    flex-basis: 100%;
+    margin-right: 0;
+  }
+}
+
+.group-chip[aria-pressed="true"] {
+  color: var(--color-ink);
+  border-color: var(--color-ink-2);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .group-chip:hover {
+    color: var(--color-ink);
+  }
+}
+
+.group-chip:active {
+  transform: translateY(1px);
+}
+
+.lib-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  gap: var(--space-xs);
+  align-content: start;
+  padding: var(--space-xs) var(--space-md) var(--space-md);
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+  overscroll-behavior: contain;
+  min-height: 0;
+  max-height: 60dvh;
+}
+
+@media (min-width: 64rem) {
+  .lib-grid {
+    max-height: none;
+  }
+}
+
+.lib-grid .card {
+  --card-w: 100%;
+  width: 100%;
+  font-size: 10.5px;
+}
+
+/* 字盒分批畫：捲到這個點附近就接著畫下一批（app.js moreLibrary）。 */
+.lib-more {
+  grid-column: 1 / -1;
+  height: 1px;
+}
+
+.lib-empty {
+  grid-column: 1 / -1;
+  padding: var(--space-lg) 0;
+  color: var(--color-muted);
+  font-size: var(--text-sm);
+  text-align: center;
+}
+
+.lib-count {
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  color: var(--color-muted);
+}
+
+/* ---------- 合成池 ---------- */
+
+.work {
+  display: grid;
+  gap: var(--space-md);
+  min-width: 0;
+}
+
+.pool {
+  position: relative;
+  overflow: hidden;
+}
+
+/* 合成池是一塊排版臺，不是上傳框：不畫整圈虛線，只在四角放套準角線（印刷品裁切邊那種 L 形記號）。
+ * 牌放進來就排在臺上；拖過來時角線變亮、臺面微微染上池水的顏色。 */
+.pool-well {
+  --reg: color-mix(in oklch, var(--color-pool) 62%, transparent);
+  --reg-len: 18px;
+  --reg-w: 1.5px;
+  position: relative;
+  margin: var(--space-sm) var(--space-md);
+  min-height: 150px;
+  padding: var(--space-md) var(--space-lg);
+  border-radius: var(--radius-xs);
+  background:
+    linear-gradient(var(--reg), var(--reg)) top left / var(--reg-len) var(--reg-w) no-repeat,
+    linear-gradient(var(--reg), var(--reg)) top left / var(--reg-w) var(--reg-len) no-repeat,
+    linear-gradient(var(--reg), var(--reg)) top right / var(--reg-len) var(--reg-w) no-repeat,
+    linear-gradient(var(--reg), var(--reg)) top right / var(--reg-w) var(--reg-len) no-repeat,
+    linear-gradient(var(--reg), var(--reg)) bottom left / var(--reg-len) var(--reg-w) no-repeat,
+    linear-gradient(var(--reg), var(--reg)) bottom left / var(--reg-w) var(--reg-len) no-repeat,
+    linear-gradient(var(--reg), var(--reg)) bottom right / var(--reg-len) var(--reg-w) no-repeat,
+    linear-gradient(var(--reg), var(--reg)) bottom right / var(--reg-w) var(--reg-len) no-repeat,
+    color-mix(in oklch, var(--color-paper) 55%, transparent);
+  display: flex;
+  flex-wrap: wrap;
+  align-content: center;
+  justify-content: center;
+  gap: var(--space-sm);
+  transition: background-color var(--dur-short) var(--ease-out);
+}
+
+/* 空的時候說明靠左、像版面上的圖說，不是置中的召喚區。 */
+.pool-well:has(> .pool-empty) {
+  justify-content: flex-start;
+}
+
+.pool-well .card {
+  --card-w: clamp(64px, 7vw, 92px);
+}
+
+.pool-well[data-over="true"] {
+  --reg: var(--color-pool);
+  --reg-len: 26px;
+  background-color: color-mix(in oklch, var(--color-pool-2) 26%, var(--color-paper));
+}
+
+/* 放進池子造成的後果（誰被換下來、為什麼），寫在池子正下方，旁邊給「換回」。 */
+.pool-note {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.2rem var(--space-sm);
+  margin: var(--space-xs) var(--space-md) 0;
+  padding-left: var(--space-xs);
+  border-left: 2px solid var(--color-warn);
+  font-size: var(--text-xs);
+  color: var(--color-ink-2);
+  animation: pool-note-in var(--dur-short) var(--ease-out);
+}
+
+.pool-note[hidden] {
+  display: none;
+}
+
+/* 池子裡放不到一起的兩張：虛線框起來，底下一行說是哪兩張。 */
+.pool-clash {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.2rem var(--space-sm);
+  margin: var(--space-xs) var(--space-md) 0;
+  padding-left: var(--space-xs);
+  border-left: 2px solid var(--color-accent);
+  font-size: var(--text-xs);
+  color: var(--color-ink-2);
+  animation: pool-note-in var(--dur-short) var(--ease-out);
+}
+
+.pool-clash b {
+  color: var(--color-accent);
+  font-weight: 700;
+}
+
+.pool-clash[hidden] {
+  display: none;
+}
+
+.pool-slot .card.is-clash {
+  outline: 2px dashed var(--color-accent);
+  outline-offset: 3px;
+}
+
+.pool-slot .card.is-clashing {
+  animation: pool-clash-shake var(--dur-long) var(--ease-out);
+}
+
+@keyframes pool-clash-shake {
+  20% {
+    transform: translateX(-3px) rotate(-2deg);
+  }
+  45% {
+    transform: translateX(3px) rotate(2deg);
+  }
+  70% {
+    transform: translateX(-2px);
+  }
+}
+
+/* 指到一張牌，跟它有關係的一起浮起來、描一圈。 */
+.pool-slot .card {
+  transition: translate var(--dur-short) var(--ease-out), box-shadow var(--dur-short) var(--ease-out);
+}
+
+.pool-slot .card.is-related {
+  translate: 0 -4px;
+  box-shadow: 0 0 0 2px var(--color-accent), 0 10px 18px -8px var(--color-shade);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pool-slot .card.is-clashing {
+    animation: none;
+  }
+  .pool-slot .card.is-related {
+    translate: none;
+  }
+}
+
+@keyframes pool-note-in {
+  from {
+    opacity: 0;
+    transform: translateY(-3px);
+  }
+}
+
+.link-btn {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--color-ink);
+  font: inherit;
+  text-decoration: underline;
+  text-decoration-color: var(--color-rule);
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.link-btn:hover {
+  text-decoration-color: currentColor;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pool-note {
+    animation: none;
+  }
+}
+
+.pool-empty {
+  display: grid;
+  gap: var(--space-2xs);
+  justify-items: start;
+  text-align: left;
+  color: var(--color-muted);
+  font-size: var(--text-sm);
+  max-width: 32em;
+}
+
+.pool-empty b {
+  font-family: var(--font-display);
+  font-size: var(--text-lg);
+  color: var(--color-ink-2);
+}
+
+.pool-slot {
+  position: relative;
+}
+
+.pool-x {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  z-index: 4;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 1px solid var(--color-rule);
+  background: var(--color-paper-3);
+  color: var(--color-ink);
+  display: grid;
+  place-items: center;
+  font-size: 14px;
+  line-height: 1;
+  padding: 0;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .pool-x:hover {
+    background: var(--color-accent-2);
+    border-color: var(--color-accent);
+  }
+}
+
+.pool-x:active {
+  transform: scale(0.94);
+}
+
+/* 規則 */
+.rules {
+  display: grid;
+  gap: var(--space-sm);
+  padding: 0 var(--space-md) var(--space-md);
+}
+
+.rule-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-xs) var(--space-md);
+}
+
+.rule-label {
+  font-size: var(--text-xs);
+  color: var(--color-muted);
+  white-space: nowrap;
+}
+
+/* 標籤＋控制項一組：換行只發生在組與組之間。 */
+.rule-pair {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-xs);
+  min-width: 0;
+}
+
+.rule-field {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-xs);
+  min-width: 0;
+}
+
+/* 規則在 grid 裡：不給 min-width 的話，最寬那一列（四顆步進器）會把整塊撐出手機畫面。 */
+.more-rules,
+.more-rules > div {
+  min-width: 0;
+}
+
+.chip-toggle {
+  min-height: 32px;
+  padding: 0 var(--space-sm);
+  border: 1px solid var(--color-rule);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--color-ink-2);
+  font-size: var(--text-sm);
+  white-space: nowrap;
+}
+
+.chip-toggle[aria-pressed="true"] {
+  background: var(--color-paper-4);
+  border-color: var(--color-ink-2);
+  color: var(--color-ink);
+  font-weight: 700;
+}
+
+.chip-toggle[data-heat="sex"][aria-pressed="true"] {
+  border-color: var(--color-accent);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .chip-toggle:hover {
+    color: var(--color-ink);
+    border-color: var(--color-ink-2);
+  }
+}
+
+.chip-toggle:active {
+  transform: translateY(1px);
+}
+
+.chip-toggle:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.select {
+  min-height: 32px;
+  padding: 0 var(--space-xs);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-rule);
+  background: var(--color-paper);
+  color: var(--color-ink);
+  font-size: var(--text-sm);
+}
+
+.select:hover {
+  border-color: var(--color-ink-2);
+}
+
+.stepper {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--color-rule);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.stepper button {
+  width: 30px;
+  min-height: 30px;
+  border: 0;
+  background: var(--color-paper-3);
+  color: var(--color-ink);
+  font-size: var(--text-md);
+  line-height: 1;
+  padding: 0;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .stepper button:hover {
+    background: var(--color-paper-4);
+  }
+}
+
+.stepper button:active {
+  transform: translateY(1px);
+}
+
+.stepper button:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.stepper output {
+  min-width: 2.2em;
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+}
+
+.stepper-label {
+  font-size: var(--text-xs);
+  color: var(--color-ink-2);
+  padding: 0 var(--space-2xs) 0 var(--space-xs);
+  white-space: nowrap;
+}
+
+.switch {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  font-size: var(--text-sm);
+  color: var(--color-ink-2);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+/* 開關：原生 checkbox 換成一條軌道。role=switch 在 JS 那邊加。 */
+.switch input {
+  appearance: none;
+  position: relative;
+  flex: none;
+  width: 36px;
+  height: 20px;
+  margin: 0;
+  border-radius: 999px;
+  border: 1px solid var(--color-rule);
+  background: var(--color-paper-3);
+  cursor: pointer;
+  transition:
+    background-color var(--dur-short) var(--ease-out),
+    border-color var(--dur-short) var(--ease-out);
+}
+
+.switch input::before {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--color-ink-2);
+  transition:
+    transform var(--dur-short) var(--ease-out),
+    background-color var(--dur-short) var(--ease-out);
+}
+
+.switch input:checked {
+  background: var(--color-pool-2);
+  border-color: var(--color-pool);
+}
+
+.switch input:checked::before {
+  transform: translateX(16px);
+  background: var(--color-ink);
+}
+
+.switch:has(input:checked) {
+  color: var(--color-ink);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .switch:hover input:not(:disabled) {
+    border-color: var(--color-ink-2);
+  }
+}
+
+.switch input:active::before {
+  width: 17px;
+}
+
+.switch input:checked:active::before {
+  transform: translateX(13px);
+}
+
+.switch input:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.more-rules summary {
+  cursor: pointer;
+  font-size: var(--text-xs);
+  color: var(--color-muted);
+  width: max-content;
+  list-style: none;
+}
+
+.more-rules summary::-webkit-details-marker {
+  display: none;
+}
+
+/* 箭頭：一個 ▸ 轉 90° 變 ▾，不換字。 */
+.more-rules summary::before {
+  content: "▸";
+  display: inline-block;
+  width: 1em;
+  transition: rotate var(--dur-short) var(--ease-out);
+}
+
+.more-rules[open] summary::before {
+  rotate: 90deg;
+}
+
+.more-rules summary:hover {
+  color: var(--color-ink);
+}
+
+/* 開合：高度從 0 滑到 auto（interpolate-size），裡面那層同時淡入、往下落一點；
+ * 收起時一按就開始縮、內容先淡掉，不再一格就消失。content-visibility 用 allow-discrete
+ * 撐到收完才藏。不支援 ::details-content 的瀏覽器照舊瞬間開合。
+ * overflow-clip-margin：開到一半時裁切邊，但別把步進器、選單的焦點框切掉。 */
+.more-rules {
+  interpolate-size: allow-keywords;
+}
+
+.more-rules::details-content {
+  height: 0;
+  overflow: clip;
+  overflow-clip-margin: 4px;
+  transition:
+    height var(--dur-short) var(--ease-out),
+    content-visibility var(--dur-short) allow-discrete;
+}
+
+.more-rules[open]::details-content {
+  height: auto;
+  transition:
+    height var(--dur-medium) var(--ease-out),
+    content-visibility var(--dur-medium) allow-discrete;
+}
+
+.more-rules > div {
+  display: grid;
+  gap: var(--space-sm);
+  /* padding 不用 margin：margin 會穿過高度 0 的外框露在外面，收完那一格才一次跳掉 12px。 */
+  padding-top: var(--space-sm);
+  opacity: 0;
+  translate: 0 calc(var(--space-sm) * -1);
+  transition:
+    opacity var(--dur-micro) var(--ease-out),
+    translate var(--dur-short) var(--ease-out);
+}
+
+.more-rules[open] > div {
+  opacity: 1;
+  translate: 0;
+  transition:
+    opacity var(--dur-medium) var(--ease-out) calc(var(--dur-micro) * 0.5),
+    translate var(--dur-medium) var(--ease-out);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .more-rules summary::before,
+  .more-rules::details-content,
+  .more-rules > div {
+    transition: none;
+  }
+}
+
+/* 選格（skeleton-picker.js）：數字比骨架少時，那一段在步進器底下展開。
+   外框常駐，開合用 grid-template-rows 0fr ↔ 1fr 撐高度，下面的內容跟著滑，不會跳。 */
+.skel-picker {
+  display: grid;
+  min-width: 0;
+}
+
+.skel-row {
+  display: grid;
+  grid-template-rows: 0fr;
+  min-width: 0;
+  opacity: 0;
+  transition:
+    grid-template-rows var(--dur-medium) var(--ease-out),
+    opacity var(--dur-short) var(--ease-out);
+}
+
+.skel-row[data-open="true"] {
+  grid-template-rows: 1fr;
+  opacity: 1;
+}
+
+.skel-inner {
+  min-height: 0;
+  overflow: hidden;
+}
+
+.skel-body {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2xs) var(--space-xs);
+  margin-top: var(--space-xs);
+  padding: var(--space-xs) var(--space-sm);
+  border-left: 2px solid var(--color-accent);
+  background: color-mix(in oklch, var(--color-paper-3) 60%, transparent);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+}
+
+.skel-name {
+  font-size: var(--text-xs);
+  color: var(--color-ink-2);
+  white-space: nowrap;
+}
+
+.skel-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2xs);
+  min-width: 0;
+}
+
+.skel-note {
+  flex-basis: 100%;
+  font-size: var(--text-xs);
+  color: var(--color-muted);
+}
+
+.skel-chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 var(--space-xs);
+  border: 1px solid var(--color-rule);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--color-muted);
+  font-size: var(--text-xs);
+  white-space: nowrap;
+  transition:
+    background-color var(--dur-short) var(--ease-out),
+    border-color var(--dur-short) var(--ease-out),
+    color var(--dur-short) var(--ease-out);
+}
+
+.skel-chip[aria-pressed="true"] {
+  background: var(--color-paper-4);
+  border-color: var(--color-ink-2);
+  color: var(--color-ink);
+  font-weight: 700;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .skel-chip[aria-pressed="false"]:hover {
+    border-color: var(--color-ink-2);
+    color: var(--color-ink);
+  }
+}
+
+.skel-chip:active {
+  transform: translateY(1px);
+}
+
+/* 暗掉的格子：一筆墨從左劃過；換回來時從右收掉。 */
+.skel-chip-name {
+  position: relative;
+}
+
+.skel-chip-name::after {
+  content: "";
+  position: absolute;
+  left: -2px;
+  right: -2px;
+  top: 52%;
+  height: 1.5px;
+  border-radius: 1px;
+  background: currentColor;
+  transform: scaleX(1);
+  transform-origin: left center;
+  transition: transform var(--dur-medium) var(--ease-out);
+}
+
+.skel-chip[aria-pressed="true"] .skel-chip-name::after {
+  transform: scaleX(0);
+  transform-origin: right center;
+  transition-duration: var(--dur-short);
+}
+
+/* 剛展開：格子依序浮上來。 */
+.skel-row.is-opening .skel-chip {
+  animation: skel-chip-in var(--dur-long) var(--ease-out) backwards;
+  animation-delay: calc(var(--dur-micro) + var(--i, 0) * 40ms);
+}
+
+@keyframes skel-chip-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skel-row,
+  .skel-chip,
+  .skel-chip-name::after {
+    transition: none;
+  }
+  .skel-row.is-opening .skel-chip {
+    animation: none;
+  }
+  .skel-chip:active {
+    transform: none;
+  }
+}
+
+.go-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
+  border-top: 1px solid var(--color-rule-2);
+}
+
+/* 生圖種子（web/seed-control.js）：在按鈕底下自己一行。 */
+.go-bar > .seed-ctl {
+  flex-basis: 100%;
+}
+
+.go-bar .spacer {
+  flex: 1;
+}
+
+.go-bar .btn-primary {
+  min-height: 46px;
+  padding: 0 var(--space-lg);
+  font-size: var(--text-md);
+}
+
+.go-status {
+  font-size: var(--text-xs);
+  color: var(--color-muted);
+  min-width: 0;
+}
+
+/* 手機：兩欄排好 —— 張數一行、兩個開關並排、兩個次要動作並排、「抽並生圖」撐滿自己一行。
+   flex 換行時「同一個人」會跟「偏好卡牌」擠一行、「只抽牌」又落單，主次看不出來。 */
+@media (max-width: 40rem) {
+  .go-bar {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    align-items: center;
+  }
+  .go-bar > .stepper,
+  .go-bar > .go-status,
+  .go-bar > .btn-primary,
+  .go-bar > .seed-ctl {
+    grid-column: 1 / -1;
+  }
+  .go-bar > .stepper {
+    justify-self: start;
+  }
+  .go-bar .spacer,
+  .go-bar .go-status:empty {
+    display: none;
+  }
+  .go-bar > .btn {
+    justify-content: center;
+  }
+  /* 生圖中多一顆「停」：跟「抽並生圖」一樣撐滿，放在它上面，一眼找得到。 */
+  .go-bar > .btn:not(.btn-ghost):not(.btn-primary) {
+    grid-column: 1 / -1;
+  }
+}
+
+/* ---------- 成品牆 ---------- */
+
+.wall-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-xs) var(--space-md);
+}
+
+/* 說明緊跟標題，工具靠右 —— 以前 space-between 讓說明浮在整列正中間，對不到任何東西。 */
+.wall-tools {
+  display: flex;
+  gap: var(--space-xs);
+  margin-left: auto;
+}
+
+/* 還沒有成品：「全部展開／收起」沒有東西可開，描述牌組的那句也還沒有對象，先收起來。 */
+.wall-head:not([data-has-shots="true"]) .wall-tools,
+.wall-head:not([data-has-shots="true"]) p {
+  display: none;
+}
+
+.wall-head h2 {
+  font-size: var(--text-lg);
+}
+
+.wall-head p {
+  font-size: var(--text-xs);
+  color: var(--color-muted);
+}
+
+.wall {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 19rem), 1fr));
+  gap: var(--space-md);
+  align-items: start;
+}
+
+/* 一張成品是一張印張，不是面板裡的卡片：不包外框、不墊底色，
+ * 上緣一條細裁切線（兩端各一小段加粗，像裁紙刀的對位記號）把一張張分開。 */
+.shot {
+  display: grid;
+  gap: var(--space-xs);
+  padding: var(--space-sm) 0 var(--space-xs);
+  background:
+    linear-gradient(var(--color-ink-2), var(--color-ink-2)) top left / 14px 2px no-repeat,
+    linear-gradient(var(--color-ink-2), var(--color-ink-2)) top right / 14px 2px no-repeat,
+    linear-gradient(var(--color-rule), var(--color-rule)) top / 100% 1px no-repeat;
+  min-width: 0;
+  /* 牆上幾十張成品，捲出畫面的那些不排版、不繪製（只抽牌的每張攤著三十張牌，
+     四十張就是一萬個節點）：放一張牌、抽一張，樣式重算不再掃過整面牆。
+     auto：記得它上一次真正排出來的高度，捲回來時不會跳。 */
+  content-visibility: auto;
+  contain-intrinsic-size: auto 19rem auto 36rem;
+  /* 上面那把扇子的牌指著會浮起來、陰影往外暈：content-visibility 會裁掉溢出去的，留一點邊。 */
+  overflow-clip-margin: 12px;
+}
+
+/* 只抽了牌、還沒送印：不需要留一整張直式畫框的空白，扇形牌夠放就好。送印之後照圖的比例長回來。 */
+.shot[data-status="drawn"] .shot-frame {
+  aspect-ratio: auto !important;
+  min-height: calc(var(--space-2xl) * 5);
+}
+
+/* 剛印好：由上往下顯影，亮一下再沉回正常。 */
+.shot-frame.is-developing img:not(.shot-under) {
+  animation: shot-develop var(--dur-develop) var(--ease-out) both;
+}
+
+/* 上一幀墊在底下；主圖疊在上面淡進來（預覽之間）或由上往下顯影（成品）。 */
+.shot-frame .shot-under {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.shot-frame img:not(.shot-under) {
+  position: relative;
+  z-index: 1;
+}
+
+.shot-frame img.is-pv-in {
+  animation: pv-in var(--dur-short) var(--ease-out);
+}
+
+@keyframes pv-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes shot-develop {
+  from {
+    clip-path: inset(0 0 100% 0);
+    filter: brightness(1.5) contrast(0.8);
+  }
+  60% {
+    filter: brightness(1.1);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+    filter: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .shot-frame.is-developing img,
+  .shot-frame img.is-pv-in {
+    animation: none;
+  }
+}
+
+.shot-frame {
+  position: relative;
+  container-type: inline-size;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  background: var(--color-paper-3);
+}
+
+.shot-frame img {
+  width: 100%;
+  height: 100%;
+  cursor: zoom-in;
+  object-fit: contain;
+  background: var(--color-paper);
+}
+
+.shot[data-status="running"] .shot-frame img {
+  filter: saturate(0.85);
+}
+
+.shot-empty {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-sm);
+  padding: var(--space-md);
+  text-align: center;
+  font-size: var(--text-sm);
+  color: var(--color-muted);
+}
+
+/* 只抽牌的畫框：沒有圖，就把這張抽到的牌握成一手攤開。 */
+.hand {
+  position: relative;
+  width: 100%;
+  height: 128px;
+  margin-bottom: var(--space-xs);
+}
+
+.hand-card {
+  --w: 70px;
+  position: absolute;
+  left: 50%;
+  top: 6px;
+  width: var(--w);
+  aspect-ratio: 480 / 702;
+  margin-left: calc(var(--w) / -2);
+  border-radius: 6px;
+  overflow: hidden;
+  background: var(--color-stock);
+  color: var(--color-stock-ink);
+  box-shadow: var(--shadow-card);
+  border-top: 4px solid var(--suit);
+  transform-origin: 50% 140%;
+  /* 攤開的寬度跟著畫框走：窄欄也不會被裁掉。 */
+  transform: translateX(calc(var(--o) * min(24px, 7.5cqi))) translateY(calc(var(--y) * 2px)) rotate(calc(var(--o) * 6deg));
+  transition: transform var(--dur-short) var(--ease-out);
+}
+
+.hand-card img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 22%;
+  display: block;
+}
+
+.hand-card b {
+  display: grid;
+  place-items: center;
+  height: 100%;
+  font-family: var(--font-display);
+  font-size: 30px;
+}
+
+.hand-card i {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 2px 3px;
+  font-style: normal;
+  font-size: 10px;
+  line-height: 1.3;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  background: color-mix(in oklch, var(--color-stock) 88%, transparent);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .shot:hover .hand-card {
+    transform: translateX(calc(var(--o) * min(27px, 8cqi))) translateY(calc(var(--y) * 2.4px - 6px)) rotate(calc(var(--o) * 6.5deg));
+  }
+}
+
+/* 捲到成品牆時浮在底部的那排按鈕。跟合成池底下那排是同一組動作。 */
+.go-float {
+  position: fixed;
+  left: 50%;
+  bottom: calc(var(--space-md) + env(safe-area-inset-bottom));
+  z-index: 24;
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  max-width: calc(100vw - 2 * var(--space-md) - 96px);
+  padding: var(--space-xs) var(--space-xs) var(--space-xs) var(--space-md);
+  border: 1px solid var(--color-rule);
+  border-radius: 999px;
+  background: color-mix(in oklch, var(--color-paper-2) 94%, transparent);
+  box-shadow: 0 14px 30px var(--color-shade);
+  transform: translate(-50%, calc(100% + var(--space-lg)));
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    transform var(--dur-short) var(--ease-out),
+    opacity var(--dur-short) var(--ease-out);
+}
+
+.go-float[data-show="true"] {
+  transform: translate(-50%, 0);
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.go-float .btn {
+  border-radius: 999px;
+}
+
+.go-float-state {
+  font-size: var(--text-xs);
+  color: var(--color-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+@media (max-width: 640px) {
+  .go-float {
+    left: var(--space-md);
+    transform: translate(0, calc(100% + var(--space-lg)));
+  }
+  .go-float[data-show="true"] {
+    transform: none;
+  }
+  .go-float-state {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hand-card,
+  .go-float,
+  .switch input,
+  .switch input::before {
+    transition: none;
+  }
+}
+
+.shot-progress {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 3px;
+  background: color-mix(in oklch, var(--color-paper) 60%, transparent);
+}
+
+.shot-progress i {
+  display: block;
+  height: 100%;
+  width: 100%;
+  transform-origin: left center;
+  transform: scaleX(var(--p, 0));
+  background: var(--color-pool);
+  transition: transform var(--dur-short) var(--ease-out);
+}
+
+.shot-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2xs) var(--space-xs);
+  font-size: var(--text-xs);
+  color: var(--color-muted);
+}
+
+.shot-meta .status {
+  color: var(--color-ink-2);
+}
+
+.shot-meta .status[data-kind="err"] {
+  color: var(--color-accent);
+}
+
+.shot-meta code {
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+}
+
+.shot-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2xs);
+}
+
+/* 撤下是這排唯一會拿掉東西的：推到最右、字色放淡，跟其他動作分開。
+   五顆放不下一行時，它自己靠右落在第二行，看起來是分組，不是被擠下去。 */
+.shot-actions .shot-remove {
+  margin-left: auto;
+  color: var(--color-muted);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .shot-actions .shot-remove:hover {
+    color: var(--color-accent);
+    border-color: color-mix(in oklch, var(--color-accent) 50%, transparent);
+  }
+}
+
+.shot-cards {
+  display: grid;
+  gap: var(--space-xs);
+}
+
+.deal-label {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-xs);
+  font-size: var(--text-2xs);
+  color: var(--color-muted);
+  letter-spacing: 0.08em;
+}
+
+.deal-label b {
+  font-family: var(--font-display);
+  font-size: var(--text-xs);
+  color: var(--color-ink-2);
+  letter-spacing: 0;
+}
+
+.deal-label[data-kind="mine"] b {
+  color: var(--color-pool);
+}
+
+.deal-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2xs);
+}
+
+.deal-row .card {
+  --card-w: 58px;
+}
+
+/* 抽到的：同一種花色疊成一把扇，只露出書脊 */
+.fans {
+  display: grid;
+  gap: var(--space-2xs);
+}
+
+/* 一把扇子：一種花色的牌排一排，放不下就疊得更緊、只露出書脊。
+   疊多緊由 CSS 自己算（--n 是張數，100cqw 是這把扇子的寬）：以前 JS 一把一把量寬度再寫回去，
+   量、寫交錯，每把扇子都逼整頁排版一次 —— 抽一張成品光這裡 20～35ms。 */
+.fan {
+  --fan-w: 60px;
+  container-type: inline-size;
+  display: flex;
+  align-items: flex-end;
+  min-width: 0;
+  padding-top: 6px;
+}
+
+.fan .card {
+  --card-w: var(--fan-w);
+}
+
+.fan .card + .card {
+  margin-left: min(4px, (100cqw - var(--n, 2) * var(--fan-w)) / (var(--n, 2) - 1));
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .fan button.card:hover {
+    --lift: -6px;
+  }
+}
+
+/* ---------- 廢字簍 ---------- */
+
+.trash {
+  position: fixed;
+  right: var(--space-md);
+  bottom: calc(var(--space-md) + env(safe-area-inset-bottom));
+  z-index: 25;
+  display: grid;
+  place-items: center;
+  gap: 2px;
+  width: 76px;
+  height: 76px;
+  border-radius: 50%;
+  border: 1px dashed var(--color-rule);
+  background: color-mix(in oklch, var(--color-paper-2) 92%, transparent);
+  color: var(--color-ink-2);
+  font-size: var(--text-2xs);
+  box-shadow: 0 10px 24px var(--color-shade);
+  transition:
+    transform var(--dur-short) var(--ease-out),
+    translate var(--dur-medium) var(--ease-out),
+    border-color var(--dur-short) var(--ease-out),
+    background-color var(--dur-short) var(--ease-out);
+}
+
+.trash svg {
+  width: 24px;
+  height: 24px;
+}
+
+.trash b {
+  font-family: var(--font-mono);
+  font-weight: 500;
+}
+
+.trash[data-armed="true"] {
+  border-color: var(--color-accent);
+  border-style: solid;
+}
+
+.trash[data-over="true"] {
+  transform: scale(1.12);
+  background: var(--color-accent-3);
+  color: var(--color-accent-ink);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .trash:hover {
+    border-color: var(--color-ink-2);
+    color: var(--color-ink);
+  }
+}
+
+.trash:active {
+  transform: scale(0.96);
+}
+
+/* 廢字簍開著（trash-panel.js）：簍子本身描實線；旁邊浮出的面板不擋字盒。 */
+.trash[data-open="true"] {
+  border-style: solid;
+  border-color: var(--color-accent);
+  color: var(--color-accent-ink);
+  background: var(--color-accent-3);
+}
+
+.trash-panel {
+  position: fixed;
+  right: var(--space-md);
+  bottom: calc(var(--space-md) + 76px + var(--space-sm) + env(safe-area-inset-bottom));
+  z-index: 27;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  width: min(24rem, calc(100vw - 2 * var(--space-md)));
+  /* 上面留給桅杆（約 5rem），下面是廢字簍：面板再高也不會頂出畫面。 */
+  max-height: min(36rem, calc(100dvh - 76px - var(--space-md) - var(--space-sm) - 5rem - env(safe-area-inset-bottom)));
+  padding: var(--space-sm) var(--space-md) var(--space-md);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-rule);
+  background: color-mix(in oklch, var(--color-paper-2) 96%, transparent);
+  box-shadow: 0 24px 60px var(--color-shade);
+  transform-origin: 100% 100%;
+}
+
+.trash-panel[hidden] {
+  display: none;
+}
+
+/* 面板底下那個小尖角，指著廢字簍。 */
+.trash-panel::after {
+  content: "";
+  position: absolute;
+  right: 30px;
+  bottom: -7px;
+  width: 14px;
+  height: 14px;
+  rotate: 45deg;
+  background: inherit;
+  border-right: 1px solid var(--color-rule);
+  border-bottom: 1px solid var(--color-rule);
+}
+
+.tp-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+}
+
+.tp-title {
+  font-size: var(--text-lg);
+}
+
+.tp-title b {
+  margin-left: var(--space-xs);
+  font-family: var(--font-mono);
+  font-weight: 500;
+  font-size: var(--text-sm);
+  color: var(--color-muted);
+}
+
+.tp-hint,
+.tp-empty {
+  font-size: var(--text-xs);
+  color: var(--color-muted);
+}
+
+.tp-empty[hidden] {
+  display: none;
+}
+
+.tp-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(64px, 1fr));
+  gap: var(--space-xs);
+  grid-auto-rows: max-content;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 4px 2px;
+}
+
+.tp-grid .card {
+  --card-w: 100%;
+  width: 100%;
+  font-size: 9.5px;
+  cursor: pointer;
+}
+
+.tp-grid .card .card-art {
+  filter: grayscale(0.85);
+  transition: filter var(--dur-short) var(--ease-out);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .tp-grid .card:hover .card-art {
+    filter: none;
+  }
+}
+
+.tp-acts {
+  display: flex;
+  gap: var(--space-2xs);
+}
+
+/* 手機：面板縮成一條（一排、左右捲），把畫面留給字盒；說明字收起來。 */
+@media (max-width: 40rem) {
+  .trash-panel {
+    left: var(--space-sm);
+    right: var(--space-sm);
+    width: auto;
+    gap: var(--space-2xs);
+    padding: var(--space-xs) var(--space-sm) var(--space-sm);
+  }
+
+  .trash-panel::after {
+    right: 42px;
+  }
+
+  .tp-hint {
+    display: none;
+  }
+
+  .tp-grid {
+    grid-auto-flow: column;
+    grid-template-columns: none;
+    grid-auto-columns: 52px;
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
+}
+
+/* 面板開著：字盒整欄描一圈紅色虛線，牌的游標是「丟掉」；已經封鎖的點一下是撿回來。 */
+body[data-trash-edit="true"] #lib-grid {
+  outline: 2px dashed color-mix(in oklch, var(--color-accent) 70%, transparent);
+  outline-offset: 4px;
+  border-radius: 8px;
+  animation: trash-edit-in var(--dur-long) var(--ease-out);
+}
+
+/* 面板打開那一下：虛線框從外面收進來，看得出「現在點字盒是丟牌」。 */
+@keyframes trash-edit-in {
+  from {
+    outline-offset: 14px;
+    outline-color: transparent;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body[data-trash-edit="true"] #lib-grid {
+    animation: none;
+  }
+}
+
+/* 游標告訴你點下去會怎樣：一般的牌是垃圾桶（丟進去），已經封鎖的是往回的箭頭（撿回來）。 */
+body[data-trash-edit="true"] #lib-grid .card {
+  cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='26' height='26' viewBox='0 0 24 24' fill='none' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13' stroke='%23000' stroke-width='4.5'/%3E%3Cpath d='M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13' stroke='%23f06a4a' stroke-width='2'/%3E%3C/svg%3E") 12 12, pointer;
+  transition:
+    transform var(--dur-short) var(--ease-out),
+    rotate var(--dur-short) var(--ease-settle),
+    scale var(--dur-short) var(--ease-settle),
+    box-shadow var(--dur-short) var(--ease-out),
+    opacity var(--dur-short) var(--ease-out);
+}
+
+body[data-trash-edit="true"] #lib-grid .card[data-state="banned"],
+.tp-grid .card {
+  cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='26' height='26' viewBox='0 0 24 24' fill='none' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M9 14L4 9l5-5M4 9h10a6 6 0 0 1 0 12h-3' stroke='%23000' stroke-width='4.5'/%3E%3Cpath d='M9 14L4 9l5-5M4 9h10a6 6 0 0 1 0 12h-3' stroke='%23f06a4a' stroke-width='2'/%3E%3C/svg%3E") 12 12, pointer;
+}
+
+body[data-trash-edit="true"] #lib-grid .card[data-state="banned"] {
+  opacity: 0.6;
+}
+
+/* 滑鼠停著就先預演：要丟的牌先褪一點色、歪一點；要撿回的牌顏色先回來一點。 */
+body[data-trash-edit="true"] #lib-grid .card .card-art {
+  transition: filter var(--dur-short) var(--ease-out);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  body[data-trash-edit="true"] #lib-grid .card:not([data-state="banned"]):hover {
+    rotate: -2deg;
+    box-shadow: 0 0 0 2px color-mix(in oklch, var(--color-accent) 70%, transparent), var(--shadow-lift);
+  }
+
+  body[data-trash-edit="true"] #lib-grid .card:not([data-state="banned"]):hover .card-art {
+    filter: grayscale(0.55);
+  }
+
+  body[data-trash-edit="true"] #lib-grid .card[data-state="banned"]:hover {
+    opacity: 0.9;
+  }
+
+  body[data-trash-edit="true"] #lib-grid .card[data-state="banned"]:hover .card-art {
+    filter: grayscale(0.2);
+  }
+
+  .tp-grid .card:hover {
+    --lift: -4px;
+    box-shadow: var(--shadow-lift);
+  }
+}
+
+/* 簍子開著：蓋子掀開一點。 */
+.trash svg {
+  transform-origin: 20% 30%;
+  transition: rotate var(--dur-medium) var(--ease-settle), translate var(--dur-medium) var(--ease-settle);
+}
+
+.trash[data-open="true"] svg {
+  rotate: -12deg;
+  translate: 0 -2px;
+}
+
+@media (max-width: 68.74rem) {
+  .trash-panel {
+    translate: 0 calc(-1 * var(--fav-h, 0px));
+    max-height: min(36rem, calc(100dvh - 76px - var(--space-md) - var(--space-sm) - 5rem - var(--fav-h, 0px) - env(safe-area-inset-bottom)));
+  }
+}
+
+/* ---------- 拖曳 ---------- */
+
+body[data-dragging="true"] {
+  cursor: grabbing;
+  user-select: none;
+}
+
+body[data-dragging="true"] .library[data-droppable="true"] {
+  outline: 2px dashed var(--color-rule);
+  outline-offset: -4px;
+}
+
+body[data-dragging="true"] .library[data-over="true"] {
+  outline-color: var(--color-ink-2);
+}
+
+/* ---------- 遮罩、提示 ---------- */
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  padding: var(--space-md);
+  background: var(--color-scrim);
+  animation: fade-in var(--dur-short) var(--ease-out);
+}
+
+.overlay[data-closing="true"] {
+  animation: fade-out calc(var(--dur-short) * 0.75) var(--ease-in) forwards;
+}
+
+.sheet {
+  position: relative;
+  width: min(100%, 44rem);
+  max-height: min(88dvh, 52rem);
+  overflow: auto;
+  overscroll-behavior: contain;
+  padding: var(--space-lg);
+  border-radius: var(--radius-md);
+  background: var(--color-paper-2);
+  border: 1px solid var(--color-rule);
+  box-shadow: 0 30px 80px var(--color-shade);
+  animation: sheet-in var(--dur-long) var(--ease-out);
+}
+
+.sheet-wide {
+  width: min(100%, 64rem);
+}
+
+.sheet-grip {
+  display: none;
+}
+
+.sheet h2 {
+  font-size: var(--text-xl);
+  margin-bottom: var(--space-md);
+  padding-right: var(--space-2xl);
+}
+
+.sheet-close {
+  position: absolute;
+  top: var(--space-sm);
+  right: var(--space-sm);
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-rule);
+  background: var(--color-paper-3);
+  color: var(--color-ink);
+  display: grid;
+  place-items: center;
+  padding: 0;
+}
+
+.sheet-close svg {
+  width: 18px;
+  height: 18px;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .sheet-close:hover {
+    border-color: var(--color-ink-2);
+  }
+}
+
+.sheet-close:active {
+  transform: translateY(1px);
+}
+
+.sheet-foot {
+  position: sticky;
+  bottom: calc(var(--space-lg) * -1);
+  z-index: 2;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+  justify-content: flex-end;
+  margin: var(--space-lg) calc(var(--space-lg) * -1) calc(var(--space-lg) * -1);
+  padding: var(--space-sm) var(--space-lg) var(--space-lg);
+  background: var(--color-paper-2);
+  border-top: 1px solid var(--color-rule-2);
+}
+
+.detail {
+  display: grid;
+  grid-template-columns: minmax(0, 12rem) minmax(0, 1fr);
+  gap: var(--space-lg);
+  align-items: start;
+}
+
+.detail-art {
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  aspect-ratio: 480 / 702;
+  background: var(--color-paper-3);
+}
+
+.detail-art img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.detail dl {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--space-2xs) var(--space-sm);
+  margin: var(--space-sm) 0 0;
+  font-size: var(--text-sm);
+}
+
+.detail dt {
+  color: var(--color-muted);
+}
+
+.detail dd {
+  margin: 0;
+  color: var(--color-ink-2);
+}
+
+.detail .card {
+  --card-w: 100%;
+  width: 100%;
+  font-size: 16px;
+}
+
+@media (max-width: 34rem) {
+  .detail {
+    grid-template-columns: minmax(0, 7.5rem) minmax(0, 1fr);
+    gap: var(--space-md);
+  }
+}
+
+.tag-en {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--color-muted);
+}
+
+.ban-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));
+  gap: var(--space-xs);
+  /* aspect-ratio + overflow:hidden 的格子在可捲動的格線裡最小高度會變 0，列要照內容撐開 */
+  grid-auto-rows: max-content;
+}
+
+.ban-grid .card {
+  --card-w: 100%;
+  width: 100%;
+  font-size: 10px;
+}
+
+.pos-text {
+  white-space: pre-wrap;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--color-ink-2);
+  background: var(--color-paper);
+  padding: var(--space-sm);
+  border-radius: var(--radius-sm);
+  max-height: 14rem;
+  overflow: auto;
+}
+
+.lightbox {
+  display: grid;
+  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  gap: var(--space-lg);
+}
+
+.lightbox img {
+  display: block;
+  justify-self: center;
+  width: auto;
+  height: auto;
+  max-width: 100%;
+  /* 直式的成品（832×1216）在筆電上也要一眼看完整張，不必在彈窗裡往下捲。 */
+  max-height: min(66dvh, 46rem);
+  border-radius: var(--radius-sm);
+}
+
+@media (max-width: 44rem) {
+  .lightbox {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: calc(var(--space-lg) + env(safe-area-inset-bottom));
+  z-index: 95;
+  translate: -50% 0;
+  /* left: 50% 讓瀏覽器只給它半個螢幕寬來排字（手機上一句話折成三四行）；
+   * 寬度照內容，上限才是下面那條。 */
+  width: max-content;
+  max-width: min(90vw, 30rem);
+  padding: var(--space-xs) var(--space-md);
+  border-radius: var(--radius-sm);
+  background: var(--color-paper-4);
+  border: 1px solid var(--color-rule);
+  font-size: var(--text-sm);
+  box-shadow: 0 10px 30px var(--color-shade);
+  opacity: 0;
+  transform: translateY(8px);
+  transition:
+    opacity var(--dur-short) var(--ease-out),
+    transform var(--dur-short) var(--ease-out);
+  pointer-events: none;
+}
+
+.toast[data-show="true"] {
+  opacity: 1;
+  transform: none;
+}
+
+/* 底部那條「只抽牌／抽並生圖」浮出來時，提示浮在它上面，不要蓋住按鈕（手機上最明顯）。 */
+.go-float[data-show="true"] ~ .toast {
+  bottom: calc(var(--fav-h, 0px) + var(--space-md) + 3.25rem + var(--space-xs) + env(safe-area-inset-bottom));
+}
+
+/* 手機的 --fav-h 已含托盤到視窗底邊的距離與 12px 間距，直接貼在托盤上方。
+ * 托盤沒顯示時才用底部安全區／抽牌列作為下限，避免把同一段高度算兩次。 */
+@media (max-width: 640px) {
+  body .toast {
+    bottom: max(var(--fav-h, 0px), calc(var(--space-lg) + env(safe-area-inset-bottom)));
+  }
+  .go-float[data-show="true"] ~ .toast {
+    bottom: max(var(--fav-h, 0px), calc(var(--space-md) + 3.25rem + var(--space-xs) + env(safe-area-inset-bottom)));
+  }
+}
+
+/* 帶「復原」鈕的提示要點得到。 */
+.toast[data-show="true"][data-action="true"] {
+  pointer-events: auto;
+}
+
+.toast-action {
+  margin-left: var(--space-sm);
+  padding: 2px 10px;
+  border: 1px solid var(--color-accent);
+  border-radius: var(--radius-xs);
+  background: transparent;
+  color: var(--color-accent);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .toast-action:hover {
+    background: var(--color-accent);
+    color: var(--color-accent-ink);
+  }
+}
+
+.toast-action kbd {
+  margin-left: 6px;
+  padding: 0 4px;
+  border: 1px solid currentColor;
+  border-radius: 3px;
+  font: 600 0.72em/1.4 var(--font-mono, ui-monospace, monospace);
+  opacity: 0.7;
+}
+
+/* 還能反悔多久：一條線從右往左收（滑鼠停在提示上就停住）。 */
+.toast-clock {
+  position: absolute;
+  left: var(--space-xs);
+  right: var(--space-xs);
+  bottom: 3px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--color-accent);
+  opacity: 0.55;
+  transform-origin: 0 50%;
+  animation: toast-clock var(--toast-ms) linear forwards;
+}
+
+.toast[data-paused="true"] .toast-clock {
+  animation-play-state: paused;
+  opacity: 0.9;
+}
+
+@keyframes toast-clock {
+  from {
+    transform: scaleX(1);
+  }
+  to {
+    transform: scaleX(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .toast-clock {
+    animation: none;
+  }
+}
+
+/* 按鈕自己說「已複製」。 */
+.btn.is-confirmed {
+  color: var(--color-ok, var(--color-accent));
+  border-color: currentColor;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .seg-thumb {
+    transition: none;
+  }
+}
+
+.hover-tip {
+  position: fixed;
+  z-index: 80;
+  width: 15rem;
+  padding: var(--space-sm);
+  border-radius: var(--radius-sm);
+  background: var(--color-paper-4);
+  border: 1px solid var(--color-rule);
+  box-shadow: 0 16px 40px var(--color-shade);
+  font-size: var(--text-sm);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity var(--dur-micro) var(--ease-out);
+}
+
+.hover-tip[data-show="true"] {
+  opacity: 1;
+}
+
+.hover-tip h4 {
+  display: flex;
+  gap: var(--space-xs);
+  align-items: baseline;
+  font-size: var(--text-md);
+}
+
+.hover-tip p {
+  margin-top: var(--space-2xs);
+  color: var(--color-ink-2);
+  white-space: pre-line;
+  font-size: var(--text-xs);
+  line-height: 1.6;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes fade-out {
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes sheet-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes deal {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.dealt {
+  animation: deal var(--dur-long) var(--ease-out) both;
+  animation-delay: calc(var(--i, 0) * 28ms);
+}
+
+@keyframes drop-in {
+  from {
+    opacity: 0;
+    transform: scale(0.8) translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.dropped {
+  animation: drop-in var(--dur-short) var(--ease-out) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: var(--dur-micro) !important;
+    animation-delay: 0ms !important;
+    transition-duration: var(--dur-micro) !important;
+  }
+  .dealt,
+  .dropped {
+    animation-name: fade-in;
+  }
+}
+
+@media (pointer: coarse) {
+  .btn {
+    min-height: 44px;
+  }
+}
+
+/* ---------- 細分類籤跟牌一起捲 ----------
+ * 字盒高度固定的時候（電腦的側欄、手機的挑牌抽屜），細分類籤以前釘在牌格上面：
+ * 「服裝」的籤有 400～460px 高，1280×720 的電腦只剩 78px、手機抽屜 119px 給牌。
+ * 現在籤和牌放在同一個捲動區（.lib-scroll），往下捲籤就捲走、牌格拿到整個高度；
+ * 搜尋框、花色籤還是釘在上面。換花色會捲回最上面（app.js 的 libBackToTop）。
+ * 其他寬度（字盒跟著頁面捲、牌格自己有上限）這一層不存在（display: contents），照舊。 */
+.lib-scroll {
+  display: contents;
+}
+
+@media (min-width: 64rem) {
+  .library .lib-scroll {
+    display: block;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-gutter: stable;
+  }
+  .library .lib-scroll > .lib-grid {
+    overflow: visible;
+    max-height: none;
+    scrollbar-gutter: auto;
+  }
+}
+
+/* 手機：字盒改成可以收起來 */
+@media (max-width: 63.99rem) {
+  /* 花色分頁收著也留著（一排）：點一個花色就直接展開到那一類，不必先按「展開全部」。 */
+  .library[data-collapsed="true"] .group-chips {
+    display: none;
+  }
+  .library[data-collapsed="true"] .lib-grid {
+    max-height: calc(var(--space-2xl) * 4);
+    /* 收著的時候第二排只露出上緣：往下淡出，看得出是「還有」，不像版面被切壞。 */
+    -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - var(--space-2xl)), transparent);
+    mask-image: linear-gradient(to bottom, #000 calc(100% - var(--space-2xl)), transparent);
+  }
+  .library {
+    overflow: visible;
+  }
+  .trash {
+    width: 64px;
+    height: 64px;
+  }
+}
+
+/* 手機：空的合成池不必 150px 高 —— 一行說明配四角的套準線就夠，首屏多留給字盒和按鈕。 */
+@media (max-width: 40rem) {
+  .pool-well:has(> .pool-empty) {
+    min-height: 0;
+    padding-block: var(--space-md);
+  }
+}
+
+/* 還沒有成品：一行版位說明壓在一條待印的細線上，靠左。主要的「抽並生圖」在合成池那一排，這裡是次要入口。 */
+.wall-empty {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-xs) var(--space-md);
+  margin-block: var(--space-sm) var(--space-lg);
+  padding: var(--space-md) 0 var(--space-sm);
+  border-bottom: 1px solid var(--color-rule-2);
+  text-align: left;
+}
+
+.wall-empty[hidden] {
+  display: none;
+}
+
+.wall-empty h3 {
+  font-family: var(--font-display);
+  font-size: var(--text-md);
+  color: var(--color-ink);
+}
+
+.wall-empty .btn {
+  margin-left: auto;
+}
+
+.wall-empty p {
+  max-width: 26em;
+  color: var(--color-ink-2);
+  font-size: var(--text-sm);
+}
+
+/* 右下角浮著的廢字簍（64–72px）不能壓住成品牆最後一排：牆底留出它的高度。 */
+.wall:not(:empty) {
+  padding-bottom: calc(var(--space-2xl) * 1.5);
+}
+
+@media (max-width: 40rem) {
+  .wall:not(:empty) {
+    padding-bottom: calc(var(--space-2xl) * 2 + var(--space-lg) + env(safe-area-inset-bottom));
+  }
+}
+
+.lib-toggle {
+  display: none;
+}
+
+@media (max-width: 63.99rem) {
+  .lib-toggle {
+    display: inline-flex;
+  }
+}
+
+/* ---------- 成品底下的牌：先收起來，要看再展開 ---------- */
+
+.shot-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  min-height: 32px;
+  padding: 0 var(--space-sm);
+  border: 1px solid color-mix(in oklch, var(--color-pool) 45%, var(--color-rule));
+  border-radius: 999px;
+  background: color-mix(in oklch, var(--color-pool-2) 22%, transparent);
+  color: var(--color-ink);
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: var(--text-xs);
+  white-space: nowrap;
+  transition:
+    background-color var(--dur-micro) var(--ease-out),
+    border-color var(--dur-micro) var(--ease-out);
+}
+
+.shot-toggle .chev {
+  display: inline-block;
+  width: 0.55em;
+  height: 0.55em;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: translateY(-2px) rotate(45deg);
+  transition: transform var(--dur-short) var(--ease-out);
+}
+
+.shot-toggle[aria-expanded="true"] .chev {
+  transform: translateY(2px) rotate(-135deg);
+}
+
+.shot-toggle .mini {
+  display: inline-flex;
+}
+
+.shot-toggle .mini i {
+  display: block;
+  width: 7px;
+  height: 10px;
+  margin-left: -2px;
+  border-radius: 2px;
+  border: 1px solid var(--color-paper);
+  background: var(--suit, var(--color-stock));
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .shot-toggle:hover {
+    background: color-mix(in oklch, var(--color-pool-2) 40%, transparent);
+    border-color: var(--color-pool);
+  }
+}
+
+.shot-toggle:active {
+  transform: translateY(1px);
+}
+
+.shot-cards[hidden] {
+  display: none;
+}
+
+.wall-tools {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+/* 墨池的回饋：字先壓下，狀態像墨印落在紙上。 */
+.lib-search input {
+  transform-origin: left center;
+  transition: transform var(--dur-short) var(--ease-out), opacity var(--dur-short) var(--ease-out);
+}
+
+.lib-search:focus-within input {
+  transform: scale(1.005);
+}
+
+.library[data-search="found"] .lib-count {
+  color: var(--color-ink);
+}
+
+.lib-empty,
+.pool-empty,
+.lora-empty {
+  animation: ink-empty-in var(--dur-medium) var(--ease-out) both;
+}
+
+/* 合成池拿掉最後一張時，那張正飛回字盒：提示等它走遠一點才浮上來，不要讓牌從字上面飛過去。 */
+.pool-empty {
+  animation-delay: var(--dur-medium);
+}
+
+@keyframes ink-empty-in {
+  from { opacity: 0; transform: translateY(5px); }
+  to { opacity: 1; transform: none; }
+}
+
+.suit-tab,
+.group-chip,
+.chip-toggle,
+.stepper button,
+.pool-x,
+.shot-toggle,
+.toast-action {
+  transition: transform var(--dur-short) var(--ease-settle), opacity var(--dur-short) var(--ease-out);
+}
+
+.suit-tab[aria-pressed="true"] b,
+.group-chip[aria-pressed="true"] .chip-seal {
+  filter: saturate(1.3);
+}
+
+.toast-action:active {
+  transform: translateY(1px) scale(0.97);
+}
+
+.shot[data-status="queued"] .status,
+.shot[data-status="running"] .status {
+  opacity: 0.85;
+  animation: ink-working var(--dur-breath) var(--ease-in-out) infinite alternate;
+}
+
+@keyframes ink-working {
+  to { opacity: 0.5; }
+}
+
+.shot[data-status="done"] .status {
+  color: var(--color-ok, var(--color-accent));
+}
+
+.shot[data-status="failed"] .shot-frame {
+  filter: saturate(0.75);
+}
+
+body .lora-modal .pressable,
+body .lora-tarot .pressable,
+body .shortcuts-overlay .pressable {
+  transition: transform var(--dur-short) var(--ease-settle), opacity var(--dur-short) var(--ease-out);
+}
+
+body .lora-modal .pressable:active:not(:disabled),
+body .lora-tarot .pressable:active:not(:disabled),
+body .shortcuts-overlay .pressable:active:not(:disabled) {
+  transform: translateY(1px) scale(0.97);
+}
+
+body .lora-modal :focus-visible,
+body .lora-tarot :focus-visible,
+body .shortcuts-overlay :focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+body .lora-modal .lora-empty,
+body .lora-modal .lm-none {
+  animation: ink-empty-in var(--dur-medium) var(--ease-out) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lib-empty,
+  .pool-empty,
+  .lora-empty,
+  .shot[data-status="queued"] .status,
+  .shot[data-status="running"] .status,
+  body .lora-modal .lm-none {
+    animation: none;
+  }
+  *, *::before, *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* 墨池 ↔ 疊印台：只在兩份文件都同意且使用者允許動態時啟用。 */
+.tray-bridge {
+  position: fixed;
+  left: 50%;
+  bottom: 10px;
+  z-index: 26;
+  translate: -50% 0;
+  width: min(calc(100vw - 20px), var(--tray-w, 360px));
+  height: 7rem;
+  padding: var(--space-xs) var(--space-sm);
+  border: 1px solid var(--color-rule-2);
+  border-radius: var(--radius-lg);
+  background: var(--color-paper);
+  box-shadow: 0 18px 40px -12px var(--color-shade);
+  color: var(--color-ink-2);
+  font-size: var(--text-xs);
+}
+.tray-bridge[hidden],
+body[data-fav-hand="true"] .tray-bridge { display: none; }
+.tray-bridge[data-open="false"] {
+  width: max-content;
+  height: auto;
+  border-radius: 999px;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  @view-transition {
+    navigation: auto;
+  }
+
+  .mast { view-transition-name: mast; }
+  /* 分頁底線不再單獨拍成一層：單獨一層會疊在頂欄最上面，換版那半秒把「疊印台」三個字蓋掉。
+   * 頂欄在轉場裡是活的畫面，底線用自己的動畫從另一個分頁滑過來（起點由 <head> 的
+   * pagereveal 量好寫進 --ink-dx／--ink-sx），字（.page-switch-label）始終在它上面。 */
+  .page-switch-ink.is-arriving {
+    transform-origin: left center;
+    animation: tab-ink-arrive var(--dur-long) var(--ease-settle) both;
+  }
+
+  /* 滾筒光：一條朱線拖著淡淡的紙面反光，沿換版的方向掃過整個畫面，跟新的一版落下同步 ——
+   * 像滾筒把新的一版壓上紙。它只在換版時出現（html[data-vt]，pagereveal 寫的），
+   * 單獨一層、只動 transform，換頁時主執行緒再忙也跑得動。放在 body 最後，疊在最上面。 */
+  html[data-vt] .vt-sweep {
+    display: block;
+    view-transition-name: vt-sweep;
+  }
+  ::view-transition-new(vt-sweep) {
+    animation: vt-sweep-fwd var(--dur-long) var(--ease-in-out) both;
+  }
+  html[data-vt="back"]::view-transition-new(vt-sweep) {
+    animation-name: vt-sweep-back;
+  }
+  /* 兩頁的字盒、工作區形狀不一樣（墨池工作區是整片，疊印台只有中間一欄）：配成一對的話瀏覽器會把
+   * 舊的快照拉伸變形成新的框，再加上裁切掃過去，逐格看是字被切一半、兩種牌格疊在一起。
+   * 所以各頁用自己的名字，不配對：舊的在原地退、新的在自己的位置進來，只有頂欄和分頁底線是同一個東西在動。 */
+  .library { view-transition-name: case-m; }
+  .case { view-transition-name: case-f; }
+  .work { view-transition-name: stage-m; }
+  .plate { view-transition-name: stage-f; }
+  .side { view-transition-name: proof-side; }
+  .line { view-transition-name: drying-line; }
+  .fav-hand { view-transition-name: favorite-tray; }
+  .tray-bridge:not([hidden]) { view-transition-name: favorite-tray; }
+
+  ::view-transition { pointer-events: none; }
+
+  ::view-transition-old(root),
+  ::view-transition-new(root),
+  ::view-transition-group(mast),
+  ::view-transition-old(mast),
+  ::view-transition-new(mast) {
+    animation: none;
+  }
+  ::view-transition-old(mast) { opacity: 0; }
+
+  ::view-transition-old(favorite-tray),
+  ::view-transition-new(favorite-tray) {
+    animation-duration: var(--dur-long);
+    animation-timing-function: var(--ease-travel);
+  }
+
+  /* 字盒在兩頁都在左邊同一個位置：不移動。兩頁的牌格不一樣，疊在一起是一片重影：
+   * 舊的一開始就走得快（out），新的等舊的走完（micro）才浮上來。 */
+  ::view-transition-old(case-m),
+  ::view-transition-old(case-f) {
+    animation: vt-fade-out var(--dur-micro) var(--ease-out) both;
+  }
+  ::view-transition-new(case-m),
+  ::view-transition-new(case-f) {
+    animation: vt-fade-in var(--dur-short) var(--ease-out) var(--dur-micro) both;
+  }
+
+  /* 工作區：分頁由左到右是墨池、疊印台，紙沿同一個方向換版。往疊印台：舊的往左退、新的從右邊滑進來；
+   * 回墨池反過來。只位移一小段（不是整頁飛）。舊的用 out（一開始就走得快，半拍時已經淡了大半），
+   * 新的晚半拍進來，重疊的那一下只剩淡淡一層，約 480ms 收完。 */
+  ::view-transition-old(stage-m) {
+    animation: vt-out-left var(--dur-short) var(--ease-out) both;
+  }
+  ::view-transition-new(stage-f),
+  ::view-transition-new(proof-side),
+  ::view-transition-new(drying-line) {
+    animation: vt-in-right var(--dur-long) var(--ease-out) calc(var(--dur-micro) / 2) both;
+  }
+  ::view-transition-old(stage-f),
+  ::view-transition-old(proof-side),
+  ::view-transition-old(drying-line) {
+    animation: vt-out-right var(--dur-short) var(--ease-out) both;
+  }
+  ::view-transition-new(stage-m) {
+    animation: vt-in-left var(--dur-long) var(--ease-out) calc(var(--dur-micro) / 2) both;
+  }
+}
+
+.vt-sweep {
+  display: none;
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 16rem;
+  pointer-events: none;
+  /* 往疊印台：新的一版從右邊進來，滾筒由右往左壓，亮邊在左、反光拖在右。 */
+  background:
+    linear-gradient(to right, var(--color-accent) 0 2px, color-mix(in oklch, var(--color-stock) 16%, transparent) 2px, transparent 100%);
+}
+
+html[data-vt="back"] .vt-sweep {
+  background:
+    linear-gradient(to left, var(--color-accent) 0 2px, color-mix(in oklch, var(--color-stock) 16%, transparent) 2px, transparent 100%);
+}
+
+@keyframes vt-sweep-fwd {
+  from { transform: translateX(100vw); opacity: 0.2; }
+  15% { opacity: 1; }
+  85% { opacity: 1; }
+  to { transform: translateX(-16rem); opacity: 0; }
+}
+@keyframes vt-sweep-back {
+  from { transform: translateX(-16rem); opacity: 0.2; }
+  15% { opacity: 1; }
+  85% { opacity: 1; }
+  to { transform: translateX(100vw); opacity: 0; }
+}
+@keyframes tab-ink-arrive {
+  from {
+    translate: var(--ink-dx, 0) 0;
+    scale: var(--ink-sx, 1) 1;
+  }
+}
+@keyframes vt-fade-out {
+  to { opacity: 0; }
+}
+@keyframes vt-fade-in {
+  from { opacity: 0; }
+}
+@keyframes vt-out-left {
+  to { opacity: 0; transform: translateX(-1.5rem); }
+}
+@keyframes vt-in-right {
+  from { opacity: 0; transform: translateX(2rem); }
+}
+@keyframes vt-out-right {
+  to { opacity: 0; transform: translateX(1.5rem); }
+}
+@keyframes vt-in-left {
+  from { opacity: 0; transform: translateX(-2rem); }
+}
+
+/* ================= Hires（墨池成品、疊印台成品共用；見 hires.js） ================= */
+
+/* 選單：一張小校樣單。上緣跟成品同一條裁切線（兩端加粗），不是浮起來的圓角卡。 */
+.hires-pop {
+  position: fixed;
+  z-index: 70;
+  width: min(19rem, calc(100vw - 16px));
+  display: grid;
+  gap: var(--space-sm);
+  padding: var(--space-md) var(--space-md) var(--space-sm);
+  background:
+    linear-gradient(var(--color-ink-2), var(--color-ink-2)) top left / 14px 2px no-repeat,
+    linear-gradient(var(--color-ink-2), var(--color-ink-2)) top right / 14px 2px no-repeat,
+    var(--color-paper-2);
+  border: 1px solid var(--color-rule);
+  border-radius: var(--radius-xs);
+  box-shadow: 0 16px 40px var(--color-shade);
+}
+
+.hp-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-sm);
+}
+
+.hp-head b {
+  font-family: var(--font-display);
+  font-size: var(--text-lg);
+  letter-spacing: 0.02em;
+}
+
+.hp-size {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--color-muted);
+  white-space: nowrap;
+}
+
+.hp-modes {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
+
+.hp-modes button {
+  min-height: 36px;
+}
+
+.hp-row {
+  display: flex;
+  align-items: center;
+}
+
+.hp-scale output {
+  min-width: 3.4em;
+}
+
+.hp-note {
+  font-size: var(--text-xs);
+  line-height: 1.6;
+  color: var(--color-ink-2);
+}
+
+.hp-note[data-kind="err"] {
+  color: var(--color-warn);
+}
+
+.hp-was {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-2xs) var(--space-sm);
+  padding-top: var(--space-xs);
+  border-top: 1px solid var(--color-rule-2);
+  font-size: var(--text-xs);
+  color: var(--color-muted);
+}
+
+.hp-restore {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--color-ink);
+  font-size: var(--text-xs);
+  text-decoration: underline;
+  text-decoration-color: var(--color-rule);
+  text-underline-offset: 3px;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: text-decoration-color var(--dur-micro) var(--ease-out);
+}
+
+.hp-restore:hover,
+.hp-restore:focus-visible {
+  text-decoration-color: var(--color-ink);
+}
+
+.hp-acts {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.hp-go {
+  min-height: 36px;
+  padding: 0 var(--space-md);
+}
+
+/* 成品底下那顆 Hires：正在做的時候字變淡，按下去會搖頭（圖上有停）。 */
+.shot-hires[data-busy="true"] {
+  color: var(--color-muted);
+}
+
+/* 圖上的進度：一條朱色套準線照步數由上往下掃，線下還沒重畫的那一段壓暗。
+ * 做好時新圖一樣由上往下顯影（shot-develop），掃描和顯影是同一個方向、同一件事。 */
+.hires-veil {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  /* 壓暗和套準線是整張高、往下推的：推出畫框的那一截要切掉。 */
+  overflow: hidden;
+  --y: calc(var(--p, 0) * 100%);
+}
+
+/* 進度每更新一次就滑一段。以前動的是 top：每一格都要排版，而這正好發生在生圖的時候，
+ * 主執行緒一忙就掉格。改成整張高的一層用 translateY 往下推（百分比是自己的高＝畫框的高），
+ * 交給合成器。 */
+.hv-dim {
+  position: absolute;
+  inset: 0;
+  background: var(--color-shade);
+  transform: translateY(var(--y));
+  transition: transform var(--dur-long) var(--ease-out);
+}
+
+.hv-rule {
+  position: absolute;
+  inset: 0;
+  transform: translateY(var(--y));
+  transition: transform var(--dur-long) var(--ease-out);
+}
+
+.hv-rule::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -1px;
+  height: 2px;
+  background:
+    linear-gradient(var(--color-ink), var(--color-ink)) left / 10px 100% no-repeat,
+    linear-gradient(var(--color-ink), var(--color-ink)) right / 10px 100% no-repeat,
+    var(--color-accent);
+  box-shadow: 0 0 12px var(--color-accent);
+}
+
+/* 預覽幀：蓋滿整張，跟付印時一樣看得到它一步步重畫。有預覽了就不再壓暗，掃描線照走。 */
+/* 選擇器要比 .shot-frame img:not(.shot-under) 強：那條把畫框裡每張圖都設成 relative、z-index 1，
+ * 預覽幀也被套到，結果蓋在步數那一行上面。 */
+.hires-veil img.hv-preview {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.hires-veil .hv-dim,
+.hires-veil .hv-rule {
+  z-index: 1;
+}
+
+.hires-veil .hv-bar {
+  z-index: 2;
+}
+
+.hires-veil[data-preview="true"] .hv-dim {
+  opacity: 0;
+}
+
+/* 還在排隊（前面有圖在印）：線停在頂端呼吸，整張壓暗一層。 */
+.hires-veil[data-status="queued"] .hv-rule {
+  animation: hv-breathe var(--dur-breath) var(--ease-in-out) infinite alternate;
+}
+
+.hires-veil[data-status="failed"] .hv-dim,
+.hires-veil[data-status="failed"] .hv-rule {
+  display: none;
+}
+
+@keyframes hv-breathe {
+  from {
+    opacity: 0.35;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.hv-bar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  padding: var(--space-lg) var(--space-sm) var(--space-xs);
+  background: linear-gradient(transparent, var(--color-scrim));
+  pointer-events: auto;
+}
+
+.hv-text {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--text-xs);
+  color: var(--color-ink);
+}
+
+.hires-veil[data-status="failed"] .hv-text {
+  white-space: normal;
+  color: var(--color-warn);
+}
+
+.hv-act {
+  flex: none;
+  min-height: 28px;
+  padding: 0 var(--space-sm);
+  border: 1px solid var(--color-rule);
+  border-radius: var(--radius-xs);
+  background: var(--color-paper-2);
+  color: var(--color-ink);
+  font-size: var(--text-xs);
+  cursor: pointer;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .hv-act:hover {
+    border-color: var(--color-ink-2);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hv-dim,
+  .hv-rule {
+    transition: none;
+  }
+  .hires-veil[data-status="queued"] .hv-rule {
+    animation: none;
+  }
+}
+
+/* ---------- 觸控：可點的範圍至少 24px，常用的做到 32px ----------
+ * 只放大感應區，不改外觀。手機實測（390 寬）小於 24px 的：「更多規則」19px 高、
+ * 開關的標籤 20px、頂端「介紹影片／教學」19px、「seed …」17px、「換一組」19px。 */
+@media (pointer: coarse), (max-width: 40rem) {
+  .more-rules summary {
+    display: flex;
+    align-items: center;
+    min-height: 32px;
+  }
+  .switch {
+    min-height: 32px;
+  }
+  .mast-extra,
+  .seed-use,
+  .link-btn {
+    position: relative;
+  }
+  .mast-extra::after,
+  .seed-use::after,
+  .link-btn::after {
+    content: "";
+    position: absolute;
+    inset: -8px -6px;
+  }
+}
+
+/* ---------- Hires 對比（compare.js）----------
+ * 詳情右邊的示意圖：左半原圖、右半 Hires、中間一條線。滑鼠移上去線掃一下，看得出它能比較。 */
+.cmp-thumb {
+  display: grid;
+  grid-template-columns: minmax(0, 7.5rem) minmax(0, 1fr);
+  align-items: center;
+  gap: var(--space-sm);
+  width: 100%;
+  margin-top: var(--space-sm);
+  padding: var(--space-xs);
+  border: 1px solid var(--color-rule);
+  border-radius: var(--radius-md);
+  background: var(--color-paper-2);
+  color: var(--color-ink);
+  text-align: left;
+  cursor: zoom-in;
+  transition:
+    border-color var(--dur-short) var(--ease-out),
+    background-color var(--dur-short) var(--ease-out),
+    translate var(--dur-short) var(--ease-out);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .cmp-thumb:hover {
+    border-color: var(--color-accent);
+    background: var(--color-paper-3);
+    translate: 0 -1px;
+  }
+}
+
+.cmp-thumb:active {
+  translate: 0 1px;
+}
+
+.cmp-thumb-frame {
+  position: relative;
+  display: block;
+  overflow: hidden;
+  border-radius: var(--radius-sm);
+  background: var(--color-paper);
+  box-shadow: var(--shadow-card);
+}
+
+.cmp-thumb-frame img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* 右半、分隔線都是整框寬的一層，靠 transform 推：百分比是自己的寬＝整框的寬。
+ * 外框推 50%、超出切掉，裡面的圖推回 -50%；滑過時三層一起動，合成器跑、不重畫。 */
+.cmp-thumb-cut,
+.cmp-thumb-inner,
+.cmp-thumb-line {
+  position: absolute;
+  inset: 0;
+}
+
+.cmp-thumb-cut {
+  overflow: hidden;
+  transform: translateX(50%);
+}
+
+.cmp-thumb-inner {
+  transform: translateX(-50%);
+}
+
+.cmp-thumb-line {
+  transform: translateX(50%);
+}
+
+.cmp-thumb-line::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -1px;
+  width: 2px;
+  background: var(--color-stock);
+  box-shadow: 0 0 8px var(--color-shade);
+}
+
+.cmp-thumb-line i {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 14px;
+  height: 14px;
+  translate: -50% -50%;
+  border-radius: 50%;
+  background: var(--color-stock);
+  box-shadow: 0 0 0 2px var(--color-accent);
+}
+
+.cmp-thumb-tag {
+  position: absolute;
+  top: 4px;
+  padding: 0 4px;
+  border-radius: var(--radius-xs);
+  background: color-mix(in oklch, var(--color-paper) 70%, transparent);
+  color: var(--color-ink);
+  font: 700 10px/1.5 var(--font-mono);
+}
+
+.cmp-thumb-a {
+  left: 4px;
+}
+
+.cmp-thumb-b {
+  right: 4px;
+}
+
+.cmp-thumb-cap {
+  display: grid;
+  gap: 2px;
+}
+
+.cmp-thumb-cap b {
+  font-family: var(--font-display);
+  font-size: var(--text-md);
+}
+
+.cmp-thumb-cap small {
+  color: var(--color-muted);
+  font-size: var(--text-xs);
+  line-height: 1.5;
+}
+
+@keyframes cmp-peek {
+  35% {
+    transform: translateX(72%);
+  }
+  70% {
+    transform: translateX(30%);
+  }
+}
+
+@keyframes cmp-peek-back {
+  35% {
+    transform: translateX(-72%);
+  }
+  70% {
+    transform: translateX(-30%);
+  }
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .cmp-thumb:hover :is(.cmp-thumb-cut, .cmp-thumb-line) {
+    animation: cmp-peek var(--dur-develop) var(--ease-in-out);
+  }
+  .cmp-thumb:hover .cmp-thumb-inner {
+    animation: cmp-peek-back var(--dur-develop) var(--ease-in-out);
+  }
+}
+
+.cmp-thumb:focus-visible :is(.cmp-thumb-cut, .cmp-thumb-line) {
+  animation: cmp-peek var(--dur-develop) var(--ease-in-out);
+}
+
+.cmp-thumb:focus-visible .cmp-thumb-inner {
+  animation: cmp-peek-back var(--dur-develop) var(--ease-in-out);
+}
+
+/* 全螢幕對比：一間暗房，圖是唯一亮的東西。 */
+.cmp:focus {
+  outline: none;
+}
+
+.cmp {
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  display: grid;
+  background:
+    radial-gradient(120% 90% at 50% 45%, transparent 55%, oklch(4% 0.01 250 / 0.7)),
+    oklch(8% 0.01 250);
+  animation: cmp-in var(--dur-medium) var(--ease-out);
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+@keyframes cmp-in {
+  from {
+    opacity: 0;
+  }
+}
+
+.cmp-stage {
+  position: relative;
+  overflow: hidden;
+  touch-action: none;
+  cursor: grab;
+}
+
+.cmp[data-drag="pan"] .cmp-stage {
+  cursor: grabbing;
+}
+
+.cmp[data-drag="line"] .cmp-stage {
+  cursor: ew-resize;
+}
+
+.cmp-world {
+  position: absolute;
+  inset: 0;
+}
+
+.cmp-layer {
+  position: absolute;
+  left: 0;
+  top: 0;
+  transform-origin: 0 0;
+}
+
+.cmp-layer img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+/* 右半 Hires：外框 translateX(d)、超出切掉，裡面 translateX(-d) 抵回來 —— 拖線只是兩層位移，
+ * 不像 clip-path 那樣每動一下就重畫整片。寬高由 compare.js 設成舞台大小。 */
+.cmp-cut {
+  position: absolute;
+  top: 0;
+  left: 0;
+  overflow: hidden;
+}
+
+.cmp-cut-inner {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+/* 動的時候才掛 will-change；停下來拿掉，瀏覽器才會用新的倍率重畫（放大後不糊）。 */
+.cmp[data-moving="true"] :is(.cmp-layer, .cmp-cut, .cmp-cut-inner) {
+  will-change: transform;
+}
+
+/* 關的時候：標籤、提示、倍率、分隔線先淡掉，只留圖飛回示意圖。 */
+.cmp[data-state="out"] :is(.cmp-tag, .cmp-hint, .cmp-zoom, .cmp-close, .cmp-line) {
+  opacity: 0;
+  transition: opacity var(--dur-micro) var(--ease-out);
+  animation: none;
+}
+
+.cmp[data-state="out"] {
+  pointer-events: none;
+}
+
+.cmp-line {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 0;
+  cursor: ew-resize;
+  outline: none;
+}
+
+.cmp-line::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -1px;
+  width: 2px;
+  background: var(--color-stock);
+  box-shadow: 0 0 0 1px oklch(0% 0 0 / 0.25), 0 0 18px oklch(0% 0 0 / 0.5);
+  transition: box-shadow var(--dur-short) var(--ease-out);
+}
+
+/* 線本身只有 2px：左右各墊 14px 的感應區，好抓。 */
+.cmp-line::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -14px;
+  width: 28px;
+}
+
+.cmp-knob {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  translate: -50% -50%;
+  border-radius: 50%;
+  background: var(--color-stock);
+  color: var(--color-stock-ink);
+  box-shadow: 0 0 0 2px var(--color-accent), 0 10px 24px oklch(0% 0 0 / 0.5);
+  transition: scale var(--dur-short) var(--ease-settle), box-shadow var(--dur-short) var(--ease-out);
+}
+
+.cmp-knob svg {
+  width: 22px;
+  height: 22px;
+}
+
+/* 圖飛到定位之後圓鈕才彈出來：視線被帶到「可以拖的地方」。 */
+.cmp[data-state="in"] .cmp-knob {
+  animation: cmp-knob-in var(--dur-medium) var(--ease-settle) var(--dur-long) backwards;
+}
+
+@keyframes cmp-knob-in {
+  from {
+    opacity: 0;
+    scale: 0.5;
+  }
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .cmp-line:hover .cmp-knob {
+    scale: 1.08;
+  }
+}
+
+/* 抓著線：線的光暈亮一點，手感明確。 */
+.cmp[data-drag="line"] .cmp-line::before {
+  box-shadow: 0 0 0 1px oklch(0% 0 0 / 0.25), 0 0 26px color-mix(in oklch, var(--color-accent) 55%, transparent);
+}
+
+.cmp[data-drag="line"] .cmp-knob {
+  scale: 1.14;
+  box-shadow: 0 0 0 3px var(--color-accent), 0 14px 30px oklch(0% 0 0 / 0.55);
+}
+
+.cmp-line:focus-visible .cmp-knob {
+  box-shadow: 0 0 0 2px var(--color-accent), 0 0 0 5px var(--color-focus);
+}
+
+.cmp-tag {
+  position: absolute;
+  top: var(--space-md);
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-xs);
+  padding: var(--space-2xs) var(--space-sm);
+  border-radius: var(--radius-sm);
+  background: color-mix(in oklch, var(--color-paper) 78%, transparent);
+  color: var(--color-ink);
+  font-size: var(--text-sm);
+  pointer-events: none;
+  animation: cmp-tag-in var(--dur-long) var(--ease-out) var(--dur-short) backwards;
+}
+
+.cmp-tag b {
+  font-family: var(--font-display);
+  font-size: var(--text-md);
+}
+
+.cmp-tag small {
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  color: var(--color-muted);
+}
+
+.cmp-tag-a {
+  left: var(--space-md);
+  --from: -8px;
+}
+
+.cmp-tag-b {
+  right: calc(var(--space-md) + 52px);
+  --from: 8px;
+}
+
+@keyframes cmp-tag-in {
+  from {
+    opacity: 0;
+    translate: var(--from, 0) 0;
+  }
+}
+
+.cmp-hint {
+  position: absolute;
+  left: 50%;
+  bottom: var(--space-lg);
+  translate: -50% 0;
+  margin: 0;
+  padding: var(--space-2xs) var(--space-md);
+  border-radius: 999px;
+  background: color-mix(in oklch, var(--color-paper) 80%, transparent);
+  color: var(--color-ink-2);
+  font-size: var(--text-xs);
+  white-space: nowrap;
+  pointer-events: none;
+  transition: opacity var(--dur-long) var(--ease-out), translate var(--dur-long) var(--ease-out);
+  animation: cmp-hint-in var(--dur-long) var(--ease-out) var(--dur-story) backwards;
+}
+
+@keyframes cmp-hint-in {
+  from {
+    opacity: 0;
+    translate: -50% 8px;
+  }
+}
+
+.cmp[data-touched="true"] .cmp-hint {
+  opacity: 0;
+  translate: -50% 8px;
+}
+
+.cmp-zoom {
+  position: absolute;
+  right: var(--space-md);
+  bottom: var(--space-lg);
+  min-width: 4.2em;
+  min-height: 32px;
+  padding: 0 var(--space-sm);
+  border: 1px solid var(--color-rule);
+  border-radius: 999px;
+  background: color-mix(in oklch, var(--color-paper) 80%, transparent);
+  color: var(--color-ink);
+  font: 600 var(--text-xs) / 1 var(--font-mono);
+  cursor: pointer;
+  transition: border-color var(--dur-short) var(--ease-out), color var(--dur-short) var(--ease-out);
+}
+
+.cmp-zoom[data-native="true"] {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .cmp-zoom:hover {
+    border-color: var(--color-ink-2);
+  }
+}
+
+.cmp-close {
+  position: fixed;
+  top: var(--space-md);
+  right: var(--space-md);
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 1px solid var(--color-rule);
+  border-radius: 50%;
+  background: color-mix(in oklch, var(--color-paper) 80%, transparent);
+  color: var(--color-ink);
+  cursor: pointer;
+  transition: rotate var(--dur-short) var(--ease-out), border-color var(--dur-short) var(--ease-out);
+}
+
+.cmp-close svg {
+  width: 18px;
+  height: 18px;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .cmp-close:hover {
+    rotate: 90deg;
+    border-color: var(--color-ink-2);
+  }
+}
+
+@media (max-width: 40rem) {
+  .cmp-tag {
+    top: calc(var(--space-md) + 44px);
+    font-size: var(--text-xs);
+  }
+  .cmp-tag-b {
+    right: var(--space-md);
+  }
+  .cmp-hint {
+    left: var(--space-md);
+    max-width: calc(100vw - 8rem);
+    translate: 0 0;
+    white-space: normal;
+    animation-name: cmp-tag-in;
+  }
+  .cmp[data-touched="true"] .cmp-hint {
+    translate: 0 8px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cmp,
+  .cmp-tag,
+  .cmp-hint,
+  .cmp[data-state="in"] .cmp-knob,
+  .cmp-thumb:hover :is(.cmp-thumb-cut, .cmp-thumb-inner, .cmp-thumb-line),
+  .cmp-thumb:focus-visible :is(.cmp-thumb-cut, .cmp-thumb-inner, .cmp-thumb-line) {
+    animation: none;
+  }
+  .cmp-knob,
+  .cmp-close,
+  .cmp-thumb,
+  .cmp-line::before {
+    transition: none;
+  }
+}
+
+/* ================= 手機（墨池、疊印台共用） ================= */
+
+/* 點下去不要閃一塊灰底：每顆按鈕自己有按下的樣子（墨暈、下沉），灰底會把它蓋掉。
+ * touch-action: manipulation —— 手機不必等「是不是要雙擊放大」的判斷，點下去立刻有反應。 */
+html {
+  -webkit-tap-highlight-color: transparent;
+}
+
+:where(button, a, summary, label, select, [role="button"], [role="switch"], [role="radio"], .card) {
+  touch-action: manipulation;
+}
+
+/* iPhone 的 Safari：點到字級小於 16px 的輸入框或下拉選單會把整頁放大，而且不縮回來。
+ * 要 !important：元件自己的字級（疊印台找牌框、下拉選單、種子框、Discord 設定 13.6～14px）
+ * 選擇器都比這裡具體，以前用 :where() 寫，全被蓋掉了。 */
+@media (pointer: coarse) {
+  :where(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]), select, textarea) {
+    font-size: max(1rem, 16px) !important;
+  }
+  /* 種子框的寬是用「字寬」算的（web/seed-control.js 的 17.5ch）：字一放大框就變寬，
+   * 整排擠不下、框掉到下一行。手機上基準收到 12 字，長的種子在框裡捲。 */
+  .seed-ctl .seed-ctl-input {
+    flex-basis: 12ch;
+    width: 12ch;
+  }
+}
+
+/* 詳情、規則這些彈窗：手機上從底部滑上來，寬度佔滿，只有上緣是圓的。
+ * 底部那排按鈕本來就黏在最下面；這裡再讓出 iPhone 底部橫條的高度。 */
+@media (max-width: 40rem) {
+  .overlay {
+    align-items: end;
+    justify-items: stretch;
+    padding: var(--space-lg) 0 0;
+  }
+  .sheet,
+  .sheet-wide {
+    width: 100%;
+    max-height: 100%;
+    padding: var(--space-md) var(--space-md) calc(var(--space-md) + env(safe-area-inset-bottom));
+    border-bottom: 0;
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    animation: sheet-up var(--dur-long) var(--ease-out);
+  }
+  /* 上緣一條握把：看得出這是一張從下面拉上來的紙，也是往下拉收起的把手（ui.js swipeToClose）。
+   * 握把和標題不讓瀏覽器拿去捲動，手指按住往下拉才會是「拉紙」。 */
+  .sheet-grip {
+    display: block;
+    height: var(--space-md);
+    margin: calc(var(--space-md) * -1) calc(var(--space-md) * -1) var(--space-2xs);
+    touch-action: none;
+  }
+  .sheet-grip::before {
+    content: "";
+    display: block;
+    width: 36px;
+    height: 4px;
+    margin: var(--space-xs) auto 0;
+    border-radius: 2px;
+    background: var(--color-rule);
+  }
+  .sheet h2 {
+    touch-action: none;
+  }
+  .sheet h2 {
+    font-size: var(--text-lg);
+  }
+  .sheet-foot {
+    bottom: calc((var(--space-md) + env(safe-area-inset-bottom)) * -1);
+    margin: var(--space-md) calc(var(--space-md) * -1) calc((var(--space-md) + env(safe-area-inset-bottom)) * -1);
+    padding: var(--space-sm) var(--space-md) calc(var(--space-md) + env(safe-area-inset-bottom));
+  }
+  .overlay[data-closing="true"] .sheet {
+    animation: sheet-down calc(var(--dur-short) * 0.75) var(--ease-in) forwards;
+  }
+}
+
+@keyframes sheet-up {
+  from {
+    transform: translateY(100%);
+  }
+}
+
+@keyframes sheet-down {
+  to {
+    transform: translateY(100%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sheet,
+  .overlay[data-closing="true"] .sheet {
+    animation: none;
+  }
+}
+
+/* ---------- 墨池手機：底部操作列 ----------
+ * 捲到成品牆時浮出來的「只抽牌／抽並生圖」跟右下的廢字簍，本來一個 44px 靠左、一個 64px 圓鈕靠右，
+ * 底線不齊、中間空一段。手機上併成一條：同一個高度、同一條底線，按鈕撐滿拇指搆得到的那一段。
+ * 浮出來用 settle 曲線（到位時微微過衝一下），兩顆按鈕跟在後面錯開半拍落定。 */
+@media (max-width: 40rem) {
+  .trash {
+    --dock-h: 52px;
+    width: var(--dock-h);
+    height: var(--dock-h);
+    gap: 0;
+  }
+  .trash svg {
+    width: 20px;
+    height: 20px;
+  }
+  /* 字太小在 52px 裡擠不下：只留數字，「廢字簍」交給 aria-label。 */
+  .trash span {
+    display: none;
+  }
+  /* 操作列浮出來時，偏好卡牌托盤本來就讓到操作列上面了（card.css 的 -62px），簍子留在列裡，
+   * 不必跟著托盤往上讓 —— 不然它孤零零懸在畫面中間。選擇器要比 card.css 那條讓位的重。 */
+  .go-float[data-show="true"]:not([inert]):not([hidden]) ~ .trash {
+    translate: none;
+  }
+  /* 點開的面板跟著貼到 52px 的簍子上面，指向簍子的小尖角對準它的中線。 */
+  .trash-panel {
+    bottom: calc(var(--space-md) + 52px + var(--space-sm) + env(safe-area-inset-bottom));
+  }
+  .trash-panel::after {
+    right: calc(var(--space-md) + 26px - var(--space-sm) - 7px);
+  }
+  .go-float {
+    left: var(--space-md);
+    right: calc(var(--space-md) + 52px + var(--space-xs));
+    max-width: none;
+    height: 52px;
+    padding: var(--space-2xs);
+    gap: var(--space-2xs);
+    transform: translateY(calc(100% + var(--space-lg)));
+    transition:
+      transform var(--dur-medium) var(--ease-settle),
+      opacity var(--dur-short) var(--ease-out);
+  }
+  .go-float[data-show="true"] {
+    transform: none;
+  }
+  .go-float .btn {
+    flex: 1 1 0;
+    min-width: 0;
+    height: 100%;
+    font-size: var(--text-sm);
+    opacity: 0;
+    translate: 0 var(--space-sm);
+    transition:
+      opacity var(--dur-short) var(--ease-out),
+      translate var(--dur-medium) var(--ease-settle);
+  }
+  .go-float .btn-primary {
+    flex-grow: 1.6;
+  }
+  .go-float[data-show="true"] .btn {
+    opacity: 1;
+    translate: 0;
+    transition-delay: calc(var(--dur-micro) * 0.4);
+  }
+  .go-float[data-show="true"] .btn + .btn {
+    transition-delay: calc(var(--dur-micro) * 0.8);
+  }
+  .go-float[data-show="true"] .btn + .btn + .btn {
+    transition-delay: var(--dur-micro);
+  }
+  /* 收回去時一起走，不必等。 */
+  .go-float[data-show="false"] .btn {
+    transition-duration: var(--dur-micro);
+  }
+}
+
+/* 成品的一排動作：手機上差 10–40px 就能排成一行，「撤下」不必自己掉到第二行。
+ * 內距跟著螢幕寬縮（360 寬約 7.5px、390 寬約 8px）；再更窄放不下時照舊換行、撤下靠右。 */
+@media (max-width: 40rem) {
+  .shot-actions .btn-small,
+  .shot-actions .shot-toggle {
+    padding-inline: clamp(6px, 2.1vw, 12px);
+  }
+}
+
+/* 成品牆往下捲：每張圖從下面浮上來、由淡轉實，像一張張翻過去的印張。
+ * 綁在捲動上（animation-timeline: view()），不是計時器 —— 捲多快就走多快，停下來就停，
+ * 往回捲會倒著走。只動 opacity 和 transform，合成器自己處理，捲動時不排版。 */
+@supports (animation-timeline: view()) {
+  @media (max-width: 40rem) {
+    .shot-frame {
+      animation: shot-rise var(--ease-out) both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 70%;
+    }
+  }
+}
+
+@keyframes shot-rise {
+  from {
+    opacity: 0.25;
+    transform: translateY(var(--space-lg)) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .go-float .btn {
+    transition: none;
+  }
+  .shot-frame {
+    animation: none;
+  }
+}
+
+/* ---------- 原檔不在了（gone.js）----------
+ * ComfyUI 輸出資料夾裡的圖被手動刪掉：畫框不再是一張破圖，換成一張斜線底紋的空白樣張，
+ * 說明原因、給「照原樣再印」和「撤下」。Hires 沒有原圖可放大，收起來。 */
+.shot[data-gone="true"] .shot-frame img {
+  visibility: hidden;
+}
+
+.shot[data-gone="true"] .shot-hires {
+  display: none;
+}
+
+.shot-gone {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-lg);
+  text-align: center;
+  background:
+    repeating-linear-gradient(135deg, transparent 0 10px, color-mix(in oklch, var(--color-rule) 45%, transparent) 10px 11px),
+    var(--color-paper-2);
+}
+
+.gone-note b {
+  font-family: var(--font-display);
+  font-size: var(--text-lg);
+  color: var(--color-ink);
+}
+
+.gone-note p {
+  max-width: 22em;
+  margin-top: var(--space-2xs);
+  font-size: var(--text-xs);
+  color: var(--color-muted);
+}
+
+.lightbox .gone-note {
+  padding: var(--space-2xl) var(--space-lg);
+  text-align: center;
+}
+
+.shot-gone-acts {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-xs);
+}
+
+/* ---------- 換版：墨池 ↔ 疊印台（共用元素變形） ----------
+ * 兩頁都有的東西直接「移過去」：字盒的標題與搜尋框從這頁的左欄滑到那頁的左欄、
+ * 寬度跟著變；工作區標題（合成池 ↔ 卡池）原地換字；頂欄不動、分頁底線照舊滑過去。
+ * 其他的舊內容很快淡掉，新內容依序落下 —— 字盒前幾排牌一張張發進來，卡池一列列、
+ * 試印與成品由上往下錯開，進來的方向跟著換版的方向（往疊印台從右、回墨池從左）。約 0.5 秒。
+ * 錯開的進場綁在 html[data-vt-in]（<head> 的 pagereveal 掛上、1.1 秒後拿掉）：
+ * 字盒的牌要等詞庫讀完才發，可能比轉場晚一步，照樣一張張進來。 */
+@media (prefers-reduced-motion: no-preference) {
+  /* 以前整塊整塊各自命名、各自滑；現在整頁當背景，只有共用的幾樣單獨一層。 */
+  .library,
+  .case,
+  .work,
+  .plate,
+  .side,
+  .line {
+    view-transition-name: none;
+  }
+  html[data-vt] .vt-sweep {
+    display: none;
+  }
+
+  .library .panel-head h2,
+  #case-title {
+    view-transition-name: case-title;
+  }
+  #lib-q,
+  #case-q {
+    view-transition-name: case-search;
+  }
+  #pool-title,
+  #plate-title {
+    view-transition-name: stage-title;
+  }
+
+  ::view-transition-group(case-title),
+  ::view-transition-group(case-search),
+  ::view-transition-group(stage-title) {
+    animation-duration: var(--dur-long);
+    animation-timing-function: var(--ease-travel);
+  }
+  /* 搜尋框兩頁寬度不同：不要把快照拉伸（字會被壓扁），靠左對齊、邊框跟著外框變形。 */
+  ::view-transition-old(case-search),
+  ::view-transition-new(case-search) {
+    height: 100%;
+    object-fit: none;
+    object-position: left center;
+  }
+  ::view-transition-old(case-title),
+  ::view-transition-new(case-title),
+  ::view-transition-old(case-search),
+  ::view-transition-new(case-search),
+  ::view-transition-old(stage-title),
+  ::view-transition-new(stage-title) {
+    animation-duration: var(--dur-short);
+  }
+
+  /* 整頁：舊的很快淡掉，新的背景跟著亮起來；內容的進場交給下面的錯開動畫。 */
+  /* 舊的一版一開始就走（micro），不留半透明的殘影疊在新內容底下。 */
+  ::view-transition-old(root) {
+    animation: vt-root-out var(--dur-micro) var(--ease-out) both;
+  }
+  ::view-transition-new(root) {
+    animation: vt-root-in var(--dur-short) var(--ease-out) both;
+  }
+
+  html[data-vt-in] {
+    --vt-dx: var(--space-md);
+  }
+  html[data-vt-in="back"] {
+    --vt-dx: calc(var(--space-md) * -1);
+  }
+
+  html[data-vt-in] :is(
+    .pool-well, .rules, .go-bar, .wall-head, .wall > *, .wall-empty,
+    .lib-grid > *, .case-grid > *, .register, .side > *, .line-list > *, .plate-sub,
+    .suit-tabs, .case-tabs, .panel-head > :not(h2), .plate-head > :not(h2, .plate-sub),
+    .plate-scroll > *, .line-title, .line-empty
+  ) {
+    animation: vt-rise var(--dur-long) var(--ease-out) both;
+  }
+
+  /* 錯開：一格 24ms（micro 的五分之一）。 */
+  html[data-vt-in] :is(.suit-tabs, .case-tabs, .panel-head > :not(h2), .plate-head > :not(h2, .plate-sub), .line-title, .line-empty) { animation-delay: calc(var(--dur-micro) * 0.3); }
+  html[data-vt-in] :is(.pool-well, .register:nth-child(1), .side > :nth-child(1), .plate-sub, .plate-scroll > :nth-child(1)) { animation-delay: calc(var(--dur-micro) * 0.5); }
+  html[data-vt-in] :is(.rules, .register:nth-child(2), .side > :nth-child(2), .plate-scroll > :nth-child(2)) { animation-delay: calc(var(--dur-micro) * 0.7); }
+  html[data-vt-in] :is(.go-bar, .register:nth-child(3), .side > :nth-child(3), .plate-scroll > :nth-child(n + 3)) { animation-delay: calc(var(--dur-micro) * 0.9); }
+  html[data-vt-in] :is(.wall-head, .wall-empty, .register:nth-child(4), .side > :nth-child(4)) { animation-delay: calc(var(--dur-micro) * 1.1); }
+  html[data-vt-in] :is(.wall > :nth-child(1), .register:nth-child(5)) { animation-delay: calc(var(--dur-micro) * 1.3); }
+  html[data-vt-in] :is(.wall > :nth-child(2), .register:nth-child(6)) { animation-delay: calc(var(--dur-micro) * 1.5); }
+  html[data-vt-in] :is(.wall > :nth-child(3), .register:nth-child(7)) { animation-delay: calc(var(--dur-micro) * 1.7); }
+  html[data-vt-in] .wall > :nth-child(n + 4) { animation-delay: calc(var(--dur-micro) * 1.9); }
+
+  /* 字盒的牌：依序發進來，前三排一張張，之後的一起。 */
+  html[data-vt-in] :is(.lib-grid, .case-grid) > :nth-child(1) { animation-delay: calc(var(--dur-micro) * 0.6); }
+  html[data-vt-in] :is(.lib-grid, .case-grid) > :nth-child(2) { animation-delay: calc(var(--dur-micro) * 0.75); }
+  html[data-vt-in] :is(.lib-grid, .case-grid) > :nth-child(3) { animation-delay: calc(var(--dur-micro) * 0.9); }
+  html[data-vt-in] :is(.lib-grid, .case-grid) > :nth-child(4) { animation-delay: calc(var(--dur-micro) * 1.05); }
+  html[data-vt-in] :is(.lib-grid, .case-grid) > :nth-child(5) { animation-delay: calc(var(--dur-micro) * 1.2); }
+  html[data-vt-in] :is(.lib-grid, .case-grid) > :nth-child(6) { animation-delay: calc(var(--dur-micro) * 1.35); }
+  html[data-vt-in] :is(.lib-grid, .case-grid) > :nth-child(7) { animation-delay: calc(var(--dur-micro) * 1.5); }
+  html[data-vt-in] :is(.lib-grid, .case-grid) > :nth-child(8) { animation-delay: calc(var(--dur-micro) * 1.65); }
+  html[data-vt-in] :is(.lib-grid, .case-grid) > :nth-child(9) { animation-delay: calc(var(--dur-micro) * 1.8); }
+  html[data-vt-in] :is(.lib-grid, .case-grid) > :nth-child(10) { animation-delay: calc(var(--dur-micro) * 1.95); }
+  html[data-vt-in] :is(.lib-grid, .case-grid) > :nth-child(11) { animation-delay: calc(var(--dur-micro) * 2.1); }
+  html[data-vt-in] :is(.lib-grid, .case-grid) > :nth-child(12) { animation-delay: calc(var(--dur-micro) * 2.25); }
+  html[data-vt-in] :is(.lib-grid, .case-grid) > :nth-child(n + 13) { animation-delay: calc(var(--dur-micro) * 2.4); }
+}
+
+@keyframes vt-root-out {
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes vt-root-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes vt-rise {
+  from {
+    opacity: 0;
+    translate: var(--vt-dx, 0) var(--space-sm);
+  }
+}
+
+
+/* ---------- 手機：左右留白收窄（2026-10-06 專案主用 iPhone 17：左右各多 2mm 左右） ----------
+ * iPhone 17 上 1mm 約 6px。以前外框 16px、字盒和按鈕列又各自 16px，牌離螢幕邊 32px，
+ * 合成池的四角內距再疊 24px。只在手機寬度收：外框 16→6，內層 16→14，合成池四角內距少 10px，
+ * 每一層加起來左右各多約 12px（2mm）。四角套準線、按鈕的點擊面積都不變。 */
+@media (max-width: 30rem) {
+  .mast {
+    padding-inline: 6px;
+  }
+  .layout {
+    padding-inline: 6px;
+  }
+  .go-bar,
+  .rules {
+    padding-inline: 14px;
+  }
+  /* 字盒再寬一點（專案主：字盒可以再大一點點）：內層 8px，牌離螢幕邊 14px，四欄的牌各大一些。 */
+  .lib-grid,
+  .library .panel-head,
+  .suit-tabs,
+  .group-chips {
+    padding-inline: 8px;
+  }
+  /* 搜尋框外面那一圈是 margin，不是 padding。 */
+  .lib-search {
+    margin-inline: 8px;
+  }
+  .pool-well {
+    padding-inline: calc(var(--space-lg) - 10px);
+  }
+}
+
+
+/* ---------- 手機：字盒是挑牌抽屜（app.js 的 openPicker／closePicker） ----------
+ * 收著：只剩標題列和一顆「挑牌」。打開：字盒本身固定在底部、幾乎全螢幕，牌格自己捲，
+ * 底部一條「合成池 N 張・完成」。背後一層暗幕；廢字簍、浮動抽牌列、偏好卡牌托盤先讓開。 */
+.picker-grip,
+.picker-foot,
+.picker-scrim,
+.picker-hold {
+  display: none;
+}
+
+@media (max-width: 40rem) {
+  body:not([data-picker="open"]) .library :is(.lib-search, .suit-tabs, .group-chips, .lib-grid) {
+    display: none;
+  }
+  body:not([data-picker="open"]) .library .lib-toggle {
+    min-height: 44px;
+    padding-inline: var(--space-lg);
+    border-color: var(--color-ink-2);
+    color: var(--color-ink);
+    font-weight: 700;
+  }
+  .picker-hold:not([hidden]) {
+    display: block;
+  }
+  .picker-scrim:not([hidden]) {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 84;
+    background: var(--color-scrim);
+  }
+  body[data-picker="open"] .library {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    top: max(44px, 6dvh);
+    z-index: 85;
+    display: flex;
+    flex-direction: column;
+    margin: 0;
+    padding-bottom: env(safe-area-inset-bottom);
+    border: 1px solid var(--color-rule);
+    border-bottom: 0;
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    background: var(--color-paper);
+    box-shadow: 0 -20px 50px -10px var(--color-shade);
+    overflow: hidden;
+    overscroll-behavior: contain;
+  }
+  body[data-picker="open"] .library .lib-scroll {
+    display: block;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+  body[data-picker="open"] .library .lib-grid {
+    min-height: 0;
+    max-height: none;
+    overflow: visible;
+    -webkit-mask-image: none;
+    mask-image: none;
+  }
+  body[data-picker="open"] .picker-grip {
+    display: block;
+    flex: none;
+    width: 44px;
+    height: 5px;
+    margin: 8px auto 2px;
+    border-radius: 3px;
+    background: var(--color-rule);
+    touch-action: none;
+  }
+  body[data-picker="open"] .library .panel-head {
+    touch-action: none;
+  }
+  body[data-picker="open"] .picker-foot {
+    display: flex;
+    flex: none;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-sm);
+    padding: var(--space-xs) var(--space-sm);
+    border-top: 1px solid var(--color-rule-2);
+    background: var(--color-paper-2);
+  }
+  .picker-count {
+    display: inline-block;
+    color: var(--color-ink-2);
+    font-size: var(--text-sm);
+    font-variant-numeric: tabular-nums;
+  }
+  .picker-done {
+    min-width: 7rem;
+    min-height: 44px;
+  }
+  body[data-picker="open"] :is(.trash, .go-float, .fav-hand, .tray-bridge) {
+    visibility: hidden;
+  }
+  /* 抽屜裡底下已經有「完成」：標題旁那顆「挑牌」不用了。 */
+  body[data-picker="open"] .library .lib-toggle {
+    display: none;
+  }
+}
+
+
+/* ---------- 加到主畫面（全螢幕）：狀態列透明疊在頁面上，讓出瀏海那一段 ----------
+ * 在 Safari 裡（不是全螢幕）safe-area-inset-top 是 0，這兩條沒有作用。 */
+body {
+  padding-top: env(safe-area-inset-top);
+}
+@media (max-width: 40rem) {
+  body[data-picker="open"] .library {
+    top: max(44px, 6dvh, calc(env(safe-area-inset-top) + 8px));
+  }
+}
+
+/* ---------- 手機：LoRA／底模彈窗的清單多給一點高度 ----------
+ * web/lora.css 的單欄版：清單那半最高 55vh、「目前選擇」32vh。LoRA 那半上面還釘著分類、隨機、搜尋，
+ * iPhone 上清單只剩 231px（兩列半）。這裡（web6、web7 自己）改成 62／26（工作流不改：它的主角是右半的參數），
+ * 分類籤改成一排左右滑（原本斷兩行、尾巴還被右上角的關閉鈕蓋住）。共用的 lora.css 不動。 */
+@media (max-width: 760px) {
+  .lora-modal:not(.wf-modal) .lm-left {
+    max-height: 62dvh;
+  }
+  .lora-modal:not(.wf-modal) .lm-right {
+    max-height: 26dvh;
+  }
+  .lora-modal .lm-cats {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding-right: 52px;
+    scrollbar-width: none;
+    overscroll-behavior-x: contain;
+    /* 右上角是關閉鈕：籤滑到那裡之前先淡掉，不會從按鈕底下穿過去。 */
+    -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 72px), transparent calc(100% - 44px));
+    mask-image: linear-gradient(to right, #000 calc(100% - 72px), transparent calc(100% - 44px));
+  }
+  .lora-modal .lm-cats::-webkit-scrollbar {
+    display: none;
+  }
+  .lora-modal .lm-cat {
+    flex: none;
+  }
+}
+
+/* ---------- 被分級擋掉的選項：一樣變灰，但點得到（點了會說為什麼，app.js 的 explainBlockedHeat） ---------- */
+.chip-toggle[aria-disabled="true"] {
+  opacity: 0.4;
+  cursor: help;
+}
+
+/* 頂端的分級被指名的時候亮一下：外圈描一圈、輕輕放大再回來。 */
+.segmented.is-hint {
+  animation: rating-hint var(--dur-story) var(--ease-out);
+}
+
+@keyframes rating-hint {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 transparent;
+    scale: 1;
+  }
+  25% {
+    box-shadow: 0 0 0 3px var(--color-focus);
+    scale: 1.04;
+  }
+  60% {
+    box-shadow: 0 0 0 3px var(--color-focus);
+    scale: 1;
+  }
+}
+
+/* 手機上頂欄的連線狀態只剩一顆點；連不上的時候把字露出來（綠點不用解釋）。 */
+@media (max-width: 40rem) {
+  .ping[data-ok="0"] span {
+    position: static;
+    width: auto;
+    height: auto;
+    overflow: visible;
+    clip-path: none;
+    color: var(--color-accent);
+  }
+}
+
+/* ---------- 開機中：詞庫、牌面還在讀（各頁 <head> 掛上 html[data-booting]，settleMotion 拿掉） ----------
+ * 手機走 Tailscale、剛更新完要重新下載時，畫面會有一兩秒是半空的，看起來像壞掉。
+ * 頂欄底下一條光掃過去；延遲 250ms 才出現，讀得快的時候不會閃一下。空的牌格寫一行字。 */
+html[data-booting] .mast::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: -1px;
+  width: 30%;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--color-pool-2), transparent);
+  pointer-events: none;
+  animation: boot-sweep var(--dur-develop) var(--ease-in-out) 250ms infinite both;
+}
+
+@keyframes boot-sweep {
+  from {
+    translate: -100% 0;
+  }
+  to {
+    translate: 340% 0;
+  }
+}
+
+html[data-booting] :is(#lib-grid, #case-grid, #book-grid):empty::before {
+  content: "正在讀詞庫…";
+  grid-column: 1 / -1;
+  padding: var(--space-lg) 0;
+  color: var(--color-muted);
+  font-size: var(--text-sm);
+  text-align: center;
+  animation: boot-fade var(--dur-long) var(--ease-out) 250ms both;
+}
+
+@keyframes boot-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html[data-booting] .mast::after {
+    display: none;
+  }
+}
+
+/* ---------- 手機：頂欄往上滑就冒出來（motion.js 的 watchMastPeek） ----------
+ * 以前手機的頂欄 position: static 跟著捲走。改成黏住但往下捲時滑上去藏起來，往上滑才下來。
+ * 加到主畫面（全螢幕）時狀態列透明疊在上面：頂欄停在 safe-area 下緣，上面那一段用同色補滿。 */
+@media (max-width: 44rem) {
+  .mast {
+    position: sticky;
+    top: env(safe-area-inset-top);
+    transition:
+      translate var(--dur-medium) var(--ease-out),
+      box-shadow var(--dur-medium) var(--ease-out);
+  }
+  .mast::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 100%;
+    height: env(safe-area-inset-top);
+    background: inherit;
+  }
+  html[data-mast="away"] .mast {
+    translate: 0 calc(-100% - env(safe-area-inset-top) - 2px);
+    transition-timing-function: var(--ease-exit);
+  }
+  html[data-mast="peek"] .mast {
+    box-shadow: 0 10px 24px -14px var(--color-shade);
+  }
+}
+
+@media (max-width: 44rem) and (prefers-reduced-motion: reduce) {
+  .mast {
+    transition: none;
+  }
+}
+
+/* ---------- 觸控：常按的小按鈕，看不見的點擊範圍再擴一點 ----------
+ * 手機實測：張數與規則的 ± 是 30×30、頁籤 30px 高。只往空的方向擴，而且不超過到鄰居距離的一半
+ * （規則裡上下兩排 ± 只隔 5～6px），外觀不變。± 的外框原本 overflow: hidden 會把擴出去的範圍也裁掉，
+ * 改成只把兩端按鈕的角磨圓。 */
+@media (pointer: coarse) {
+  .stepper {
+    overflow: visible;
+  }
+  .stepper > :first-child {
+    border-radius: calc(var(--radius-sm) - 1px) 0 0 calc(var(--radius-sm) - 1px);
+  }
+  .stepper > :last-child {
+    border-radius: 0 calc(var(--radius-sm) - 1px) calc(var(--radius-sm) - 1px) 0;
+  }
+  .stepper button {
+    position: relative;
+  }
+  /* ::after 已經是按下去的墨暈（pointer-events: none），點擊範圍用 ::before。 */
+  .stepper button::before {
+    content: "";
+    position: absolute;
+    inset: -3px -6px;
+  }
+  .page-switch a::after {
+    content: "";
+    position: absolute;
+    inset: -5px 0;
+  }
+}
+
+/* ---------- 牌組面板（decks.js 的 openDecks）：上面存目前的牌，底下一組一列 ---------- */
+.decks {
+  display: grid;
+  gap: var(--space-md);
+}
+.deck-save-lead,
+.deck-note {
+  margin: 0 0 var(--space-xs);
+  color: var(--color-muted);
+  font-size: var(--text-sm);
+}
+.deck-save-row {
+  display: flex;
+  gap: var(--space-xs);
+}
+.deck-name {
+  flex: 1;
+  min-width: 0;
+  min-height: 40px;
+  padding: 0 var(--space-sm);
+  border: 1px solid var(--color-rule);
+  border-radius: var(--radius-sm);
+  background: var(--color-paper-2);
+  color: var(--color-ink);
+}
+.deck-name:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 1px;
+}
+.deck-list {
+  display: grid;
+}
+.deck-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-xs);
+  border-top: 1px solid var(--color-rule-2);
+  border-radius: var(--radius-xs);
+}
+.deck-main {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+.deck-title {
+  font-weight: 700;
+}
+.deck-meta {
+  color: var(--color-muted);
+  font-size: var(--text-xs);
+}
+.deck-tags {
+  overflow: hidden;
+  color: var(--color-ink-2);
+  font-size: var(--text-xs);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.deck-acts {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+/* ---------- 貼上提示詞變成牌（paste-prompt.js）：上面貼、底下即時分好類 ---------- */
+.paste {
+  display: grid;
+  gap: var(--space-md);
+}
+.paste-text {
+  width: 100%;
+  min-height: 7rem;
+  padding: var(--space-sm);
+  border: 1px solid var(--color-rule);
+  border-radius: var(--radius-sm);
+  background: var(--color-paper-2);
+  color: var(--color-ink);
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  line-height: 1.5;
+  resize: vertical;
+}
+.paste-text:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 1px;
+}
+.paste-result {
+  display: grid;
+  gap: var(--space-sm);
+}
+.paste-note {
+  margin: 0;
+  color: var(--color-muted);
+  font-size: var(--text-sm);
+}
+.paste-group h3 {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-sm);
+  margin: 0 0 var(--space-2xs);
+  color: var(--color-ink-2);
+  font-size: var(--text-sm);
+}
+.paste-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.paste-chip {
+  padding: 2px var(--space-xs);
+  border: 1px solid var(--color-rule-2);
+  border-radius: 999px;
+  color: var(--color-ink-2);
+  font-size: var(--text-xs);
+}
+.paste-group.is-cards .paste-chip {
+  border-color: var(--color-pool-2);
+  color: var(--color-ink);
+}
+.paste-group.is-unknown .paste-chip {
+  border-style: dashed;
+}
+.paste-group.is-muted {
+  opacity: 0.7;
+}
+.paste-group.is-blocked .paste-chip {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+  text-decoration: line-through;
+}
+.decks-paste {
+  justify-self: start;
+}
+
+.paste-group.is-cards .paste-chip.is-off {
+  border-color: var(--color-rule-2);
+  border-style: dashed;
+  color: var(--color-muted);
+}
+
+/* ---------- 牌的詳情：份量一排（weights.js 的 weightRow） ---------- */
+/* 「份量」跟五顆數字同一行；五顆平分可用的寬度，再窄也放得下（疊印台的小選單只有 16rem）。
+ * 在牌的詳情裡橫跨兩欄（grid-column），不擠在右欄。 */
+.weight-row {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  min-width: 0;
+  margin: 0 0 var(--space-xs);
+}
+.weight-label {
+  flex: none;
+  color: var(--color-muted);
+  font-size: var(--text-sm);
+}
+.weight-seg {
+  display: flex;
+  flex: 1 1 auto;
+  min-width: 0;
+  /* 電腦上詳情很寬：不要拉成一整條，數字之間太空。 */
+  max-width: 22rem;
+}
+.weight-seg button {
+  flex: 1 1 0;
+  min-width: 0;
+  padding-inline: 2px;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+.weight-seg button[data-dir="up"][aria-checked="true"] {
+  color: var(--color-accent);
+}
+
+/* ---------- 手機：廢字簍跟著浮動抽牌列出現（app.js 的 renderGoFloat） ----------
+ * 以前它一直固定在右下角，抽牌那排捲到底部時會蓋住「只抽牌」的右半邊。
+ * 手機上改成：浮動抽牌列出來時一起出來（排在同一條底線），拖牌的時候（丟進來封鎖）、
+ * 清單打開的時候也在；其他時候讓開。 */
+@media (max-width: 40rem) {
+  .trash {
+    opacity: 0;
+    pointer-events: none;
+    scale: 0.8;
+    transition:
+      opacity var(--dur-short) var(--ease-out),
+      scale var(--dur-short) var(--ease-out),
+      transform var(--dur-short) var(--ease-out),
+      translate var(--dur-medium) var(--ease-out),
+      border-color var(--dur-short) var(--ease-out),
+      background-color var(--dur-short) var(--ease-out);
+  }
+  .go-float[data-show="true"]:not([inert]):not([hidden]) ~ .trash,
+  .trash[data-armed],
+  .trash[data-open="true"] {
+    opacity: 1;
+    pointer-events: auto;
+    scale: 1;
+  }
+}
+
+/* ---------- 小手機（iPhone SE 這類，24rem 以下）：頂欄擠回兩行 ----------
+ * 疊印台比墨池多一顆「規則」：375 寬時分級 126＋工具 251 比可用的 363 多 18px，工具掉到第三行。
+ * 工具鈕最小寬 36 → 32px、分級左右 6 → 5px（點擊範圍還有 32px）；真的放不下就左右滑，不再長出第三行。 */
+@media (max-width: 24rem) {
+  .mast-controls {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+  }
+  .mast-tools .ghost.icon-btn,
+  .mast-tools :is(#lora-pick-btn, #ckpt-pick-btn, #wf-pick-btn) {
+    min-width: 32px;
+    padding-inline: 6px;
+  }
+  .mast .segmented button {
+    padding: 0 5px;
+  }
+}
+
+/* ---------- 快捷鍵說明（keys-help.js） ----------
+ * 頂欄的「?」只給有滑鼠鍵盤的電腦；手機、平板摸的沒有鍵盤，不佔頂欄的位置。 */
+.help-btn {
+  font-family: var(--font-mono);
+  font-weight: 700;
+}
+@media (hover: none), (max-width: 44rem) {
+  .mast-tools .help-btn {
+    display: none;
+  }
+}
+.keys-help {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+  gap: var(--space-md) var(--space-xl);
+}
+.keys-help-note {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: var(--color-muted);
+  font-size: var(--text-sm);
+}
+.keys-help-group h3 {
+  margin: 0 0 var(--space-xs);
+  color: var(--color-ink-2);
+  font-size: var(--text-sm);
+}
+.keys-help-group dl {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--space-xs) var(--space-md);
+  margin: 0;
+  font-size: var(--text-sm);
+}
+.keys-help-group dt {
+  white-space: nowrap;
+}
+.keys-help-group dd {
+  margin: 0;
+  color: var(--color-ink-2);
+}
+.keys-help-keys {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+.keys-help kbd {
+  display: inline-block;
+  min-width: 1.6em;
+  padding: 0.05em 0.4em;
+  border: 1px solid var(--color-rule);
+  border-bottom-width: 2px;
+  border-radius: var(--radius-xs);
+  background: var(--color-paper-2);
+  color: var(--color-ink);
+  font-family: var(--font-mono);
+  font-size: 0.85em;
+  text-align: center;
+}
+.keys-help-to {
+  color: var(--color-muted);
+}
+
+/* 挑牌抽屜開著（墨池、疊印台）：提示框往上讓到抽屜底下那條「…N 張・完成」的上面，不蓋住「完成」。 */
+@media (max-width: 40rem) {
+  body[data-picker="open"] .toast {
+    bottom: calc(var(--space-sm) + 64px + env(safe-area-inset-bottom));
+  }
+}
+
+/* ---------- 頂欄的生圖進度（gen-status.js） ----------
+ * 墨池、疊印台送去印的，別頁的頂欄也看得到：一圈進度＋「墨池 印製中 42%」，點了回去。
+ * 手機頂欄那排已經滿了：徽章收起來，改在換頁鈕的角落掛小圈（下面 .page-switch-gen）。 */
+.mast-tools .gen-badge {
+  gap: 6px;
+  padding-inline: 10px 12px;
+  font-family: var(--font-body);
+  font-variant-numeric: tabular-nums;
+  text-decoration: none;
+}
+.mast-tools .gen-badge[hidden] {
+  display: none;
+}
+.gen-badge-ring {
+  --ring: var(--color-accent);
+  flex: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: conic-gradient(var(--ring) calc(var(--p, 0) * 1turn), color-mix(in oklab, var(--ring) 22%, transparent) 0);
+  -webkit-mask: radial-gradient(circle, transparent 3.5px, #000 4px);
+  mask: radial-gradient(circle, transparent 3.5px, #000 4px);
+}
+.gen-badge[data-state="done"] .gen-badge-ring {
+  --ring: var(--color-good);
+  --p: 1;
+}
+.gen-badge[data-state="failed"] .gen-badge-ring {
+  --p: 1;
+}
+.gen-badge[data-state="waiting"] .gen-badge-ring {
+  --ring: var(--color-muted);
+  --p: 0;
+}
+.gen-badge[data-state="done"] {
+  border-color: color-mix(in oklab, var(--color-good) 55%, var(--color-rule));
+}
+.gen-badge[data-state="failed"] {
+  border-color: color-mix(in oklab, var(--color-accent) 55%, var(--color-rule));
+}
+@media (prefers-reduced-motion: no-preference) {
+  /* 還在排隊（沒有進度）：那一圈慢慢呼吸，看得出不是卡住。 */
+  .gen-badge[data-queued="true"] .gen-badge-ring {
+    animation: gen-badge-breathe var(--dur-breath) var(--ease-in-out) infinite alternate;
+  }
+  .gen-badge-pop {
+    animation: gen-badge-pop var(--dur-medium) var(--ease-settle);
+  }
+}
+@keyframes gen-badge-breathe {
+  from {
+    opacity: 0.45;
+  }
+}
+@keyframes gen-badge-pop {
+  40% {
+    scale: 1.08;
+  }
+}
+/* 換頁鈕角落的小圈（手機）：在印是一塊會長的扇形，印好綠點，沒印成紅點，還排著空心圈。 */
+.page-switch-gen {
+  display: none;
+}
+@media (max-width: 40rem) {
+  .mast-tools .gen-badge {
+    display: none;
+  }
+  .page-switch a[data-gen] .page-switch-gen {
+    --ring: var(--color-accent);
+    position: absolute;
+    z-index: 2;
+    top: -4px;
+    right: -4px;
+    display: block;
+    width: 11px;
+    height: 11px;
+    border-radius: 50%;
+    background: conic-gradient(var(--ring) calc(var(--gp, 0) * 1turn), color-mix(in oklab, var(--ring) 30%, var(--color-paper-2)) 0);
+    box-shadow: 0 0 0 2px var(--color-paper-2);
+    pointer-events: none;
+  }
+  .page-switch a[data-gen="done"] .page-switch-gen {
+    background: var(--color-good);
+  }
+  .page-switch a[data-gen="failed"] .page-switch-gen {
+    background: var(--color-accent);
+  }
+  .page-switch a[data-gen="waiting"] .page-switch-gen {
+    background: var(--color-paper-2);
+    box-shadow:
+      0 0 0 2px var(--color-paper-2),
+      inset 0 0 0 2px var(--color-muted);
+  }
+}
+@media (max-width: 40rem) and (prefers-reduced-motion: no-preference) {
+  .page-switch a[data-gen-queued="true"] .page-switch-gen {
+    animation: gen-badge-breathe var(--dur-breath) var(--ease-in-out) infinite alternate;
+  }
+}
+
+/* ---------- 姿勢參考（pose.js） ----------
+ * 規則裡那顆鈕：選了是小縮圖＋強度；面板裡左邊參考圖、右邊抓到的骨架，底下挑圖。 */
+.pose-btn {
+  gap: var(--space-2xs);
+  max-width: 100%;
+}
+.pose-btn[data-on="true"] {
+  border-color: var(--color-pool-2, var(--color-ink-2));
+}
+.pose-btn-thumb {
+  width: 20px;
+  height: 26px;
+  border-radius: 3px;
+  object-fit: cover;
+}
+.pose-btn-warn {
+  color: var(--color-accent);
+  font-size: var(--text-xs);
+  font-weight: 400;
+}
+.pose-sheet {
+  display: grid;
+  gap: var(--space-md);
+}
+.pose-sheet h3 {
+  margin: 0 0 var(--space-xs);
+  color: var(--color-ink-2);
+  font-size: var(--text-sm);
+}
+.pose-note,
+.pose-empty,
+.pose-hint {
+  margin: 0;
+  color: var(--color-muted);
+  font-size: var(--text-sm);
+}
+.pose-hint {
+  font-size: var(--text-xs);
+}
+.pose-status {
+  min-height: 1.4em;
+  margin: 0;
+  font-size: var(--text-sm);
+}
+.pose-status:empty {
+  display: none;
+}
+.pose-pair {
+  display: flex;
+  gap: var(--space-md);
+}
+.pose-pair figure {
+  display: grid;
+  gap: var(--space-2xs);
+  margin: 0;
+}
+.pose-pair img,
+.pose-wait {
+  display: grid;
+  place-items: center;
+  width: 120px;
+  height: 160px;
+  border-radius: var(--radius-sm);
+  background: var(--color-paper-2);
+  color: var(--color-muted);
+  font-size: var(--text-xs);
+  object-fit: contain;
+}
+.pose-pair figcaption {
+  color: var(--color-muted);
+  font-size: var(--text-xs);
+  text-align: center;
+}
+.pose-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-xs) var(--space-sm);
+}
+.pose-file {
+  display: none;
+}
+.pose-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));
+  gap: var(--space-xs);
+}
+.pose-pick {
+  overflow: hidden;
+  aspect-ratio: 3 / 4;
+  padding: 0;
+  border: 1px solid var(--color-rule-2);
+  border-radius: var(--radius-xs);
+  background: var(--color-paper-2);
+  cursor: pointer;
+}
+.pose-pick img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.pose-pick:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+/* ---------- 姿勢編輯器（pose-editor.js） ----------
+ * 電腦：左邊工具、右邊畫布；手機：畫布在上、工具在下。畫布黑底（就是送去的骨架圖）。 */
+.pe {
+  display: grid;
+  grid-template-columns: minmax(14rem, 18rem) minmax(0, 1fr);
+  gap: var(--space-lg);
+  align-items: start;
+}
+.pe-side {
+  display: grid;
+  gap: var(--space-xs);
+}
+.pe-side h3 {
+  margin: var(--space-xs) 0 0;
+  color: var(--color-ink-2);
+  font-size: var(--text-sm);
+}
+.pe-presets,
+.pe-tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2xs);
+}
+.pe-info {
+  min-height: 2.6em;
+  margin: var(--space-xs) 0 0;
+  color: var(--color-muted);
+  font-size: var(--text-xs);
+}
+.pe-stage {
+  justify-self: center;
+  width: 100%;
+  max-width: min(100%, calc(68dvh * var(--pe-ratio, 0.7)));
+  max-height: 68dvh;
+  overflow: hidden;
+  border: 1px solid var(--color-rule-2);
+  border-radius: var(--radius-sm);
+  background: #000;
+}
+.pe-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+  cursor: grab;
+}
+.pe-canvas:active {
+  cursor: grabbing;
+}
+@media (max-width: 40rem) {
+  .pe {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-sm);
+  }
+  .pe-stage {
+    order: -1;
+    max-height: 56dvh;
+    max-width: min(100%, calc(56dvh * var(--pe-ratio, 0.7)));
+  }
+}
+
+/* ---------- 新手導覽（tour.js） ----------
+ * 整頁一層：要看的那塊挖亮（其他地方用一圈很大的陰影壓暗），旁邊一張小視窗。
+ * 這一層本身不擋滑鼠（pointer-events: none），亮出來的那塊點得到，才能「邊看邊操作」；只有小視窗收點擊。 */
+.tour-btn {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--color-muted);
+  font: inherit;
+  font-size: var(--text-xs);
+  text-decoration: underline;
+  text-decoration-color: var(--color-rule);
+  text-underline-offset: var(--space-2xs);
+  white-space: nowrap;
+  cursor: pointer;
+}
+.tour-btn:hover {
+  color: var(--color-ink);
+}
+.tour {
+  position: fixed;
+  inset: 0;
+  z-index: 400;
+  pointer-events: none;
+}
+.tour-dim {
+  position: absolute;
+  inset: 0;
+  background: color-mix(in oklab, #000 58%, transparent);
+}
+.tour-dim[hidden],
+.tour-ring[hidden],
+.tour-todo[hidden],
+.tour-foot [hidden] {
+  display: none;
+}
+.tour-ring {
+  position: fixed;
+  border-radius: var(--radius-md);
+  box-shadow:
+    0 0 0 2px var(--color-accent),
+    0 0 0 9999px color-mix(in oklab, #000 58%, transparent);
+  transition:
+    left var(--dur-short) var(--ease-out),
+    top var(--dur-short) var(--ease-out),
+    width var(--dur-short) var(--ease-out),
+    height var(--dur-short) var(--ease-out);
+}
+.tour-card {
+  position: fixed;
+  display: grid;
+  gap: var(--space-xs);
+  width: min(22rem, calc(100vw - 16px));
+  padding: var(--space-md);
+  border: 1px solid var(--color-rule-2);
+  border-radius: var(--radius-md);
+  background: var(--color-paper-2);
+  box-shadow: var(--shadow-lift);
+  color: var(--color-ink);
+  pointer-events: auto;
+}
+.tour-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-xs);
+}
+.tour-count {
+  color: var(--color-muted);
+  font-size: var(--text-xs);
+  font-variant-numeric: tabular-nums;
+}
+.tour-quit {
+  min-width: 32px;
+  min-height: 32px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--color-muted);
+  font: inherit;
+  cursor: pointer;
+}
+.tour-quit:hover {
+  color: var(--color-ink);
+}
+.tour-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: var(--text-md);
+}
+.tour-text {
+  margin: 0;
+  color: var(--color-ink-2);
+  font-size: var(--text-sm);
+  line-height: 1.65;
+}
+.tour-todo {
+  margin: 0;
+  color: var(--color-accent);
+  font-size: var(--text-sm);
+  font-weight: 700;
+}
+.tour-card[data-done="true"] .tour-todo {
+  color: var(--color-good);
+}
+.tour-foot {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-xs);
+  margin-top: var(--space-2xs);
+}
+.tour-foot .tour-prev {
+  margin-right: auto;
+}
+.tour-offer {
+  position: fixed;
+  left: var(--space-md);
+  bottom: var(--space-md);
+  z-index: 350;
+  display: grid;
+  gap: var(--space-sm);
+  width: min(20rem, calc(100vw - 2 * var(--space-md)));
+  padding: var(--space-md);
+  border: 1px solid var(--color-rule-2);
+  border-radius: var(--radius-md);
+  background: var(--color-paper-2);
+  box-shadow: var(--shadow-lift);
+  animation: fade-in var(--dur-medium) var(--ease-out);
+}
+.tour-offer p {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  font-size: var(--text-sm);
+}
+.tour-offer span {
+  color: var(--color-ink-2);
+}
+.tour-offer-foot {
+  display: flex;
+  gap: var(--space-xs);
+}
+.mast-links {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  white-space: nowrap;
+}
+.mast-links .mast-extra + .mast-extra {
+  margin-left: 0;
+}
+@media (max-width: 40rem) {
+  .mast-links {
+    margin-left: auto;
+  }
+  .mast-links .mast-extra {
+    margin-left: 0;
+  }
+  /* 手機：邀請卡放在最上面（下面是主按鈕、浮動抽牌列，不要擋住），一按就收。 */
+  .tour-offer {
+    top: calc(8px + env(safe-area-inset-top));
+    bottom: auto;
+    left: 8px;
+    width: calc(100vw - 16px);
+    padding: var(--space-sm) var(--space-md);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tour-ring {
+    transition: none;
+  }
+}
+
+/* 頂欄第一排在手機上剛好擠滿：多了「導覽」之後，「墨池」標誌被擠成直排兩個字（375 以下本來就會）。
+ * 間距縮一點、標誌不准折行：390～360 都維持一排。 */
+@media (max-width: 40rem) {
+  .mast-primary {
+    column-gap: 6px;
+  }
+  .mast-extra + .mast-extra {
+    margin-left: 6px;
+  }
+  .wordmark {
+    flex: none;
+    white-space: nowrap;
+  }
+  /* 再窄（約 380 以下）放不下：介紹影片、教學、導覽整組換到下一行，不要被頂欄裁掉。 */
+  .mast-primary {
+    flex-wrap: wrap;
+    row-gap: 2px;
+  }
+}
+
+/* 頂欄多了「導覽」：筆電寬度（1500 以下）底模名稱少顯示幾個字、連結間距小一點，
+ * 讓疊印台（工具最多）在 1366、1440 寬照舊一排，不因為這顆鈕換行。 */
+@media (max-width: 1500px) {
+  .mast-tools .ghost .gen-pick-label {
+    max-width: 8em;
+  }
+  .mast-extra + .mast-extra {
+    margin-left: 6px;
+  }
+}

@@ -1,0 +1,196 @@
+/* The Latin edition keeps the same illustrated stock, with horizontal labels.
+ * UI changes are scoped to the active document language. */
+html[lang="en"][data-language-pending] body { visibility: hidden; }
+
+.language-picker {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+  min-height: 34px;
+  padding: 0 7px;
+  margin-left: auto;
+  border: 1px solid var(--color-rule-2);
+  border-radius: 6px;
+  background: var(--color-paper-2);
+  color: var(--color-ink-2);
+  font: 12px/1.2 "Segoe UI", "Microsoft JhengHei", sans-serif;
+}
+.language-picker select {
+  min-height: 32px;
+  max-width: 104px;
+  border: 0;
+  background: var(--color-paper-2);
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+.language-picker:focus-within { outline: 2px solid var(--color-focus); outline-offset: 2px; }
+.language-picker select:focus-visible { outline: none; }
+/* The shared notification dialog's close symbol is outside Chiron's pinned
+ * source. A system symbol face prevents a hidden dialog fetching a web shard. */
+#dc-modal .tg-close { font-family: system-ui, sans-serif; }
+.gate-inner > .language-picker { margin: 20px auto 0; }
+.mast-primary { flex-wrap: wrap; }
+
+html[lang="en"] {
+  --font-display: "Trebuchet MS", "Segoe UI", sans-serif;
+  --font-body: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  --locale-register: #d9b17b;
+}
+html[lang="en"] .wordmark {
+  flex: none;
+  font-size: 1.05rem;
+  letter-spacing: -0.035em;
+  font-weight: 700;
+  color: var(--color-ink);
+}
+html[lang="en"] .wordmark::before {
+  content: "";
+  width: 14px;
+  height: 20px;
+  margin-right: 3px;
+  border: 1px solid var(--locale-register);
+  border-radius: 2px;
+  box-shadow: -3px -3px 0 -1px var(--color-paper), -3px -3px 0 0 var(--locale-register);
+  rotate: -8deg;
+}
+html[lang="en"] .mast { gap: 10px 18px; padding-block: 12px; }
+html[lang="en"] .mast-primary { flex: 1 1 auto; gap: 12px; }
+html[lang="en"] .mast-controls { flex-wrap: wrap; gap: 10px; }
+html[lang="en"] .mast-tools { flex-wrap: wrap; }
+html[lang="en"] .page-switch a { min-height: 34px; padding-inline: 11px; font-size: 0.8125rem; }
+html[lang="en"] .page-switch a[aria-current="page"] { color: var(--locale-register); }
+html[lang="en"] :is(.panel-head h2, .book-title h2, .album-title h2, .wall-head h2, .plate-head h2) { letter-spacing: -0.03em; }
+html[lang="en"] :is(.btn, .quiet-btn, .segmented button) { letter-spacing: 0; }
+html[lang="en"] :is(.panel-head, .plate-head, .trials-head, .wall-head) { flex-wrap: wrap; row-gap: 8px; }
+html[lang="en"] :is(.rule-row, .rule-steppers, .go-bar, .go-options, .plate-acts, .book-order) { flex-wrap: wrap; }
+html[lang="en"] .rule-label { min-width: 7rem; }
+html[lang="en"] .group-chip { min-height: 30px; white-space: normal; line-height: 1.25; text-align: left; }
+html[lang="en"] .chip-fam { letter-spacing: 0; }
+html[lang="en"] .chip-fam::after { content: ":"; }
+html[lang="en"] .lib-search input { font-size: 0.8125rem; }
+html[lang="en"] .case-grid { grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); }
+html[lang="en"] .book-grid { grid-template-columns: repeat(auto-fill, minmax(114px, 1fr)); }
+
+/* One label spec for every English card: the library card, the pool card and
+ * the enlarged peek are the same card at different widths. Every size in the
+ * label is a multiple of --u (7.8% of the card width: 9px on a 115px library
+ * card, 17.6px on the 226px peek), so a small card is the large one scaled
+ * down. Pool cards narrower than ~100px keep an 8px floor for legibility. Two lines of name fit inside the suit-seal height, so every
+ * label bar in a row is equally tall. */
+html[lang="en"] :is(.card, .card-peek-face) { container-type: inline-size; }
+html[lang="en"] .card {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr) auto;
+}
+html[lang="en"] .card-art { grid-column: 1; grid-row: 1; }
+html[lang="en"] :is(.card-spine, .card-peek-spine) {
+  --u: max(8px, 7.8cqw);
+  grid-column: 1;
+  grid-row: 2;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: calc(var(--u) * 0.5);
+  min-height: 0;
+  padding: calc(var(--u) * 0.625);
+  border: 0;
+  border-top: 2px solid var(--suit, var(--peek-suit));
+}
+html[lang="en"] :is(.card-suit, .card-peek-suit) { flex: none; width: calc(var(--u) * 1.875); height: calc(var(--u) * 1.875); font-size: var(--u); }
+html[lang="en"] :is(.card-name, .card-peek-name) {
+  flex: 1 1 auto;
+  min-width: 0;
+  writing-mode: horizontal-tb;
+  text-orientation: mixed;
+  font: 650 var(--u)/1.25 var(--font-body);
+  letter-spacing: -0.01em;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+html[lang="en"] .card-seal { display: none; }
+html[lang="en"] .card-rate { position: absolute; right: 4px; top: 4px; font: 700 8px/1 var(--font-body); }
+html[lang="en"] .card-flag { font: 700 0.72em/1.1 var(--font-body); padding: 0.3em; max-width: 92%; white-space: normal; text-align: center; }
+html[lang="en"] .card-glyph { font-size: 2.1em; letter-spacing: -0.07em; }
+html[lang="en"] .reg-cards .card { --card-w: max(4.2rem, var(--pool-card)); font-size: 10px; }
+html[lang="en"] .reg-cards .ghost-card { --card-w: max(3.8rem, calc(var(--pool-card) * 0.76)); }
+html[lang="en"] .card-peek-face { display: grid; grid-template-columns: 1fr; grid-template-rows: minmax(0, 1fr) auto; }
+html[lang="en"] .card-peek-art { grid-row: 1; }
+html[lang="en"] .card-peek-seal { display: none; }
+html[lang="en"] :is(.tab-dot, .suit-seal, .reg-glyph) { font-family: var(--font-mono); font-weight: 500; }
+html[lang="en"] .register { grid-template-columns: 5.25rem minmax(0, 1fr); }
+html[lang="en"] .reg-role { writing-mode: horizontal-tb; letter-spacing: 0; line-height: 1.2; }
+html[lang="en"] .line-title { width: 5rem; letter-spacing: 0; font-size: 0.75rem; }
+html[lang="en"] .line::before { left: 6.25rem; }
+html[lang="en"] .pool-legend { flex-wrap: wrap; }
+html[lang="en"] .keys-hint { line-height: 1.8; }
+html[lang="en"] .sheet h2 { letter-spacing: -0.025em; }
+html[lang="en"] .sheet :is(p, dd, .rule-label) { overflow-wrap: anywhere; }
+html[lang="en"] .book-meta { flex-wrap: wrap; justify-content: center; }
+html[lang="en"] .tour-title { letter-spacing: -0.025em; }
+html[lang="en"] .tour-text { line-height: 1.55; }
+html[lang="en"][data-booting] :is(#lib-grid, #case-grid, #book-grid):empty::before { content: "Loading card library…"; }
+html[lang="en"] .registers[data-empty="true"] .reg-role { display: block; }
+html[lang="en"] .gate-title { font-family: var(--font-display); letter-spacing: -0.04em; }
+html[lang="en"] .k .zh { font-family: var(--font-display); letter-spacing: -0.025em; }
+html[lang="en"] .k-say .zh { font-size: 44px; }
+html[lang="en"] .k-slam .zh { font-size: 110px; }
+html[lang="en"] .k-slam .sub { font-family: var(--font-body); }
+html[lang="en"] :is(.k-say, .k-step) { width: max-content; max-width: 1580px; white-space: normal; }
+html[lang="en"] .k .ch { white-space: nowrap; }
+html[lang="en"] .twm { font-size: 20px; letter-spacing: -0.03em; }
+html[lang="en"] .tnav { width: 170px !important; }
+html[lang="en"] .tnav i { padding-inline: 9px; font-size: 13px; }
+html[lang="en"] .tmore { margin-left: 20px; }
+html[lang="en"] .tseg span { font-size: 12px; letter-spacing: -0.02em; }
+
+@media (max-width: 70rem) {
+  html[lang="en"] .mast-primary { width: 100%; }
+  html[lang="en"] .mast-controls { width: 100%; margin-left: 0; }
+}
+@media (max-width: 44rem) {
+  /* Three rows, like the Chinese masthead: name · films · language, the four
+   * rooms, then rating and tools. The picker shows only its code here; the
+   * transparent native select still covers it for touch and keyboard. */
+  html[lang="en"] .mast-primary { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; }
+  html[lang="en"] .wordmark { order: 0; flex: none; }
+  html[lang="en"] .mast-links { order: 1; margin-left: auto; gap: 12px; }
+  html[lang="en"] .language-picker { order: 2; position: relative; min-height: 32px; margin-left: 0; }
+  html[lang="en"] .language-picker::after { content: "EN"; font-weight: 600; }
+  html[lang="en"] .language-picker select { position: absolute; inset: 0; width: 100%; max-width: none; opacity: 0; }
+  html[lang="en"] .page-switch { order: 3; width: 100%; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  html[lang="en"] .page-switch a { padding-inline: 4px; justify-content: center; min-height: 34px; font-size: 12px; }
+  /* The rating switch and tools fit one 363px row only with the base 4px gap. */
+  html[lang="en"] .mast-controls { overflow: visible; column-gap: var(--space-2xs); }
+  html[lang="en"] .mast-tools { row-gap: 8px; }
+  html[lang="en"] .book-order { width: 100%; }
+  html[lang="en"] .book-sort, html[lang="en"] #book-sort { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); width: 100%; }
+  html[lang="en"] .book-q { max-width: none; }
+  html[lang="en"] .plate-acts { gap: 8px; }
+  html[lang="en"] .plate-head > h2 { width: 100%; }
+  html[lang="en"] .pool-legend { gap: 8px 14px; }
+  html[lang="en"] .go-float { max-width: calc(100vw - 20px); gap: 6px; }
+  html[lang="en"] .go-float .btn { font-size: 12px; padding-inline: 10px; }
+  html[lang="en"] .go-float-state { font-size: 11px; }
+  html[lang="en"] .book-grid { grid-template-columns: repeat(auto-fill, minmax(94px, 1fr)); gap: 14px 10px; }
+  html[lang="en"] .rule-row { align-items: flex-start; gap: 8px; }
+  html[lang="en"] .rule-row > .rule-label { width: 100%; }
+  html[lang="en"] .line-title { width: 4rem; }
+  html[lang="en"] .line::before { left: 5rem; }
+}
+/* English LoRA, checkpoint and connection labels are long. Between 34rem and
+ * 44rem the tools keep only their icons, as both languages already do below
+ * 34rem (names stay in title and for screen readers), so they share a row with
+ * the rating switch instead of wrapping onto a fourth. */
+@media (min-width: 34.0625rem) and (max-width: 44rem) {
+  html[lang="en"] :is(.mast-tools .ghost .gen-pick-label, .ping span) { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  html[lang="en"] .mast-tools :is(#lora-pick-btn, #ckpt-pick-btn, #wf-pick-btn, .ghost.icon-btn) { min-width: 36px; padding-inline: var(--space-xs); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .language-picker, .language-picker * { scroll-behavior: auto; }
+}

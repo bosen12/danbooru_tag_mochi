@@ -1,0 +1,71 @@
+{
+ "mochi": {
+  "file": "mochi.webp",
+  "seed": 24,
+  "pins": [
+   "1girl",
+   "red hair",
+   "kimono",
+   "cherry blossoms",
+   "sunset"
+  ],
+  "positive": "1girl, solo, red hair, short hair, purple eyes, blunt bangs, medium breasts, hair flower, curly hair, hair scrunchie, kimono, kneehighs, sleeves rolled up, gloves, wedding ring, ring, microphone, singing, kneeling, cowboy shot, looking ahead, expressionless, open mouth, cherry blossoms, sunset, park, outdoors, light rays, bloom, sfw, general, masterpiece, best quality, amazing quality",
+  "width": 832,
+  "height": 1216,
+  "ckpt": "illurtrious\\waiIllustriousSDXL_v170.safetensors"
+ },
+ "fuseA": {
+  "file": "fuseA.webp",
+  "seed": 40,
+  "pins": [
+   "1girl",
+   "red hair",
+   "long hair",
+   "kimono",
+   "japanese clothes",
+   "standing",
+   "cherry blossoms",
+   "sunset"
+  ],
+  "positive": "1girl, solo, red hair, long hair, yellow eyes, straight hair, flat chest, hair flower, two-tone hair, pointy ears, kimono, japanese clothes, black thighhighs, thighhighs, tassel earrings, earrings, long sleeves, standing, profile, looking ahead, serious, half-closed eyes, clenched teeth, cherry blossoms, sunset, bamboo forest, outdoors, dim lighting, emphasis lines, sfw, general, masterpiece, best quality, amazing quality",
+  "width": 832,
+  "height": 1216,
+  "ckpt": "illurtrious\\waiIllustriousSDXL_v170.safetensors"
+ },
+ "fuseB": {
+  "file": "fuseB.webp",
+  "seed": 57,
+  "pins": [
+   "1girl",
+   "red hair",
+   "long hair",
+   "kimono",
+   "japanese clothes",
+   "standing",
+   "cherry blossoms",
+   "sunset"
+  ],
+  "positive": "1girl, solo, red hair, long hair, brown eyes, wavy hair, medium breasts, high ponytail, ponytail, body blush, bride, kimono, japanese clothes, black bowtie, bowtie, bracelet, white socks, socks, standing, portrait, looking back, forced smile, arched back, parted lips, cherry blossoms, sunset, bamboo forest, outdoors, lamppost, light particles, sfw, general, masterpiece, best quality, amazing quality",
+  "width": 832,
+  "height": 1216,
+  "ckpt": "illurtrious\\waiIllustriousSDXL_v170.safetensors"
+ },
+ "fuseC": {
+  "file": "fuseC.webp",
+  "seed": 19,
+  "pins": [
+   "1girl",
+   "red hair",
+   "long hair",
+   "kimono",
+   "japanese clothes",
+   "standing",
+   "cherry blossoms",
+   "sunset"
+  ],
+  "positive": "1girl, solo, red hair, long hair, blue eyes, drill hair, flat chest, gradient hair, dark-skinned female, dark skin, messy hair, kimono, japanese clothes, kneehighs, veil, tooth necklace, necklace, standing, archery, full body, looking outside, sleepy, head tilt, cherry blossoms, sunset, sports court, outdoors, lamppost, rubble, bow (weapon), sfw, general, masterpiece, best quality, amazing quality",
+  "width": 832,
+  "height": 1216,
+  "ckpt": "illurtrious\\waiIllustriousSDXL_v170.safetensors"
+ }
+}

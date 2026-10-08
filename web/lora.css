@@ -1,0 +1,2320 @@
+/* LoRA 大面板：視覺鎖在暗房那套，不跟四套版面主題混用。 */
+
+.lora-modal,
+.lora-preview-tip,
+.tw-tip,
+.lora-toast,
+.lora-tarot,
+.shortcuts-overlay,
+.shot-viewer {
+  --bg: #181920;
+  --panel: #1f212b;
+  --rail: #1b1d26;
+  --sunk: #141520;
+  --line: #2e3140;
+  --line-2: #3a3e50;
+  --ink: #eeece4;
+  --dim: #a2a8b8;
+  --faint: #838897;
+  --amber: #eaad57;
+  --amber-d: #c08a35;
+  --amber-soft: rgba(234, 173, 87, 0.14);
+  --err: #f0796d;
+  --mono: var(--font-outlier, "IBM Plex Mono", ui-monospace, monospace);
+  --radius: 16px;
+  --shadow: 0 12px 34px -8px rgba(0, 0, 0, 0.55), 0 2px 8px rgba(0, 0, 0, 0.35);
+  --ease-out: cubic-bezier(0.22, 0.61, 0.36, 1);
+  --ease-in: cubic-bezier(0.4, 0, 1, 1);
+  --ease-entrance: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-spring: cubic-bezier(0.34, 1.4, 0.64, 1);
+  --d-micro: 140ms;
+  --d-exit: 100ms;
+  --d-ui: 220ms;
+  --d-pop: 280ms;
+  color: var(--ink);
+  font-family: var(--font-body, inherit);
+}
+
+#lora-pick-btn,
+#ckpt-pick-btn,
+#wf-pick-btn {
+  max-width: min(220px, 100%);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+#lora-pick-btn,
+#wf-pick-btn {
+  flex: 0 0 auto;
+}
+#ckpt-pick-btn {
+  flex: 1 1 auto;
+  min-width: 5rem;
+  max-width: min(180px, 100%);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+#lora-pick-btn .gen-pick-label,
+#ckpt-pick-btn .gen-pick-label,
+#wf-pick-btn .gen-pick-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+#ckpt-pick-btn .ckpt-layers {
+  display: inline-flex;
+  width: 15px;
+  height: 15px;
+  flex: none;
+}
+#ckpt-pick-btn .ckpt-layers svg {
+  width: 15px;
+  height: 15px;
+}
+#lora-pick-btn img {
+  vertical-align: -3px;
+  margin-right: 6px;
+  border-radius: 3px;
+}
+#lora-pick-btn.has,
+#ckpt-pick-btn.has,
+#wf-pick-btn.has {
+  border-color: var(--color-accent);
+  color: var(--color-ink);
+}
+.ckpt-modal .lora-modal-inner {
+  width: min(860px, 95vw);
+  height: min(680px, 88vh);
+  grid-template-columns: 320px 1fr;
+}
+.ckpt-cur-hint {
+  margin: 0 0 14px;
+  font-size: 12.5px;
+  color: var(--dim);
+}
+.ckpt-mgr-inline {
+  margin: 16px 0 0;
+}
+
+.wf-modal .lora-modal-inner {
+  width: min(860px, 95vw);
+  height: min(720px, 88vh);
+  grid-template-columns: 320px 1fr;
+}
+.wf-drop {
+  display: block;
+  width: calc(100% - 24px);
+  margin: 0 12px 12px;
+  padding: 12px;
+  border: 1px dashed var(--line-2);
+  border-radius: 10px;
+  background: var(--sunk);
+  color: var(--dim);
+  font: inherit;
+  font-size: 12.5px;
+  text-align: left;
+  cursor: pointer;
+}
+.wf-drop:hover,
+.wf-drop[data-over="1"] {
+  border-color: var(--amber);
+  color: var(--ink);
+}
+.wf-sec {
+  margin: 14px 0 6px;
+  font-size: 12px;
+  font-weight: 650;
+  color: var(--faint);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.wf-prompt {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  width: 100%;
+  margin: 0 0 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--sunk);
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+}
+.wf-prompt.on {
+  border-color: var(--amber);
+  background: var(--amber-soft);
+}
+.wf-prompt strong {
+  display: block;
+  font-size: 13px;
+}
+.wf-prompt em {
+  display: block;
+  margin-top: 4px;
+  font-style: normal;
+  font-size: 12px;
+  color: var(--dim);
+  overflow-wrap: anywhere;
+}
+.wf-del {
+  margin-top: 12px;
+}
+.wf-msg {
+  min-height: 1.3em;
+  margin: 8px 0 0;
+  font-size: 12.5px;
+  color: var(--dim);
+}
+.wf-msg[data-kind="err"] {
+  color: var(--err);
+}
+.wf-url-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+.wf-url-row input {
+  flex: 1;
+  min-width: 0;
+  height: 36px;
+  padding: 0 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--sunk);
+  color: var(--ink);
+  font: inherit;
+  font-size: 13px;
+}
+/* 「存位址」：排字匣的 .ghost 樣式在 web/styles.css，墨池、疊印台沒有載那份，
+ * 這顆鈕在那兩頁就變成瀏覽器預設的白底、配上淺色字幾乎看不見。跟旁邊的輸入框同一套暗房配色。 */
+.wf-url-row .ghost {
+  flex: none;
+  height: 36px;
+  padding: 0 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  color: var(--ink);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color var(--d-micro) var(--ease-out), background var(--d-micro) var(--ease-out);
+}
+.wf-url-row .ghost:hover {
+  border-color: var(--amber-d);
+}
+.wf-url-row .ghost:focus-visible {
+  outline: 2px solid var(--amber);
+  outline-offset: 2px;
+}
+.ckpt-head {
+  padding: 16px 16px 8px;
+  padding-right: 48px;
+}
+.ckpt-head-title {
+  font-size: 15px;
+  font-weight: 650;
+  color: var(--ink);
+}
+.ckpt-head-hint {
+  margin: 6px 0 0;
+  font-size: 12px;
+  color: var(--faint);
+  line-height: 1.45;
+}
+
+.lora-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 140;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  padding-top: max(24px, env(safe-area-inset-top));
+  padding-bottom: max(24px, env(safe-area-inset-bottom));
+  background: rgba(8, 8, 11, 0.8);
+  backdrop-filter: blur(6px);
+  opacity: 0;
+  pointer-events: none;
+  visibility: hidden;
+  transition: opacity var(--d-exit) var(--ease-in);
+}
+.lora-modal.open {
+  opacity: 1;
+  pointer-events: auto;
+  visibility: visible;
+  transition: opacity var(--d-pop) var(--ease-out);
+}
+.lora-modal.open.is-closing {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--d-exit) var(--ease-in);
+}
+.lora-modal-inner {
+  position: relative;
+  width: min(1080px, 95vw);
+  height: min(740px, 88vh);
+  background: var(--panel);
+  border: 1px solid var(--line-2);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  overflow: hidden;
+  transform: translateY(8px) scale(0.985);
+  transition: transform var(--d-exit) var(--ease-in);
+}
+.lora-modal.open:not(.is-closing) .lora-modal-inner {
+  transform: none;
+  transition: transform var(--d-pop) var(--ease-entrance);
+}
+.lora-modal-close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 2;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border-radius: 8px;
+  border: 0;
+  background: var(--sunk);
+  color: var(--dim);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  font-size: 15px;
+  line-height: 1;
+  transition: color var(--d-micro) var(--ease-out), background var(--d-micro) var(--ease-out),
+    transform var(--d-micro) var(--ease-out);
+}
+.lora-modal-close:hover {
+  color: var(--ink);
+  background: var(--line-2);
+}
+.lora-modal-close:active {
+  transform: scale(0.9);
+}
+.lora-modal-close:focus-visible {
+  outline: 2px solid var(--amber);
+  outline-offset: 2px;
+}
+.lora-modal-close svg {
+  width: 16px;
+  height: 16px;
+}
+
+.lm-left {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  border-right: 1px solid var(--line);
+  background: var(--rail);
+  min-width: 0;
+}
+.lm-cats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 14px 14px 0;
+  flex: none;
+}
+.lm-cat,
+.lm-subcat {
+  font-family: inherit;
+}
+.lm-cat {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: 1px solid var(--line-2);
+  background: var(--sunk);
+  color: var(--dim);
+  padding: 5px 10px;
+  border-radius: 999px;
+  font-size: 11.5px;
+  cursor: pointer;
+  transition: border-color var(--d-micro) var(--ease-out), background var(--d-micro) var(--ease-out),
+    color var(--d-micro) var(--ease-out);
+}
+.lm-cat:hover {
+  color: var(--ink);
+}
+.lm-cat.on {
+  border-color: var(--amber);
+  background: var(--amber-soft);
+  color: var(--ink);
+}
+.lm-cat:focus-visible,
+.lm-subcat:focus-visible,
+.lora-row:focus-visible,
+.lm-slot-tab:focus-visible {
+  outline: 2px solid var(--amber);
+  outline-offset: 2px;
+}
+.lm-cat-n,
+.lm-subcat-n {
+  font-family: var(--mono);
+  font-size: 10px;
+  opacity: 0.75;
+  font-variant-numeric: tabular-nums;
+}
+.lm-subcats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  padding: 0 14px;
+  flex: none;
+  overflow: hidden;
+}
+.lm-subcats:empty {
+  padding: 0 14px;
+}
+.lm-subcat {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--faint);
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 10.5px;
+  cursor: pointer;
+  transition: border-color var(--d-micro) var(--ease-out), background var(--d-micro) var(--ease-out),
+    color var(--d-micro) var(--ease-out);
+}
+.lm-subcat:hover {
+  color: var(--dim);
+  border-color: var(--line-2);
+}
+.lm-subcat.on {
+  border-color: var(--line-2);
+  background: var(--sunk);
+  color: var(--ink);
+}
+.lm-subcat-n {
+  font-size: 9.5px;
+  opacity: 0.7;
+}
+.lm-random-btn {
+  margin: 10px 14px 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: calc(100% - 28px);
+  flex: none;
+  padding: 8px 10px;
+  font-size: 12.5px;
+  font-family: inherit;
+  background: transparent;
+  border: 1px solid var(--line);
+  color: var(--dim);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: border-color var(--d-micro) var(--ease-out), color var(--d-micro) var(--ease-out),
+    background var(--d-micro) var(--ease-out);
+}
+.lm-random-btn:hover {
+  border-color: color-mix(in srgb, var(--amber) 45%, var(--line));
+  color: var(--ink);
+}
+.lm-random-btn svg {
+  width: 15px;
+  height: 15px;
+}
+.lm-search-wrap {
+  position: relative;
+  padding: 12px 14px 10px;
+  flex: none;
+}
+.lm-search-wrap svg {
+  position: absolute;
+  left: 24px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 15px;
+  height: 15px;
+  color: var(--faint);
+  pointer-events: none;
+}
+.lm-search-wrap input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 8px 10px 8px 32px;
+  background: var(--sunk);
+  color: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  font-size: 13px;
+  font-family: inherit;
+}
+.lm-search-wrap input::placeholder {
+  color: var(--faint);
+}
+.lm-search-wrap input:focus {
+  outline: none;
+  border-color: rgba(234, 173, 87, 0.55);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--amber) 22%, transparent);
+}
+.lm-list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 0 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.lora-row {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  cursor: pointer;
+  text-align: left;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  font-family: inherit;
+  transition: background var(--d-micro) var(--ease-out), box-shadow var(--d-micro) var(--ease-out);
+  animation: lmRowIn 0.22s var(--ease-out) both;
+}
+.lora-row:hover {
+  background: color-mix(in srgb, var(--amber-soft) 55%, transparent);
+}
+.lora-row.on {
+  background: var(--amber-soft);
+  box-shadow: inset 3px 0 0 var(--amber);
+}
+@keyframes lmRowIn {
+  from {
+    opacity: 0;
+    transform: translateY(3px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .lora-row {
+    animation: none;
+  }
+}
+.lora-row .rn {
+  flex: 1;
+  min-width: 0;
+}
+.lora-row .rt {
+  font-size: 12.5px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: block;
+}
+.lora-row .rf {
+  font-size: 10px;
+  color: var(--faint);
+  font-family: var(--mono);
+  display: block;
+}
+.lora-slot-badge {
+  color: var(--amber);
+  font-size: 11px;
+  margin-right: 3px;
+}
+.lora-cat-head {
+  font-size: 10.5px;
+  color: var(--faint);
+  font-family: var(--mono);
+  padding: 6px 8px 2px;
+  letter-spacing: 0.5px;
+}
+.lora-empty {
+  color: var(--faint);
+  font-size: 12.5px;
+  padding: 10px;
+  text-align: center;
+}
+.lora-pager {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 4px 2px;
+  margin-top: 2px;
+  border-top: 1px solid var(--line);
+  position: sticky;
+  bottom: 0;
+  background: var(--panel);
+}
+.lora-page-btn {
+  border: 1px solid var(--line-2);
+  background: var(--sunk);
+  color: var(--ink);
+  padding: 5px 10px;
+  min-height: 24px;
+  border-radius: 7px;
+  cursor: pointer;
+  font-size: 11.5px;
+  font-family: inherit;
+  transition: border-color var(--d-micro), background var(--d-micro), color var(--d-micro);
+}
+.lora-page-btn:hover:not(:disabled) {
+  border-color: var(--amber);
+  color: var(--amber);
+  background: var(--amber-soft);
+}
+.lora-page-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.lora-page-info {
+  font-size: 11px;
+  color: var(--faint);
+  font-variant-numeric: tabular-nums;
+}
+
+.lora-row img,
+.lora-row video,
+.lora-row .ph {
+  width: 52px;
+  height: 52px;
+  border-radius: 8px;
+  object-fit: cover;
+  flex: none;
+  background: var(--sunk);
+}
+.ph {
+  display: grid;
+  place-items: center;
+}
+.ph::after {
+  content: "🧩";
+  font-size: 1.5em;
+  opacity: 0.35;
+  filter: grayscale(1);
+}
+
+.lm-manager-link {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin: 8px 8px 10px;
+  padding: 9px 12px;
+  border-radius: 9px;
+  border: 1px solid var(--line-2);
+  background: var(--sunk);
+  color: var(--dim);
+  font-size: 12px;
+  text-align: center;
+  text-decoration: none;
+  transition: border-color var(--d-micro) var(--ease-out), color var(--d-micro) var(--ease-out),
+    background var(--d-micro) var(--ease-out);
+}
+.lm-manager-link img {
+  display: inline-block;
+  border-radius: 4px;
+  vertical-align: -3px;
+}
+.lm-manager-link:hover {
+  border-color: var(--amber);
+  color: var(--ink);
+  background: var(--amber-soft);
+}
+.lm-manager-link:focus-visible {
+  outline: 2px solid var(--amber);
+  outline-offset: 2px;
+}
+
+.lm-right {
+  padding: 20px 46px 24px 22px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  min-width: 0;
+}
+.lm-right-head {
+  font-size: 11px;
+  color: var(--faint);
+  font-family: var(--mono);
+  letter-spacing: 0.5px;
+  margin-bottom: 10px;
+}
+.lm-none {
+  color: var(--faint);
+  font-size: 13px;
+  padding: 40px 0;
+  text-align: center;
+}
+
+.lm-slot-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 18px;
+}
+.lm-slot-tab {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 9px;
+  border-radius: 10px;
+  border: 1px solid var(--line-2);
+  background: var(--sunk);
+  color: var(--dim);
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+  transition: border-color var(--d-micro) var(--ease-out), background var(--d-micro) var(--ease-out);
+}
+.lm-slot-tab:hover {
+  border-color: var(--line-2);
+}
+.lm-slot-tab.on {
+  border-color: var(--amber);
+  background: var(--amber-soft);
+  color: var(--ink);
+}
+.lm-slot-tab img,
+.lm-slot-tab video,
+.lm-slot-tab .ph {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  object-fit: cover;
+  flex: none;
+  background: var(--sunk);
+}
+.lm-slot-tab-meta {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.lm-slot-tab-label {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  color: var(--faint);
+  letter-spacing: 0.4px;
+}
+.lm-slot-tab-title {
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.lm-slot-tab-title.empty {
+  color: var(--faint);
+}
+.lm-slot-clear {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border-radius: 6px;
+  border: 0;
+  background: transparent;
+  color: var(--faint);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  font-size: 11px;
+  transition: background var(--d-micro) var(--ease-out), color var(--d-micro) var(--ease-out);
+}
+.lm-slot-clear:hover {
+  background: var(--line-2);
+  color: var(--ink);
+}
+.lm-slot-clear svg {
+  width: 12px;
+  height: 12px;
+}
+
+.lm-cur-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 18px;
+  animation: lmFadeUp var(--d-pop) var(--ease-entrance) both;
+}
+.lm-cur-head > img,
+.lm-cur-head > video,
+.lm-cur-head > .ph {
+  width: 56px;
+  height: 56px;
+  border-radius: 10px;
+  object-fit: cover;
+  flex: none;
+  background: var(--sunk);
+}
+.lm-cur-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--ink);
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.lm-cur-folder {
+  font-size: 11px;
+  color: var(--faint);
+  font-family: var(--mono);
+  margin-top: 2px;
+  /* 路徑是一長串沒有空白的字，不給它斷點就會撐出容器外。 */
+  overflow-wrap: anywhere;
+}
+.lm-actions-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 7px;
+  flex-wrap: wrap;
+}
+.lm-detail-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  border: 1px solid var(--line-2);
+  background: var(--sunk);
+  color: var(--dim);
+  font-size: 11px;
+  text-decoration: none;
+  transition: border-color var(--d-micro) var(--ease-out), color var(--d-micro) var(--ease-out),
+    background var(--d-micro) var(--ease-out);
+}
+.lm-detail-link:hover {
+  border-color: var(--amber);
+  color: var(--ink);
+  background: var(--amber-soft);
+}
+.lm-detail-link img {
+  display: block;
+  width: 13px;
+  height: 13px;
+  border-radius: 3px;
+  flex: none;
+}
+.lm-base-model {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 9px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--faint);
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.2px;
+}
+
+.lm-tw-label {
+  font-size: 12px;
+  color: var(--dim);
+  margin-bottom: 8px;
+  animation: lmFadeUp var(--d-pop) var(--ease-entrance) both;
+  animation-delay: 60ms;
+}
+.lm-tw-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+.lm-tw-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--line-2);
+  background: var(--sunk);
+  cursor: pointer;
+  transition: border-color var(--d-micro) var(--ease-out), background var(--d-micro) var(--ease-out);
+  animation: lmFadeUp var(--d-pop) var(--ease-entrance) both;
+  animation-delay: calc(90ms + var(--i, 0) * 45ms);
+}
+.lm-tw-item:hover {
+  border-color: var(--line-2);
+  background: color-mix(in srgb, var(--sunk) 70%, var(--amber-soft));
+}
+.lm-tw-item.on {
+  border-color: var(--amber);
+  background: var(--amber-soft);
+}
+.lm-tw-item input {
+  margin-top: 3px;
+  accent-color: var(--amber);
+  flex: none;
+}
+.lm-tw-item .lm-tw-idx {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: var(--faint);
+  flex: none;
+  margin-top: 2px;
+}
+.lm-tw-item .lm-tw-text {
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--ink);
+  white-space: normal;
+  word-break: break-word;
+}
+
+.tw-tip {
+  position: fixed;
+  z-index: 200;
+  pointer-events: none;
+  background: var(--panel);
+  border: 1px solid var(--line-2);
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+  padding: 8px 11px;
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: var(--ink);
+  opacity: 0;
+  transform: translateY(-4px);
+  transition: opacity var(--d-micro) var(--ease-out), transform var(--d-micro) var(--ease-out);
+}
+.tw-tip.show {
+  opacity: 1;
+  transform: none;
+}
+
+.lora-preview-tip {
+  position: fixed;
+  z-index: 200;
+  pointer-events: none;
+  display: flex;
+  gap: 10px;
+  background: var(--panel);
+  border: 1px solid var(--line-2);
+  border-radius: 15px;
+  box-shadow: var(--shadow);
+  padding: 10px;
+  opacity: 0;
+  transform: translateY(6px) scale(0.97);
+  transition: opacity var(--d-ui) var(--ease-out), transform var(--d-ui) var(--ease-spring);
+}
+.lora-preview-tip.show {
+  opacity: 1;
+  transform: none;
+}
+.lpt-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  width: 200px;
+}
+.lpt-item img,
+.lpt-item video,
+.lpt-item .ph {
+  width: 200px;
+  height: 200px;
+  border-radius: 10px;
+  object-fit: cover;
+  background: var(--sunk);
+  flex: none;
+}
+.lpt-item .ph {
+  display: grid;
+  place-items: center;
+}
+.lpt-item .ph::after {
+  content: "🧩";
+  font-size: 2.4em;
+  opacity: 0.35;
+  filter: grayscale(1);
+}
+.lpt-label {
+  font-size: 11px;
+  color: var(--faint);
+  font-family: var(--mono);
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lm-strength {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12.5px;
+  color: var(--dim);
+  margin-bottom: 18px;
+  animation: lmFadeUp var(--d-pop) var(--ease-entrance) both;
+}
+.lm-strength input[type="range"] {
+  flex: 1;
+  accent-color: var(--amber);
+}
+.lm-strength output {
+  font-family: var(--mono);
+  min-width: 36px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.lm-preview {
+  border-radius: 15px;
+  overflow: hidden;
+  background: var(--sunk);
+  border: 1px solid var(--line);
+  animation: lmFadeUp var(--d-pop) var(--ease-entrance) both;
+}
+.lm-preview img,
+.lm-preview video {
+  display: block;
+  width: 100%;
+  max-height: 320px;
+  object-fit: contain;
+}
+@keyframes lmFadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.lora-toast {
+  position: fixed;
+  left: 50%;
+  bottom: 92px;
+  transform: translate(-50%, 12px);
+  background: var(--panel);
+  border: 1px solid var(--line-2);
+  color: var(--ink);
+  padding: 10px 18px;
+  border-radius: 10px;
+  font-size: 13.5px;
+  box-shadow: var(--shadow);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 160;
+  max-width: min(420px, 90vw);
+  transition: opacity var(--d-exit) var(--ease-in), transform var(--d-exit) var(--ease-in);
+}
+.lora-toast.show {
+  opacity: 1;
+  transform: translate(-50%, 0);
+  transition: opacity var(--d-ui) var(--ease-out), transform var(--d-ui) var(--ease-out);
+}
+.lora-toast.error {
+  border-color: var(--err);
+  color: var(--err);
+  box-shadow: var(--shadow), inset 3px 0 0 var(--err);
+}
+
+.lora-tarot {
+  position: fixed;
+  inset: 0;
+  z-index: 145;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  padding: 28px;
+  background: rgba(12, 12, 16, 0.92);
+  backdrop-filter: blur(8px);
+  opacity: 0;
+  pointer-events: none;
+  visibility: hidden;
+  transition: opacity var(--d-exit) var(--ease-in);
+}
+.lora-tarot.open {
+  opacity: 1;
+  pointer-events: auto;
+  visibility: visible;
+  transition: opacity var(--d-pop) var(--ease-out);
+}
+.lora-tarot.open.is-closing {
+  opacity: 0;
+  pointer-events: none;
+}
+.lora-tarot-title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 650;
+  color: var(--ink);
+  text-wrap: balance;
+}
+.lora-tarot-hint {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--faint);
+}
+.lora-tarot-cards {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 14px;
+  max-width: 980px;
+}
+.lora-tarot-card {
+  width: 160px;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+  color: var(--ink);
+  animation: lmFadeUp var(--d-pop) var(--ease-entrance) both;
+  animation-delay: calc(var(--i, 0) * 40ms);
+}
+.lora-tarot-card:hover .lora-tarot-face {
+  transform: translateY(-4px);
+  border-color: var(--amber);
+}
+.lora-tarot-card:focus-visible .lora-tarot-face {
+  outline: 2px solid var(--amber);
+  outline-offset: 2px;
+}
+.lora-tarot-face {
+  background: var(--panel);
+  border: 1px solid var(--line-2);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: var(--shadow);
+  transition: transform var(--d-ui) var(--ease-out), border-color var(--d-micro);
+}
+.lora-tarot-face img,
+.lora-tarot-face video,
+.lora-tarot-face .ph {
+  width: 100%;
+  height: 160px;
+  object-fit: cover;
+  display: block;
+  background: var(--sunk);
+}
+.lora-tarot-name {
+  padding: 8px 10px 2px;
+  font-size: 12.5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.lora-tarot-folder {
+  padding: 0 10px 10px;
+  font-size: 10px;
+  color: var(--faint);
+  font-family: var(--mono);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.lora-tarot-close {
+  border: 1px solid var(--line-2);
+  background: var(--sunk);
+  color: var(--dim);
+  padding: 7px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 13px;
+}
+.lora-tarot-close:hover {
+  color: var(--ink);
+  border-color: var(--amber);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lm-cur-head,
+  .lm-tw-label,
+  .lm-tw-item,
+  .lm-strength,
+  .lm-preview,
+  .lora-tarot-card {
+    animation: none;
+  }
+  .tw-tip,
+  .lora-preview-tip,
+  .lora-toast,
+  .lora-modal,
+  .lora-tarot {
+    transition: none;
+  }
+}
+
+@media (max-width: 900px) {
+  #lora-pick-btn,
+  #ckpt-pick-btn,
+  #wf-pick-btn {
+    min-height: 36px;
+    padding: 0 10px;
+  }
+  #lora-pick-btn {
+    max-width: none;
+  }
+  #ckpt-pick-btn {
+    flex: 0 1 auto;
+    max-width: 6.25rem;
+  }
+}
+@media (max-width: 760px) {
+  .lora-modal {
+    padding: 12px;
+    align-items: flex-end;
+  }
+  .lora-modal-inner,
+  .ckpt-modal .lora-modal-inner,
+  .wf-modal .lora-modal-inner {
+    grid-template-columns: 1fr;
+    height: auto;
+    max-height: calc(100dvh - 24px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+    width: 100%;
+  }
+  /* 單欄之後「目前選擇」會排在清單前面，而清單被 flex:1 壓到只剩 10px——
+     來這個彈窗就是為了選東西，所以清單要排第一、而且有保底高度。 */
+  .lm-left {
+    order: -1;
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+    max-height: 55vh;
+  }
+  /* 清單自己捲，不能整個長出去把「目前選擇」推到彈窗外面
+     （.lora-modal-inner 是 overflow:hidden，推出去就永遠點不到了）。
+     兩段的上限加起來要留在 100dvh 以內。 */
+  .lm-list {
+    min-height: 120px;
+  }
+  .lm-right {
+    max-height: 32vh;
+  }
+  .lm-search-wrap input,
+  .wf-url-row input {
+    font-size: 16px;
+  }
+  .lora-tarot-card {
+    width: min(160px, 42vw);
+  }
+}
+
+/* ===== 作品冊 ==============================================================
+   在這之前 .album-modal 一條專屬規則都沒有，整個借用 .lora-modal 的
+   「320px 檔名側欄 ＋ 詳情頁」。那個比例是為了從幾百個檔名裡挑一個而設計的；
+   作品冊要回答的是「我上次喜歡的那張長什麼樣」，答案是圖，不是檔名。
+   所以把比例倒過來：印樣吃掉全部寬度，詳情退成右邊固定的 320。 */
+.album-modal .album-inner {
+  grid-template-columns: 1fr 320px;
+}
+
+.album-main {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  /* 印樣自己捲，不能整片長出去蓋到右邊的詳情。手機版給 .album-main 設了
+     max-height，少了這一行，格子就會直接畫在「目前選擇」上面。 */
+  overflow: hidden;
+  border-right: 1px solid var(--line);
+}
+
+/* .album-main 有 max-height（手機版 62vh），而 flex 項目預設會被壓縮。
+   標題、工具列、籤條都不准縮 —— 只有印樣該伸縮。少了這三行，籤條會從 32px
+   被壓成 16px，籤本身則整個溢出到容器外面。 */
+.album-head,
+.album-tools,
+.album-chips {
+  flex: 0 0 auto;
+}
+
+.album-head {
+  padding: 20px 22px 0;
+}
+.album-head .ckpt-head-title {
+  margin: 0;
+}
+/* 「12 / 12」要在篩掉東西時一眼看得出少了幾份，所以數字等寬。 */
+.album-count {
+  font-family: var(--mono);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  color: var(--faint);
+  font-weight: 400;
+}
+
+.album-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 22px;
+}
+.album-tools input[type="search"] {
+  flex: 1 1 200px;
+  min-width: 0;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid var(--line-2);
+  background: var(--sunk);
+  color: var(--ink);
+  font-family: inherit;
+  font-size: 13px;
+}
+.album-tools input[type="search"]:focus-visible,
+.album-tools select:focus-visible {
+  outline: 2px solid var(--amber);
+  outline-offset: 1px;
+}
+.album-sort {
+  font-size: 12px;
+  color: var(--faint);
+}
+/* Windows 上原生 select 不給明確的 background-color / color 會變成白底黑字。 */
+.album-tools select {
+  padding: 7px 8px;
+  border-radius: 10px;
+  border: 1px solid var(--line-2);
+  background-color: var(--sunk);
+  color: var(--ink);
+  font-family: inherit;
+  font-size: 13px;
+}
+/* 匯出／匯入是收納，不是瀏覽。放在右欄最底下，跟工具列分開 ——
+   在窄螢幕上它們本來會把搜尋列擠成三行。 */
+.album-io {
+  flex: 0 0 auto;
+  display: flex;
+  gap: 6px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+}
+
+/* 籤條：接上 filterCkpt／filterEra／filterLora 那三個以前沒人寫的變數。 */
+.album-chips {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 0 22px 10px;
+}
+/* 一個維度一行，橫著捲。換行的話光是底模那一排就可能吃掉三行，
+   把印樣擠到只剩一條縫 —— 而印樣才是來這裡的理由。 */
+.album-chip-row {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 6px;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+}
+.album-chip-row::-webkit-scrollbar {
+  display: none;
+}
+.album-chip-label {
+  width: 3.2em;
+  flex: 0 0 auto;
+  font-size: 11px;
+  font-family: var(--mono);
+  color: var(--faint);
+}
+.album-chip {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 26px;
+  max-width: 11em;
+  padding: 0 9px;
+  border-radius: 99px;
+  border: 1px solid var(--line-2);
+  background: var(--sunk);
+  color: var(--dim);
+  font-family: inherit;
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition:
+    border-color var(--d-micro) var(--ease-out),
+    background var(--d-micro) var(--ease-out),
+    color var(--d-micro) var(--ease-out);
+}
+.album-chip:hover {
+  color: var(--ink);
+  border-color: var(--dim);
+}
+.album-chip[aria-pressed="true"] {
+  background: var(--amber-soft);
+  border-color: var(--amber-d);
+  color: var(--amber);
+}
+.album-chip:focus-visible {
+  outline: 2px solid var(--amber);
+  outline-offset: 2px;
+}
+.album-chip-n {
+  font-family: var(--mono);
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+  color: var(--faint);
+}
+.album-chip[aria-pressed="true"] .album-chip-n {
+  color: var(--amber-d);
+}
+
+/* 印樣本體。格子等寬等高：不等高的瀑布流看起來比較「有設計」，
+   可是掃一排縮圖靠的是眼睛不用重新對焦，等高才掃得快。 */
+.album-grid {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(148px, 1fr));
+  align-content: start;
+  /* 格子是 <button>，而 <button> 當 flex 容器時貢獻給格線的內在高度是錯的
+     （實測整列被算成 16px，縮圖被壓成 2px）。拉伸關掉，讓每一格自己算高度。
+     而且這本來就是想要的：一排裡某個名字比較長，不該把整排拉高。 */
+  align-items: start;
+  gap: 14px;
+  padding: 4px 22px 22px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.album-empty {
+  grid-column: 1 / -1;
+  padding: 40px 0;
+  text-align: center;
+}
+
+/* 格線的項目是這層，按鈕在裡面。理由寫在 album.js 的 makeCell 上面：
+   <button> 當 grid item 會把 auto 列的高度算錯，每一列疊在上一列身上。 */
+.album-cell-wrap {
+  min-width: 0;
+}
+
+.album-cell {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.album-thumb {
+  position: relative;
+  flex: 0 0 auto;
+  aspect-ratio: 4 / 5;
+  border-radius: 12px;
+  border: 1px solid var(--line-2);
+  background: var(--sunk);
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  transition:
+    border-color var(--d-micro) var(--ease-out),
+    transform var(--d-micro) var(--ease-out);
+}
+.album-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.album-ph {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--faint);
+}
+.album-cell:hover .album-thumb {
+  border-color: var(--dim);
+  transform: translateY(-2px);
+}
+.album-cell:focus-visible {
+  outline: none;
+}
+.album-cell:focus-visible .album-thumb {
+  outline: 2px solid var(--amber);
+  outline-offset: 2px;
+}
+.album-cell[aria-current="true"] .album-thumb {
+  border-color: var(--amber);
+  box-shadow: 0 0 0 2px var(--amber-soft);
+}
+
+.album-cap {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+/* 名字長度是使用者說了算，兩行封頂，不讓一個長名字把整排格子撐高。 */
+.album-cap-name {
+  font-size: 12.5px;
+  line-height: 1.35;
+  color: var(--ink);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+}
+.album-cap-meta {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  font-variant-numeric: tabular-nums;
+  color: var(--faint);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 壞掉的配方在格子上就看得出來，不必點進去才發現重現不了。
+   顏色不是唯一的線索 —— 角落有徽章，徽章裡有給螢幕閱讀器的字。 */
+.album-badge {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  border-radius: 99px;
+  background: var(--sunk);
+  color: var(--amber);
+  box-shadow: 0 0 0 1px var(--line-2);
+}
+.album-badge svg {
+  width: 13px;
+  height: 13px;
+}
+.album-cell.is-broken .album-badge {
+  color: var(--err);
+}
+.album-cell.is-broken .album-thumb img {
+  filter: grayscale(0.8);
+  opacity: 0.55;
+}
+.album-modal .sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* 右欄詳情 */
+.album-side {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  padding: 20px 22px 16px;
+  background: var(--rail);
+}
+.album-side .lm-right-head {
+  flex: 0 0 auto;
+}
+.album-detail {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.album-side .wf-msg {
+  flex: 0 0 auto;
+}
+.album-detail:empty::after {
+  content: "點左邊任何一張，設定會出現在這裡。";
+  display: block;
+  padding: 40px 0;
+  text-align: center;
+  font-size: 12.5px;
+  color: var(--faint);
+}
+.album-detail-shot {
+  border-radius: 12px;
+  border: 1px solid var(--line-2);
+  background: var(--sunk);
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  min-height: 90px;
+  margin-bottom: 12px;
+}
+.album-detail-shot img {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+.album-detail-title {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.album-detail-title strong {
+  font-size: 14px;
+  line-height: 1.35;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.album-detail-title .ghost.mini {
+  flex: 0 0 auto;
+}
+
+/* 缺件：一行一件。以前是用「；」串成一句塞進 <p>，兩個 LoRA 就讀不完了。 */
+.album-miss {
+  margin-bottom: 12px;
+  padding: 9px 11px;
+  border-radius: 10px;
+  border: 1px solid var(--err);
+  background: color-mix(in oklab, var(--err) 12%, transparent);
+  font-size: 12px;
+}
+.album-miss.is-soft {
+  border-color: var(--amber-d);
+  background: var(--amber-soft);
+}
+.album-miss strong {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--err);
+}
+.album-miss.is-soft strong {
+  color: var(--amber);
+}
+.album-miss ul {
+  margin: 0;
+  padding-left: 1.1em;
+  color: var(--dim);
+}
+.album-miss li {
+  overflow-wrap: anywhere;
+}
+
+.album-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin-bottom: 14px;
+  font-size: 12px;
+}
+.album-meta-row {
+  display: flex;
+  gap: 8px;
+  min-width: 0;
+}
+.album-meta-k {
+  flex: 0 0 3.4em;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: var(--faint);
+  padding-top: 1px;
+}
+.album-meta-v {
+  flex: 1 1 auto;
+  min-width: 0;
+  color: var(--dim);
+  font-variant-numeric: tabular-nums;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 動作分三層。以前這五顆長得一模一樣，其中一顆會直接覆蓋工作臺、
+   一顆會真的去生圖、一顆會刪檔案 —— 相同的重量就是相同的誤觸機率。 */
+.album-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.album-go {
+  flex: 1 1 auto;
+  min-height: 38px;
+  padding: 0 16px;
+  border-radius: 10px;
+  border: 1px solid var(--amber-d);
+  background: var(--amber);
+  color: #1b1405;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition:
+    filter var(--d-micro) var(--ease-out),
+    transform var(--d-micro) var(--ease-out);
+}
+.album-go:hover:not(:disabled) {
+  filter: brightness(1.08);
+}
+.album-go:active:not(:disabled) {
+  transform: scale(0.98);
+}
+.album-go:focus-visible {
+  outline: 2px solid var(--amber);
+  outline-offset: 2px;
+}
+.album-go:disabled {
+  background: var(--sunk);
+  border-color: var(--line-2);
+  color: var(--faint);
+  cursor: not-allowed;
+}
+.album-go-why {
+  flex: 1 1 100%;
+  font-size: 11.5px;
+  color: var(--err);
+}
+.album-apply {
+  flex: 1 1 auto;
+}
+.album-actions-quiet {
+  flex: 1 1 100%;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+}
+/* 刪除跟複製／匯出隔一段距離，而且自己一種顏色。 */
+.album-danger {
+  margin-left: auto;
+}
+.album-danger:hover {
+  color: var(--err);
+  border-color: var(--err);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .album-cell:hover .album-thumb {
+    transform: none;
+  }
+}
+
+@media (max-width: 900px) {
+  .album-modal .album-inner {
+    grid-template-columns: 1fr;
+  }
+  .album-main {
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+    min-height: 0;
+  }
+  .album-side {
+    max-height: 40vh;
+  }
+}
+
+@media (max-width: 760px) {
+  .album-modal .album-inner {
+    grid-template-columns: 1fr;
+  }
+  /* 來作品冊就是為了看圖，所以印樣排第一、有保底高度，詳情在下面自己捲。
+     兩段的上限加起來要留在 100dvh 以內，否則詳情會被推出 overflow:hidden 的外面。 */
+  .album-main {
+    order: -1;
+    max-height: 56vh;
+  }
+  .album-grid {
+    min-height: 100px;
+    grid-template-columns: repeat(auto-fill, minmax(116px, 1fr));
+    gap: 10px;
+    padding: 4px 14px 14px;
+  }
+  /* 窄螢幕上 head ＋ tools ＋ 三排籤條會吃掉 250px，在一個 367px 的面板裡
+     等於還沒看到任何一張圖就用完了。三件事各讓一步： */
+  /* 1. 說明那一句在手機上不是第一次要讀的東西，詳情欄還會再講一次。 */
+  .album-head .ckpt-head-hint {
+    display: none;
+  }
+  /* 2. 三排籤條併成一條橫捲的帶子。 */
+  .album-chips {
+    flex-direction: row;
+    flex-wrap: nowrap;
+    gap: 14px;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+  }
+  .album-chips::-webkit-scrollbar {
+    display: none;
+  }
+  .album-chip-row {
+    flex: 0 0 auto;
+    overflow: visible;
+  }
+  /* 3. 印樣多拿一點高度，詳情少拿一點 —— 來這裡是為了先看圖。 */
+  .album-main {
+    max-height: 62vh;
+  }
+  .album-side {
+    max-height: 30vh;
+  }
+  .album-head,
+  .album-tools,
+  .album-chips {
+    padding-left: 14px;
+    padding-right: 14px;
+  }
+  .album-side {
+    padding: 14px;
+  }
+  .album-tools input[type="search"],
+  .album-tools select {
+    font-size: 16px;
+  }
+  .album-chip,
+  .album-cell {
+    min-height: 0;
+  }
+  .album-chip {
+    min-height: 32px;
+  }
+  .album-go,
+  .album-apply {
+    min-height: 44px;
+  }
+}
+
+.shortcuts-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 210;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(8, 8, 11, 0.82);
+  backdrop-filter: blur(7px);
+  opacity: 0;
+  pointer-events: none;
+  visibility: hidden;
+  transition: opacity var(--d-exit) var(--ease-in);
+}
+.shortcuts-overlay.open {
+  opacity: 1;
+  pointer-events: auto;
+  visibility: visible;
+  transition: opacity var(--d-pop) var(--ease-out);
+}
+.shortcuts-overlay.open.is-closing {
+  opacity: 0;
+  pointer-events: none;
+}
+.shortcuts-panel {
+  position: relative;
+  width: min(560px, 92vw);
+  max-height: 86vh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background: var(--panel);
+  border: 1px solid var(--line-2);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 28px 30px 24px;
+  transform: translateY(8px) scale(0.985);
+  transition: transform var(--d-exit) var(--ease-in);
+}
+.shortcuts-overlay.open:not(.is-closing) .shortcuts-panel {
+  transform: none;
+  transition: transform var(--d-pop) var(--ease-entrance);
+}
+.shortcuts-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border-radius: 8px;
+  border: 0;
+  background: var(--sunk);
+  color: var(--dim);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+.shortcuts-close:hover {
+  color: var(--ink);
+  background: var(--line-2);
+}
+.shortcuts-close:focus-visible {
+  outline: 2px solid var(--amber);
+  outline-offset: 2px;
+}
+.shortcuts-close svg {
+  width: 16px;
+  height: 16px;
+}
+.shortcuts-head {
+  margin: 0 40px 22px 0;
+}
+.shortcuts-head h2 {
+  margin: 0 0 4px;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--ink);
+}
+.shortcuts-head p {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--faint);
+}
+.shortcut-group {
+  margin: 0 0 18px;
+}
+.shortcut-group h3 {
+  margin: 0 0 8px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  color: var(--faint);
+  font-family: var(--mono);
+  text-transform: uppercase;
+}
+.shortcut-row {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  padding: 7px 0;
+  border-bottom: 1px solid var(--line);
+}
+.shortcut-row:last-child {
+  border-bottom: 0;
+}
+.shortcut-keys {
+  flex: none;
+  width: 108px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.shortcut-desc {
+  font-size: 13px;
+  color: var(--dim);
+  line-height: 1.5;
+}
+.kbd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  border-radius: 6px;
+  font-family: var(--mono);
+  font-size: 11.5px;
+  font-weight: 600;
+  background: var(--sunk);
+  color: var(--ink);
+  border: 1px solid var(--line-2);
+  border-bottom: 2px solid var(--line-2);
+  box-sizing: border-box;
+}
+
+.shot-viewer {
+  position: fixed;
+  inset: 0;
+  z-index: 150;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  padding-top: max(24px, env(safe-area-inset-top));
+  padding-bottom: max(24px, env(safe-area-inset-bottom));
+  background: rgba(8, 8, 11, 0.82);
+  backdrop-filter: blur(7px);
+  opacity: 0;
+  pointer-events: none;
+  visibility: hidden;
+  transition: opacity var(--d-exit) var(--ease-in);
+}
+.shot-viewer.open {
+  opacity: 1;
+  pointer-events: auto;
+  visibility: visible;
+  transition: opacity var(--d-pop) var(--ease-out);
+}
+.shot-viewer.open.is-closing {
+  opacity: 0;
+  pointer-events: none;
+}
+.shot-viewer-inner {
+  position: relative;
+  display: flex;
+  align-items: stretch;
+  gap: 22px;
+  width: fit-content;
+  max-width: calc(100vw - 48px);
+  max-height: calc(100dvh - 48px);
+  background: var(--panel);
+  border: 1px solid var(--line-2);
+  border-radius: 20px;
+  box-shadow: var(--shadow);
+  padding: 22px;
+  transform: translateY(8px) scale(0.985);
+  transition: transform var(--d-exit) var(--ease-in);
+  overflow: hidden;
+}
+.shot-viewer.open:not(.is-closing) .shot-viewer-inner {
+  transform: none;
+  transition: transform var(--d-pop) var(--ease-entrance);
+}
+.shot-viewer-stage {
+  position: relative;
+  flex: none;
+  width: min(62vh, 42vw, 600px);
+  max-width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #0c0c10;
+  border-radius: 12px;
+  overflow: hidden;
+}
+.shot-viewer-stage img {
+  display: block;
+  width: 100%;
+  max-height: min(70vh, 720px);
+  object-fit: contain;
+  background: #000;
+}
+
+/* 換上一張／下一張：有方向的滑入。按 › 新的一張從右邊進來、按 ‹ 從左邊，
+   這樣兩顆箭頭在畫面上分得出來，而不是原地換一張圖。
+   .shot-viewer-stage 本來就 overflow:hidden，滑動不會漏到面板外面。
+   走的是檢視器自己那套尺度（--d-pop / --ease-entrance，跟面板開啟同一家），
+   不是外層 tokens.css 的那套 —— .shot-viewer 自己重新定義過這些變數。 */
+@keyframes shot-nav-r {
+  from {
+    opacity: 0;
+    transform: translateX(7%);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes shot-nav-l {
+  from {
+    opacity: 0;
+    transform: translateX(-7%);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.shot-viewer-stage img.nav-r {
+  animation: shot-nav-r var(--d-pop) var(--ease-entrance) both;
+}
+.shot-viewer-stage img.nav-l {
+  animation: shot-nav-l var(--d-pop) var(--ease-entrance) both;
+}
+/* 右欄的資訊跟著換，但不跟著滑 —— 兩邊一起滑會變成整個面板在動，
+   而 seed／POS 是要讀的字，移動中的字最難讀。只給它淡入。 */
+.shot-viewer-info.nav-in {
+  animation: shot-nav-info var(--d-ui) var(--ease-out) both;
+}
+@keyframes shot-nav-info {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .shot-viewer-stage img.nav-r,
+  .shot-viewer-stage img.nav-l,
+  .shot-viewer-info.nav-in {
+    animation: none;
+  }
+}
+.shot-viewer-info {
+  flex: none;
+  width: 320px;
+  min-width: 0;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-right: 28px;
+}
+.shot-viewer-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 2;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border-radius: 8px;
+  border: 0;
+  background: var(--sunk);
+  color: var(--dim);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+.shot-viewer-close:hover {
+  color: var(--ink);
+  background: var(--line-2);
+}
+.shot-viewer-close svg {
+  width: 16px;
+  height: 16px;
+}
+.shot-viewer-nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 40px;
+  height: 56px;
+  border-radius: 10px;
+  border: 1px solid var(--line-2);
+  background: rgba(19, 19, 24, 0.72);
+  color: var(--ink);
+  cursor: pointer;
+  font-size: 20px;
+  display: grid;
+  place-items: center;
+  z-index: 2;
+  transition: background var(--d-micro), border-color var(--d-micro);
+}
+.shot-viewer-nav:hover {
+  border-color: var(--amber);
+  background: var(--amber-soft);
+}
+.shot-viewer-nav[hidden] {
+  display: none;
+}
+.shot-viewer-nav.prev {
+  left: 10px;
+}
+.shot-viewer-nav.next {
+  right: 10px;
+}
+.gi-row {
+  display: flex;
+  gap: 10px;
+  font-size: 13px;
+  align-items: baseline;
+}
+.gi-k {
+  flex: 0 0 56px;
+  color: var(--faint);
+  font-size: 12px;
+  font-family: var(--mono);
+}
+.gi-v {
+  color: var(--ink);
+  word-break: break-word;
+  min-width: 0;
+}
+.shot-viewer-pos {
+  font-size: 12px;
+  line-height: 1.6;
+  color: #d4d0c8;
+  background: var(--sunk);
+  border: 1px solid var(--line);
+  padding: 11px;
+  border-radius: 8px;
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 220px;
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+.shot-viewer-copy {
+  align-self: flex-start;
+  border: 1px solid var(--line-2);
+  background: var(--sunk);
+  color: var(--dim);
+  padding: 6px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 12px;
+}
+.shot-viewer-copy:hover {
+  color: var(--ink);
+  border-color: var(--amber);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .shortcuts-overlay,
+  .shot-viewer,
+  .shortcuts-panel,
+  .shot-viewer-inner {
+    transition: none;
+  }
+}
+
+@media (max-width: 860px) {
+  /* 手機上圖就是主角，左右各 24px 的留白等於把圖縮掉 15%。 */
+  .shot-viewer {
+    padding-left: max(10px, env(safe-area-inset-left));
+    padding-right: max(10px, env(safe-area-inset-right));
+  }
+  .shot-viewer-inner {
+    flex-direction: column;
+    width: min(640px, 100%);
+    max-width: 100%;
+    max-height: calc(100dvh - 24px);
+    padding: 14px;
+    overflow-y: auto;
+  }
+  /* 32px 的叉叉手指戳不準，關不掉的彈窗最惱人。 */
+  .shot-viewer-close {
+    width: 44px;
+    height: 44px;
+  }
+  .shot-viewer-stage {
+    width: 100%;
+  }
+  .shot-viewer-info {
+    width: 100%;
+    padding-right: 0;
+  }
+  .shortcut-row {
+    flex-direction: column;
+    gap: 5px;
+  }
+  .shortcut-keys {
+    width: auto;
+  }
+}
+
+/* 工作流面板的取樣參數（墨池、疊印台）：一行一種用途，欄位是小數字框；改過的描一道底線。 */
+.wf-sampling {
+  margin-top: 14px;
+  padding: 12px 0 4px;
+  border-top: 1px solid var(--line);
+}
+.wf-sampling[hidden] {
+  display: none;
+}
+.wf-samp-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+.wf-samp-head .lm-right-head {
+  margin-bottom: 8px;
+}
+.wf-samp-reset {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--dim);
+  font: inherit;
+  font-size: 12px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+.wf-samp-reset:disabled {
+  opacity: 0.4;
+  cursor: default;
+  text-decoration: none;
+}
+.wf-samp-reset:not(:disabled):hover {
+  color: var(--ink);
+}
+.wf-samp-row {
+  display: grid;
+  grid-template-columns: 5.5em repeat(3, minmax(0, 1fr));
+  align-items: end;
+  gap: 8px;
+  padding: 6px 0;
+}
+.wf-samp-label {
+  align-self: center;
+  font-size: 13px;
+  color: var(--ink);
+  white-space: nowrap;
+}
+.wf-samp-field {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+.wf-samp-field > span {
+  font-size: 11px;
+  color: var(--faint);
+  font-family: var(--mono);
+}
+.wf-samp-field input {
+  width: 100%;
+  min-width: 0;
+  height: 32px;
+  padding: 0 8px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--sunk);
+  color: var(--ink);
+  font: inherit;
+  font-family: var(--mono);
+  font-size: 13px;
+  box-shadow: inset 0 -2px 0 transparent;
+  transition: box-shadow 0.12s ease-out, border-color 0.12s ease-out;
+}
+.wf-samp-field input:focus-visible {
+  outline: 2px solid var(--amber);
+  outline-offset: 1px;
+}
+.wf-samp-field[data-changed="true"] input {
+  box-shadow: inset 0 -2px 0 var(--amber);
+}
+.wf-sampling[data-custom="true"] .wf-samp-row[data-row="base"] {
+  opacity: 0.5;
+}
+@media (max-width: 34rem) {
+  .wf-samp-row {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .wf-samp-label {
+    grid-column: 1 / -1;
+  }
+  .wf-samp-field input {
+    font-size: 16px;
+  }
+}

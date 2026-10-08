@@ -1,0 +1,46 @@
+{
+  "_comment": [
+    "複製成 config.json 再改。config.json 不進版控，所以你的路徑不會被推出去。",
+    "優先序：環境變數 > config.json > 程式內建預設值。",
+    "任何一項留空或整個拿掉，就會退回內建預設值。"
+  ],
+  "comfy": {
+    "_comment": "底模清單以 ComfyUI 為準（含 extra_model_paths 與遠端機器）；checkpointDir 只用來補本機預覽圖，ComfyUI 連不上時才退回本機清單。upscaleModelDir 留空就從 checkpointDir 往上找 models/upscale_models。hires.upscaleModel、hires.steps、hires.cfg、hires.denoise 可覆寫深度放大模型和取樣。",
+    "api": "http://127.0.0.1:8188",
+    "ckpt": "illurtrious\\waiIllustriousSDXL_v170.safetensors",
+    "checkpointDir": "",
+    "upscaleModelDir": "",
+    "checkpointPrefix": "illurtrious",
+    "genTimeoutSec": 600,
+    "steps": 25,
+    "cfg": 6.5,
+    "sampler": "euler_ancestral",
+    "scheduler": "normal"
+  },
+  "server": {
+    "_comment": "allowNet 留空代表只放行本機與 Tailscale 網段。",
+    "host": "127.0.0.1",
+    "port": 8796,
+    "allowNet": ""
+  },
+  "paths": {
+    "_comment": "loraRoot 留空 = 改問 ComfyUI 要清單（能選、能送，但沒有預覽圖和觸發詞）。填了才讀得到本機的 metadata。loraFolders 留空 = 掃 loraRoot 底下所有子資料夾（以及根目錄的鬆散檔案）；只想要其中幾個再列出來。promptPacksDir 是 scripts/harvest_prompts.py 挖新 tag 用的外部素材夾，沒有就留空。",
+    "webDir": "web",
+    "promptPacksDir": "",
+    "loraRoot": "",
+    "loraFolders": []
+  },
+  "client": {
+    "_comment": "streamIdleMs：Comfy 靜默超過這麼久就放棄該張。顯示卡較慢（例如 AMD ROCm 載模型或搬顯存）可以調大。",
+    "streamIdleMs": 90000
+  },
+  "telegram": {
+    "api": "https://api.telegram.org",
+    "queueMax": 200
+  },
+  "discord": {
+    "_comment": "bot token 和頻道 ID 不放這裡，在畫面上的 Discord 面板填，存進 .secrets/discord.json（已 gitignore）。",
+    "api": "https://discord.com/api/v10",
+    "queueMax": 200
+  }
+}

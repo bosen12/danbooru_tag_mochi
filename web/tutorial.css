@@ -1,0 +1,1316 @@
+/* 教學影片（tutorial.js）：把墨池、疊印台的介面畫成一台「螢幕」（1600×880，尺寸跟真的畫面 1:1），
+ * 游標在裡面點、拖、按。舞台、字幕、轉場沿用 intro.css、film.css。 */
+
+/* ---------- 螢幕 ---------- */
+
+.tscreen {
+  position: absolute;
+  overflow: hidden;
+  border-radius: 26px;
+  background: linear-gradient(180deg, oklch(16.4% 0.013 250), oklch(14.6% 0.012 250));
+  box-shadow:
+    0 0 0 1px oklch(100% 0 0 / 0.09),
+    0 90px 180px -40px rgb(0 0 0 / 0.95),
+    0 0 140px -30px oklch(60% 0.19 33 / 0.14);
+  font-family: var(--font-body);
+  color: var(--color-ink);
+}
+
+/* 玻璃上掃過的一道光（--glare 由 tutorial.js 照時間寫）。 */
+.tscreen::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 9;
+  pointer-events: none;
+  background: linear-gradient(112deg, transparent calc(var(--glare, -40%) - 10%), oklch(100% 0 0 / 0.075) var(--glare, -40%), transparent calc(var(--glare, -40%) + 10%));
+}
+
+.torg {
+  position: absolute;
+  left: 800px;
+  top: 440px;
+  width: 0;
+  height: 0;
+}
+
+.tfx {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 1600px;
+  height: 880px;
+  pointer-events: none;
+}
+
+.tb {
+  position: absolute;
+  box-sizing: border-box;
+}
+
+.tl {
+  white-space: nowrap;
+}
+
+.tcursor {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 34px;
+  height: 34px;
+  transform-origin: 5px 3px;
+  pointer-events: none;
+  filter: drop-shadow(0 6px 8px rgb(0 0 0 / 0.55));
+  z-index: 5;
+}
+
+.tcursor svg {
+  display: block;
+}
+
+/* ---------- 桅杆 ---------- */
+
+.tmast {
+  border-bottom: 1px solid var(--color-rule-2);
+  background: color-mix(in oklch, var(--color-paper) 90%, transparent);
+}
+
+.twm {
+  font: 800 26px/1 var(--font-display);
+  letter-spacing: 0.06em;
+}
+
+.tnav {
+  display: flex;
+  gap: 2px;
+  padding: 2px;
+  height: 38px;
+  border: 1px solid var(--color-rule-2);
+  border-radius: 6px;
+  background: var(--color-paper-2);
+}
+
+.tnav i {
+  position: relative;
+  display: grid;
+  place-items: center;
+  padding: 0 15px;
+  white-space: nowrap;
+  border-radius: 3px;
+  font: 700 15px/1 var(--font-display);
+  font-style: normal;
+  color: var(--color-ink-2);
+}
+
+.tnav i.on {
+  background: var(--color-paper-4);
+  color: var(--color-ink);
+}
+
+.tmore {
+  font: 500 12.5px/1 var(--font-body);
+  color: var(--color-muted);
+  text-decoration: underline;
+  text-decoration-color: var(--color-rule);
+  text-underline-offset: 4px;
+}
+
+.tseg {
+  position: absolute;
+  display: flex;
+  padding: 2px;
+  border-radius: 6px;
+  background: var(--color-paper-2);
+  border: 1px solid var(--color-rule-2);
+  box-sizing: border-box;
+}
+
+.tseg span {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  border-radius: 3px;
+  font: 500 15px/1 var(--font-body);
+  color: var(--color-ink-2);
+  white-space: nowrap;
+}
+
+.tseg span.on {
+  color: var(--color-ink);
+  font-weight: 700;
+}
+
+.tseg .th {
+  position: absolute;
+  z-index: 0;
+  left: 2px;
+  top: 2px;
+  bottom: 2px;
+  border-radius: 3px;
+  background: var(--color-paper-4);
+}
+
+.tseg .th.ex {
+  background: var(--color-accent-3);
+}
+
+.tbtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  box-sizing: border-box;
+  border: 1px solid var(--btn-edge, var(--color-rule));
+  border-radius: 6px;
+  background: var(--btn-bg, var(--color-paper-3));
+  color: var(--btn-ink, var(--color-ink));
+  font: 700 17px/1 var(--font-display);
+  white-space: nowrap;
+}
+
+.tbtn.pri {
+  --btn-bg: var(--color-accent-2);
+  --btn-ink: var(--color-accent-ink);
+  --btn-edge: var(--color-accent);
+  box-shadow: 0 10px 26px -10px oklch(60% 0.19 33 / 0.7);
+}
+
+.tbtn.ghost {
+  --btn-bg: transparent;
+}
+
+.tbtn.sm {
+  font-size: 13.5px;
+}
+
+.tbtn small {
+  font: 600 13px/1 var(--font-mono);
+  opacity: 0.85;
+}
+
+.tbtn b {
+  font: 600 13px/1 var(--font-mono);
+  opacity: 0.8;
+}
+
+.tbtn svg {
+  width: 17px;
+  height: 17px;
+  flex: none;
+}
+
+.tping {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font: 500 12.5px/1 var(--font-body);
+  color: var(--color-muted);
+  white-space: nowrap;
+}
+
+.tping i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-good);
+  box-shadow: 0 0 10px oklch(74% 0.13 150 / 0.7);
+}
+
+/* ---------- 字盒 ---------- */
+
+.thead {
+  font: 800 23px/1 var(--font-display);
+  color: var(--color-ink);
+  white-space: nowrap;
+}
+
+.tcount {
+  font: 500 12px/1 var(--font-mono);
+  letter-spacing: 0.06em;
+  color: var(--color-muted);
+  white-space: nowrap;
+}
+
+.tsearch {
+  display: flex;
+  align-items: center;
+  padding: 0 14px;
+  border: 1px solid var(--color-rule);
+  border-radius: 8px;
+  background: var(--color-paper-2);
+  font: 500 17px/1 var(--font-body);
+  color: var(--color-muted);
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.tsearch.on {
+  border-color: var(--color-focus);
+  box-shadow: 0 0 0 3px oklch(80% 0.12 220 / 0.22);
+  color: var(--color-ink);
+}
+
+.tsearch .tx {
+  color: var(--color-ink);
+}
+
+.tsearch .tx.sel {
+  background: oklch(60% 0.19 33 / 0.4);
+  border-radius: 3px;
+}
+
+.tsearch .tcaret {
+  width: 2px;
+  height: 22px;
+  margin-left: 1px;
+  background: var(--color-focus);
+}
+
+.tchip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 34px;
+  padding: 0 13px 0 8px;
+  box-sizing: border-box;
+  border: 1px solid var(--color-rule);
+  border-radius: 999px;
+  background: var(--color-paper-2);
+  font: 700 14.5px/1 var(--font-display);
+  color: var(--color-ink-2);
+  white-space: nowrap;
+}
+
+.tchip.on {
+  background: var(--color-paper-4);
+  border-color: var(--color-ink-2);
+  color: var(--color-ink);
+}
+
+.tchip b {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--suit, var(--color-paper-4));
+  color: oklch(20% 0.02 250);
+  font: 800 12.5px/1 var(--font-display);
+}
+
+.tchip.flat {
+  padding: 0 14px;
+  height: 32px;
+  font-weight: 600;
+}
+
+/* 規則那一排 */
+.tlab {
+  font: 500 13.5px/1 var(--font-body);
+  color: var(--color-muted);
+  white-space: nowrap;
+}
+
+.tpill {
+  display: grid;
+  place-items: center;
+  height: 36px;
+  box-sizing: border-box;
+  border: 1px solid var(--color-rule);
+  border-radius: 999px;
+  background: transparent;
+  font: 700 15.5px/1 var(--font-display);
+  color: var(--color-ink-2);
+  white-space: nowrap;
+}
+
+.tpill.on {
+  background: var(--color-paper-4);
+  border-color: var(--color-ink-2);
+  color: var(--color-ink);
+}
+
+.tpill.off {
+  opacity: 0.4;
+  border-style: dashed;
+}
+
+.tselect {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-sizing: border-box;
+  height: 40px;
+  padding: 0 12px 0 14px;
+  border: 1px solid var(--color-rule);
+  border-radius: 6px;
+  background: var(--color-paper-2);
+  font: 700 16px/1 var(--font-display);
+  color: var(--color-ink);
+  white-space: nowrap;
+}
+
+.tselect::after {
+  content: "";
+  width: 7px;
+  height: 7px;
+  margin-left: 12px;
+  border-right: 2px solid var(--color-ink-2);
+  border-bottom: 2px solid var(--color-ink-2);
+  transform: rotate(45deg) translateY(-2px);
+}
+
+.tmenu {
+  border: 1px solid var(--color-rule);
+  border-radius: 8px;
+  background: var(--color-paper-3);
+  box-shadow: 0 24px 50px -14px rgb(0 0 0 / 0.8);
+  padding: 4px;
+}
+
+.tmenu i {
+  display: block;
+  padding: 0 12px;
+  border-radius: 5px;
+  font: 600 15px/34px var(--font-display);
+  font-style: normal;
+  color: var(--color-ink-2);
+  white-space: nowrap;
+}
+
+.tmenu i.on {
+  background: var(--color-accent-3);
+  color: var(--color-accent-ink);
+}
+
+.tstep {
+  display: flex;
+  align-items: stretch;
+  height: 42px;
+  box-sizing: border-box;
+  border: 1px solid var(--color-rule);
+  border-radius: 6px;
+  overflow: hidden;
+  font: 600 15px/1 var(--font-body);
+  color: var(--color-ink-2);
+}
+
+.tstep span,
+.tstep b,
+.tstep i {
+  display: grid;
+  place-items: center;
+  font-style: normal;
+}
+
+.tstep span {
+  padding: 0 11px;
+  border-right: 1px solid var(--color-rule-2);
+  white-space: nowrap;
+}
+
+.tstep i {
+  width: 32px;
+  font-size: 19px;
+  color: var(--color-ink);
+}
+
+.tstep b {
+  width: 36px;
+  font: 600 16px/1 var(--font-mono);
+  color: var(--color-ink);
+}
+
+.tswitch {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font: 500 15px/1 var(--font-body);
+  color: var(--color-ink-2);
+  white-space: nowrap;
+}
+
+.tswitch i {
+  position: relative;
+  width: 38px;
+  height: 22px;
+  border-radius: 999px;
+  background: var(--color-paper-4);
+  border: 1px solid var(--color-rule);
+  box-sizing: border-box;
+}
+
+.tswitch i::after {
+  content: "";
+  position: absolute;
+  left: 3px;
+  top: 3px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--color-ink-2);
+  transition: none;
+}
+
+.tswitch.on i {
+  background: var(--color-accent-2);
+  border-color: var(--color-accent);
+}
+
+.tswitch.on i::after {
+  transform: translateX(16px);
+  background: #fff;
+}
+
+.tinput {
+  display: flex;
+  align-items: center;
+  padding: 0 14px;
+  box-sizing: border-box;
+  border: 1px solid var(--color-rule);
+  border-radius: 6px;
+  background: var(--color-paper-2);
+  font: 600 16px/1 var(--font-mono);
+  color: var(--color-muted);
+  white-space: nowrap;
+}
+
+.tinput.on {
+  color: var(--color-ink);
+  border-color: var(--color-focus);
+  box-shadow: 0 0 0 3px oklch(80% 0.12 220 / 0.2);
+}
+
+/* ---------- 合成池 ---------- */
+
+.tpool {
+  background: linear-gradient(180deg, oklch(17% 0.02 230 / 0.5), oklch(15.5% 0.012 250 / 0.2));
+}
+
+.tpool::before,
+.tpool::after {
+  content: "";
+  position: absolute;
+  width: 22px;
+  height: 22px;
+  border: 0 solid var(--color-rule);
+}
+
+.tpool::before {
+  left: 0;
+  top: 0;
+  border-width: 2px 0 0 2px;
+}
+
+.tpool::after {
+  right: 0;
+  bottom: 0;
+  border-width: 0 2px 2px 0;
+}
+
+.tpool.over {
+  background: linear-gradient(180deg, oklch(24% 0.05 225 / 0.6), oklch(18% 0.03 230 / 0.3));
+  box-shadow: 0 0 0 2px var(--color-pool), 0 0 40px -6px oklch(62% 0.09 225 / 0.6);
+}
+
+.tpool-empty {
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 6px;
+  text-align: center;
+  color: var(--color-muted);
+  font: 500 14px/1.4 var(--font-body);
+}
+
+.tpool-empty b {
+  font: 800 22px/1 var(--font-display);
+  color: var(--color-ink-2);
+}
+
+.tx-btn {
+  position: absolute;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--color-ink);
+  color: oklch(20% 0.02 250);
+  display: grid;
+  place-items: center;
+  font: 800 16px/1 var(--font-display);
+  box-shadow: 0 4px 10px rgb(0 0 0 / 0.5);
+}
+
+.tnote {
+  padding-left: 10px;
+  border-left: 3px solid var(--color-accent);
+  font: 500 15px/1.35 var(--font-body);
+  color: var(--color-ink-2);
+  white-space: nowrap;
+}
+
+.tnote b {
+  margin-left: 14px;
+  padding: 2px 10px;
+  border: 1px solid var(--color-accent);
+  border-radius: 4px;
+  font-weight: 700;
+  color: var(--color-accent);
+}
+
+.tnote.clash {
+  border-left-color: var(--color-warn);
+}
+
+.tnote.clash em {
+  margin-right: 8px;
+  padding: 1px 8px;
+  border-radius: 3px;
+  background: var(--color-warn);
+  color: oklch(20% 0.02 60);
+  font-style: normal;
+  font-weight: 800;
+}
+
+/* 池裡的牌：被指到時（相關的牌）亮起來；相剋的牌抖一下、描紅。 */
+.wc.is-related > .card {
+  box-shadow: 0 0 0 3px var(--color-warn), 0 0 30px oklch(80% 0.13 80 / 0.5);
+}
+
+.wc.is-clash > .card {
+  box-shadow: 0 0 0 3px var(--color-accent), 0 0 26px oklch(60% 0.19 33 / 0.6);
+}
+
+.wc.is-pinned > .card {
+  box-shadow: 0 0 0 2px var(--color-pool), var(--shadow-card);
+}
+
+.wc.is-dragging > .card {
+  opacity: 0.28;
+  filter: grayscale(0.6);
+  outline: 1.5px dashed var(--color-rule);
+  outline-offset: 2px;
+}
+
+.wc.is-hot > .card {
+  box-shadow: 0 1px 0 var(--color-shine) inset, 0 22px 34px -8px rgb(0 0 0 / 0.75);
+}
+
+.wc.is-lifted > .card {
+  box-shadow: 0 26px 40px rgb(0 0 0 / 0.7);
+}
+
+.wc .enter-chip {
+  position: absolute;
+  right: 4px;
+  bottom: 4px;
+  z-index: 3;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: var(--color-ink);
+  color: oklch(20% 0.02 250);
+  font: 700 10px/1.2 var(--font-mono);
+  box-shadow: 0 0 0 2px var(--color-accent);
+}
+
+/* ---------- 成品牆 ---------- */
+
+.tshot {
+  border-top: 1px solid var(--color-rule-2);
+  background:
+    linear-gradient(var(--color-ink-2), var(--color-ink-2)) top left / 14px 2px no-repeat,
+    linear-gradient(var(--color-ink-2), var(--color-ink-2)) top right / 14px 2px no-repeat;
+}
+
+.tframe {
+  position: absolute;
+  overflow: hidden;
+  border-radius: 6px;
+  background: var(--color-paper-2);
+  box-shadow: 0 30px 60px -28px rgb(0 0 0 / 0.85);
+}
+
+.tframe img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.tframe .draft {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 14px;
+  color: var(--color-ink-2);
+  font: 500 16px/1.3 var(--font-body);
+  background: var(--color-paper-2);
+}
+
+.tprog {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 6px;
+  background: oklch(100% 0 0 / 0.1);
+}
+
+.tprog i {
+  display: block;
+  height: 100%;
+  transform-origin: 0 50%;
+  background: linear-gradient(90deg, var(--color-accent), oklch(78% 0.14 60));
+}
+
+.tmeta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font: 500 14px/1 var(--font-body);
+  color: var(--color-ink-2);
+  white-space: nowrap;
+}
+
+.tmeta code {
+  padding: 3px 7px;
+  border-radius: 4px;
+  background: var(--color-paper-3);
+  font: 500 12.5px/1 var(--font-mono);
+  color: var(--color-muted);
+}
+
+.ttoggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 34px;
+  padding: 0 14px;
+  border: 1px solid var(--color-rule);
+  border-radius: 6px;
+  background: var(--color-paper-2);
+  font: 700 14.5px/1 var(--font-display);
+  color: var(--color-ink);
+  white-space: nowrap;
+}
+
+.ttoggle .mini {
+  display: inline-flex;
+  gap: 3px;
+}
+
+.ttoggle .mini i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--suit);
+}
+
+.ttoggle.on {
+  border-color: var(--color-ink-2);
+  background: var(--color-paper-4);
+}
+
+.ttoggle::after {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: rotate(45deg) translateY(-2px);
+}
+
+.tdeal {
+  padding: 16px 18px;
+  border-radius: 12px;
+  border: 1px solid var(--color-rule);
+  background: var(--color-paper-2);
+  box-shadow: 0 40px 80px -30px rgb(0 0 0 / 0.9);
+}
+
+.tdeal h4 {
+  margin: 0;
+  font: 800 15px/1 var(--font-display);
+  color: var(--color-pool);
+  white-space: nowrap;
+}
+
+.tdeal h4 span {
+  margin-left: 10px;
+  font: 500 13px/1 var(--font-body);
+  color: var(--color-muted);
+}
+
+/* 提示條（toast）：底下一條倒數線。 */
+.ttoast {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 0 16px;
+  box-sizing: border-box;
+  border-radius: 8px;
+  border: 1px solid var(--color-rule);
+  background: var(--color-paper-4);
+  font: 500 15.5px/1 var(--font-body);
+  box-shadow: 0 16px 40px rgb(0 0 0 / 0.55);
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.ttoast b {
+  padding: 4px 12px;
+  border: 1px solid var(--color-accent);
+  border-radius: 4px;
+  color: var(--color-accent);
+  font-weight: 700;
+}
+
+.ttoast b kbd {
+  margin-left: 6px;
+  padding: 0 4px;
+  border: 1px solid currentColor;
+  border-radius: 3px;
+  font: 600 11px/1.5 var(--font-mono);
+  opacity: 0.75;
+}
+
+.ttoast .clock {
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  bottom: 3px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--color-accent);
+  transform-origin: 0 50%;
+  opacity: 0.6;
+}
+
+.tsheet {
+  border-radius: 16px;
+  border: 1px solid var(--color-rule);
+  background: var(--color-paper-2);
+  box-shadow: 0 50px 100px -20px rgb(0 0 0 / 0.9);
+}
+
+.tsheet h3 {
+  margin: 0;
+  font: 800 22px/1 var(--font-display);
+  white-space: nowrap;
+}
+
+.tscrim {
+  background: oklch(9% 0.01 250 / 0.72);
+}
+
+.ttrash {
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 2px;
+  border-radius: 50%;
+  border: 1px dashed var(--color-rule);
+  background: color-mix(in oklch, var(--color-paper-2) 92%, transparent);
+  color: var(--color-ink-2);
+  font: 500 11.5px/1 var(--font-body);
+}
+
+.ttrash svg {
+  width: 26px;
+  height: 26px;
+}
+
+.ttrash b {
+  font: 700 13px/1 var(--font-mono);
+}
+
+.ttrash.armed {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+  box-shadow: 0 0 0 4px oklch(60% 0.19 33 / 0.25), 0 0 40px oklch(60% 0.19 33 / 0.4);
+}
+
+.ttray {
+  border-radius: 16px;
+  background: color-mix(in oklch, var(--color-paper-2) 97%, transparent);
+  border: 1px solid var(--color-rule);
+  box-shadow: 0 -20px 60px -20px rgb(0 0 0 / 0.85);
+}
+
+.ttray .tab {
+  font: 700 15px/1 var(--font-display);
+  color: var(--color-ink);
+  white-space: nowrap;
+}
+
+.ttray .tab small {
+  margin-left: 8px;
+  font: 500 12px/1 var(--font-mono);
+  color: var(--color-muted);
+}
+
+.tfloat {
+  border-radius: 999px;
+  border: 1px solid var(--color-rule);
+  background: color-mix(in oklch, var(--color-paper-3) 94%, transparent);
+  box-shadow: 0 20px 44px -12px rgb(0 0 0 / 0.8);
+}
+
+/* ---------- 疊印台 ---------- */
+
+.tline {
+  border-bottom: 1px solid var(--color-rule-2);
+}
+
+.tline i.rope {
+  position: absolute;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--color-rule) 4%, var(--color-rule) 96%, transparent);
+}
+
+.treg {
+  border-bottom: 1px solid var(--color-rule-2);
+}
+
+.treg .rk {
+  font: 800 46px/1 var(--font-display);
+  color: color-mix(in oklch, var(--suit) 60%, var(--color-paper-3));
+}
+
+.treg .rn {
+  font: 700 15px/1 var(--font-display);
+  color: var(--color-ink-2);
+  white-space: nowrap;
+}
+
+.treg .rn small {
+  display: block;
+  margin-top: 6px;
+  font: 500 11.5px/1 var(--font-mono);
+  color: var(--color-muted);
+}
+
+.treg.glow {
+  background: linear-gradient(90deg, color-mix(in oklch, var(--suit) 16%, transparent), transparent 70%);
+}
+
+.tink {
+  display: flex;
+  gap: 3px;
+  padding: 3px 4px;
+  border-radius: 999px;
+  background: oklch(95% 0.02 85 / 0.9);
+}
+
+.tink i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: oklch(24% 0.02 50 / 0.18);
+}
+
+.tink i[data-on="1"] {
+  background: var(--suit);
+}
+
+.tink i.pick {
+  box-shadow: 0 0 0 1px var(--color-stock-ink);
+}
+
+.wc.is-shadow > .card {
+  filter: grayscale(1) brightness(0.74) contrast(0.92);
+  opacity: 0.82;
+  outline: 1.5px dashed oklch(60% 0.01 250 / 0.7);
+  outline-offset: 3px;
+  box-shadow: none;
+}
+
+.ttrial {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  box-sizing: border-box;
+  padding: 8px 12px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  font: 500 13px/1.25 var(--font-body);
+  color: var(--color-ink-2);
+}
+
+.ttrial b.let {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 8px;
+  background: var(--color-paper);
+  border: 1px solid var(--color-rule);
+  font: 800 26px/1 var(--font-display);
+  color: var(--color-ink-2);
+}
+
+.ttrial.on {
+  border-color: var(--color-accent);
+  background: color-mix(in oklch, var(--color-accent) 9%, transparent);
+}
+
+.ttrial.on b.let {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+
+.ttrial .pk {
+  display: flex;
+  gap: 3px;
+  margin-top: 6px;
+}
+
+.ttrial .pk i {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--color-stock-2) center / cover;
+  border: 2px solid var(--suit, var(--color-rule));
+}
+
+.tpaper {
+  border-radius: 4px;
+  background: oklch(96% 0.01 90);
+  box-shadow: 0 30px 60px -24px rgb(0 0 0 / 0.85);
+}
+
+.tpaper .ph {
+  position: absolute;
+  overflow: hidden;
+  background: #ddd;
+}
+
+.tpaper .ph img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.tcrop {
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  border: 0 solid var(--color-rule);
+}
+
+.tpeg {
+  position: absolute;
+  left: 50%;
+  top: -10px;
+  width: 16px;
+  height: 22px;
+  margin-left: -8px;
+  border-radius: 3px;
+  background: linear-gradient(oklch(62% 0.06 60), oklch(48% 0.06 55));
+  box-shadow: 0 3px 6px rgb(0 0 0 / 0.5);
+}
+
+/* ---------- 影片的字幕：一步一步 ---------- */
+
+.k-step {
+  text-align: center;
+}
+
+.k-step .zh {
+  display: block;
+  font: 800 54px/1.2 var(--font-display);
+  color: var(--color-ink);
+  text-shadow: 0 4px 10px rgb(0 0 0 / 0.7), 0 10px 50px rgb(0 0 0 / 0.9);
+}
+
+.k-step .en {
+  display: block;
+  margin-top: 12px;
+  font: 500 22px/1.3 var(--font-mono);
+  letter-spacing: 0.05em;
+  color: oklch(80% 0.02 250);
+  text-shadow: 0 4px 20px rgb(0 0 0 / 0.9);
+}
+
+.tbadge {
+  position: absolute;
+  width: 62px;
+  height: 62px;
+  margin: -31px 0 0 -31px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--color-accent);
+  color: #fff;
+  font: 900 34px/1 "Noto Serif TC", var(--font-display);
+  box-shadow: 0 0 0 6px oklch(60% 0.19 33 / 0.25), 0 14px 34px oklch(60% 0.19 33 / 0.5);
+}
+
+.tkey {
+  position: absolute;
+  z-index: 3;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  min-width: 78px;
+  height: 78px;
+  padding: 0 18px;
+  box-sizing: border-box;
+  border-radius: 14px;
+  background: linear-gradient(oklch(34% 0.018 250), oklch(26% 0.016 250));
+  border: 1px solid oklch(46% 0.02 250);
+  box-shadow: 0 8px 0 oklch(17% 0.012 250), 0 18px 36px rgb(0 0 0 / 0.6);
+  color: var(--color-ink);
+  will-change: transform, opacity;
+}
+
+.tkey.is-wide {
+  min-width: 150px;
+}
+
+.tkey b {
+  font: 800 34px/1 var(--font-mono);
+}
+
+.tkey small {
+  margin-top: 6px;
+  font: 500 13px/1 var(--font-body);
+  color: var(--color-muted);
+}
+
+.tkey.is-down {
+  background: linear-gradient(oklch(58% 0.19 33), oklch(50% 0.18 33));
+  border-color: var(--color-accent);
+  box-shadow: 0 3px 0 oklch(30% 0.1 33), 0 0 60px oklch(60% 0.19 33 / 0.6);
+  color: #fff;
+}
+
+.tkey.is-down small {
+  color: rgb(255 255 255 / 0.85);
+}
+
+/* 章節進度：上面一排點，現在這章拉長、旁邊寫名字。 */
+.trail {
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  white-space: nowrap;
+  will-change: opacity;
+}
+
+.trail i {
+  width: 9px;
+  height: 9px;
+  border-radius: 999px;
+  background: oklch(100% 0 0 / 0.22);
+}
+
+.trail i.done {
+  background: oklch(100% 0 0 / 0.55);
+}
+
+.trail i.now {
+  width: 34px;
+  background: var(--color-accent);
+  box-shadow: 0 0 16px oklch(60% 0.19 33 / 0.7);
+}
+
+.trail span {
+  margin-left: 6px;
+  font: 600 16px/1 var(--font-mono);
+  letter-spacing: 0.08em;
+  color: oklch(84% 0.02 250);
+}
+
+.trail span b {
+  margin-right: 10px;
+  color: var(--color-accent);
+}
+
+/* 世界裡的標籤：一個數字＋名稱，指出「這一塊叫什麼」。 */
+.ttag {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 26px 10px 10px;
+  border-radius: 999px;
+  border: 2px solid var(--color-accent);
+  background: oklch(14% 0.014 250 / 0.94);
+  box-shadow: 0 20px 50px -12px rgb(0 0 0 / 0.85), 0 0 40px -6px oklch(60% 0.19 33 / 0.4);
+  font: 800 34px/1 var(--font-display);
+  color: var(--color-ink);
+  white-space: nowrap;
+}
+
+.ttag i {
+  display: grid;
+  place-items: center;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background: var(--color-accent);
+  color: #fff;
+  font: 900 28px/1 "Noto Serif TC", var(--font-display);
+  font-style: normal;
+}
+
+.ttag small {
+  display: block;
+  margin-top: 6px;
+  font: 500 15px/1 var(--font-mono);
+  letter-spacing: 0.06em;
+  color: oklch(78% 0.03 250);
+}
+
+.ttip {
+  padding: 9px 16px;
+  border-radius: 8px;
+  background: var(--color-accent);
+  color: #fff;
+  font: 800 22px/1.15 var(--font-display);
+  white-space: nowrap;
+  box-shadow: 0 14px 34px -8px oklch(60% 0.19 33 / 0.6);
+}
+
+.ttip small {
+  display: block;
+  margin-top: 4px;
+  font: 500 13px/1 var(--font-mono);
+  opacity: 0.85;
+}
+
+.ttip::after {
+  content: "";
+  position: absolute;
+  left: var(--ax, 50%);
+  bottom: -9px;
+  width: 16px;
+  height: 16px;
+  margin-left: -8px;
+  transform: rotate(45deg);
+  background: var(--color-accent);
+  border-radius: 3px;
+}
+
+.ttip.up::after {
+  bottom: auto;
+  top: -7px;
+}
+
+/* 螢幕後面漂著的牌（景深）。 */
+.tdrift > .card {
+  filter: blur(2.5px) saturate(0.85);
+  box-shadow: 0 30px 60px rgb(0 0 0 / 0.5);
+}
+
+/* 開場、結尾 */
+.tcue {
+  font: 900 250px/1 "Noto Serif TC", var(--font-display);
+  color: var(--color-ink);
+  white-space: nowrap;
+}
+
+.toc {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 22px 12px 12px;
+  border-radius: 999px;
+  border: 1.5px solid oklch(100% 0 0 / 0.18);
+  background: oklch(16% 0.014 250 / 0.9);
+  font: 800 28px/1 var(--font-display);
+  color: var(--color-ink);
+  white-space: nowrap;
+}
+
+.toc b {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: var(--suit);
+  color: oklch(20% 0.02 250);
+  font: 800 21px/1 var(--font-display);
+}
+
+.tkbd {
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 8px;
+  padding: 10px 18px 14px;
+  border-radius: 14px;
+  background: linear-gradient(oklch(31% 0.016 250), oklch(24% 0.014 250));
+  border: 1px solid oklch(44% 0.02 250);
+  box-shadow: 0 7px 0 oklch(16% 0.012 250), 0 20px 40px rgb(0 0 0 / 0.55);
+  color: var(--color-ink);
+}
+
+.tkbd b {
+  font: 800 40px/1 var(--font-mono);
+}
+
+.tkbd small {
+  font: 600 20px/1.2 var(--font-display);
+  color: var(--color-ink-2);
+  white-space: nowrap;
+}
+
+.tkbd.hot {
+  background: linear-gradient(oklch(58% 0.19 33), oklch(50% 0.18 33));
+  border-color: var(--color-accent);
+  box-shadow: 0 3px 0 oklch(30% 0.1 33), 0 0 70px oklch(60% 0.19 33 / 0.6);
+  color: #fff;
+}
+
+.tkbd.hot small {
+  color: rgb(255 255 255 / 0.9);
+}
+
+/* ---------- 放大牌（滑鼠停在牌上浮出來的那張） ---------- */
+
+.tpeek {
+  width: 248px;
+  padding: 10px;
+  box-sizing: border-box;
+  border-radius: 14px;
+  background: oklch(21% 0.016 250);
+  border: 1px solid oklch(34% 0.016 250);
+  box-shadow: 0 22px 50px oklch(6% 0.01 250 / 0.6);
+}
+
+.tpeek-face {
+  position: relative;
+  width: 228px;
+  height: 334px;
+  overflow: hidden;
+  border-radius: 10px;
+}
+
+.tpeek-en {
+  margin: 8px 2px 0;
+  font: 500 12.5px/1 var(--font-mono);
+  color: var(--color-muted);
+}
+
+.tpeek-facts {
+  margin: 6px 2px 0;
+  font: 500 12.5px/1.6 var(--font-body);
+  color: var(--color-ink-2);
+}
+
+.tpeek-facts b {
+  margin-right: 8px;
+  font-weight: 500;
+  color: var(--color-muted);
+}

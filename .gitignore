@@ -1,0 +1,18 @@
+__pycache__/
+*.py[cod]
+
+# Machine-specific settings (ComfyUI paths, checkpoint folders). Template: config.example.json
+config.json
+
+# Your own data: card usage, decks, saved works, generation log, imported workflows
+data/
+
+# Discord / Telegram credentials
+.secrets/
+
+# Card illustrations are downloaded from the GitHub release on first start
+# (scripts/fetch_card_art.py) or baked with your own checkpoint (scripts/bake_card_art.py).
+web/cards/
+
+# Launcher: "never ask again" for baking card art
+.no-card-bake

@@ -1,0 +1,1146 @@
+/* ================= 卡冊（book.html） =================
+ * 每張牌底下一行次數。名次前三蓋一顆朱印。沒用過的牌褪一點色、像還沒翻開過的那幾頁。
+ * 換排序、換花色時牌從舊位置滑到新位置（book.js 的 FLIP），這裡只管靜態的樣子與小動作。 */
+
+.book {
+  display: grid;
+  gap: var(--space-sm);
+  padding: var(--space-md) var(--space-lg) var(--space-2xl);
+  max-width: 1600px;
+  margin: 0 auto;
+}
+
+.book-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  justify-content: space-between;
+  gap: var(--space-sm) var(--space-lg);
+}
+
+.book-title {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: var(--space-2xs) var(--space-md);
+  min-width: 0;
+}
+
+.book-title h2 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: var(--text-xl);
+  letter-spacing: 0.06em;
+}
+
+.book-sum {
+  margin: 0;
+  color: var(--color-muted);
+  font-size: var(--text-sm);
+  font-variant-numeric: tabular-nums;
+}
+
+.book-sum-n {
+  color: var(--color-ink);
+  font-family: var(--font-mono);
+  font-weight: 500;
+}
+
+.book-sum-dot {
+  margin-inline: var(--space-2xs);
+  color: var(--color-rule);
+}
+
+.book-q {
+  flex: 1 1 16rem;
+  max-width: 24rem;
+  min-height: 40px;
+  padding: 0 var(--space-sm);
+  border: 1px solid var(--color-rule-2);
+  border-radius: var(--radius-sm);
+  background: var(--color-paper-2);
+  color: var(--color-ink);
+  font: inherit;
+  transition: border-color var(--dur-micro) var(--ease-out), background-color var(--dur-micro) var(--ease-out);
+}
+
+/* 跟疊印台的找牌框同一種焦點：以前只換一點底色，鍵盤走到這裡幾乎看不出來。 */
+.book-q:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 1px;
+  border-color: var(--color-ink-2);
+  background: var(--color-paper-3);
+}
+
+.book-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-xs) var(--space-md);
+}
+
+.book-suits {
+  padding: 0;
+}
+
+.book-order {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.book-order .segmented button {
+  gap: 0.3em;
+}
+
+.sort-arrow {
+  display: inline-block;
+  font-family: var(--font-mono);
+  transition: transform var(--dur-short) var(--ease-settle);
+}
+
+/* 選中的那一邊：箭頭往它指的方向點一下（多到少往下、少到多往上）。 */
+.book-order [aria-checked="true"] .sort-arrow {
+  animation: sort-nudge var(--dur-medium) var(--ease-settle);
+}
+
+[aria-checked="true"] > .sort-arrow:only-of-type {
+  color: var(--color-accent);
+}
+
+@keyframes sort-nudge {
+  40% {
+    transform: translateY(var(--nudge, 3px));
+  }
+}
+
+.book-order [role="radio"]:last-child [class="sort-arrow"] {
+  --nudge: -3px;
+}
+
+.book-groups {
+  padding: 0;
+}
+
+/* ---------- 牌格 ---------- */
+
+.book-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
+  gap: var(--space-md) var(--space-sm);
+  align-content: start;
+  padding-top: var(--space-xs);
+}
+
+.book-cell {
+  position: relative;
+  display: grid;
+  gap: 6px;
+  justify-items: center;
+}
+
+.book-cell .card {
+  --card-w: 100%;
+  width: 100%;
+  font-size: 11px;
+}
+
+/* 沒用過的牌照原樣顯示（專案主：不要灰色），只有底下的「未使用」字是淡的。 */
+
+.book-meta {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 3px;
+  min-height: 1.4em;
+  color: var(--color-muted);
+  font-size: var(--text-xs);
+  font-variant-numeric: tabular-nums;
+  transition: color var(--dur-micro) var(--ease-out), transform var(--dur-short) var(--ease-settle);
+}
+
+.book-n {
+  color: var(--color-ink);
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  font-weight: 500;
+}
+
+.book-cell[data-unused="true"] .book-n {
+  color: var(--color-rule);
+  font-weight: 400;
+}
+
+/* 牌抬起來的時候，底下的次數跟著往上靠一點，像同一張紙。 */
+@media (hover: hover) and (pointer: fine) {
+  .book-cell:has(.card:hover) .book-meta {
+    color: var(--color-ink-2);
+    transform: translateY(-3px);
+  }
+}
+
+/* 按下去：次數跟著牌一起壓一下（牌的 :active 在 card.css）。 */
+.book-cell:has(.card:active) .book-meta {
+  transform: translateY(1px);
+  transition-duration: var(--dur-micro);
+}
+
+/* 名次章：朱印蓋在牌的右上角，略斜。 */
+/* 牌本身 overflow: hidden，章要蓋在牌面內側（右上角，插畫上），不能掛在外面。 */
+.book-rank {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border: 2px solid currentColor;
+  border-radius: 6px;
+  background: color-mix(in oklch, var(--color-stock) 88%, transparent);
+  color: var(--color-accent);
+  font-family: var(--font-display);
+  font-size: 17px;
+  font-weight: 800;
+  line-height: 1;
+  transform: rotate(-8deg);
+  box-shadow: 0 6px 16px -6px var(--color-shade);
+  pointer-events: none;
+}
+
+.book-rank[data-r="2"] {
+  color: var(--color-accent-2);
+}
+
+.book-rank[data-r="3"] {
+  color: var(--color-accent-3);
+}
+
+/* 還沒有任何使用紀錄：工具列底下一行引導（不擋牌，牌照樣能翻、能點開）。 */
+.book-hint {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-xs) var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
+  border: 1px dashed var(--color-rule);
+  border-radius: var(--radius-sm);
+  color: var(--color-muted);
+  font-size: var(--text-sm);
+}
+
+.book-hint[hidden] {
+  display: none;
+}
+
+.book-hint b {
+  color: var(--color-ink);
+}
+
+.book-more {
+  grid-column: 1 / -1;
+  height: 1px;
+}
+
+.book-empty {
+  grid-column: 1 / -1;
+  display: grid;
+  justify-items: start;
+  gap: var(--space-xs);
+  padding: var(--space-xl) 0;
+  color: var(--color-muted);
+}
+
+.book-empty b {
+  color: var(--color-ink);
+  font-family: var(--font-display);
+  font-size: var(--text-lg);
+}
+
+/* ---------- 詳情 ---------- */
+
+.book-big {
+  position: relative;
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+  margin: var(--space-sm) 0 var(--space-md);
+  padding-bottom: var(--space-sm);
+  color: var(--color-muted);
+}
+
+.book-big-n {
+  color: var(--color-ink);
+  font-family: var(--font-mono);
+  font-size: var(--text-2xl);
+  font-weight: 500;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+/* 跟用最多的那張比：一條細長的墨線，從左邊畫到它的比例。 */
+.book-bar-fill {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--color-accent);
+  transform-origin: left center;
+  transform: scaleX(var(--share, 0));
+  animation: book-bar-draw var(--dur-story) var(--ease-out) var(--dur-short) both;
+}
+
+.book-big::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--color-rule-2);
+  z-index: -1;
+}
+
+@keyframes book-bar-draw {
+  from {
+    transform: scaleX(0);
+  }
+}
+
+.book-stats {
+  margin-bottom: var(--space-md);
+}
+
+/* ---------- 詳情：用它做過的圖 ---------- */
+
+.book-detail .book-works {
+  grid-column: 1 / -1;
+}
+
+.book-works {
+  display: grid;
+  gap: var(--space-xs);
+  padding-top: var(--space-sm);
+  border-top: 1px solid var(--color-rule-2);
+}
+
+.book-works-head {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-xs);
+  margin: 0;
+  font-size: var(--text-sm);
+  font-weight: 700;
+}
+
+.book-works-head span {
+  color: var(--color-muted);
+  font-weight: 400;
+  font-size: var(--text-xs);
+}
+
+.book-works-empty {
+  margin: 0;
+  color: var(--color-muted);
+  font-size: var(--text-xs);
+}
+
+/* 一排小圖，照各自的長寬比，錯開浮上來（詳情打開之後，接在牌飛進來後面）。 */
+.book-works-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(78px, 1fr));
+  gap: var(--space-xs);
+  align-items: start;
+}
+
+.book-work {
+  position: relative;
+  display: block;
+  width: 100%;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid var(--color-rule-2);
+  border-radius: var(--radius-xs);
+  background: var(--color-paper-3);
+  cursor: zoom-in;
+  transition: transform var(--dur-short) var(--ease-out), border-color var(--dur-micro) var(--ease-out), box-shadow var(--dur-short) var(--ease-out);
+  animation: book-work-in var(--dur-medium) var(--ease-out) calc(var(--dur-short) + var(--i, 0) * 30ms) both;
+}
+
+.book-work img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.book-work-room {
+  position: absolute;
+  left: 4px;
+  bottom: 4px;
+  padding: 1px 5px;
+  border-radius: 3px;
+  background: color-mix(in oklch, var(--color-paper) 78%, transparent);
+  color: var(--color-ink-2);
+  font-size: var(--text-2xs);
+  line-height: 1.5;
+  opacity: 0;
+  transition: opacity var(--dur-micro) var(--ease-out);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .book-work:hover {
+    transform: translateY(-2px);
+    border-color: var(--color-ink-2);
+    box-shadow: var(--shadow-lift);
+  }
+  .book-work:hover .book-work-room {
+    opacity: 1;
+  }
+}
+
+@media (hover: none) {
+  .book-work-room {
+    opacity: 1;
+  }
+}
+
+.book-work:active {
+  transform: scale(0.97);
+  transition-duration: var(--dur-micro);
+}
+
+@keyframes book-work-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.96);
+  }
+}
+
+.book-work-full {
+  display: grid;
+  gap: var(--space-xs);
+  justify-items: center;
+}
+
+.book-work-full img {
+  max-width: 100%;
+  max-height: 72dvh;
+  border-radius: var(--radius-sm);
+  object-fit: contain;
+}
+
+/* ---------- 窄螢幕 ---------- */
+
+@media (max-width: 40rem) {
+  .book {
+    padding: var(--space-sm) var(--space-sm) var(--space-2xl);
+  }
+  .book-q {
+    flex-basis: 100%;
+    max-width: none;
+  }
+  .book-grid {
+    grid-template-columns: repeat(auto-fill, minmax(88px, 1fr));
+    gap: var(--space-sm) var(--space-xs);
+  }
+  .book-rank {
+    width: 26px;
+    height: 26px;
+    font-size: 15px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .book-work,
+  .book-bar-fill,
+  .book-order [aria-checked="true"] .sort-arrow {
+    animation: none;
+  }
+}
+
+/* ---------- 換版：墨池／疊印台 → 卡冊 ----------
+ * 三頁共用同一套（styles.css 的「換版」）：頂欄不動、分頁底線滑過來；字盒的標題與搜尋框
+ * 變形成卡冊的標題與搜尋框；其他內容依序落下，方向跟著換版的方向。 */
+@media (prefers-reduced-motion: no-preference) {
+  #book-title {
+    view-transition-name: case-title;
+  }
+  #book-q {
+    view-transition-name: case-search;
+  }
+
+  html[data-vt-in] :is(.book-sum, .book-bar, .book-groups, .book-grid > .book-cell) {
+    animation: vt-rise var(--dur-long) var(--ease-out) both;
+  }
+  html[data-vt-in] .book-sum { animation-delay: calc(var(--dur-micro) * 0.3); }
+  html[data-vt-in] .book-bar { animation-delay: calc(var(--dur-micro) * 0.5); }
+  html[data-vt-in] .book-groups { animation-delay: calc(var(--dur-micro) * 0.7); }
+  html[data-vt-in] .book-grid > .book-cell:nth-child(1) { animation-delay: calc(var(--dur-micro) * 0.8); }
+  html[data-vt-in] .book-grid > .book-cell:nth-child(2) { animation-delay: calc(var(--dur-micro) * 0.95); }
+  html[data-vt-in] .book-grid > .book-cell:nth-child(3) { animation-delay: calc(var(--dur-micro) * 1.1); }
+  html[data-vt-in] .book-grid > .book-cell:nth-child(4) { animation-delay: calc(var(--dur-micro) * 1.25); }
+  html[data-vt-in] .book-grid > .book-cell:nth-child(5) { animation-delay: calc(var(--dur-micro) * 1.4); }
+  html[data-vt-in] .book-grid > .book-cell:nth-child(6) { animation-delay: calc(var(--dur-micro) * 1.55); }
+  html[data-vt-in] .book-grid > .book-cell:nth-child(7) { animation-delay: calc(var(--dur-micro) * 1.7); }
+  html[data-vt-in] .book-grid > .book-cell:nth-child(8) { animation-delay: calc(var(--dur-micro) * 1.85); }
+  html[data-vt-in] .book-grid > .book-cell:nth-child(9) { animation-delay: calc(var(--dur-micro) * 2); }
+  html[data-vt-in] .book-grid > .book-cell:nth-child(10) { animation-delay: calc(var(--dur-micro) * 2.15); }
+  html[data-vt-in] .book-grid > .book-cell:nth-child(11) { animation-delay: calc(var(--dur-micro) * 2.3); }
+  html[data-vt-in] .book-grid > .book-cell:nth-child(12) { animation-delay: calc(var(--dur-micro) * 2.45); }
+  html[data-vt-in] .book-grid > .book-cell:nth-child(n + 13) { animation-delay: calc(var(--dur-micro) * 2.6); }
+}
+
+/* ================= 卡盒 =================
+ * 右下角一顆膠囊（最後放進去的三張疊成一小疊＋張數），點開往上長出一塊面板。
+ * 牌格右下角的「＋」：滑鼠移上去才出現（觸控一直都在），放進盒子之後變「✓」、牌上蓋「盒中」。 */
+
+.book {
+  /* 盒子固定在右下角：最後一排牌底下留出它的高度，不被蓋住。 */
+  padding-bottom: calc(var(--space-2xl) + 64px);
+}
+
+.box-add {
+  position: absolute;
+  right: 6px;
+  /* 牌的底緣（次數那一行之上）。 */
+  bottom: calc(1.4em + 12px);
+  z-index: 3;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 1px solid var(--color-rule);
+  border-radius: 50%;
+  background: color-mix(in oklch, var(--color-paper) 86%, transparent);
+  color: var(--color-ink);
+  box-shadow: 0 6px 14px -6px var(--color-shade);
+  opacity: 0;
+  transform: translateY(4px) scale(0.85);
+  transition:
+    opacity var(--dur-micro) var(--ease-out),
+    transform var(--dur-short) var(--ease-settle),
+    background-color var(--dur-micro) var(--ease-out),
+    color var(--dur-micro) var(--ease-out);
+}
+
+/* ＋／✓ 用兩條線畫：全形「＋」在中文字型裡偏上，不會在圓心。
+ * 兩條線都從圓心出發，放進盒子時直接折成勾（短的那筆往左下、長的往右上）。 */
+.box-add::before,
+.box-add::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 12px;
+  height: 2px;
+  margin: -1px 0 0 -6px;
+  border-radius: 1px;
+  background: currentColor;
+  transition:
+    transform var(--dur-short) var(--ease-settle),
+    width var(--dur-short) var(--ease-settle),
+    margin var(--dur-short) var(--ease-settle);
+}
+
+.box-add::after {
+  transform: rotate(90deg);
+}
+
+/* 勾：16 格裡 (4,8)→(7,11)→(12.5,4.5)，以圓心 (8,8) 為準，再往左下挪 0.7px（量過，看起來才在正中）。 */
+.box-add[aria-pressed="true"]::before {
+  width: 5px;
+  margin-left: -2.5px;
+  transform: translate(-3.2px, 2px) rotate(45deg);
+}
+
+.box-add[aria-pressed="true"]::after {
+  width: 9px;
+  margin-left: -4.5px;
+  transform: translate(1.05px, 0.25px) rotate(-49.8deg);
+}
+
+.book-cell:hover .box-add,
+.book-cell:focus-within .box-add,
+.box-add[aria-pressed="true"] {
+  opacity: 1;
+  transform: none;
+}
+
+@media (hover: none) {
+  .box-add {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.box-add[aria-pressed="true"] {
+  border-color: var(--color-pool-2);
+  background: var(--color-pool-2);
+  color: var(--color-paper);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .box-add:hover {
+    transform: scale(1.1);
+  }
+}
+
+.box-add:active {
+  transform: scale(0.9);
+  transition-duration: var(--dur-micro);
+}
+
+.card-flag[data-kind="box"] {
+  color: var(--color-pool-2);
+}
+
+/* 飛往盒子的影子：牌的複製，飛行由 motion.js 的 flight 逐格畫。 */
+.box-ghost {
+  box-shadow: var(--shadow-lift);
+}
+
+/* ---------- 盒子（右下角） ---------- */
+
+.box-dock {
+  position: fixed;
+  right: calc(var(--space-md) + env(safe-area-inset-right));
+  bottom: calc(var(--space-md) + env(safe-area-inset-bottom));
+  z-index: 60;
+  display: grid;
+  justify-items: end;
+  gap: var(--space-xs);
+  pointer-events: none;
+}
+
+.box-dock > * {
+  pointer-events: auto;
+}
+
+.box-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  min-height: 48px;
+  padding: 6px 14px 6px 10px;
+  border: 1px solid var(--color-rule);
+  border-radius: 999px;
+  background: var(--color-paper-2);
+  color: var(--color-ink);
+  box-shadow: 0 14px 30px -10px var(--color-shade);
+  font: inherit;
+  font-size: var(--text-sm);
+  cursor: pointer;
+  transition: border-color var(--dur-micro) var(--ease-out), background-color var(--dur-micro) var(--ease-out);
+}
+
+.box-pill[aria-expanded="true"] {
+  border-color: var(--color-ink-2);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .box-pill:hover {
+    border-color: var(--color-ink-2);
+  }
+}
+
+.box-icon {
+  display: grid;
+  color: var(--color-ink-2);
+}
+
+.box-count {
+  min-width: 1.6em;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: var(--color-pool-2);
+  color: var(--color-paper);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  text-align: center;
+}
+
+.box-pill[data-empty="true"] .box-count {
+  background: var(--color-paper-4);
+  color: var(--color-muted);
+}
+
+/* 最後放進去的三張：小小一疊，往右斜著疊。 */
+.box-stack {
+  position: relative;
+  display: block;
+  width: 26px;
+  height: 34px;
+}
+
+.box-pill[data-empty="true"] .box-stack {
+  display: none;
+}
+
+.box-stack i {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border: 1px solid color-mix(in oklch, var(--suit) 70%, var(--color-rule));
+  border-radius: 3px;
+  background: var(--color-stock);
+  transform: translateX(calc(var(--k) * -5px)) rotate(calc(var(--k) * -7deg));
+  transform-origin: 50% 100%;
+  transition: transform var(--dur-short) var(--ease-settle);
+}
+
+.box-stack i img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 22%;
+}
+
+.box-stack i b {
+  display: grid;
+  place-items: center;
+  height: 100%;
+  color: var(--color-stock-ink, #333);
+  font-family: var(--font-display);
+  font-size: 13px;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .box-pill:hover .box-stack i {
+    transform: translateX(calc(var(--k) * -8px)) rotate(calc(var(--k) * -12deg));
+  }
+}
+
+/* ---------- 打開的面板 ---------- */
+
+.box-panel {
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
+  gap: var(--space-sm);
+  width: min(30rem, calc(100vw - 2 * var(--space-md)));
+  max-height: min(34rem, calc(100dvh - 140px));
+  padding: var(--space-md);
+  border: 1px solid var(--color-rule);
+  border-radius: var(--radius-md);
+  background: var(--color-paper-2);
+  box-shadow: 0 24px 60px -16px var(--color-shade);
+  transform-origin: 100% 100%;
+}
+
+.box-panel[hidden] {
+  display: none;
+}
+
+.box-panel-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.box-title {
+  margin-right: auto;
+  font-family: var(--font-display);
+  font-size: var(--text-lg);
+  letter-spacing: 0.04em;
+  font-variant-numeric: tabular-nums;
+}
+
+.box-close {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid var(--color-rule-2);
+  border-radius: 50%;
+  background: transparent;
+  color: var(--color-ink-2);
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  transition: transform var(--dur-short) var(--ease-settle), border-color var(--dur-micro) var(--ease-out);
+}
+
+.box-close:hover {
+  border-color: var(--color-ink-2);
+  transform: rotate(90deg);
+}
+
+.box-empty {
+  margin: 0;
+  color: var(--color-muted);
+  font-size: var(--text-sm);
+}
+
+.box-empty[hidden] {
+  display: none;
+}
+
+.box-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));
+  gap: var(--space-xs);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 4px 2px;
+  min-height: 0;
+}
+
+.box-slot {
+  position: relative;
+}
+
+.box-slot .card {
+  --card-w: 100%;
+  width: 100%;
+  font-size: 9.5px;
+}
+
+.box-x {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 1px solid var(--color-rule);
+  border-radius: 50%;
+  background: var(--color-paper-2);
+  color: var(--color-ink-2);
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+  opacity: 0;
+  transform: scale(0.8);
+  transition: opacity var(--dur-micro) var(--ease-out), transform var(--dur-short) var(--ease-settle), color var(--dur-micro) var(--ease-out);
+}
+
+.box-slot:hover .box-x,
+.box-x:focus-visible {
+  opacity: 1;
+  transform: none;
+}
+
+.box-x:hover {
+  color: var(--color-accent);
+}
+
+@media (hover: none) {
+  .box-x {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.box-panel-foot {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.box-go {
+  gap: var(--space-xs);
+}
+
+.box-go .count {
+  font-family: var(--font-mono);
+  opacity: 0.85;
+}
+
+@media (max-width: 40rem) {
+  .box-dock {
+    right: calc(var(--space-sm) + env(safe-area-inset-right));
+    bottom: calc(var(--space-sm) + env(safe-area-inset-bottom));
+  }
+  .box-panel {
+    width: calc(100vw - 2 * var(--space-sm));
+    max-height: calc(100dvh - 120px);
+  }
+  .box-go {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .box-add,
+  .box-add::before,
+  .box-add::after,
+  .box-stack i,
+  .box-close,
+  .box-x {
+    transition: none;
+  }
+}
+
+
+/* ---------- 手機：左右留白收窄（iPhone 17 左右各多約 2mm；見 styles.css 同一段） ---------- */
+@media (max-width: 30rem) {
+  .book {
+    padding-inline: 4px;
+  }
+}
+
+/* ---------- 電腦：工具列（花色、排序、只看用過的、小分類）捲下去時黏在頂欄底下 ----------
+ * 手機不黏：工具列在手機上有兩三行高，加上頂欄會佔掉四分之一個螢幕。
+ * 頂欄的高度 book.js 量好放在 --mast-h。黏住之後底下才出現一條線和淡淡的影子
+ * （scroll-state 查詢；不支援的瀏覽器就是一直沒有線，照樣能用）。 */
+.book-tools-in {
+  display: grid;
+  gap: var(--space-sm);
+}
+
+@media (min-width: 40.0625rem) {
+  .book-tools {
+    position: sticky;
+    top: var(--mast-h, 0px);
+    z-index: 20;
+    margin-inline: calc(var(--space-lg) * -1);
+    container-type: scroll-state;
+  }
+  .book-tools-in {
+    padding: var(--space-xs) var(--space-lg);
+    /* 跟頂欄同一個底色：背後的牌捲過去時字不會透上來。 */
+    background: color-mix(in oklch, var(--color-paper) 96%, transparent);
+    border-bottom: 1px solid transparent;
+    transition:
+      border-color var(--dur-short) var(--ease-out),
+      box-shadow var(--dur-short) var(--ease-out);
+  }
+  @container scroll-state(stuck: top) {
+    .book-tools-in {
+      border-bottom-color: var(--color-rule-2);
+      box-shadow: 0 12px 20px -18px var(--color-shade);
+    }
+  }
+}
+
+/* ---------- 牌的戰績（排序「出好圖」「常撤下」） ----------
+ * 大字變成幾成（收藏或撤下的比例），小字是「收藏・N 張」。常撤下用朱色，一眼分得出在看哪一種。 */
+.book-cell[data-war="good"] .book-n {
+  color: var(--color-good);
+}
+.book-cell[data-war="bad"] .book-n {
+  color: var(--color-accent);
+}
+.book-cell[data-war-zero="true"] .book-n {
+  color: var(--color-muted);
+}
+.book-war {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- 收集進度與成就牆（achievements.js） ----------
+ * 花色分頁：圖章外圈一圈＝這個花色點亮了幾成。
+ * 成就牆：每個花色一條進度；成就是一枚枚章，沒解鎖的灰、銅銀金白金四種底色。 */
+.book-suits .suit-tab b {
+  position: relative;
+}
+.book-suits .suit-tab b::after {
+  content: "";
+  position: absolute;
+  inset: -3px;
+  border-radius: 50%;
+  background: conic-gradient(var(--suit) calc(var(--lit, 0) * 1turn), color-mix(in oklab, var(--suit) 20%, transparent) 0);
+  -webkit-mask: radial-gradient(circle, transparent calc(50% - 2px), #000 calc(50% - 1.5px));
+  mask: radial-gradient(circle, transparent calc(50% - 2px), #000 calc(50% - 1.5px));
+  pointer-events: none;
+}
+.book-ach {
+  font-variant-numeric: tabular-nums;
+}
+.ach-wall {
+  display: grid;
+  gap: var(--space-xl);
+}
+.ach-wall h3 {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-2xs) var(--space-sm);
+  margin: 0 0 var(--space-sm);
+  font-size: var(--text-md);
+}
+.ach-wall h3 small {
+  color: var(--color-muted);
+  font-size: var(--text-xs);
+  font-weight: 400;
+}
+.ach-suits {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 18rem), 1fr));
+  gap: var(--space-xs) var(--space-lg);
+}
+.ach-suit {
+  display: grid;
+  grid-template-columns: auto auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-xs);
+  font-size: var(--text-sm);
+}
+.ach-suit-glyph {
+  display: inline-grid;
+  place-items: center;
+  width: 1.6em;
+  height: 1.6em;
+  border-radius: 50%;
+  background: var(--suit);
+  color: var(--color-stock-ink);
+  font-family: var(--font-display);
+  font-size: var(--text-xs);
+}
+.ach-suit-n {
+  color: var(--color-muted);
+  font-size: var(--text-xs);
+  font-variant-numeric: tabular-nums;
+}
+.ach-bar {
+  position: relative;
+  display: block;
+  overflow: hidden;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--color-paper-3);
+}
+.ach-bar i {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--suit, var(--color-good));
+  transform-origin: left;
+  scale: var(--lit, 0) 1;
+}
+.ach-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 17rem), 1fr));
+  gap: var(--space-sm);
+}
+.ach {
+  --medal: var(--color-paper-3);
+  --medal-ink: var(--color-muted);
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr);
+  gap: var(--space-sm);
+  align-items: start;
+  padding: var(--space-sm);
+  border: 1px solid var(--color-rule-2);
+  border-radius: var(--radius-sm);
+  background: var(--color-paper-2);
+}
+.ach[data-tier="1"] {
+  --medal: #b07a4a;
+  --medal-ink: #fff4e8;
+}
+.ach[data-tier="2"] {
+  --medal: #a9b2bd;
+  --medal-ink: #1d2228;
+}
+.ach[data-tier="3"] {
+  --medal: #d8a93a;
+  --medal-ink: #2a1d00;
+}
+.ach[data-tier="4"] {
+  --medal: linear-gradient(135deg, #e9f1ff, #9fb7d8 55%, #f4f7ff);
+  --medal-ink: #18243a;
+}
+.ach-medal {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--medal);
+  color: var(--medal-ink);
+  font-family: var(--font-display);
+  font-size: var(--text-md);
+  font-weight: 700;
+  box-shadow: inset 0 0 0 2px color-mix(in oklab, var(--color-ink) 12%, transparent);
+}
+.ach[data-level="0"] .ach-medal {
+  border: 1px dashed var(--color-rule);
+  box-shadow: none;
+  opacity: 0.6;
+}
+.ach-body {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+.ach-body b {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2xs);
+  font-size: var(--text-sm);
+}
+.ach-tier {
+  color: var(--color-muted);
+  font-size: var(--text-xs);
+  font-weight: 400;
+}
+.ach-desc {
+  color: var(--color-ink-2);
+  font-size: var(--text-xs);
+}
+.ach-progress {
+  display: grid;
+  gap: 2px;
+}
+.ach-progress small,
+.ach-at {
+  color: var(--color-muted);
+  font-size: var(--text-xs);
+  font-variant-numeric: tabular-nums;
+}
+.ach-progress .ach-bar i {
+  background: var(--color-good);
+}
+
+/* ---------- 用它做過的圖（從出圖日誌） ----------
+ * 收藏過的右上角一顆星，撤下過的淡一點；原圖不在了留一格說明。 */
+.book-work-badge {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  padding: 0 5px;
+  border-radius: 3px;
+  background: color-mix(in oklch, var(--color-paper) 78%, transparent);
+  color: var(--color-muted);
+  font-size: var(--text-2xs);
+  line-height: 1.6;
+}
+.book-work-badge.is-fav {
+  color: var(--color-good);
+}
+.book-work[data-discard="true"] img {
+  opacity: 0.55;
+}
+.book-work-gone {
+  display: grid;
+  place-items: center;
+  height: 100%;
+  min-height: 60px;
+  color: var(--color-muted);
+  font-size: var(--text-2xs);
+}
+.book-works-more {
+  justify-self: start;
+}
+.book-works-more[hidden],
+.book-works-grid[hidden],
+.book-works-empty[hidden] {
+  display: none;
+}
+.book-work-cards {
+  margin: 0;
+  color: var(--color-ink-2);
+  font-size: var(--text-xs);
+}

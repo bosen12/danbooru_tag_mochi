@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="utf-8" />
+    <script src="language.js"></script>
+    <script type="module" src="i18n.js"></script>
+    <!-- 墨池 ⇄ 疊印台 ⇄ 卡冊 換版（styles.css 的 @view-transition）：判斷方向（滾筒光、分頁底線用），從別頁過來就不播。
+         要在第一次畫面之前掛上，所以放在 head 最前面。 -->
+    <script>
+      // 開機中（詞庫、牌面還沒讀完）：頂欄底下一條掃光、空的牌格寫「正在讀詞庫」（styles.css）。
+      // 開機做完 settleMotion() 拿掉；讀不到詞庫的話 15 秒後自己收，不會一直轉。
+      document.documentElement.dataset.booting = "";
+      setTimeout(() => delete document.documentElement.dataset.booting, 15000);
+      addEventListener("pagereveal", (e) => {
+        const vt = e.viewTransition;
+        if (!vt) return;
+        // 四個房間由左到右：墨池 0、疊印台 1、卡冊 2、作品冊 3。往右走的換版從右邊進來，往左反過來。
+        const room = (u) => (/fuse\.html$/.test(u) ? 1 : /book\.html$/.test(u) ? 2 : /album\.html$/.test(u) ? 3 : /\/(index\.html)?$/.test(u) ? 0 : -1);
+        let from = "";
+        try {
+          from = new URL(navigation?.activation?.from?.url || document.referrer || "", location.href).pathname;
+        } catch {}
+        const was = room(from);
+        const here = room(location.pathname);
+        if (was < 0 || here < 0 || was === here) return vt.skipTransition();
+        document.documentElement.dataset.vt = here > was ? "fwd" : "back";
+        // 進場的錯開動畫（styles.css 的 html[data-vt-in]）比轉場本身長一點，牌也可能晚一步才發進來：
+        // 另外掛一個標記，一秒後才拿掉。
+        document.documentElement.dataset.vtIn = document.documentElement.dataset.vt;
+        // Remember the transition even when vocabulary arrives after its temporary CSS marker expires.
+        document.documentElement.dataset.vtPlayed = "true";
+        setTimeout(() => delete document.documentElement.dataset.vtIn, 1100);
+        vt.finished.finally(() => delete document.documentElement.dataset.vt);
+        // 導覽的墨底從剛才那個標籤滑過來（三個分頁：找的是剛才那一頁的標籤，不是「另一個」）。
+        const ink = document.querySelector(".page-switch-ink");
+        const a = ink?.parentElement;
+        const other = a && [...a.parentElement.querySelectorAll("a")].find((x) => x !== a && room(new URL(x.href).pathname) === was);
+        if (ink && other) {
+          const ra = a.getBoundingClientRect();
+          const ro = other.getBoundingClientRect();
+          if (ra.width) {
+            ink.style.setProperty("--ink-dx", ro.left - ra.left + "px");
+            ink.style.setProperty("--ink-sx", String(ro.width / ra.width));
+            ink.classList.add("is-arriving");
+            ink.addEventListener("animationend", () => ink.classList.remove("is-arriving"), { once: true });
+          }
+        }
+      });
+    </script>
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#0f1217" />
+    <title>排字匣 · 墨池</title>
+    <meta name="description" content="排字匣的卡牌版：把字拖進合成池，引擎抽牌補齊，每張圖底下攤開用了哪些牌。" />
+    <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+    <!-- 加到主畫面（iPhone：分享 → 加入主畫面）：像 App 一樣全螢幕打開，沒有網址列。
+         狀態列透明疊在頁面上，body 用 safe-area 讓出瀏海那一段（styles.css）。 -->
+    <link rel="manifest" href="manifest.json" />
+    <link rel="apple-touch-icon" href="icon-180.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="墨池" />
+    <!-- 墨池 ↔ 疊印台 的跨頁轉場：同意書放在最前面、直接寫在頁面裡。放在 styles.css 的話，
+         冷啟動時它排在 Google Fonts 後面才讀到，瀏覽器已經判定這頁沒同意，轉場就被跳過。 -->
+    <style>
+      @media (prefers-reduced-motion: no-preference) {
+        @view-transition {
+          navigation: auto;
+        }
+      }
+    </style>
+    <link rel="preload" href="lexicon.json" as="fetch" crossorigin />
+    <link rel="preload" href="cards/manifest.json" as="fetch" crossorigin />
+    <link rel="modulepreload" href="engine.js" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Noto+Sans+TC:wght@400;500;700&display=swap"
+    />
+    <link rel="stylesheet" href="fonts.css" />
+    <link rel="stylesheet" href="card.css" />
+    <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="lora.css" />
+    <link rel="stylesheet" href="discord.css" />
+    <link rel="stylesheet" href="locale.css" />
+  </head>
+  <body>
+    <header class="mast">
+      <div class="mast-primary">
+        <h1 class="wordmark">墨池</h1>
+        <nav class="page-switch" aria-label="墨池頁面">
+          <a href="./" aria-current="page"><span class="page-switch-ink" aria-hidden="true"></span><span class="page-switch-label">墨池</span></a>
+          <a href="fuse.html" title="一張牌一層墨：照花色疊進卡池，看引擎補了什麼再付印"><span class="page-switch-label">疊印台</span></a>
+          <a href="book.html" title="每張牌用過幾次：多到少、少到多，點開看它的來歷"><span class="page-switch-label">卡冊</span></a>
+          <a href="album.html" title="收藏的成品：大圖、用了哪些牌、帶回墨池再印"><span class="page-switch-label">作品冊</span></a>
+        </nav>
+        <a class="mast-extra" href="intro.html" title="三分鐘的介紹影片（畫面、配樂即時產生）· Intro film">介紹影片</a>
+        <a class="mast-extra" href="tutorial.html" title="墨池與疊印台的使用教學影片 · How-to film">教學</a>
+      </div>
+      <div class="mast-controls">
+        <div class="segmented" id="rating" data-kind="rating" role="radiogroup" aria-label="尺度分級"></div>
+        <div class="mast-tools" id="mast-tools">
+          <button class="ghost icon-btn" id="sound-btn" type="button" aria-pressed="true" aria-label="聲音：開" title="聲音：開" data-sfx="off"></button>
+          <div class="ping" id="ping" data-ok="" role="status" aria-live="polite"><i aria-hidden="true"></i><span>Comfy…</span></div>
+        </div>
+      </div>
+    </header>
+
+    <div class="layout">
+      <aside class="library panel" id="library" aria-label="字盒">
+        <div class="panel-head">
+          <h2>字盒</h2>
+          <p><span class="lib-count" id="lib-count"></span></p>
+          <button class="btn btn-small btn-ghost lib-toggle" id="lib-toggle" type="button" aria-controls="lib-grid">收起字盒</button>
+        </div>
+        <div class="lib-search">
+          <input id="lib-q" type="search" placeholder="搜尋：紅髮、kimono…（按 / 跳到這裡）" aria-label="搜尋字盒" autocomplete="off" />
+        </div>
+        <div class="suit-tabs" id="suit-tabs" role="group" aria-label="花色"></div>
+        <!-- 細分類籤跟牌一起捲（電腦的字盒、手機的挑牌抽屜；styles.css 的 .lib-scroll）：籤多的花色牌格才不會只剩一小條。 -->
+        <div class="lib-scroll" id="lib-scroll">
+          <div class="group-chips" id="group-chips" role="group" aria-label="小分類" hidden></div>
+          <div class="lib-grid" id="lib-grid" aria-label="字盒裡的牌：點一下放進合成池，拖進廢字簍封鎖"></div>
+        </div>
+      </aside>
+
+      <main class="work" id="work">
+        <section class="pool panel" aria-labelledby="pool-title">
+          <div class="panel-head">
+            <h2 id="pool-title">合成池</h2>
+            <p><span id="pool-count"></span> <button class="btn btn-small btn-ghost" id="pool-paste" type="button" title="貼上一段提示詞，詞庫有的變成牌（電腦上也可以在空白處直接按 Ctrl+V）">貼上</button> <button class="btn btn-small btn-ghost" id="pool-decks" type="button" title="把合成池存成牌組，或套用存過的牌組">牌組</button> <button class="btn btn-small btn-ghost" id="pool-clear" type="button" hidden>清空</button></p>
+          </div>
+          <div class="pool-well" id="pool-well" aria-label="合成池：放進來的字每張圖都一定有"></div>
+          <div class="rules" id="rules"></div>
+          <div class="go-bar" id="go-bar"></div>
+        </section>
+
+        <section aria-labelledby="wall-title">
+          <div class="wall-head" id="wall-head">
+            <h2 id="wall-title">成品</h2>
+            <p>每張圖用了哪些牌收在「牌 · N」裡：你放進池子的，和引擎抽到的。</p>
+            <div class="wall-tools" id="wall-tools"></div>
+          </div>
+          <div class="wall-empty" id="wall-empty">
+            <h3>還沒有成品</h3>
+            <p>放幾個字進合成池，就能抽牌並生圖。</p>
+            <button class="btn btn-small" id="wall-start" type="button">抽並生圖</button>
+          </div>
+          <div class="wall" id="wall"></div>
+        </section>
+      </main>
+    </div>
+
+    <div class="go-float" id="go-float" role="group" aria-label="抽牌（浮動）" data-show="false" inert></div>
+    <button class="trash" id="trash" type="button"></button>
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <div class="tray-bridge" id="tray-bridge" aria-hidden="true" hidden><span>偏好卡牌</span></div>
+    <script>
+      try {
+        const cards = JSON.parse(localStorage.getItem("mochi.hand.v1") || "[]");
+        if (Array.isArray(cards) && cards.length) {
+          const bridge = document.getElementById("tray-bridge");
+          bridge.hidden = false;
+          bridge.dataset.open = localStorage.getItem("mochi.hand.v1.open") !== "false" ? "true" : "false";
+          bridge.style.setProperty("--tray-count", Math.min(cards.length, 10));
+          bridge.style.setProperty("--tray-w", `${Math.max(360, 40 + Math.min(cards.length, 10) * 93)}px`);
+          bridge.firstElementChild.textContent = `偏好卡牌 ${cards.length}/10`;
+        }
+      } catch { /* 儲存空間不可用時，照常載入頁面。 */ }
+    </script>
+    <script type="module" src="app.js"></script>
+      <div class="vt-sweep" aria-hidden="true"></div>
+  </body>
+</html>

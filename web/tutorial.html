@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="utf-8" />
+    <script src="language.js"></script>
+    <script type="module" src="i18n.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#07090d" />
+    <title>墨池 · 疊印台 · 使用教學</title>
+    <meta name="description" content="墨池與疊印台的使用教學影片：從放第一張牌到付印晾紙，畫面與配樂都是這一頁即時產生的。" />
+    <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@600;900&display=swap"
+    />
+    <!-- 牌面跟墨池、疊印台是同一張（card.css）；舞台、字幕在 intro.css、film.css；教學影片自己的螢幕、游標、鍵帽在 tutorial.css。 -->
+    <link rel="stylesheet" href="tokens.css" />
+    <link rel="stylesheet" href="fonts.css" />
+    <link rel="stylesheet" href="card.css" />
+    <link rel="stylesheet" href="intro.css" />
+    <link rel="stylesheet" href="film.css" />
+    <link rel="stylesheet" href="tutorial.css" />
+    <link rel="stylesheet" href="locale.css" />
+  </head>
+  <body>
+    <div class="frame" id="frame">
+      <div class="stage" id="stage" aria-hidden="true">
+        <canvas class="bg" id="bg" width="960" height="540"></canvas>
+        <div class="world-box" id="world-box"><div class="world" id="world"></div></div>
+        <div class="whipblur" id="whipblur" style="display: none"></div>
+        <div class="hud" id="hud"></div>
+        <div class="ink-wipe" id="wipe"></div>
+        <div class="flash" id="flash"></div>
+        <div class="grain" id="grain"></div>
+        <div class="vignette"></div>
+      </div>
+    </div>
+
+    <div class="gate" id="gate">
+      <div class="gate-inner">
+        <p class="gate-kicker">墨池 · 疊印台 · How to</p>
+        <h1 class="gate-title">使用教學<span>Tutorial · <span id="len">4:30</span></span></h1>
+        <p class="gate-note">看完就會用：放牌、規則、抽牌、生圖，到疊印台的試印、付印、晾紙 · Every feature, step by step</p>
+        <div class="gate-cuts" id="cuts" role="radiogroup" aria-label="選影片 · Film">
+          <button type="button" role="radio" data-film="intro">介紹影片 3:00<small>排字匣 · 墨池 · 疊印台</small></button>
+          <button type="button" role="radio" data-film="tutorial">使用教學<small>墨池 &amp; 疊印台 · How to</small></button>
+        </div>
+        <div class="gate-load"><i id="load-bar"></i></div>
+        <p class="gate-status" id="load-status">準備中 · Loading…</p>
+        <button class="gate-play" id="play" type="button" disabled>
+          <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M7 4.5v15l13-7.5z" fill="currentColor" /></svg>
+          <span>播放 Play</span>
+        </button>
+        <p class="gate-keys">建議開聲音、全螢幕 · 空白鍵 暫停 · ← → 快轉 · F 全螢幕 · M 靜音 &nbsp;/&nbsp; Sound on · Space pause · ← → seek · F fullscreen · M mute</p>
+      </div>
+    </div>
+
+    <div class="bar" id="bar">
+      <button type="button" id="pp" aria-label="暫停 Pause"></button>
+      <div class="bar-track" id="track"><i id="fill"></i></div>
+      <span class="bar-time" id="time">0:00</span>
+    </div>
+
+    <script type="module" src="tutorial.js"></script>
+  </body>
+</html>

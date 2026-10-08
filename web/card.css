@@ -1,0 +1,908 @@
+/* 墨池的卡面：墨池工作臺（index.html）和疊印台（fuse.html）共用同一種牌。
+ * 從 styles.css 拆出來，兩頁一起吃這一份，牌長得永遠一樣。 */
+
+/* ---------- 卡牌（跟字鋪同一種卡：左邊直排書脊） ---------- */
+
+.card {
+  --card-w: 88px;
+  --suit: var(--suit-look);
+  position: relative;
+  flex: none;
+  width: var(--card-w);
+  aspect-ratio: 480 / 702;
+  padding: 0;
+  border: 0;
+  border-radius: calc(var(--card-w) * 0.07);
+  background: var(--color-stock);
+  color: var(--color-stock-ink);
+  box-shadow: var(--shadow-card);
+  display: grid;
+  grid-template-columns: 26% minmax(0, 1fr);
+  overflow: hidden;
+  text-align: left;
+  font-size: calc(var(--card-w) * 0.125);
+  transform: translateY(var(--lift, 0));
+  transition:
+    transform var(--dur-short) var(--ease-out),
+    scale var(--dur-short) var(--ease-settle),
+    box-shadow var(--dur-short) var(--ease-out),
+    opacity var(--dur-short) var(--ease-out);
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+.card[data-suit="cast"] {
+  --suit: var(--suit-cast);
+}
+.card[data-suit="look"] {
+  --suit: var(--suit-look);
+}
+.card[data-suit="wear"] {
+  --suit: var(--suit-wear);
+}
+.card[data-suit="pose"] {
+  --suit: var(--suit-pose);
+}
+.card[data-suit="scene"] {
+  --suit: var(--suit-scene);
+}
+.card[data-suit="style"] {
+  --suit: var(--suit-style);
+}
+
+.card-spine {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25em;
+  padding: 0.3em 0 0.35em;
+  background: var(--color-stock);
+  border-right: 1px solid var(--color-stock-3);
+  min-height: 0;
+}
+
+.card-suit {
+  display: grid;
+  place-items: center;
+  width: 1.45em;
+  height: 1.45em;
+  border-radius: 50%;
+  background: var(--suit);
+  color: var(--color-stock-ink);
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 0.95em;
+  line-height: 1;
+  flex: none;
+}
+
+.card-name {
+  writing-mode: vertical-rl;
+  text-orientation: upright;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 1.12em;
+  line-height: 1;
+  letter-spacing: 0.02em;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.card-name[data-len="4"] {
+  font-size: 0.95em;
+}
+.card-name[data-len="5"] {
+  font-size: 0.8em;
+}
+.card-name[data-len="6"],
+.card-name[data-len="7"],
+.card-name[data-len="8"] {
+  font-size: 0.66em;
+}
+
+.card-rate {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 0.62em;
+  line-height: 1;
+  padding: 0.12em 0.18em;
+  border-radius: 2px;
+  flex: none;
+}
+
+/* 小分類的一字章：書脊最底下，花色的顏色描一圈，字用墨色，不搶字名。 */
+.card-seal {
+  flex: none;
+  margin-top: auto;
+  display: grid;
+  place-items: center;
+  width: 1.45em;
+  height: 1.45em;
+  border: 1px solid var(--suit);
+  border-radius: 2px;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 0.9em;
+  line-height: 1;
+  color: var(--color-stock-ink);
+  background: color-mix(in oklch, var(--suit) 22%, var(--color-stock));
+}
+
+.card-rate[data-r="sensitive"] {
+  background: var(--color-warn);
+  color: var(--color-stock-ink);
+}
+
+.card-rate[data-r="explicit"] {
+  background: var(--color-accent-3);
+  color: var(--color-accent-ink);
+}
+
+.card-art {
+  position: relative;
+  min-width: 0;
+  background: var(--color-stock-2);
+  overflow: hidden;
+}
+
+.card-art img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 22%;
+  pointer-events: none;
+}
+
+.card-glyph {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 2.9em;
+  color: color-mix(in oklch, var(--suit) 70%, var(--color-stock-ink));
+  background:
+    repeating-linear-gradient(0deg, transparent 0 9px, color-mix(in oklch, var(--color-stock-3) 60%, transparent) 9px 10px),
+    var(--color-stock-2);
+}
+
+.card-flag {
+  position: absolute;
+  top: 16%;
+  left: 50%;
+  translate: -50% 0;
+  padding: 0.1em 0.35em;
+  border: 2px solid currentColor;
+  border-radius: 3px;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 0.9em;
+  line-height: 1.15;
+  background: color-mix(in oklch, var(--color-stock) 88%, transparent);
+  rotate: -8deg;
+  white-space: nowrap;
+  pointer-events: none;
+  color: var(--color-accent-3);
+}
+
+.card-flag.is-stamping {
+  animation: flag-stamp var(--dur-long) var(--ease-settle);
+}
+
+@keyframes flag-stamp {
+  0% {
+    opacity: 0;
+    scale: 1.8;
+  }
+  55% {
+    opacity: 1;
+    scale: 0.92;
+  }
+  100% {
+    scale: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card-flag.is-stamping {
+    animation: none;
+  }
+}
+
+.card-flag[data-kind="pool"] {
+  color: var(--color-pool-2);
+}
+
+.card-flag[data-kind="src"] {
+  top: auto;
+  bottom: 6%;
+  rotate: 0deg;
+  font-size: 0.7em;
+  border-width: 1px;
+  color: var(--color-stock-muted);
+}
+
+.card[data-state="pinned"] {
+  box-shadow: 0 0 0 2px var(--color-pool), var(--shadow-card);
+}
+
+.card[data-state="banned"] {
+  opacity: 0.45;
+}
+
+.card[data-state="banned"] .card-art {
+  filter: grayscale(1);
+}
+
+.card[data-state="gone"] {
+  opacity: 0.35;
+}
+
+/* 點下去：牌往紙裡壓一點（跟按鈕同一種手感，但牌是紙，不暈墨：牌上的 ::before／::after 是章）。 */
+button.card:active {
+  --lift: 1px;
+  scale: 0.98;
+  transition-duration: var(--dur-micro);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  button.card:hover {
+    --lift: -3px;
+    box-shadow: var(--shadow-lift);
+    z-index: 3;
+  }
+  button.card[data-state="pinned"]:hover {
+    box-shadow: 0 0 0 2px var(--color-pool), var(--shadow-lift);
+  }
+}
+
+/* 拖著走的那張（見 drag.js）：外層跟著手指平移，裡面那張牌負責浮起、傾斜、放大。 */
+
+.drag-ghost {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 90;
+  pointer-events: none;
+  transform-origin: 0 0;
+  will-change: transform;
+}
+
+.drag-ghost > .card {
+  --g-tilt: -2deg;
+  --g-scale: 1;
+  margin: 0;
+  rotate: var(--g-tilt);
+  scale: var(--g-scale);
+  box-shadow: 0 10px 18px var(--color-shade);
+  transition:
+    rotate var(--dur-micro) var(--ease-out),
+    scale var(--dur-short) var(--ease-settle),
+    box-shadow var(--dur-short) var(--ease-out),
+    filter var(--dur-micro) var(--ease-out),
+    opacity var(--dur-micro) var(--ease-out);
+}
+
+/* 拿起來：放大一點、陰影拉深，像離開桌面。 */
+.drag-ghost.is-lifted > .card {
+  --g-scale: 1.07;
+  box-shadow: 0 26px 40px var(--color-shade);
+}
+
+/* 移到收得下的地方：再大一點、描一圈亮邊。 */
+.drag-ghost.is-lifted[data-over="valid"] > .card {
+  --g-scale: 1.12;
+  box-shadow: 0 0 0 2px var(--color-accent), 0 30px 46px var(--color-shade);
+}
+
+/* 移到廢字簍上：縮小、褪色，看得出放手就沒了。 */
+.drag-ghost.is-lifted[data-over="sink"] > .card {
+  --g-scale: 0.9;
+  filter: grayscale(0.75) brightness(0.8);
+  opacity: 0.85;
+}
+
+/* 原位留一個空位：淡、灰、虛線框。 */
+.card[data-dragging="true"] {
+  opacity: 0.28;
+  filter: grayscale(0.6);
+  outline: 1.5px dashed var(--color-rule);
+  outline-offset: 2px;
+}
+
+/* 手機長按的那 280ms：牌慢慢往下壓，壓到底就拿起來了。 */
+.card.is-pressing {
+  scale: 0.95;
+  /* 跟 drag.js 的長按時間（280ms）綁在一起：壓到底的那一刻剛好拿起來，所以是等速、不走動態詞彙。 */
+  transition: scale 280ms linear;
+}
+
+/* 落地：先大、再壓扁、彈回。 */
+.card.is-landed {
+  animation: card-land var(--dur-long) var(--ease-out);
+}
+
+@keyframes card-land {
+  0% {
+    scale: 1.06;
+  }
+  35% {
+    scale: 1.05 0.93;
+  }
+  70% {
+    scale: 0.99 1.02;
+  }
+  100% {
+    scale: 1;
+  }
+}
+
+/* 放錯地方彈回原位：到家時輕輕一跳。 */
+.card.is-home {
+  animation: card-home var(--dur-medium) var(--ease-out);
+}
+
+@keyframes card-home {
+  0% {
+    scale: 0.96;
+  }
+  60% {
+    scale: 1.03;
+  }
+  100% {
+    scale: 1;
+  }
+}
+
+/* 落點散開的一圈墨，顏色是那張牌的花色。 */
+.land-ring {
+  position: fixed;
+  z-index: 89;
+  pointer-events: none;
+  border-radius: 50%;
+  border: 2px solid var(--ring, var(--color-accent));
+  background: radial-gradient(closest-side, color-mix(in oklch, var(--ring, var(--color-accent)) 22%, transparent), transparent);
+  opacity: 0;
+  animation: land-ring var(--dur-xl) var(--ease-out);
+}
+
+@keyframes land-ring {
+  0% {
+    transform: scale(0.35);
+    opacity: 0.9;
+  }
+  100% {
+    transform: scale(1.15);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .drag-ghost > .card,
+  .card.is-pressing {
+    transition: none;
+  }
+  .card.is-landed,
+  .card.is-home,
+  .land-ring {
+    animation: none;
+  }
+}
+
+/* 找牌框裡打了字：按 Enter 會放上去的那一張（第一張）浮起一點、描一圈，右下角一顆 Enter 鍵
+   （cards.js setEnterTarget）。圈畫成貼邊的 2px：字盒是捲動區，畫得更外面會被切掉。 */
+.card.is-enter-target {
+  --lift: -3px;
+  box-shadow: 0 0 0 2px var(--color-accent), var(--shadow-lift, var(--shadow-card));
+}
+
+.enter-chip {
+  position: absolute;
+  right: 5px;
+  bottom: 5px;
+  z-index: 4;
+  padding: 1px 5px 2px;
+  border-radius: 4px;
+  border: 1px solid color-mix(in oklch, var(--color-paper) 40%, transparent);
+  border-bottom-width: 2px;
+  background: var(--color-ink);
+  color: var(--color-paper);
+  font: 700 9px/1.2 var(--font-mono, ui-monospace, monospace);
+  letter-spacing: 0.02em;
+  pointer-events: none;
+  animation: enter-chip-in var(--dur-short) var(--ease-out);
+}
+
+@keyframes enter-chip-in {
+  from {
+    opacity: 0;
+    translate: 0 4px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .enter-chip {
+    animation: none;
+  }
+}
+
+/* ================= 偏好卡牌（手牌，見 hand.js）：視窗底部的托盤 ================= */
+
+/* 托盤：霧面紙，一道淺弧排開整張牌；寬度照張數長（--fav-want），夾在視窗裡。 */
+.fav-hand {
+  position: fixed;
+  left: 50%;
+  bottom: 10px;
+  z-index: 26;
+  box-sizing: border-box;
+  width: min(calc(100vw - 20px), max(var(--fav-want, 360px), 360px));
+  translate: -50% 0;
+  padding: 8px 12px 14px;
+  border: 1px solid var(--color-rule-2);
+  border-radius: 16px;
+  background: color-mix(in oklch, var(--color-paper) 90%, transparent);
+  -webkit-backdrop-filter: blur(14px) saturate(1.1);
+  backdrop-filter: blur(14px) saturate(1.1);
+  box-shadow: 0 18px 40px -12px var(--color-shade), 0 2px 6px -2px var(--color-shade);
+  transition:
+    width var(--dur-medium) var(--ease-out),
+    border-color var(--dur-micro) var(--ease-out),
+    box-shadow var(--dur-micro) var(--ease-out),
+    scale var(--dur-short) var(--ease-out),
+    translate var(--dur-short) var(--ease-out);
+}
+
+.fav-hand[data-hidden="true"] {
+  display: none;
+}
+
+/* 打開／收起那一下（hand.js morphTo）：外框靠 clip-path 裁，不動寬高。
+   - width 的轉場先關掉，不然它會在底下另外跑一段每格排版的動畫。
+   - 毛玻璃先關掉、底色加深一點：裁切範圍每格在變，模糊要一直重算，生圖時跟 ComfyUI 搶顯示卡。 */
+.fav-hand.is-morphing {
+  transition-property: border-color, box-shadow, scale, translate;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  background: color-mix(in oklch, var(--color-paper) 97%, transparent);
+}
+
+/* 收起來的那 300ms：外框在縮，裡面的東西還要看得到（被外框切掉、牌一張張沉下去）。 */
+.fav-hand.is-collapsing[data-open] :is(.fav-body, .fav-hint, .fav-pick) {
+  display: revert;
+}
+
+.fav-hand.is-collapsing[data-open] .fav-body {
+  display: block;
+}
+
+/* 收起來：只剩一顆標籤（大一點，底部一眼找得到、好按）。 */
+.fav-hand[data-open="false"] {
+  width: max-content;
+  padding: 5px 6px;
+  border-radius: 999px;
+}
+
+.fav-hand[data-open="false"] .fav-tab {
+  padding: 7px 14px;
+  font-size: 0.9375rem;
+}
+
+.fav-hand[data-open="false"] :is(.fav-body, .fav-hint, .fav-pick) {
+  display: none;
+}
+
+/* 墨池底下的浮動按鈕列出現時，托盤讓到它上面。以前改 bottom（10px → 72px）：托盤帶毛玻璃，
+ * 每一格都要排版、重算模糊，而捲到成品牆看圖正是生圖的時候。改用 translate，
+ * 讓位距離也算進操作列的手機安全區，才不會蓋住「只抽牌／抽並生圖」。 */
+.go-float[data-show="true"] ~ .fav-hand {
+  translate: -50% calc(-62px - env(safe-area-inset-bottom));
+}
+
+/* 拖牌經過：托盤描一圈（可以放），壓在上面亮起來。 */
+.fav-hand[data-droppable="true"] {
+  border-color: color-mix(in oklch, var(--color-accent) 55%, transparent);
+}
+
+.fav-hand[data-over="true"] {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px color-mix(in oklch, var(--color-accent) 22%, transparent), 0 18px 40px -12px var(--color-shade);
+}
+
+/* 滿十張：拖過來不亮成可以放，標頭改說滿了（放下去影子彈回原位）。 */
+.fav-hand[data-over="true"][data-full="true"] {
+  border-color: var(--color-rule);
+  box-shadow: 0 18px 40px -12px var(--color-shade);
+}
+
+.fav-hand[data-full="true"] .fav-hint {
+  color: var(--color-accent);
+}
+
+/* 托盤收著或還沒有牌：拖牌的時候變成一顆「放這裡」的標籤，拖過去就加進來。 */
+body[data-dragging="true"] .fav-hand[data-hidden="true"][data-droppable="true"] {
+  display: block;
+  animation: fav-pill-in var(--dur-short) var(--ease-out);
+}
+
+body[data-dragging="true"] .fav-hand[data-open="false"][data-droppable="true"] .fav-head::after {
+  content: "放這裡加入";
+  padding-right: 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-accent);
+}
+
+body[data-dragging="true"] .fav-hand[data-open="false"][data-over="true"] {
+  scale: 1.08;
+}
+
+@keyframes fav-pill-in {
+  from {
+    opacity: 0;
+    translate: -50% 12px;
+  }
+}
+
+/* 拖著托盤上的牌經過托盤：它先讓出位置（空格跟著指標走）。 */
+.fav-slot.is-out {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.fav-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 34px;
+}
+
+.fav-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--color-ink);
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color var(--dur-micro) var(--ease-out);
+}
+
+.fav-tab:hover {
+  background: var(--color-paper-3);
+}
+
+.fav-count {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-muted);
+}
+
+.fav-chev {
+  color: var(--color-muted);
+  transition: rotate var(--dur-short) var(--ease-out);
+}
+
+.fav-hand[data-open="true"] .fav-chev {
+  rotate: 180deg;
+}
+
+.fav-hint {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.8125rem;
+  color: var(--color-muted);
+}
+
+.fav-pick {
+  flex: none;
+  padding: 4px 14px;
+  border: 1px solid var(--color-rule);
+  border-radius: 999px;
+  background: var(--color-paper-3);
+  color: var(--color-ink);
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background-color var(--dur-micro) var(--ease-out),
+    border-color var(--dur-micro) var(--ease-out),
+    color var(--dur-micro) var(--ease-out);
+}
+
+.fav-pick:hover {
+  border-color: var(--color-ink-2);
+}
+
+.fav-pick[aria-pressed="true"] {
+  border-color: var(--color-accent);
+  background: var(--color-accent);
+  color: var(--color-accent-ink, #fff);
+}
+
+/* 牌的上面留一點空：指到的那張浮起來不會被切掉。 */
+.fav-body {
+  padding-top: 14px;
+}
+
+.fav-fan {
+  position: relative;
+  height: calc(var(--fav-card-w, 84px) * 1.4625 + 22px);
+}
+
+.fav-slot {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  transform-origin: 50% 100%;
+  transition:
+    transform var(--dur-medium) var(--ease-out),
+    opacity var(--dur-micro) var(--ease-out);
+}
+
+/* 跟字盒同一張牌：同寬、同字級，陰影也一樣；只有指到的那張多一層影子。 */
+.fav-card {
+  --card-w: var(--fav-card-w, 84px);
+  width: var(--fav-card-w, 84px);
+  font-size: var(--fav-card-fs, 10px);
+  cursor: pointer;
+}
+
+.fav-slot.is-hot .fav-card {
+  box-shadow: 0 14px 22px -8px var(--color-shade), var(--shadow-card);
+}
+
+.fav-slot.is-arriving {
+  opacity: 0;
+}
+
+/* 現在的分級出不了的牌：淡一點、灰一點（牌上蓋著「分級擋掉」的章）。 */
+.fav-slot.is-blocked .fav-card {
+  opacity: 0.55;
+  filter: grayscale(0.7);
+}
+
+/* ×：指到牌才出現；觸控螢幕沒有「指到」，一直都在。 */
+.fav-x {
+  position: absolute;
+  top: -7px;
+  right: -7px;
+  /* 牌指到時自己會升到 z-index 3（字盒的樣式），× 要再高一層。 */
+  z-index: 5;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 1.5px solid var(--color-paper);
+  border-radius: 50%;
+  background: var(--color-ink);
+  color: var(--color-paper);
+  cursor: pointer;
+  opacity: 0;
+  scale: 0.6;
+  transition:
+    opacity var(--dur-micro) var(--ease-out),
+    scale var(--dur-short) var(--ease-out),
+    background-color var(--dur-micro) var(--ease-out);
+}
+
+.fav-slot:is(.is-hot, :focus-within) .fav-x,
+.fav-hand[data-editing="true"] .fav-x {
+  opacity: 1;
+  scale: 1;
+}
+
+.fav-x:hover {
+  background: var(--color-accent);
+}
+
+@media (hover: none) {
+  .fav-x {
+    opacity: 0.9;
+    scale: 1;
+  }
+}
+
+.fav-emptytext {
+  display: grid;
+  place-items: center;
+  box-sizing: border-box;
+  height: 100%;
+  margin: 0;
+  padding: 0 16px;
+  border: 1.5px dashed var(--color-rule);
+  border-radius: 10px;
+  font-size: 13px;
+  color: var(--color-muted);
+  text-align: center;
+}
+
+/* 窄螢幕托盤佔滿整條底邊：角落的廢字簍（墨池）、「卡池」標籤（疊印台）往上讓到托盤上面，
+   不然一個被托盤蓋住（拖不進廢字簍），一個蓋在托盤上。寬螢幕托盤兩旁留了位置，不用讓。 */
+/* 底下的提示（toast）也浮在托盤上面，不蓋住牌。 */
+body .toast {
+  bottom: calc(var(--fav-h, 0px) + var(--space-lg) + env(safe-area-inset-bottom));
+}
+
+/* 「卡池」（疊印台左下）跟中間那顆托盤膠囊左右會撞，一律讓。
+   廢字簍在右下：托盤收成中間的小膠囊時左右碰不到，不必讓 —— 以前照讓，它就浮在內容中間
+   一路壓著右半邊。托盤打開（佔滿底邊）才讓。 */
+@media (max-width: 68.74rem) {
+  .pool-pill,
+  body[data-fav-hand-open="true"] .trash {
+    translate: 0 calc(-1 * var(--fav-h, 0px));
+  }
+}
+
+@media (min-width: 68.75rem) {
+  .fav-hand {
+    width: min(calc(100vw - 200px), max(var(--fav-want, 360px), 360px));
+  }
+}
+
+/* 托盤佔的高度，整頁捲動時底下墊一樣多，最後一排牌不會被蓋住
+   （疊印台寬螢幕整頁不捲、三欄各自捲，墊在 fuse.css 的三欄裡）。 */
+body {
+  padding-bottom: var(--fav-h, 0px);
+}
+
+/* 挑牌模式：字盒整欄描一圈；已經在手牌裡的蓋一個「手」。 */
+body[data-hand-edit="true"] :is(#case-grid, #lib-grid) {
+  outline: 2px dashed color-mix(in oklch, var(--color-accent) 60%, transparent);
+  outline-offset: 4px;
+  border-radius: 8px;
+}
+
+body[data-hand-edit="true"] :is(#case-grid, #lib-grid) .card {
+  cursor: copy;
+}
+
+body[data-hand-edit="true"] :is(#case-grid, #lib-grid) .card[data-in-hand="true"] {
+  cursor: pointer;
+}
+
+.card[data-in-hand="true"]::before {
+  content: "手";
+  position: absolute;
+  right: 4px;
+  top: 4px;
+  z-index: 3;
+  display: grid;
+  place-items: center;
+  width: 1.6em;
+  height: 1.6em;
+  border-radius: 50%;
+  background: var(--color-accent);
+  color: var(--color-accent-ink, #fff);
+  font-weight: 800;
+  font-size: 9px;
+  line-height: 1;
+  pointer-events: none;
+}
+
+.fav-card[data-in-hand]::before {
+  content: none;
+}
+
+/* 剛加進手牌：「手」像橡皮章壓下來（跟字盒的「在池」同一個手感）。 */
+.card.is-hand-stamp[data-in-hand="true"]::before {
+  animation: hand-stamp var(--dur-long) var(--ease-settle);
+}
+
+@keyframes hand-stamp {
+  0% {
+    opacity: 0;
+    scale: 1.8;
+  }
+  55% {
+    opacity: 1;
+    scale: 0.9;
+  }
+  100% {
+    scale: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card.is-hand-stamp[data-in-hand="true"]::before {
+    animation: none;
+  }
+}
+
+/* 疊印台的字盒：在池的牌右上角已經有「在池」，「手」排到它下面，不疊在一起。 */
+.case-grid .card[data-state="pinned"][data-in-hand="true"]::before {
+  top: 22px;
+}
+
+@media (max-width: 640px) {
+  .fav-hand {
+    bottom: 8px;
+    width: calc(100vw - 16px);
+    padding: 4px 8px 10px;
+  }
+  .fav-hand[data-open="false"] {
+    width: max-content;
+  }
+  .fav-hand[data-editing="false"] .fav-hint {
+    display: none;
+  }
+  .fav-head {
+    justify-content: space-between;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fav-hand,
+  .fav-slot,
+  .fav-chev,
+  .fav-x {
+    transition: none;
+  }
+}
+
+/* 「偏好卡牌」鈕：圖示＋字＋張數；托盤開著的時候亮起來。 */
+.hand-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.hand-btn b {
+  font-size: 0.8em;
+  font-weight: 700;
+  opacity: 0.7;
+  font-variant-numeric: tabular-nums;
+}
+
+.hand-btn[aria-pressed="true"] {
+  color: var(--color-accent);
+  box-shadow: inset 0 0 0 1.5px var(--color-accent);
+}
+
+/* ---------- 份量（weights.js）：右下角一個小數字，1.0 不標 ----------
+ * 大於 1 暖色（墨紅）、小於 1 灰藍。牌本身也帶 data-w：加強的邊框深一點、淡化的透明一點。 */
+.card-w {
+  position: absolute;
+  right: 3px;
+  bottom: 3px;
+  z-index: 2;
+  min-width: 2em;
+  padding: 0.1em 0.35em;
+  border-radius: 999px;
+  background: color-mix(in oklch, var(--color-stock) 92%, transparent);
+  color: var(--color-accent);
+  font-family: var(--font-mono);
+  /* 手機合成池的牌只有 70px 寬：數字最少 10px，一眼讀得到。 */
+  font-size: max(10px, 1.05em);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.3;
+  text-align: center;
+  box-shadow: 0 0 0 1px currentColor inset;
+  pointer-events: none;
+}
+.card[data-w="down"] .card-w {
+  color: color-mix(in oklch, var(--color-pool-2) 70%, var(--color-muted));
+}
+.card[data-w="up"] {
+  box-shadow: 0 0 0 1.5px color-mix(in oklch, var(--color-accent) 70%, transparent), 0 6px 14px -8px var(--color-shade);
+}
+.card[data-w="down"] .card-art img {
+  opacity: 0.72;
+}
