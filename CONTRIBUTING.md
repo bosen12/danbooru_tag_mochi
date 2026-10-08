@@ -36,7 +36,7 @@ python tests/run.py --browser
 
 ## Shared source and translations
 
-Most runtime code and tests are synchronized from [danbooru_tag_random](https://github.com/bosen12/danbooru_tag_random). Contributors may change this standalone repository normally. The maintainer carries merged changes back to upstream before synchronizing again, so contributions are preserved. Add English UI translations to `web/locales/en.js`; keep user-entered names and machine prompts unchanged. Bat files use CRLF.
+Most runtime code and tests are synchronized from [danbooru_tag_random](https://github.com/bosen12/danbooru_tag_random). Contributors may change this standalone repository normally. The maintainer carries merged changes back to upstream before synchronizing again, so contributions are preserved. When carrying new GPL-only contributions upstream, preserve their GPL notices and make the corresponding upstream distribution comply with GPLv3; synchronization does not grant permission to relicense those contributions as MIT. Add English UI translations to `web/locales/en.js`; keep user-entered names and machine prompts unchanged. Bat files use CRLF.
 
 Maintainers work on shared code in upstream, run its tests, run `python scripts/sync_mochi.py`, then run these standalone checks. README, launchers, `.github`, CONTRIBUTING, release notes and community copy belong to Mochi. Font rebuilding is performed in upstream; see `web/fonts/README.md`.
 
@@ -48,4 +48,4 @@ Maintainers work on shared code in upstream, run its tests, run `python scripts/
 
 開發測試需要 Python 3.9+、Node.js 20+；跑 `python tests/run.py`；完整歷史引擎回歸用 `python tests/run.py --full`，需要較長時間。安裝上方 Playwright 開發依賴後，可用 `python tests/run.py --browser` 驗證真實頁面與中英文安裝選擇。測試使用假 API，不會安裝套件或送到你的 ComfyUI 生圖。
 
-可以直接在本 repo 提 PR；維護者會先把合併內容搬回 Random，再同步，避免貢獻被覆蓋。新增介面文字時補英文翻譯；bat 保留 CRLF。
+可以直接在本 repo 提 PR；維護者會先把合併內容搬回 Random，再同步，避免貢獻被覆蓋。 新 GPL 貢獻搬回上游時，必須保留 GPL 聲明並確保上游相應發布符合 GPLv3；同步不代表可以把貢獻改授權為 MIT。新增介面文字時補英文翻譯；bat 保留 CRLF。
