@@ -84,8 +84,12 @@ def _root_from_config(config: dict) -> Path | None:
 
 
 def embedded_python(root: Path) -> Path | None:
-    """ComfyUI portable keeps its python next to the ComfyUI folder."""
-    for cand in (root.parent / "python_embeded" / "python.exe", root / "python_embeded" / "python.exe", root.parent / "python_embedded" / "python.exe"):
+    """ComfyUI's own python: the portable build keeps it next to the ComfyUI folder; a git
+    install usually has a venv inside it; ComfyUI Desktop uses .venv."""
+    cands = [root.parent / "python_embeded" / "python.exe", root / "python_embeded" / "python.exe", root.parent / "python_embedded" / "python.exe"]
+    for venv in (root / "venv", root / ".venv", root.parent / "venv", root.parent / ".venv"):
+        cands += [venv / "Scripts" / "python.exe", venv / "bin" / "python"]
+    for cand in cands:
         if cand.is_file():
             return cand
     return None
@@ -150,45 +154,54 @@ def status(config: dict | None = None) -> dict:
     return {"root": root, "node": node, "model": model, "comfy_up": comfy_up}
 
 
-def install_node(root: Path) -> bool:
+def install_custom_node(root: Path, dir_name: str, git_url: str, zip_url: str, label: str) -> bool:
+    """Put a ComfyUI custom node into custom_nodes/<dir_name> and install its requirements
+    with ComfyUI's own python. git clone when git is on PATH, otherwise the GitHub zip.
+    Shared with fetch_lora_manager.py."""
     nodes = root / "custom_nodes"
-    dest = nodes / NODE_DIR
+    dest = nodes / dir_name
     if not nodes.is_dir():
-        print(f"No custom_nodes folder under {root}. Not installing the node.")
+        print(f"No custom_nodes folder under {root}. Not installing {label}.")
         return False
     if not dest.exists():
         git = shutil.which("git")
         ok = False
         if git:
-            print("Cloning comfyui_controlnet_aux ...", flush=True)
-            ok = subprocess.call([git, "clone", "--depth", "1", NODE_GIT, str(dest)]) == 0
+            print(f"Cloning {label} ...", flush=True)
+            ok = subprocess.call([git, "clone", "--depth", "1", git_url, str(dest)]) == 0
         if not ok:
-            print("Downloading comfyui_controlnet_aux (zip) ...", flush=True)
+            print(f"Downloading {label} (zip) ...", flush=True)
             try:
-                req = urllib.request.Request(NODE_ZIP, headers=UA)
+                req = urllib.request.Request(zip_url, headers=UA)
                 with urllib.request.urlopen(req, timeout=180) as resp:
                     data = resp.read()
                 with zipfile.ZipFile(io.BytesIO(data)) as zf:
                     top = zf.namelist()[0].split("/")[0]
-                    tmp = nodes / (".tmp_" + NODE_DIR)
+                    tmp = nodes / (".tmp_" + dir_name)
                     shutil.rmtree(tmp, ignore_errors=True)
                     zf.extractall(tmp)
                     os.replace(tmp / top, dest)
                     shutil.rmtree(tmp, ignore_errors=True)
             except (OSError, urllib.error.URLError, zipfile.BadZipFile) as err:
-                print(f"Could not download the node ({err}).")
+                print(f"Could not download {label} ({err}).")
                 return False
     py = embedded_python(root)
     req = dest / "requirements.txt"
     if py and req.is_file():
-        print("Installing the node's python packages with ComfyUI's python ...", flush=True)
+        print(f"Installing {label}'s python packages with ComfyUI's python ...", flush=True)
         code = subprocess.call([str(py), "-s", "-m", "pip", "install", "-r", str(req)])
         if code != 0:
-            print("pip did not finish. Open ComfyUI Manager and use 'Try fix' on comfyui_controlnet_aux.")
+            print(f"pip did not finish. Open ComfyUI Manager and use 'Try fix' on {dir_name}.")
             return False
     elif not py:
         print("ComfyUI's own python was not found (not the portable build?).")
         print(f"Install the packages yourself:  <ComfyUI python> -m pip install -r \"{req}\"")
+    return True
+
+
+def install_node(root: Path) -> bool:
+    if not install_custom_node(root, NODE_DIR, NODE_GIT, NODE_ZIP, "comfyui_controlnet_aux"):
+        return False
     print("Node installed. Restart ComfyUI once so it loads AIO Aux Preprocessor.")
     return True
 

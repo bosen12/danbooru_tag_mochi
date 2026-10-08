@@ -875,8 +875,35 @@ def models_from_comfy(kind: str) -> list[str]:
     return names
 
 
+_LM_CKPT = {"at": 0.0, "by_file": {}, "ok": False}
+
+
+def lm_checkpoints() -> dict:
+    """ComfyUI 的 LoRA Manager 認得的 checkpoint：檔名 → {title, previewUrl}。一分鐘快取（生圖時也會叫到）。"""
+    now = time.time()
+    if now - _LM_CKPT["at"] < 60:
+        return _LM_CKPT["by_file"]
+    by_file = {}
+    raw = lora_scan.lora_manager_list("checkpoints")
+    for it in raw or []:
+        fn = str(it.get("file_path") or "").replace("\\", "/").rsplit("/", 1)[-1]
+        name = lora_scan.lm_preview_name(it.get("preview_url") or "") or ""
+        # 底模面板只放 <img>：影片預覽（實測有 27MB 的 mp4）下載了也顯示不出來，不給。
+        if lora_scan.is_video_preview(name):
+            it = {**it, "preview_url": ""}
+            name = ""
+        if fn:
+            by_file[fn] = {
+                "title": str(it.get("model_name") or Path(fn).stem),
+                "previewUrl": lora_scan.lm_preview_src(it.get("preview_url") or ""),
+                "preview": name,
+            }
+    _LM_CKPT.update(at=now, by_file=by_file, ok=raw is not None)
+    return by_file
+
+
 def checkpoints_for_ui() -> tuple[list[dict], str]:
-    """Use Comfy as the model source and attach local preview metadata when available."""
+    """Use Comfy as the model source; names and previews from ComfyUI's LoRA Manager, else the local folder."""
     local = list_ckpts()
     by_file = {it["file"]: it for it in local}
     by_name = {str(it.get("ckpt_name") or "").replace("/", "\\"): it for it in local}
@@ -886,18 +913,23 @@ def checkpoints_for_ui() -> tuple[list[dict], str]:
         names = []
     if not names:
         return local, "local" if local else "none"
+    lm = lm_checkpoints()
     items = []
     for raw in names:
         fn = raw.split("\\")[-1]
         loc = by_name.get(raw) or by_file.get(fn) or {}
-        items.append(
-            {
-                "file": fn,
-                "ckpt_name": raw,
-                "title": loc.get("title") or Path(fn).stem,
-                "preview": loc.get("preview") or "",
-            }
-        )
+        man = lm.get(fn) or {}
+        item = {
+            "file": fn,
+            "ckpt_name": raw,
+            "title": man.get("title") or loc.get("title") or Path(fn).stem,
+            "preview": loc.get("preview") or "",
+        }
+        # 本機 checkpointDir 只掃一層；LoRA Manager 認得每個子資料夾。本機沒有圖才用它的。
+        if not item["preview"] and man.get("previewUrl"):
+            item["preview"] = man.get("preview") or "preview"
+            item["previewUrl"] = man["previewUrl"]
+        items.append(item)
     return items, "comfy"
 
 
@@ -3129,6 +3161,8 @@ class Handler(BaseHTTPRequestHandler):
                 "source": source,
                 "current": resolve_ckpt(None, items),
                 "items": items,
+                # ComfyUI 有 LoRA Manager：畫面上「用 LoRA Manager 管理」連到它的 checkpoint 頁。
+                "manager": lora_scan.lm_manager_url().rsplit("/", 1)[0] + "/checkpoints" if _LM_CKPT["ok"] else "",
             },
         )
 
@@ -3395,6 +3429,9 @@ class Handler(BaseHTTPRequestHandler):
             vals = qs.get(key) or [default]
             return vals[0] if vals else default
 
+        if one("lm"):
+            self._serve_lm_preview(one("lm"))
+            return
         p = lora_scan.preview_path(one("folder"), one("file"))
         if p is None:
             self._json(404, {"ok": False, "error": "not found"})
@@ -3419,6 +3456,33 @@ class Handler(BaseHTTPRequestHandler):
             return
         extra = {"Cache-Control": "private, max-age=86400"}
         if lora_scan.is_video_preview(p.name):
+            extra["Accept-Ranges"] = "bytes"
+        self._bytes(200, raw, mime, extra)
+
+    def _serve_lm_preview(self, src: str) -> None:
+        """轉送 ComfyUI LoRA Manager 的預覽圖（LoRA、checkpoint 都是）。
+
+        瀏覽器不一定連得到 ComfyUI（手機走 Tailscale、ComfyUI 只聽 127.0.0.1），所以由這裡去拿。
+        只轉 /api/lm/previews?…，不能拿來打 ComfyUI 的其他網址。"""
+        if not src.startswith(lora_scan.LM_PREVIEW_PREFIX) or any(c in src for c in "\r\n#") or "://" in src:
+            self._json(404, {"ok": False, "error": "not found"})
+            return
+        try:
+            req = urllib.request.Request(comfy_base() + src, method="GET")
+            with urllib.request.urlopen(req, timeout=20) as r:
+                raw = r.read()
+                mime = (r.headers.get("Content-Type") or "").split(";")[0].strip()
+        except urllib.error.HTTPError as exc:
+            self._json(404 if exc.code == 404 else 502, {"ok": False, "error": f"LoRA Manager {exc.code}"})
+            return
+        except (OSError, urllib.error.URLError) as exc:
+            self._json(502, {"ok": False, "error": str(exc)})
+            return
+        if not mime.startswith(("image/", "video/")):
+            self._json(502, {"ok": False, "error": "not a preview"})
+            return
+        extra = {"Cache-Control": "private, max-age=86400"}
+        if mime.startswith("video/"):
             extra["Accept-Ranges"] = "bytes"
         self._bytes(200, raw, mime, extra)
 
@@ -4216,8 +4280,12 @@ def main() -> None:
     print(f"ckpt     {CKPT}")
     # 第一次 clone 下來最常見的兩個「怎麼是空的」就是這兩項沒設定。
     # 與其讓使用者從空清單反推，開機就講清楚。
-    if not lora_scan.LORA_ROOT:
-        print("loras    （未設定 config.json 的 paths.loraRoot，LoRA 清單改問 Comfy，沒有預覽圖和觸發詞）")
+    lm_total = lora_scan.lora_manager_count()
+    if lm_total is not None:
+        print(f"loras    ComfyUI 的 LoRA Manager：{lm_total} 個，預覽圖和觸發詞從它來（{lora_scan.lm_manager_url()}）")
+    elif not lora_scan.LORA_ROOT:
+        print("loras    （ComfyUI 沒有 LoRA Manager、也沒設定 paths.loraRoot：LoRA 清單改問 Comfy，沒有預覽圖和觸發詞。"
+              "啟動檔會自動裝 LoRA Manager，裝完重開 ComfyUI）")
     elif not lora_scan.LORA_ROOT.is_dir():
         print(
             f"loras    {lora_scan.LORA_ROOT}（路徑不存在，LoRA 面板會是空的）\n"

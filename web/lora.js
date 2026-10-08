@@ -10,7 +10,29 @@ const ICON_CLOSE =
 const LORA_MGR_LOGO_B64 =
   "iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAAXNSR0IArs4c6QAAA/lJREFUWEeVV0trFEEQ/ubiRRQPInoTDwo+jhpRRAUR4wNFkywBEdw1ia+LBxUVRUHwIir4QPABIngTPHry5i/IWcFHdteYRCKJm5np7ZLu6Z7p6emenexhd7anp+urqq++qgnGv7cIAAIQCIG4lP8AuZz/iCW9xbuTAArUPvO6eJy0lADQxrRhy4oTkgON20bpqgEgMZr5rnDJZRNQb68Sh4pOmEhSV3UK5E35nOthY41InZ03kAIvnOEDkzgSjH9rEoIgB9rNgOpe9Y5AdpZKgfBeeyYcFJQs+/QAk95WFyXbg/HvTWXZJKI23tvrDGbJ3hygPKcMACkJHK6bHDDqzxUkGUmLgC5uKX+zFOQO0xWgDiLgwqX7aH/5AeIhunGEE7V+nGoM9GR7cmzigMmt5JqEDugUON1JJIoIpy89QOvrT+DvHMAXMDh8EGfODaeHV6g8J6kcEdDhzn5FVOuXH6P5ow3MzAJxiKHh/WiMDZUw1dILOzUyBSIC3xIpznRDM1f9igolQv3KU0y0p0CMIZifR+3wLjRGj7sBuIx5dCmJgElgB4kEgMbV55hoT4I4R9DpoHZgJ+pnjmbSKQQs7QHVNdlNQquiBICRay8w0ZoCUQyKGWr7tqHeOKI4ZjDfrkajAnIyL0IuHstJsY9JBIxcfyUBcGIgYhjq34nG8D43scxeKiIqKkCJrV1smRTbd6xmMnrjDX42pwAw8C7D4KE+NGoKwGL0yrRTjIBHjAgYvfkWrfY0OGcgzjBwsA/1ob1WBOwK6i3nnjLUZZEcKL7Hbr1Dsz2NgHNwFmHg0DacHtxdsQoc6qh89Sih7Rhh7O57tFrT4HEEdBm2blmL3X3rZRMj4jIqq1auwOaN6/xSbqSqOA842KurSvDo7L0PaP36A4oiUBwi4F10WQxiMTgLwaMQS8I5PHx0Ges3rPXEvtjoEyFyiYRkr8hAIsXnH35EszkjhYjCBZCIBGMyIpwtAFEEPjOFNauX48nL21i2bKmzB6TIdHXky1DdLugAcOHZJ0zO/pOeR9Oz4J0OKFoAOCkQISjsgDpz2L5jE+7cGlVNsWQ0k1WgJyJn0LKB4uLrz/g9O48AHOHkH/BOCEQhKBLp4LJD8lgAYujyGCMn92Pg2B6llHpKLhrxp8ASJS4Ika5Z7cOX8fK5NMmwMwW2InqHDCtluZ7iaHAZAdKb/nnAp26VVM/oqPZ0JEFkgiUjIINrHex5N6re5hw79RSU2FfvIXkSqtIz22olj7W1jLSpfWnHGvGM7X4lzBnu0etLWnDpO0JShmoi0vLvack6Tc62uojE2Kmt1gs0cYzcLcJm6dYCgAL5CqVVgRTOLVoUFM8UrP/DbkWRXoaOTQAAAABJRU5ErkJggg==";
 
-const LORA_MGR_ORIGIN = `http://${location.hostname}:7861`;
+// ComfyUI 的 LoRA Manager（custom node）：/api/loras、/api/checkpoints 有它就給它的網址。
+// 伺服器看到的是 127.0.0.1:8188；手機走 Tailscale 開網頁時，換成這一頁的主機名才連得到。
+let LORA_MGR_URL = "";
+let CKPT_MGR_URL = "";
+function reachable(url) {
+  if (!url) return "";
+  try {
+    const u = new URL(url);
+    const loop = (h) => ["127.0.0.1", "localhost", "[::1]", "::1"].includes(h);
+    if (loop(u.hostname) && !loop(location.hostname)) u.hostname = location.hostname;
+    return u.href;
+  } catch {
+    return "";
+  }
+}
+function syncManagerLinks() {
+  for (const [id, url] of [["lm-manager-link", LORA_MGR_URL], ["ckpt-manager-link", CKPT_MGR_URL]]) {
+    const a = $(id);
+    if (!a) continue;
+    a.hidden = !url;
+    if (url) a.href = url;
+  }
+}
 const GEN_LORA_PAGE_SIZE = 80;
 
 let GEN_LORAS = null;
@@ -125,6 +147,8 @@ async function fetchGenLoras() {
   try {
     const got = await fetch("/api/loras").then((r) => r.json());
     if (!got.error) GEN_LORAS = got.items || [];
+    LORA_MGR_URL = reachable(got.manager);
+    syncManagerLinks();
     // 伺服器會講為什麼是空的（沒設定 paths.loraRoot、資料夾不存在、改問 ComfyUI
     // 也失敗…）。不轉述的話使用者只看到一個空面板，沒有線索。
     if (got.error) toast("LoRA：" + got.error, true);
@@ -136,6 +160,7 @@ async function fetchGenLoras() {
 }
 
 function loraPreviewUrl(l) {
+  if (l.previewUrl) return l.previewUrl;
   return `/api/lora-preview?folder=${encodeURIComponent(l.folder)}&file=${encodeURIComponent(l.preview)}`;
 }
 function isLoraPreviewVideo(l) {
@@ -556,8 +581,14 @@ function renderLmCurrent() {
   detailLink.className = "lm-detail-link";
   detailLink.target = "_blank";
   detailLink.rel = "noopener";
-  detailLink.title = "在 LoRA Manager 開這個 LoRA 的完整詳情（新分頁）";
-  detailLink.href = `${LORA_MGR_ORIGIN}/loras?open=${encodeURIComponent((lora.folder || "") + "/" + (lora.file || ""))}`;
+  // 有 Civitai 資料就開它的模型頁（說明、範例圖、建議強度都在那）；沒有就開 LoRA Manager。
+  const civ = lora.civitai && lora.civitai.modelId;
+  detailLink.title = civ ? "在 Civitai 開這個 LoRA 的頁面（新分頁）" : "在 LoRA Manager 開（新分頁）";
+  const detailHref = civ
+    ? `https://civitai.com/models/${encodeURIComponent(lora.civitai.modelId)}${lora.civitai.versionId ? `?modelVersionId=${encodeURIComponent(lora.civitai.versionId)}` : ""}`
+    : LORA_MGR_URL;
+  detailLink.hidden = !detailHref;
+  if (detailHref) detailLink.href = detailHref;
   detailLink.innerHTML = `<img src="data:image/png;base64,${LORA_MGR_LOGO_B64}" alt="" width="13" height="13"><span>詳情</span>`;
   const actionsRow = document.createElement("div");
   actionsRow.className = "lm-actions-row";
@@ -1274,6 +1305,7 @@ export function handleLoraKeys(e) {
 }
 
 function ckptPreviewUrl(c) {
+  if (c.previewUrl) return c.previewUrl;
   return `/api/ckpt-preview?file=${encodeURIComponent(c.preview)}`;
 }
 
@@ -1349,7 +1381,8 @@ function renderCkptCurrent() {
   mgr.className = "lm-manager-link ckpt-mgr-inline";
   mgr.target = "_blank";
   mgr.rel = "noopener";
-  mgr.href = `${LORA_MGR_ORIGIN}/loras`;
+  mgr.href = CKPT_MGR_URL;
+  mgr.hidden = !CKPT_MGR_URL;
   mgr.innerHTML = `<img src="data:image/png;base64,${LORA_MGR_LOGO_B64}" alt="" width="16" height="16">在 LoRA Manager 開（新分頁）`;
   box.appendChild(mgr);
 }
@@ -1360,6 +1393,8 @@ async function fetchCkpts() {
     const data = await fetch("/api/checkpoints").then((r) => r.json());
     GEN_CKPTS = data.items || [];
     GEN_CKPT_SOURCE = data.source || "";
+    CKPT_MGR_URL = reachable(data.manager);
+    syncManagerLinks();
     const names = new Set(GEN_CKPTS.map((c) => c.ckpt_name));
     if (GEN_CKPT && !names.has(GEN_CKPT)) GEN_CKPT = "";
     if (!GEN_CKPT && data.current && names.has(data.current)) GEN_CKPT = data.current;
@@ -1470,10 +1505,7 @@ function closeCkptModal() {
 
 export function initLoraPicker() {
   ensureDom();
-  const mgr = $("lm-manager-link");
-  if (mgr) mgr.href = `${LORA_MGR_ORIGIN}/loras`;
-  const ckptMgr = $("ckpt-manager-link");
-  if (ckptMgr) ckptMgr.href = `${LORA_MGR_ORIGIN}/loras`;
+  syncManagerLinks();
   renderGenCurrent();
   renderCkptBtn();
   fetchCkpts();

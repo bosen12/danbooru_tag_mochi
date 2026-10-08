@@ -95,6 +95,122 @@ def preview_path(folder: str, fn: str) -> Path | None:
     return p if p.is_file() else None
 
 
+def comfy_base() -> str:
+    """ComfyUI 位址：環境變數 > 畫面上存的 > config.json > 預設。"""
+    env = os.environ.get("COMFY_API", "").strip()
+    saved = workflows.saved_comfy_api()
+    return (env or saved or str(cfg("comfy.api", "", workflows.DEFAULT_COMFY_API))).rstrip("/")
+
+
+# ---------- ComfyUI 的 LoRA Manager（custom node：willmiao/ComfyUI-Lora-Manager） ----------
+# 它住在 ComfyUI 裡，自己掃 ComfyUI 的每一個 loras 資料夾（含 extra_model_paths），
+# 每個 LoRA 的名稱、預覽圖、Civitai 觸發詞、底模都整理好了。裝了就用它：不必填 loraRoot，
+# 遠端的 ComfyUI 也拿得到預覽圖（圖由本伺服器轉送，見 server.py 的 /api/lora-preview?lm=）。
+LM_PAGE_SIZE = 100  # LoRA Manager 一頁最多給 100 筆
+LM_PREVIEW_PREFIX = "/api/lm/previews?"
+
+
+def _get_json(url: str, timeout: float = 10):
+    import urllib.request
+
+    req = urllib.request.Request(url, method="GET")
+    with urllib.request.urlopen(req, timeout=timeout) as r:
+        return json.loads(r.read().decode("utf-8"))
+
+
+def lora_manager_list(kind: str = "loras", base: str | None = None) -> list | None:
+    """LoRA Manager 的整份清單（kind：loras／checkpoints）。沒裝、ComfyUI 沒開或中途失敗都回 None。"""
+    base = (base or comfy_base()).rstrip("/")
+    items, page, pages = [], 1, 1
+    while page <= pages and page <= 500:
+        try:
+            data = _get_json(f"{base}/api/lm/{kind}/list?page={page}&page_size={LM_PAGE_SIZE}")
+        except Exception:
+            return None
+        if not isinstance(data, dict) or not isinstance(data.get("items"), list):
+            return None
+        items.extend(it for it in data["items"] if isinstance(it, dict))
+        try:
+            pages = int(data.get("total_pages") or 1)
+        except (TypeError, ValueError):
+            pages = 1
+        page += 1
+    return items
+
+
+def lm_preview_src(preview_url: str) -> str:
+    """LoRA Manager 的預覽圖網址 → 本伺服器轉送的網址（瀏覽器不必直接連得到 ComfyUI）。"""
+    url = str(preview_url or "")
+    if not url.startswith(LM_PREVIEW_PREFIX):
+        return ""
+    from urllib.parse import quote
+
+    return "/api/lora-preview?lm=" + quote(url, safe="")
+
+
+def lm_preview_name(preview_url: str) -> str | None:
+    """預覽圖的檔名（xxx.preview.mp4）：前端靠副檔名決定放 <img> 還是 <video>。"""
+    from urllib.parse import unquote
+
+    url = unquote(str(preview_url or ""))
+    return url.replace("\\", "/").rsplit("/", 1)[-1] or None if url else None
+
+
+def lora_manager_count(base: str | None = None, timeout: float = 3) -> int | None:
+    """ComfyUI 有 LoRA Manager 就回它管的 LoRA 數；沒裝或連不上回 None。開機訊息用，不等太久。"""
+    base = (base or comfy_base()).rstrip("/")
+    try:
+        data = _get_json(f"{base}/api/lm/loras/list?page=1&page_size=1", timeout=timeout)
+        return int(data.get("total") or 0) if isinstance(data, dict) and "items" in data else None
+    except Exception:
+        return None
+
+
+def lm_manager_url(base: str | None = None) -> str:
+    return (base or comfy_base()).rstrip("/") + "/loras"
+
+
+def from_lora_manager(raw: list) -> dict:
+    """LoRA Manager 的 items → 本專案 /api/loras 的格式（同 build_lora_list）。
+
+    lora_name 是「folder/檔名」：LoRA Manager 的 folder 就是相對於那個 loras 根目錄的路徑，
+    跟 ComfyUI LoraLoader 清單裡的名字一樣。被它標成 exclude 的不列。"""
+    allowed = set(LORA_FOLDERS)
+    items, counts = [], {}
+    for it in raw:
+        if it.get("exclude"):
+            continue
+        fn = str(it.get("file_path") or "").replace("\\", "/").rsplit("/", 1)[-1]
+        if not fn:
+            continue
+        folder = str(it.get("folder") or "").replace("\\", "/").strip("/")
+        category = folder.split("/")[0] if folder else ROOT_CATEGORY
+        if allowed and category not in allowed:
+            continue
+        stem = fn.rsplit(".", 1)[0]
+        civ = it.get("civitai") if isinstance(it.get("civitai"), dict) else {}
+        words = [w for w in (strip_angle_tags(x) for x in (civ.get("trainedWords") or []) if isinstance(x, str)) if w]
+        preview_url = str(it.get("preview_url") or "")
+        entry = {
+            "folder": folder,
+            "category": category,
+            "file": fn,
+            "name": stem,
+            "title": str(it.get("model_name") or stem),
+            "trainedWords": words,
+            "preview": lm_preview_name(preview_url),
+            "previewUrl": lm_preview_src(preview_url) or None,
+            "base_model": str(it.get("base_model") or ""),
+        }
+        if civ.get("modelId"):
+            entry["civitai"] = {"modelId": civ.get("modelId"), "versionId": civ.get("id")}
+        items.append(entry)
+        counts[category] = counts.get(category, 0) + 1
+    items.sort(key=lambda x: (x["folder"].lower(), x["file"].lower()))
+    folders = sorted(counts, key=lambda c: (c != ROOT_CATEGORY, c.lower()))
+    return {"items": items, "counts": counts, "folders": folders, "source": "lora-manager"}
+
+
 def lora_names_from_comfy() -> list:
     r"""沒設定 loraRoot 時，直接問 ComfyUI 它認得哪些 LoRA。
 
@@ -103,9 +219,7 @@ def lora_names_from_comfy() -> list:
     """
     import urllib.request
 
-    env = os.environ.get("COMFY_API", "").strip()
-    saved = workflows.saved_comfy_api()
-    base = (env or saved or str(cfg("comfy.api", "", workflows.DEFAULT_COMFY_API))).rstrip("/")
+    base = comfy_base()
     req = urllib.request.Request(base + "/object_info/LoraLoader", method="GET")
     with urllib.request.urlopen(req, timeout=10) as r:
         info = json.loads(r.read().decode("utf-8"))
@@ -141,6 +255,19 @@ def build_from_comfy() -> dict:
 
 
 def build_lora_list() -> dict:
+    # 第一選擇：ComfyUI 的 LoRA Manager（預覽圖、觸發詞都有，也不必填 loraRoot）。
+    # 沒裝、ComfyUI 沒開、或它一個 LoRA 都沒有，才退回下面的本機掃描／問 ComfyUI。
+    base = comfy_base()
+    raw = lora_manager_list("loras", base)
+    if raw:
+        data = from_lora_manager(raw)
+        if data["items"]:
+            data["manager"] = lm_manager_url(base)
+            with _lock:
+                _cache["data"] = data
+                _cache["at"] = time.time()
+                _cache["refreshing"] = False
+            return data
     items, counts, errs = [], {}, []
     if LORA_ROOT is None:
         # 沒設定路徑就問 ComfyUI。這樣新 clone 下來不用填任何東西就有 LoRA 可選，
@@ -152,7 +279,8 @@ def build_lora_list() -> dict:
             else:
                 data["note"] = (
                     f"清單來自 ComfyUI（{len(data['items'])} 個）。"
-                    "想要預覽圖和觸發詞，請在 config.json 填 paths.loraRoot。"
+                    "想要預覽圖和觸發詞：在 ComfyUI 裝 LoRA Manager（啟動檔會自動裝，裝完重開 ComfyUI），"
+                    "或在 config.json 填 paths.loraRoot。"
                 )
         except Exception as exc:
             data = {

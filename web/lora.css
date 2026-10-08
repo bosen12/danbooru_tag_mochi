@@ -2318,3 +2318,9 @@
     font-size: 16px;
   }
 }
+
+/* ComfyUI 沒有 LoRA Manager、這個 LoRA 也沒有 Civitai 資料時，連結藏起來（display:flex 會蓋掉 hidden）。 */
+.lm-manager-link[hidden],
+.lm-detail-link[hidden] {
+  display: none;
+}

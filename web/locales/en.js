@@ -781,6 +781,8 @@ LoRA／底模|LoRA / Checkpoint
 生圖會用這顆底模。|Generation uses this checkpoint.
 在 LoRA Manager 開（新分頁）|Open in LoRA Manager · New tab
 在 LoRA Manager 開這個 LoRA 的完整詳情（新分頁）|View LoRA details in LoRA Manager · New tab
+在 Civitai 開這個 LoRA 的頁面（新分頁）|Open this LoRA on Civitai · New tab
+LoRA：ComfyUI 沒有回報任何 LoRA|LoRA: ComfyUI reported no LoRAs.
 底模清單載入失敗：|Could not load checkpoints:
 找不到底模|No checkpoints found
 ComfyUI 沒有回報 checkpoint|ComfyUI returned no checkpoints.
@@ -1328,6 +1330,8 @@ LoRA {0} 尚未選擇——從左邊清單點一個|Select LoRA {0} from the lis
 隨機瀏覽 {0} 個 LoRA|Browse {0} random LoRA
 LoRA Manager 送來的「{0}」在這裡的清單找不到|LoRA “{0!}” from LoRA Manager was not found in this list.
 已從 LoRA Manager 選入 LoRA {0}：「{1}」|Selected LoRA {0!} from LoRA Manager: “{1!}”
+LoRA：清單來自 ComfyUI（{0} 個）。想要預覽圖和觸發詞：在 ComfyUI 裝 LoRA Manager（啟動檔會自動裝，裝完重開 ComfyUI），或在 config.json 填 paths.loraRoot。|LoRA: list from ComfyUI ({0!}). For preview images and trigger words, install ComfyUI LoRA Manager (the launcher installs it; restart ComfyUI afterwards) or set paths.loraRoot in config.json.
+LoRA：沒設定 paths.loraRoot，改問 ComfyUI 也失敗了：{0}|LoRA: no LoRA Manager or paths.loraRoot, and ComfyUI could not be reached: {0!}
 設定 · 底模 {0}|Checkpoint settings · {0!}
 底模已換成「{0}」|Checkpoint changed to “{0!}”
 工作流：{0}|Workflow: {0!}
