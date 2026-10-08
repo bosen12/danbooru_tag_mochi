@@ -2,6 +2,10 @@
 
 Issues and pull requests are welcome. For bugs, use the bug report form and include the steps to reproduce, OS, Python/ComfyUI versions, GPU/VRAM and the relevant error text. Remove webhook URLs, tokens, personal paths and private prompts from logs.
 
+## Contribution license
+
+New contributions to Mochi are accepted under GNU GPLv3 only (`GPL-3.0-only`), the code license in [LICENSE](LICENSE). Submit only work you may license on these terms and preserve existing copyright and third-party notices. See [NOTICE](NOTICE) for the earlier MIT publication and separately licensed assets.
+
 ## Development checks
 
 Python 3.9+ and Node.js 20+ are needed for tests. The application server itself only uses Python's standard library.
@@ -37,6 +41,8 @@ Most runtime code and tests are synchronized from [danbooru_tag_random](https://
 Maintainers work on shared code in upstream, run its tests, run `python scripts/sync_mochi.py`, then run these standalone checks. README, launchers, `.github`, CONTRIBUTING, release notes and community copy belong to Mochi. Font rebuilding is performed in upstream; see `web/fonts/README.md`.
 
 ## 繁體中文
+
+新提交的 Mochi 程式貢獻採 GNU GPLv3（僅第 3 版，`GPL-3.0-only`）；請確認有權以此授權提交，並保留既有作者與第三方授權聲明。先前 MIT 版本與獨立素材授權見 [NOTICE](NOTICE)。
 
 歡迎開 issue 或送 PR。錯誤回報請附重現步驟、作業系統、Python／ComfyUI 版本、GPU／VRAM 與相關錯誤訊息，先移除憑證及私人資料。
 

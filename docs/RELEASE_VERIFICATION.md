@@ -51,7 +51,7 @@ This is one generation on an existing ComfyUI installation. It does not test eve
 
 ## Published updates and remote CI
 
-The repository is public. The existing [v1.0 tag](https://github.com/bosen12/danbooru_tag_mochi/releases/tag/v1.0), published on 2026-10-08, predates these fixes. Clone the latest main to get the setup, launcher, portability and missing-art fixes.
+The repository is public. The existing [v1.0 tag](https://github.com/bosen12/danbooru_tag_mochi/releases/tag/v1.0), published on 2026-10-08, predates these fixes. Clone the latest main to get the setup, launcher, portability and missing-art fixes. The current code distribution is GPLv3 only; the earlier v1.0 and code published through revision `bacb663` retain their MIT permissions. See [NOTICE](../NOTICE) for the license transition and separate asset/vendor licenses.
 
 [CI run for code revision `1e6ee81`](https://github.com/bosen12/danbooru_tag_mochi/actions/runs/37798386690) completed successfully after pushing. All five required jobs passed:
 

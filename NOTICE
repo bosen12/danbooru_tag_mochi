@@ -1,0 +1,36 @@
+Mochi / 墨池
+Original creator: bosen12 — https://github.com/bosen12
+Official project: https://github.com/bosen12/danbooru_tag_mochi
+Copyright (c) 2026 bosen12
+SPDX-License-Identifier: GPL-3.0-only
+
+Mochi is free software: you can redistribute it and/or modify it under
+the terms of the GNU General Public License version 3 as published by
+the Free Software Foundation.
+
+Mochi is distributed in the hope that it will be useful, but WITHOUT
+ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License
+for more details.
+
+You should have received a copy of the GNU General Public License along
+with Mochi, in LICENSE. If not, see https://www.gnu.org/licenses/.
+
+License transition — 2026-10-08
+The current Mochi distribution uses GPL-3.0-only. Earlier code was
+published under MIT, including v1.0 and main through revision
+bacb663e02396f445581da2799c0c9042900a916. This change does not withdraw
+the MIT permissions already granted for that previously published code.
+Its original copyright and MIT notice are preserved in
+LICENSES/MIT-prior-versions.txt; this file does not grant MIT permission
+for new GPL-only contributions. Shared code is synchronized from
+danbooru_tag_random; this notice concerns the Mochi distribution.
+
+Separate material and third-party notices
+- Release card illustrations: CC BY 4.0. Credit "card art from
+  danbooru_tag_mochi by bosen12". See https://creativecommons.org/licenses/by/4.0/.
+- Chiron Hei HK font: SIL Open Font License 1.1; see web/fonts/OFL.txt.
+- three.js: MIT; see web/vendor/three/LICENSE.
+Keep the copyright and license notices for those components intact.
+ComfyUI, checkpoints, LoRAs and downloaded models retain their own terms;
+the Mochi GPL license does not relicense them or user-generated images.

@@ -4,6 +4,8 @@
 
 [![test](https://github.com/bosen12/danbooru_tag_mochi/actions/workflows/test.yml/badge.svg)](https://github.com/bosen12/danbooru_tag_mochi/actions/workflows/test.yml)
 
+Created by [bosen12](https://github.com/bosen12) · Code: GPLv3
+
 English · [繁體中文](#繁體中文)
 
 Danbooru tags as illustrated cards. Pin a few cards, let the engine draw the rest by its rules, and send the composition to your local ComfyUI (WAI / Illustrious SDXL).
@@ -156,13 +158,15 @@ Issues and pull requests are welcome. Run `python tests/run.py` and keep the CI 
 
 ## License
 
-Code: MIT, see [LICENSE](LICENSE). The card illustrations in the release downloads are under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/): use and adapt them freely, crediting “card art from danbooru_tag_mochi by bosen12”. The Chiron Hei HK font is under the SIL Open Font License 1.1 (`web/fonts/OFL.txt`); three.js is MIT (`web/vendor/three/LICENSE`). Tag names come from Danbooru. You are responsible for what you generate.
+Mochi code is distributed under **GNU GPLv3 only (`GPL-3.0-only`)**, see [LICENSE](LICENSE) and [NOTICE](NOTICE). Commercial use is allowed; distributing a modified application requires preserving notices and providing the corresponding source under GPLv3. Code previously published under MIT, including v1.0, retains those existing permissions; the earlier notice is preserved in [LICENSES/MIT-prior-versions.txt](LICENSES/MIT-prior-versions.txt). The card illustrations in the release downloads are under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/): use and adapt them freely, crediting “card art from danbooru_tag_mochi by bosen12”. The Chiron Hei HK font is under the SIL Open Font License 1.1 (`web/fonts/OFL.txt`); three.js is MIT (`web/vendor/three/LICENSE`). Tag names come from Danbooru. You are responsible for what you generate.
 
 ---
 
 <a id="繁體中文"></a>
 
 # 墨池 Mochi · Danbooru 卡牌生圖工作臺
+
+原作者：[bosen12](https://github.com/bosen12) · 程式授權：GPLv3
 
 把 Danbooru 標籤做成一張張有插畫的牌：挑幾張放進合成池，引擎依規則抽牌補齊，整組送進本機的 ComfyUI（WAI / Illustrious SDXL）生圖。
 
@@ -245,4 +249,4 @@ LoRA 面板的「詳情」在 ComfyUI 的 LoRA Manager 直接打開那一個 LoR
 
 ## 授權
 
-程式碼 MIT（[LICENSE](LICENSE)）。Release 下載的卡牌插畫是 [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/deed.zh-hant)：可以自由使用、改作，標示「卡牌插畫出自 danbooru_tag_mochi（bosen12）」即可。字型 Chiron Hei HK 為 SIL OFL 1.1；three.js 為 MIT。tag 名稱來自 Danbooru；生成內容的責任在使用者自己。
+Mochi 程式碼以 **GNU GPLv3（僅第 3 版，`GPL-3.0-only`）**發布，見 [LICENSE](LICENSE) 與 [NOTICE](NOTICE)。允許商用；發布修改版時須保留聲明，並依 GPLv3 提供對應原始碼。先前已用 MIT 公開的程式碼（包括 v1.0）保留原有使用權，原聲明保存在 [LICENSES/MIT-prior-versions.txt](LICENSES/MIT-prior-versions.txt)。Release 下載的卡牌插畫是 [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/deed.zh-hant)：可以自由使用、改作，標示「卡牌插畫出自 danbooru_tag_mochi（bosen12）」即可。字型 Chiron Hei HK 為 SIL OFL 1.1；three.js 為 MIT。tag 名稱來自 Danbooru；生成內容的責任在使用者自己。
