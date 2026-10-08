@@ -1123,7 +1123,7 @@ function ensureDom() {
         <div class="lm-left ckpt-pane">
           <div class="ckpt-head">
             <div class="ckpt-head-title" id="ckpt-head-title">底模</div>
-            <p class="ckpt-head-hint">只掃 illurtrious 資料夾。點左邊換一顆，生圖用目前這顆。</p>
+            <p class="ckpt-head-hint">清單來自 ComfyUI。點左邊換一顆，生圖用目前這顆。</p>
           </div>
           <div class="lm-search-wrap">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>

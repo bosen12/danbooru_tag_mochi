@@ -108,7 +108,8 @@ def _existing_dir(raw) -> Path | None:
 
 
 CKPT_DIR = _existing_dir(_ckpt_dir)
-CKPT_PREFIX = str(cfg("comfy.checkpointPrefix", "COMFY_CKPT_PREFIX", "illurtrious"))
+# checkpointDir 底下再多一層子資料夾時填它（ComfyUI 的名字會是「子資料夾\檔名」）。預設沒有。
+CKPT_PREFIX = str(cfg("comfy.checkpointPrefix", "COMFY_CKPT_PREFIX", ""))
 
 
 def _prefix_subdir(folder: Path | None, prefix: str) -> Path | None:
@@ -4189,7 +4190,7 @@ def list_ckpts(root: Path | None = None, prefix: str | None = None) -> list[dict
         items.append(
             {
                 "file": p.name,
-                "ckpt_name": f"{pre}\\{p.name}",
+                "ckpt_name": f"{pre}\\{p.name}" if pre else p.name,
                 "title": stem,
                 "preview": preview,
             }
@@ -4281,15 +4282,15 @@ def check_ckpt() -> None:
         have = checkpoints()
     except Exception:
         return
-    if not have or CKPT in have:
+    if not have:
+        print(f"ckpt     {CKPT}（ComfyUI 沒有回報任何底模）")
         return
-    print(f"warn     找不到 checkpoint {CKPT}")
-    print("         Comfy 現有的：")
-    for name in have[:20]:
-        print("           " + name)
-    if len(have) > 20:
-        print(f"           …還有 {len(have) - 20} 個")
-    print("         用 COMFY_CKPT 環境變數指定，或改 start*.bat 裡的 COMFY_CKPT。")
+    if CKPT in have:
+        print(f"ckpt     {CKPT}")
+        return
+    # 預設的底模（comfy.ckpt）這台的 ComfyUI 沒有：不是錯，生圖時會自動挑一個（pick_default_ckpt）。
+    print(f"ckpt     {pick_default_ckpt(have)}（ComfyUI 沒有預設的 {CKPT}，先用這個；網頁頂欄的模型按鈕可以換，"
+          "要固定就設 config.json 的 comfy.ckpt）")
 
 
 class AppServer(ThreadingHTTPServer):
@@ -4319,7 +4320,6 @@ def main() -> None:
     print(f"排字匣  http://{host}:{port}   畫面 {WEB.name}   Comfy {comfy_base()}")
     print("allow    " + ",".join(str(n) for n in ALLOW_NETS))
     print(f"設定檔  {CONFIG_PATH}" + ("" if CONFIG else "（沒有，全部用預設值）"))
-    print(f"ckpt     {CKPT}")
     # 第一次 clone 下來最常見的兩個「怎麼是空的」就是這兩項沒設定。
     # 與其讓使用者從空清單反推，開機就講清楚。
     lm_total = lora_scan.lora_manager_count()

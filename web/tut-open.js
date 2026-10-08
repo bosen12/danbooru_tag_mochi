@@ -5,6 +5,7 @@
 import { EZ, seg, lerp, spring, mk, put, V, env, makeScene, cardEl, esc } from "./tut-kit.js";
 import { track } from "./film-kit.js";
 import { b } from "./tut-mochi.js";
+import { english } from "./i18n.js";
 
 export function buildOpen(ctx) {
   const { world, hud, text, SCENES } = ctx;
@@ -35,8 +36,8 @@ export function buildOpen(ctx) {
     }, el);
     S.cue({ t: t0, kind: "pop", gain: 0.12, f: 440 });
   };
-  pill(`<b style="--suit:var(--suit-look)">墨</b>墨池　放牌 · 規則 · 抽圖 · 成品牆`, 250, b(4, 0.5));
-  pill(`<b style="--suit:var(--suit-scene)">印</b>疊印台　疊層 · 影子 · 試印 · 付印`, 335, b(4, 2));
+  pill(`<b style="--suit:var(--suit-look)">${english ? "I" : "墨"}</b>墨池　放牌 · 規則 · 抽圖 · 成品牆`, 250, b(4, 0.5));
+  pill(`<b style="--suit:var(--suit-scene)">${english ? "F" : "印"}</b>疊印台　疊層 · 影子 · 試印 · 付印`, 335, b(4, 2));
   text.say("*第一次*用這個網頁？", "First time here?", b(0, 1), b(1, 3));
   text.say("看完這支，*每個功能*你都會用", "Watch this — you'll know every feature", b(1, 3.3), b(3, 0));
   text.slam({ zh: "使用教學", en: "A HANDS-ON GUIDE", sub: "*墨池* 與 *疊印台*", y: 430, inAt: b(3, 0), outAt: b(5, 2.5) });

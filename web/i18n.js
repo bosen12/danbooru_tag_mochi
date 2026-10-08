@@ -76,6 +76,19 @@ function translate(source, depth) {
   return source;
 }
 
+// Suit and group seals show one Chinese character. In English they become letters, never the
+// dictionary word for that character (風 is the Style seal, not "wind"). Applied to the element and
+// again to its text node, because some rooms fill a seal's text after inserting it.
+const GLYPH_SEL = ".card-suit, .tab-dot, .reg-glyph, .suit-seal, .suit-glyph, .suit-tab > b, .chip-seal, .card-peek-suit, .card-peek-seal, .ach-suit-glyph, .ach-medal, .tchip > b, .rk, .chip > b, .plate-head > b, b.tb.tl";
+const GLYPHS = { 人: "C", 容: "A", 衣: "W", 姿: "P", 景: "S", 風: "F", 動: "A", 身: "B", 鏡: "C", 表: "E", 視: "G", 誘: "T", 走: "X", 性: "X", 上: "T", 下: "B", 外: "O", 連: "D", 內: "U", 襪: "L", 鞋: "F", 飾: "A", 材: "M", 時: "E", 裸: "N", 色: "C", 長: "L", 型: "H", 眼: "E", 膚: "S", 妝: "M", 體: "B", 職: "J", 族: "R", 地: "L", 光: "L", 背: "B", 效: "F", 晝: "T", 天: "S", 氣: "W", 室: "I", 坐: "F", 女: "F", 男: "M" };
+const MEDALS = { 牌: "C", 門: "S", 花: "F", 友: "★", 手: "+", 印: "P", 藏: "★", 眼: "✓", 日: "D", 百: "100", 夜: "N" };
+function glyph(node) {
+  if (!node.matches(GLYPH_SEL)) return false;
+  const map = node.matches(".ach-medal") ? MEDALS : GLYPHS;
+  if (map[node.textContent]) node.textContent = map[node.textContent];
+  return true;
+}
+
 export function translateTree(root) {
   if (!english || !root) return root;
   const elements = root.nodeType === 1 ? [root, ...root.querySelectorAll("*")] : [];
@@ -85,12 +98,7 @@ export function translateTree(root) {
       const rates = { 色: "E", 敏: "S" };
       if (rates[node.textContent]) node.textContent = rates[node.textContent];
     }
-    if (node.matches(".card-suit, .tab-dot, .reg-glyph, .suit-seal, .suit-glyph, .suit-tab > b, .chip-seal, .card-peek-suit, .card-peek-seal, .ach-suit-glyph, .ach-medal, .tchip > b, .rk, .chip > b, .plate-head > b, b.tb.tl")) {
-      const glyphs = { 人: "C", 容: "A", 衣: "W", 姿: "P", 景: "S", 風: "F", 動: "A", 身: "B", 鏡: "C", 表: "E", 視: "G", 誘: "T", 走: "X", 性: "X", 上: "T", 下: "B", 外: "O", 連: "D", 內: "U", 襪: "L", 鞋: "F", 飾: "A", 材: "M", 時: "E", 裸: "N", 色: "C", 長: "L", 型: "H", 眼: "E", 膚: "S", 妝: "M", 體: "B", 職: "J", 族: "R", 地: "L", 光: "L", 背: "B", 效: "F", 晝: "T", 天: "S", 氣: "W", 室: "I", 坐: "F", 女: "F", 男: "M" };
-      const medals = { 牌: "C", 門: "S", 花: "F", 友: "★", 手: "+", 印: "P", 藏: "★", 眼: "✓", 日: "D", 百: "100", 夜: "N" };
-      const map = node.matches(".ach-medal") ? medals : glyphs;
-      if (map[node.textContent]) node.textContent = map[node.textContent];
-    }
+    glyph(node);
     for (const attr of attrs) {
       if (!node.hasAttribute(attr)) continue;
       const source = node.getAttribute(attr), result = t(source);
@@ -108,6 +116,11 @@ export function translateTree(root) {
   })();
   for (const node of texts) {
     if (!node.parentElement || node.parentElement.closest(excluded)) continue;
+    if (glyph(node.parentElement)) continue;
+    // A lone character in an element that is not in the page yet may be a seal: ui.js el()
+    // translates before the element has a parent, so it cannot tell yet. Wait for insertion;
+    // the observer translates it then, with its context.
+    if (!node.isConnected && /^[㐀-鿿]$/.test(node.data.trim())) continue;
     let result = t(node.data);
     // A counter in its own node (<b>1</b><span>次</span>) reads the number beside it.
     const unit = result.trim();

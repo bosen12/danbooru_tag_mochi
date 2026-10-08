@@ -14,6 +14,10 @@
 對應：上游 `web6/X` 與 web6 會載入的 `web/X` → 這邊的 `web/X`（伺服器本來就先找 web6 再找 web，合成一個資料夾後路徑不變）。
 這邊不一樣的字樣（`start.bat`、預設埠 8796、卡面 Release 網址、影片裡的 clone 網址）寫在上游腳本的 `REWRITES`。
 
+## 外人的 PR
+
+開源版收到 PR 時：先在這邊審、合併，**再把同樣的改動搬回上游**（`../danbooru_tag_random` 的 `web6/`、`web/`…），不然下次 `sync_mochi.py` 會把它蓋掉。搬回去之後跑一次同步，`--check` 應該是 0 個檔。
+
 ## 只屬於這個 repo 的檔（在這邊改）
 
 `README.md`（**英文在上、中文在下**）、`CLAUDE.md`、`start.bat`、`start.sh`、`.gitignore`、`.gitattributes`、`LICENSE`、`.github/workflows/test.yml`。

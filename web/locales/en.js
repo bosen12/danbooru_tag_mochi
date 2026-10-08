@@ -396,7 +396,7 @@ Enter 放上第一張，↓ 走進字盒|Enter adds the first result; ↓ moves 
 男|Men
 不限|Any
 混合（每張隨機）|Mixed · Random per image
-每張隨機|Random per image
+每張隨機|Random each
 每段抽幾個|Cards per category
 每段補幾張|Cards per category
 引擎每段補幾張|Cards added per category
@@ -782,6 +782,21 @@ LoRA／底模|LoRA / Checkpoint
 在 LoRA Manager 開（新分頁）|Open in LoRA Manager · New tab
 在 LoRA Manager 開這個 LoRA 的完整詳情（新分頁）|View LoRA details in LoRA Manager · New tab
 在 Civitai 開這個 LoRA 的頁面（新分頁）|Open this LoRA on Civitai · New tab
+個 Danbooru tag · 每個都有中文|Danbooru tags, each with a Chinese name
+種花色 ＝ 六條旋臂|suits = six spiral arms
+同一格只留一張|One card per slot
+伺服器|Server
+你的電腦|Your computer
+秒內斷線都接得回來|seconds: a dropped connection picks up again
+開源 · 自由改|Open source · Change anything
+看中文、送英文，規則替你把關|Pick cards by name. ComfyUI gets checked Danbooru tags.
+每個字都是一張牌，放進去的一定有|Every tag is a card. Pinned cards always make it in.
+一張牌一層墨，看得見引擎補了什麼|One card per ink layer. See what the engine adds.
+張牌面，每一張都是 ComfyUI 畫的|card faces, every one painted by ComfyUI
+墨池 與 疊印台|Ink Pool and Fuse Bed
+墨池　放牌 · 規則 · 抽圖 · 成品牆|Ink Pool · Pin · Rules · Draw · Results
+疊印台　疊層 · 影子 · 試印 · 付印|Fuse Bed · Layers · Shadows · Proofs · Generate
+從字盒挑牌，或用下面的起手式；留白的層由引擎補上。|Choose cards from the library or try a starter below. The engine fills empty layers.
 卡面插畫|Card art
 烘焙卡面|Bake card art
 敏感、色情卡面|Sensitive and explicit card art
@@ -823,7 +838,7 @@ LoRA：ComfyUI 沒有回報任何 LoRA|LoRA: ComfyUI reported no LoRAs.
 底模清單載入失敗：|Could not load checkpoints:
 找不到底模|No checkpoints found
 ComfyUI 沒有回報 checkpoint|ComfyUI returned no checkpoints.
-只掃 illurtrious 資料夾。點左邊換一顆，生圖用目前這顆。|Browse the configured checkpoint folder. Select a model on the left to use it for generation.
+清單來自 ComfyUI。點左邊換一顆，生圖用目前這顆。|Models come from ComfyUI. Select one on the left; new images use the current model.
 這個資料夾沒有 checkpoint。連上 ComfyUI 後會改問它要清單。|No checkpoints in this folder. Connect to ComfyUI to load its model list.
 生圖|Generate
 快速 Hires|Fast Hires
@@ -1373,6 +1388,8 @@ LoRA：沒設定 paths.loraRoot，改問 ComfyUI 也失敗了：{0}|LoRA: no LoR
 重開失敗（{0}）：請自己重開 ComfyUI|Restart failed ({0!}). Restart ComfyUI yourself.
 {0}（下次啟動接著抓）|{0} (resumes next launch)
 {0}（下次啟動接著做）|{0} (resumes next launch)
+「{0}」跟「{1}」同時成立不了，引擎會擠掉其中一個|“{0}” and “{1}” cannot both apply. The engine drops one.
+「{0}」跟「{1}」同時成立不了，引擎會摘掉其中一個{2}|“{0}” and “{1}” cannot both apply. The engine removes one.{2}
 設定 · 底模 {0}|Checkpoint settings · {0!}
 底模已換成「{0}」|Checkpoint changed to “{0!}”
 工作流：{0}|Workflow: {0!}

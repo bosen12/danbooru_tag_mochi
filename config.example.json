@@ -7,10 +7,10 @@
   "comfy": {
     "_comment": "底模清單以 ComfyUI 為準（含 extra_model_paths 與遠端機器）；checkpointDir 只用來補本機預覽圖，ComfyUI 連不上時才退回本機清單。upscaleModelDir 留空就從 checkpointDir 往上找 models/upscale_models。hires.upscaleModel、hires.steps、hires.cfg、hires.denoise 可覆寫深度放大模型和取樣。",
     "api": "http://127.0.0.1:8188",
-    "ckpt": "illurtrious\\waiIllustriousSDXL_v170.safetensors",
+    "ckpt": "",
     "checkpointDir": "",
     "upscaleModelDir": "",
-    "checkpointPrefix": "illurtrious",
+    "checkpointPrefix": "",
     "genTimeoutSec": 600,
     "steps": 25,
     "cfg": 6.5,

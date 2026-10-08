@@ -229,3 +229,7 @@ html[lang="en"] .tseg span { font-size: 12px; letter-spacing: -0.02em; }
 @media (prefers-reduced-motion: reduce) {
   .language-picker, .language-picker * { scroll-behavior: auto; }
 }
+
+/* Films: labels that show a tag with its Chinese name underneath (or the reverse) would
+ * print the same English words twice; the English edition keeps one line. */
+html[lang="en"] :is(.k-flash, .w.chip, .w.rel-label) small { display: none; }

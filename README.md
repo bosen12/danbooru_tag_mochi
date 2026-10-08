@@ -1,3 +1,5 @@
+<img src="web/favicon.svg" width="72" height="72" alt="">
+
 # Mochi · a card workbench for Danbooru-tag image generation
 
 [![test](https://github.com/bosen12/danbooru_tag_mochi/actions/workflows/test.yml/badge.svg)](https://github.com/bosen12/danbooru_tag_mochi/actions/workflows/test.yml)
@@ -12,6 +14,13 @@ The interface is in English or Traditional Chinese. It follows your browser lang
 > The server runs on your own machine and only accepts loopback and Tailscale connections by default.
 
 Mochi is the card interface of [danbooru_tag_random](https://github.com/bosen12/danbooru_tag_random), released on its own.
+
+| Ink Pool | Fuse Bed |
+|---|---|
+| ![Ink Pool: the card library, pinned cards and a draw](.github/screenshots/ink-pool.jpg) | ![Fuse Bed: cards stacked into suit layers, with four proofs](.github/screenshots/fuse-bed.jpg) |
+| **Card Book** | **Intro film** (rendered live in the page) |
+| ![Card Book: how often each card was used](.github/screenshots/card-book.jpg) | ![Intro film: the whole lexicon as a galaxy of cards](.github/screenshots/film-8.jpg) |
+
 
 ## Four rooms
 
@@ -124,6 +133,10 @@ node tests/test_i18n.mjs
 
 Language detection, English translation, user content left untranslated, and selections kept across a language switch. ComfyUI is not needed.
 
+## Contributing
+
+Issues and pull requests are welcome. Run `node tests/test_i18n.mjs` and keep the CI green. Most of the code here is synced from the [danbooru_tag_random](https://github.com/bosen12/danbooru_tag_random) workspace, so a merged change is carried over there by the maintainer; you do not need to do anything for that. For new interface text, add the English line to `web/locales/en.js`.
+
 ## License
 
 Code: MIT, see [LICENSE](LICENSE). The Chiron Hei HK font is under the SIL Open Font License 1.1 (`web/fonts/OFL.txt`); three.js is MIT (`web/vendor/three/LICENSE`). Tag names come from Danbooru. You are responsible for what you generate.
@@ -142,6 +155,8 @@ Code: MIT, see [LICENSE](LICENSE). The Chiron Hei HK font is under the SIL Open 
 > 伺服器只在你自己的機器上跑，預設只接受本機與 Tailscale 的連線。
 
 墨池是 [danbooru_tag_random](https://github.com/bosen12/danbooru_tag_random)（排字匣）的卡牌介面，獨立出來發布。
+
+截圖見上方英文段落（介面中英文都有，依瀏覽器語言切換）。
 
 ## 四個房間
 
@@ -198,6 +213,10 @@ LoRA 面板的「詳情」在 ComfyUI 的 LoRA Manager 直接打開那一個 LoR
 - **一直顯示 Comfy 未連上**：ComfyUI 沒開，或不在 `comfy.api` 的位址。
 - **「讀不到詞庫」**：用 `start.bat`／`start.sh`／`server.py` 開，不要直接點 HTML。
 - **生圖到一半停掉**：把 `client.streamIdleMs` 調大。
+
+## 參與開發
+
+歡迎開 issue、送 PR；跑 `node tests/test_i18n.mjs`、CI 要綠。這裡大部分的程式是從 danbooru_tag_random 同步過來的，合併後由維護者搬回去，送 PR 的人不用管。新增介面文字時，英文那一行加在 `web/locales/en.js`。
 
 ## 授權
 

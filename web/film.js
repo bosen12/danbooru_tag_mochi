@@ -878,7 +878,7 @@ function buildDetail(data) {
   S.act([4, 7.6], (u) => {
     const p = EZ.out(seg(u, 4.1, 4.6));
     const k = Math.max(0, hopAt(u) + 1);
-    setHTML(inf, `∞ <span>無限抽 · 已經畫了 <b>${8 + k}</b> 張</span>`);
+    setHTML(inf, english ? `∞ <span>Continuous · <b>${8 + k}</b> images so far</span>` : `∞ <span>無限抽 · 已經畫了 <b>${8 + k}</b> 張</span>`);
     put(inf, { x: 0, y: -560, o: p });
   }, inf);
 
