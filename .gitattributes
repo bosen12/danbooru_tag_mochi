@@ -4,3 +4,4 @@
 *.woff2 binary
 *.webp binary
 *.png binary
+*.sh text eol=lf

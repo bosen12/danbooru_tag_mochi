@@ -1,6 +1,133 @@
-# 墨池 Mochi · Danbooru 卡牌生圖工作臺
+# Mochi · a card workbench for Danbooru-tag image generation
 
-[English](#english) · 繁體中文
+English · [繁體中文](#繁體中文)
+
+Danbooru tags as illustrated cards. Pin a few cards, let the engine draw the rest by its rules, and send the composition to your local ComfyUI (WAI / Illustrious SDXL).
+
+The interface is in English or Traditional Chinese. It follows your browser language, and the globe menu in the top bar switches it. ComfyUI always receives the canonical English tags.
+
+> **Adult content.** This tool can generate adult images. The rating switch starts at *General*. The lexicon and negative prompt block `loli`, `shota`, `teen`, `child` and similar tags; those cards are never drawn or illustrated.
+> The server runs on your own machine and only accepts loopback and Tailscale connections by default.
+
+Mochi is the card interface of [danbooru_tag_random](https://github.com/bosen12/danbooru_tag_random), released on its own.
+
+## Four rooms
+
+| Room | What it does |
+|---|---|
+| **Ink Pool** `/` | Browse the card library by suit (Cast, Appearance, Clothing, Pose, Scene, Style), or search in English or Chinese. Pinned cards appear in every image; the engine fills the remaining slots. Rules set content level, era, characters, pose reference and size. Batch, continuous and draw-only modes. |
+| **Fuse Bed** `/fuse.html` | One card per ink layer. Pinned cards stack into six suit rows; grey shadows are the engine's additions. Four same-seed proofs redraw instantly, so you see what each card changes before you generate. |
+| **Card Book** `/book.html` | How often each card was used, its save and discard rates, and the images it appeared in. Achievements. |
+| **Gallery** `/album.html` | Saved images, the full generation history, and a report card for every checkpoint and LoRA. Send a work's cards back to the Ink Pool. |
+
+The **Intro film** (`/intro.html`, 3 min) and the **Tutorial** (`/tutorial.html`, 4.5 min) are rendered live in the page with the real engine and cards. **Tour** in the top bar walks you through each room step by step.
+
+## Requirements
+
+| | Version | Why |
+|---|---|---|
+| **Python** | 3.9 or newer | Runs `server.py`. Standard library only; nothing to `pip install` |
+| **ComfyUI** | default `http://127.0.0.1:8188` | Generates the images |
+| **SDXL checkpoint** | WAI / Illustrious recommended | The lexicon is tuned for Danbooru tags |
+| Browser | Chrome, Edge, Firefox or Safari from the last three years | Uses `:has()`, `popover`, `oklch()` and container queries |
+
+## Getting started
+
+```bash
+git clone https://github.com/bosen12/danbooru_tag_mochi.git
+cd danbooru_tag_mochi
+```
+
+1. **Start ComfyUI** and check that <http://127.0.0.1:8188> opens.
+2. **Start Mochi.**
+   - Windows: double-click `start.bat`. It finds Python (or opens the download page if you have none) and opens your browser.
+   - macOS / Linux: `./start.sh`, or `python3 server.py` and open <http://127.0.0.1:8796>.
+3. **Choose a checkpoint** with the model button in the top bar. It lists what ComfyUI has. Until you choose, Mochi picks an Illustrious / SDXL model from that list.
+
+Keep the server window open. After updating, reload the page with **Ctrl+F5**.
+
+### Prepared on first start
+
+| What | Size | How | Skip |
+|---|---|---|---|
+| Card art, all ages (1934 files) | ~100 MB | Downloaded from this repo's [release](https://github.com/bosen12/danbooru_tag_mochi/releases/tag/card-art-v4), checked with SHA-256, unpacked into `web/cards/`. Resumes if interrupted; never overwrites cards you baked yourself | `NO_CARD_FETCH=1` |
+| Sensitive / explicit card art | — | Not published. With ComfyUI running, `start.bat` asks each time whether to bake them with your checkpoint (`scripts/bake_card_art.py`) | `NO_CARD_BAKE=1` or a `.no-card-bake` file |
+| Hires upscale model `RealESRGAN_x4plus_anime_6B` | ~18 MB | Saved to ComfyUI's `models/upscale_models` | `NO_UPSCALE_FETCH=1` |
+| Pose reference (OpenPose ControlNet + `comfyui_controlnet_aux`) | ~2.5 GB | Optional. `start.bat` asks first (Y / not now / never); restart ComfyUI once after installing | `NO_POSE_FETCH=1` or answer *A* |
+
+On Windows the downloads run in a separate minimized window, and the page opens straight away with placeholder cards; reload when the download says *Done*. With `start.sh` or `python3 server.py`, the card art downloads in the background; run `python3 scripts/fetch_upscale_model.py` or `python3 scripts/fetch_pose_assets.py` yourself for the other two.
+
+## Configuration
+
+Machine-specific settings live in `config.json`, which git ignores. Start from the template:
+
+```bash
+cp config.example.json config.json
+```
+
+A fresh clone usually needs nothing: checkpoints and LoRAs come from ComfyUI.
+
+| `config.json` | Meaning |
+|---|---|
+| `comfy.api` | ComfyUI address (also editable from the Comfy indicator in the top bar) |
+| `comfy.ckpt` | Default checkpoint. Must match ComfyUI's list **exactly**, including subfolders |
+| `comfy.checkpointDir` | Enables checkpoint preview images. Generation works without it |
+| `paths.loraRoot` | Enables LoRA previews and trigger words. Empty = ask ComfyUI for the list |
+| `server.port` / `server.host` / `server.allowNet` | Default `8796`, `127.0.0.1`, loopback and Tailscale only |
+| `client.streamIdleMs` | How long ComfyUI may stay silent before an image is abandoned. Raise it for slow GPUs (for example AMD ROCm) |
+
+Environment variables override the file: `COMFY_API`, `COMFY_CKPT`, `PORT`, `HOST`, `ALLOW_NET`, `LORA_ROOT`.
+
+**Your own ComfyUI workflow.** In ComfyUI choose *Export (API)*, drop the JSON on the Workflow panel, and pick the node that receives the positive prompt. The original JSON is never modified.
+
+**Discord.** The Discord button in the top bar takes a channel webhook URL, and generated images are posted there. The URL is stored in `.secrets/`, never committed and never sent back to the browser.
+
+**Phones.** `start.bat` binds `0.0.0.0` but accepts only loopback and Tailscale (`100.64.0.0/10`). On a phone, use the `Tailscale http://100.x.x.x:8796/` address printed in the server window.
+
+## Your data
+
+Everything you create stays in `data/` (git-ignored): card usage, decks, the gallery, the generation history, imported workflows and a webp cache of results. To move to another machine, copy `data/` and `config.json`.
+
+## Layout
+
+```
+server.py            API, generation queue, ComfyUI proxy, static files
+card_usage.py …      server side of the card book, decks, gallery, history, LoRAs, workflows
+web/                 front end (no build step; the browser loads ES modules directly)
+  engine.js          draw engine: rules, mutual exclusion, implications, ratings
+  lexicon.json       tags, Chinese names, categories, exclusion groups
+  index.html …       the four rooms
+  i18n.js, locales/  the English edition
+  cards/             card art (downloaded or baked; not in git)
+scripts/             card art download and baking, upscale model, pose reference
+tests/               node tests/test_i18n.mjs
+```
+
+## Troubleshooting
+
+- **The `.bat` window closes at once.** Install Python 3 with *Add python.exe to PATH* ticked, or run `py -3 server.py` in this folder to read the error.
+- **"Port 8796 is already in use".** Mochi is probably already running: open <http://127.0.0.1:8796/>. To run a second copy, set `PORT` to another port first.
+- **The top bar keeps saying Comfy is offline.** ComfyUI is not running, or not at `comfy.api`.
+- **"Could not load the card library".** Open Mochi through `start.bat`, `start.sh` or `server.py`, not by opening the HTML file.
+- **Generation stops half-way.** Raise `client.streamIdleMs` for slow GPUs.
+
+## Tests
+
+```bash
+node tests/test_i18n.mjs
+```
+
+Language detection, English translation, user content left untranslated, and selections kept across a language switch. ComfyUI is not needed.
+
+## License
+
+Code: MIT, see [LICENSE](LICENSE). The Chiron Hei HK font is under the SIL Open Font License 1.1 (`web/fonts/OFL.txt`); three.js is MIT (`web/vendor/three/LICENSE`). Tag names come from Danbooru. You are responsible for what you generate.
+
+---
+
+<a id="繁體中文"></a>
+
+# 墨池 Mochi · Danbooru 卡牌生圖工作臺
 
 把 Danbooru 標籤做成一張張有插畫的牌：挑幾張放進合成池，引擎依規則抽牌補齊，整組送進本機的 ComfyUI（WAI / Illustrious SDXL）生圖。
 
@@ -9,7 +136,7 @@
 > **成人向。** 這個工具可以產生成人內容，頂欄的分級預設是「全年齡」。詞庫與負向提示詞會擋 `loli`、`shota`、`teen`、`child` 等字，這些牌永遠不會畫也不會抽。
 > 伺服器只在你自己的機器上跑，預設只接受本機與 Tailscale 的連線。
 
-從 [danbooru_tag_random](https://github.com/bosen12/danbooru_tag_random)（排字匣）拆出來的獨立版本，只留墨池這一套介面。
+墨池是 [danbooru_tag_random](https://github.com/bosen12/danbooru_tag_random)（排字匣）的卡牌介面，獨立出來發布。
 
 ## 四個房間
 
@@ -20,16 +147,11 @@
 | **卡冊** `/book.html` | 每張牌用過幾次、收藏和撤下的比例、這張牌進過哪些圖。成就牆。 |
 | **作品冊** `/album.html` | 收藏的成品、每一張出圖的日誌、每個底模和 LoRA 的成績單；作品上的牌可以帶回墨池再印。 |
 
-另外有兩支在頁面裡即時產生的影片：**介紹影片**（`/intro.html`，3 分鐘）和**使用教學**（`/tutorial.html`，4 分半），畫面和配樂都是真的引擎、真的牌現場算的。頂欄的「導覽」會一步一步帶你操作。
+另外有兩支在頁面裡即時產生的影片：**介紹影片**（`/intro.html`，3 分鐘）和**使用教學**（`/tutorial.html`，4 分半）。頂欄的「導覽」會一步一步帶你操作。
 
 ## 你需要先有什麼
 
-| | 版本 | 為什麼 |
-|---|---|---|
-| **Python** | 3.9 以上 | 跑 `server.py`。只用標準函式庫，不必 `pip install` |
-| **ComfyUI** | 預設 `http://127.0.0.1:8188` | 真正生圖的是它 |
-| **SDXL checkpoint** | 建議 WAI / Illustrious 系列 | 詞庫照 Danbooru tag 調的 |
-| 瀏覽器 | 近三年的 Chrome / Edge / Firefox / Safari | 用到 `:has()`、`popover`、`oklch()`、container queries |
+Python 3.9 以上（只用標準函式庫）、ComfyUI（預設 `http://127.0.0.1:8188`）、SDXL checkpoint（建議 WAI / Illustrious）、近三年的 Chrome / Edge / Firefox / Safari。
 
 ## 上手
 
@@ -38,140 +160,35 @@ git clone https://github.com/bosen12/danbooru_tag_mochi.git
 cd danbooru_tag_mochi
 ```
 
-1. **先把 ComfyUI 開起來**，確認瀏覽器打得開 <http://127.0.0.1:8188>。
-2. **開伺服器。**
-   - Windows：雙擊 `start.bat`。會自動找 Python、開瀏覽器。
-   - macOS / Linux：`python3 server.py`，然後開 <http://127.0.0.1:8796>。
-3. **選底模。** 頂欄的模型按鈕列出 ComfyUI 認得的 checkpoint，點一個就好。想固定預設值，見下面〈設定〉的 `comfy.ckpt`。
+1. **先把 ComfyUI 開起來**，確認 <http://127.0.0.1:8188> 打得開。
+2. **開墨池。** Windows 雙擊 `start.bat`（沒裝 Python 會直接打開下載頁）；macOS / Linux 跑 `./start.sh`，或 `python3 server.py` 再開 <http://127.0.0.1:8796>。
+3. **選底模。** 頂欄的模型按鈕列出 ComfyUI 有的 checkpoint。還沒選之前，墨池會從清單裡挑一個 Illustrious／SDXL 的。
 
-視窗不要關。更新程式後在瀏覽器按 **Ctrl+F5**。
-
-### 第一次啟動會自動準備的東西
+### 第一次啟動會準備的東西
 
 | 東西 | 大小 | 怎麼來 | 不想要 |
 |---|---|---|---|
-| 卡牌插畫（全年齡 1160 張） | 約 100 MB | 從 GitHub Release 下載、驗 SHA-256、解到 `web/cards/`。斷了下次接著抓；已經有的圖不覆蓋 | `NO_CARD_FETCH=1` |
-| 敏感／色情分級的卡面 | — | 不公開下載。ComfyUI 開著時 `start.bat` 每次都會先問你要不要用自己的底模烘（`scripts/bake_card_art.py`） | `NO_CARD_BAKE=1` 或放一個 `.no-card-bake` 檔 |
-| Hires 放大模型 `RealESRGAN_x4plus_anime_6B` | 約 18 MB | 放進 ComfyUI 的 `models/upscale_models` | `NO_UPSCALE_FETCH=1` |
-| 姿勢參考（OpenPose ControlNet＋`comfyui_controlnet_aux`） | 約 2.5 GB | 裝進本機 ComfyUI；裝完要重開一次 ComfyUI | `NO_POSE_FETCH=1` |
-
-Windows 的啟動檔會把下載開在另一個縮小的視窗，網頁照常先開（沒插畫時先顯示字的佔位牌），下載完重新整理就有圖。macOS / Linux 直接跑 `server.py` 時，卡面由伺服器在背景下載；放大模型和姿勢參考可以手動跑 `python3 scripts/fetch_upscale_model.py`、`python3 scripts/fetch_pose_assets.py`。
+| 卡牌插畫（全年齡 1934 個檔） | 約 100 MB | 從本 repo 的 [Release](https://github.com/bosen12/danbooru_tag_mochi/releases/tag/card-art-v4) 下載、驗 SHA-256、解到 `web/cards/`。斷了會接著抓；自己烘的圖不覆蓋 | `NO_CARD_FETCH=1` |
+| 敏感／色情分級的卡面 | — | 不公開。ComfyUI 開著時 `start.bat` 每次都會先問要不要用你的底模烘 | `NO_CARD_BAKE=1` 或 `.no-card-bake` 檔 |
+| Hires 放大模型 | 約 18 MB | 放進 ComfyUI 的 `models/upscale_models` | `NO_UPSCALE_FETCH=1` |
+| 姿勢參考（OpenPose ControlNet＋`comfyui_controlnet_aux`） | 約 2.5 GB | 選用。`start.bat` 會先問（Y 裝／N 這次不要／A 永遠不問），裝完要重開一次 ComfyUI | `NO_POSE_FETCH=1` 或回答 A |
 
 ## 設定
 
-機器專屬的東西都在 `config.json`（不進版控），從範本複製一份再改：
+`cp config.example.json config.json` 再改（不進版控）。新 clone 通常什麼都不用改：底模、LoRA 清單直接問 ComfyUI。常用的有 `comfy.api`、`comfy.ckpt`（要跟 ComfyUI 清單一字不差）、`comfy.checkpointDir`（底模預覽圖）、`paths.loraRoot`（LoRA 預覽圖與觸發詞）、`server.port`（預設 8796）、`client.streamIdleMs`（慢顯卡調大）。環境變數優先於設定檔。
 
-```bash
-cp config.example.json config.json
-```
+自己的 ComfyUI workflow：用「匯出工作流 (API)」，拖進畫面的「工作流」面板。送到 Discord：頂欄的 Discord 按鈕貼上頻道 webhook。手機走 Tailscale，用黑窗印出的 `Tailscale http://100.x.x.x:8796/`。
 
-新 clone 通常什麼都不用改：底模、LoRA 清單直接問 ComfyUI。要改的話：
-
-| `config.json` | 說明 |
-|---|---|
-| `comfy.api` | ComfyUI 位址（畫面右上的 Comfy 指示燈也能改） |
-| `comfy.ckpt` | 預設底模檔名，要跟 ComfyUI 下拉選單裡的字**一模一樣**（含子資料夾） |
-| `comfy.checkpointDir` | 填了才有底模預覽圖；生圖不受影響 |
-| `paths.loraRoot` | 填了才讀得到 LoRA 的預覽圖和觸發詞；留空就問 ComfyUI 要清單 |
-| `server.port` / `server.host` / `server.allowNet` | 預設 `8796`、`127.0.0.1`、只收本機與 Tailscale |
-| `client.streamIdleMs` | ComfyUI 靜默多久就放棄該張；慢顯卡（例如 AMD ROCm）調大 |
-
-環境變數優先於 `config.json`：`COMFY_API`、`COMFY_CKPT`、`PORT`、`HOST`、`ALLOW_NET`、`LORA_ROOT`。
-
-**自己的 ComfyUI workflow**：在 ComfyUI 用「匯出工作流 (API)」，把 JSON 拖進畫面的「工作流」面板，指定 Positive Prompt 寫進哪個 node。原始 JSON 不會被改。
-
-**送到 Discord**：頂欄的 Discord 按鈕，貼上頻道的 webhook 網址，成圖就自動送進頻道。網址存在 `.secrets/`（不進版控、不回傳瀏覽器）。
-
-**手機**：`start.bat` 把伺服器綁在 `0.0.0.0`，但只收 loopback 和 Tailscale（`100.64.0.0/10`）。手機走 Tailscale，用黑窗印出的 `Tailscale http://100.x.x.x:8796/`。
-
-## 資料存在哪
-
-全部在專案底下的 `data/`（不進版控）：卡牌使用次數、牌組、作品冊、出圖日誌、匯入的 workflow、成品的 webp 快取。搬家時整個 `data/` 和 `config.json` 一起帶走就好。
-
-## 檔案結構
-
-```
-server.py            API、生圖佇列、ComfyUI 代理、靜態檔
-card_usage.py …      卡冊、牌組、作品冊、出圖日誌、LoRA、workflow 的伺服器端
-web/                 前端（不必建置，瀏覽器直接載 ES modules）
-  engine.js          抽牌引擎：規則、互斥、附帶、分級
-  lexicon.json       詞庫（tag、中文名、分類、互斥群組）
-  index.html …       四個房間
-  i18n.js, locales/  英文版
-  cards/             卡牌插畫（下載或自己烘，不進版控）
-scripts/             插畫下載與烘焙、放大模型、姿勢參考
-```
+你的資料（使用次數、牌組、作品冊、出圖日誌、匯入的 workflow）都在 `data/`，搬家時連同 `config.json` 一起帶走。
 
 ## 跑不起來時
 
-- **bat 一閃就關**：要先裝 Python 3，安裝時勾 *Add python.exe to PATH*。或在本資料夾手動跑 `py -3 server.py` 看錯誤訊息。
-- **右上角一直是「Comfy 未連上」**：ComfyUI 沒開，或不在 `comfy.api` 指的位址。
-- **畫面寫「讀不到詞庫」**：用 `start.bat`／`server.py` 開，不要直接點 HTML 檔。
-- **生圖到一半停掉**：慢顯卡把 `client.streamIdleMs` 調大。
-
-## 測試
-
-```bash
-node tests/test_i18n.mjs
-```
-
-語言判斷、英文翻譯、使用者內容不被翻、切換語言保留選牌。不需要開 ComfyUI。
+- **bat 一閃就關**：要先裝 Python 3，安裝時勾 *Add python.exe to PATH*；或在本資料夾跑 `py -3 server.py` 看錯誤。
+- **「8796 已經有程式在用」**：多半是墨池已經開著，直接開 <http://127.0.0.1:8796/>。要同時開第二份，先設 `PORT=別的埠`。
+- **一直顯示 Comfy 未連上**：ComfyUI 沒開，或不在 `comfy.api` 的位址。
+- **「讀不到詞庫」**：用 `start.bat`／`start.sh`／`server.py` 開，不要直接點 HTML。
+- **生圖到一半停掉**：把 `client.streamIdleMs` 調大。
 
 ## 授權
 
-程式碼：MIT，見 [LICENSE](LICENSE)。
-字型 Chiron Hei HK：SIL Open Font License 1.1（`web/fonts/OFL.txt`）。three.js：MIT（`web/vendor/three/LICENSE`）。
-詞庫裡的 tag 名稱來自 Danbooru；生成內容的責任在使用者自己。
-
----
-
-<a id="english"></a>
-
-# Mochi · a card workbench for Danbooru-tag image generation
-
-Danbooru tags as illustrated cards. Pin a few cards, let the engine draw the rest by its rules, and send the composition to your local ComfyUI (WAI / Illustrious SDXL).
-
-The interface is English or Traditional Chinese (follows your browser; switch with the globe menu in the top bar). ComfyUI always receives the canonical English tags.
-
-> **Adult content.** This tool can generate adult images. The rating switch starts at *General*. The lexicon and negative prompt block `loli`, `shota`, `teen`, `child` and similar tags; those cards are never drawn or illustrated.
-> The server runs on your own machine and only accepts loopback and Tailscale connections by default.
-
-Split out of [danbooru_tag_random](https://github.com/bosen12/danbooru_tag_random) with only the Mochi interface.
-
-## Four rooms
-
-| Room | What it does |
-|---|---|
-| **Ink Pool** `/` | Browse the card library by suit (Cast, Appearance, Clothing, Pose, Scene, Style) or search in English or Chinese. Pinned cards appear in every image; the engine fills the remaining slots. Rules set content level, era, characters, pose reference and size. Batch, continuous and draw-only modes. |
-| **Fuse Bed** `/fuse.html` | One card per ink layer. Pinned cards stack into six suit rows; grey shadows are the engine's additions. Four same-seed proofs redraw instantly, so you see what each card changes before you generate. |
-| **Card Book** `/book.html` | How often each card was used, save and discard rates, and the images it appeared in. Achievements. |
-| **Gallery** `/album.html` | Saved images, the full generation history, and a report card for every checkpoint and LoRA. Send a work's cards back to the Ink Pool. |
-
-The **Intro film** (`/intro.html`, 3 min) and **Tutorial** (`/tutorial.html`, 4.5 min) are rendered live in the page with the real engine and cards. **Tour** in the top bar walks you through each room.
-
-## Requirements
-
-Python 3.9+ (standard library only), ComfyUI (default `http://127.0.0.1:8188`), an SDXL checkpoint (WAI / Illustrious recommended), and a current Chrome, Edge, Firefox or Safari.
-
-## Getting started
-
-```bash
-git clone https://github.com/bosen12/danbooru_tag_mochi.git
-cd danbooru_tag_mochi
-```
-
-1. Start ComfyUI.
-2. Windows: double-click `start.bat`. macOS / Linux: `python3 server.py`, then open <http://127.0.0.1:8796>.
-3. Choose a checkpoint with the model button in the top bar.
-
-On first start the all-ages card art (about 100 MB) downloads from the GitHub release into `web/cards/`; until then cards show placeholder glyphs, so reload when it finishes. `start.bat` also offers to bake sensitive and explicit card art with your own checkpoint, and installs the Hires upscale model and the pose-reference ControlNet into your local ComfyUI. Skip any of them with `NO_CARD_FETCH=1`, `NO_CARD_BAKE=1`, `NO_UPSCALE_FETCH=1` or `NO_POSE_FETCH=1`.
-
-## Configuration
-
-Copy `config.example.json` to `config.json` (git-ignored). Most installs need nothing: checkpoints and LoRAs come from ComfyUI. Useful keys: `comfy.api`, `comfy.ckpt` (must match ComfyUI's list exactly), `comfy.checkpointDir` (preview images), `paths.loraRoot` (LoRA previews and trigger words), `server.port` (default 8796), `client.streamIdleMs` (raise for slow GPUs). Environment variables override the file: `COMFY_API`, `COMFY_CKPT`, `PORT`, `HOST`, `ALLOW_NET`, `LORA_ROOT`.
-
-Import your own ComfyUI workflow (*Export (API)*) from the Workflow panel. Share generated images to Discord from the Discord button in the top bar (paste a channel webhook URL; it stays in `.secrets/`). Your data (usage, decks, gallery, history, imported workflows) lives in `data/`.
-
-## License
-
-Code: MIT ([LICENSE](LICENSE)). Chiron Hei HK font: SIL OFL 1.1. three.js: MIT. Tag names come from Danbooru; you are responsible for what you generate.
+程式碼 MIT（[LICENSE](LICENSE)）。字型 Chiron Hei HK 為 SIL OFL 1.1；three.js 為 MIT。tag 名稱來自 Danbooru；生成內容的責任在使用者自己。

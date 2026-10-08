@@ -2889,7 +2889,7 @@ def dc_endpoint() -> "tuple[str, dict]":
         hook = _dc["webhook"]
     headers = {
         # Discord 會擋掉沒有 User-Agent 的請求。
-        "User-Agent": "DanbooruTagRandom (https://github.com/bosen12/danbooru_tag_random, 1.0)",
+        "User-Agent": "DanbooruTagMochi (https://github.com/bosen12/danbooru_tag_mochi, 1.0)",
     }
     if mode == "webhook":
         if not hook:
@@ -4186,12 +4186,30 @@ def check_ckpt() -> None:
     print("         用 COMFY_CKPT 環境變數指定，或改 start*.bat 裡的 COMFY_CKPT。")
 
 
+class AppServer(ThreadingHTTPServer):
+    # Windows 的 SO_REUSEADDR 讓第二份伺服器也綁得上同一個埠，而且不報錯：啟動檔點兩次，
+    # 兩份就搶同一個埠的請求，生圖佇列各記各的（進度、接回都會莫名其妙不見）。改成獨佔。
+    allow_reuse_address = os.name != "nt"
+
+    def server_bind(self) -> None:
+        if os.name == "nt" and hasattr(socket, "SO_EXCLUSIVEADDRUSE"):
+            self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_EXCLUSIVEADDRUSE, 1)
+        super().server_bind()
+
+
 def main() -> None:
     host = str(cfg("server.host", "HOST", "127.0.0.1"))
     port = int(cfg("server.port", "PORT", 8796))
     tg_load()
     dc_load()
-    httpd = ThreadingHTTPServer((host, port), Handler)
+    try:
+        httpd = AppServer((host, port), Handler)
+    except OSError as err:
+        print(f"port     {port} 已經有程式在用（{err.strerror or err}）")
+        print(f"         如果是這個伺服器已經開著：直接開 http://127.0.0.1:{port}/ 就好。")
+        print("         要同時開第二份：先設 PORT=別的埠 再啟動。")
+        print(f"         Port {port} is already in use. If the server is already running, open http://127.0.0.1:{port}/.")
+        raise SystemExit(1) from None
     print(f"排字匣  http://{host}:{port}   畫面 {WEB.name}   Comfy {comfy_base()}")
     print("allow    " + ",".join(str(n) for n in ALLOW_NETS))
     print(f"設定檔  {CONFIG_PATH}" + ("" if CONFIG else "（沒有，全部用預設值）"))

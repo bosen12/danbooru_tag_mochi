@@ -1660,7 +1660,7 @@ function buildMontage(data) {
   shot(4, (g, act, cue) => {
     const bw = mk("div", "w browser", g);
     const tabs = mk("div", "br-tabs", bw);
-    mk("span", "br-tab", tabs, "GitHub · danbooru_tag_random");
+    mk("span", "br-tab", tabs, "GitHub · danbooru_tag_mochi");
     mk("span", "br-tab is-front", tabs, "文件 · README");
     const ours = mk("span", "br-tab is-ours", tabs);
     mk("div", "br-page", bw, "<i></i><i></i><i></i><i></i>");
@@ -1755,7 +1755,7 @@ function buildFinale(data) {
   const TT = bar(87) + 0.2;
   kinetic({ cls: "k-title", zh: "排字匣", en: "DANBOORU CASE", x: 960, y: 400, align: "center", inAt: TT, outAt: bar(94) + 1, st: 0.1 });
   kinetic({ cls: "k-cap", zh: "排字匣　·　墨池　·　疊印台", en: "TAG CASE · MOCHI · OVERPRINT", x: 960, y: 620, align: "center", inAt: TT + 0.8, outAt: bar(94) + 1, st: 0.04 });
-  const cmd = "git clone https://github.com/bosen12/danbooru_tag_random";
+  const cmd = "git clone https://github.com/bosen12/danbooru_tag_mochi";
   const mono = mk("div", "k k-mono", hudEl);
   mono.style.left = "960px";
   mono.style.top = "770px";

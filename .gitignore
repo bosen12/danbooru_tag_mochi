@@ -16,3 +16,5 @@ web/cards/
 
 # Launcher: "never ask again" for baking card art
 .no-card-bake
+# Launcher: "never ask again" for installing pose reference
+.no-pose-fetch

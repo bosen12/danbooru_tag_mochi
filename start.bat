@@ -13,11 +13,13 @@ if not defined PY (
 )
 if not defined PY (
   echo Python 3 not found.
-  echo Install Python and tick "Add python.exe to PATH".
+  echo Opening the download page. Install Python 3.9 or newer and tick
+  echo "Add python.exe to PATH" in the installer, then run start.bat again.
+  start "" "https://www.python.org/downloads/windows/"
   pause
   exit /b 1
 )
-echo pai-zi-xia  mo-chi (card workbench)
+echo Mochi  card workbench for Danbooru tags + ComfyUI
 echo local     http://127.0.0.1:%PORT%/
 set "TSIP="
 if exist "%ProgramFiles%\Tailscale\tailscale.exe" for /f %%I in ('"%ProgramFiles%\Tailscale\tailscale.exe" ip -4 2^>nul') do set "TSIP=%%I"
