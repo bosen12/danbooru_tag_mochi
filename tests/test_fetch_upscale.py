@@ -40,6 +40,7 @@ with tempfile.TemporaryDirectory() as tmp_s:
         fum.extra_yaml_beside_models(ckpt) == tmp / "ComfyUI" / "extra_model_paths.yaml",
     )
 
+    block_base = tmp / "absolute-block"
     text = (
         "ignored:\n"
         "  base_path: somewhere\n"
@@ -48,7 +49,7 @@ with tempfile.TemporaryDirectory() as tmp_s:
         f"  base_path: {(tmp / 'external').as_posix()}\n"
         "  upscale_models: upscale\n"
         "block:\n"
-        "  base_path: /opt/comfy\n"
+        f"  base_path: {block_base.as_posix()}\n"
         "  upscale_models: |\n"
         "    one/up\n"
         "    two/up\n"
@@ -60,8 +61,8 @@ with tempfile.TemporaryDirectory() as tmp_s:
     got = [os.path.normpath(p) for p in parsed]
     want = [
         os.path.normpath(tmp / "external" / "upscale"),
-        os.path.normpath("/opt/comfy/one/up"),
-        os.path.normpath("/opt/comfy/two/up"),
+        os.path.normpath(block_base / "one" / "up"),
+        os.path.normpath(block_base / "two" / "up"),
         os.path.normpath(tmp / "ComfyUI" / "relmodels" / "upscale_models"),
     ]
     ok("yaml upscale_models paths", got == want, f"{got}\nvs\n{want}")

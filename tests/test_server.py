@@ -1679,6 +1679,19 @@ try:
     ok("preferred path: a subfolder still names LoRAs from ComfyUI's loras root", _names == ["A\\x.safetensors"], str(_names))
     ok("preferred path: previews inside the folder are served", _ls.preview_path("A", "x.preview.png") is not None)
     ok("preferred path: files outside the folder are not", _ls.preview_path("B", "y.safetensors") is None and _ls.preview_path("..", "x.png") is None)
+    _alias = _pref_td / "lora-root-alias"
+    try:
+        _alias.symlink_to(_lroot, target_is_directory=True)
+    except OSError:
+        print("skip preferred path symlink fixture (not permitted on this system)")
+    else:
+        _ls.comfy_model_dirs = lambda kind: [_alias] if kind == "loras" else []
+        _ls.reset_cache()
+        _alias_items = _ls.build_lora_list()["items"]
+        _alias_names = [((i["folder"] + "\\") if i["folder"] else "") + i["file"] for i in _alias_items]
+        ok("preferred path: aliased ComfyUI root keeps model names", _alias_names == ["A\\x.safetensors"], str(_alias_names))
+        ok("preferred path: aliased root serves only selected previews", _ls.preview_path("A", "x.preview.png") is not None and _ls.preview_path("B", "y.safetensors") is None)
+        _ls.comfy_model_dirs = lambda kind: [_lroot] if kind == "loras" else []
     try:
         server.set_model_path("lora", str(_pref_td / "missing"))
         ok("preferred path: a missing folder is refused", False)

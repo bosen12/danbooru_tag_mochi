@@ -73,7 +73,10 @@ def scan_roots():
     pref = preferred_path()
     if pref is None:
         return LORA_ROOT, LORA_ROOT, list(LORA_FOLDERS)
-    roots = comfy_model_dirs("loras") + ([LORA_ROOT] if LORA_ROOT else [])
+    # Settings save a resolved path. ComfyUI can report /var aliases on macOS
+    # or short Windows paths; compare and derive model names in the same form.
+    pref = pref.resolve()
+    roots = [Path(r).resolve() for r in comfy_model_dirs("loras") + ([LORA_ROOT] if LORA_ROOT else [])]
     owner = next((r for r in sorted(roots, key=lambda r: -len(str(r))) if is_under(pref, r)), None)
     return pref, owner or pref, []
 
