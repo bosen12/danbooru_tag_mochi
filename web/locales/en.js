@@ -782,6 +782,43 @@ LoRA／底模|LoRA / Checkpoint
 在 LoRA Manager 開（新分頁）|Open in LoRA Manager · New tab
 在 LoRA Manager 開這個 LoRA 的完整詳情（新分頁）|View LoRA details in LoRA Manager · New tab
 在 Civitai 開這個 LoRA 的頁面（新分頁）|Open this LoRA on Civitai · New tab
+卡面插畫|Card art
+烘焙卡面|Bake card art
+敏感、色情卡面|Sensitive and explicit card art
+Hires 放大模型|Hires upscale model
+安裝|Install
+這次不要|Not now
+不要再問|Never ask
+烘|Bake
+重開 ComfyUI|Restart ComfyUI
+重新整理看新圖|Reload for new art
+第一次使用的準備|First-time setup
+ComfyUI 重開中，大約半分鐘|ComfyUI is restarting. This takes about half a minute.
+已載入|Loaded
+下載失敗|Download failed
+安裝失敗|Installation failed
+烘焙失敗|Baking failed
+從 GitHub 下載全年齡卡面（約 100 MB）|Downloading the all-ages card art from GitHub (about 100 MB)
+下載好了：重新整理網頁就有圖|Downloaded. Reload the page to see the art.
+烘好了：重新整理網頁就有圖|Baked. Reload the page to see the art.
+等 ComfyUI 開起來|Waiting for ComfyUI to start
+ComfyUI 在別台電腦：請在那台裝 LoRA Manager|ComfyUI runs on another computer. Install LoRA Manager there.
+ComfyUI 在別台電腦：這台不動它|ComfyUI runs on another computer. Nothing is installed from here.
+安裝到 ComfyUI 的 custom_nodes|Installing into ComfyUI's custom_nodes
+裝好了，重開 ComfyUI 才會生效|Installed. Restart ComfyUI to load it.
+找不到 ComfyUI 的資料夾|ComfyUI folder not found
+下載到 ComfyUI 的 upscale_models（約 18 MB）|Downloading into ComfyUI's upscale_models (about 18 MB)
+選用：ComfyUI 節點＋OpenPose 模型，約 2.5 GB，裝完要重開 ComfyUI|Optional: a ComfyUI node and an OpenPose model, about 2.5 GB. Restart ComfyUI afterwards.
+安裝節點、下載模型（約 2.5 GB）|Installing the node and downloading the model (about 2.5 GB)
+另一個視窗正在烘|Already baking in another window
+用你的 ComfyUI 烘還沒有的全年齡卡面|Baking missing all-ages cards with your ComfyUI
+用你的 ComfyUI 烘敏感、色情卡面|Baking sensitive and explicit cards with your ComfyUI
+不在公開下載包裡；用你的底模烘約 600 張，要一小時以上|Not in the public download. Baking about 600 cards with your checkpoint takes over an hour.
+不再問（刪掉 .no-pose-fetch 就會再問）|Will not ask again (delete .no-pose-fetch to be asked)
+這次先不要|Skipped for now
+現在不用回答這一項|Nothing to answer for this item now
+ComfyUI 還有圖在畫，畫完再重開|ComfyUI is still generating. Restart it when it finishes.
+ComfyUI-Manager 不讓重開（或沒裝）：請自己重開 ComfyUI|ComfyUI-Manager cannot restart ComfyUI here. Restart ComfyUI yourself.
 LoRA：ComfyUI 沒有回報任何 LoRA|LoRA: ComfyUI reported no LoRAs.
 底模清單載入失敗：|Could not load checkpoints:
 找不到底模|No checkpoints found
@@ -1332,6 +1369,10 @@ LoRA Manager 送來的「{0}」在這裡的清單找不到|LoRA “{0!}” from 
 已從 LoRA Manager 選入 LoRA {0}：「{1}」|Selected LoRA {0!} from LoRA Manager: “{1!}”
 LoRA：清單來自 ComfyUI（{0} 個）。想要預覽圖和觸發詞：在 ComfyUI 裝 LoRA Manager（啟動檔會自動裝，裝完重開 ComfyUI），或在 config.json 填 paths.loraRoot。|LoRA: list from ComfyUI ({0!}). For preview images and trigger words, install ComfyUI LoRA Manager (the launcher installs it; restart ComfyUI afterwards) or set paths.loraRoot in config.json.
 LoRA：沒設定 paths.loraRoot，改問 ComfyUI 也失敗了：{0}|LoRA: no LoRA Manager or paths.loraRoot, and ComfyUI could not be reached: {0!}
+第一次使用：準備中 {0}/{1}|First-time setup {0}/{1}
+重開失敗（{0}）：請自己重開 ComfyUI|Restart failed ({0!}). Restart ComfyUI yourself.
+{0}（下次啟動接著抓）|{0} (resumes next launch)
+{0}（下次啟動接著做）|{0} (resumes next launch)
 設定 · 底模 {0}|Checkpoint settings · {0!}
 底模已換成「{0}」|Checkpoint changed to “{0!}”
 工作流：{0}|Workflow: {0!}

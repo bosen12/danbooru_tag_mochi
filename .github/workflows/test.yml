@@ -43,7 +43,7 @@ jobs:
           for i in $(seq 1 30); do curl -s -o /dev/null http://127.0.0.1:8796/ && break; sleep 1; done
           fail=0
           for p in / /fuse.html /book.html /album.html /intro.html /tutorial.html /lexicon.json /engine.js \
-                   /api/ping /api/decks /api/usage /api/recipes /api/genlog /api/genlog/stats /api/workflows /api/checkpoints /api/loras; do
+                   /api/ping /api/setup /api/decks /api/usage /api/recipes /api/genlog /api/genlog/stats /api/workflows /api/checkpoints /api/loras; do
             code=$(curl -s -o /dev/null -w '%{http_code}' "http://127.0.0.1:8796$p")
             echo "$code $p"
             [ "$code" = 200 ] || fail=1

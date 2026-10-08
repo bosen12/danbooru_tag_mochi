@@ -25,10 +25,9 @@ set "TSIP="
 if exist "%ProgramFiles%\Tailscale\tailscale.exe" for /f %%I in ('"%ProgramFiles%\Tailscale\tailscale.exe" ip -4 2^>nul') do set "TSIP=%%I"
 if defined TSIP echo Tailscale http://%TSIP%:%PORT%/
 echo bind      0.0.0.0:%PORT%/
-call "%~dp0scripts\card-art-check.bat"
-call "%~dp0scripts\upscale-model-check.bat"
-call "%~dp0scripts\pose-assets-check.bat"
-call "%~dp0scripts\lora-manager-check.bat"
+rem First-time setup (card art, LoRA Manager, upscale model, pose reference, card baking)
+rem runs inside the server and shows progress and questions in the page, so one launch
+rem finishes it even if ComfyUI is started later (setup_tasks.py).
 start "" "http://127.0.0.1:%PORT%/"
 %PY% server.py
 if errorlevel 1 pause

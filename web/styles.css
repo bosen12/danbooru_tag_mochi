@@ -5574,3 +5574,130 @@ html[data-booting] :is(#lib-grid, #case-grid, #book-grid):empty::before {
     margin-left: 6px;
   }
 }
+
+/* ---------- 第一次使用的準備面板（setup-panel.js） ----------
+ * 左下角，跟導覽邀請卡同一種卡片。準備還在進行時邀請卡先不出來（兩張疊在同一個角落）。 */
+.setup-panel {
+  position: fixed;
+  left: var(--space-md);
+  bottom: var(--space-md);
+  z-index: 360;
+  display: grid;
+  gap: var(--space-xs);
+  width: min(23rem, calc(100vw - 2 * var(--space-md)));
+  max-height: min(70dvh, 34rem);
+  overflow: auto;
+  padding: var(--space-sm) var(--space-md) var(--space-md);
+  border: 1px solid var(--color-rule-2);
+  border-radius: var(--radius-md);
+  background: var(--color-paper-2);
+  box-shadow: var(--shadow-lift);
+  animation: fade-in var(--dur-medium) var(--ease-out);
+}
+html[data-setup] .tour-offer {
+  display: none;
+}
+.setup-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  min-height: 32px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--color-ink);
+  font: inherit;
+  font-size: var(--text-sm);
+  text-align: left;
+  cursor: pointer;
+}
+.setup-chev {
+  transition: rotate var(--dur-short) var(--ease-out);
+}
+.setup-panel[data-collapsed="true"] .setup-chev {
+  rotate: -90deg;
+}
+.setup-panel[data-collapsed="true"] :is(.setup-list, .setup-note) {
+  display: none;
+}
+.setup-list {
+  display: grid;
+  gap: var(--space-xs);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.setup-item {
+  display: grid;
+  grid-template-columns: 1.25rem minmax(0, 1fr);
+  gap: var(--space-xs);
+  align-items: start;
+  font-size: var(--text-sm);
+}
+.setup-icon {
+  display: grid;
+  place-items: center;
+  width: 1.25rem;
+  height: 1.25rem;
+  margin-top: 1px;
+  border-radius: 50%;
+  color: var(--color-ink-2);
+  font-size: var(--text-xs);
+  font-weight: 700;
+}
+.setup-item[data-state="done"] .setup-icon { color: var(--color-good); }
+.setup-item[data-state="error"] .setup-icon { color: var(--color-accent); }
+.setup-item:is([data-state="ask"], [data-state="restart"]) .setup-icon {
+  background: var(--color-accent);
+  color: var(--color-accent-ink);
+}
+/* 進行中：一圈轉動的弧（減少動態時就是靜止的弧）。 */
+.setup-item[data-state="run"] .setup-icon {
+  border: 2px solid var(--color-rule-2);
+  border-top-color: var(--color-ink);
+  animation: setup-spin var(--dur-develop) linear infinite;
+}
+@keyframes setup-spin {
+  to { rotate: 1turn; }
+}
+.setup-body {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.setup-body small {
+  color: var(--color-ink-2);
+  font-size: var(--text-xs);
+  overflow-wrap: anywhere;
+}
+.setup-answers,
+.setup-foot {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+  margin-top: 4px;
+}
+.setup-note {
+  margin: 0;
+  color: var(--color-ink-2);
+  font-size: var(--text-xs);
+}
+.setup-note:empty {
+  display: none;
+}
+@media (max-width: 40rem) {
+  /* 手機：跟邀請卡一樣放最上面，不擋底下的主按鈕和浮動抽牌列。 */
+  .setup-panel {
+    top: calc(8px + env(safe-area-inset-top));
+    bottom: auto;
+    left: 8px;
+    width: calc(100vw - 16px);
+    max-height: 60dvh;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .setup-item[data-state="run"] .setup-icon {
+    animation: none;
+  }
+}

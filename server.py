@@ -42,6 +42,7 @@ import card_decks
 import gen_log
 import lora_scan
 import recipes
+import setup_tasks
 import workflows
 
 # 這支程式原本把機器專屬的路徑寫死在原始碼裡（checkpoint 目錄、ComfyUI 位址…），
@@ -3901,6 +3902,9 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/api/loras":
             self._serve_loras()
             return
+        if path == "/api/setup":
+            self._json(200, {"ok": True, **setup_tasks.snapshot()}, cache_control="no-store")
+            return
         if path == "/api/checkpoints":
             self._serve_checkpoints()
             return
@@ -4038,6 +4042,11 @@ class Handler(BaseHTTPRequestHandler):
                 self._json(200, {"ok": True})
             except Exception as exc:
                 self._json(500, {"ok": False, "error": str(exc)})
+            return
+        if path == "/api/setup":
+            # 第一次使用的準備：回答詢問（姿勢參考、成人卡面）或請 ComfyUI-Manager 重開 ComfyUI。
+            done, message = setup_tasks.answer(str(payload.get("id") or ""), str(payload.get("answer") or ""))
+            self._json(200 if done else 409, {"ok": done, "error": message, **setup_tasks.snapshot()})
             return
         if path == "/api/lora-push":
             self._serve_lora_push_post(payload)
@@ -4318,7 +4327,13 @@ def main() -> None:
         )
         print(f"discord  {where}  自動送 {'開' if ds['enabled'] else '關'}")
     check_ckpt()
-    start_card_fetch()
+    if (WEB / "setup-panel.js").is_file():
+        # 這個版面在網頁上顯示準備進度（web6/setup-panel.js）：卡面、LoRA Manager、放大模型、
+        # 姿勢參考、烘焙都由 setup_tasks 在背景做，ComfyUI 什麼時候開都接得上。
+        setup_tasks.start(comfy_base, on_lora_ready=lora_scan.reset_cache)
+        print("setup    第一次使用的準備在背景做，進度和要回答的事在網頁上（data/setup.log 有紀錄）")
+    else:
+        start_card_fetch()
     removed = prune_hires_inputs()
     if removed:
         print(f"hires    清掉 {len(removed)} 張舊的上傳原圖，input/danbooru_hires 留下最近 {HIRES_INPUT_KEEP} 張")

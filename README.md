@@ -53,12 +53,12 @@ Keep the server window open. After updating, reload the page with **Ctrl+F5**.
 | What | Size | How | Skip |
 |---|---|---|---|
 | Card art, all ages (1934 files) | ~100 MB | Downloaded from this repo's [release](https://github.com/bosen12/danbooru_tag_mochi/releases/tag/card-art-v4), checked with SHA-256, unpacked into `web/cards/`. Resumes if interrupted; never overwrites cards you baked yourself | `NO_CARD_FETCH=1` |
-| Sensitive / explicit card art | — | Not published. With ComfyUI running, `start.bat` asks each time whether to bake them with your checkpoint (`scripts/bake_card_art.py`) | `NO_CARD_BAKE=1` or a `.no-card-bake` file |
+| Sensitive / explicit card art | — | Not published. Once the download is in, the page asks whether to bake them with your checkpoint (`scripts/bake_card_art.py`). Missing or outdated all-ages cards are baked without asking | `NO_CARD_BAKE=1` or a `.no-card-bake` file |
 | Hires upscale model `RealESRGAN_x4plus_anime_6B` | ~18 MB | Saved to ComfyUI's `models/upscale_models` | `NO_UPSCALE_FETCH=1` |
 | [ComfyUI LoRA Manager](https://github.com/willmiao/ComfyUI-Lora-Manager) (custom node) | small | The LoRA panel takes its list, preview images and Civitai trigger words from it, and the checkpoint panel its names and previews. Installed automatically if ComfyUI lacks it (git clone into `custom_nodes`, packages with ComfyUI's own Python); restart ComfyUI once afterwards | `NO_LORA_MANAGER_FETCH=1` |
-| Pose reference (OpenPose ControlNet + `comfyui_controlnet_aux`) | ~2.5 GB | Optional. `start.bat` asks first (Y / not now / never); restart ComfyUI once after installing | `NO_POSE_FETCH=1` or answer *A* |
+| Pose reference (OpenPose ControlNet + `comfyui_controlnet_aux`) | ~2.5 GB | Optional. The page asks first (install / not now / never); ComfyUI needs one restart afterwards | `NO_POSE_FETCH=1` or answer *A* |
 
-On Windows the downloads run in a separate minimized window, and the page opens straight away with placeholder cards; reload when the download says *Done*. With `start.sh` or `python3 server.py`, the card art downloads in the background; run `python3 scripts/fetch_lora_manager.py`, `python3 scripts/fetch_upscale_model.py` or `python3 scripts/fetch_pose_assets.py` yourself for the others.
+**One launch does all of it**, on Windows, macOS and Linux alike. The server does the work in the background and a panel in the lower-left corner of the page shows each step, asks the two questions, and offers **Restart ComfyUI** after something is installed into it (through ComfyUI-Manager; otherwise restart it yourself). If ComfyUI is not running yet, the steps that need it wait and continue as soon as you start it; there is no need to run `start.bat` again. The page opens straight away with placeholder cards; the panel tells you when to reload. Everything is logged in `data/setup.log`. People who already have everything never see the panel.
 
 ## Configuration
 
@@ -174,10 +174,12 @@ cd danbooru_tag_mochi
 | 東西 | 大小 | 怎麼來 | 不想要 |
 |---|---|---|---|
 | 卡牌插畫（全年齡 1934 個檔） | 約 100 MB | 從本 repo 的 [Release](https://github.com/bosen12/danbooru_tag_mochi/releases/tag/card-art-v4) 下載、驗 SHA-256、解到 `web/cards/`。斷了會接著抓；自己烘的圖不覆蓋 | `NO_CARD_FETCH=1` |
-| 敏感／色情分級的卡面 | — | 不公開。ComfyUI 開著時 `start.bat` 每次都會先問要不要用你的底模烘 | `NO_CARD_BAKE=1` 或 `.no-card-bake` 檔 |
+| 敏感／色情分級的卡面 | — | 不公開。卡面下載好之後，網頁上問你要不要用你的底模烘；全年齡卡缺的、過時的直接烘，不問 | `NO_CARD_BAKE=1` 或 `.no-card-bake` 檔 |
 | Hires 放大模型 | 約 18 MB | 放進 ComfyUI 的 `models/upscale_models` | `NO_UPSCALE_FETCH=1` |
 | [ComfyUI LoRA Manager](https://github.com/willmiao/ComfyUI-Lora-Manager)（custom node） | 不大 | LoRA 面板的清單、預覽圖、Civitai 觸發詞，底模面板的名稱和預覽圖都從它來。ComfyUI 沒有就自動裝（git clone 進 `custom_nodes`、用 ComfyUI 自己的 Python 裝套件），裝完重開一次 ComfyUI | `NO_LORA_MANAGER_FETCH=1` |
-| 姿勢參考（OpenPose ControlNet＋`comfyui_controlnet_aux`） | 約 2.5 GB | 選用。`start.bat` 會先問（Y 裝／N 這次不要／A 永遠不問），裝完要重開一次 ComfyUI | `NO_POSE_FETCH=1` 或回答 A |
+| 姿勢參考（OpenPose ControlNet＋`comfyui_controlnet_aux`） | 約 2.5 GB | 選用。網頁上先問（安裝／這次不要／不要再問），裝完要重開一次 ComfyUI | `NO_POSE_FETCH=1` 或回答 A |
+
+**啟動一次就全部做完**（Windows、macOS、Linux 都一樣）：伺服器在背景做，網頁左下角的面板顯示每一步、問那兩個問題，裝進 ComfyUI 的東西需要重開時給一顆「重開 ComfyUI」（透過 ComfyUI-Manager；沒有就自己重開）。ComfyUI 還沒開的話，要用到它的步驟會等，一開就接著做，不用再跑一次 `start.bat`。網頁照常先開（先是字的佔位牌），面板會告訴你什麼時候重新整理。過程記在 `data/setup.log`。東西都已經有的人完全看不到這個面板。
 
 ## 設定
 

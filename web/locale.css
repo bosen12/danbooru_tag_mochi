@@ -83,8 +83,8 @@ html[lang="en"] .book-grid { grid-template-columns: repeat(auto-fill, minmax(114
 
 /* One label spec for every English card: the library card, the pool card and
  * the enlarged peek are the same card at different widths. Every size in the
- * label is a multiple of --u (7.8% of the card width: 9px on a 115px library
- * card, 17.6px on the 226px peek), so a small card is the large one scaled
+ * label is a multiple of --u (9% of the card width: 10.4px on a 115px library
+ * card, 20.3px on the 226px peek), so a small card is the large one scaled
  * down. Pool cards narrower than ~100px keep an 8px floor for legibility. Two lines of name fit inside the suit-seal height, so every
  * label bar in a row is equally tall. */
 html[lang="en"] :is(.card, .card-peek-face) { container-type: inline-size; }
@@ -94,7 +94,7 @@ html[lang="en"] .card {
 }
 html[lang="en"] .card-art { grid-column: 1; grid-row: 1; }
 html[lang="en"] :is(.card-spine, .card-peek-spine) {
-  --u: max(8px, 7.8cqw);
+  --u: max(8px, 9cqw);
   grid-column: 1;
   grid-row: 2;
   display: flex;

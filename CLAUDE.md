@@ -23,3 +23,7 @@
 - `.bat` 一律 CRLF（`.gitattributes` 管）：LF 的批次檔 `goto` 會失效。
 - 卡面插畫從**這個 repo 的 Release** `card-art-v4` 下載。上游發新卡面包時，這邊也要發同一個 zip（`gh release create card-art-vN ... -R bosen12/danbooru_tag_mochi`）。
 - 給陌生人用：改了啟動流程、第一次啟動會下載或安裝的東西，README 的〈Prepared on first start〉兩種語言都要跟著改。
+
+## 第一次使用的準備
+
+`start.bat`／`start.sh` 只開伺服器；卡面下載、LoRA Manager、放大模型、姿勢參考、烘焙卡面都在伺服器背景做（`setup_tasks.py`，從上游同步），網頁左下角的面板（`web/setup-panel.js`）顯示進度和詢問。不要把這些步驟加回啟動檔：那樣又會變成要啟動兩次。

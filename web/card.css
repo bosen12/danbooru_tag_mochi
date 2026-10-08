@@ -906,3 +906,59 @@ body[data-hand-edit="true"] :is(#case-grid, #lib-grid) .card[data-in-hand="true"
 .card[data-w="down"] .card-art img {
   opacity: 0.72;
 }
+
+/* ---------- 字跟著牌的寬度走：字盒的小牌、合成池的牌、放大卡同一個比例 ----------
+ * 牌面的字原本就是「卡寬 × 12.5%」（.card 的 font-size），但字盒、疊印台字盒、偏好卡牌托盤的牌寬是
+ * 100%（跟著格子），算不出來，只好寫死 10～10.5px（只有卡寬的 9%，字盒的字太小）；放大卡（card-peek）
+ * 又是另一套 px。改用 container query 單位：每張牌量自己的寬度，書脊和插畫區的字都是卡寬的 --card-f，
+ * 放大只是等比例變大。英文牌的底條另有一套（locale.css 的 --u），也是跟卡寬走。 */
+:root {
+  --card-f: 12.5cqw;
+}
+.card {
+  container-type: inline-size;
+}
+.card > :is(.card-spine, .card-art) {
+  font-size: var(--card-f);
+}
+
+/* 放大卡跟小牌同一份尺寸：書脊 26%、章、字、小分類章都照 .card-spine 的 em 比例（card-peek.js 的
+ * 樣式是寫死 px 的共用版，這裡多一層選擇器蓋過去）。英文的書脊是橫的底條，在 locale.css。 */
+html:not([lang="en"]) .card-peek .card-peek-face {
+  container-type: inline-size;
+  grid-template-columns: 26% minmax(0, 1fr);
+}
+html:not([lang="en"]) .card-peek .card-peek-spine {
+  gap: 0.25em;
+  padding: 0.3em 0 0.35em;
+  font-size: var(--card-f);
+}
+html:not([lang="en"]) .card-peek .card-peek-suit {
+  width: 1.45em;
+  height: 1.45em;
+  font-size: 0.95em;
+}
+html:not([lang="en"]) .card-peek .card-peek-name {
+  font-size: 1.12em;
+  letter-spacing: 0.02em;
+}
+html:not([lang="en"]) .card-peek .card-peek-name[data-len="4"] {
+  font-size: 0.95em;
+}
+html:not([lang="en"]) .card-peek .card-peek-name[data-len="5"] {
+  font-size: 0.8em;
+}
+html:not([lang="en"]) .card-peek .card-peek-name:is([data-len="6"], [data-len="7"], [data-len="8"]) {
+  font-size: 0.66em;
+}
+html:not([lang="en"]) .card-peek .card-peek-seal {
+  width: 1.45em;
+  height: 1.45em;
+  border-width: 1px;
+  border-radius: 2px;
+  font-size: 0.9em;
+}
+html:not([lang="en"]) .card-peek .card-peek-rate {
+  padding: 0.12em 0.18em;
+  font-size: 0.62em;
+}
