@@ -59,7 +59,7 @@ import * as S from "./store.js";
 import { recordUses } from "./usage.js";
 import { getSfx } from "./sfx.js";
 import { mountDiscord } from "./discord-link.js";
-import { t, takeLanguageState } from "./i18n.js";
+import { english, t, takeLanguageState } from "./i18n.js";
 
 const sfx = getSfx();
 // 聲音引擎第一次建立要幾十毫秒：第一個手勢時先在下一輪建好，等真的要出聲時已經在了。
@@ -2491,7 +2491,8 @@ function showCard(tag, from) {
       el(
         "div",
         {},
-        el("p", { class: "tag-en" }, card.tag),
+        // 英文版的標題就是 tag：不再印一次。
+        english ? null : el("p", { class: "tag-en" }, card.tag),
         el("dl", {}, facts.map(([k, v]) => [el("dt", {}, k), el("dd", {}, v)]))
       )
     ),

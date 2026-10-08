@@ -1,4 +1,4 @@
-import { dateLocale } from "./i18n.js";
+import { dateLocale, english } from "./i18n.js";
 /**
  * 卡冊：每張牌進過幾張圖。
  *
@@ -812,7 +812,8 @@ function openCard(card, srcNode) {
       el(
         "div",
         {},
-        el("p", { class: "tag-en" }, card.tag),
+        // 英文版的標題就是 tag：不再印一次。
+        english ? null : el("p", { class: "tag-en" }, card.tag),
         el(
           "div",
           { class: "book-big", style: `--share: ${share}` },
