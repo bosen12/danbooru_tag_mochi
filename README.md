@@ -15,6 +15,13 @@ The interface is in English or Traditional Chinese. It follows your browser lang
 
 Mochi is the card interface of [danbooru_tag_random](https://github.com/bosen12/danbooru_tag_random), released on its own.
 
+<p align="center">
+  <a href="https://github.com/bosen12/danbooru_tag_mochi/raw/main/.github/mochi-demo.mp4">
+    <img src=".github/mochi-demo-poster.jpg" alt="Demo video: pin cards, draw and generate with a real ComfyUI, save to the gallery" width="720">
+  </a><br>
+  <sub>▶ 1-minute demo, recorded live against a real ComfyUI (General content level)</sub>
+</p>
+
 | Ink Pool | Fuse Bed |
 |---|---|
 | ![Ink Pool: the card library, pinned cards and a draw](.github/screenshots/ink-pool.jpg) | ![Fuse Bed: cards stacked into suit layers, with four proofs](.github/screenshots/fuse-bed.jpg) |
@@ -159,6 +166,8 @@ Code: MIT, see [LICENSE](LICENSE). The card illustrations in the release downloa
 墨池是 [danbooru_tag_random](https://github.com/bosen12/danbooru_tag_random)（排字匣）的卡牌介面，獨立出來發布。
 
 截圖見上方英文段落（介面中英文都有，依瀏覽器語言切換）。
+
+示範影片（1 分鐘，接真的 ComfyUI 即時錄的，一般級別）：見上方英文段落的 ▶ 縮圖，或直接開 [mochi-demo.mp4](https://github.com/bosen12/danbooru_tag_mochi/raw/main/.github/mochi-demo.mp4)。
 
 ## 四個房間
 
