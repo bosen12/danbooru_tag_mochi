@@ -2045,7 +2045,7 @@ async function boot() {
   const engineCards = prints.mochi.tags.filter((t) => !pool.includes(t) && hasArt(t) && !BAD.test(t)).slice(0, 8);
   const mochiCards = pool.length + prints.mochi.tags.filter((t) => !pool.includes(t) && lib.byTag.has(t)).length;
   // 無限抽的牆：四張真的成品，其餘用場景牌的插畫（也是 ComfyUI 烘的）。
-  const wallImgs = [art.mochi, art.fuseA, art.fuseB, art.fuseC, ...pickArt(["starry sky", "cherry blossoms", "city lights", "rain", "beach", "snow", "forest", "library", "cafe", "sunset", "lantern", "river"], 12).map((t) => assets.art(t))];
+  const wallImgs = [art.mochi, art.fuseA, art.fuseB, art.fuseC, ...["starry sky", "cherry blossoms", "city lights", "rain", "beach", "snow", "forest", "library", "cafe", "sunset", "lantern", "river"].filter(hasArt).slice(0, 12).map((t) => assets.art(t))];
 
   // 時代：真的讀每張牌的 era。
   const eraTags = pickArt(["kimono", "torii", "samurai", "shrine", "paper lantern", "jeans", "skyscraper", "headphones", "school uniform", "plate armor", "castle", "knight", "sneakers", "armor", "hanfu"], 10);

@@ -38,7 +38,9 @@ export function visibleIn(card, { rating = "general", era = "modern" } = {}) {
 /** 字盒的一個視圖：花色／小分類／搜尋字，加上分級、時代。 */
 export function viewList({ suit = "all", group = "", q = "", rating = "general", era = "modern" } = {}) {
   const Q = q.toLowerCase();
-  return env.lib.cards.filter((c) => visibleIn(c, { rating, era }) && env.assets.art(c.tag) && (suit === "all" || c.suit === suit) && (!group || c.group === group || c.item.group === group) && (!Q || c.zh.toLowerCase().includes(Q) || c.tag.includes(Q)));
+  // Illustration downloads do not change the scripted cards or group chips.
+  // cardEl renders the same text placeholders as the workbench.
+  return env.lib.cards.filter((c) => visibleIn(c, { rating, era }) && (suit === "all" || c.suit === suit) && (!group || c.group === group || c.item.group === group) && (!Q || c.zh.toLowerCase().includes(Q) || c.tag.includes(Q)));
 }
 export function countOf(opts) {
   const Q = (opts.q || "").toLowerCase();

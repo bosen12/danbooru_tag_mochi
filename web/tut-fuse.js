@@ -10,7 +10,7 @@ import { contradictions, ACT_PLACE, applyPin } from "./engine.js";
 import { REGISTERS, REGISTER_ROLE, emptyBed, placeCard, removeCard, relationsOf } from "./fuse-bed.js";
 import { CARD_SUIT_INFO } from "./cards.js";
 import { CH } from "./tut-chapters.js";
-import { b, B, buildLibrary, segmented, ICON, tipAt, toastAt } from "./tut-mochi.js";
+import { b, B, buildLibrary, visibleIn, segmented, ICON, tipAt, toastAt } from "./tut-mochi.js";
 import { focus, zoomZ, makePen, SUIT_COLOR } from "./tut-mochi-a.js";
 
 /* ================= 版面（離螢幕中心，跟真的疊印台 1:1；真的 y 減 440） ================= */
@@ -165,8 +165,8 @@ export function buildFuseScene(ctx) {
   const hangs = [];
 
   /* ---------- 字盒 ---------- */
-  const pick = ["1girl", "long hair", "red hair", "sundress", "smile", "standing", "beach", "sunset", "school uniform", "indoors", "night", "kimono"].filter((t) => hasCard(t) && env.assets.art(t));
-  const fill = env.lib.cards.filter((c) => env.assets.art(c.tag) && !c.eras.includes("edo") && !pick.includes(c.tag) && c.gate !== "male").slice(0, 24).map((c) => c.tag);
+  const pick = ["1girl", "long hair", "red hair", "sundress", "smile", "standing", "beach", "sunset", "school uniform", "indoors", "night", "kimono"].filter(hasCard);
+  const fill = env.lib.cards.filter((c) => visibleIn(c) && !c.eras.includes("edo") && !pick.includes(c.tag)).slice(0, 24).map((c) => c.tag);
   const libTags = [...pick.filter((t) => t !== "kimono"), ...fill];
   const m = { O, S, ui: { count: libCount, tabs: {}, libEmpty: box(O, "tb", -783, -100, 300, 40, "") }, libGeo: { x0: -732, y0: -83, dx: 103, dy: 150, cols: 3, w: 98 } };
   m.ui.libEmpty.style.opacity = "0";
@@ -277,7 +277,7 @@ export function buildFuseScene(ctx) {
     if (!trialCache.has(key)) {
       const list = SEEDS[set].map((seed) => {
         const d = idata.drawAt(ENG, env.lex, settings, pins, seed);
-        const extra = d.tags.filter((t) => !pins.includes(t) && hasCard(t) && env.assets.art(t));
+        const extra = d.tags.filter((t) => !pins.includes(t) && hasCard(t));
         const got = (t) => d.tags.includes(t);
         return { seed, tags: d.tags, extra, got };
       });
@@ -402,7 +402,7 @@ export function buildFuseScene(ctx) {
     text.chapter("08", c.zh, c.en, b(66, 2), b(68, 0));
     const stack = mk("div", "w", S.root);
     const sheets = REGISTERS.map((suit, i) => {
-      const tag = { cast: "1girl", look: "red hair", wear: "sundress", pose: "standing", scene: "beach", style: (env.lib.cards.find((k) => k.suit === "style" && env.assets.art(k.tag)) || {}).tag }[suit];
+      const tag = { cast: "1girl", look: "red hair", wear: "sundress", pose: "standing", scene: "beach", style: (env.lib.cards.find((k) => k.suit === "style" && visibleIn(k)) || {}).tag }[suit];
       const el = mk("div", "w", stack);
       const card = mk("div", "tb tsheet", el);
       Object.assign(card.style, { left: "-230px", top: "-150px", width: "460px", height: "300px", background: `linear-gradient(135deg, color-mix(in oklch, var(--suit-${suit}) 26%, oklch(15% 0.014 250 / 0.94)), oklch(14% 0.012 250 / 0.94))`, border: `2px solid var(--suit-${suit})`, overflow: "hidden" });
@@ -883,7 +883,7 @@ export function buildFuseScene(ctx) {
         else {
           const ex = trs[i].extra;
           const pk = ["cast", "look", "wear", "pose", "scene", "style"].map((s2) => ex.find((tag) => suitOf(tag) === s2)).filter(Boolean).slice(0, 4);
-          html = `<b class="let">${tl.L}</b><div>補 ${ex.length} 現代<div class="pk">${pk.map((tag) => `<i style="--suit:var(--suit-${suitOf(tag)});background-image:url('${env.assets.art(tag)}')"></i>`).join("")}</div></div>`;
+          html = `<b class="let">${tl.L}</b><div>補 ${ex.length} 現代<div class="pk">${pk.map((tag) => `<i style="--suit:var(--suit-${suitOf(tag)});background-image:${env.assets.art(tag) ? `url('${env.assets.art(tag)}')` : "none"}"></i>`).join("")}</div></div>`;
         }
         if (tileHtml.get(tl) !== html) {
           tileHtml.set(tl, html);

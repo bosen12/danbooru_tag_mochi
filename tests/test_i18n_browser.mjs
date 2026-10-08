@@ -77,14 +77,22 @@ try {
     const context = await browser.newContext({ locale: 'en-US', viewport: { width: 1440, height: 960 } });
     await context.route('https://**/*', (r) => r.abort());
     await context.route('**/cards/manifest.json', (r) => r.fulfill({ contentType: 'application/json', body: '{}' }));
-    const page = await context.newPage(), errors = [];
-    page.on('pageerror', (e) => errors.push(e.stack || e.message));
-    await page.goto(origin + '/intro.html');
-    try { await page.waitForFunction(() => !!window.__intro, null, { timeout: 20000 }); }
-    catch (e) { console.log(JSON.stringify({ scenario: 'intro-no-card-art', errors })); throw e; }
-    await page.evaluate(() => { document.querySelector('#gate').classList.add('is-gone'); __intro.seek(55); });
-    await scan(page, 'intro-no-card-art');
-    assert.deepEqual(errors, [], 'Intro initializes and seeks without downloaded card art');
+    for (const route of ['/intro.html', '/tutorial.html']) {
+      const page = await context.newPage(), errors = [];
+      page.on('pageerror', (e) => errors.push(e.stack || e.message));
+      await page.goto(origin + route);
+      try { await page.waitForFunction(() => !!window.__intro, null, { timeout: 20000 }); }
+      catch (e) { console.log(JSON.stringify({ scenario: route + '-no-card-art', errors })); throw e; }
+      await page.evaluate(() => document.querySelector('#gate').classList.add('is-gone'));
+      if (route === '/intro.html') {
+        await page.evaluate(() => __intro.seek(70));
+        assert.equal(await page.locator('img[src="null"]').count(), 0, 'Image-only scenes must omit missing card-art sources');
+      }
+      await page.evaluate((t) => __intro.seek(t), route === '/intro.html' ? 55 : 52);
+      await scan(page, route + '-no-card-art');
+      assert.deepEqual(errors, [], route + ' initializes and seeks without downloaded card art');
+      await page.close();
+    }
     await context.close();
   }
   for (const width of [320, 390, 1440]) {

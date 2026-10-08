@@ -12,7 +12,7 @@ export function buildOpen(ctx) {
   const S = makeScene("open", { world, hud, tint: [0.62, 0.12, 40] });
   SCENES.open = S;
   // 漂在後面的牌：每個花色幾張，大小、深度、方向各不同（越遠越糊、越慢）
-  const tags = ["1girl", "red hair", "sundress", "standing", "beach", "sunset", "cherry blossoms", "long hair", "smile", "school uniform", "night", "kimono", "rain", "umbrella"].filter((t) => env.lib.byTag.get(t) && env.assets.art(t));
+  const tags = ["1girl", "red hair", "sundress", "standing", "beach", "sunset", "cherry blossoms", "long hair", "smile", "school uniform", "night", "kimono", "rain", "umbrella"].filter((t) => env.lib.byTag.has(t));
   const cards = tags.map((tag, i) => {
     const el = cardEl(tag, 200, S.root, { cls: "tdrift" });
     const a = i * 2.399;

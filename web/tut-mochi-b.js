@@ -187,8 +187,8 @@ export function buildMochiPartB(P) {
   };
   const shotSpec = (draw, i) => {
     const pins = pinsNow();
-    const mine = pins.filter((t) => hasCard(t) && env.assets.art(t));
-    const drawn = draw.tags.filter((t) => !pins.includes(t) && hasCard(t) && env.assets.art(t));
+    const mine = pins.filter(hasCard);
+    const drawn = draw.tags.filter((t) => !pins.includes(t) && hasCard(t));
     return { seed: draw.seed, era: "江戶", mine: mine.slice(0, 7), drawn: drawn.slice(0, 18), fan: drawn, img: artAt(i), hue: hueAt(i), n: i };
   };
   const allShots = [];
