@@ -782,6 +782,15 @@ LoRA／底模|LoRA / Checkpoint
 在 LoRA Manager 開（新分頁）|Open in LoRA Manager · New tab
 在 LoRA Manager 開這個 LoRA 的完整詳情（新分頁）|View LoRA details in LoRA Manager · New tab
 在 Civitai 開這個 LoRA 的頁面（新分頁）|Open this LoRA on Civitai · New tab
+Discord Developer Portal → 你的 application → Bot → Reset Token。存在伺服器的|Discord Developer Portal → your application → Bot → Reset Token. Saved on the server in
+，不進 git、不會回傳瀏覽器。留空＝沿用已存的 token。|, excluded from Git and never returned to the browser. Leave blank to keep the saved token.
+頻道 ID|Channel ID
+在 Discord 開「開發者模式」後右鍵頻道 →「複製頻道 ID」。bot 要先邀進該伺服器，並且在那個頻道有|In Discord, turn on Developer Mode, then right-click the channel → Copy Channel ID. Invite the bot to the server and give it
+發送訊息|Send Messages
+和|and
+附加檔案|Attach Files
+權限。|permissions in that channel.
+時代對不上|Era does not match
 偏好路徑|Preferred folder
 沒設定：列出 ComfyUI 的全部 LoRA|Not set: every LoRA ComfyUI knows
 沒設定：列出 ComfyUI 的全部底模|Not set: every checkpoint ComfyUI knows
@@ -1402,6 +1411,10 @@ LoRA：沒設定 paths.loraRoot，改問 ComfyUI 也失敗了：{0}|LoRA: no LoR
 重開失敗（{0}）：請自己重開 ComfyUI|Restart failed ({0!}). Restart ComfyUI yourself.
 {0}（下次啟動接著抓）|{0} (resumes next launch)
 {0}（下次啟動接著做）|{0} (resumes next launch)
+已固定成 {0}|Fixed to {0}
+例如 {0}|e.g. {0!}
+印好 {0} 張・收藏 {1}（{2}%）・撤下 {3}（{4}%）・張數還太少，不排名|{0} generated · {1} saved ({2}%) · {3} discarded ({4}%) · Too few to rank
+印好 {0} 張・收藏 {1}（{2}%）・撤下 {3}（{4}%）|{0} generated · {1} saved ({2}%) · {3} discarded ({4}%)
 找到 {0} 個 LoRA|{0} LoRAs found
 找到 {0} 個底模|{0} checkpoints found
 找不到這個資料夾：{0}|Folder not found: {0!}

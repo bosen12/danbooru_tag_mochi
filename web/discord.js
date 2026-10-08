@@ -61,12 +61,12 @@ function ensureDom() {
         <label class="tg-field">
           <span>Bot token</span>
           <input id="dc-token" type="password" autocomplete="off" spellcheck="false" placeholder="MTA1…" />
-          <em>Discord Developer Portal → 你的 application → Bot → Reset Token。存在伺服器的 <code>.secrets/discord.json</code>，不進 git、不會回傳瀏覽器。留空＝沿用已存的。</em>
+          <em>Discord Developer Portal → 你的 application → Bot → Reset Token。存在伺服器的 <code>.secrets/discord.json</code>，不進 git、不會回傳瀏覽器。留空＝沿用已存的 token。</em>
         </label>
         <label class="tg-field">
           <span>頻道 ID</span>
           <input id="dc-channel" type="text" autocomplete="off" spellcheck="false" placeholder="1234567890123456789" />
-          <em>在 Discord 開「開發者模式」後右鍵頻道 →「複製頻道 ID」。bot 要先邀進該伺服器，並且在那個頻道有<strong>發送訊息</strong>和<strong>附加檔案</strong>權限。</em>
+          <em>在 Discord 開「開發者模式」後右鍵頻道 →「複製頻道 ID」。bot 要先邀進該伺服器，並且在那個頻道有 <strong>發送訊息</strong> 和 <strong>附加檔案</strong> 權限。</em>
         </label>
         </div>
         <div id="dc-hook-fields" style="display:none">
