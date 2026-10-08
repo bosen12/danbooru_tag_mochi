@@ -5564,11 +5564,11 @@ html[data-booting] :is(#lib-grid, #case-grid, #book-grid):empty::before {
   }
 }
 
-/* 頂欄多了「導覽」：筆電寬度（1500 以下）底模名稱少顯示幾個字、連結間距小一點，
- * 讓疊印台（工具最多）在 1366、1440 寬照舊一排，不因為這顆鈕換行。 */
+/* 頂欄多了「導覽」和語言選單：筆電寬度（1500 以下）底模名稱少顯示幾個字（全名在滑鼠提示）、
+ * 連結間距小一點，讓疊印台（工具最多）在 1366、1440 寬照舊一排。8em 時 1366 差 21px。 */
 @media (max-width: 1500px) {
   .mast-tools .ghost .gen-pick-label {
-    max-width: 8em;
+    max-width: 6.5em;
   }
   .mast-extra + .mast-extra {
     margin-left: 6px;
