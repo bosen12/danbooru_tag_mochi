@@ -1,8 +1,8 @@
 # Community post drafts
 
-These drafts describe the latest main branch, which includes readiness fixes after the existing public v1.0 tag. Publish after the new CI passes and the verification record is reviewed. The repository and card-art download were verified accessible. These drafts have not been posted.
+These drafts describe the latest main branch, which includes readiness fixes after the existing public v1.0 tag. The [cross-platform and browser CI](https://github.com/bosen12/danbooru_tag_mochi/actions/runs/37798386690) passed; review the verification record before posting. The repository and card-art download were verified accessible. These drafts have not been posted.
 
-下方文案對應最新 main；請等新 CI 通過再使用，既有 v1.0 標籤尚未包含這批改動。
+下方文案對應已推送、跨平台與瀏覽器 CI 通過的最新 main；既有 v1.0 標籤尚未包含這批改動。文案尚未發到社群。
 
 ## English
 

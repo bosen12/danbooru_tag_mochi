@@ -9,6 +9,9 @@ The public application release [v1.0](https://github.com/bosen12/danbooru_tag_mo
 - Waiting for a LoRA restart no longer blocks other setup steps; repeated answers cannot start duplicate installers.
 - The Details patch uses Python 3.9-compatible file writing and reports unsupported/missing targets as failures rather than claiming completion.
 - The standalone repository includes core engine, setup, asset, server, launcher and isolated HTTP tests. New CI covers Linux, Windows, macOS and bilingual browser fixtures; manual dispatch adds the full historical engine suite.
+- Resolve aliased LoRA roots so preferred subfolders retain ComfyUI model names and previews on macOS and Windows.
+- The intro and tutorial films use text-card placeholders before card-art downloads finish; an empty manifest no longer prevents playback. Image-only collections omit missing sources.
+- Windows test diagnostics use UTF-8, and launcher fixtures isolate both ProgramFiles and ProgramW6432.
 - Added contribution instructions, issue forms, this changelog, verification evidence and English/Traditional Chinese community post drafts.
 
 ### Tested scope and limitations

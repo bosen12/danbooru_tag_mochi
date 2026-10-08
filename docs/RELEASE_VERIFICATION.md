@@ -1,6 +1,6 @@
 # Release verification — 2026-10-08
 
-This record captures local readiness verification performed after the public v1.0 release and before pushing these changes. Remote CI evidence is recorded separately below. The existing v1.0 tag predates these fixes. Community drafts have not been posted.
+This record combines local readiness verification and successful remote CI after publishing the updates to main. The existing v1.0 tag predates these fixes. Community drafts have not been posted.
 
 ## Local automated checks
 
@@ -14,13 +14,13 @@ Environment: Windows, Python 3.12.14, Node.js 24.18.0, Playwright 1.62.1 with Ch
 | Python compatibility | Python 3.9 pathlib signature exercised by regression fixture; Windows launcher rejects simulated 3.8 and accepts simulated 3.9 |
 | Windows launcher | Actual cmd launcher preserves custom PORT/HOST and applies defaults |
 | Clean-copy HTTP smoke | 18 pages/APIs returned 200; setup/downloads disabled and a local fake unavailable ComfyUI used |
-| Bilingual workbench browser | 137 scenarios passed; no untranslated UI or geometry issues in the tested fixtures |
+| Bilingual workbench browser | 139 scenarios passed, including intro/tutorial initialization with an empty card-art manifest; no untranslated UI or geometry issues in the tested fixtures |
 | Bilingual setup browser | Install/patch questions in English/Traditional Chinese, three choices, no pre-consent request and choice submission passed |
 | Full historical engine | `node tests/test_engine.mjs` exited 0; 3,002 passing assertions, zero failures (about 18 minutes locally) |
 | Shared source/export | Random core checks also passed 10/10; `sync_mochi.py --check` reports zero updates |
 | Static release files | 24 Python files parse with Python 3.9 grammar; both touched batch launchers use CRLF; relative release-document links exist; `git diff --check` passed |
 
-The Python 3.9 check above is a compatibility regression on this Windows Python 3.12 installation, not a claim that a real Python 3.9 runtime was run locally. The new CI matrix provides that runtime check after pushing.
+The Python 3.9 check above is a compatibility regression on this Windows Python 3.12 installation, not a claim that a real Python 3.9 runtime was run locally. The successful Linux Python 3.9 CI job below provides that runtime check.
 
 ## Real public card-art download
 
@@ -49,14 +49,26 @@ Used a clean temporary Mochi copy with background setup disabled, checked that t
 
 This is one generation on an existing ComfyUI installation. It does not test every checkpoint, every GPU or a new ComfyUI installation. No custom nodes were installed, no pip packages were installed, and ComfyUI was not restarted for this verification.
 
-## GitHub status and pending external checks
+## Published updates and remote CI
 
-The repository is public and [v1.0](https://github.com/bosen12/danbooru_tag_mochi/releases/tag/v1.0) was published at 2026-10-08 13:03:10 UTC. [The existing CI run](https://github.com/bosen12/danbooru_tag_mochi/actions/runs/37785155517) succeeded for commit `36f1689311804cff349f3970ec26e38e769831e3`; it validates the earlier workflow, not the newly prepared configuration.
+The repository is public. The existing [v1.0 tag](https://github.com/bosen12/danbooru_tag_mochi/releases/tag/v1.0), published on 2026-10-08, predates these fixes. Clone the latest main to get the setup, launcher, portability and missing-art fixes.
 
-New CI is configured for Linux Python 3.9/3.13, Windows/macOS Python 3.13, and Linux bilingual Chromium checks. Manual dispatch also runs the longer historical engine suite. Those remote results are pending until these changes are pushed.
+[CI run for code revision `1e6ee81`](https://github.com/bosen12/danbooru_tag_mochi/actions/runs/37798386690) completed successfully after pushing. All five required jobs passed:
+
+| CI job | Result |
+| --- | --- |
+| Linux Python 3.9 | Passed |
+| Linux Python 3.13 | Passed |
+| Windows Python 3.13 | Passed |
+| macOS Python 3.13 | Passed |
+| Linux Chromium bilingual workbench/setup | Passed |
+
+Each core job ran `tests/run.py`; the browser job ran both browser suites. The longer historical engine job is only enabled by manual dispatch and was skipped for this push; its local 3,002-assertion result is above. The live [main workflow status](https://github.com/bosen12/danbooru_tag_mochi/actions/workflows/test.yml?query=branch%3Amain) includes subsequent documentation updates.
+
+The real CI runs exposed path aliases on macOS/Windows, a Python 3.13-specific test-path assumption, Windows diagnostic encoding, and intro/tutorial initialization before card art is downloaded. These were corrected and tested again. LoRA names and previews now use resolved roots, and both films keep their text-card placeholders without downloaded art. Image-only collections exclude missing card-art sources. The actual symlink regression is covered in Linux/macOS CI; Windows may skip symlink creation when permission is unavailable.
 
 Optional first-time LoRA Manager/pip installation and pose-model downloads still need an independent fresh-user installation trial. Their control flow is covered by fixtures. No universal minimum VRAM claim is made. A scan of 209 historical text blobs found no matches for the checked credential patterns; this is a limited scan, not an exhaustive security audit.
 
 ## 維護者核對
 
-本次已驗證本機核心測試、中英文瀏覽器、公開卡圖下載，以及 RTX 5070 Ti 的實機生圖／作品儲存。跨平台新 CI 要推送後才有結果；首次 LoRA 套件安裝和姿勢模型下載尚未以全新 ComfyUI 實測。v1.0 已公開，這批修正屬該標籤之後的 main 更新，社群文案尚未發布。社群文案在 [COMMUNITY_POSTS.md](../COMMUNITY_POSTS.md)。
+本次已驗證本機核心測試、中英文瀏覽器、公開卡圖下載，以及 RTX 5070 Ti 的實機生圖／作品儲存。最新程式修正已推送，Linux／Windows／macOS 與中英文瀏覽器 CI 全數通過；首次 LoRA 套件安裝和姿勢模型下載尚未以全新 ComfyUI 實測。v1.0 已公開，這批修正屬該標籤之後的 main 更新，社群文案尚未發布。社群文案在 [COMMUNITY_POSTS.md](../COMMUNITY_POSTS.md)。
