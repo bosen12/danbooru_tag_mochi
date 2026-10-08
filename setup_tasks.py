@@ -211,6 +211,9 @@ def _lora() -> None:
         _set("lora", "skip", "NO_LORA_MANAGER_FETCH")
         return
     if lora_manager_running():
+        if comfy_local():
+            # 「詳情」直達那一個 LoRA：LoRA Manager 更新會蓋掉，每次開機都確認補過了（不用重開 ComfyUI）。
+            _run("check", ["fetch_lora_manager.py", "--patch"], show=False)
         _set("lora", "done", "")
         return
     if not comfy_local():

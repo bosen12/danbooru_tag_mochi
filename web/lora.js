@@ -581,12 +581,12 @@ function renderLmCurrent() {
   detailLink.className = "lm-detail-link";
   detailLink.target = "_blank";
   detailLink.rel = "noopener";
-  // 詳情開 ComfyUI 的 LoRA Manager（它的頁面不吃網址參數，開到 LoRA 清單）。
-  // 沒有 LoRA Manager、但有 Civitai 資料：開 Civitai 的模型頁。
+  // 詳情：在 ComfyUI 的 LoRA Manager 直接打開這一個 LoRA（?open=<folder>/<file>，
+  // scripts/fetch_lora_manager.py 幫它補上的）。沒有 LoRA Manager、但有 Civitai 資料：開 Civitai 的模型頁。
   const civ = lora.civitai && lora.civitai.modelId;
-  detailLink.title = LORA_MGR_URL ? "在 LoRA Manager 開（新分頁）" : "在 Civitai 開這個 LoRA 的頁面（新分頁）";
+  detailLink.title = LORA_MGR_URL ? "在 LoRA Manager 開這個 LoRA 的完整詳情（新分頁）" : "在 Civitai 開這個 LoRA 的頁面（新分頁）";
   const detailHref =
-    LORA_MGR_URL ||
+    (LORA_MGR_URL && `${LORA_MGR_URL}?open=${encodeURIComponent((lora.folder ? lora.folder + "/" : "") + (lora.file || ""))}`) ||
     (civ ? `https://civitai.com/models/${encodeURIComponent(lora.civitai.modelId)}${lora.civitai.versionId ? `?modelVersionId=${encodeURIComponent(lora.civitai.versionId)}` : ""}` : "");
   detailLink.hidden = !detailHref;
   if (detailHref) detailLink.href = detailHref;

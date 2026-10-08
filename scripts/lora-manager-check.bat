@@ -8,6 +8,8 @@ rem Only a ComfyUI on this machine is touched. Skip with: set NO_LORA_MANAGER_FE
 rem Console text is ASCII on purpose: cmd's code page is not UTF-8.
 if defined NO_LORA_MANAGER_FETCH exit /b 0
 if not defined PY set "PY=python"
+rem The LoRA panel's "details" link opens that LoRA directly: re-applied after LoRA Manager updates.
+%PY% "%~dp0fetch_lora_manager.py" --patch >nul 2>&1
 %PY% "%~dp0fetch_lora_manager.py" --check
 if "%errorlevel%"=="4" goto restart
 if not "%errorlevel%"=="3" exit /b 0
