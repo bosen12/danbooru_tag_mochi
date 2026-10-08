@@ -1,5 +1,7 @@
 # Mochi · a card workbench for Danbooru-tag image generation
 
+[![test](https://github.com/bosen12/danbooru_tag_mochi/actions/workflows/test.yml/badge.svg)](https://github.com/bosen12/danbooru_tag_mochi/actions/workflows/test.yml)
+
 English · [繁體中文](#繁體中文)
 
 Danbooru tags as illustrated cards. Pin a few cards, let the engine draw the rest by its rules, and send the composition to your local ComfyUI (WAI / Illustrious SDXL).
