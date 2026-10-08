@@ -188,6 +188,23 @@ html[lang="en"] .tseg span { font-size: 12px; letter-spacing: -0.02em; }
   html[lang="en"] .line-title { width: 4rem; }
   html[lang="en"] .line::before { left: 5rem; }
 }
+/* Phones, both languages: the same three rows as the English masthead. Name,
+ * films and language on the first row; the four rooms as an even second row
+ * (each tab a full quarter, easy to hit with a thumb); rating and tools last. */
+@media (max-width: 34rem) {
+  .mast-primary { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; }
+  .wordmark { order: 0; flex: none; }
+  .mast-links { order: 1; margin-left: auto; gap: 12px; }
+  .language-picker { order: 2; margin-left: 0; }
+  .page-switch { order: 3; width: 100%; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .page-switch a { padding-inline: 4px; justify-content: center; min-height: 34px; }
+}
+/* styles.css lets the tools scroll sideways below 24rem. On a 320px Fuse Bed
+ * (one more tool) the whole page scrolled sideways instead. Wrap only when the
+ * row really does not fit, as the English masthead already does. */
+@media (max-width: 24rem) {
+  .mast-controls { flex-wrap: wrap; overflow-x: visible; }
+}
 /* English LoRA, checkpoint and connection labels are long. Between 34rem and
  * 44rem the tools keep only their icons, as both languages already do below
  * 34rem (names stay in title and for screen readers), so they share a row with
