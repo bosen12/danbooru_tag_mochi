@@ -139,7 +139,7 @@ Issues and pull requests are welcome. Run `node tests/test_i18n.mjs` and keep th
 
 ## License
 
-Code: MIT, see [LICENSE](LICENSE). The Chiron Hei HK font is under the SIL Open Font License 1.1 (`web/fonts/OFL.txt`); three.js is MIT (`web/vendor/three/LICENSE`). Tag names come from Danbooru. You are responsible for what you generate.
+Code: MIT, see [LICENSE](LICENSE). The card illustrations in the release downloads are under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/): use and adapt them freely, crediting “card art from danbooru_tag_mochi by bosen12”. The Chiron Hei HK font is under the SIL Open Font License 1.1 (`web/fonts/OFL.txt`); three.js is MIT (`web/vendor/three/LICENSE`). Tag names come from Danbooru. You are responsible for what you generate.
 
 ---
 
@@ -220,4 +220,4 @@ LoRA 面板的「詳情」在 ComfyUI 的 LoRA Manager 直接打開那一個 LoR
 
 ## 授權
 
-程式碼 MIT（[LICENSE](LICENSE)）。字型 Chiron Hei HK 為 SIL OFL 1.1；three.js 為 MIT。tag 名稱來自 Danbooru；生成內容的責任在使用者自己。
+程式碼 MIT（[LICENSE](LICENSE)）。Release 下載的卡牌插畫是 [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/deed.zh-hant)：可以自由使用、改作，標示「卡牌插畫出自 danbooru_tag_mochi（bosen12）」即可。字型 Chiron Hei HK 為 SIL OFL 1.1；three.js 為 MIT。tag 名稱來自 Danbooru；生成內容的責任在使用者自己。
