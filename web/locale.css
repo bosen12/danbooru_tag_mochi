@@ -26,6 +26,13 @@ html[lang="en"][data-language-pending] body { visibility: hidden; }
   cursor: pointer;
 }
 .language-picker:focus-within { outline: 2px solid var(--color-focus); outline-offset: 2px; }
+/* The picker shows only the current language's code; the native select sits on
+ * top, transparent, so touch, mouse and keyboard still open the real menu. It is
+ * changed rarely, so it does not need the masthead width of "繁體中文" or "English". */
+.language-picker { position: relative; min-height: 32px; }
+.language-picker::after { content: "中文"; font-weight: 600; }
+html[lang="en"] .language-picker::after { content: "EN"; }
+.language-picker select { position: absolute; inset: 0; width: 100%; max-width: none; opacity: 0; }
 .language-picker select:focus-visible { outline: none; }
 /* The shared notification dialog's close symbol is outside Chiron's pinned
  * source. A system symbol face prevents a hidden dialog fetching a web shard. */
@@ -55,9 +62,10 @@ html[lang="en"] .wordmark::before {
   box-shadow: -3px -3px 0 -1px var(--color-paper), -3px -3px 0 0 var(--locale-register);
   rotate: -8deg;
 }
-html[lang="en"] .mast { gap: 10px 18px; padding-block: 12px; }
-html[lang="en"] .mast-primary { flex: 1 1 auto; gap: 12px; }
-html[lang="en"] .mast-controls { flex-wrap: wrap; gap: 10px; }
+/* Same masthead spacing as the Chinese edition: at 1366px and wider the English
+ * masthead fits one row (see the 1760px block for the labels that shrink). */
+html[lang="en"] .mast-primary { flex: 1 1 auto; }
+html[lang="en"] .mast-controls { flex-wrap: wrap; }
 html[lang="en"] .mast-tools { flex-wrap: wrap; }
 html[lang="en"] .page-switch a { min-height: 34px; padding-inline: 11px; font-size: 0.8125rem; }
 html[lang="en"] .page-switch a[aria-current="page"] { color: var(--locale-register); }
@@ -155,14 +163,11 @@ html[lang="en"] .tseg span { font-size: 12px; letter-spacing: -0.02em; }
 }
 @media (max-width: 44rem) {
   /* Three rows, like the Chinese masthead: name · films · language, the four
-   * rooms, then rating and tools. The picker shows only its code here; the
-   * transparent native select still covers it for touch and keyboard. */
+   * rooms, then rating and tools. */
   html[lang="en"] .mast-primary { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; }
   html[lang="en"] .wordmark { order: 0; flex: none; }
   html[lang="en"] .mast-links { order: 1; margin-left: auto; gap: 12px; }
-  html[lang="en"] .language-picker { order: 2; position: relative; min-height: 32px; margin-left: 0; }
-  html[lang="en"] .language-picker::after { content: "EN"; font-weight: 600; }
-  html[lang="en"] .language-picker select { position: absolute; inset: 0; width: 100%; max-width: none; opacity: 0; }
+  html[lang="en"] .language-picker { order: 2; margin-left: 0; }
   html[lang="en"] .page-switch { order: 3; width: 100%; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); }
   html[lang="en"] .page-switch a { padding-inline: 4px; justify-content: center; min-height: 34px; font-size: 12px; }
   /* The rating switch and tools fit one 363px row only with the base 4px gap. */
@@ -190,6 +195,19 @@ html[lang="en"] .tseg span { font-size: 12px; letter-spacing: -0.02em; }
 @media (min-width: 34.0625rem) and (max-width: 44rem) {
   html[lang="en"] :is(.mast-tools .ghost .gen-pick-label, .ping span) { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
   html[lang="en"] .mast-tools :is(#lora-pick-btn, #ckpt-pick-btn, #wf-pick-btn, .ghost.icon-btn) { min-width: 36px; padding-inline: var(--space-xs); }
+}
+/* Laptop widths: the English names are wider than the Chinese ones ("Danbooru Case"
+ * is 134px, 墨池 is 51px). The wordmark keeps its card icon and "Comfy connected" its
+ * status light; both texts stay for screen readers. A second masthead row would
+ * cost 48px on a 768px-tall laptop screen, so the English masthead fits one row
+ * on laptop screens up to 1760px; wider screens show the full names. */
+@media (min-width: 70.0625rem) and (max-width: 1760px) {
+  html[lang="en"] .wordmark { font-size: 0; gap: 0; }
+  html[lang="en"] .wordmark::before { margin-right: 0; font-size: 1rem; }
+}
+@media (max-width: 1760px) {
+  html[lang="en"] .mast-tools .ghost .gen-pick-label { max-width: 6.5em; }
+  html[lang="en"] .ping span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 }
 @media (prefers-reduced-motion: reduce) {
   .language-picker, .language-picker * { scroll-behavior: auto; }

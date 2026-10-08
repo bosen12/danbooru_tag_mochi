@@ -747,7 +747,7 @@ JSON 太大（上限 5 MB）。|JSON file too large · Maximum 5 MB.
 固定的生圖種子|Fixed generation seed
 換一顆新的固定種子|Choose a new fixed seed
 用這顆種子固定生圖|Use this seed for generation
-選 LoRA|Choose LoRA
+選 LoRA|LoRA
 選 LoRA（L）|Choose LoRA (L)
 設定：底模|Checkpoint settings
 設定底模|Choose checkpoint
