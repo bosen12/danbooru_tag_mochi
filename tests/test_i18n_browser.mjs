@@ -71,6 +71,22 @@ async function scan(page, name) {
   return data;
 }
 try {
+  // A fresh clone has no downloaded card manifest. The intro must still
+  // initialize and show its text-card demonstration before setup finishes.
+  {
+    const context = await browser.newContext({ locale: 'en-US', viewport: { width: 1440, height: 960 } });
+    await context.route('https://**/*', (r) => r.abort());
+    await context.route('**/cards/manifest.json', (r) => r.fulfill({ contentType: 'application/json', body: '{}' }));
+    const page = await context.newPage(), errors = [];
+    page.on('pageerror', (e) => errors.push(e.stack || e.message));
+    await page.goto(origin + '/intro.html');
+    try { await page.waitForFunction(() => !!window.__intro, null, { timeout: 20000 }); }
+    catch (e) { console.log(JSON.stringify({ scenario: 'intro-no-card-art', errors })); throw e; }
+    await page.evaluate(() => { document.querySelector('#gate').classList.add('is-gone'); __intro.seek(55); });
+    await scan(page, 'intro-no-card-art');
+    assert.deepEqual(errors, [], 'Intro initializes and seeks without downloaded card art');
+    await context.close();
+  }
   for (const width of [320, 390, 1440]) {
     const context = await browser.newContext({ locale: 'en-US', viewport: { width, height: 960 }, reducedMotion: 'reduce' });
     await context.route('https://**/*', (r) => r.abort());

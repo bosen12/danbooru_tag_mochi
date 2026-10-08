@@ -143,8 +143,11 @@ function cardEl(tag, w, parent, { ghost = false } = {}) {
 
 const suitOf = (tag) => lib.byTag.get(tag)?.suit || "look";
 const zhOf = (tag) => lib.byTag.get(tag)?.zh || tag;
-const hasArt = (tag) => !!(lib.byTag.get(tag) && assets.art(tag) && !ratingBlocked(lib.byTag.get(tag).item, "general"));
-const pickArt = (list, n) => list.filter(hasArt).slice(0, n);
+const hasCard = (tag) => !!(lib.byTag.get(tag) && !ratingBlocked(lib.byTag.get(tag).item, "general"));
+const hasArt = (tag) => hasCard(tag) && !!assets.art(tag);
+// Scene roles must exist before first-time card downloads finish. cardNode
+// already renders text placeholders; only image-only scenes require hasArt.
+const pickArt = (list, n) => list.filter(hasCard).slice(0, n);
 
 /** 一張「成品」：ComfyUI 真的畫出來的那張（web6/intro-art/）。 */
 function printEl(src, w, h, parent, label = "") {
