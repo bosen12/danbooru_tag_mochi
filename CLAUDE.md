@@ -16,7 +16,9 @@
 
 ## 只屬於這個 repo 的檔（在這邊改）
 
-`README.md`（**英文在上、中文在下**）、`CLAUDE.md`、`start.bat`、`start.sh`、`.gitignore`、`.gitattributes`、`LICENSE`。
+`README.md`（**英文在上、中文在下**）、`CLAUDE.md`、`start.bat`、`start.sh`、`.gitignore`、`.gitattributes`、`LICENSE`、`.github/workflows/test.yml`。
+
+- CI（GitHub Actions）在 Linux／Windows、Python 3.9 與最新版跑：編譯、`tests/test_i18n.mjs`、不連 ComfyUI 啟動伺服器打遍頁面和 API。新增頁面或唯讀 API 時加進 smoke test 的清單。
 
 - `.bat` 一律 CRLF（`.gitattributes` 管）：LF 的批次檔 `goto` 會失效。
 - 卡面插畫從**這個 repo 的 Release** `card-art-v4` 下載。上游發新卡面包時，這邊也要發同一個 zip（`gh release create card-art-vN ... -R bosen12/danbooru_tag_mochi`）。
