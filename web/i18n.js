@@ -28,7 +28,7 @@ const compiled = [...templates].sort((a, b) => b[0].replace(/\{\d+\}/g, "").leng
   return { re: new RegExp("^" + parts.map(escape).join("([\\s\\S]*?)") + "$"), target };
 });
 // Chinese counters have no plural; English units after a lone 1 read singular.
-const singular = { uses: "use", images: "image", cards: "card", items: "item", days: "day", times: "time", proofs: "proof", additions: "addition", achievements: "achievement", categories: "category", subcategories: "subcategory", steps: "step", slots: "slot", seconds: "second", models: "model", minutes: "minute", hours: "hour", groups: "group", generations: "generation", conflicts: "conflict" };
+const singular = { uses: "use", images: "image", cards: "card", items: "item", days: "day", times: "time", proofs: "proof", additions: "addition", achievements: "achievement", categories: "category", subcategories: "subcategory", steps: "step", slots: "slot", seconds: "second", models: "model", minutes: "minute", hours: "hour", groups: "group", generations: "generation", conflicts: "conflict", checkpoints: "checkpoint", LoRAs: "LoRA" };
 const one = new RegExp(`(^|[^\\d.,/])1 ((?:[a-z]+ )?)(${Object.keys(singular).join("|")})\\b`, "g");
 // 「紅髮（red hair）」 translates to "red hair (red hair)"; say the name once.
 const echo = /(^|[·:\n]\s*)([^()·:\n]+?) \(\2\)/g;

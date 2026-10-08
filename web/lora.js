@@ -891,6 +891,151 @@ function showSingleLoraPreviewTip(anchor, lora) {
   tip.classList.add("show");
 }
 
+
+// ---------- 偏好路徑：只看某個資料夾底下的 LoRA／底模（存在伺服器的 data/settings.json，不必碰 config.json） ----------
+const ICON_FOLDER = `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7.5A2.5 2.5 0 0 1 5.5 5H9l2 2.2h7.5A2.5 2.5 0 0 1 21 9.7v7.8a2.5 2.5 0 0 1-2.5 2.5h-13A2.5 2.5 0 0 1 3 17.5z"/></svg>`;
+let PATHS = null;
+async function fetchPaths(force = false) {
+  if (PATHS && !force) return PATHS;
+  try {
+    PATHS = await fetch("/api/paths", { cache: "no-store" }).then((r) => r.json());
+  } catch {
+    PATHS = null;
+  }
+  return PATHS;
+}
+function shortPath(p) {
+  const parts = String(p || "").replace(/\\/g, "/").split("/").filter(Boolean);
+  return parts.length > 2 ? "…/" + parts.slice(-2).join("/") : String(p || "");
+}
+function renderPathBar(kind) {
+  const host = $(kind === "lora" ? "lm-path" : "ckpt-path");
+  if (!host) return;
+  const info = (PATHS && PATHS[kind]) || { path: "", suggestions: [] };
+  const open = host.dataset.open === "true";
+  host.replaceChildren();
+  const btn = document.createElement("button");
+  btn.type = "button";
+  btn.className = "ghost lm-path-btn";
+  btn.setAttribute("aria-expanded", open ? "true" : "false");
+  btn.title = info.path || (kind === "lora" ? "沒設定：列出 ComfyUI 的全部 LoRA" : "沒設定：列出 ComfyUI 的全部底模");
+  btn.innerHTML = `${ICON_FOLDER}<span class="lm-path-label">偏好路徑</span><span class="lm-path-cur"></span>`;
+  btn.querySelector(".lm-path-cur").textContent = info.path ? shortPath(info.path) : "全部";
+  btn.addEventListener("click", () => {
+    host.dataset.open = open ? "false" : "true";
+    renderPathBar(kind);
+    if (!open) host.querySelector(".lm-path-input")?.focus();
+  });
+  host.append(btn);
+  if (!open) return;
+  const panel = document.createElement("div");
+  panel.className = "lm-path-panel";
+  const hint = document.createElement("p");
+  hint.className = "lm-path-hint";
+  hint.textContent = kind === "lora" ? "只看這個資料夾底下的 LoRA。點下面的資料夾，或貼上路徑。" : "只看這個資料夾底下的底模。點下面的資料夾，或貼上路徑。";
+  const input = document.createElement("input");
+  input.type = "text";
+  input.className = "lm-path-input";
+  input.value = info.path || "";
+  input.placeholder = kind === "lora" ? "例如 D:\\ComfyUI\\models\\loras" : "例如 D:\\ComfyUI\\models\\checkpoints";
+  input.spellcheck = false;
+  input.setAttribute("aria-label", kind === "lora" ? "LoRA 資料夾路徑" : "底模資料夾路徑");
+  const status = document.createElement("p");
+  status.className = "lm-path-status";
+  status.setAttribute("role", "status");
+  const acts = document.createElement("div");
+  acts.className = "lm-path-acts";
+  const mk = (label, cls, fn) => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = cls;
+    b.textContent = label;
+    b.addEventListener("click", fn);
+    acts.append(b);
+    return b;
+  };
+  if (PATHS && PATHS.pick) mk("選資料夾…", "ghost", () => pickFolder(kind, input, status));
+  mk("套用", "lm-path-apply", () => applyPath(kind, input.value, status));
+  if (info.path) mk("全部", "ghost", () => applyPath(kind, "", status));
+  input.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      applyPath(kind, input.value, status);
+    }
+  });
+  const list = document.createElement("ul");
+  list.className = "lm-path-list";
+  for (const sgt of info.suggestions || []) {
+    const li = document.createElement("li");
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "lm-path-sgt";
+    b.dataset.depth = String(sgt.depth || 0);
+    b.setAttribute("aria-pressed", sgt.path === info.path ? "true" : "false");
+    b.title = sgt.path;
+    const name = document.createElement("span");
+    name.textContent = sgt.depth ? shortPath(sgt.path).split("/").pop() : shortPath(sgt.path);
+    const n = document.createElement("small");
+    n.textContent = String(sgt.count);
+    b.append(name, n);
+    b.addEventListener("click", () => applyPath(kind, sgt.path, status));
+    li.append(b);
+    list.append(li);
+  }
+  panel.append(hint, input, acts, status, list);
+  host.append(panel);
+}
+async function applyPath(kind, path, status) {
+  if (status) status.textContent = "套用中…";
+  let data = null;
+  try {
+    const r = await fetch("/api/paths", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ kind, path }) });
+    data = await r.json();
+  } catch (e) {
+    data = { ok: false, error: e.message };
+  }
+  if (!data || !data.ok) {
+    if (status) status.textContent = (data && data.error) || "存不起來";
+    return;
+  }
+  await fetchPaths(true);
+  if (kind === "lora") {
+    GEN_LORAS = null;
+    await fetchGenLoras();
+    renderLmCats();
+    renderLmSubcats();
+    renderLmList($("lm-search").value, true);
+  } else {
+    GEN_CKPTS = null;
+    await fetchCkpts();
+    renderCkptList($("ckpt-search")?.value);
+    renderCkptCurrent();
+    renderCkptBtn();
+  }
+  renderPathBar(kind);
+  const st = $(kind === "lora" ? "lm-path" : "ckpt-path")?.querySelector(".lm-path-status");
+  if (st) st.textContent = data.path ? `找到 ${data.count} 個${kind === "lora" ? " LoRA" : "底模"}` : "改回 ComfyUI 的全部";
+}
+async function pickFolder(kind, input, status) {
+  status.textContent = "電腦上跳出了資料夾視窗，選好再按確定…";
+  try {
+    const r = await fetch("/api/paths/pick", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ kind, initial: input.value }) });
+    const data = await r.json();
+    if (!data.ok) {
+      status.textContent = data.error || "開不了資料夾視窗";
+      return;
+    }
+    if (!data.path) {
+      status.textContent = "沒有選資料夾";
+      return;
+    }
+    input.value = data.path;
+    await applyPath(kind, data.path, status);
+  } catch (e) {
+    status.textContent = e.message;
+  }
+}
+
 async function openLoraModal() {
   overlayOpen($("lora-modal"));
   if (!GEN_LORAS) $("lm-list").innerHTML = '<div class="lora-empty">載入中…</div>';
@@ -900,6 +1045,7 @@ async function openLoraModal() {
   renderLmSubcats();
   renderLmList($("lm-search").value, true);
   focusEntry($("lm-search"), $("lora-modal-close"));
+  fetchPaths().then(() => renderPathBar("lora"));
 }
 function closeLoraModal() {
   const modal = $("lora-modal");
@@ -1093,6 +1239,7 @@ function ensureDom() {
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="4"/><circle cx="8.3" cy="8.3" r="1.2" fill="currentColor" stroke="none"/><circle cx="15.7" cy="8.3" r="1.2" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.2" fill="currentColor" stroke="none"/><circle cx="8.3" cy="15.7" r="1.2" fill="currentColor" stroke="none"/><circle cx="15.7" cy="15.7" r="1.2" fill="currentColor" stroke="none"/></svg>
             隨機瀏覽
           </button>
+          <div class="lm-path" id="lm-path"></div>
           <div class="lm-search-wrap">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
             <input type="search" id="lm-search" placeholder="搜尋 LoRA…" autocomplete="off" spellcheck="false">
@@ -1125,6 +1272,7 @@ function ensureDom() {
             <div class="ckpt-head-title" id="ckpt-head-title">底模</div>
             <p class="ckpt-head-hint">清單來自 ComfyUI。點左邊換一顆，生圖用目前這顆。</p>
           </div>
+          <div class="lm-path" id="ckpt-path"></div>
           <div class="lm-search-wrap">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
             <input type="search" id="ckpt-search" placeholder="搜尋底模…" autocomplete="off" spellcheck="false">
@@ -1499,6 +1647,7 @@ async function openCkptModal() {
   renderCkptList($("ckpt-search")?.value);
   renderCkptCurrent();
   focusEntry($("ckpt-search"), $("ckpt-modal-close"));
+  fetchPaths().then(() => renderPathBar("ckpt"));
 }
 function closeCkptModal() {
   fadeCloseOverlay($("ckpt-modal"), null, () => renderCkptBtn());

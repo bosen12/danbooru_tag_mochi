@@ -71,13 +71,15 @@ Keep the server window open. After updating, reload the page with **Ctrl+F5**.
 
 ## Configuration
 
-Machine-specific settings live in `config.json`, which git ignores. Start from the template:
+**No configuration file is needed.** Everything a normal setup changes is in the page:
 
-```bash
-cp config.example.json config.json
-```
+- **ComfyUI address**: the Comfy indicator in the top bar.
+- **LoRA folder / checkpoint folder**: the **Preferred folder** button in the LoRA and checkpoint pickers. Pick one of the folders ComfyUI reports (with model counts), paste a path, or press *Choose folder…* for a folder window on this computer. Only models in that folder are listed; *All* goes back to everything ComfyUI knows.
+- **Checkpoint**: the model button in the top bar.
 
-A fresh clone usually needs nothing: checkpoints and LoRAs come from ComfyUI, and with ComfyUI LoRA Manager (installed on first start) they have names, preview images and trigger words. Previews are relayed by this server, so they also show on a phone over Tailscale.
+These are saved in `data/settings.json`. `config.json` (from `config.example.json`, git-ignored) is still read for advanced settings such as the port, host and timeouts; anything set in the page takes precedence.
+
+A fresh clone usually needs nothing at all: checkpoints and LoRAs come from ComfyUI, and with ComfyUI LoRA Manager (installed on first start) they have names, preview images and trigger words. Previews are relayed by this server, so they also show on a phone over Tailscale.
 
 | `config.json` | Meaning |
 |---|---|
@@ -198,7 +200,9 @@ cd danbooru_tag_mochi
 
 ## 設定
 
-`cp config.example.json config.json` 再改（不進版控）。新 clone 通常什麼都不用改：底模、LoRA 清單直接問 ComfyUI，有 LoRA Manager（第一次啟動會裝）就連預覽圖、觸發詞都有，手機走 Tailscale 也看得到。常用的有 `comfy.api`、`comfy.ckpt`（要跟 ComfyUI 清單一字不差）、`comfy.checkpointDir`（底模預覽圖）、`paths.loraRoot`（沒有 LoRA Manager 時才用：自己掃資料夾拿預覽圖與觸發詞）、`server.port`（預設 8796）、`client.streamIdleMs`（慢顯卡調大）。環境變數優先於設定檔。
+**不需要設定檔。** 一般會改的都在網頁上：ComfyUI 位址點頂欄的 Comfy 燈號；LoRA、底模的資料夾在 LoRA／底模面板的「**偏好路徑**」——點 ComfyUI 回報的資料夾（附模型數）、貼上路徑，或按「選資料夾…」在這台電腦上跳出資料夾視窗；只列那個資料夾底下的，按「全部」改回來。這些存在 `data/settings.json`。`config.json`（從 `config.example.json` 複製，不進版控）只剩埠號、逾時這類進階設定，網頁上設的優先。
+
+新 clone 通常什麼都不用改：底模、LoRA 清單直接問 ComfyUI，有 LoRA Manager（第一次啟動會裝）就連預覽圖、觸發詞都有，手機走 Tailscale 也看得到。常用的有 `comfy.api`、`comfy.ckpt`（要跟 ComfyUI 清單一字不差）、`comfy.checkpointDir`（底模預覽圖）、`paths.loraRoot`（沒有 LoRA Manager 時才用：自己掃資料夾拿預覽圖與觸發詞）、`server.port`（預設 8796）、`client.streamIdleMs`（慢顯卡調大）。環境變數優先於設定檔。
 
 LoRA 面板的「詳情」在 ComfyUI 的 LoRA Manager 直接打開那一個 LoRA：墨池在它的 `static/js/loras.js` 補一小段（`scripts/fetch_lora_manager.py --patch`，不用重開 ComfyUI），LoRA Manager 更新蓋掉後下次啟動會再補。手機（Tailscale）上這些連結指向這台的 ComfyUI，ComfyUI 要用 `--listen` 開才點得開；連不到時連結會藏起來，「詳情」改開 Civitai（預覽圖照樣看得到）。
 

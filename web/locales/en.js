@@ -782,6 +782,20 @@ LoRA／底模|LoRA / Checkpoint
 在 LoRA Manager 開（新分頁）|Open in LoRA Manager · New tab
 在 LoRA Manager 開這個 LoRA 的完整詳情（新分頁）|View LoRA details in LoRA Manager · New tab
 在 Civitai 開這個 LoRA 的頁面（新分頁）|Open this LoRA on Civitai · New tab
+偏好路徑|Preferred folder
+沒設定：列出 ComfyUI 的全部 LoRA|Not set: every LoRA ComfyUI knows
+沒設定：列出 ComfyUI 的全部底模|Not set: every checkpoint ComfyUI knows
+只看這個資料夾底下的 LoRA。點下面的資料夾，或貼上路徑。|Show only the LoRAs in this folder. Pick a folder below or paste a path.
+只看這個資料夾底下的底模。點下面的資料夾，或貼上路徑。|Show only the checkpoints in this folder. Pick a folder below or paste a path.
+LoRA 資料夾路徑|LoRA folder path
+底模資料夾路徑|Checkpoint folder path
+選資料夾…|Choose folder…
+套用中…|Applying…
+改回 ComfyUI 的全部|Showing everything ComfyUI knows
+電腦上跳出了資料夾視窗，選好再按確定…|A folder window opened on this computer. Pick a folder and confirm…
+沒有選資料夾|No folder chosen
+開不了資料夾視窗|Could not open a folder window
+只有在這台電腦上開的網頁能選資料夾；手機上請直接填路徑|Only a page opened on this computer can open a folder window. On a phone, type the path.
 個 Danbooru tag · 每個都有中文|Danbooru tags, each with a Chinese name
 種花色 ＝ 六條旋臂|suits = six spiral arms
 同一格只留一張|One card per slot
@@ -1388,6 +1402,12 @@ LoRA：沒設定 paths.loraRoot，改問 ComfyUI 也失敗了：{0}|LoRA: no LoR
 重開失敗（{0}）：請自己重開 ComfyUI|Restart failed ({0!}). Restart ComfyUI yourself.
 {0}（下次啟動接著抓）|{0} (resumes next launch)
 {0}（下次啟動接著做）|{0} (resumes next launch)
+找到 {0} 個 LoRA|{0} LoRAs found
+找到 {0} 個底模|{0} checkpoints found
+找不到這個資料夾：{0}|Folder not found: {0!}
+偏好路徑 {0} 底下沒有 LoRA Manager 認得的 LoRA|LoRA Manager knows no LoRA in the preferred folder {0!}
+LoRA：清單來自 ComfyUI（{0} 個）。想要預覽圖和觸發詞：在 ComfyUI 裝 LoRA Manager（啟動檔會自動裝，裝完重開 ComfyUI），或在 LoRA 面板的「偏好路徑」選你的 LoRA 資料夾。|LoRA: list from ComfyUI ({0!}). For preview images and trigger words, install ComfyUI LoRA Manager (the launcher installs it; restart ComfyUI afterwards) or choose your LoRA folder under Preferred folder.
+LoRA：沒設定偏好路徑，改問 ComfyUI 也失敗了：{0}|LoRA: no preferred folder set, and ComfyUI could not be reached: {0!}
 「{0}」跟「{1}」同時成立不了，引擎會擠掉其中一個|“{0}” and “{1}” cannot both apply. The engine drops one.
 「{0}」跟「{1}」同時成立不了，引擎會摘掉其中一個{2}|“{0}” and “{1}” cannot both apply. The engine removes one.{2}
 設定 · 底模 {0}|Checkpoint settings · {0!}

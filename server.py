@@ -20,6 +20,7 @@ import re
 import socket
 import ssl
 import struct
+import subprocess
 import sys
 import threading
 import time
@@ -926,12 +927,50 @@ def lm_checkpoints() -> dict:
             name = ""
         if fn:
             by_file[fn] = {
+                "path": str(it.get("file_path") or ""),
                 "title": str(it.get("model_name") or Path(fn).stem),
                 "previewUrl": lora_scan.lm_preview_src(it.get("preview_url") or ""),
                 "preview": name,
             }
     _LM_CKPT.update(at=now, by_file=by_file, ok=raw is not None)
     return by_file
+
+
+# ---------- 底模的偏好路徑（畫面上的「偏好路徑」，存在 data/settings.json 的 ckptPath） ----------
+# 只看這個資料夾底下的底模（原本 checkpointPrefix＝illurtrious 想做的就是這件事）。比 config.json 優先。
+_PREF_CKPT = {"key": "", "at": 0.0, "files": {}}
+
+
+def ckpt_pref() -> Path | None:
+    got = str(workflows.load_settings().get("ckptPath") or "").strip()
+    return Path(got) if got else None
+
+
+def pref_ckpt_files(pref: Path | None = None) -> dict:
+    """偏好路徑底下（含子資料夾）的底模檔：檔名 → 路徑。一分鐘快取。"""
+    pref = ckpt_pref() if pref is None else pref
+    if pref is None:
+        return {}
+    key = str(pref)
+    if _PREF_CKPT["key"] == key and time.time() - _PREF_CKPT["at"] < 60:
+        return _PREF_CKPT["files"]
+    files = {}
+    try:
+        for f in pref.rglob("*"):
+            if f.is_file() and f.suffix.lower() in CKPT_EXTS and not f.name.startswith("."):
+                files.setdefault(f.name, f)
+    except OSError:
+        pass
+    _PREF_CKPT.update(key=key, at=time.time(), files=files)
+    return files
+
+
+def _local_preview(model: Path) -> str:
+    for ext in CKPT_PREVIEW_EXTS:
+        cand = model.with_name(model.stem + ext)
+        if cand.is_file():
+            return cand.name
+    return ""
 
 
 def checkpoints_for_ui() -> tuple[list[dict], str]:
@@ -962,8 +1001,123 @@ def checkpoints_for_ui() -> tuple[list[dict], str]:
             item["preview"] = man.get("preview") or "preview"
             item["previewUrl"] = man["previewUrl"]
         items.append(item)
+    pref = ckpt_pref()
+    if pref is not None:
+        # 偏好路徑：只留那個資料夾底下的（LoRA Manager 知道每個檔在哪；沒有它就看資料夾裡的檔名）。
+        local_files = pref_ckpt_files(pref)
+        keep = set(local_files) | {fn for fn, man in lm.items() if lora_scan.is_under(man.get("path"), pref)}
+        items = [it for it in items if it["file"] in keep]
+        for it in items:
+            if not it["preview"] and it["file"] in local_files:
+                name = _local_preview(local_files[it["file"]])
+                if name:
+                    it["preview"] = name
+                    it["previewUrl"] = "/api/ckpt-preview?file=" + urllib.parse.quote(name)
     return items, "comfy"
 
+
+
+# ---------- 偏好路徑的 API（LoRA、底模面板的「偏好路徑」） ----------
+PATH_KEYS = {"lora": "loraPath", "ckpt": "ckptPath"}
+_SUGGEST = {"at": 0.0, "data": {}}
+
+
+def _count_models(folder: Path, kind: str, cap: int = 5000) -> int:
+    exts = {".safetensors"} if kind == "lora" else CKPT_EXTS
+    n = 0
+    try:
+        for f in folder.rglob("*"):
+            if f.suffix.lower() in exts and f.is_file():
+                n += 1
+                if n >= cap:
+                    break
+    except OSError:
+        pass
+    return n
+
+
+def path_suggestions(kind: str) -> list[dict]:
+    """可以直接點的資料夾：ComfyUI 回報的模型資料夾和它們底下的第一層子資料夾，附模型數。一分鐘快取。"""
+    if time.time() - _SUGGEST["at"] < 60 and kind in _SUGGEST["data"]:
+        return _SUGGEST["data"][kind]
+    roots = lora_scan.comfy_model_dirs("loras" if kind == "lora" else "checkpoints")
+    if kind == "lora" and lora_scan.LORA_ROOT:
+        roots = roots + [lora_scan.LORA_ROOT]
+    if kind == "ckpt" and CKPT_DIR:
+        roots = roots + [CKPT_DIR]
+    out, seen = [], set()
+    for root in roots:
+        if not root.is_dir() or lora_scan.norm_path(root) in seen:
+            continue
+        seen.add(lora_scan.norm_path(root))
+        n = _count_models(root, kind)
+        if not n:
+            continue
+        out.append({"path": str(root), "count": n, "depth": 0})
+        try:
+            subs = sorted((d for d in root.iterdir() if d.is_dir()), key=lambda d: d.name.lower())
+        except OSError:
+            subs = []
+        for d in subs:
+            if lora_scan.norm_path(d) in seen:
+                continue
+            k = _count_models(d, kind)
+            if k:
+                seen.add(lora_scan.norm_path(d))
+                out.append({"path": str(d), "count": k, "depth": 1})
+    _SUGGEST["data"][kind] = out
+    _SUGGEST["at"] = time.time()
+    return out
+
+
+def paths_status(client_ip: str) -> dict:
+    """GET /api/paths：目前的偏好路徑（沒設就是 ""）、config.json 的舊設定、建議清單、能不能開資料夾視窗。"""
+    import importlib.util  # noqa: PLC0415
+
+    saved = workflows.load_settings()
+    local = client_ip in ("127.0.0.1", "::1", "::ffff:127.0.0.1")
+    return {
+        "ok": True,
+        "pick": local and importlib.util.find_spec("tkinter") is not None,
+        "lora": {"path": str(saved.get("loraPath") or ""), "config": str(lora_scan.LORA_ROOT or ""), "suggestions": path_suggestions("lora")},
+        "ckpt": {"path": str(saved.get("ckptPath") or ""), "config": str(CKPT_DIR or ""), "suggestions": path_suggestions("ckpt")},
+    }
+
+
+def set_model_path(kind: str, raw) -> dict:
+    """POST /api/paths：存偏好路徑（"" ＝ 清掉，回到 ComfyUI 的全部）。資料夾不存在就不存。"""
+    if kind not in PATH_KEYS:
+        raise ValueError("kind 要是 lora 或 ckpt")
+    text = str(raw or "").strip().strip('"').strip()
+    if text:
+        folder = Path(os.path.expandvars(os.path.expanduser(text)))
+        if not folder.is_dir():
+            raise ValueError(f"找不到這個資料夾：{text}")
+        text = str(folder.resolve())
+        count = _count_models(folder, kind)
+    else:
+        count = None
+    workflows.save_settings({PATH_KEYS[kind]: text})
+    lora_scan.reset_cache()
+    _LM_CKPT["at"] = 0.0
+    _PREF_CKPT["at"] = 0.0
+    return {"ok": True, "kind": kind, "path": text, "count": count}
+
+
+def pick_folder(initial: str, title: str) -> str:
+    """在這台電腦上跳出資料夾視窗（tkinter，另開一個程序，視窗放最上層）。按取消回 ""。"""
+    code = (
+        "import sys, tkinter as tk\n"
+        "from tkinter import filedialog\n"
+        "r = tk.Tk(); r.withdraw(); r.attributes('-topmost', True)\n"
+        "p = filedialog.askdirectory(initialdir=sys.argv[1] or None, title=sys.argv[2], parent=r, mustexist=True)\n"
+        "sys.stdout.write(p or '')\n"
+    )
+    try:
+        done = subprocess.run([sys.executable, "-c", code, initial or "", title], capture_output=True, text=True, timeout=900)
+    except (OSError, subprocess.TimeoutExpired):
+        return ""
+    return done.stdout.strip()
 
 class HiresError(ValueError):
     """Hires 參數不合法。SSE 走 error 事件；沒有 SSE 的 POST 回 400。"""
@@ -3939,6 +4093,9 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/api/setup":
             self._json(200, {"ok": True, **setup_tasks.snapshot()}, cache_control="no-store")
             return
+        if path == "/api/paths":
+            self._json(200, paths_status(self.client_address[0]), cache_control="no-store")
+            return
         if path == "/api/checkpoints":
             self._serve_checkpoints()
             return
@@ -4076,6 +4233,21 @@ class Handler(BaseHTTPRequestHandler):
                 self._json(200, {"ok": True})
             except Exception as exc:
                 self._json(500, {"ok": False, "error": str(exc)})
+            return
+        if path == "/api/paths":
+            try:
+                self._json(200, set_model_path(str(payload.get("kind") or ""), payload.get("path")))
+            except ValueError as exc:
+                self._json(400, {"ok": False, "error": str(exc)})
+            return
+        if path == "/api/paths/pick":
+            # 只在這台電腦上開的網頁才跳資料夾視窗（手機上按，視窗會跳在電腦上，沒人看得到）。
+            if self.client_address[0] not in ("127.0.0.1", "::1", "::ffff:127.0.0.1"):
+                self._json(403, {"ok": False, "error": "只有在這台電腦上開的網頁能選資料夾；手機上請直接填路徑"})
+                return
+            kind = str(payload.get("kind") or "")
+            title = "選 LoRA 資料夾" if kind == "lora" else "選底模資料夾"
+            self._json(200, {"ok": True, "path": pick_folder(str(payload.get("initial") or ""), title)})
             return
         if path == "/api/setup":
             # 第一次使用的準備：回答詢問（姿勢參考、成人卡面）或請 ComfyUI-Manager 重開 ComfyUI。
@@ -4257,6 +4429,11 @@ def resolve_ckpt(name: str | None, items: list | None = None) -> str:
 def ckpt_preview_path(fn: str, root: Path | None = None) -> Path | None:
     if not fn or "/" in fn or "\\" in fn or fn in (".", "..") or ".." in fn:
         return None
+    if root is None:
+        # 偏好路徑底下（含子資料夾）的預覽圖：只認那些底模旁邊的同名預覽。
+        for model in pref_ckpt_files().values():
+            if model.with_name(fn).is_file() and model.with_name(fn).name.startswith(model.stem):
+                return model.with_name(fn)
     base = Path(root) if root is not None else CKPT_DIR
     if base is None:
         return None
@@ -4322,6 +4499,10 @@ def main() -> None:
     print(f"設定檔  {CONFIG_PATH}" + ("" if CONFIG else "（沒有，全部用預設值）"))
     # 第一次 clone 下來最常見的兩個「怎麼是空的」就是這兩項沒設定。
     # 與其讓使用者從空清單反推，開機就講清楚。
+    if lora_scan.preferred_path():
+        print(f"loras    偏好路徑 {lora_scan.preferred_path()}（在 LoRA 面板的「偏好路徑」改）")
+    if ckpt_pref():
+        print(f"ckpts    偏好路徑 {ckpt_pref()}（在底模面板的「偏好路徑」改）")
     lm_total = lora_scan.lora_manager_count()
     if lm_total is not None:
         print(f"loras    ComfyUI 的 LoRA Manager：{lm_total} 個，預覽圖和觸發詞從它來（{lora_scan.lm_manager_url()}）")
