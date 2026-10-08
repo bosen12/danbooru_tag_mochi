@@ -8,6 +8,7 @@ unless paths.loraRoot is set in config.json.
     python scripts/fetch_lora_manager.py            # install if missing
     python scripts/fetch_lora_manager.py --check    # 0 present (or cannot install here), 3 missing, 4 installed but ComfyUI not restarted
     python scripts/fetch_lora_manager.py --patch    # only make /loras?open=<folder>/<file> open that LoRA (see patch_open_param)
+    python scripts/fetch_lora_manager.py --check-patch  # read-only: 3 needs patch, 0 already supported or cannot patch
 
 Installed means: ComfyUI answers /api/lm/loras/list. ComfyUI not running: the custom_nodes
 folder is looked at instead. Only touches a ComfyUI on this machine (a remote one, reached over
@@ -104,7 +105,7 @@ def node_dir(root: Path) -> Path | None:
     return None
 
 
-def patch_open_param(node: Path) -> str:
+def patch_open_param(node: Path, *, check_only: bool = False) -> str:
     """'patched' 補好了、'already' 本來就有、'unsupported' 檔案跟預期不一樣（不動）。"""
     js = node / "static" / "js" / "loras.js"
     try:
@@ -129,24 +130,27 @@ def patch_open_param(node: Path) -> str:
                 return "unsupported"
         except OSError:
             return "unsupported"
+    if check_only:
+        return "needed"
     patched = PATCH_IMPORTS + text
     patched = patched.replace(anchor_fn, PATCH_FUNCTION.lstrip("\n") + anchor_fn, 1)
     patched = patched.replace(PATCH_CALL_AFTER, PATCH_CALL_AFTER + PATCH_CALL, 1)
     try:
-        js.write_text(patched, encoding="utf-8", newline="")
+        with js.open("w", encoding="utf-8", newline="") as output:
+            output.write(patched)
     except OSError:
         return "unsupported"
     return "patched"
 
 
-def ensure_open_param(config: dict | None = None) -> str:
+def ensure_open_param(config: dict | None = None, *, check_only: bool = False) -> str:
     """這台的 ComfyUI 有 LoRA Manager 就確認「詳情直達」補過了。回傳 patch_open_param 的結果或 'none'。"""
     config = up.load_config() if config is None else config
     if not pose.comfy_is_local(up.comfy_base(config)):
         return "none"
     root = pose.comfy_root(config)
     node = node_dir(root) if root else None
-    return patch_open_param(node) if node else "none"
+    return patch_open_param(node, check_only=check_only) if node else "none"
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -155,10 +159,15 @@ def main(argv: list[str] | None = None) -> int:
     argv = list(sys.argv[1:] if argv is None else argv)
     check_only = "--check" in argv
     config = up.load_config()
+    if "--check-patch" in argv:
+        result = ensure_open_param(config, check_only=True)
+        print(f"LoRA Manager open-link patch: {result}")
+        return 3 if result == "needed" else 0
     if "--patch" in argv:
-        # 只補「詳情直達」（伺服器每次開機、啟動檔都會叫）。
-        print(f"LoRA Manager open-link patch: {ensure_open_param(config)}")
-        return 0
+        # Setup calls this after the user allows the Details link patch.
+        result = ensure_open_param(config)
+        print(f"LoRA Manager open-link patch: {result}")
+        return 0 if result in ("patched", "already") else 1
     base = up.comfy_base(config)
     if not pose.comfy_is_local(base):
         return 0

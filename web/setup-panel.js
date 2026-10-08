@@ -11,6 +11,7 @@ const POLL_MS = 2500;
 const ICON = { wait: "…", run: "", ask: "?", restart: "↻", done: "✓", skip: "–", error: "!" };
 // 答案按鈕的字（中文是原文，英文版由 i18n 換）。
 const ANSWER = {
+  lora: [["yes", "允許", true], ["no", "這次不要"], ["never", "不要再問"]],
   pose: [["yes", "安裝", true], ["no", "這次不要"], ["never", "不要再問"]],
   bake_adult: [["yes", "烘", true], ["no", "這次不要"]],
 };

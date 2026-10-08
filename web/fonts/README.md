@@ -1,5 +1,10 @@
 # WEB6 Chiron Hei HK
 
+Mochi ships these assets from [danbooru_tag_random](https://github.com/bosen12/danbooru_tag_random).
+Run the rebuild and verification commands below from that upstream checkout;
+the standalone Mochi repository does not include the font build toolchain.
+Maintainers copy rebuilt assets with `python scripts/sync_mochi.py`.
+
 The Traditional Chinese display family, glyphs and font weights are preserved.
 The English edition uses system fonts and horizontal card labels.
 `../fonts.css` serves one local variable WOFF2 for current WEB6 source text and the

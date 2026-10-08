@@ -10,7 +10,7 @@
 順序：
   cards       卡面插畫（全年齡包，GitHub Release）—— 不用 ComfyUI，一開機就抓
   ── 等 ComfyUI 開起來 ──
-  lora        ComfyUI 的 LoRA Manager：沒有就裝，裝完要重開 ComfyUI      （只動這台機器上的 ComfyUI）
+  lora        ComfyUI 的 LoRA Manager：安裝或修補前先問                    （只動這台機器上的 ComfyUI）
   upscale     Hires 放大模型（RealESRGAN_x4plus_anime_6B）                  （同上）
   pose        姿勢參考（ControlNet 節點＋模型，2.5 GB）：先問               （同上）
   bake        卡面下載完，全年齡缺的、提示詞改過的直接烘
@@ -226,13 +226,14 @@ def _wait_comfy(keys: list[str]) -> None:
 
 
 def _lora() -> None:
-    if os.environ.get("NO_LORA_MANAGER_FETCH"):
-        _set("lora", "skip", "NO_LORA_MANAGER_FETCH")
+    if os.environ.get("NO_LORA_MANAGER_FETCH") or (ROOT / ".no-lora-manager-fetch").exists():
+        _set("lora", "skip", "")
         return
     if lora_manager_running():
-        if comfy_local():
-            # 「詳情」直達那一個 LoRA：LoRA Manager 更新會蓋掉，每次開機都確認補過了（不用重開 ComfyUI）。
-            _run("check", ["fetch_lora_manager.py", "--patch"], show=False)
+        if comfy_local() and _run("check", ["fetch_lora_manager.py", "--check-patch"], show=False) == 3:
+            _set("lora", "ask", "選用：修改 LoRA Manager 的 loras.js，讓詳情連結直接開啟指定 LoRA；不用重開 ComfyUI",
+                 answers=["yes", "no", "never"], action="patch")
+            return
         _set("lora", "done", "")
         return
     if not comfy_local():
@@ -240,16 +241,28 @@ def _lora() -> None:
         return
     code = _check("fetch_lora_manager.py")
     if code == 3:
-        _set("lora", "run", "安裝到 ComfyUI 的 custom_nodes")
-        if _run("lora", ["fetch_lora_manager.py"]) != 0:
-            _set("lora", "error", _failed("安裝失敗"))
-            return
-        code = 4
+        _set("lora", "ask", "選用：安裝 LoRA Manager 到 ComfyUI，安裝 Python 套件並加入詳情連結補丁；裝完要重開 ComfyUI",
+             answers=["yes", "no", "never"], action="install")
+        return
     if code == 4:
         _set("lora", "restart", "裝好了，重開 ComfyUI 才會生效")
-        _wait_loaded("lora", lora_manager_running)
+        _thread(_wait_loaded, "lora", lora_manager_running)
         return
     _set("lora", "skip", "找不到 ComfyUI 的資料夾")
+
+
+def _lora_install(action: str) -> None:
+    args = ["fetch_lora_manager.py"] + (["--patch"] if action == "patch" else [])
+    if _run("lora", args) != 0:
+        _set("lora", "error", _failed("安裝失敗"))
+        return
+    if action == "patch" or lora_manager_running():
+        _set("lora", "done", "已載入")
+        if _on_lora_ready:
+            _on_lora_ready()
+        return
+    _set("lora", "restart", "裝好了，重開 ComfyUI 才會生效")
+    _wait_loaded("lora", lora_manager_running)
 
 
 def _wait_loaded(key: str, loaded) -> None:
@@ -353,16 +366,23 @@ def answer(key: str, value: str) -> tuple[bool, str]:
         return restart_comfy()
     with _lock:
         cur = _state.get(key) or {}
-    if cur.get("state") != "ask" or value not in (cur.get("answers") or []):
-        return False, "現在不用回答這一項"
+        if cur.get("state") != "ask" or value not in (cur.get("answers") or []):
+            return False, "現在不用回答這一項"
+        # 領走問題後才開 worker：雙擊或另一分頁不能重複安裝。
+        _state[key] = {**cur, "state": "run" if value == "yes" else "skip"}
     if value == "yes":
-        _thread(_pose_install if key == "pose" else _bake_adult)
-    elif value == "never" and key == "pose":
+        if key == "lora":
+            _thread(_lora_install, cur.get("action", "install"))
+        else:
+            _thread(_pose_install if key == "pose" else _bake_adult)
+    elif value == "never" and key in ("pose", "lora"):
+        marker = ".no-pose-fetch" if key == "pose" else ".no-lora-manager-fetch"
         try:
-            (ROOT / ".no-pose-fetch").write_text("", encoding="utf-8")
+            (ROOT / marker).write_text("", encoding="utf-8")
         except OSError:
-            pass
-        _set(key, "skip", "不再問（刪掉 .no-pose-fetch 就會再問）")
+            _set(key, "skip", "這次先不要：無法儲存略過設定")
+            return False, "無法儲存略過設定，下次啟動會再問"
+        _set(key, "skip", f"不再問（刪掉 {marker} 就會再問）")
     else:
         _set(key, "skip", "這次先不要")
     return True, ""
@@ -378,4 +398,3 @@ def start(comfy_base, on_lora_ready=None) -> None:
     _on_lora_ready = on_lora_ready
     _log("---- setup start ----")
     _thread(_main)
-

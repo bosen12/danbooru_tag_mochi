@@ -64,6 +64,10 @@ cd danbooru_tag_mochi
 
 Keep the server window open. After updating, reload the page with **Ctrl+F5**.
 
+Windows also respects `PORT` and `HOST` set before launch. For example, `set PORT=18812` then `start.bat` opens port 18812. Both launchers require Python 3.9+. Choosing **Never ask** for LoRA setup creates `.no-lora-manager-fetch`; delete it to restore the question. `NO_SETUP=1` skips every background setup step.
+
+The public repository has a v1.0 release. The latest main includes additional readiness fixes after that tag. See [release notes](CHANGELOG.md) and the [verification record](docs/RELEASE_VERIFICATION.md) for tested environments and limitations.
+
 ### Prepared on first start
 
 | What | Size | How | Skip |
@@ -71,10 +75,10 @@ Keep the server window open. After updating, reload the page with **Ctrl+F5**.
 | Card art, all ages (1934 files) | ~100 MB | Downloaded from this repo's [release](https://github.com/bosen12/danbooru_tag_mochi/releases/tag/card-art-v4), checked with SHA-256, unpacked into `web/cards/`. Resumes if interrupted; never overwrites cards you baked yourself | `NO_CARD_FETCH=1` |
 | Sensitive / explicit card art | — | Not published. Once the download is in, the page asks whether to bake them with your checkpoint (`scripts/bake_card_art.py`). Missing or outdated all-ages cards are baked without asking | `NO_CARD_BAKE=1` or a `.no-card-bake` file |
 | Hires upscale model `RealESRGAN_x4plus_anime_6B` | ~18 MB | Saved to ComfyUI's `models/upscale_models` | `NO_UPSCALE_FETCH=1` |
-| [ComfyUI LoRA Manager](https://github.com/willmiao/ComfyUI-Lora-Manager) (custom node) | small | The LoRA panel takes its list, preview images and Civitai trigger words from it, and the checkpoint panel its names and previews. Installed automatically if ComfyUI lacks it (git clone into `custom_nodes`, packages with ComfyUI's own Python); restart ComfyUI once afterwards | `NO_LORA_MANAGER_FETCH=1` |
+| [ComfyUI LoRA Manager](https://github.com/willmiao/ComfyUI-Lora-Manager) (custom node) | small | The LoRA panel takes its list, preview images and Civitai trigger words from it, and the checkpoint panel its names and previews. Optional: the setup panel asks before installing it into `custom_nodes`, installing packages with ComfyUI's own Python, or adding the Details link patch. Choose Allow / Not now / Never ask; restart ComfyUI after installation | `NO_LORA_MANAGER_FETCH=1` |
 | Pose reference (OpenPose ControlNet + `comfyui_controlnet_aux`) | ~2.5 GB | Optional. The page asks first (install / not now / never); ComfyUI needs one restart afterwards | `NO_POSE_FETCH=1` or answer *A* |
 
-**One launch does all of it**, on Windows, macOS and Linux alike. The server does the work in the background and a panel in the lower-left corner of the page shows each step, asks the two questions, and offers **Restart ComfyUI** after something is installed into it (through ComfyUI-Manager; otherwise restart it yourself). If ComfyUI is not running yet, the steps that need it wait and continue as soon as you start it; there is no need to run `start.bat` again. The page opens straight away with placeholder cards; the panel tells you when to reload. Everything is logged in `data/setup.log`. People who already have everything never see the panel.
+**One launch does all of it**, on Windows, macOS and Linux alike. The server does the work in the background and a panel in the lower-left corner of the page shows each step, asks before optional LoRA installation/patching, pose setup and adult card baking, and offers **Restart ComfyUI** after something is installed into it (through ComfyUI-Manager; otherwise restart it yourself). If ComfyUI is not running yet, the steps that need it wait and continue as soon as you start it; there is no need to run `start.bat` again. The page opens straight away with placeholder cards; the panel tells you when to reload. Everything is logged in `data/setup.log`. People who already have everything never see the panel.
 
 ## Configuration
 
@@ -86,7 +90,7 @@ Keep the server window open. After updating, reload the page with **Ctrl+F5**.
 
 These are saved in `data/settings.json`. `config.json` (from `config.example.json`, git-ignored) is still read for advanced settings such as the port, host and timeouts; anything set in the page takes precedence.
 
-A fresh clone usually needs nothing at all: checkpoints and LoRAs come from ComfyUI, and with ComfyUI LoRA Manager (installed on first start) they have names, preview images and trigger words. Previews are relayed by this server, so they also show on a phone over Tailscale.
+A fresh clone usually needs nothing at all: checkpoints and LoRAs come from ComfyUI, and with ComfyUI LoRA Manager (optional in first-time setup) they have names, preview images and trigger words. Previews are relayed by this server, so they also show on a phone over Tailscale.
 
 | `config.json` | Meaning |
 |---|---|
@@ -101,7 +105,7 @@ Environment variables override the file: `COMFY_API`, `COMFY_CKPT`, `PORT`, `HOS
 
 **Your own ComfyUI workflow.** In ComfyUI choose *Export (API)*, drop the JSON on the Workflow panel, and pick the node that receives the positive prompt. The original JSON is never modified.
 
-ComfyUI LoRA Manager is a separate project (GPLv3). It is installed into your own ComfyUI, not shipped with Mochi. So that **Details** in the LoRA panel opens that LoRA directly (`/loras?open=<folder>/<file>`), Mochi adds a few lines to LoRA Manager's `static/js/loras.js` (`scripts/fetch_lora_manager.py --patch`, no ComfyUI restart). An update of LoRA Manager replaces the file; Mochi re-applies it on the next start, and leaves the file alone if it no longer looks as expected. On a phone (Tailscale) these links point at this computer's ComfyUI, so they only open if ComfyUI was started with `--listen`; Mochi checks first and hides them otherwise (Details then opens Civitai; previews still show, because this server relays them).
+ComfyUI LoRA Manager is a separate project (GPLv3). It is installed into your own ComfyUI, not shipped with Mochi. So that **Details** in the LoRA panel opens that LoRA directly (`/loras?open=<folder>/<file>`), with your permission in the setup panel, Mochi adds a few lines to LoRA Manager's `static/js/loras.js` (`scripts/fetch_lora_manager.py --patch`, no ComfyUI restart). An update of LoRA Manager replaces the file; Mochi asks again before re-applying it on the next start, and leaves the file alone if it no longer looks as expected. On a phone (Tailscale) these links point at this computer's ComfyUI, so they only open if ComfyUI was started with `--listen`; Mochi checks first and hides them otherwise (Details then opens Civitai; previews still show, because this server relays them).
 
 **Discord.** The Discord button in the top bar takes a channel webhook URL, and generated images are posted there. The URL is stored in `.secrets/`, never committed and never sent back to the browser.
 
@@ -137,14 +141,18 @@ tests/               node tests/test_i18n.mjs
 ## Tests
 
 ```bash
-node tests/test_i18n.mjs
+python tests/run.py
+# Optional browser checks, after installing Playwright:
+python tests/run.py --browser
 ```
+
+Core engine, setup decisions, asset handling, server behavior and clean-copy HTTP checks. Node.js 20+ is required for development tests. See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 Language detection, English translation, user content left untranslated, and selections kept across a language switch. ComfyUI is not needed.
 
 ## Contributing
 
-Issues and pull requests are welcome. Run `node tests/test_i18n.mjs` and keep the CI green. Most of the code here is synced from the [danbooru_tag_random](https://github.com/bosen12/danbooru_tag_random) workspace, so a merged change is carried over there by the maintainer; you do not need to do anything for that. For new interface text, add the English line to `web/locales/en.js`.
+Issues and pull requests are welcome. Run `python tests/run.py` and keep the CI green. See [CONTRIBUTING.md](CONTRIBUTING.md) for browser checks and contribution details. Most of the code here is synced from the [danbooru_tag_random](https://github.com/bosen12/danbooru_tag_random) workspace, so a merged change is carried over there by the maintainer; you do not need to do anything for that. For new interface text, add the English line to `web/locales/en.js`.
 
 ## License
 
@@ -195,6 +203,10 @@ cd danbooru_tag_mochi
 2. **開墨池。** Windows 雙擊 `start.bat`（沒裝 Python 會直接打開下載頁）；macOS / Linux 跑 `./start.sh`，或 `python3 server.py` 再開 <http://127.0.0.1:8796>。
 3. **選底模。** 頂欄的模型按鈕列出 ComfyUI 有的 checkpoint。還沒選之前，墨池會從清單裡挑一個 Illustrious／SDXL 的。
 
+Windows 會保留啟動前設定的 `PORT`／`HOST`；例如先 `set PORT=18812` 再跑 `start.bat`。兩種啟動檔都要求 Python 3.9+。LoRA 選「不要再問」會建立 `.no-lora-manager-fetch`，刪除此檔可恢復詢問；`NO_SETUP=1` 可略過所有背景準備。
+
+v1.0 已公開；最新 main 已加入該標籤之後的發布準備修正。已測環境和限制見 [發布紀錄](CHANGELOG.md) 與 [驗證紀錄](docs/RELEASE_VERIFICATION.md)。
+
 ### 第一次啟動會準備的東西
 
 | 東西 | 大小 | 怎麼來 | 不想要 |
@@ -202,18 +214,18 @@ cd danbooru_tag_mochi
 | 卡牌插畫（全年齡 1934 個檔） | 約 100 MB | 從本 repo 的 [Release](https://github.com/bosen12/danbooru_tag_mochi/releases/tag/card-art-v4) 下載、驗 SHA-256、解到 `web/cards/`。斷了會接著抓；自己烘的圖不覆蓋 | `NO_CARD_FETCH=1` |
 | 敏感／色情分級的卡面 | — | 不公開。卡面下載好之後，網頁上問你要不要用你的底模烘；全年齡卡缺的、過時的直接烘，不問 | `NO_CARD_BAKE=1` 或 `.no-card-bake` 檔 |
 | Hires 放大模型 | 約 18 MB | 放進 ComfyUI 的 `models/upscale_models` | `NO_UPSCALE_FETCH=1` |
-| [ComfyUI LoRA Manager](https://github.com/willmiao/ComfyUI-Lora-Manager)（custom node） | 不大 | LoRA 面板的清單、預覽圖、Civitai 觸發詞，底模面板的名稱和預覽圖都從它來。ComfyUI 沒有就自動裝（git clone 進 `custom_nodes`、用 ComfyUI 自己的 Python 裝套件），裝完重開一次 ComfyUI | `NO_LORA_MANAGER_FETCH=1` |
+| [ComfyUI LoRA Manager](https://github.com/willmiao/ComfyUI-Lora-Manager)（custom node） | 不大 | LoRA 面板的清單、預覽圖、Civitai 觸發詞，底模面板的名稱和預覽圖都從它來。選用：準備面板先問「允許／這次不要／不要再問」，才裝進 `custom_nodes`、用 ComfyUI 自己的 Python 裝套件或補詳情連結；安裝完重開一次 ComfyUI | `NO_LORA_MANAGER_FETCH=1` |
 | 姿勢參考（OpenPose ControlNet＋`comfyui_controlnet_aux`） | 約 2.5 GB | 選用。網頁上先問（安裝／這次不要／不要再問），裝完要重開一次 ComfyUI | `NO_POSE_FETCH=1` 或回答 A |
 
-**啟動一次就全部做完**（Windows、macOS、Linux 都一樣）：伺服器在背景做，網頁左下角的面板顯示每一步、問那兩個問題，裝進 ComfyUI 的東西需要重開時給一顆「重開 ComfyUI」（透過 ComfyUI-Manager；沒有就自己重開）。ComfyUI 還沒開的話，要用到它的步驟會等，一開就接著做，不用再跑一次 `start.bat`。網頁照常先開（先是字的佔位牌），面板會告訴你什麼時候重新整理。過程記在 `data/setup.log`。東西都已經有的人完全看不到這個面板。
+**啟動一次就全部做完**（Windows、macOS、Linux 都一樣）：伺服器在背景做，網頁左下角的面板顯示每一步、詢問 LoRA 安裝／修補、姿勢參考與成人卡面烘焙，裝進 ComfyUI 的東西需要重開時給一顆「重開 ComfyUI」（透過 ComfyUI-Manager；沒有就自己重開）。ComfyUI 還沒開的話，要用到它的步驟會等，一開就接著做，不用再跑一次 `start.bat`。網頁照常先開（先是字的佔位牌），面板會告訴你什麼時候重新整理。過程記在 `data/setup.log`。東西都已經有的人完全看不到這個面板。
 
 ## 設定
 
 **不需要設定檔。** 一般會改的都在網頁上：ComfyUI 位址點頂欄的 Comfy 燈號；LoRA、底模的資料夾在 LoRA／底模面板的「**偏好路徑**」——點 ComfyUI 回報的資料夾（附模型數）、貼上路徑，或按「選資料夾…」在這台電腦上跳出資料夾視窗；只列那個資料夾底下的，按「全部」改回來。這些存在 `data/settings.json`。`config.json`（從 `config.example.json` 複製，不進版控）只剩埠號、逾時這類進階設定，網頁上設的優先。
 
-新 clone 通常什麼都不用改：底模、LoRA 清單直接問 ComfyUI，有 LoRA Manager（第一次啟動會裝）就連預覽圖、觸發詞都有，手機走 Tailscale 也看得到。常用的有 `comfy.api`、`comfy.ckpt`（要跟 ComfyUI 清單一字不差）、`comfy.checkpointDir`（底模預覽圖）、`paths.loraRoot`（沒有 LoRA Manager 時才用：自己掃資料夾拿預覽圖與觸發詞）、`server.port`（預設 8796）、`client.streamIdleMs`（慢顯卡調大）。環境變數優先於設定檔。
+新 clone 通常什麼都不用改：底模、LoRA 清單直接問 ComfyUI，有 LoRA Manager（準備面板可選擇安裝）就連預覽圖、觸發詞都有，手機走 Tailscale 也看得到。常用的有 `comfy.api`、`comfy.ckpt`（要跟 ComfyUI 清單一字不差）、`comfy.checkpointDir`（底模預覽圖）、`paths.loraRoot`（沒有 LoRA Manager 時才用：自己掃資料夾拿預覽圖與觸發詞）、`server.port`（預設 8796）、`client.streamIdleMs`（慢顯卡調大）。環境變數優先於設定檔。
 
-LoRA 面板的「詳情」在 ComfyUI 的 LoRA Manager 直接打開那一個 LoRA：墨池在它的 `static/js/loras.js` 補一小段（`scripts/fetch_lora_manager.py --patch`，不用重開 ComfyUI），LoRA Manager 更新蓋掉後下次啟動會再補。手機（Tailscale）上這些連結指向這台的 ComfyUI，ComfyUI 要用 `--listen` 開才點得開；連不到時連結會藏起來，「詳情」改開 Civitai（預覽圖照樣看得到）。
+LoRA 面板的「詳情」在 ComfyUI 的 LoRA Manager 直接打開那一個 LoRA：準備面板取得同意後，墨池才在它的 `static/js/loras.js` 補一小段（`scripts/fetch_lora_manager.py --patch`，不用重開 ComfyUI），LoRA Manager 更新蓋掉後下次啟動會先問再補。手機（Tailscale）上這些連結指向這台的 ComfyUI，ComfyUI 要用 `--listen` 開才點得開；連不到時連結會藏起來，「詳情」改開 Civitai（預覽圖照樣看得到）。
 
 自己的 ComfyUI workflow：用「匯出工作流 (API)」，拖進畫面的「工作流」面板。送到 Discord：頂欄的 Discord 按鈕貼上頻道 webhook。手機走 Tailscale，用黑窗印出的 `Tailscale http://100.x.x.x:8796/`。
 
@@ -229,7 +241,7 @@ LoRA 面板的「詳情」在 ComfyUI 的 LoRA Manager 直接打開那一個 LoR
 
 ## 參與開發
 
-歡迎開 issue、送 PR；跑 `node tests/test_i18n.mjs`、CI 要綠。這裡大部分的程式是從 danbooru_tag_random 同步過來的，合併後由維護者搬回去，送 PR 的人不用管。新增介面文字時，英文那一行加在 `web/locales/en.js`。
+歡迎開 issue、送 PR；跑 `python tests/run.py`、CI 要綠（詳細步驟見 [CONTRIBUTING.md](CONTRIBUTING.md)）。這裡大部分的程式是從 danbooru_tag_random 同步過來的，合併後由維護者搬回去，送 PR 的人不用管。新增介面文字時，英文那一行加在 `web/locales/en.js`。
 
 ## 授權
 

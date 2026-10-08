@@ -825,6 +825,7 @@ LoRA 資料夾路徑|LoRA folder path
 敏感、色情卡面|Sensitive and explicit card art
 Hires 放大模型|Hires upscale model
 安裝|Install
+允許|Allow
 這次不要|Not now
 不要再問|Never ask
 烘|Bake
@@ -858,6 +859,11 @@ ComfyUI 在別台電腦：這台不動它|ComfyUI runs on another computer. Noth
 用你的 ComfyUI 烘敏感、色情卡面|Baking sensitive and explicit cards with your ComfyUI
 不在公開下載包裡；用你的底模烘約 600 張，要一小時以上|Not in the public download. Baking about 600 cards with your checkpoint takes over an hour.
 不再問（刪掉 .no-pose-fetch 就會再問）|Will not ask again (delete .no-pose-fetch to be asked)
+不再問（刪掉 .no-lora-manager-fetch 就會再問）|Will not ask again (delete .no-lora-manager-fetch to be asked)
+選用：修改 LoRA Manager 的 loras.js，讓詳情連結直接開啟指定 LoRA；不用重開 ComfyUI|Optional: modify LoRA Manager's loras.js so Details opens the selected LoRA directly. No ComfyUI restart is needed.
+選用：安裝 LoRA Manager 到 ComfyUI，安裝 Python 套件並加入詳情連結補丁；裝完要重開 ComfyUI|Optional: install LoRA Manager into ComfyUI, install its Python packages and add the Details link patch. Restart ComfyUI afterwards.
+這次先不要：無法儲存略過設定|Skipped for now. Could not save this preference.
+無法儲存略過設定，下次啟動會再問|Could not save this preference. You will be asked again next launch.
 這次先不要|Skipped for now
 現在不用回答這一項|Nothing to answer for this item now
 ComfyUI 還有圖在畫，畫完再重開|ComfyUI is still generating. Restart it when it finishes.
@@ -1410,7 +1416,7 @@ LoRA {0} 尚未選擇——從左邊清單點一個|Select LoRA {0} from the lis
 隨機瀏覽 {0} 個 LoRA|Browse {0} random LoRA
 LoRA Manager 送來的「{0}」在這裡的清單找不到|LoRA “{0!}” from LoRA Manager was not found in this list.
 已從 LoRA Manager 選入 LoRA {0}：「{1}」|Selected LoRA {0!} from LoRA Manager: “{1!}”
-LoRA：清單來自 ComfyUI（{0} 個）。想要預覽圖和觸發詞：在 ComfyUI 裝 LoRA Manager（啟動檔會自動裝，裝完重開 ComfyUI），或在 config.json 填 paths.loraRoot。|LoRA: list from ComfyUI ({0!}). For preview images and trigger words, install ComfyUI LoRA Manager (the launcher installs it; restart ComfyUI afterwards) or set paths.loraRoot in config.json.
+LoRA：清單來自 ComfyUI（{0} 個）。想要預覽圖和觸發詞：在 ComfyUI 裝 LoRA Manager（裝完重開 ComfyUI），或在 config.json 填 paths.loraRoot。|LoRA: list from ComfyUI ({0!}). For preview images and trigger words, install ComfyUI LoRA Manager (restart ComfyUI after installing it) or set paths.loraRoot in config.json.
 LoRA：沒設定 paths.loraRoot，改問 ComfyUI 也失敗了：{0}|LoRA: no LoRA Manager or paths.loraRoot, and ComfyUI could not be reached: {0!}
 第一次使用：準備中 {0}/{1}|First-time setup {0}/{1}
 重開失敗（{0}）：請自己重開 ComfyUI|Restart failed ({0!}). Restart ComfyUI yourself.
@@ -1428,7 +1434,7 @@ LoRA：沒設定 paths.loraRoot，改問 ComfyUI 也失敗了：{0}|LoRA: no LoR
 找到 {0} 個底模|{0} checkpoints found
 找不到這個資料夾：{0}|Folder not found: {0!}
 偏好路徑 {0} 底下沒有 LoRA Manager 認得的 LoRA|LoRA Manager knows no LoRA in the preferred folder {0!}
-LoRA：清單來自 ComfyUI（{0} 個）。想要預覽圖和觸發詞：在 ComfyUI 裝 LoRA Manager（啟動檔會自動裝，裝完重開 ComfyUI），或在 LoRA 面板的「偏好路徑」選你的 LoRA 資料夾。|LoRA: list from ComfyUI ({0!}). For preview images and trigger words, install ComfyUI LoRA Manager (the launcher installs it; restart ComfyUI afterwards) or choose your LoRA folder under Preferred folder.
+LoRA：清單來自 ComfyUI（{0} 個）。想要預覽圖和觸發詞：在 ComfyUI 裝 LoRA Manager（裝完重開 ComfyUI），或在 LoRA 面板的「偏好路徑」選你的 LoRA 資料夾。|LoRA: list from ComfyUI ({0!}). For preview images and trigger words, install ComfyUI LoRA Manager (restart ComfyUI after installing it) or choose your LoRA folder under Preferred folder.
 LoRA：沒設定偏好路徑，改問 ComfyUI 也失敗了：{0}|LoRA: no preferred folder set, and ComfyUI could not be reached: {0!}
 「{0}」跟「{1}」同時成立不了，引擎會擠掉其中一個|“{0}” and “{1}” cannot both apply. The engine drops one.
 「{0}」跟「{1}」同時成立不了，引擎會摘掉其中一個{2}|“{0}” and “{1}” cannot both apply. The engine removes one.{2}

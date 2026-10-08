@@ -1,0 +1,15 @@
+name: Feature request / 功能建議
+description: Describe the task you want Mochi to help with. / 描述你想解決的使用需求。
+title: "[Feature] "
+body:
+  - type: textarea
+    id: need
+    attributes:
+      label: What are you trying to do? / 你想完成什麼？
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: Suggested behavior / 建議的操作方式
+      description: Include your current workaround, if any. / 可以附目前的替代做法。

@@ -341,7 +341,7 @@ def build_lora_list() -> dict:
             else:
                 data["note"] = (
                     f"清單來自 ComfyUI（{len(data['items'])} 個）。"
-                    "想要預覽圖和觸發詞：在 ComfyUI 裝 LoRA Manager（啟動檔會自動裝，裝完重開 ComfyUI），"
+                    "想要預覽圖和觸發詞：在 ComfyUI 裝 LoRA Manager（裝完重開 ComfyUI），"
                     "或在 LoRA 面板的「偏好路徑」選你的 LoRA 資料夾。"
                 )
         except Exception as exc:

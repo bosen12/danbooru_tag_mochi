@@ -18,3 +18,9 @@ web/cards/
 .no-card-bake
 # Launcher: "never ask again" for installing pose reference
 .no-pose-fetch
+
+# Setup panel: never ask to install or patch LoRA Manager
+.no-lora-manager-fetch
+# Local development browser dependencies
+node_modules/
+package-lock.json

@@ -1,18 +1,18 @@
 @echo off
 setlocal EnableExtensions
 cd /d "%~dp0"
-set "PORT=8796"
-set "HOST=0.0.0.0"
+if not defined PORT set "PORT=8796"
+if not defined HOST set "HOST=0.0.0.0"
 set "PYTHONUTF8=1"
 set "PY="
-python -c "import sys; raise SystemExit(sys.version_info.major != 3)" >nul 2>&1
+python -c "import sys; raise SystemExit(sys.version_info < (3, 9))" >nul 2>&1
 if not errorlevel 1 set "PY=python"
 if not defined PY (
-  py -3 -c "import sys; raise SystemExit(sys.version_info.major != 3)" >nul 2>&1
+  py -3 -c "import sys; raise SystemExit(sys.version_info < (3, 9))" >nul 2>&1
   if not errorlevel 1 set "PY=py -3"
 )
 if not defined PY (
-  echo Python 3 not found.
+  echo Python 3.9 or newer not found.
   echo Opening the download page. Install Python 3.9 or newer and tick
   echo "Add python.exe to PATH" in the installer, then run start.bat again.
   start "" "https://www.python.org/downloads/windows/"

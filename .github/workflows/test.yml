@@ -1,11 +1,10 @@
 name: test
-
 on:
   push:
   pull_request:
-
+  workflow_dispatch:
 jobs:
-  test:
+  core:
     name: ${{ matrix.os }} · Python ${{ matrix.python }}
     runs-on: ${{ matrix.os }}
     strategy:
@@ -15,6 +14,7 @@ jobs:
           - { os: ubuntu-latest, python: "3.9" }
           - { os: ubuntu-latest, python: "3.13" }
           - { os: windows-latest, python: "3.13" }
+          - { os: macos-latest, python: "3.13" }
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -23,29 +23,33 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-
       - name: Compile Python
-        run: python -m compileall -q server.py card_usage.py card_decks.py gen_log.py lora_scan.py recipes.py workflows.py scripts
-
-      - name: Language and translation
-        run: node tests/test_i18n.mjs
-
-      # No ComfyUI in CI: every page and read-only API must still answer.
-      - name: Server smoke test
-        shell: bash
-        env:
-          NO_CARD_FETCH: "1"
-          PORT: "8796"
-          COMFY_API: http://127.0.0.1:9
-          PYTHONUTF8: "1"
+        run: python -m compileall -q setup_tasks.py server.py card_usage.py card_decks.py gen_log.py lora_scan.py recipes.py workflows.py scripts tests
+      - name: Core and isolated HTTP checks
+        run: python tests/run.py
+  browser:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install browser test dependencies
+        run: npm install --no-save playwright@1.62.1
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Bilingual workbench and setup UI
         run: |
-          python server.py > server.log 2>&1 &
-          for i in $(seq 1 30); do curl -s -o /dev/null http://127.0.0.1:8796/ && break; sleep 1; done
-          fail=0
-          for p in / /fuse.html /book.html /album.html /intro.html /tutorial.html /lexicon.json /engine.js \
-                   /api/ping /api/setup /api/decks /api/usage /api/recipes /api/genlog /api/genlog/stats /api/workflows /api/checkpoints /api/loras; do
-            code=$(curl -s -o /dev/null -w '%{http_code}' "http://127.0.0.1:8796$p")
-            echo "$code $p"
-            [ "$code" = 200 ] || fail=1
-          done
-          if [ "$fail" != 0 ]; then cat server.log; exit 1; fi
+          node tests/test_i18n_browser.mjs
+          node tests/test_setup_browser.mjs
+  full-engine:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Full historical engine regression
+        run: node tests/test_engine.mjs

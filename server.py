@@ -4508,7 +4508,7 @@ def main() -> None:
         print(f"loras    ComfyUI 的 LoRA Manager：{lm_total} 個，預覽圖和觸發詞從它來（{lora_scan.lm_manager_url()}）")
     elif not lora_scan.LORA_ROOT:
         print("loras    （ComfyUI 沒有 LoRA Manager、也沒設定 paths.loraRoot：LoRA 清單改問 Comfy，沒有預覽圖和觸發詞。"
-              "啟動檔會自動裝 LoRA Manager，裝完重開 ComfyUI）")
+              "墨池準備面板可選擇安裝 LoRA Manager，裝完重開 ComfyUI）")
     elif not lora_scan.LORA_ROOT.is_dir():
         print(
             f"loras    {lora_scan.LORA_ROOT}（路徑不存在，LoRA 面板會是空的）\n"
