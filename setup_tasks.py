@@ -23,6 +23,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import subprocess
 import sys
 import threading
@@ -84,8 +85,31 @@ def snapshot() -> dict:
 
 # ---------- 跑腳本 ----------
 
+_PROGRESS = [
+    (re.compile(r"^(\d+)%\s+([\d.]+/[\d.]+ [MG]B)"), "下載中 {0}%（{1}）"),
+    (re.compile(r"^\[(\d+)/(\d+)\]"), "烘焙中 {0}/{1}"),
+    (re.compile(r"^(?:Cloning|Downloading) (.+?)(?: \(zip\))? \.\.\."), "下載 {0}…"),
+    (re.compile(r"^Installing (.+?)'s python packages"), "安裝 {0} 的 Python 套件…"),
+    (re.compile(r"^checking sha256"), "檢查檔案…"),
+    (re.compile(r"retrying|continuing"), "連線中斷，接著下載…"),
+]
+
+
+def progress_text(line: str) -> str:
+    """腳本印的是給終端機看的英文；畫面上只換成中文進度（英文版再由 en.js 翻）。認不得的行回空字串。"""
+    for pat, text in _PROGRESS:
+        m = pat.search(line)
+        if m:
+            return text.format(*m.groups())
+    return ""
+
+
+def _failed(what: str) -> str:
+    return what + "，詳情在 data/setup.log"
+
+
 def _run(key: str, args: list[str], show: bool = True) -> int:
-    """開子程序跑 scripts/ 底下的腳本。show：把輸出的最後一行當成畫面上的進度。"""
+    """開子程序跑 scripts/ 底下的腳本。show：認得的進度行換成中文，當成畫面上的進度。"""
     env = {**os.environ, "PYTHONUTF8": "1", "PYTHONIOENCODING": "utf-8", "CARD_FETCH_STARTED": "1"}
     cmd = [sys.executable, "-u", str(SCRIPTS / args[0]), *args[1:]]
     _log("run " + " ".join(args))
@@ -95,21 +119,16 @@ def _run(key: str, args: list[str], show: bool = True) -> int:
     except OSError as err:
         _log(f"{key}: cannot start {args[0]}: {err}")
         return 1
-    last = ""
     for line in proc.stdout:
         line = line.strip()
         if not line:
             continue
-        last = line
         _log(f"{key}> {line}")
-        if show and key in _state:
+        text = progress_text(line) if show else ""
+        if text and key in _state:
             with _lock:
-                _state[key]["text"] = line[-160:]
-    code = proc.wait()
-    if key in _state:
-        with _lock:
-            _state[key]["last"] = last[-160:]
-    return code
+                _state[key]["text"] = text
+    return proc.wait()
 
 
 def _check(script: str, *args: str) -> int:
@@ -190,7 +209,7 @@ def _cards() -> None:
         if code == 0:
             _set("cards", "done", "下載好了：重新整理網頁就有圖", reload=True)
         else:
-            _set("cards", "error", (_state["cards"].get("last") or "下載失敗") + "（下次啟動接著抓）")
+            _set("cards", "error", _failed("下載失敗") + "（下次啟動接著抓）")
     finally:
         _events["cards_done"].set()
 
@@ -223,7 +242,7 @@ def _lora() -> None:
     if code == 3:
         _set("lora", "run", "安裝到 ComfyUI 的 custom_nodes")
         if _run("lora", ["fetch_lora_manager.py"]) != 0:
-            _set("lora", "error", _state["lora"].get("last") or "安裝失敗")
+            _set("lora", "error", _failed("安裝失敗"))
             return
         code = 4
     if code == 4:
@@ -251,7 +270,7 @@ def _upscale() -> None:
         return
     _set("upscale", "run", "下載到 ComfyUI 的 upscale_models（約 18 MB）")
     code = _run("upscale", ["fetch_upscale_model.py"])
-    _set("upscale", "done" if code == 0 else "error", "" if code == 0 else (_state["upscale"].get("last") or "下載失敗"))
+    _set("upscale", "done" if code == 0 else "error", "" if code == 0 else _failed("下載失敗"))
 
 
 def _pose() -> None:
@@ -267,7 +286,7 @@ def _pose() -> None:
 def _pose_install() -> None:
     _set("pose", "run", "安裝節點、下載模型（約 2.5 GB）")
     if _run("pose", ["fetch_pose_assets.py"]) != 0:
-        _set("pose", "error", (_state["pose"].get("last") or "安裝失敗") + "（下次啟動接著做）")
+        _set("pose", "error", _failed("安裝失敗") + "（下次啟動接著做）")
         return
     if pose_node_loaded():
         _set("pose", "done", "")
@@ -292,7 +311,7 @@ def _bake() -> None:
         _set("bake", "run", "用你的 ComfyUI 烘還沒有的全年齡卡面")
         rc = _run("bake", ["bake_card_art.py", "--rating", "general"])
         if rc != 0:
-            _set("bake", "error", _state["bake"].get("last") or "烘焙失敗")
+            _set("bake", "error", _failed("烘焙失敗"))
             _set("bake_adult", "skip", "")
             return
         _set("bake", "done", "烘好了：重新整理網頁就有圖", reload=True)
@@ -307,7 +326,7 @@ def _bake() -> None:
 def _bake_adult() -> None:
     _set("bake_adult", "run", "用你的 ComfyUI 烘敏感、色情卡面")
     rc = _run("bake_adult", ["bake_card_art.py"])
-    _set("bake_adult", "done" if rc == 0 else "error", "烘好了：重新整理網頁就有圖" if rc == 0 else (_state["bake_adult"].get("last") or "烘焙失敗"), reload=rc == 0)
+    _set("bake_adult", "done" if rc == 0 else "error", "烘好了：重新整理網頁就有圖" if rc == 0 else _failed("烘焙失敗"), reload=rc == 0)
 
 
 def _thread(fn, *a) -> None:

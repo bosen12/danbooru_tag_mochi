@@ -836,6 +836,11 @@ ComfyUI 重開中，大約半分鐘|ComfyUI is restarting. This takes about half
 下載失敗|Download failed
 安裝失敗|Installation failed
 烘焙失敗|Baking failed
+下載失敗，詳情在 data/setup.log|Download failed. Details are in data/setup.log
+安裝失敗，詳情在 data/setup.log|Installation failed. Details are in data/setup.log
+烘焙失敗，詳情在 data/setup.log|Baking failed. Details are in data/setup.log
+檢查檔案…|Checking the file…
+連線中斷，接著下載…|Connection dropped. Resuming…
 從 GitHub 下載全年齡卡面（約 100 MB）|Downloading the all-ages card art from GitHub (about 100 MB)
 下載好了：重新整理網頁就有圖|Downloaded. Reload the page to see the art.
 烘好了：重新整理網頁就有圖|Baked. Reload the page to see the art.
@@ -1410,6 +1415,10 @@ LoRA：沒設定 paths.loraRoot，改問 ComfyUI 也失敗了：{0}|LoRA: no LoR
 第一次使用：準備中 {0}/{1}|First-time setup {0}/{1}
 重開失敗（{0}）：請自己重開 ComfyUI|Restart failed ({0!}). Restart ComfyUI yourself.
 {0}（下次啟動接著抓）|{0} (resumes next launch)
+下載中 {0}%（{1}）|Downloading {0}% ({1!})
+烘焙中 {0}/{1}|Baking {0}/{1}
+下載 {0}…|Downloading {0!}…
+安裝 {0} 的 Python 套件…|Installing Python packages for {0!}…
 {0}（下次啟動接著做）|{0} (resumes next launch)
 已固定成 {0}|Fixed to {0}
 例如 {0}|e.g. {0!}
