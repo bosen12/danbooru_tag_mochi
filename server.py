@@ -340,6 +340,9 @@ def comfy_rejection_text(body: dict) -> str:
         for e in ne.get("errors") or []:
             kind = e.get("type")
             details = str(e.get("details") or "")
+            if kind == "value_not_in_list" and details.strip().startswith("ckpt_name") and re.search(r"not in \[\s*\]", details):
+                # 剛裝好的 ComfyUI 一個底模都沒有：講要去下載，不要講一個使用者從沒選過的檔名。
+                return "ComfyUI 裡還沒有任何底模：下載一個 SDXL 底模（建議 Illustrious 系，例如 WAI-Illustrious）放進 ComfyUI 的 models/checkpoints，重開 ComfyUI 再試"
             if kind == "value_not_in_list":
                 field, _, rest = details.partition(":")
                 m = re.search(r"'([^']*)'", rest)
@@ -4576,6 +4579,17 @@ class AppServer(ThreadingHTTPServer):
         super().server_bind()
 
 
+def open_browser(port: int, delay: float = 0.3) -> None:
+    """啟動檔設了 OPEN_BROWSER=1 才開。以前 start.bat 在伺服器起來之前就開瀏覽器，
+    快的電腦第一眼是「無法連上這個網站」；改成伺服器開始接連線之後再開。"""
+    if os.environ.get("OPEN_BROWSER") != "1":
+        return
+    import webbrowser
+
+    url = f"http://127.0.0.1:{port}/"
+    threading.Timer(delay, lambda: webbrowser.open(url)).start()
+
+
 def main() -> None:
     host = str(cfg("server.host", "HOST", "127.0.0.1"))
     port = int(cfg("server.port", "PORT", 8796))
@@ -4588,8 +4602,18 @@ def main() -> None:
         print(f"         如果是這個伺服器已經開著：直接開 http://127.0.0.1:{port}/ 就好。")
         print("         要同時開第二份：先設 PORT=別的埠 再啟動。")
         print(f"         Port {port} is already in use. If the server is already running, open http://127.0.0.1:{port}/.")
+        # 多半是同一個伺服器還開著（又點了一次啟動檔）：照樣把網頁打開。
+        open_browser(port, delay=0)
+        time.sleep(0.5)
         raise SystemExit(1) from None
-    print(f"排字匣  http://{host}:{port}   畫面 {WEB.name}   Comfy {comfy_base()}")
+    base = comfy_base()
+    if workflows._comfy_answers(base, 1.0):
+        comfy_note = f"Comfy {base}"
+    elif not (os.environ.get("COMFY_API") or workflows.saved_comfy_api() or str(cfg("comfy.api", "", "")).strip()):
+        comfy_note = "Comfy 還沒開（找過 8188 和 ComfyUI Desktop 的 8000）：開好之後網頁會自動接上 / ComfyUI not found yet; the page connects when it starts"
+    else:
+        comfy_note = f"Comfy 連不到 {base}：開好 ComfyUI，或在網頁頂欄的 Comfy 燈號改網址 / cannot reach ComfyUI at {base}"
+    print(f"排字匣  http://{host}:{port}   畫面 {WEB.name}   {comfy_note}")
     print("allow    " + ",".join(str(n) for n in ALLOW_NETS))
     print(f"設定檔  {CONFIG_PATH}" + ("" if CONFIG else "（沒有，全部用預設值）"))
     # 第一次 clone 下來最常見的兩個「怎麼是空的」就是這兩項沒設定。
@@ -4646,6 +4670,7 @@ def main() -> None:
     removed = prune_hires_inputs()
     if removed:
         print(f"hires    清掉 {len(removed)} 張舊的上傳原圖，input/danbooru_hires 留下最近 {HIRES_INPUT_KEEP} 張")
+    open_browser(port)
     httpd.serve_forever()
 
 

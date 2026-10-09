@@ -14,10 +14,7 @@ PORT="${PORT:-8796}"
 export PORT PYTHONUTF8=1
 URL="http://127.0.0.1:$PORT/"
 echo "Mochi  $URL"
-(
-  sleep 2
-  if command -v open >/dev/null 2>&1; then open "$URL"
-  elif command -v xdg-open >/dev/null 2>&1; then xdg-open "$URL" >/dev/null 2>&1
-  fi
-) &
+# The server opens the browser once it accepts connections.
+OPEN_BROWSER=1
+export OPEN_BROWSER
 exec "$PY" server.py

@@ -15,6 +15,11 @@ The public application release [v1.0](https://github.com/bosen12/danbooru_tag_mo
 - Windows test diagnostics use UTF-8, and launcher fixtures isolate both ProgramFiles and ProgramW6432.
 - Added contribution instructions, issue forms, this changelog and verification evidence.
 - Community post drafts are kept locally and excluded from the public repository.
+- The launchers no longer open the browser before the server is up (fast machines showed “can't reach this page” first); the server opens it once it accepts connections, and also when Mochi was already running.
+- The server window says whether ComfyUI was found, instead of always printing an address.
+- A ComfyUI with no checkpoints at all gets “download an SDXL checkpoint into models/checkpoints”, not a file name you never picked.
+- The adult card-art question gives the real count and time (it said “about 600, over an hour”; with the current lexicon it is about 730 cards).
+- README: Getting started is three steps ending with Draw & generate; advanced notes moved to Configuration; troubleshooting covers ComfyUI Desktop, text-only cards and LoRA previews.
 - ComfyUI is found automatically: the regular version on port 8188 or ComfyUI Desktop on 8000. A URL you set in the page, `COMFY_API` or `comfy.api` still wins.
 - When ComfyUI rejects a workflow, the failed image says which node and value instead of “HTTP Error 400: Bad Request” (a model ComfyUI does not have, a custom node that is not installed). Running out of GPU memory says what to try.
 - The generation history survives a crash mid-write: the next entry no longer joins the broken line and gets lost with it.

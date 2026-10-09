@@ -28,6 +28,8 @@ echo bind      0.0.0.0:%PORT%/
 rem First-time setup (card art, LoRA Manager, upscale model, pose reference, card baking)
 rem runs inside the server and shows progress and questions in the page, so one launch
 rem finishes it even if ComfyUI is started later (setup_tasks.py).
-start "" "http://127.0.0.1:%PORT%/"
+rem The server opens the browser once it accepts connections (OPEN_BROWSER=1);
+rem opening it here first used to show "can't reach this page" on fast machines.
+set "OPEN_BROWSER=1"
 %PY% server.py
 if errorlevel 1 pause

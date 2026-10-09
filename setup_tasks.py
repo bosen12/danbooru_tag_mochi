@@ -127,11 +127,28 @@ def _run(key: str, args: list[str], show: bool = True) -> int:
         if not line:
             continue
         _log(f"{key}> {line}")
+        if key == "check":
+            _last_check[0] = line
         text = progress_text(line) if show else ""
         if text and key in _state:
             with _lock:
                 _state[key]["text"] = text
     return proc.wait()
+
+
+_last_check = [""]
+# 烘一張卡面大約幾秒（RTX 級顯卡實測 6.4 秒；估時用，寧可說多一點）。
+BAKE_SECONDS = 7
+
+
+def bake_ask_text(status_line: str) -> str:
+    """問要不要烘敏感／色情卡面：張數和時間照 bake_card_art --status 實際缺的算，不寫死。"""
+    m = re.search(r"(\d+) missing", status_line or "")
+    if not m:
+        return "不在公開下載包裡；用你的底模烘，要一段時間"
+    n = int(m.group(1))
+    minutes = max(1, round(n * BAKE_SECONDS / 60))
+    return f"不在公開下載包裡；用你的底模烘 {n} 張，大約 {minutes} 分鐘"
 
 
 def _check(script: str, *args: str) -> int:
@@ -334,7 +351,7 @@ def _bake() -> None:
     else:
         _set("bake", "done", "")
     if _check("bake_card_art.py") == 10:
-        _set("bake_adult", "ask", "不在公開下載包裡；用你的底模烘約 600 張，要一小時以上", answers=["yes", "no"])
+        _set("bake_adult", "ask", bake_ask_text(_last_check[0]), answers=["yes", "no"])
     else:
         _set("bake_adult", "done", "")
 

@@ -62,13 +62,9 @@ cd danbooru_tag_mochi
 2. **Start Mochi.**
    - Windows: double-click `start.bat`. It finds Python (or opens the download page if you have none) and opens your browser.
    - macOS / Linux: `./start.sh`, or `python3 server.py` and open <http://127.0.0.1:8796>.
-3. **Choose a checkpoint** with the model button in the top bar. It lists what ComfyUI has. Until you choose, Mochi picks an Illustrious / SDXL model from that list.
+3. **Press Draw & generate.** With nothing pinned, the engine draws every card itself, so the first image needs no setup. Mochi picks an Illustrious / SDXL checkpoint from ComfyUI's list until you choose one with the model button in the top bar. **Tour** in the top bar walks you through each room.
 
 Keep the server window open. After updating, reload the page with **Ctrl+F5**.
-
-Windows also respects `PORT` and `HOST` set before launch. For example, `set PORT=18812` then `start.bat` opens port 18812. Both launchers require Python 3.9+. Choosing **Never ask** for LoRA setup creates `.no-lora-manager-fetch`; delete it to restore the question. `NO_SETUP=1` skips every background setup step.
-
-The public repository has a v1.0 release. The latest main includes additional readiness fixes after that tag. See [release notes](CHANGELOG.md) and the [verification record](docs/RELEASE_VERIFICATION.md) for tested environments and limitations.
 
 ### Prepared on first start
 
@@ -82,6 +78,8 @@ The public repository has a v1.0 release. The latest main includes additional re
 
 **One launch does all of it**, on Windows, macOS and Linux alike. The server does the work in the background and a panel in the lower-left corner of the page shows each step, asks before optional LoRA installation/patching, pose setup and adult card baking, and offers **Restart ComfyUI** after something is installed into it (through ComfyUI-Manager; otherwise restart it yourself). If ComfyUI is not running yet, the steps that need it wait and continue as soon as you start it; there is no need to run `start.bat` again. The page opens straight away with placeholder cards; the panel tells you when to reload. Everything is logged in `data/setup.log`. People who already have everything never see the panel.
 
+The public repository has a v1.0 release. The latest main includes additional readiness fixes after that tag. See [release notes](CHANGELOG.md) and the [verification record](docs/RELEASE_VERIFICATION.md) for tested environments and limitations.
+
 ## Configuration
 
 **No configuration file is needed.** Everything a normal setup changes is in the page:
@@ -93,6 +91,8 @@ The public repository has a v1.0 release. The latest main includes additional re
 These are saved in `data/settings.json`. `config.json` (from `config.example.json`, git-ignored) is still read for advanced settings such as the port, host and timeouts; anything set in the page takes precedence.
 
 A fresh clone usually needs nothing at all: checkpoints and LoRAs come from ComfyUI, and with ComfyUI LoRA Manager (optional in first-time setup) they have names, preview images and trigger words. Previews are relayed by this server, so they also show on a phone over Tailscale.
+
+Windows also respects `PORT` and `HOST` set before launch. For example, `set PORT=18812` then `start.bat` opens port 18812. Both launchers require Python 3.9+. Choosing **Never ask** for LoRA setup creates `.no-lora-manager-fetch`; delete it to restore the question. `NO_SETUP=1` skips every background setup step.
 
 | `config.json` | Meaning |
 |---|---|
@@ -136,7 +136,9 @@ tests/               node tests/test_i18n.mjs
 
 - **The `.bat` window closes at once.** Install Python 3 with *Add python.exe to PATH* ticked, or run `py -3 server.py` in this folder to read the error.
 - **"Port 8796 is already in use".** Mochi is probably already running: open <http://127.0.0.1:8796/>. To run a second copy, set `PORT` to another port first.
-- **The top bar keeps saying Comfy is offline.** ComfyUI is not running, or not at `comfy.api`.
+- **The top bar keeps saying Comfy is offline.** Start ComfyUI; Mochi finds it on 8188 or ComfyUI Desktop's 8000 by itself and connects within seconds. If ComfyUI runs elsewhere (another port, another computer), click the Comfy indicator and enter its URL.
+- **Cards show only text, no pictures.** First start is still downloading the card art (about 100 MB); the panel in the lower-left shows progress and tells you when to reload.
+- **The LoRA panel has no previews or trigger words.** Allow the ComfyUI LoRA Manager install in the setup panel, then restart ComfyUI once.
 - **"Could not load the card library".** Open Mochi through `start.bat`, `start.sh` or `server.py`, not by opening the HTML file.
 - **Generation stops half-way.** Raise `client.streamIdleMs` for slow GPUs.
 
@@ -205,11 +207,7 @@ cd danbooru_tag_mochi
 
 1. **先把 ComfyUI 開起來**（一般版 8188 或 ComfyUI Desktop 的 8000 都會自動找到；在別的位址就點頂欄的 Comfy 燈號填網址）。
 2. **開墨池。** Windows 雙擊 `start.bat`（沒裝 Python 會直接打開下載頁）；macOS / Linux 跑 `./start.sh`，或 `python3 server.py` 再開 <http://127.0.0.1:8796>。
-3. **選底模。** 頂欄的模型按鈕列出 ComfyUI 有的 checkpoint。還沒選之前，墨池會從清單裡挑一個 Illustrious／SDXL 的。
-
-Windows 會保留啟動前設定的 `PORT`／`HOST`；例如先 `set PORT=18812` 再跑 `start.bat`。兩種啟動檔都要求 Python 3.9+。LoRA 選「不要再問」會建立 `.no-lora-manager-fetch`，刪除此檔可恢復詢問；`NO_SETUP=1` 可略過所有背景準備。
-
-v1.0 已公開；最新 main 已加入該標籤之後的發布準備修正。已測環境和限制見 [發布紀錄](CHANGELOG.md) 與 [驗證紀錄](docs/RELEASE_VERIFICATION.md)。
+3. **按「抽並生圖」。** 什麼都沒釘也行：引擎會把每一格都抽好，第一張圖不必先設定任何東西。底模在你用頂欄的模型按鈕選之前，墨池會從 ComfyUI 的清單挑一個 Illustrious／SDXL 的。頂欄的「導覽」會一步一步帶你走每個房間。
 
 ### 第一次啟動會準備的東西
 
@@ -223,9 +221,13 @@ v1.0 已公開；最新 main 已加入該標籤之後的發布準備修正。已
 
 **啟動一次就全部做完**（Windows、macOS、Linux 都一樣）：伺服器在背景做，網頁左下角的面板顯示每一步、詢問 LoRA 安裝／修補、姿勢參考與成人卡面烘焙，裝進 ComfyUI 的東西需要重開時給一顆「重開 ComfyUI」（透過 ComfyUI-Manager；沒有就自己重開）。ComfyUI 還沒開的話，要用到它的步驟會等，一開就接著做，不用再跑一次 `start.bat`。網頁照常先開（先是字的佔位牌），面板會告訴你什麼時候重新整理。過程記在 `data/setup.log`。東西都已經有的人完全看不到這個面板。
 
+v1.0 已公開；最新 main 已加入該標籤之後的發布準備修正。已測環境和限制見 [發布紀錄](CHANGELOG.md) 與 [驗證紀錄](docs/RELEASE_VERIFICATION.md)。
+
 ## 設定
 
 **不需要設定檔。** 一般會改的都在網頁上：ComfyUI 位址點頂欄的 Comfy 燈號；LoRA、底模的資料夾在 LoRA／底模面板的「**偏好路徑**」——點 ComfyUI 回報的資料夾（附模型數）、貼上路徑，或按「選資料夾…」在這台電腦上跳出資料夾視窗；只列那個資料夾底下的，按「全部」改回來。這些存在 `data/settings.json`。`config.json`（從 `config.example.json` 複製，不進版控）只剩埠號、逾時這類進階設定，網頁上設的優先。
+
+Windows 會保留啟動前設定的 `PORT`／`HOST`；例如先 `set PORT=18812` 再跑 `start.bat`。兩種啟動檔都要求 Python 3.9+。LoRA 選「不要再問」會建立 `.no-lora-manager-fetch`，刪除此檔可恢復詢問；`NO_SETUP=1` 可略過所有背景準備。
 
 新 clone 通常什麼都不用改：底模、LoRA 清單直接問 ComfyUI，有 LoRA Manager（準備面板可選擇安裝）就連預覽圖、觸發詞都有，手機走 Tailscale 也看得到。常用的有 `comfy.api`、`comfy.ckpt`（要跟 ComfyUI 清單一字不差）、`comfy.checkpointDir`（底模預覽圖）、`paths.loraRoot`（沒有 LoRA Manager 時才用：自己掃資料夾拿預覽圖與觸發詞）、`server.port`（預設 8796）、`client.streamIdleMs`（慢顯卡調大）。環境變數優先於設定檔。
 
@@ -239,7 +241,9 @@ LoRA 面板的「詳情」在 ComfyUI 的 LoRA Manager 直接打開那一個 LoR
 
 - **bat 一閃就關**：要先裝 Python 3，安裝時勾 *Add python.exe to PATH*；或在本資料夾跑 `py -3 server.py` 看錯誤。
 - **「8796 已經有程式在用」**：多半是墨池已經開著，直接開 <http://127.0.0.1:8796/>。要同時開第二份，先設 `PORT=別的埠`。
-- **一直顯示 Comfy 未連上**：ComfyUI 沒開，或不在 `comfy.api` 的位址。
+- **一直顯示 Comfy 未連上**：先開 ComfyUI；一般版 8188、ComfyUI Desktop 的 8000 墨池會自己找到，幾秒內接上。ComfyUI 在別的埠或別台電腦，就點頂欄的 Comfy 燈號填網址。
+- **牌只有字、沒有圖**：第一次啟動還在下載卡面（約 100 MB），左下角的面板有進度，好了會叫你重新整理。
+- **LoRA 面板沒有預覽圖和觸發詞**：在準備面板允許安裝 ComfyUI LoRA Manager，裝好重開 ComfyUI 一次。
 - **「讀不到詞庫」**：用 `start.bat`／`start.sh`／`server.py` 開，不要直接點 HTML。
 - **生圖到一半停掉**：把 `client.streamIdleMs` 調大。
 

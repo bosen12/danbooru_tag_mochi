@@ -856,7 +856,7 @@ ComfyUI 在別台電腦：這台不動它|ComfyUI runs on another computer. Noth
 另一個視窗正在烘|Already baking in another window
 用你的 ComfyUI 烘還沒有的全年齡卡面|Baking missing all-ages cards with your ComfyUI
 用你的 ComfyUI 烘敏感、色情卡面|Baking sensitive and explicit cards with your ComfyUI
-不在公開下載包裡；用你的底模烘約 600 張，要一小時以上|Not in the public download. Baking about 600 cards with your checkpoint takes over an hour.
+不在公開下載包裡；用你的底模烘，要一段時間|Not in the public download. Baking them with your checkpoint takes a while.
 不再問（刪掉 .no-pose-fetch 就會再問）|Will not ask again (delete .no-pose-fetch to be asked)
 不再問（刪掉 .no-lora-manager-fetch 就會再問）|Will not ask again (delete .no-lora-manager-fetch to be asked)
 選用：修改 LoRA Manager 的 loras.js，讓詳情連結直接開啟指定 LoRA；不用重開 ComfyUI|Optional: modify LoRA Manager's loras.js so Details opens the selected LoRA directly. No ComfyUI restart is needed.
@@ -1420,6 +1420,7 @@ LoRA：沒設定 paths.loraRoot，改問 ComfyUI 也失敗了：{0}|LoRA: no LoR
 第一次使用：準備中 {0}/{1}|First-time setup {0}/{1}
 重開失敗（{0}）：請自己重開 ComfyUI|Restart failed ({0!}). Restart ComfyUI yourself.
 {0}（下次啟動接著抓）|{0} (resumes next launch)
+不在公開下載包裡；用你的底模烘 {0} 張，大約 {1} 分鐘|Not in the public download. Baking {0} cards with your checkpoint takes about {1} minutes.
 顯示卡記憶體不夠（{0}）：尺寸調小、先不要 Hires，或關掉同時在跑的東西再試|Out of GPU memory ({0!}). Use a smaller size, skip Hires, or close whatever else is running, then try again.
 顯示卡記憶體不夠：尺寸調小、先不要 Hires，或關掉同時在跑的東西再試|Out of GPU memory. Use a smaller size, skip Hires, or close whatever else is running, then try again.
 ComfyUI 跑到一半出錯（{0}）：{1}|ComfyUI failed while generating ({0!}): {1!}
@@ -1432,6 +1433,7 @@ ComfyUI 退件：{0}|ComfyUI rejected the workflow: {0}
 ComfyUI 沒有裝「{0}」這個節點：用 ComfyUI-Manager 的「Install Missing Custom Nodes」裝好、重開 ComfyUI 再試|This ComfyUI does not have the “{0!}” node. Install it with ComfyUI-Manager's Install Missing Custom Nodes, restart ComfyUI and try again.
 字盒裡沒有「{0}」。|No card matches “{0!}”.
 看全部|Show all
+ComfyUI 裡還沒有任何底模：下載一個 SDXL 底模（建議 Illustrious 系，例如 WAI-Illustrious）放進 ComfyUI 的 models/checkpoints，重開 ComfyUI 再試|ComfyUI has no checkpoints yet. Download an SDXL checkpoint (an Illustrious model such as WAI-Illustrious is recommended) into ComfyUI's models/checkpoints, restart ComfyUI and try again.
 下面決定排字匣要改這套工作流的哪些地方，沒選的保留它的原值。|Choose what Danbooru Case changes in this workflow. Anything not picked keeps the workflow's value.
 沒選就是內建。要用自己的工作流：把 ComfyUI 用它畫的任何一張 PNG 拖進來，或匯入「匯出工作流 (API)」的 JSON。|Built in unless you pick one. To use your own workflow, drop any PNG ComfyUI made with it, or import the JSON from Export (API).
 匯入工作流…|Import workflow…

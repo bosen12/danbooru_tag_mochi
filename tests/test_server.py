@@ -127,6 +127,8 @@ _rej = server.comfy_rejection_text({
 ok("comfy rejection: missing model named", "gone.safetensors" in _rej and "CheckpointLoaderSimple" in _rej and "#4" in _rej, _rej)
 _rej2 = server.comfy_rejection_text({"error": {"type": "missing_node_type", "message": "Node 'FooNode' not found.", "extra_info": {"class_type": "FooNode"}}, "node_errors": {}})
 ok("comfy rejection: missing custom node named", "FooNode" in _rej2 and "Install Missing Custom Nodes" in _rej2, _rej2)
+_rej3 = server.comfy_rejection_text({"error": {"type": "prompt_outputs_failed_validation"}, "node_errors": {"13": {"class_type": "CheckpointLoaderSimple", "errors": [{"type": "value_not_in_list", "details": "ckpt_name: 'x.safetensors' not in []"}]}}})
+ok("comfy rejection: no checkpoints at all says download one", "還沒有任何底模" in _rej3 and "x.safetensors" not in _rej3, _rej3)
 _oom = server.comfy_exec_error_text({"node_type": "KSampler", "exception_message": "Allocation on device 0 would exceed allowed memory. (out of memory)\nCurrently allocated: 7.2 GiB"})
 ok("comfy exec error: out of memory explained", "顯示卡記憶體不夠" in _oom and "KSampler" in _oom, _oom)
 ok("comfy exec error: other errors keep the first line", server.comfy_exec_error_text({"node_type": "VAEDecode", "exception_message": "boom\nstack"}) == "ComfyUI 跑到一半出錯（VAEDecode）：boom")
@@ -1785,6 +1787,22 @@ ok("comfy detect: finds the second address when the first is down", wfmod.detect
 _fake.shutdown()
 wfmod.COMFY_CANDIDATES = _old_cands
 wfmod._DETECT.update(base="", t=0.0, ok=False)
+
+# 啟動檔設 OPEN_BROWSER=1：伺服器開始接連線之後才開瀏覽器（以前 start.bat 先開，快的電腦會撲空）。
+import webbrowser as _wb
+_opened = []
+_old_open = _wb.open
+_wb.open = lambda url, *a, **k: _opened.append(url)
+_env_os.environ.pop("OPEN_BROWSER", None)
+server.open_browser(8796, delay=0)
+_th.Event().wait(0.2)
+ok("open browser: off unless the launcher asks", _opened == [], str(_opened))
+_env_os.environ["OPEN_BROWSER"] = "1"
+server.open_browser(8796, delay=0)
+_th.Event().wait(0.3)
+ok("open browser: opens the local page", _opened == ["http://127.0.0.1:8796/"], str(_opened))
+_env_os.environ.pop("OPEN_BROWSER", None)
+_wb.open = _old_open
 
 # 出圖日誌：上次寫到半行就斷電，下一筆不能黏在殘行後面一起丟掉。
 import gen_log as _gl
