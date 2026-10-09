@@ -314,7 +314,10 @@ def comfy_base() -> str:
     saved = workflows.saved_comfy_api()
     if saved:
         return saved
-    return str(cfg("comfy.api", "", "http://127.0.0.1:8188")).rstrip("/")
+    configured = str(cfg("comfy.api", "", "")).strip()
+    if configured:
+        return configured.rstrip("/")
+    return workflows.detect_comfy_base()
 
 
 class ComfyRejected(RuntimeError):

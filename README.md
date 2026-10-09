@@ -47,7 +47,7 @@ The **Intro film** (`/intro.html`, 3 min) and the **Tutorial** (`/tutorial.html`
 | | Version | Why |
 |---|---|---|
 | **Python** | 3.9 or newer | Runs `server.py`. Standard library only; nothing to `pip install` |
-| **ComfyUI** | default `http://127.0.0.1:8188` | Generates the images |
+| **ComfyUI** | found automatically at `127.0.0.1:8188` or ComfyUI Desktop's `127.0.0.1:8000` | Generates the images |
 | **SDXL checkpoint** | WAI / Illustrious recommended | The lexicon is tuned for Danbooru tags |
 | Browser | Chrome, Edge, Firefox or Safari from the last three years | Uses `:has()`, `popover`, `oklch()` and container queries |
 
@@ -58,7 +58,7 @@ git clone https://github.com/bosen12/danbooru_tag_mochi.git
 cd danbooru_tag_mochi
 ```
 
-1. **Start ComfyUI** and check that <http://127.0.0.1:8188> opens.
+1. **Start ComfyUI** (the regular version on port 8188 or ComfyUI Desktop on 8000; Mochi finds either. Elsewhere, click the Comfy indicator in the top bar and enter the URL).
 2. **Start Mochi.**
    - Windows: double-click `start.bat`. It finds Python (or opens the download page if you have none) and opens your browser.
    - macOS / Linux: `./start.sh`, or `python3 server.py` and open <http://127.0.0.1:8796>.
@@ -194,7 +194,7 @@ Mochi code is distributed under **GNU GPLv3 only (`GPL-3.0-only`)**, see [LICENS
 
 ## 你需要先有什麼
 
-Python 3.9 以上（只用標準函式庫）、ComfyUI（預設 `http://127.0.0.1:8188`）、SDXL checkpoint（建議 WAI / Illustrious）、近三年的 Chrome / Edge / Firefox / Safari。
+Python 3.9 以上（只用標準函式庫）、ComfyUI（自動找 `127.0.0.1:8188`，或 ComfyUI Desktop 的 `8000`）、SDXL checkpoint（建議 WAI / Illustrious）、近三年的 Chrome / Edge / Firefox / Safari。
 
 ## 上手
 
@@ -203,7 +203,7 @@ git clone https://github.com/bosen12/danbooru_tag_mochi.git
 cd danbooru_tag_mochi
 ```
 
-1. **先把 ComfyUI 開起來**，確認 <http://127.0.0.1:8188> 打得開。
+1. **先把 ComfyUI 開起來**（一般版 8188 或 ComfyUI Desktop 的 8000 都會自動找到；在別的位址就點頂欄的 Comfy 燈號填網址）。
 2. **開墨池。** Windows 雙擊 `start.bat`（沒裝 Python 會直接打開下載頁）；macOS / Linux 跑 `./start.sh`，或 `python3 server.py` 再開 <http://127.0.0.1:8796>。
 3. **選底模。** 頂欄的模型按鈕列出 ComfyUI 有的 checkpoint。還沒選之前，墨池會從清單裡挑一個 Illustrious／SDXL 的。
 

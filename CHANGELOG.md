@@ -15,6 +15,7 @@ The public application release [v1.0](https://github.com/bosen12/danbooru_tag_mo
 - Windows test diagnostics use UTF-8, and launcher fixtures isolate both ProgramFiles and ProgramW6432.
 - Added contribution instructions, issue forms, this changelog and verification evidence.
 - Community post drafts are kept locally and excluded from the public repository.
+- ComfyUI is found automatically: the regular version on port 8188 or ComfyUI Desktop on 8000. A URL you set in the page, `COMFY_API` or `comfy.api` still wins.
 - When ComfyUI rejects a workflow, the failed image says which node and value instead of “HTTP Error 400: Bad Request” (a model ComfyUI does not have, a custom node that is not installed). Running out of GPU memory says what to try.
 - The generation history survives a crash mid-write: the next entry no longer joins the broken line and gets lost with it.
 - Your own workflow: drop any PNG ComfyUI made with it (the image carries the workflow), not only an Export (API) JSON.

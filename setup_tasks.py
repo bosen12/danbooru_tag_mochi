@@ -111,6 +111,9 @@ def _failed(what: str) -> str:
 def _run(key: str, args: list[str], show: bool = True) -> int:
     """開子程序跑 scripts/ 底下的腳本。show：認得的進度行換成中文，當成畫面上的進度。"""
     env = {**os.environ, "PYTHONUTF8": "1", "PYTHONIOENCODING": "utf-8", "CARD_FETCH_STARTED": "1"}
+    # 下載、安裝腳本是另外開的程序：直接給它伺服器找到的 ComfyUI（例如 Desktop 的 8000），不要各自猜。
+    if not env.get("COMFY_API") and _comfy_base:
+        env["COMFY_API"] = _base()
     cmd = [sys.executable, "-u", str(SCRIPTS / args[0]), *args[1:]]
     _log("run " + " ".join(args))
     try:

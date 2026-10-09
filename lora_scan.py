@@ -150,10 +150,11 @@ def preview_path(folder: str, fn: str) -> Path | None:
 
 
 def comfy_base() -> str:
-    """ComfyUI 位址：環境變數 > 畫面上存的 > config.json > 預設。"""
+    """ComfyUI 位址：環境變數 > 畫面上存的 > config.json > 自動找（8188、ComfyUI Desktop 的 8000）。"""
     env = os.environ.get("COMFY_API", "").strip()
     saved = workflows.saved_comfy_api()
-    return (env or saved or str(cfg("comfy.api", "", workflows.DEFAULT_COMFY_API))).rstrip("/")
+    configured = str(cfg("comfy.api", "", "")).strip()
+    return (env or saved or configured or workflows.detect_comfy_base()).rstrip("/")
 
 
 # ---------- ComfyUI 的 LoRA Manager（custom node：willmiao/ComfyUI-Lora-Manager） ----------

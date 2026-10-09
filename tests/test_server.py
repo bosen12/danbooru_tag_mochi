@@ -1767,6 +1767,25 @@ finally:
     _ls.lora_manager_list, _ls.comfy_model_dirs, server.models_from_comfy, server.lm_checkpoints = _saved
     _ls.reset_cache()
 
+# 沒設定 ComfyUI 位址時自動找：8188 沒有就試 ComfyUI Desktop 的 8000（這裡用假的伺服器代替）。
+import http.server as _hs
+class _FakeComfy(_hs.BaseHTTPRequestHandler):
+    def do_GET(self):
+        body = b'{"system": {"os": "test"}}' if self.path == "/system_stats" else b"{}"
+        self.send_response(200); self.send_header("Content-Type", "application/json"); self.end_headers(); self.wfile.write(body)
+    def log_message(self, *a):
+        pass
+_fake = _hs.HTTPServer(("127.0.0.1", 0), _FakeComfy)
+_th.Thread(target=_fake.serve_forever, daemon=True).start()
+_dead = socket.socket(); _dead.bind(("127.0.0.1", 0)); _dead_port = _dead.getsockname()[1]; _dead.close()
+_old_cands = wfmod.COMFY_CANDIDATES
+wfmod.COMFY_CANDIDATES = (f"http://127.0.0.1:{_dead_port}", f"http://127.0.0.1:{_fake.server_port}")
+wfmod._DETECT.update(base="", t=0.0, ok=False)
+ok("comfy detect: finds the second address when the first is down", wfmod.detect_comfy_base() == f"http://127.0.0.1:{_fake.server_port}", wfmod.detect_comfy_base())
+_fake.shutdown()
+wfmod.COMFY_CANDIDATES = _old_cands
+wfmod._DETECT.update(base="", t=0.0, ok=False)
+
 # 出圖日誌：上次寫到半行就斷電，下一筆不能黏在殘行後面一起丟掉。
 import gen_log as _gl
 _glp = _gl._path()

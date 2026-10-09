@@ -9,8 +9,10 @@ import os
 import re
 import tempfile
 import threading
+import time
 import unicodedata
 import urllib.parse
+import urllib.request
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
@@ -143,6 +145,33 @@ def apply_mapping(workflow: dict, mapping: dict | None, values: dict | None) -> 
             if strength_input and strength is not None:
                 patch("lora-strength", float(strength), {**spec, "input": strength_input})
     return runtime
+
+
+# 沒設定位址時自動找 ComfyUI：一般版預設 8188，ComfyUI Desktop 預設 8000。
+# 以前固定 8188，用 Desktop 的人第一次打開只看到「Comfy 未連」，得自己找地方改網址。
+COMFY_CANDIDATES = ("http://127.0.0.1:8188", "http://127.0.0.1:8000")
+_DETECT = {"base": "", "t": 0.0}
+_DETECT_LOCK = threading.Lock()
+
+
+def _comfy_answers(base: str, timeout: float = 0.6) -> bool:
+    try:
+        with urllib.request.urlopen(base + "/system_stats", timeout=timeout) as resp:
+            return resp.status == 200 and b"system" in resp.read(4096)
+    except Exception:
+        return False
+
+
+def detect_comfy_base() -> str:
+    """找到的記 30 秒（找不到記 5 秒），不必每個請求都探一次；連著的那個掛了，下次換一個。"""
+    now = time.time()
+    with _DETECT_LOCK:
+        if _DETECT["base"] and now - _DETECT["t"] < (30 if _DETECT.get("ok") else 5):
+            return _DETECT["base"]
+    found = next((c for c in COMFY_CANDIDATES if _comfy_answers(c)), "")
+    with _DETECT_LOCK:
+        _DETECT.update(base=found or COMFY_CANDIDATES[0], t=time.time(), ok=bool(found))
+        return _DETECT["base"]
 
 
 def normalize_comfy_url(raw: str | None) -> str:
