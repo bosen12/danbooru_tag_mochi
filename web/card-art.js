@@ -486,10 +486,23 @@ function castOf(item) {
     if (tag === "yuri") return ["2girls", "yuri", "adult"];
   }
   if (HETERO_PICTURE.has(tag)) return ["1girl", "1boy", "hetero", "adult"];
+  // 協力性事在 Danbooru 約 97% 是多個女生、約 74% 是兩女一男，不是一個女生加多個男生。
+  if (tag === "teamwork (sexual)") return ["2girls", "1boy", "multiple girls", "adult"];
+  // 幫忙乳交只寫 2girls 時，乳交特寫會把第二個女生裁掉。
+  if (tag === "assisted paizuri") return ["2girls", "1boy", "multiple girls", "adult"];
+  // 被夾、團體照多數是三個女生，但仍有不少男生，所以只改卡片。
+  if (tag === "sandwiched" || tag === "group picture") return ["3girls", "multiple girls", "adult"];
   if (needs.has("five")) return ["4girls", "1boy", "adult"];
+  // 只要男生、而且要兩個男生：胸肌相抵、胸肌夾莖幾乎沒有女生。
+  if (item.gate === "male" && needs.has("2male") && !needs.has("female")) return ["2boys", "adult male"];
   if (needs.has("2female") && needs.has("male")) return ["2girls", "1boy", "adult"];
+  // 至少兩個女生、四人以上，而且沒有要求男生：排比胸、被胸包圍。
+  if (needs.has("2female") && needs.has("crowd") && !needs.has("male")) return ["4girls", "multiple girls", "adult"];
+  // 至少兩個女生再加第三人，第三個多半也是女生。抽籤仍允許中間是男生。
+  if (needs.has("2female") && needs.has("group") && !needs.has("male")) return ["3girls", "multiple girls", "adult"];
   if (needs.has("yuri") || needs.has("2female")) return ["2girls", "yuri", "adult"];
   if (needs.has("2male")) return ["1girl", "2boys", "adult"];
+  // 其餘的 group／crowd 維持一個女生加多個男生（輪姦、群交、3P、被手包圍）。
   if (needs.has("group") || needs.has("crowd")) return ["1girl", "multiple boys", "adult"];
   if (needs.has("pair")) return ["1girl", "1boy", "hetero", "adult"];
   if (item.gate === "male" || needs.has("male")) {
@@ -530,10 +543,13 @@ export function artPrompt(item, ctx = {}) {
   } else if (item.section === "env") {
     parts = [...castFor(item), item.tag, ...extra, "full body"];
   } else {
+    const cast = castFor(item);
     const framed = extra.some((e) => /\b(body|shot|portrait)\b/.test(e));
-    const frame = framed ? "" : PERSON_FRAME[item.group] ?? "upper body";
+    let frame = framed ? "" : PERSON_FRAME[item.group] ?? "upper body";
+    // 多個女生擠在上半身時，中間那個會被畫成小孩。已經是全身的鏡頭不動。
+    if (cast.includes("multiple girls") && !framed && !/\bfull body\b/.test(frame)) frame = "full body, standing";
     const bg = item.group === "camera" || item.group === "sex" ? "simple background" : "simple background, white background";
-    parts = [...castFor(item), item.tag, ...extra, frame, bg];
+    parts = [...cast, item.tag, ...extra, frame, bg];
   }
   const tags = [...new Set(parts.join(", ").split(",").map((s) => s.trim()).filter(Boolean))];
   const negative = [artNegative(tags), ART_NEG[item.tag], HETERO_PICTURE.has(item.tag) ? "yaoi" : ""].filter(Boolean).join(", ");

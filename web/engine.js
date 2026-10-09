@@ -3164,6 +3164,15 @@ function ensureCast(parts, settings, ctx) {
   if (ctx.needMale && !ctx.needYuri && !hasMale(out)) out.push("1boy");
   if (ctx.need2Female && !ctx.needYaoi) out = bumpGender(out, true, 2);
   if (ctx.need2Male && !ctx.needYuri) out = bumpGender(out, false, 2);
+  // 排比胸、被胸包圍要多個女生再湊滿四人。男女都開時，下面的平衡會補成兩女兩男；
+  // 丹維幾乎沒有兩個男生。別的牌自己要求人群（輪姦、4P、5P）時不走這裡。
+  // 已經有男生就留著，差的人數補女生，不要再補第二個男生。
+  if (ctx.girlCrowd >= 4 && !ctx.needYaoi) {
+    if (!ctx.needMale) out = out.filter((t) => !MALE_COUNT.has(t));
+    const boys = genderCount(out, false);
+    const wantGirls = Math.max(2, ctx.girlCrowd - boys);
+    out = bumpGender(out, true, Math.min(wantGirls, 5));
+  }
   const min = ctx.needFive ? 5 : ctx.needCrowd ? 4 : ctx.needGroup ? 3 : ctx.needPair ? 2 : 1;
   const canGirl = settings.girl !== false && !ctx.needYaoi;
   const canBoy = settings.boy !== false && !ctx.needYuri;
@@ -3363,6 +3372,8 @@ function pinContext(lex, pinned) {
   let need2Female = false;
   let needYuri = false;
   let needYaoi = false;
+  let girlCrowd = 0;
+  let otherCrowd = false;
   const heatLists = [];
   const eraLists = [];
   for (const tag of pinned) {
@@ -3379,6 +3390,14 @@ function pinContext(lex, pinned) {
     if (needs.includes("group")) needGroup = true;
     if (needs.includes("crowd")) needCrowd = true;
     if (needs.includes("five")) needFive = true;
+    const asksCrowd = needs.includes("crowd") || needs.includes("five");
+    const girlSide = needs.includes("2female")
+      && !needs.includes("male")
+      && !needs.includes("2male")
+      && !needs.includes("yaoi")
+      && item.gate !== "male";
+    if (asksCrowd && girlSide) girlCrowd = Math.max(girlCrowd, needs.includes("five") ? 5 : 4);
+    else if (asksCrowd) otherCrowd = true;
     if (needs.includes("2male")) {
       needMale = true;
       need2Male = true;
@@ -3406,7 +3425,8 @@ function pinContext(lex, pinned) {
     const e = erasOf(item);
     if (e) eraLists.push(e);
   }
-  return { needFemale, needMale, needPair, needGroup, needCrowd, needFive, need2Male, need2Female, needYuri, needYaoi, heatLists, eraLists };
+  if (otherCrowd || needYaoi) girlCrowd = 0;
+  return { needFemale, needMale, needPair, needGroup, needCrowd, needFive, need2Male, need2Female, needYuri, needYaoi, girlCrowd, heatLists, eraLists };
 }
 
 function intersectOrUnion(lists) {

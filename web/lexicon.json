@@ -544,13 +544,13 @@
     "masterpiece": "傑作",
     "best quality": "最高品質",
     "amazing quality": "極致品質",
+    "nsfw": "限制級",
+    "explicit": "露骨",
     "absurdres": "超高解析",
     "highres": "高解析",
     "very aesthetic": "非常有美感",
     "highly aesthetic": "極有美感",
-    "newest": "最新風",
-    "nsfw": "限制級",
-    "explicit": "露骨"
+    "newest": "最新風"
   },
   "tags": [
     {
@@ -53639,6 +53639,3600 @@
       "group": "other",
       "sub": "obj_build",
       "zh": "鎖鏈"
+    },
+    {
+      "tag": "presenting own breasts",
+      "section": "feature",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "body_f",
+      "sub": "bf_touch",
+      "needs": [
+        "female"
+      ],
+      "zh": "捧胸獻上"
+    },
+    {
+      "tag": "handsfree breast squeeze",
+      "section": "feature",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "body_f",
+      "sub": "bf_touch",
+      "needs": [
+        "female"
+      ],
+      "zh": "無手擠胸"
+    },
+    {
+      "tag": "poking own breast",
+      "section": "feature",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "body_f",
+      "sub": "bf_touch",
+      "needs": [
+        "female"
+      ],
+      "zh": "戳自己胸"
+    },
+    {
+      "tag": "sucking own breasts",
+      "section": "feature",
+      "gate": "female",
+      "heat": [
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "skin",
+      "era": [
+        "any"
+      ],
+      "group": "body_f",
+      "sub": "bf_touch",
+      "needs": [
+        "female"
+      ],
+      "zh": "自吸乳房"
+    },
+    {
+      "tag": "spread nipple",
+      "section": "feature",
+      "gate": "female",
+      "heat": [
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "skin",
+      "era": [
+        "any"
+      ],
+      "group": "body_f",
+      "sub": "bf_touch",
+      "needs": [
+        "female"
+      ],
+      "zh": "撥開乳頭"
+    },
+    {
+      "tag": "licking own nipple",
+      "section": "feature",
+      "gate": "female",
+      "heat": [
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "skin",
+      "era": [
+        "any"
+      ],
+      "group": "body_f",
+      "sub": "bf_touch",
+      "needs": [
+        "female"
+      ],
+      "zh": "舔自己乳頭"
+    },
+    {
+      "tag": "self milking",
+      "section": "feature",
+      "gate": "female",
+      "heat": [
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [
+        "lactation"
+      ],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "body_f",
+      "sub": "bf_touch",
+      "needs": [
+        "female"
+      ],
+      "zh": "自己擠奶"
+    },
+    {
+      "tag": "lactating into container",
+      "section": "feature",
+      "gate": "female",
+      "heat": [
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [
+        "lactation"
+      ],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "body_f",
+      "sub": "bf_touch",
+      "needs": [
+        "female"
+      ],
+      "zh": "擠進容器"
+    },
+    {
+      "tag": "excessive lactation",
+      "section": "feature",
+      "gate": "female",
+      "heat": [
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [
+        "lactation"
+      ],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "other",
+      "sub": "bf_intimate",
+      "needs": [
+        "female"
+      ],
+      "zh": "大量泌乳"
+    },
+    {
+      "tag": "projectile lactation",
+      "section": "feature",
+      "gate": "female",
+      "heat": [
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [
+        "lactation"
+      ],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "other",
+      "sub": "bf_intimate",
+      "needs": [
+        "female"
+      ],
+      "zh": "噴乳"
+    },
+    {
+      "tag": "grabbing own pectoral",
+      "section": "feature",
+      "gate": "male",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "body_m",
+      "sub": "bm_build",
+      "needs": [
+        "male"
+      ],
+      "zh": "抓自己胸肌"
+    },
+    {
+      "tag": "pectoral squeeze",
+      "section": "feature",
+      "gate": "male",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "body_m",
+      "sub": "bm_build",
+      "needs": [
+        "male"
+      ],
+      "zh": "擠胸肌"
+    },
+    {
+      "tag": "pectoral lift",
+      "section": "feature",
+      "gate": "male",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "body_m",
+      "sub": "bm_build",
+      "needs": [
+        "male"
+      ],
+      "zh": "托起胸肌"
+    },
+    {
+      "tag": "pectoral press",
+      "section": "feature",
+      "gate": "male",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "body_m",
+      "sub": "bm_build",
+      "needs": [
+        "male"
+      ],
+      "zh": "胸肌貼壓"
+    },
+    {
+      "tag": "hands on own chest",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "tease",
+      "sub": "pose_hand",
+      "mutexExtra": [
+        "both_arms",
+        "hand_g"
+      ],
+      "zh": "按胸口"
+    },
+    {
+      "tag": "groping motion",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "tease",
+      "sub": "pose_hand",
+      "mutexExtra": [
+        "both_arms",
+        "hand_g"
+      ],
+      "zh": "揉胸手勢"
+    },
+    {
+      "tag": "hand on another's chest",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "tease",
+      "sub": "pose_two",
+      "needs": [
+        "pair"
+      ],
+      "zh": "按對方胸"
+    },
+    {
+      "tag": "hands on another's chest",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "tease",
+      "sub": "pose_two",
+      "needs": [
+        "pair"
+      ],
+      "mutexExtra": [
+        "both_arms"
+      ],
+      "zh": "雙手按胸"
+    },
+    {
+      "tag": "guiding hand",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "tease",
+      "sub": "pose_two",
+      "needs": [
+        "pair"
+      ],
+      "zh": "拉手引導"
+    },
+    {
+      "tag": "hand under shirt",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [
+        "shirt",
+        "hand under clothes"
+      ],
+      "layer": "normal",
+      "era": [
+        "modern",
+        "victorian"
+      ],
+      "group": "flash",
+      "sub": "flash_lift",
+      "zh": "手探上衣"
+    },
+    {
+      "tag": "hand in bra",
+      "section": "pose",
+      "gate": "female",
+      "heat": [
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [
+        "bra"
+      ],
+      "layer": "normal",
+      "era": [
+        "modern"
+      ],
+      "group": "flash",
+      "sub": "flash_lift",
+      "needs": [
+        "female"
+      ],
+      "zh": "手探胸罩"
+    },
+    {
+      "tag": "hand in own bra",
+      "section": "pose",
+      "gate": "female",
+      "heat": [
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [
+        "bra"
+      ],
+      "layer": "normal",
+      "era": [
+        "modern"
+      ],
+      "group": "flash",
+      "sub": "flash_lift",
+      "needs": [
+        "female"
+      ],
+      "zh": "手探自己胸罩"
+    },
+    {
+      "tag": "hand in another's bra",
+      "section": "pose",
+      "gate": "female",
+      "heat": [
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [
+        "bra"
+      ],
+      "layer": "normal",
+      "era": [
+        "modern"
+      ],
+      "group": "flash",
+      "sub": "flash_lift",
+      "needs": [
+        "female",
+        "pair"
+      ],
+      "zh": "手探她胸罩"
+    },
+    {
+      "tag": "hand in bikini",
+      "section": "pose",
+      "gate": "female",
+      "heat": [
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "modern"
+      ],
+      "group": "flash",
+      "sub": "flash_lift",
+      "needs": [
+        "female"
+      ],
+      "zh": "手探泳裝"
+    },
+    {
+      "tag": "hand in another's shirt",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "modern",
+        "victorian"
+      ],
+      "group": "flash",
+      "sub": "flash_lift",
+      "needs": [
+        "pair"
+      ],
+      "zh": "手探她衫"
+    },
+    {
+      "tag": "hand in another's clothes",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "flash",
+      "sub": "flash_lift",
+      "needs": [
+        "pair"
+      ],
+      "zh": "手探她衣"
+    },
+    {
+      "tag": "imminent grope",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "flash",
+      "sub": "pose_situ",
+      "needs": [
+        "pair"
+      ],
+      "zh": "快摸"
+    },
+    {
+      "tag": "surrounded by hands",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "flash",
+      "sub": "pose_situ",
+      "needs": [
+        "group"
+      ],
+      "zh": "被手包圍"
+    },
+    {
+      "tag": "nipple guessing game (meme)",
+      "section": "pose",
+      "gate": "female",
+      "heat": [
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "flash",
+      "sub": "pose_situ",
+      "needs": [
+        "female"
+      ],
+      "zh": "猜乳頭"
+    },
+    {
+      "tag": "pectoral docking",
+      "section": "pose",
+      "gate": "male",
+      "heat": [
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [
+        "pectoral press"
+      ],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "flash",
+      "sub": "pose_situ",
+      "needs": [
+        "male",
+        "2male"
+      ],
+      "zh": "胸肌相抵"
+    },
+    {
+      "tag": "face to breasts",
+      "section": "pose",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "tease",
+      "sub": "pose_situ",
+      "needs": [
+        "female",
+        "pair"
+      ],
+      "zh": "臉貼乳"
+    },
+    {
+      "tag": "breasts on head",
+      "section": "pose",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [
+        "breast rest"
+      ],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "tease",
+      "sub": "pose_situ",
+      "needs": [
+        "female",
+        "pair"
+      ],
+      "zh": "胸當枕"
+    },
+    {
+      "tag": "breasts on another's back",
+      "section": "pose",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [
+        "breast press"
+      ],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "tease",
+      "sub": "pose_situ",
+      "needs": [
+        "female",
+        "pair"
+      ],
+      "zh": "胸壓背"
+    },
+    {
+      "tag": "breast pillow",
+      "section": "pose",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "tease",
+      "sub": "pose_situ",
+      "needs": [
+        "female",
+        "pair"
+      ],
+      "zh": "胸枕"
+    },
+    {
+      "tag": "cheek-to-breast",
+      "section": "pose",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "tease",
+      "sub": "pose_situ",
+      "needs": [
+        "female",
+        "pair"
+      ],
+      "zh": "臉頰貼胸"
+    },
+    {
+      "tag": "imminent breast grab",
+      "section": "pose",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "tease",
+      "sub": "pose_situ",
+      "needs": [
+        "female",
+        "pair"
+      ],
+      "zh": "快抓胸"
+    },
+    {
+      "tag": "covering another's breasts",
+      "section": "pose",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "tease",
+      "sub": "pose_situ",
+      "needs": [
+        "female",
+        "pair"
+      ],
+      "zh": "遮她的胸"
+    },
+    {
+      "tag": "tickling breasts",
+      "section": "pose",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "tease",
+      "sub": "pose_situ",
+      "needs": [
+        "female",
+        "pair"
+      ],
+      "zh": "搔乳房"
+    },
+    {
+      "tag": "torso grab",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "tease",
+      "sub": "pose_situ",
+      "needs": [
+        "pair"
+      ],
+      "zh": "抓軀幹"
+    },
+    {
+      "tag": "weighing breasts",
+      "section": "pose",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "tease",
+      "sub": "pose_situ",
+      "needs": [
+        "female"
+      ],
+      "zh": "掂胸"
+    },
+    {
+      "tag": "finger between breasts",
+      "section": "pose",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "tease",
+      "sub": "pose_situ",
+      "needs": [
+        "female"
+      ],
+      "zh": "指插乳溝"
+    },
+    {
+      "tag": "bust measuring",
+      "section": "pose",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "tease",
+      "sub": "pose_situ",
+      "needs": [
+        "female"
+      ],
+      "zh": "量胸圍"
+    },
+    {
+      "tag": "breasts on shoulders",
+      "section": "pose",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "tease",
+      "sub": "pose_situ",
+      "needs": [
+        "female",
+        "pair"
+      ],
+      "zh": "胸擱肩"
+    },
+    {
+      "tag": "breast shake",
+      "section": "pose",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "tease",
+      "sub": "pose_act",
+      "needs": [
+        "female"
+      ],
+      "zh": "搖乳房"
+    },
+    {
+      "tag": "fanning breasts",
+      "section": "pose",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "tease",
+      "sub": "pose_act",
+      "needs": [
+        "female"
+      ],
+      "zh": "搧胸"
+    },
+    {
+      "tag": "wiping breasts",
+      "section": "pose",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "tease",
+      "sub": "pose_act",
+      "needs": [
+        "female"
+      ],
+      "zh": "擦乳房"
+    },
+    {
+      "tag": "symmetrical docking",
+      "section": "pose",
+      "gate": "female",
+      "heat": [
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [
+        "breast press"
+      ],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "sex",
+      "sub": "sex_touch",
+      "needs": [
+        "female",
+        "2female"
+      ],
+      "zh": "胸貼胸"
+    },
+    {
+      "tag": "asymmetrical docking",
+      "section": "pose",
+      "gate": "female",
+      "heat": [
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [
+        "breast press"
+      ],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "sex",
+      "sub": "sex_touch",
+      "needs": [
+        "female",
+        "2female"
+      ],
+      "zh": "錯胸"
+    },
+    {
+      "tag": "breast on breast",
+      "section": "pose",
+      "gate": "female",
+      "heat": [
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "sex",
+      "sub": "sex_touch",
+      "needs": [
+        "female",
+        "2female"
+      ],
+      "zh": "胸疊胸"
+    },
+    {
+      "tag": "nipple-to-nipple",
+      "section": "pose",
+      "gate": "female",
+      "heat": [
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "skin",
+      "era": [
+        "any"
+      ],
+      "group": "sex",
+      "sub": "sex_touch",
+      "needs": [
+        "female",
+        "2female"
+      ],
+      "zh": "乳頭相抵"
+    },
+    {
+      "tag": "nipples pressed together",
+      "section": "pose",
+      "gate": "female",
+      "heat": [
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "skin",
+      "era": [
+        "any"
+      ],
+      "group": "sex",
+      "sub": "sex_touch",
+      "needs": [
+        "female",
+        "2female"
+      ],
+      "zh": "乳頭互抵"
+    },
+    {
+      "tag": "breast-to-pectoral docking",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "sex",
+      "sub": "sex_touch",
+      "needs": [
+        "female",
+        "male",
+        "pair"
+      ],
+      "zh": "胸壓胸肌"
+    },
+    {
+      "tag": "grabbed breast over shoulder",
+      "section": "pose",
+      "gate": "female",
+      "heat": [
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [
+        "grabbing another's breast"
+      ],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "sex",
+      "sub": "sex_touch",
+      "needs": [
+        "female",
+        "pair"
+      ],
+      "zh": "肩後抓胸"
+    },
+    {
+      "tag": "nipple rub",
+      "section": "pose",
+      "gate": "female",
+      "heat": [
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [
+        "nipple stimulation"
+      ],
+      "layer": "skin",
+      "era": [
+        "any"
+      ],
+      "group": "sex",
+      "sub": "sex_touch",
+      "needs": [
+        "female"
+      ],
+      "zh": "搓乳頭"
+    },
+    {
+      "tag": "nipple rub through clothes",
+      "section": "pose",
+      "gate": "female",
+      "heat": [
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [
+        "nipple rub"
+      ],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "sex",
+      "sub": "sex_touch",
+      "needs": [
+        "female"
+      ],
+      "zh": "隔衣搓乳"
+    },
+    {
+      "tag": "nipple tweak through clothes",
+      "section": "pose",
+      "gate": "female",
+      "heat": [
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [
+        "nipple tweak"
+      ],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "sex",
+      "sub": "sex_touch",
+      "needs": [
+        "female"
+      ],
+      "zh": "隔衣捏乳"
+    },
+    {
+      "tag": "nipple stimulation through clothes",
+      "section": "pose",
+      "gate": "female",
+      "heat": [
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "sex",
+      "sub": "sex_touch",
+      "needs": [
+        "female"
+      ],
+      "zh": "隔衣玩乳"
+    },
+    {
+      "tag": "nipple flick",
+      "section": "pose",
+      "gate": "female",
+      "heat": [
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [
+        "nipple stimulation"
+      ],
+      "layer": "skin",
+      "era": [
+        "any"
+      ],
+      "group": "sex",
+      "sub": "sex_touch",
+      "needs": [
+        "female"
+      ],
+      "zh": "彈乳頭"
+    },
+    {
+      "tag": "nipple press",
+      "section": "pose",
+      "gate": "female",
+      "heat": [
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [
+        "nipple stimulation"
+      ],
+      "layer": "skin",
+      "era": [
+        "any"
+      ],
+      "group": "sex",
+      "sub": "sex_touch",
+      "needs": [
+        "female"
+      ],
+      "zh": "按乳頭"
+    },
+    {
+      "tag": "nipple push",
+      "section": "pose",
+      "gate": "female",
+      "heat": [
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [
+        "nipple stimulation"
+      ],
+      "layer": "skin",
+      "era": [
+        "any"
+      ],
+      "group": "sex",
+      "sub": "sex_touch",
+      "needs": [
+        "female"
+      ],
+      "zh": "推乳頭"
+    },
+    {
+      "tag": "finger on nipple",
+      "section": "pose",
+      "gate": "female",
+      "heat": [
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "skin",
+      "era": [
+        "any"
+      ],
+      "group": "sex",
+      "sub": "sex_touch",
+      "needs": [
+        "female"
+      ],
+      "zh": "指按乳頭"
+    },
+    {
+      "tag": "tickling nipples",
+      "section": "pose",
+      "gate": "female",
+      "heat": [
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "skin",
+      "era": [
+        "any"
+      ],
+      "group": "sex",
+      "sub": "sex_touch",
+      "needs": [
+        "female",
+        "pair"
+      ],
+      "zh": "搔乳頭"
+    },
+    {
+      "tag": "poking another's breast",
+      "section": "pose",
+      "gate": "female",
+      "heat": [
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "sex",
+      "sub": "sex_touch",
+      "needs": [
+        "female",
+        "pair"
+      ],
+      "zh": "戳她的胸"
+    },
+    {
+      "tag": "pectoral grab",
+      "section": "pose",
+      "gate": "male",
+      "heat": [
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "sex",
+      "sub": "sex_touch",
+      "needs": [
+        "male",
+        "pair"
+      ],
+      "zh": "抓胸肌"
+    },
+    {
+      "tag": "breast massage",
+      "section": "pose",
+      "gate": "female",
+      "heat": [
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "sex",
+      "sub": "sex_touch",
+      "needs": [
+        "female",
+        "pair"
+      ],
+      "zh": "按摩乳房"
+    },
+    {
+      "tag": "breast pull",
+      "section": "pose",
+      "gate": "female",
+      "heat": [
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "sex",
+      "sub": "sex_touch",
+      "needs": [
+        "female"
+      ],
+      "zh": "拉乳房"
+    },
+    {
+      "tag": "hand grabbing both breasts",
+      "section": "pose",
+      "gate": "female",
+      "heat": [
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "sex",
+      "sub": "sex_touch",
+      "needs": [
+        "female"
+      ],
+      "zh": "單手抓雙乳"
+    },
+    {
+      "tag": "areola measuring",
+      "section": "pose",
+      "gate": "female",
+      "heat": [
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "skin",
+      "era": [
+        "any"
+      ],
+      "group": "sex",
+      "sub": "sex_touch",
+      "needs": [
+        "female"
+      ],
+      "zh": "量乳暈"
+    },
+    {
+      "tag": "nipple stimulation (female on male)",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "skin",
+      "era": [
+        "any"
+      ],
+      "group": "sex",
+      "sub": "sex_touch",
+      "needs": [
+        "male",
+        "female"
+      ],
+      "zh": "女玩男乳"
+    },
+    {
+      "tag": "hand milking",
+      "section": "pose",
+      "gate": "female",
+      "heat": [
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [
+        "lactation"
+      ],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "sex",
+      "sub": "sex_touch",
+      "needs": [
+        "female",
+        "pair"
+      ],
+      "zh": "手擠奶"
+    },
+    {
+      "tag": "forced lactation",
+      "section": "pose",
+      "gate": "female",
+      "heat": [
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [
+        "lactation"
+      ],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "sex",
+      "sub": "sex_touch",
+      "needs": [
+        "female",
+        "pair"
+      ],
+      "zh": "強迫泌乳"
+    },
+    {
+      "tag": "slapping with breasts",
+      "section": "pose",
+      "gate": "female",
+      "heat": [
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "sex",
+      "sub": "sex_touch",
+      "needs": [
+        "female",
+        "pair"
+      ],
+      "zh": "用胸甩人"
+    },
+    {
+      "tag": "breast crush",
+      "section": "pose",
+      "gate": "female",
+      "heat": [
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "sex",
+      "sub": "sex_touch",
+      "needs": [
+        "female",
+        "pair"
+      ],
+      "zh": "胸壓碎"
+    },
+    {
+      "tag": "face between breasts",
+      "section": "pose",
+      "gate": "female",
+      "heat": [
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "sex",
+      "sub": "sex_oral",
+      "needs": [
+        "female",
+        "pair"
+      ],
+      "zh": "埋胸"
+    },
+    {
+      "tag": "licking breast",
+      "section": "pose",
+      "gate": "female",
+      "heat": [
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [
+        "licking"
+      ],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "sex",
+      "sub": "sex_oral",
+      "needs": [
+        "female",
+        "pair"
+      ],
+      "zh": "舔乳房"
+    },
+    {
+      "tag": "biting nipple",
+      "section": "pose",
+      "gate": "female",
+      "heat": [
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [
+        "nipple stimulation"
+      ],
+      "layer": "skin",
+      "era": [
+        "any"
+      ],
+      "group": "sex",
+      "sub": "sex_oral",
+      "needs": [
+        "female",
+        "pair"
+      ],
+      "zh": "咬乳頭"
+    },
+    {
+      "tag": "biting breast",
+      "section": "pose",
+      "gate": "female",
+      "heat": [
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "sex",
+      "sub": "sex_oral",
+      "needs": [
+        "female",
+        "pair"
+      ],
+      "zh": "咬乳房"
+    },
+    {
+      "tag": "kissing breast",
+      "section": "pose",
+      "gate": "female",
+      "heat": [
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "sex",
+      "sub": "sex_oral",
+      "needs": [
+        "female",
+        "pair"
+      ],
+      "zh": "親乳房"
+    },
+    {
+      "tag": "sucking both nipples",
+      "section": "pose",
+      "gate": "female",
+      "heat": [
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "skin",
+      "era": [
+        "any"
+      ],
+      "group": "sex",
+      "sub": "sex_oral",
+      "needs": [
+        "female",
+        "pair"
+      ],
+      "zh": "同時吸雙乳"
+    },
+    {
+      "tag": "mutual breast sucking",
+      "section": "pose",
+      "gate": "female",
+      "heat": [
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [
+        "breast sucking"
+      ],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "sex",
+      "sub": "sex_oral",
+      "needs": [
+        "female",
+        "2female"
+      ],
+      "zh": "互吸乳房"
+    },
+    {
+      "tag": "breast sucking through clothes",
+      "section": "pose",
+      "gate": "female",
+      "heat": [
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [
+        "breast sucking"
+      ],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "sex",
+      "sub": "sex_oral",
+      "needs": [
+        "female",
+        "pair"
+      ],
+      "zh": "隔衣吸乳"
+    },
+    {
+      "tag": "sucking male nipple",
+      "section": "pose",
+      "gate": "male",
+      "heat": [
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "skin",
+      "era": [
+        "any"
+      ],
+      "group": "sex",
+      "sub": "sex_oral",
+      "needs": [
+        "male",
+        "pair"
+      ],
+      "zh": "吸男乳頭"
+    },
+    {
+      "tag": "penis to breast",
+      "section": "pose",
+      "gate": "female",
+      "heat": [
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "sex",
+      "sub": "sex_oral",
+      "needs": [
+        "female",
+        "male",
+        "pair"
+      ],
+      "zh": "陰莖蹭胸"
+    },
+    {
+      "tag": "penis under breasts",
+      "section": "pose",
+      "gate": "female",
+      "heat": [
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "sex",
+      "sub": "sex_oral",
+      "needs": [
+        "female",
+        "male",
+        "pair"
+      ],
+      "zh": "陰莖從下"
+    },
+    {
+      "tag": "penis over breasts",
+      "section": "pose",
+      "gate": "female",
+      "heat": [
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "sex",
+      "sub": "sex_oral",
+      "needs": [
+        "female",
+        "male",
+        "pair"
+      ],
+      "zh": "陰莖擱胸"
+    },
+    {
+      "tag": "twisted breasts",
+      "section": "pose",
+      "gate": "female",
+      "heat": [
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "sex",
+      "sub": "sex_oral",
+      "needs": [
+        "female",
+        "male",
+        "pair"
+      ],
+      "zh": "扭轉雙乳"
+    },
+    {
+      "tag": "folding paizuri",
+      "section": "pose",
+      "gate": "female",
+      "heat": [
+        "sex"
+      ],
+      "mutex": "sex_act",
+      "bind": [],
+      "implies": [
+        "paizuri"
+      ],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "sex",
+      "sub": "sex_oral",
+      "needs": [
+        "female",
+        "male",
+        "pair"
+      ],
+      "zh": "對折乳交"
+    },
+    {
+      "tag": "nursing paizuri",
+      "section": "pose",
+      "gate": "female",
+      "heat": [
+        "sex"
+      ],
+      "mutex": "sex_act",
+      "bind": [],
+      "implies": [
+        "paizuri"
+      ],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "sex",
+      "sub": "sex_oral",
+      "needs": [
+        "female",
+        "male",
+        "pair"
+      ],
+      "zh": "哺乳乳交"
+    },
+    {
+      "tag": "assisted paizuri",
+      "section": "pose",
+      "gate": "female",
+      "heat": [
+        "sex"
+      ],
+      "mutex": "sex_act",
+      "bind": [],
+      "implies": [
+        "paizuri"
+      ],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "sex",
+      "sub": "sex_oral",
+      "needs": [
+        "female",
+        "male",
+        "pair",
+        "group",
+        "2female"
+      ],
+      "zh": "幫忙乳交"
+    },
+    {
+      "tag": "paizuri while penetrated",
+      "section": "pose",
+      "gate": "female",
+      "heat": [
+        "sex"
+      ],
+      "mutex": "sex_act",
+      "bind": [],
+      "implies": [
+        "paizuri"
+      ],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "sex",
+      "sub": "sex_oral",
+      "needs": [
+        "female",
+        "male",
+        "pair",
+        "group",
+        "2male"
+      ],
+      "zh": "插入中乳交"
+    },
+    {
+      "tag": "nursing fingering",
+      "section": "pose",
+      "gate": "female",
+      "heat": [
+        "sex"
+      ],
+      "mutex": "sex_act",
+      "bind": [],
+      "implies": [
+        "fingering"
+      ],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "sex",
+      "sub": "sex_oral",
+      "needs": [
+        "female",
+        "pair"
+      ],
+      "zh": "哺乳指交"
+    },
+    {
+      "tag": "reverse nursing fingering",
+      "section": "pose",
+      "gate": "female",
+      "heat": [
+        "sex"
+      ],
+      "mutex": "sex_act",
+      "bind": [],
+      "implies": [
+        "fingering"
+      ],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "sex",
+      "sub": "sex_oral",
+      "needs": [
+        "female",
+        "pair"
+      ],
+      "zh": "反哺乳指交"
+    },
+    {
+      "tag": "reverse nursing handjob",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "sex"
+      ],
+      "mutex": "sex_act",
+      "bind": [],
+      "implies": [
+        "handjob"
+      ],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "sex",
+      "sub": "sex_oral",
+      "needs": [
+        "female",
+        "male",
+        "pair"
+      ],
+      "zh": "反哺乳手交"
+    },
+    {
+      "tag": "pecjob",
+      "section": "pose",
+      "gate": "male",
+      "heat": [
+        "sex"
+      ],
+      "mutex": "sex_act",
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "sex",
+      "sub": "sex_oral",
+      "needs": [
+        "male",
+        "2male",
+        "pair"
+      ],
+      "zh": "胸肌夾莖"
+    },
+    {
+      "tag": "grabbing multiple others' breasts",
+      "section": "pose",
+      "gate": "female",
+      "heat": [
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "sex",
+      "sub": "sex_group",
+      "needs": [
+        "female",
+        "male",
+        "group",
+        "2female"
+      ],
+      "zh": "抓多人胸"
+    },
+    {
+      "tag": "cooperative breast sucking",
+      "section": "pose",
+      "gate": "female",
+      "heat": [
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "sex",
+      "sub": "sex_group",
+      "needs": [
+        "female",
+        "group",
+        "2female"
+      ],
+      "zh": "合力吸乳"
+    },
+    {
+      "tag": "cooperative nipple licking",
+      "section": "pose",
+      "gate": "female",
+      "heat": [
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "skin",
+      "era": [
+        "any"
+      ],
+      "group": "sex",
+      "sub": "sex_group",
+      "needs": [
+        "female",
+        "male",
+        "group",
+        "2female"
+      ],
+      "zh": "合力舔乳"
+    },
+    {
+      "tag": "sucking on multiple breasts",
+      "section": "pose",
+      "gate": "female",
+      "heat": [
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "sex",
+      "sub": "sex_group",
+      "needs": [
+        "female",
+        "male",
+        "group",
+        "2female"
+      ],
+      "zh": "吸多人胸"
+    },
+    {
+      "tag": "cooperative breast smother",
+      "section": "pose",
+      "gate": "female",
+      "heat": [
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [
+        "teamwork (sexual)"
+      ],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "sex",
+      "sub": "sex_group",
+      "needs": [
+        "female",
+        "group",
+        "2female"
+      ],
+      "zh": "合力悶胸"
+    },
+    {
+      "tag": "teamwork (sexual)",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "sex",
+      "sub": "sex_group",
+      "needs": [
+        "group",
+        "2female"
+      ],
+      "zh": "協力性事"
+    },
+    {
+      "tag": "take your pick",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "sex",
+      "sub": "sex_group",
+      "needs": [
+        "group",
+        "2female"
+      ],
+      "zh": "任君挑選"
+    },
+    {
+      "tag": "breast pile",
+      "section": "pose",
+      "gate": "female",
+      "heat": [
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "sex",
+      "sub": "sex_group",
+      "needs": [
+        "female",
+        "group",
+        "2female"
+      ],
+      "zh": "乳堆"
+    },
+    {
+      "tag": "surrounded by breasts",
+      "section": "pose",
+      "gate": "female",
+      "heat": [
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "sex",
+      "sub": "sex_group",
+      "needs": [
+        "female",
+        "2female",
+        "crowd"
+      ],
+      "zh": "被胸包圍"
+    },
+    {
+      "tag": "bound breasts",
+      "section": "pose",
+      "gate": "female",
+      "heat": [
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "sex",
+      "sub": "sex_bdsm",
+      "needs": [
+        "female"
+      ],
+      "zh": "綁胸"
+    },
+    {
+      "tag": "tied breast",
+      "section": "pose",
+      "gate": "female",
+      "heat": [
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "sex",
+      "sub": "sex_bdsm",
+      "needs": [
+        "female"
+      ],
+      "zh": "綁住乳房"
+    },
+    {
+      "tag": "slapping breasts",
+      "section": "pose",
+      "gate": "female",
+      "heat": [
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "sex",
+      "sub": "sex_bdsm",
+      "needs": [
+        "female",
+        "pair"
+      ],
+      "zh": "拍打乳房"
+    },
+    {
+      "tag": "breast punch",
+      "section": "pose",
+      "gate": "female",
+      "heat": [
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "sex",
+      "sub": "sex_bdsm",
+      "needs": [
+        "female",
+        "pair"
+      ],
+      "zh": "揍乳房"
+    },
+    {
+      "tag": "foot on another's breast",
+      "section": "pose",
+      "gate": "female",
+      "heat": [
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "sex",
+      "sub": "sex_bdsm",
+      "needs": [
+        "female",
+        "pair"
+      ],
+      "zh": "腳踩乳房"
+    },
+    {
+      "tag": "nipple torture",
+      "section": "pose",
+      "gate": "female",
+      "heat": [
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [
+        "nipple stimulation"
+      ],
+      "layer": "skin",
+      "era": [
+        "any"
+      ],
+      "group": "sex",
+      "sub": "sex_bdsm",
+      "needs": [
+        "female"
+      ],
+      "zh": "虐乳頭"
+    },
+    {
+      "tag": "tied nipples",
+      "section": "pose",
+      "gate": "female",
+      "heat": [
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "skin",
+      "era": [
+        "any"
+      ],
+      "group": "sex",
+      "sub": "sex_bdsm",
+      "needs": [
+        "female"
+      ],
+      "zh": "綁乳頭"
+    },
+    {
+      "tag": "nipple weights",
+      "section": "pose",
+      "gate": "female",
+      "heat": [
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "skin",
+      "era": [
+        "any"
+      ],
+      "group": "sex",
+      "sub": "sex_bdsm",
+      "needs": [
+        "female"
+      ],
+      "zh": "乳頭吊重"
+    },
+    {
+      "tag": "nipple leash",
+      "section": "pose",
+      "gate": "female",
+      "heat": [
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "skin",
+      "era": [
+        "any"
+      ],
+      "group": "sex",
+      "sub": "sex_bdsm",
+      "needs": [
+        "female"
+      ],
+      "zh": "乳頭牽繩"
+    },
+    {
+      "tag": "nipple injection",
+      "section": "pose",
+      "gate": "female",
+      "heat": [
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [
+        "nipple stimulation"
+      ],
+      "layer": "skin",
+      "era": [
+        "any"
+      ],
+      "group": "sex",
+      "sub": "sex_bdsm",
+      "needs": [
+        "female"
+      ],
+      "zh": "乳頭注射"
+    },
+    {
+      "tag": "tentacle between breasts",
+      "section": "pose",
+      "gate": "female",
+      "heat": [
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [
+        "tentacles"
+      ],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "sex",
+      "sub": "sex_alien",
+      "needs": [
+        "female"
+      ],
+      "zh": "觸手夾乳"
+    },
+    {
+      "tag": "grabbed by tentacles",
+      "section": "pose",
+      "gate": "female",
+      "heat": [
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [
+        "tentacles"
+      ],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "sex",
+      "sub": "sex_alien",
+      "needs": [
+        "female"
+      ],
+      "zh": "觸手抓住"
+    },
+    {
+      "tag": "tentacles under clothes",
+      "section": "pose",
+      "gate": "female",
+      "heat": [
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [
+        "tentacles"
+      ],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "sex",
+      "sub": "sex_alien",
+      "needs": [
+        "female"
+      ],
+      "zh": "觸手入衣"
+    },
+    {
+      "tag": "suction tentacles",
+      "section": "pose",
+      "gate": "female",
+      "heat": [
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [
+        "tentacles"
+      ],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "sex",
+      "sub": "sex_alien",
+      "needs": [
+        "female"
+      ],
+      "zh": "吸盤觸手"
+    },
+    {
+      "tag": "nipple suction cups",
+      "section": "clothing",
+      "gate": "female",
+      "heat": [
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [
+        "lactation"
+      ],
+      "layer": "accessory",
+      "era": [
+        "any"
+      ],
+      "group": "acc",
+      "sub": "acc_toy",
+      "needs": [
+        "female"
+      ],
+      "zh": "乳頭吸盤"
+    },
+    {
+      "tag": "animal hands",
+      "section": "feature",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "other",
+      "sub": "nonhuman",
+      "zh": "獸掌"
+    },
+    {
+      "tag": "extra arms",
+      "section": "feature",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "other",
+      "sub": "nonhuman",
+      "zh": "多手臂"
+    },
+    {
+      "tag": "extra hands",
+      "section": "feature",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "other",
+      "sub": "nonhuman",
+      "zh": "多手"
+    },
+    {
+      "tag": "clawed hands",
+      "section": "feature",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "other",
+      "sub": "nonhuman",
+      "zh": "爪手"
+    },
+    {
+      "tag": "mechanical hands",
+      "section": "feature",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "medieval",
+        "modern"
+      ],
+      "group": "other",
+      "sub": "nonhuman",
+      "zh": "機械手"
+    },
+    {
+      "tag": "against mirror",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [
+        "mirror"
+      ],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "tease",
+      "sub": "pose_stance",
+      "zh": "貼鏡子"
+    },
+    {
+      "tag": "arm across chest",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "tease",
+      "sub": "pose_hand",
+      "zh": "橫擋胸"
+    },
+    {
+      "tag": "self hug",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "tease",
+      "sub": "pose_act",
+      "zh": "抱自己"
+    },
+    {
+      "tag": "arm hug",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "tease",
+      "sub": "pose_two",
+      "needs": [
+        "pair"
+      ],
+      "zh": "抱手臂"
+    },
+    {
+      "tag": "head hug",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "tease",
+      "sub": "pose_two",
+      "needs": [
+        "pair"
+      ],
+      "zh": "抱住頭"
+    },
+    {
+      "tag": "double arm hug",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "tease",
+      "sub": "pose_two",
+      "needs": [
+        "group",
+        "2female"
+      ],
+      "zh": "雙抱手臂"
+    },
+    {
+      "tag": "caress",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "tease",
+      "sub": "pose_two",
+      "needs": [
+        "pair"
+      ],
+      "zh": "撫摸"
+    },
+    {
+      "tag": "girl sandwich",
+      "section": "pose",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [
+        "sandwiched"
+      ],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "tease",
+      "sub": "pose_two",
+      "needs": [
+        "female",
+        "group",
+        "2female"
+      ],
+      "zh": "兩女夾中"
+    },
+    {
+      "tag": "head on chest",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "tease",
+      "sub": "pose_two",
+      "needs": [
+        "pair"
+      ],
+      "zh": "頭靠胸"
+    },
+    {
+      "tag": "breast envy",
+      "section": "pose",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "tease",
+      "sub": "pose_situ",
+      "needs": [
+        "female",
+        "pair"
+      ],
+      "zh": "羨慕胸"
+    },
+    {
+      "tag": "breast contest",
+      "section": "pose",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "tease",
+      "sub": "pose_situ",
+      "needs": [
+        "female",
+        "2female"
+      ],
+      "zh": "比胸圍"
+    },
+    {
+      "tag": "face to pecs",
+      "section": "pose",
+      "gate": "male",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "tease",
+      "sub": "pose_situ",
+      "needs": [
+        "male",
+        "pair"
+      ],
+      "zh": "臉貼胸肌"
+    },
+    {
+      "tag": "disembodied hand",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "tease",
+      "sub": "pose_situ",
+      "zh": "浮空手"
+    },
+    {
+      "tag": "shadow hands",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "tease",
+      "sub": "pose_situ",
+      "zh": "影子手"
+    },
+    {
+      "tag": "giant hand",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "tease",
+      "sub": "pose_situ",
+      "zh": "巨手"
+    },
+    {
+      "tag": "too many hands",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "tease",
+      "sub": "pose_situ",
+      "zh": "一堆手"
+    },
+    {
+      "tag": "bust chart",
+      "section": "pose",
+      "gate": "female",
+      "heat": [
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "flash",
+      "sub": "pose_situ",
+      "needs": [
+        "female",
+        "2female",
+        "crowd"
+      ],
+      "zh": "排比胸"
+    },
+    {
+      "tag": "tawawa challenge",
+      "section": "pose",
+      "gate": "female",
+      "heat": [
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "modern"
+      ],
+      "group": "flash",
+      "sub": "pose_situ",
+      "needs": [
+        "female"
+      ],
+      "zh": "胸上平衡"
+    },
+    {
+      "tag": "bra lift",
+      "section": "pose",
+      "gate": "female",
+      "heat": [
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [
+        "bra"
+      ],
+      "layer": "normal",
+      "era": [
+        "modern"
+      ],
+      "group": "flash",
+      "sub": "flash_lift",
+      "needs": [
+        "female"
+      ],
+      "zh": "掀胸罩"
+    },
+    {
+      "tag": "bra slip",
+      "section": "pose",
+      "gate": "female",
+      "heat": [
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [
+        "bra"
+      ],
+      "layer": "normal",
+      "era": [
+        "modern"
+      ],
+      "group": "flash",
+      "sub": "flash_lift",
+      "needs": [
+        "female"
+      ],
+      "zh": "胸罩滑落"
+    },
+    {
+      "tag": "sports bra pull",
+      "section": "pose",
+      "gate": "female",
+      "heat": [
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [
+        "sports bra"
+      ],
+      "layer": "normal",
+      "era": [
+        "modern"
+      ],
+      "group": "flash",
+      "sub": "flash_lift",
+      "needs": [
+        "female"
+      ],
+      "zh": "拉運動內衣"
+    },
+    {
+      "tag": "leotard pull",
+      "section": "pose",
+      "gate": "female",
+      "heat": [
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [
+        "leotard"
+      ],
+      "layer": "normal",
+      "era": [
+        "modern"
+      ],
+      "group": "flash",
+      "sub": "flash_lift",
+      "needs": [
+        "female"
+      ],
+      "zh": "拉緊身衣"
+    },
+    {
+      "tag": "bikini top pull",
+      "section": "pose",
+      "gate": "female",
+      "heat": [
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [
+        "bikini",
+        "clothes pull"
+      ],
+      "layer": "normal",
+      "era": [
+        "modern"
+      ],
+      "group": "flash",
+      "sub": "flash_lift",
+      "needs": [
+        "female"
+      ],
+      "zh": "拉比基尼上衣"
+    },
+    {
+      "tag": "camisole pull",
+      "section": "pose",
+      "gate": "female",
+      "heat": [
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [
+        "camisole"
+      ],
+      "layer": "normal",
+      "era": [
+        "modern"
+      ],
+      "group": "flash",
+      "sub": "flash_lift",
+      "needs": [
+        "female"
+      ],
+      "zh": "拉吊帶背心"
+    },
+    {
+      "tag": "strap pull",
+      "section": "pose",
+      "gate": "female",
+      "heat": [
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "modern"
+      ],
+      "group": "flash",
+      "sub": "flash_lift",
+      "needs": [
+        "female"
+      ],
+      "zh": "拉衣帶"
+    },
+    {
+      "tag": "double strap slip",
+      "section": "pose",
+      "gate": "female",
+      "heat": [
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [
+        "strap slip"
+      ],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "flash",
+      "sub": "flash_lift",
+      "needs": [
+        "female"
+      ],
+      "zh": "雙帶滑落"
+    },
+    {
+      "tag": "piercing pull",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [
+        "piercing"
+      ],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "flash",
+      "sub": "flash_lift",
+      "zh": "拉穿洞"
+    },
+    {
+      "tag": "oppai challenge",
+      "section": "pose",
+      "gate": "female",
+      "heat": [
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [
+        "flashing"
+      ],
+      "layer": "normal",
+      "era": [
+        "modern"
+      ],
+      "group": "flash",
+      "sub": "flash_expose",
+      "needs": [
+        "female"
+      ],
+      "zh": "露胸挑戰"
+    },
+    {
+      "tag": "arm between breasts",
+      "section": "pose",
+      "gate": "female",
+      "heat": [
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [
+        "between breasts"
+      ],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "flash",
+      "sub": "flash_pose",
+      "needs": [
+        "female"
+      ],
+      "zh": "手臂夾胸"
+    },
+    {
+      "tag": "covering one breast",
+      "section": "pose",
+      "gate": "female",
+      "heat": [
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [
+        "covering privates"
+      ],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "flash",
+      "sub": "flash_pose",
+      "needs": [
+        "female"
+      ],
+      "zh": "遮一邊胸"
+    },
+    {
+      "tag": "breast awe",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "flash",
+        "sex"
+      ],
+      "mutex": "expression",
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "face",
+      "sub": "face_lewd",
+      "needs": [
+        "female",
+        "pair"
+      ],
+      "zh": "驚嘆胸"
+    },
+    {
+      "tag": "head between pecs",
+      "section": "pose",
+      "gate": "male",
+      "heat": [
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "sex",
+      "sub": "sex_oral",
+      "needs": [
+        "male",
+        "pair"
+      ],
+      "zh": "頭夾胸肌"
+    },
+    {
+      "tag": "invisible man",
+      "section": "pose",
+      "gate": "male",
+      "heat": [
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "sex",
+      "sub": "sex_pos",
+      "needs": [
+        "male",
+        "pair"
+      ],
+      "zh": "隱形人"
     },
     {
       "tag": "petite",

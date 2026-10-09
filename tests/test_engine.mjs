@@ -625,7 +625,9 @@ function eraDraws(era, n = 60, seed0 = 9000) {
   const hCg = tagsOf(dCg);
   ok("cowgirl+pov keeps cowgirl", hCg.has("cowgirl position"));
   ok("cowgirl+pov has no visible boy", !hCg.has("1boy"));
-  ok("cowgirl+pov is solo", hCg.has("solo"));
+  // 2026-10-09：胸部互動進池後，這顆種子抽到背景人群 people。
+  // 引擎因此寫 solo focus、拿掉 solo。畫面上仍是一個女生，沒有男生。
+  ok("cowgirl+pov is solo", hCg.has("solo") || hCg.has("solo focus"));
   ok("cowgirl+pov looks at viewer", hCg.has("looking at viewer"));
 }
 
@@ -2638,6 +2640,56 @@ function indoorOutdoorClash(have) {
     }
   }
   eq("pinned yuri and tribadism stay two or more girls and no boy", yuriBad, 0);
+
+  // 排比胸、被胸包圍：男女都開時不能補成兩女兩男。釘了 1boy 就留一個男生，人數用女生補滿。
+  // 協力性事仍要補男生。輪姦、以及排比胸再釘輪姦，不能被這條帶走。
+  let girlCrowdBad = 0;
+  for (const tag of ["bust chart", "surrounded by breasts"]) {
+    const pin = applyPin(lex, new Set(), new Set(), tag).pinned;
+    for (const scene of [sexBoth, girlOnly]) {
+      for (let i = 0; i < 20; i++) {
+        const d = drawOne(lex, scene, pin, new Set(), mulberry32(99500 + i), 99500 + i);
+        const h = tagsOf(d);
+        if (!h.has(tag) || d.people < 4 || girlCount(h) < 4 || boyCount(h) > 0) girlCrowdBad += 1;
+      }
+    }
+  }
+  eq("pinned bust chart and surrounded by breasts are four girls", girlCrowdBad, 0);
+
+  let oneBoyBad = 0;
+  for (const tag of ["bust chart", "surrounded by breasts"]) {
+    let pin = applyPin(lex, new Set(), new Set(), tag).pinned;
+    pin = applyPin(lex, pin, new Set(), "1boy").pinned;
+    for (let i = 0; i < 10; i++) {
+      const d = drawOne(lex, sexBoth, pin, new Set(), mulberry32(99620 + i), 99620 + i);
+      const h = tagsOf(d);
+      if (!h.has(tag) || !h.has("1boy") || h.has("2boys") || h.has("3boys") || girlCount(h) < 3 || d.people < 4) oneBoyBad += 1;
+    }
+  }
+  eq("pinned 1boy on a girl crowd stays one boy and at least three girls", oneBoyBad, 0);
+
+  let teamBad = 0;
+  const pinTeam = applyPin(lex, new Set(), new Set(), "teamwork (sexual)").pinned;
+  for (let i = 0; i < 20; i++) {
+    const h = tagsOf(drawOne(lex, sexBoth, pinTeam, new Set(), mulberry32(99720 + i), 99720 + i));
+    if (!h.has("teamwork (sexual)") || girlCount(h) < 2 || boyCount(h) < 1) teamBad += 1;
+  }
+  eq("pinned teamwork stays at least two girls and a boy", teamBad, 0);
+
+  let gbCastBad = 0;
+  const pinGbCast = applyPin(lex, new Set(), new Set(), "gangbang").pinned;
+  for (let i = 0; i < 20; i++) {
+    const h = tagsOf(drawOne(lex, sexBoth, pinGbCast, new Set(), mulberry32(99820 + i), 99820 + i));
+    if (!h.has("gangbang") || boyCount(h) < 1 || girlCount(h) < 1) gbCastBad += 1;
+  }
+  let mixCrowdBad = 0;
+  for (let i = 0; i < 10; i++) {
+    let pin = applyPin(lex, new Set(), new Set(), "bust chart").pinned;
+    pin = applyPin(lex, pin, new Set(), "gangbang").pinned;
+    const h = tagsOf(drawOne(lex, sexBoth, pin, new Set(), mulberry32(99920 + i), 99920 + i));
+    if (!h.has("gangbang") || !h.has("bust chart") || boyCount(h) < 1) mixCrowdBad += 1;
+  }
+  eq("pinned gangbang still has a boy, even beside bust chart", gbCastBad + mixCrowdBad, 0);
 
   let headBad = 0;
   for (const [tag, need] of [["foursome", 4], ["gangbang", 4], ["fivesome", 5]]) {
@@ -5614,7 +5666,11 @@ function indoorOutdoorClash(have) {
     // 第三十五次（2026-10-09）：胸圍改成照常見程度加權（fillBreastSize，種子派生的獨立亂數）。只有胸圍這張變（中等胸部 → 巨乳），其餘逐字相同。
     // 第三十六次（2026-10-09）：長相自由格照常見程度加權（FEATURE_SHARE）。鞭痕、巨臀、臀部刺青換成乳搖、胸擱桌上、亮瞳孔；
     // 長相不同，後面的姿勢、場景跟著換（單膝跪、仰角、餐廳）。仍是 1girl solo，沒有男生。
-    "1girl, solo, very short hair, yellow eyes, aqua hair, undercut, huge breasts, bouncing breasts, breasts on table, bright pupils, microskirt, skirt, oversized clothes, torn shirt, shirt, blue panties, panties, female masturbation, on one knee, from below, looking up, annoyed, encasement, restaurant, indoors, vacuum bed, sunset, city lights, mountainous horizon, nsfw, explicit, masterpiece, best quality, amazing quality");
+    // 第三十七次（2026-10-09）：胸部互動 118 個現役詞進池。這張換成羽毛翅膀、紫洋裝、指交、晴空塔。
+    // 仍是 1girl solo，沒有男生，也沒有人類陰莖。
+    // 第三十八次（2026-10-09）：第三、四輪 38 個現役詞進池。這張換成大量泌乳、觸手夾乳、玄關。
+    // 仍是 1girl solo，沒有男生，也沒有人類陰莖。
+    "1girl, solo, very short hair, yellow eyes, aqua hair, undercut, huge breasts, hair flower, excessive lactation, lactation, completely nude, jewelry, glasses, neck ribbon, ribbon, masturbation, squatting, portrait, averting eyes, naughty face, tentacle between breasts, tentacles, genkan, indoors, twilight, moonlight, confetti, nsfw, explicit, masterpiece, best quality, amazing quality");
   ok("drawOne exposes shadow diagnostics", Array.isArray(shadowIntegrationDraw.shadowViolations));
 
   const eatProneShadow = validateSupportShadow({
@@ -5779,7 +5835,9 @@ function indoorOutdoorClash(have) {
   // 身體對不上時必抽要讓步，而且如實回報 —— 不硬湊出手在兩個地方的圖。
   let honestWhenShort = 0;
   let sawShort = 0;
-  for (let i = 0; i < 60; i++) {
+  // 2026-10-09：胸部互動讓誘惑池變大，前 60 張都抽滿 3 個。短少還在，最早出現在 seed 90180。
+  // 2026-10-09 第二次：第三、四輪又多了擁抱和手勢，短少提前到 seed 90123。窗口維持 160。
+  for (let i = 0; i < 160; i++) {
     const d = draw((s) => {
       s.mustDraw = { "pose:tease": 3 };
     }, 90100 + i);
@@ -5787,7 +5845,7 @@ function indoorOutdoorClash(have) {
     if (got < 3) sawShort += 1;
     if (d.mustReport[0].got === got) honestWhenShort += 1;
   }
-  eq("must report never lies", honestWhenShort, 60);
+  eq("must report never lies", honestWhenShort, 160);
   ok("sex acts really can crowd out a must pose", sawShort > 0, `sawShort=${sawShort}`);
 
   // 互斥絕不破：髮色槽再怎麼必抽也只能有一個。
@@ -6519,6 +6577,8 @@ function indoorOutdoorClash(have) {
   ok("twilight control: dusk 抽得到", seenWith("outdoors", "dusk") > 0);
 
   // 過渡時段和夜側可以共存，而且兩個方向都要通（換順序結果相同）。
+  // 2026-10-09 第二次：第三、四輪 38 個字進池，釘 dusk 要到 seed 307 才抽到 market stall。
+  // 正向搜尋放到 600。嚴格白天／夜側的互斥仍只看前 300 張。
   for (const [pin, want] of [
     ["market stall", "sunset"],
     ["market stall", "dusk"],
@@ -6529,9 +6589,9 @@ function indoorOutdoorClash(have) {
     ["sunset", "starry sky"],
     ["dusk", "market stall"],
   ]) {
-    const seed = seenWith(pin, want);
+    const seed = seenWith(pin, want, "weird", 600);
     ok(`twilight: 釘「${pin}」抽得到「${want}」`, seed > 0,
-      `weird / counts.env=10 / 全熱度，seed 1..300 一次都沒出現`);
+      `weird / counts.env=10 / 全熱度，seed 1..600 一次都沒出現`);
   }
 
   // 嚴格白天 ↔ 嚴格夜側仍然對稱互斥，暮光的改動不能鬆到這裡。
