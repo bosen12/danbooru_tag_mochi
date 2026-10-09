@@ -5612,7 +5612,9 @@ function indoorOutdoorClash(have) {
     // 第三十四次（2026-10-06）：花紋衣服拿掉，駕駛員服換成機甲駕駛服。
     // 這張換成過大的衣服、破襯衫、藍內褲、屈膝禮、背面。仍是 1girl solo，沒有男生，也沒有人類陰莖。
     // 第三十五次（2026-10-09）：胸圍改成照常見程度加權（fillBreastSize，種子派生的獨立亂數）。只有胸圍這張變（中等胸部 → 巨乳），其餘逐字相同。
-    "1girl, solo, very short hair, yellow eyes, aqua hair, undercut, huge breasts, whip marks, huge ass, ass tattoo, microskirt, skirt, oversized clothes, torn shirt, shirt, blue panties, panties, female masturbation, curtsey, standing, from behind, looking down, ahegao, canyon, outdoors, twilight, sunlight, rickshaw, traffic light, nsfw, explicit, masterpiece, best quality, amazing quality");
+    // 第三十六次（2026-10-09）：長相自由格照常見程度加權（FEATURE_SHARE）。鞭痕、巨臀、臀部刺青換成乳搖、胸擱桌上、亮瞳孔；
+    // 長相不同，後面的姿勢、場景跟著換（單膝跪、仰角、餐廳）。仍是 1girl solo，沒有男生。
+    "1girl, solo, very short hair, yellow eyes, aqua hair, undercut, huge breasts, bouncing breasts, breasts on table, bright pupils, microskirt, skirt, oversized clothes, torn shirt, shirt, blue panties, panties, female masturbation, on one knee, from below, looking up, annoyed, encasement, restaurant, indoors, vacuum bed, sunset, city lights, mountainous horizon, nsfw, explicit, masterpiece, best quality, amazing quality");
   ok("drawOne exposes shadow diagnostics", Array.isArray(shadowIntegrationDraw.shadowViolations));
 
   const eatProneShadow = validateSupportShadow({
@@ -7822,6 +7824,11 @@ function indoorOutdoorClash(have) {
     if (h.has("multiple girls")) multiG += 1;
     if (h.has("5girls")) five += 1;
     if (h.has("loli") || h.has("shota")) loli += 1;
+  }
+  // 2026-10-09：長相自由格照常見程度加權之後，誘惑尺度不再常隨機露出胸口，乳貼跟著變少
+  // （3000 張 26 → 9）。這條只驗「抽得到」，上面 400 張沒中就往後多看，抽到就停。
+  for (let i = 400; pasties === 0 && i < 3000; i += 1) {
+    if (tagsOf(drawOne(lex, girl, new Set(), new Set(), mulberry32(120000 + i), 120000 + i)).has("pasties")) pasties += 1;
   }
   ok("正常模式抽得到乳貼", pasties > 0, `pasties=${pasties}`);
   eq("乳貼不會藏在蓋住的胸口底下", pastiesHidden, 0);

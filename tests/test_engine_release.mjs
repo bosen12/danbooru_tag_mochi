@@ -42,4 +42,18 @@ for (const rating of ['general', 'sensitive', 'explicit']) {
   assert.ok(share('huge breasts') + share('gigantic breasts') < 0.25, 'Huge and gigantic breasts stay uncommon at General');
   assert.ok(share('medium breasts') > share('gigantic breasts') * 3, 'Medium breasts are far more common than gigantic');
 }
+// Free feature slots add details, not new premises: in Normal scenes non-human traits stay rare.
+{
+  const N = 400;
+  const nonhuman = (sceneMode) => {
+    const settings = { ...defaultSettings(data), girl: true, boy: false, rating: 'general', eras: ['modern'], sceneMode };
+    let n = 0;
+    for (let i = 1; i <= N; i++) {
+      for (const tag of drawOne(lex, settings, new Set(), new Set(), mulberry32(i), i).positive.split(', ')) if (lex.byTag.get(tag)?.sub === 'nonhuman') n++;
+    }
+    return n / N;
+  };
+  assert.ok(nonhuman('normal') < 0.15, 'Normal scenes rarely add non-human traits on their own');
+  assert.ok(nonhuman('weird') > nonhuman('normal'), 'Weird scenes keep the old, uniform free-feature draw');
+}
 console.log(`Release engine invariants: ${draws} draws across three ratings passed`);

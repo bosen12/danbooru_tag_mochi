@@ -3659,6 +3659,40 @@ function isColorVariant(item) {
   return parts.length >= 2 && COLOR_WORD.has(parts[0]);
 }
 
+// 長相的自由格（固定格之外、補到「每段抽幾個」的那幾張）抽什麼。
+//
+// 以前整段長相牌一起平均抽，牌越多的小分類越常中：非人特徵有 30 張，就佔最大份，
+// 每張圖都冒出翅膀、狐尾、嘴角流血、母女、懷孕這種會改寫整張圖設定的字。
+// 自由格要補的是細節（睫毛、瀏海、腮紅、妝、體型），不是新的設定：
+// 先決定每一家佔幾成（份量就是意圖，不隨詞庫長大而變），家裡再平均挑；
+// 特別搶戲的個別字再壓低。想要那些設定就釘它，或開多元／奇葩（奇葩照舊平均抽）。
+const FEATURE_FAMILY = {
+  eye_shape: "eyes", hair_detail: "hair", makeup: "makeup", skin_flush: "flush",
+  bf_shape: "build", bm_build: "build", skin_tone: "tone", mouth_bits: "mouth", wear_bits: "wear",
+  skin_mark: "mark", tattoo: "tattoo", hair_shape: "hair_shape", body_part: "body_part",
+  nonhuman: "nonhuman", persona: "persona", relation: "relation", bf_intimate: "intimate",
+  bm_penis: "intimate", bf_touch: "touch", bm_hair: "body_hair", job_classic: "job", job_modern: "job",
+};
+const FEATURE_SHARE = {
+  eyes: 14, hair: 14, flush: 12, makeup: 9, build: 8, job: 6, tone: 5, mouth: 5, wear: 4, mark: 4,
+  hair_shape: 3, tattoo: 3, body_part: 3, intimate: 3, touch: 3, body_hair: 2, nonhuman: 2,
+  persona: 1, relation: 1, other: 3,
+};
+// 多元：非人特徵、人設放寬（人種格也是多元才開）。
+const FEATURE_SHARE_DIVERSE = { ...FEATURE_SHARE, nonhuman: 8, persona: 3, mark: 6, tattoo: 5 };
+const FEATURE_SHARE_HEAT = { flash: { intimate: 8, touch: 5 }, sex: { intimate: 9, touch: 6 } };
+const FEATURE_LOUD = new Set([
+  "pregnant", "quadruple amputee", "giantess", "minigirl", "old woman", "old man", "obese", "fat man",
+  "blood from mouth", "blood on face", "nosebleed", "injury", "whip marks", "bite mark",
+  "symbol-shaped pupils", "star-shaped pupils", "ringed eyes", "white pupils", "glowing hair",
+  "green skin", "colored skin", "genderswap", "futanari", "saliva", "saliva trail",
+]);
+const FEATURE_LOUD_FACTOR = 0.3;
+
+function featureFamilyOf(item) {
+  return FEATURE_FAMILY[item.sub] || "other";
+}
+
 // 胸圍的相對常見程度（fillBreastSize 用）。沒列到的同格新字一律 10。
 const BREAST_WEIGHT = {
   "medium breasts": 30,
@@ -6171,7 +6205,39 @@ export function drawOne(lex, settings, pinned, userBanned, rand, seed, opts) {
     // 拿走，light 群裡 10 個 era:["any"] 的字機率恆為 0。era:["any"] 的意思是每個
     // 時代都能用，不是次等候選；真正不屬於當代的字 eraOk() 已經擋掉了。
     // 年代骨架與主場地由 stampAnchors("env") 和 fillSlot("env", "place") 負責。
+    if (section === "feature" && !selected && sceneMode !== "weird") return fillFeatureFlavor(pool, need);
     takeFromPool(pool, need, rand, commit, prefer, fillAllowed, mPre);
+  };
+
+  // 長相自由格（FEATURE_SHARE 的說明）。主亂數照舊洗一次牌、吃掉一樣多次，後面服裝、
+  // 姿勢、場景的抽法對每顆種子都不變；挑哪幾張用種子派生的獨立亂數。
+  const featureRand = Number.isFinite(seed) ? mulberry32(((seed >>> 0) ^ 0x00f1a7e5) >>> 0) : rand;
+  const fillFeatureFlavor = (pool, need) => {
+    if (mPre && mPre.taken && mPre.taken.size) pool = prefilterPoolByMutex(mPre.idx, mPre.taken, pool).kept;
+    const shuffled = shuffle(pool, rand);
+    // 走光、性愛的畫面，私密部位和觸碰本來就是重點，不是搶戲：份量照尺度拉回來。
+    const share = { ...(sceneMode === "diverse" ? FEATURE_SHARE_DIVERSE : FEATURE_SHARE), ...(FEATURE_SHARE_HEAT[heat] || {}) };
+    const famSize = new Map();
+    for (const item of shuffled) famSize.set(featureFamilyOf(item), (famSize.get(featureFamilyOf(item)) || 0) + 1);
+    const candidates = shuffled.map((item) => {
+      const fam = featureFamilyOf(item);
+      const w = (share[fam] ?? share.other) / famSize.get(fam);
+      return { item, weight: FEATURE_LOUD.has(item.tag) ? w * FEATURE_LOUD_FACTOR : w };
+    });
+    let n = 0;
+    while (n < need && candidates.length) {
+      let cursor = featureRand() * candidates.reduce((sum, c) => sum + c.weight, 0);
+      let index = candidates.length - 1;
+      for (let i = 0; i < candidates.length; i += 1) {
+        cursor -= candidates[i].weight;
+        if (cursor <= 0) {
+          index = i;
+          break;
+        }
+      }
+      const [{ item }] = candidates.splice(index, 1);
+      if (allow(item) && commit(item.tag)) n += 1;
+    }
   };
 
   // 佔住 place 這一格的時代錨，改成「偏好」而不是「無條件蓋章」。
