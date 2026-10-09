@@ -1874,7 +1874,8 @@ function startBlock() {
       { class: "pool-start-body" },
       "從字盒挑牌，或用下方起手式；留白的層由引擎補上。",
       // 手機沒有滑鼠懸停的放大卡：長按（放開）是唯一看得到牌面說明的地方，寫在第一次挑牌的這裡。
-      matchMedia("(hover: none)").matches ? "長按一張牌放開，可以看它的說明。" : null
+      // 自己一行：兩句黏在同一個文字節點裡，英文版會變成「layers.Long press」。
+      matchMedia("(hover: none)").matches ? el("span", { class: "pool-start-hint" }, "長按一張牌放開，可以看它的說明。") : null
     ),
     deckStarters(),
     starters.length

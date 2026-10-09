@@ -30,4 +30,16 @@ for (const rating of ['general', 'sensitive', 'explicit']) {
     draws++;
   }
 }
+// Breast size is weighted by how common each size is, not uniform across six options.
+{
+  const settings = { ...defaultSettings(data), girl: true, boy: false, rating: 'general', eras: ['modern'], heats: ['activity'] };
+  const count = new Map();
+  const N = 600;
+  for (let i = 1; i <= N; i++) {
+    for (const tag of drawOne(lex, settings, new Set(), new Set(), mulberry32(i), i).positive.split(', ')) count.set(tag, (count.get(tag) || 0) + 1);
+  }
+  const share = (tag) => (count.get(tag) || 0) / N;
+  assert.ok(share('huge breasts') + share('gigantic breasts') < 0.25, 'Huge and gigantic breasts stay uncommon at General');
+  assert.ok(share('medium breasts') > share('gigantic breasts') * 3, 'Medium breasts are far more common than gigantic');
+}
 console.log(`Release engine invariants: ${draws} draws across three ratings passed`);

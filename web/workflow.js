@@ -563,7 +563,8 @@ async function refreshComfy() {
     return;
   }
   const input = $("wf-url");
-  if (input && document.activeElement !== input) input.value = j.saved || j.api || "";
+  // 有焦點時不蓋掉正在打的字；但空的就填（從頂欄燈號點進來時游標已經先放進來了）。
+  if (input && (document.activeElement !== input || !input.value)) input.value = j.saved || j.api || "";
   if (j.note) say(j.note, "err");
 }
 
@@ -679,11 +680,35 @@ function closeModal() {
   );
 }
 
+/**
+ * 頂欄的「Comfy 未連」一點就打開這裡、游標放在 ComfyUI 網址：連不上時最直覺的下一步，
+ * 也是 README 跟出圖失敗訊息叫人去點的地方。
+ */
+function linkPing() {
+  const ping = $("ping");
+  if (!ping || ping.dataset.wfLink) return;
+  ping.dataset.wfLink = "1";
+  ping.tabIndex = 0;
+  ping.setAttribute("role", "button");
+  ping.title = "ComfyUI 網址（點一下修改）";
+  const go = () => {
+    openModal();
+    window.setTimeout(() => $("wf-url")?.focus(), 0);
+  };
+  ping.addEventListener("click", go);
+  ping.addEventListener("keydown", (e) => {
+    if (e.key !== "Enter" && e.key !== " ") return;
+    e.preventDefault();
+    go();
+  });
+}
+
 export function initWorkflow({ sampling: withSampling = false } = {}) {
   samplingOn = withSampling;
   ensureDom();
   renderPickBtn();
   $("wf-pick-btn")?.addEventListener("click", openModal);
+  linkPing();
   $("wf-close")?.addEventListener("click", closeModal);
   $("wf-modal")?.addEventListener("click", (e) => {
     if (e.target.id === "wf-modal") closeModal();

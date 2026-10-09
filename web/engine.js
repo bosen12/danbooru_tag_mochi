@@ -3659,6 +3659,16 @@ function isColorVariant(item) {
   return parts.length >= 2 && COLOR_WORD.has(parts[0]);
 }
 
+// 胸圍的相對常見程度（fillBreastSize 用）。沒列到的同格新字一律 10。
+const BREAST_WEIGHT = {
+  "medium breasts": 30,
+  "large breasts": 26,
+  "small breasts": 18,
+  "huge breasts": 13,
+  "flat chest": 8,
+  "gigantic breasts": 5,
+};
+
 function takeFromPool(pool, count, rand, commit, prefer, allow, mPre) {
   if (mPre && mPre.taken && mPre.taken.size) {
     pool = prefilterPoolByMutex(mPre.idx, mPre.taken, pool).kept;
@@ -6228,6 +6238,31 @@ export function drawOne(lex, settings, pinned, userBanned, rand, seed, opts) {
     takeFromPool(pool, 1, rand, commit, prefer, allow, mPre);
   };
 
+  // 胸圍：以前跟其他格一樣六種平均抽，全年齡、只開活動也有三成五是 huge／gigantic。
+  // 改成照常見程度加權。主亂數照舊洗一次牌（吃掉一樣多次），所以同一顆種子的其他牌
+  // 一張都不變；加權用種子派生的獨立亂數（同 compositionRand 的做法）。
+  const breastRand = Number.isFinite(seed) ? mulberry32(((seed >>> 0) ^ 0x00b2e457) >>> 0) : rand;
+  const fillBreastSize = () => {
+    if (mutexTaken.has("breast_size")) return;
+    const indexed = lex.byMutex && lex.byMutex.get("feature:breast_size");
+    let pool = mPool(indexed || lex.bySection.feature.filter((item) => item.mutex === "breast_size")).filter((item) => allow(item));
+    if (mPre && mPre.taken && mPre.taken.size) pool = prefilterPoolByMutex(mPre.idx, mPre.taken, pool).kept;
+    const candidates = shuffle(pool, rand).map((item) => ({ item, weight: BREAST_WEIGHT[item.tag] ?? 10 }));
+    while (candidates.length) {
+      let cursor = breastRand() * candidates.reduce((sum, c) => sum + c.weight, 0);
+      let index = candidates.length - 1;
+      for (let i = 0; i < candidates.length; i += 1) {
+        cursor -= candidates[i].weight;
+        if (cursor <= 0) {
+          index = i;
+          break;
+        }
+      }
+      const [{ item }] = candidates.splice(index, 1);
+      if (allow(item) && commit(item.tag)) return;
+    }
+  };
+
   // 場上已經看得出是哪個運動時，活動欄優先挑那個運動自己的活動（排球場 → 做運動，
   // 而不是逛街）。抽不到也沒關係，場地本來就會把不合的活動擋掉。
   const sportActivityPrefer = () => {
@@ -6350,7 +6385,7 @@ export function drawOne(lex, settings, pinned, userBanned, rand, seed, opts) {
     fillSlot("feature", "hair_color");
     fillGroup("feature", "hair_style");
   }
-  if (female) fillSlot("feature", "breast_size");
+  if (female) fillBreastSize();
   // 人種格在正常模式由 allow() 擋掉。多元／奇葩才擲。以前只在有男生時擲，
   // 女角的惡魔娘、史萊姆娘、乳牛娘就永遠進不了只有女生的多元圖。
   if (!real && (female || male) && rand() < 0.38) fillSlot("feature", "race");

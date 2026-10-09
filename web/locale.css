@@ -69,13 +69,16 @@ html[lang="en"] .mast-controls { flex-wrap: wrap; }
 html[lang="en"] .mast-tools { flex-wrap: wrap; }
 html[lang="en"] .page-switch a { min-height: 34px; padding-inline: 11px; font-size: 0.8125rem; }
 html[lang="en"] .page-switch a[aria-current="page"] { color: var(--locale-register); }
-html[lang="en"] :is(.panel-head h2, .book-title h2, .album-title h2, .wall-head h2, .plate-head h2) { letter-spacing: -0.03em; }
+html[lang="en"] :is(.panel-head h2, .book-title h2, .album-title h2, .wall-head h2, .plate-head h2, .case-head h2) { letter-spacing: -0.03em; }
 html[lang="en"] :is(.btn, .quiet-btn, .segmented button) { letter-spacing: 0; }
 html[lang="en"] :is(.panel-head, .plate-head, .trials-head, .wall-head) { flex-wrap: wrap; row-gap: 8px; }
 html[lang="en"] :is(.rule-row, .rule-steppers, .go-bar, .go-options, .plate-acts, .book-order) { flex-wrap: wrap; }
 html[lang="en"] .rule-label { min-width: 7rem; }
 html[lang="en"] .group-chip { min-height: 30px; white-space: normal; line-height: 1.25; text-align: left; }
 html[lang="en"] .chip-fam { letter-spacing: 0; }
+/* 給中文排的寬字距，英文字母會一個一個散開（「S t a r t  y o u r」）。 */
+html[lang="en"] :is(.pool-start-lead, .trials-title) { letter-spacing: -0.02em; }
+html[lang="en"] :is(.pb-go[data-wide="true"], .print-float[data-wide="true"] .pf-label, .pill-label, .deal-label) { letter-spacing: 0.02em; }
 html[lang="en"] .chip-fam::after { content: ":"; }
 html[lang="en"] .lib-search input { font-size: 0.8125rem; }
 html[lang="en"] .case-grid { grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); }

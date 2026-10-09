@@ -581,6 +581,18 @@ body #wf-pick-btn.has {
   background: var(--color-good);
 }
 
+/* 有工作流面板的房間：點燈號改 ComfyUI 網址（web/workflow.js 的 linkPing）。 */
+.ping[role="button"] {
+  cursor: pointer;
+  border-radius: var(--radius-sm, 4px);
+}
+
+.ping[role="button"]:hover span {
+  color: var(--color-ink);
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
 .ping[data-ok="0"] i {
   background: var(--color-accent);
 }

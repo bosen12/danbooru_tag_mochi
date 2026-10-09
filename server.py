@@ -215,6 +215,24 @@ def negative_for(rating) -> str:
     return NEGATIVE + (", " + ", ".join(add) if add else "")
 _DEFAULT_ALLOW_NET = "127.0.0.0/8,100.64.0.0/10"
 
+# 卡面 manifest 裡給烘焙腳本的欄位（提示詞、種子）佔了一半以上，瀏覽器用不到：
+# 每一頁都要載它（手機走 Tailscale 時更有感），送出去之前拿掉。檔案本身不動。
+_MANIFEST_BUILD_ONLY = ("positive", "negative", "seed")
+
+
+def slim_card_manifest(raw: bytes) -> bytes:
+    try:
+        data = json.loads(raw)
+    except ValueError:
+        return raw
+    if not isinstance(data, dict):
+        return raw
+    out = {
+        tag: ({k: v for k, v in entry.items() if k not in _MANIFEST_BUILD_ONLY} if isinstance(entry, dict) else entry)
+        for tag, entry in data.items()
+    }
+    return json.dumps(out, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
+
 
 def parse_allow_nets(raw: str | None = None):
     if raw is None:
@@ -3918,6 +3936,8 @@ class Handler(BaseHTTPRequestHandler):
         if hit and hit["mtime"] == st.st_mtime_ns and hit["size"] == st.st_size:
             return hit
         raw = dest.read_bytes()
+        if dest.name == "manifest.json" and dest.parent.name == "cards":
+            raw = slim_card_manifest(raw)
         mime = mimetypes.guess_type(dest.name)[0] or "application/octet-stream"
         base = mime.split(";")[0]
         gz = None
@@ -4009,7 +4029,7 @@ class Handler(BaseHTTPRequestHandler):
         data = rec["gz"] if use_gz else rec["raw"]
         self.send_response(200)
         self.send_header("Content-Type", mime)
-        self.send_header("Content-Length", str(len(data) if body else rec["size"]))
+        self.send_header("Content-Length", str(len(data) if body else len(rec["raw"])))
         self.send_header("ETag", etag)
         self.send_header("Cache-Control", cache)
         self.send_header("Vary", "Accept-Encoding")
@@ -4203,7 +4223,8 @@ class Handler(BaseHTTPRequestHandler):
             return
         if path == "/api/gen":
             if not ping().get("ok"):
-                self._json(503, {"ok": False, "error": "ComfyUI 連不上 " + comfy_base()})
+                # 第一次用的人最常遇到：說清楚下一步（開 ComfyUI，或改位址）。
+                self._json(503, {"ok": False, "error": f"ComfyUI 連不上 {comfy_base()}：先開 ComfyUI；位址不對就點頂欄的 Comfy 燈號改"})
                 return
             accept = self.headers.get("Accept") or ""
             if "text/event-stream" in accept:

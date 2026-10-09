@@ -7,7 +7,15 @@ import { resolve, extname, sep } from 'node:path';
 import { createRequire } from 'node:module';
 import { tmpdir } from 'node:os';
 const require = createRequire(import.meta.url);
-const { chromium } = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
+// Playwright: PLAYWRIGHT_MODULE, then a project/global install, then a local Codex runtime copy.
+const { chromium } = (() => {
+  const { homedir } = require('node:os');
+  const tries = [process.env.PLAYWRIGHT_MODULE, 'playwright', resolve(homedir(), '.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright')].filter(Boolean);
+  for (const name of tries) {
+    try { return require(name); } catch {}
+  }
+  throw new Error('Playwright not found. Run: npm install --no-save playwright && npx playwright install chromium');
+})();
 const root = resolve(import.meta.dirname, '..'), out = process.env.BROWSER_RESULTS_DIR || await mkdtemp(resolve(tmpdir(), 'mochi-browser-'));
 const frontend = existsSync(resolve(root, 'web6/index.html')) ? 'web6' : 'web';
 await mkdir(out, { recursive: true });

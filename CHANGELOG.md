@@ -15,6 +15,11 @@ The public application release [v1.0](https://github.com/bosen12/danbooru_tag_mo
 - Windows test diagnostics use UTF-8, and launcher fixtures isolate both ProgramFiles and ProgramW6432.
 - Added contribution instructions, issue forms, this changelog and verification evidence.
 - Community post drafts are kept locally and excluded from the public repository.
+- Breast size is weighted by how common each size is instead of uniform across six options. At General with Activity, huge or gigantic fell from about 35% to under 20% of images. Every other card for the same seed is unchanged unless a rule depends on breast size.
+- The card-art manifest is served without bake-only fields (prompts, seeds): about 1.07 MB → 0.46 MB parsed on every page.
+- The Comfy indicator in the top bar opens the ComfyUI URL setting (Ink Pool, Fuse Bed), as the README describes. When ComfyUI is unreachable, the failed image says what to do next, in English too.
+- English layout fixes: headings and buttons spaced for Chinese (“S t a r t  y o u r”) use normal letter spacing; Card Book sort arrows no longer touch their labels; the Fuse Bed touch hint is its own line.
+- Windows launcher test reads cmd output in any console code page.
 
 ### Tested scope and limitations
 

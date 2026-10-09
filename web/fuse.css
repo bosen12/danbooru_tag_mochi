@@ -1301,6 +1301,10 @@ body.fuse {
   color: var(--color-ink-2);
 }
 
+.pool-start-hint {
+  display: block;
+}
+
 /* 起手式像一頁排字樣本：一行一組、行間一條細線，不是三張等寬的選項卡。 */
 .starters {
   display: grid;

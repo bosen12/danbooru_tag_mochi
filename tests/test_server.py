@@ -117,6 +117,14 @@ nets = parse_allow_nets("")
 ok("loopback allowed", allowed_client("127.0.0.1", nets))
 ok("loopback net allowed", allowed_client("127.0.0.2", nets))
 ok("tailscale allowed", allowed_client("100.79.212.103", nets))
+
+# 卡面 manifest 送給瀏覽器時拿掉烘焙用的欄位，畫面要的欄位全留著。
+_slim = json.loads(server.slim_card_manifest(json.dumps({
+    "red hair": {"file": "red_hair.webp", "seed": 7, "positive": "1girl, red hair", "negative": "x", "rating": "general",
+                 "thumb": True, "v": "abc", "mini": {"src": "abc", "w": {"160": "d"}}},
+}).encode()))
+ok("card manifest: build-only fields dropped", set(_slim["red hair"]) == {"file", "rating", "thumb", "v", "mini"}, str(_slim))
+ok("card manifest: invalid JSON passes through", server.slim_card_manifest(b"not json") == b"not json")
 ok("cgnat low allowed", allowed_client("100.64.0.1", nets))
 ok("cgnat high allowed", allowed_client("100.127.255.254", nets))
 ok("wifi blocked", not allowed_client("192.168.1.101", nets))

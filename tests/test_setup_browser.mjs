@@ -6,7 +6,15 @@ import { existsSync } from 'node:fs';
 import { resolve, extname, sep } from 'node:path';
 import { createRequire } from 'node:module';
 const require = createRequire(import.meta.url);
-const { chromium } = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
+// Playwright: PLAYWRIGHT_MODULE, then a project/global install, then a local Codex runtime copy.
+const { chromium } = (() => {
+  const { homedir } = require('node:os');
+  const tries = [process.env.PLAYWRIGHT_MODULE, 'playwright', resolve(homedir(), '.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright')].filter(Boolean);
+  for (const name of tries) {
+    try { return require(name); } catch {}
+  }
+  throw new Error('Playwright not found. Run: npm install --no-save playwright && npx playwright install chromium');
+})();
 const root = resolve(import.meta.dirname, '..'), frontend = existsSync(resolve(root, 'web6/index.html')) ? 'web6' : 'web';
 const texts = {
   install: '選用：安裝 LoRA Manager 到 ComfyUI，安裝 Python 套件並加入詳情連結補丁；裝完要重開 ComfyUI',

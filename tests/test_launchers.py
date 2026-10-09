@@ -32,10 +32,11 @@ def launch(version="3.13", **settings):
     cmd=str(Path(os.environ['SystemRoot'])/'System32'/'cmd.exe')
     # 64-bit cmd can restore ProgramFiles from ProgramW6432. Both must point
     # at the fixture so this test never invokes the real Tailscale executable.
-    probe=subprocess.run([cmd,'/d','/c','echo %ProgramFiles%'],env=env,text=True,capture_output=True,timeout=5)
+    # cmd writes in the console code page (cp950 on Traditional Chinese Windows); only the ASCII SERVER line is parsed.
+    probe=subprocess.run([cmd,'/d','/c','echo %ProgramFiles%'],env=env,text=True,errors='replace',capture_output=True,timeout=5)
     assert probe.returncode == 0 and probe.stdout.strip() == str(stage), "ProgramFiles fixture was overridden"
     result=subprocess.run([cmd,'/d','/c',str(stage/'start.bat')],
-                          cwd=stage,env=env,input='\n',text=True,capture_output=True,timeout=15)
+                          cwd=stage,env=env,input='\n',text=True,errors='replace',capture_output=True,timeout=15)
     values=[line.removeprefix('SERVER ') for line in result.stdout.splitlines() if line.startswith('SERVER ')]
     return result, json.loads(values[-1]) if values else None
 

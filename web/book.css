@@ -91,7 +91,11 @@
   gap: var(--space-xs);
 }
 
+/* 箭頭跟字之間留一點空：gap 要 flex 才有用（按鈕本來是 block，英文會黏成「↓Most used」）。 */
 .book-order .segmented button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   gap: 0.3em;
 }
 

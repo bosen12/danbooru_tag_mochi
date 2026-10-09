@@ -5611,7 +5611,8 @@ function indoorOutdoorClash(have) {
     // 這張換成超短裙、過大襯衫、峽谷、人力車。仍是 1girl solo，沒有男生，也沒有人類陰莖。
     // 第三十四次（2026-10-06）：花紋衣服拿掉，駕駛員服換成機甲駕駛服。
     // 這張換成過大的衣服、破襯衫、藍內褲、屈膝禮、背面。仍是 1girl solo，沒有男生，也沒有人類陰莖。
-    "1girl, solo, very short hair, yellow eyes, aqua hair, undercut, medium breasts, whip marks, huge ass, ass tattoo, microskirt, skirt, oversized clothes, torn shirt, shirt, blue panties, panties, female masturbation, curtsey, standing, from behind, looking down, ahegao, canyon, outdoors, twilight, sunlight, rickshaw, traffic light, nsfw, explicit, masterpiece, best quality, amazing quality");
+    // 第三十五次（2026-10-09）：胸圍改成照常見程度加權（fillBreastSize，種子派生的獨立亂數）。只有胸圍這張變（中等胸部 → 巨乳），其餘逐字相同。
+    "1girl, solo, very short hair, yellow eyes, aqua hair, undercut, huge breasts, whip marks, huge ass, ass tattoo, microskirt, skirt, oversized clothes, torn shirt, shirt, blue panties, panties, female masturbation, curtsey, standing, from behind, looking down, ahegao, canyon, outdoors, twilight, sunlight, rickshaw, traffic light, nsfw, explicit, masterpiece, best quality, amazing quality");
   ok("drawOne exposes shadow diagnostics", Array.isArray(shadowIntegrationDraw.shadowViolations));
 
   const eatProneShadow = validateSupportShadow({

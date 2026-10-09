@@ -1421,6 +1421,8 @@ LoRA：沒設定 paths.loraRoot，改問 ComfyUI 也失敗了：{0}|LoRA: no LoR
 第一次使用：準備中 {0}/{1}|First-time setup {0}/{1}
 重開失敗（{0}）：請自己重開 ComfyUI|Restart failed ({0!}). Restart ComfyUI yourself.
 {0}（下次啟動接著抓）|{0} (resumes next launch)
+ComfyUI 網址（點一下修改）|ComfyUI URL (click to change)
+ComfyUI 連不上 {0}：先開 ComfyUI；位址不對就點頂欄的 Comfy 燈號改|Cannot reach ComfyUI at {0!}. Start ComfyUI, or click the Comfy indicator in the top bar to change the URL.
 下載中 {0}%（{1}）|Downloading {0}% ({1!})
 烘焙中 {0}/{1}|Baking {0}/{1}
 下載 {0}…|Downloading {0!}…
