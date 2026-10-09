@@ -1433,6 +1433,11 @@ ComfyUI 退件：{0}|ComfyUI rejected the workflow: {0}
 ComfyUI 沒有裝「{0}」這個節點：用 ComfyUI-Manager 的「Install Missing Custom Nodes」裝好、重開 ComfyUI 再試|This ComfyUI does not have the “{0!}” node. Install it with ComfyUI-Manager's Install Missing Custom Nodes, restart ComfyUI and try again.
 字盒裡沒有「{0}」。|No card matches “{0!}”.
 看全部|Show all
+停止|Stop
+現在沒有在跑|Nothing is running
+停了：下次啟動會再問（下載會接著抓）|Stopped. You will be asked again next launch (the download resumes).
+停了：已經烘好的留著；下次啟動接著烘|Stopped. Cards already baked are kept; baking resumes next launch.
+停了：已經烘好的留著，重新整理就看得到；下次啟動會再問|Stopped. Cards already baked are kept; reload to see them. You will be asked again next launch.
 ComfyUI 裡還沒有任何底模：下載一個 SDXL 底模（建議 Illustrious 系，例如 WAI-Illustrious）放進 ComfyUI 的 models/checkpoints，重開 ComfyUI 再試|ComfyUI has no checkpoints yet. Download an SDXL checkpoint (an Illustrious model such as WAI-Illustrious is recommended) into ComfyUI's models/checkpoints, restart ComfyUI and try again.
 下面決定排字匣要改這套工作流的哪些地方，沒選的保留它的原值。|Choose what Danbooru Case changes in this workflow. Anything not picked keeps the workflow's value.
 沒選就是內建。要用自己的工作流：把 ComfyUI 用它畫的任何一張 PNG 拖進來，或匯入「匯出工作流 (API)」的 JSON。|Built in unless you pick one. To use your own workflow, drop any PNG ComfyUI made with it, or import the JSON from Export (API).

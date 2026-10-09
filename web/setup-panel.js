@@ -54,8 +54,11 @@ function render(snap) {
   foot.hidden = !acts.length;
 }
 
+// 跑很久的（烘幾百張卡面、下載 2.5 GB）可以停；已經做好的留著，下次啟動接著做或再問。
+const STOPPABLE = new Set(["bake", "bake_adult", "pose"]);
+
 function row(it) {
-  const answers = it.state === "ask" ? ANSWER[it.id] || [] : [];
+  const answers = it.state === "ask" ? ANSWER[it.id] || [] : it.state === "run" && STOPPABLE.has(it.id) ? [["stop", "停止"]] : [];
   return el(
     "li",
     { class: "setup-item", dataset: { state: it.state } },

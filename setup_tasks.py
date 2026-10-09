@@ -122,6 +122,7 @@ def _run(key: str, args: list[str], show: bool = True) -> int:
     except OSError as err:
         _log(f"{key}: cannot start {args[0]}: {err}")
         return 1
+    _procs[key] = proc
     for line in proc.stdout:
         line = line.strip()
         if not line:
@@ -133,10 +134,30 @@ def _run(key: str, args: list[str], show: bool = True) -> int:
         if text and key in _state:
             with _lock:
                 _state[key]["text"] = text
-    return proc.wait()
+    code = proc.wait()
+    _procs.pop(key, None)
+    return code
 
 
 _last_check = [""]
+# 正在跑的子程序（烘焙、姿勢參考下載可以按「停止」）。
+_procs: dict = {}
+_stopped: set = set()
+STOPPABLE = ("bake", "bake_adult", "pose")
+
+
+def stop(key: str) -> tuple[bool, str]:
+    """網頁上按「停止」：已經烘好、下載好的留著，下次啟動會接著做或再問。"""
+    proc = _procs.get(key)
+    if key not in STOPPABLE or proc is None or proc.poll() is not None:
+        return False, "現在沒有在跑"
+    _stopped.add(key)
+    try:
+        proc.terminate()
+    except OSError:
+        pass
+    _log(f"{key}: stopped from the page")
+    return True, ""
 # 烘一張卡面大約幾秒（RTX 級顯卡實測 6.4 秒；估時用，寧可說多一點）。
 BAKE_SECONDS = 7
 
@@ -318,7 +339,11 @@ def _pose() -> None:
 
 def _pose_install() -> None:
     _set("pose", "run", "安裝節點、下載模型（約 2.5 GB）")
-    if _run("pose", ["fetch_pose_assets.py"]) != 0:
+    rc = _run("pose", ["fetch_pose_assets.py"])
+    if "pose" in _stopped:
+        _set("pose", "skip", "停了：下次啟動會再問（下載會接著抓）")
+        return
+    if rc != 0:
         _set("pose", "error", _failed("安裝失敗") + "（下次啟動接著做）")
         return
     if pose_node_loaded():
@@ -343,6 +368,10 @@ def _bake() -> None:
     if code == 10:
         _set("bake", "run", "用你的 ComfyUI 烘還沒有的全年齡卡面")
         rc = _run("bake", ["bake_card_art.py", "--rating", "general"])
+        if "bake" in _stopped:
+            _set("bake", "skip", "停了：已經烘好的留著；下次啟動接著烘", reload=True)
+            _set("bake_adult", "skip", "")
+            return
         if rc != 0:
             _set("bake", "error", _failed("烘焙失敗"))
             _set("bake_adult", "skip", "")
@@ -359,6 +388,9 @@ def _bake() -> None:
 def _bake_adult() -> None:
     _set("bake_adult", "run", "用你的 ComfyUI 烘敏感、色情卡面")
     rc = _run("bake_adult", ["bake_card_art.py"])
+    if "bake_adult" in _stopped:
+        _set("bake_adult", "skip", "停了：已經烘好的留著，重新整理就看得到；下次啟動會再問", reload=True)
+        return
     _set("bake_adult", "done" if rc == 0 else "error", "烘好了：重新整理網頁就有圖" if rc == 0 else _failed("烘焙失敗"), reload=rc == 0)
 
 
@@ -381,9 +413,11 @@ def _main() -> None:
 
 
 def answer(key: str, value: str) -> tuple[bool, str]:
-    """網頁上的回答：pose yes/no/never、bake_adult yes/no、restart。"""
+    """網頁上的回答：pose yes/no/never、bake_adult yes/no、restart；跑著的烘焙、姿勢下載可以 stop。"""
     if key == "restart":
         return restart_comfy()
+    if value == "stop":
+        return stop(key)
     with _lock:
         cur = _state.get(key) or {}
         if cur.get("state") != "ask" or value not in (cur.get("answers") or []):

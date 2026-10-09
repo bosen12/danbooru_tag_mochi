@@ -193,6 +193,25 @@ for k in st.ORDER:
 snap = st.snapshot()
 ok("全部好了：沒有進行中的事", not snap["active"] and not snap["restart"], str(snap))
 
+# 8. 烘幾百張卡面、下載 2.5 GB 可以停：子程序收到 terminate，已經做好的留著，狀態寫「停了」。
+ran = reset({})
+st._stopped.clear()
+ok("沒在跑的不能停", st.answer("bake_adult", "stop")[0] is False)
+class _FakeProc:
+    terminated = False
+    def poll(self):
+        return None
+    def terminate(self):
+        _FakeProc.terminated = True
+st._procs["bake_adult"] = _FakeProc()
+ok("跑著的可以停", st.answer("bake_adult", "stop")[0] and _FakeProc.terminated)
+st._procs.clear()
+st._stopped.clear()
+st._run = lambda key, args, show=True: (st._stopped.add(key), 1)[1]  # 跑到一半被按了停止
+st._bake_adult()
+ok("停了：不算失敗，提示重新整理看已烘好的", state("bake_adult") == "skip" and st._state["bake_adult"].get("reload"), str(st._state["bake_adult"]))
+st._stopped.clear()
+
 # 7. 腳本印給終端機的英文不上畫面：進度換成中文（英文版再由 en.js 翻），其他行不顯示。
 pt = st.progress_text
 ok("下載進度換成中文", pt("45%   12.3/100.0 MB  2.31 MB/s") == "下載中 45%（12.3/100.0 MB）", pt("45%   12.3/100.0 MB"))
