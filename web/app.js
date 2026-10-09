@@ -31,6 +31,7 @@ import { watchGone, sweepGone } from "./gone.js";
 import { relationsOf } from "./fuse-bed.js";
 import { drawWithSeed } from "./draw-with-seed.js";
 import { ratingBlocked, RATING_LABEL } from "./rules/rating.js";
+import { searchMiss } from "./lib-hint.js";
 import { HEATS, toggleHeat } from "./heats.js";
 import { SCENE_MODES, SCENE_MODE_LABELS, heatBlockedByRating } from "./scene-policy.js";
 import { initLoraPicker, currentLorasPayload, currentTriggerText, currentCkpt, handleLoraKeys } from "./lora.js";
@@ -595,7 +596,7 @@ function renderLibrary() {
   // 打到沒有符合的那一下，搜尋框輕輕搖頭（跟疊印台的找牌框一樣）。之後繼續打、仍然沒有，不再搖。
   if (q && !list.length && was !== "empty") refuse($("lib-q"));
   if (!list.length) {
-    grid.replaceChildren(el("p", { class: "lib-empty" }, q ? `字盒裡沒有「${ui.query}」。可能被分級、性別或時代收起來了。` : "這一格沒有字。"));
+    grid.replaceChildren(q ? libraryMiss(q) : el("p", { class: "lib-empty" }, "這一格沒有字。"));
     markEnterTarget();
     return;
   }
@@ -612,6 +613,50 @@ function renderLibrary() {
   }
   dealLibrary = false;
   markEnterTarget();
+}
+
+/** 搜不到：說是被花色、分級、性別還是時代收起來的，並給一顆按鈕解開（lib-hint.js）。 */
+function libraryMiss(q) {
+  const shownBy = (c) => visible(c) && (ui.suit === "all" || c.suit === ui.suit) && (!ui.group || c.group === ui.group);
+  const unlockRating = (c) => ["general", "sensitive", "explicit"].find((r) => !ratingBlocked(c.item, r)) || "explicit";
+  const radio = (label, i) => $("rules").querySelectorAll(`[aria-label="${t(label)}"] [role="radio"]`)[i];
+  return searchMiss({
+    cards: lib.cards,
+    q,
+    query: ui.query,
+    className: "lib-empty",
+    reasons: [
+      {
+        hides: (c) => visible(c) && !shownBy(c),
+        text: (c) => `「${c.zh}」在「${CARD_SUIT_INFO[c.suit]?.zh || c.suit}」裡`,
+        label: () => "看全部",
+        run: () => pickSuit("all"),
+      },
+      {
+        hides: (c) => ratingBlocked(c.item, settings.rating),
+        text: (c) => `「${c.zh}」要在「${RATING_LABEL[unlockRating(c)]}」才看得到`,
+        label: (c) => `切到${RATING_LABEL[unlockRating(c)]}`,
+        run: (c) => $("rating").querySelector(`[data-v="${unlockRating(c)}"]`)?.click(),
+      },
+      {
+        hides: (c) => (c.gate === "male" && !settings.boy) || (c.gate === "female" && !settings.girl),
+        text: (c) => `「${c.zh}」是${c.gate === "male" ? "男生" : "女生"}的牌`,
+        label: () => "人物改成不限",
+        run: () => radio("畫面裡有誰", 2)?.click(),
+      },
+      {
+        hides: (c) => !visible(c),
+        text: (c) => `「${c.zh}」不屬於現在的時代`,
+        label: () => "顯示所有時代",
+        run: () => {
+          ui.eraOnly = false;
+          saveUi();
+          renderRules();
+          renderLibrary();
+        },
+      },
+    ],
+  });
 }
 
 /** 搜尋框裡打了字：Enter 會放進合成池的那一張（第一張）描一圈。 */

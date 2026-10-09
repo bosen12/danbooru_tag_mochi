@@ -5670,7 +5670,8 @@ function indoorOutdoorClash(have) {
     // 仍是 1girl solo，沒有男生，也沒有人類陰莖。
     // 第三十八次（2026-10-09）：第三、四輪 38 個現役詞進池。這張換成大量泌乳、觸手夾乳、玄關。
     // 仍是 1girl solo，沒有男生，也沒有人類陰莖。
-    "1girl, solo, very short hair, yellow eyes, aqua hair, undercut, huge breasts, hair flower, excessive lactation, lactation, completely nude, jewelry, glasses, neck ribbon, ribbon, masturbation, squatting, portrait, averting eyes, naughty face, tentacle between breasts, tentacles, genkan, indoors, twilight, moonlight, confetti, nsfw, explicit, masterpiece, best quality, amazing quality");
+    // 第三十九次（2026-10-09）：正常場景不再自己補手的構圖母題（HAND_MOTIF）。只有觸手夾乳換成乳頭牽繩。仍是 1girl solo，沒有男生。
+    "1girl, solo, very short hair, yellow eyes, aqua hair, undercut, huge breasts, hair flower, excessive lactation, lactation, completely nude, jewelry, glasses, neck ribbon, ribbon, masturbation, squatting, portrait, averting eyes, naughty face, nipple leash, genkan, indoors, twilight, moonlight, confetti, nsfw, explicit, masterpiece, best quality, amazing quality");
   ok("drawOne exposes shadow diagnostics", Array.isArray(shadowIntegrationDraw.shadowViolations));
 
   const eatProneShadow = validateSupportShadow({

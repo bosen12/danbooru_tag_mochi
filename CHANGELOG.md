@@ -15,6 +15,9 @@ The public application release [v1.0](https://github.com/bosen12/danbooru_tag_mo
 - Windows test diagnostics use UTF-8, and launcher fixtures isolate both ProgramFiles and ProgramW6432.
 - Added contribution instructions, issue forms, this changelog and verification evidence.
 - Community post drafts are kept locally and excluded from the public repository.
+- When a search finds nothing, the library says why and offers one button to fix it: switch rating (“breast pile only appears at Explicit”), set Cast to Any, show all eras, or show all suits. Fuse Bed's card search does the same, and names cards that are in Blocked cards.
+- Phone: Draw & generate sits right under the count, so the first screen shows it whole and no longer shows two sets of draw buttons.
+- Normal scenes no longer add hand motifs (giant hand, shadow hands, too many hands, floating hands) on their own; pin them or use Diverse/Weird.
 - 156 new cards for breast and chest interactions, hand motifs and hugs (2,552 → 2,708), each checked against Danbooru. 29 of them can appear at General (hugs, hands on chest, extra arms, floating hands); the rest are Sensitive or Explicit. Cards that need several girls (bust chart, surrounded by breasts) are no longer padded into two girls and two boys.
 - Free Appearance slots (the ones past the five fixed slots) favor details like eyelashes, bangs, blush, makeup and build over premise-changing traits (wings, tails, blood, family relations, pregnancy). Normal scenes: about 0.7 such traits per image → 0.2. Diverse loosens non-human traits; Weird keeps the old uniform draw; Flash and Sex restore intimate details.
 - Breast size is weighted by how common each size is instead of uniform across six options. At General with Activity, huge or gigantic fell from about 35% to under 20% of images. Every other card for the same seed is unchanged unless a rule depends on breast size.

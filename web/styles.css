@@ -1730,6 +1730,26 @@ body #wf-pick-btn.has {
   .go-bar > .btn:not(.btn-ghost):not(.btn-primary) {
     grid-column: 1 / -1;
   }
+  /* 主按鈕緊接在張數下面，開關和種子往後：第一屏就看得到整顆「抽並生圖」，
+     底部浮動列才會收起（以前主按鈕被切一半，第一屏同時有兩組「只抽牌」）。 */
+  .go-bar > * {
+    order: 4;
+  }
+  .go-bar > .stepper {
+    order: 0;
+  }
+  .go-bar > .btn:not(.btn-ghost):not(.btn-primary) {
+    order: 1;
+  }
+  .go-bar > .btn-primary {
+    order: 2;
+  }
+  .go-bar > .btn-ghost {
+    order: 3;
+  }
+  .go-bar > .seed-ctl {
+    order: 5;
+  }
 }
 
 /* ---------- 成品牆 ---------- */
@@ -5712,4 +5732,12 @@ html[data-setup] .tour-offer {
   .setup-item[data-state="run"] .setup-icon {
     animation: none;
   }
+}
+
+/* 字盒、找牌框搜不到時：一句原因加一顆解開的按鈕（lib-hint.js）。 */
+.lib-hint {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-xs) var(--space-sm);
 }

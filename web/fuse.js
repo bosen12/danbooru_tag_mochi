@@ -30,6 +30,7 @@ import { drawWithSeed } from "./draw-with-seed.js";
 import { skeletonPicker } from "./skeleton-picker.js";
 import { compareThumb } from "./compare.js";
 import { ratingBlocked, RATING_LABEL } from "./rules/rating.js";
+import { searchMiss } from "./lib-hint.js";
 import { watchGone, sweepGone } from "./gone.js";
 import { HEATS, toggleHeat } from "./heats.js";
 import { heatBlockedByRating } from "./scene-policy.js";
@@ -3131,6 +3132,41 @@ function visibleCard(card) {
   return true;
 }
 
+/** 找牌框搜不到：說是被花色、分級、性別還是廢字簍收起來的（lib-hint.js）。 */
+function caseMiss(q) {
+  const inTab = (c) => caseTab === "all" || c.suit === caseTab;
+  return searchMiss({
+    cards: lib.cards,
+    q,
+    query: $("case-q").value.trim(),
+    className: "case-empty",
+    reasons: [
+      {
+        hides: (c) => visibleCard(c) && (!inTab(c) || (caseGroup && c.group !== caseGroup) || caseTab === "match"),
+        text: (c) => `「${c.zh}」在「${CARD_SUIT_INFO[c.suit]?.zh || c.suit}」裡`,
+        label: () => "看全部",
+        run: () => $("case-tabs").querySelector('[data-tab="all"]')?.click(),
+      },
+      {
+        hides: (c) => !rankOk(c),
+        text: (c) => `「${c.zh}」要在「${RATING_LABEL[c.rating] || c.rating}」才看得到`,
+        label: (c) => `切到${RATING_LABEL[c.rating] || c.rating}`,
+        run: (c) => $("rating").querySelector(`[data-v="${c.rating}"]`)?.click(),
+      },
+      {
+        hides: (c) => (c.gate === "male" && !settings.boy) || (c.gate === "female" && !settings.girl),
+        text: (c) => `「${c.zh}」是${c.gate === "male" ? "男生" : "女生"}的牌`,
+        label: () => "人物改成不限",
+        run: () => setSettings({ girl: true, boy: true }),
+      },
+      {
+        hides: (c) => bans.has(c.tag),
+        text: (c) => `「${c.zh}」在廢字簍裡：從廢字簍拿出來就看得到`,
+      },
+    ],
+  });
+}
+
 function affinities() {
   const out = new Map();
   const has = new Set(bed.pins);
@@ -3243,11 +3279,13 @@ function renderCase() {
   }
   if (!list.length) {
     const emptyKey = (q ? "q:" + q : "") + "|" + caseTab + "|" + caseGroup;
-    const empty = el(
-      "p",
-      { class: "case-empty" },
-      caseTab === "match" && !bed.pins.length ? "放一張牌上版，這裡會列出跟它呼應的牌，和引擎常常補進來的牌。" : "沒有符合的牌。"
-    );
+    const empty = q
+      ? caseMiss(q)
+      : el(
+          "p",
+          { class: "case-empty" },
+          caseTab === "match" && !bed.pins.length ? "放一張牌上版，這裡會列出跟它呼應的牌，和引擎常常補進來的牌。" : "沒有符合的牌。"
+        );
     grid.append(empty);
     if (emptyKey !== caseEmptyShown) {
       caseEmptyShown = emptyKey;

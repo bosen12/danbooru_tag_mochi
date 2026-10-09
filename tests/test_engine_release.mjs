@@ -56,4 +56,13 @@ for (const rating of ['general', 'sensitive', 'explicit']) {
   assert.ok(nonhuman('normal') < 0.15, 'Normal scenes rarely add non-human traits on their own');
   assert.ok(nonhuman('weird') > nonhuman('normal'), 'Weird scenes keep the old, uniform free-feature draw');
 }
+// Hand motifs (giant hand, shadow hands…) rewrite the whole picture: Normal scenes only use them when pinned.
+{
+  const settings = { ...defaultSettings(data), girl: true, boy: false, rating: 'general', heats: ['tease'], eras: ['modern'], sceneMode: 'normal' };
+  let random = 0;
+  for (let i = 1; i <= 400; i++) if (/giant hand|shadow hands|too many hands|disembodied hand/.test(drawOne(lex, settings, new Set(), new Set(), mulberry32(i), i).positive)) random++;
+  assert.equal(random, 0, 'Normal scenes do not add hand motifs on their own');
+  const pin = applyPin(lex, new Set(), new Set(), 'giant hand').pinned;
+  assert.ok(drawOne(lex, settings, pin, new Set(), mulberry32(7), 7).positive.includes('giant hand'), 'A pinned hand motif still appears');
+}
 console.log(`Release engine invariants: ${draws} draws across three ratings passed`);

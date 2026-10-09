@@ -3700,6 +3700,7 @@ const FEATURE_SHARE = {
 };
 // 多元：非人特徵、人設放寬（人種格也是多元才開）。
 const FEATURE_SHARE_DIVERSE = { ...FEATURE_SHARE, nonhuman: 8, persona: 3, mark: 6, tattoo: 5 };
+const HAND_MOTIF = new Set(["disembodied hand", "shadow hands", "giant hand", "too many hands"]);
 const FEATURE_SHARE_HEAT = { flash: { intimate: 8, touch: 5 }, sex: { intimate: 9, touch: 6 } };
 const FEATURE_LOUD = new Set([
   "pregnant", "quadruple amputee", "giantess", "minigirl", "old woman", "old man", "obese", "fat man",
@@ -7170,6 +7171,9 @@ export function drawOne(lex, settings, pinned, userBanned, rand, seed, opts) {
   }
 
   fill("pose", (item) => {
+    // 手的構圖母題（影子手、巨手、一堆手、浮空手）會改寫整張圖的設定：正常場景不自己補，
+    // 全年齡以前約 4% 的圖會冒出來。釘它、或開多元／奇葩照舊抽得到。
+    if (sceneMode === "normal" && HAND_MOTIF.has(item.tag)) return false;
     if (people >= 2 && soloSex(item.tag)) return false;
     if ((heat === "sex" || hasSexAct) && item.mutex === "activity" && !SEX_OK_ACTIVITY.has(item.tag)) return false;
     return true;
