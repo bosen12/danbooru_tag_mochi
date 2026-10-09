@@ -113,6 +113,13 @@ def apply_mapping(workflow: dict, mapping: dict | None, values: dict | None) -> 
     patch("negative", values.get("negative"))
     if "seed" in values:
         patch("seed", values.get("seed"))
+        # 兩段式（Hires）、KSamplerAdvanced 加細節器：每一個取樣器的種子都要換，
+        # 否則只有第一個跟著變，作品冊記的種子也對不上實際用的。
+        seed_spec = mapping.get("seed") if isinstance(mapping.get("seed"), dict) else {}
+        if (seed_spec.get("mode") or "keep") == "control":
+            for extra in seed_spec.get("also") or []:
+                if isinstance(extra, dict):
+                    patch("seed", values.get("seed"), {**extra, "mode": "control"})
     if "width" in values:
         patch("width", values.get("width"))
     if "height" in values:
@@ -303,6 +310,44 @@ def prompt_candidates(workflow: dict) -> list[dict]:
     return out
 
 
+_SEED_INPUTS = ("seed", "noise_seed")
+_SEED_SOURCE_INPUTS = ("seed", "noise_seed", "value", "int")
+LATENT_NODES = ("EmptyLatentImage", "EmptySD3LatentImage")
+
+
+def seed_targets(workflow: dict) -> list[dict]:
+    """每一個會用到種子的地方：取樣器自己的 seed／noise_seed，或是接過來的 Primitive 種子節點。"""
+    out: list[dict] = []
+    seen: set = set()
+
+    def add(nid: str, name: str) -> None:
+        if (nid, name) not in seen:
+            seen.add((nid, name))
+            out.append({"node": nid, "input": name})
+
+    for nid, node in workflow.items():
+        if str(nid).startswith("_") or not isinstance(node, dict):
+            continue
+        inputs = node.get("inputs") or {}
+        if not isinstance(inputs, dict):
+            continue
+        for name in _SEED_INPUTS:
+            if name not in inputs:
+                continue
+            value = inputs[name]
+            if _is_link(value):
+                src = _node(workflow, str(value[0]))
+                src_inputs = (src or {}).get("inputs") or {}
+                for cand in _SEED_SOURCE_INPUTS:
+                    v = src_inputs.get(cand) if isinstance(src_inputs, dict) else None
+                    if isinstance(v, (int, float)) and not isinstance(v, bool):
+                        add(str(value[0]), cand)
+                        break
+            elif isinstance(value, (int, float)) and not isinstance(value, bool):
+                add(str(nid), name)
+    return out
+
+
 def suggest_mapping(workflow: dict) -> dict:
     """Best-effort mapping. Unique KSampler.positive → CLIP is high confidence; otherwise leave positive unset."""
     require_api_workflow(workflow)
@@ -310,7 +355,6 @@ def suggest_mapping(workflow: dict) -> dict:
     neg_ids: list[str] = []
     sampler_pos_ids: list[str] = []
     sampler_neg_ids: list[str] = []
-    seed_ids: list[str] = []
     ckpt_ids: list[str] = []
     lora_ids: list[str] = []
     latent_ids: list[str] = []
@@ -331,13 +375,11 @@ def suggest_mapping(workflow: dict) -> dict:
             neg_ids.append(srcn)
             if "sampler" in ct.lower():
                 sampler_neg_ids.append(srcn)
-        if "seed" in inputs and not _is_link(inputs.get("seed")):
-            seed_ids.append(str(nid))
         if ct in ("CheckpointLoaderSimple", "CheckpointLoader") and "ckpt_name" in inputs:
             ckpt_ids.append(str(nid))
         if (ct in ("LoraLoader", "LoraLoaderModelOnly") or "lora" in ct.lower()) and "lora_name" in inputs:
             lora_ids.append(str(nid))
-        if ct == "EmptyLatentImage" and "width" in inputs and "height" in inputs:
+        if ct in LATENT_NODES and "width" in inputs and "height" in inputs:
             latent_ids.append(str(nid))
 
     mapping: dict = {}
@@ -358,9 +400,11 @@ def suggest_mapping(workflow: dict) -> dict:
     ckpt = _only_id(ckpt_ids)
     if ckpt:
         mapping["checkpoint"] = {"node": ckpt, "input": "ckpt_name", "mode": "keep"}
-    seed = _only_id(seed_ids)
-    if seed:
-        mapping["seed"] = {"node": seed, "input": "seed", "mode": "control"}
+    seeds = seed_targets(workflow)
+    if seeds:
+        mapping["seed"] = {**seeds[0], "mode": "control"}
+        if len(seeds) > 1:
+            mapping["seed"]["also"] = seeds[1:]
     latent = _only_id(latent_ids)
     if latent:
         mapping["width"] = {"node": latent, "input": "width", "mode": "control"}

@@ -15,6 +15,10 @@ The public application release [v1.0](https://github.com/bosen12/danbooru_tag_mo
 - Windows test diagnostics use UTF-8, and launcher fixtures isolate both ProgramFiles and ProgramW6432.
 - Added contribution instructions, issue forms, this changelog and verification evidence.
 - Community post drafts are kept locally and excluded from the public repository.
+- Your own workflow: drop any PNG ComfyUI made with it (the image carries the workflow), not only an Export (API) JSON.
+- Every sampler's seed is controlled: KSamplerAdvanced's `noise_seed`, two-pass Hires and seeds wired from a primitive used to stay fixed, so every image reused the workflow's seed and the gallery recorded the wrong one. Workflows imported earlier are fixed automatically.
+- LoRAs picked in the LoRA panel are added after the checkpoint when the workflow has no LoRA node mapped, instead of being silently dropped.
+- The Workflow panel shows what Mochi changes (seed, size, checkpoint) and lets you choose whether the checkpoint follows the top bar; the top-bar checkpoint is struck through when the workflow keeps its own.
 - When a search finds nothing, the library says why and offers one button to fix it: switch rating (“breast pile only appears at Explicit”), set Cast to Any, show all eras, or show all suits. Fuse Bed's card search does the same, and names cards that are in Blocked cards.
 - Phone: Draw & generate sits right under the count, so the first screen shows it whole and no longer shows two sets of draw buttons.
 - Normal scenes no longer add hand motifs (giant hand, shadow hands, too many hands, floating hands) on their own; pin them or use Diverse/Weird.

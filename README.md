@@ -105,7 +105,7 @@ A fresh clone usually needs nothing at all: checkpoints and LoRAs come from Comf
 
 Environment variables override the file: `COMFY_API`, `COMFY_CKPT`, `PORT`, `HOST`, `ALLOW_NET`, `LORA_ROOT`.
 
-**Your own ComfyUI workflow.** In ComfyUI choose *Export (API)*, drop the JSON on the Workflow panel, and pick the node that receives the positive prompt. The original JSON is never modified.
+**Your own ComfyUI workflow.** Drop any PNG that ComfyUI made with it on the Workflow panel (the image carries the workflow), or a JSON from *Export (API)*. The positive prompt node is detected for you. The panel shows what Mochi changes: every sampler's seed (including `noise_seed`, two-pass Hires and linked seed primitives), the size, and optionally the checkpoint. LoRAs picked in the LoRA panel are added after the checkpoint when the workflow has none mapped. The stored workflow is never modified.
 
 ComfyUI LoRA Manager is a separate project (GPLv3). It is installed into your own ComfyUI, not shipped with Mochi. So that **Details** in the LoRA panel opens that LoRA directly (`/loras?open=<folder>/<file>`), with your permission in the setup panel, Mochi adds a few lines to LoRA Manager's `static/js/loras.js` (`scripts/fetch_lora_manager.py --patch`, no ComfyUI restart). An update of LoRA Manager replaces the file; Mochi asks again before re-applying it on the next start, and leaves the file alone if it no longer looks as expected. On a phone (Tailscale) these links point at this computer's ComfyUI, so they only open if ComfyUI was started with `--listen`; Mochi checks first and hides them otherwise (Details then opens Civitai; previews still show, because this server relays them).
 
@@ -231,7 +231,7 @@ v1.0 已公開；最新 main 已加入該標籤之後的發布準備修正。已
 
 LoRA 面板的「詳情」在 ComfyUI 的 LoRA Manager 直接打開那一個 LoRA：準備面板取得同意後，墨池才在它的 `static/js/loras.js` 補一小段（`scripts/fetch_lora_manager.py --patch`，不用重開 ComfyUI），LoRA Manager 更新蓋掉後下次啟動會先問再補。手機（Tailscale）上這些連結指向這台的 ComfyUI，ComfyUI 要用 `--listen` 開才點得開；連不到時連結會藏起來，「詳情」改開 Civitai（預覽圖照樣看得到）。
 
-自己的 ComfyUI workflow：用「匯出工作流 (API)」，拖進畫面的「工作流」面板。送到 Discord：頂欄的 Discord 按鈕貼上頻道 webhook。手機走 Tailscale，用黑窗印出的 `Tailscale http://100.x.x.x:8796/`。
+自己的 ComfyUI workflow：把 ComfyUI 用它畫的任何一張 PNG 拖進「工作流」面板（或用「匯出工作流 (API)」的 JSON）；種子每個取樣器都會換，LoRA 面板選的會接在底模後面，底模可以選跟著頂欄或保留工作流的。送到 Discord：頂欄的 Discord 按鈕貼上頻道 webhook。手機走 Tailscale，用黑窗印出的 `Tailscale http://100.x.x.x:8796/`。
 
 你的資料（使用次數、牌組、作品冊、出圖日誌、匯入的 workflow）都在 `data/`，搬家時連同 `config.json` 一起帶走。
 

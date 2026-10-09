@@ -160,11 +160,11 @@ function ensureDom() {
       <div class="lm-left">
         <div class="ckpt-head">
           <div class="ckpt-head-title" id="wf-head-title">工作流</div>
-          <p class="ckpt-head-hint">沒選就是內建。要自己的圖，匯入 ComfyUI「匯出工作流 (API)」的 JSON。</p>
+          <p class="ckpt-head-hint">沒選就是內建。要用自己的工作流：把 ComfyUI 用它畫的任何一張 PNG 拖進來，或匯入「匯出工作流 (API)」的 JSON。</p>
         </div>
         <div id="wf-list" class="lm-list"></div>
-        <button type="button" class="wf-drop" id="wf-drop">匯入 API JSON…<br>拖進來或點這裡選檔</button>
-        <input id="wf-file" type="file" accept="application/json,.json" hidden />
+        <button type="button" class="wf-drop" id="wf-drop">匯入工作流…<br>ComfyUI 畫的 PNG 或 API JSON，拖進來或點這裡選檔</button>
+        <input id="wf-file" type="file" accept="application/json,.json,image/png,.png" hidden />
       </div>
       <div class="lm-right">
         <div class="lm-right-head">目前選擇</div>
@@ -383,8 +383,24 @@ function syncSamplingNote() {
   $("wf-sampling").dataset.custom = custom ? "true" : "false";
 }
 
+/** 自訂工作流保留它自己的底模時，頂欄的底模不會生效：劃掉變淡，滑上去說明。 */
+function markCkptOwner() {
+  const btn = $("ckpt-pick-btn");
+  if (!btn) return;
+  const spec = current && (current.mapping?.checkpoint || current.suggested?.checkpoint);
+  const owned = !!(WORKFLOW_ID && current && (!spec || (spec.mode || "keep") !== "control"));
+  if (owned) {
+    btn.dataset.wfOwned = "1";
+    btn.title = `工作流「${current.name || WORKFLOW_ID}」用它自己的底模（在工作流面板可以改成用這裡選的）`;
+  } else if (btn.dataset.wfOwned) {
+    delete btn.dataset.wfOwned;
+    btn.title = "設定：底模";
+  }
+}
+
 function renderCurrent() {
   syncSamplingNote();
+  markCkptOwner();
   const box = $("wf-current");
   if (!box) return;
   box.replaceChildren();
@@ -410,7 +426,7 @@ function renderCurrent() {
   t.textContent = current.name || WORKFLOW_ID;
   const h = document.createElement("p");
   h.className = "ckpt-cur-hint";
-  h.textContent = current.ready ? "下面三欄決定排字匣要改哪些節點。沒選的會保留 workflow 原值。" : "至少選一個正向節點才能生圖。";
+  h.textContent = current.ready ? "下面決定排字匣要改這套工作流的哪些地方，沒選的保留它的原值。" : "至少選一個正向節點才能生圖。";
   box.append(t, h);
 
   const prompts = current.prompts || [];
@@ -435,10 +451,10 @@ function renderCurrent() {
   if (!loras.length) {
     const none = document.createElement("p");
     none.className = "ckpt-cur-hint";
-    none.textContent = "這張圖沒有 LoRA 節點。";
+    none.textContent = "這套工作流沒有 LoRA 節點：LoRA 面板選的會自動接在底模後面。";
     box.append(none);
   } else {
-    box.append(keepButton(loraOn.size === 0, "不改，保留 workflow 裡的 LoRA", () => saveLoras([])));
+    box.append(keepButton(loraOn.size === 0, "不指定：LoRA 面板選的接在底模後面，工作流自己的 LoRA 照留", () => saveLoras([])));
     for (const item of loras) {
       box.append(
         nodeButton(item, loraOn.has(item.id), () => {
@@ -452,6 +468,34 @@ function renderCurrent() {
         })
       );
     }
+  }
+
+  // 種子、尺寸、底模：以前看不到排字匣會不會改它們。種子抓不到時每張都是同一顆，底模保留時頂欄選的不會生效。
+  const eff = (field) => current.mapping?.[field] || current.suggested?.[field] || null;
+  const line = (text) => {
+    const p = document.createElement("p");
+    p.className = "ckpt-cur-hint";
+    p.textContent = text;
+    return p;
+  };
+  box.append(heading("種子、尺寸、底模"));
+  const seed = eff("seed");
+  const seedN = seed && (seed.mode || "keep") === "control" ? 1 + (seed.also || []).length : 0;
+  box.append(line(seedN ? `種子：每張換新的（${seedN} 個取樣器跟著換）` : "種子：這套工作流找不到種子欄位，每張會用它自己寫死的那顆。"));
+  const w = eff("width");
+  box.append(line(w && (w.mode || "keep") === "control" ? "尺寸：照規則裡選的尺寸" : "尺寸：保留工作流自己的"));
+  const ck = eff("checkpoint");
+  if (ck) {
+    const control = (ck.mode || "keep") === "control";
+    const setCkpt = (mode) => {
+      const mapping = baseMapping();
+      mapping.checkpoint = { ...ck, mode };
+      putMapping(mapping);
+    };
+    box.append(keepButton(control, "底模：用頂欄選的", () => setCkpt("control")));
+    box.append(keepButton(!control, "底模：保留工作流自己的", () => setCkpt("keep")));
+  } else {
+    box.append(line("底模：這套工作流沒有底模節點，頂欄選的不會套用。"));
   }
 
   const del = document.createElement("button");
@@ -604,7 +648,70 @@ async function importWorkflow(data, name) {
   say(j.ready ? `已匯入「${j.name}」。` : "已匯入。選 tags 要寫進哪個節點。", j.ready ? "" : "err");
 }
 
+/**
+ * ComfyUI 存的 PNG 裡有兩段文字：prompt 是 API 格式（排字匣要的），workflow 是編輯器格式。
+ * 讀 tEXt／iTXt（iTXt 只收沒壓縮的，ComfyUI 存的就是這種）。找不到回 { prompt: null, workflow }。
+ */
+export function pngWorkflowText(buffer) {
+  const bytes = new Uint8Array(buffer);
+  const sig = [137, 80, 78, 71, 13, 10, 26, 10];
+  if (bytes.length < 8 || sig.some((b, i) => bytes[i] !== b)) return null;
+  const view = new DataView(buffer);
+  const latin = new TextDecoder("latin1");
+  const utf8 = new TextDecoder("utf-8");
+  const found = {};
+  let pos = 8;
+  while (pos + 12 <= bytes.length) {
+    const len = view.getUint32(pos);
+    const type = latin.decode(bytes.subarray(pos + 4, pos + 8));
+    const body = bytes.subarray(pos + 8, pos + 8 + len);
+    if (type === "tEXt" || type === "iTXt") {
+      const zero = body.indexOf(0);
+      const key = latin.decode(body.subarray(0, zero));
+      let text = "";
+      if (type === "tEXt") text = utf8.decode(body.subarray(zero + 1));
+      else if (body[zero + 1] === 0) {
+        // iTXt：keyword\0 壓縮旗標 壓縮法 語言\0 翻譯後的 keyword\0 文字
+        let at = zero + 3;
+        at = body.indexOf(0, at) + 1;
+        at = body.indexOf(0, at) + 1;
+        text = utf8.decode(body.subarray(at));
+      }
+      if (key === "prompt" || key === "workflow") found[key] = text;
+    }
+    if (type === "IEND") break;
+    pos += 12 + len;
+  }
+  return { prompt: found.prompt || null, workflow: found.workflow || null };
+}
+
 async function importFile(file) {
+  if (/\.png$/i.test(file.name || "") || file.type === "image/png") {
+    let meta;
+    try {
+      meta = pngWorkflowText(await file.arrayBuffer());
+    } catch (e) {
+      say("讀不到這張圖：" + e.message, "err");
+      return;
+    }
+    if (!meta) {
+      say("這不是 PNG 檔。", "err");
+      return;
+    }
+    if (!meta.prompt) {
+      say(meta.workflow ? "這張圖只存了編輯器格式的工作流：在 ComfyUI 打開它，再用「匯出工作流 (API)」存 JSON 匯入。" : "這張圖裡沒有 ComfyUI 的工作流（存圖時可能拿掉了）。", "err");
+      return;
+    }
+    let data;
+    try {
+      data = JSON.parse(meta.prompt);
+    } catch {
+      say("這張圖裡的工作流讀不懂。", "err");
+      return;
+    }
+    await importWorkflow(data, String(file.name || "").replace(/\.png$/i, "") || "Workflow");
+    return;
+  }
   if (file.size > MAX_WORKFLOW_BYTES) {
     say("JSON 太大（上限 5 MB）。", "err");
     return;
@@ -707,6 +814,8 @@ export function initWorkflow({ sampling: withSampling = false } = {}) {
   samplingOn = withSampling;
   ensureDom();
   renderPickBtn();
+  // 開頁就知道目前的自訂工作流會不會用頂欄的底模（不必先打開工作流面板）。
+  if (WORKFLOW_ID) loadCurrent().catch(() => {});
   $("wf-pick-btn")?.addEventListener("click", openModal);
   linkPing();
   $("wf-close")?.addEventListener("click", closeModal);
@@ -737,8 +846,8 @@ export function initWorkflow({ sampling: withSampling = false } = {}) {
   drop?.addEventListener("drop", (e) => {
     e.preventDefault();
     delete drop.dataset.over;
-    const file = [...(e.dataTransfer?.files || [])].find((f) => /\.json$/i.test(f.name) || f.type.includes("json"));
-    if (!file) say("請拖入 .json 檔。", "err");
+    const file = [...(e.dataTransfer?.files || [])].find((f) => /\.(json|png)$/i.test(f.name) || f.type.includes("json") || f.type === "image/png");
+    if (!file) say("請拖入 ComfyUI 畫的 PNG，或工作流的 .json 檔。", "err");
     else importFile(file);
   });
   refreshList().catch(() => {});

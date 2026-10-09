@@ -740,7 +740,6 @@ JSON 太大（上限 5 MB）。|JSON file too large · Maximum 5 MB.
 請拖入 .json 檔。|Drop a .json file.
 沒選就是內建。要自己的圖，匯入 ComfyUI「匯出工作流 (API)」的 JSON。|Use the built-in workflow, or import a JSON file from ComfyUI's Export (API).
 目前用的是自己的工作流：生圖照它圖裡的 steps／CFG，這裡的「生圖」那一行不套用。Hires 一律用這裡的。|Your imported workflow controls generation steps and CFG. The Hires settings below still apply.
-下面三欄決定排字匣要改哪些節點。沒選的會保留 workflow 原值。|Map the nodes below. Unselected nodes keep their original workflow values.
 每張都用這顆種子生圖；抽牌照樣每張隨機|Use this generation seed for every image; card draws remain random.
 每張隨機。填一個數字就固定下來|Random seed per image. Enter a number to use a fixed seed.
 種子模式|Seed mode
@@ -1423,6 +1422,27 @@ LoRA：沒設定 paths.loraRoot，改問 ComfyUI 也失敗了：{0}|LoRA: no LoR
 {0}（下次啟動接著抓）|{0} (resumes next launch)
 字盒裡沒有「{0}」。|No card matches “{0!}”.
 看全部|Show all
+下面決定排字匣要改這套工作流的哪些地方，沒選的保留它的原值。|Choose what Danbooru Case changes in this workflow. Anything not picked keeps the workflow's value.
+沒選就是內建。要用自己的工作流：把 ComfyUI 用它畫的任何一張 PNG 拖進來，或匯入「匯出工作流 (API)」的 JSON。|Built in unless you pick one. To use your own workflow, drop any PNG ComfyUI made with it, or import the JSON from Export (API).
+匯入工作流…|Import workflow…
+ComfyUI 畫的 PNG 或 API JSON，拖進來或點這裡選檔|Drop a ComfyUI PNG or API JSON here, or click to choose
+請拖入 ComfyUI 畫的 PNG，或工作流的 .json 檔。|Drop a PNG made by ComfyUI, or a workflow .json file.
+讀不到這張圖：{0}|Could not read this image: {0!}
+這不是 PNG 檔。|This is not a PNG file.
+這張圖只存了編輯器格式的工作流：在 ComfyUI 打開它，再用「匯出工作流 (API)」存 JSON 匯入。|This image only has the editor workflow. Open it in ComfyUI, use Export (API), and import that JSON.
+這張圖裡沒有 ComfyUI 的工作流（存圖時可能拿掉了）。|This image has no ComfyUI workflow (it may have been stripped when saved).
+這張圖裡的工作流讀不懂。|The workflow in this image could not be read.
+這套工作流沒有 LoRA 節點：LoRA 面板選的會自動接在底模後面。|This workflow has no LoRA nodes. LoRAs picked in the LoRA panel are added after the checkpoint.
+不指定：LoRA 面板選的接在底模後面，工作流自己的 LoRA 照留|None: picked LoRAs go after the checkpoint; the workflow's own LoRAs stay
+種子、尺寸、底模|Seed, size, checkpoint
+種子：每張換新的（{0} 個取樣器跟著換）|Seed: new for every image ({0} samplers follow it)
+種子：這套工作流找不到種子欄位，每張會用它自己寫死的那顆。|Seed: no seed field found. Every image uses the workflow's fixed seed.
+尺寸：照規則裡選的尺寸|Size: follows the size in Rules
+尺寸：保留工作流自己的|Size: keeps the workflow's own
+底模：用頂欄選的|Checkpoint: use the one picked in the top bar
+底模：保留工作流自己的|Checkpoint: keep the workflow's own
+底模：這套工作流沒有底模節點，頂欄選的不會套用。|Checkpoint: this workflow has no checkpoint node, so the top-bar pick is not used.
+工作流「{0}」用它自己的底模（在工作流面板可以改成用這裡選的）|Workflow “{0!}” uses its own checkpoint (change this in the Workflow panel)
 人物改成不限|Set Cast to Any
 顯示所有時代|Show all eras
 「{0}」在「{1}」裡|“{0}” is in {1}

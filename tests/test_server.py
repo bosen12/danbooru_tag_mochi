@@ -1035,6 +1035,37 @@ try:
 except Exception as exc:
     ok("missing profile refused", True, str(exc))
 
+# 種子：KSamplerAdvanced（noise_seed）、兩段式、Primitive 接過來的種子都要換；舊版存檔沒有 seed 設定的自動補。
+import copy as _copy
+_adv = _copy.deepcopy(_PROFILE_WF)
+_adv["3"] = {"class_type": "KSamplerAdvanced", "inputs": {**{k: v for k, v in _PROFILE_WF["3"]["inputs"].items() if k != "seed"}, "noise_seed": 5}}
+ok("seed: noise_seed detected", wfmod.suggest_mapping(_adv).get("seed", {}).get("input") == "noise_seed", str(wfmod.suggest_mapping(_adv).get("seed")))
+_two = _copy.deepcopy(_PROFILE_WF)
+_two["30"] = {"class_type": "KSampler", "inputs": {**_PROFILE_WF["3"]["inputs"], "seed": 7, "latent_image": ["3", 0]}}
+_two["8"]["inputs"]["samples"] = ["30", 0]
+_two_seed = wfmod.suggest_mapping(_two).get("seed") or {}
+ok("seed: two samplers both controlled", _two_seed.get("mode") == "control" and len(_two_seed.get("also") or []) == 1, str(_two_seed))
+_prim = _copy.deepcopy(_PROFILE_WF)
+_prim["50"] = {"class_type": "PrimitiveInt", "inputs": {"value": 3}}
+_prim["3"]["inputs"]["seed"] = ["50", 0]
+ok("seed: linked primitive followed", (wfmod.suggest_mapping(_prim).get("seed") or {}).get("node") == "50", str(wfmod.suggest_mapping(_prim).get("seed")))
+_legacy_map = wfmod.suggest_mapping(_two)
+_legacy_map.pop("seed")
+_legacy = wfmod.save_profile("legacy-two-pass", _two, _legacy_map)
+_lw, _ = server.prepare_workflow({"positive": "1girl", "seed": 4242, "workflowId": _legacy["id"]})
+ok("seed: legacy profile without seed setting gets every sampler seeded", _lw["3"]["inputs"]["seed"] == 4242 and _lw["30"]["inputs"]["seed"] == 4242, str((_lw["3"]["inputs"]["seed"], _lw["30"]["inputs"]["seed"])))
+_lw2, _ = server.prepare_workflow({"positive": "1girl", "seed": 4242, "workflowId": _prof["id"]})
+ok("seed: an explicit keep is still respected", _lw2["3"]["inputs"]["seed"] == 1)
+
+# LoRA：沒有指定 LoRA 節點時，LoRA 面板選的接在底模後面；指定了就照指定。
+_lr, _ = server.prepare_workflow({"positive": "1girl", "workflowId": _legacy["id"], "loras": [{"file": "a.safetensors", "strength": 0.6}]})
+_lora_nodes = [k for k, n in _lr.items() if n["class_type"] == "LoraLoader"]
+ok("lora: inserted after the checkpoint", len(_lora_nodes) == 1 and _lr[_lora_nodes[0]]["inputs"]["model"] == ["4", 0], str(_lora_nodes))
+ok("lora: samplers and text encoders use the LoRA", _lr["3"]["inputs"]["model"] == [_lora_nodes[0], 0] and _lr["6"]["inputs"]["clip"] == [_lora_nodes[0], 1])
+ok("lora: VAE still from the checkpoint", _lr["8"]["inputs"]["vae"] == ["4", 2])
+_nolora, _ = server.prepare_workflow({"positive": "1girl", "workflowId": _legacy["id"]})
+ok("lora: nothing inserted when none picked", not any(n["class_type"] == "LoraLoader" for n in _nolora.values()))
+
 ok(
     "empty ckpt pool accepts a Comfy-style name",
     server.resolve_ckpt(r"extra\remote.safetensors", []) == r"extra\remote.safetensors",

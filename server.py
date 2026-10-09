@@ -520,7 +520,7 @@ def inject_lora(wf: dict, lora_name: str, strength: float) -> None:
     VAE([_,2]) 不動。連呼叫兩次會自動疊成 ckpt → LoRA2 → LoRA1 → 其餘。"""
     ckpt = None
     for nid, n in wf.items():
-        if isinstance(n, dict) and n.get("class_type") == "CheckpointLoaderSimple":
+        if isinstance(n, dict) and n.get("class_type") in ("CheckpointLoaderSimple", "CheckpointLoader"):
             ckpt = str(nid)
             break
     if ckpt is None:
@@ -1685,6 +1685,12 @@ def prepare_workflow(payload: dict):
     if not workflows.mapping_ready(prof["mapping"]):
         raise workflows.WorkflowError("先指定 Positive Prompt 要寫進哪個節點。", "need_mapping")
     mapping = prof["mapping"]
+    # 這版以前存的工作流，種子只認唯一一個 seed：KSamplerAdvanced（noise_seed）、兩段式都沒對到，
+    # 每張圖用的是工作流寫死的那顆。沒存過種子設定的，照現在的偵測補上（使用者明講「不改」的不動）。
+    if "seed" not in mapping:
+        suggested_seed = workflows.suggest_mapping(prof["workflow"]).get("seed")
+        if suggested_seed:
+            mapping = {**mapping, "seed": suggested_seed}
     values = {"positive": positive}
     neg_spec = mapping.get("negative") if isinstance(mapping.get("negative"), dict) else {}
     if (neg_spec.get("mode") or "keep") == "control":
@@ -1708,9 +1714,15 @@ def prepare_workflow(payload: dict):
             pool = list_ckpts()
         values["checkpoint"] = resolve_ckpt(payload.get("ckpt"), pool)
     lora_specs = mapping.get("loras") if isinstance(mapping.get("loras"), list) else []
-    if any(isinstance(s, dict) and (s.get("mode") or "keep") == "control" for s in lora_specs):
+    lora_mapped = any(isinstance(s, dict) and (s.get("mode") or "keep") == "control" for s in lora_specs)
+    if lora_mapped:
         values["loras"] = convert_loras(payload.get("loras"))
     wf = workflows.apply_mapping(prof["workflow"], mapping, values)
+    # 沒有指定要改哪個 LoRA 節點時，頂欄選的 LoRA 插在底模後面（跟內建一樣），不要默默丟掉。
+    # 工作流自己的 LoRA 照留，接在這些後面。
+    if not lora_mapped and mapping.get("loraInsert", True) is not False:
+        for name, strength in convert_loras(payload.get("loras")):
+            inject_lora(wf, name, strength)
     meta["kind"] = "profile"
     meta["id"] = wid
     meta["name"] = prof.get("name") or wid

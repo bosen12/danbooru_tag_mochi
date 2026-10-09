@@ -2460,3 +2460,9 @@
   font-family: var(--mono);
   color: var(--faint);
 }
+
+/* 自訂工作流保留它自己的底模：頂欄的底模不會生效（workflow.js 的 markCkptOwner）。 */
+#ckpt-pick-btn[data-wf-owned="1"] .gen-pick-label {
+  text-decoration: line-through;
+  opacity: 0.55;
+}
