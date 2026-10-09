@@ -118,6 +118,19 @@ ok("loopback allowed", allowed_client("127.0.0.1", nets))
 ok("loopback net allowed", allowed_client("127.0.0.2", nets))
 ok("tailscale allowed", allowed_client("100.79.212.103", nets))
 
+# ComfyUI 退件（/prompt 400）翻成看得懂的話，不是「HTTP Error 400: Bad Request」。
+_rej = server.comfy_rejection_text({
+    "error": {"type": "prompt_outputs_failed_validation", "message": "Prompt outputs failed validation"},
+    "node_errors": {"4": {"class_type": "CheckpointLoaderSimple", "errors": [
+        {"type": "value_not_in_list", "message": "Value not in list", "details": "ckpt_name: 'gone.safetensors' not in ['a.safetensors']"}]}},
+})
+ok("comfy rejection: missing model named", "gone.safetensors" in _rej and "CheckpointLoaderSimple" in _rej and "#4" in _rej, _rej)
+_rej2 = server.comfy_rejection_text({"error": {"type": "missing_node_type", "message": "Node 'FooNode' not found.", "extra_info": {"class_type": "FooNode"}}, "node_errors": {}})
+ok("comfy rejection: missing custom node named", "FooNode" in _rej2 and "Install Missing Custom Nodes" in _rej2, _rej2)
+_oom = server.comfy_exec_error_text({"node_type": "KSampler", "exception_message": "Allocation on device 0 would exceed allowed memory. (out of memory)\nCurrently allocated: 7.2 GiB"})
+ok("comfy exec error: out of memory explained", "顯示卡記憶體不夠" in _oom and "KSampler" in _oom, _oom)
+ok("comfy exec error: other errors keep the first line", server.comfy_exec_error_text({"node_type": "VAEDecode", "exception_message": "boom\nstack"}) == "ComfyUI 跑到一半出錯（VAEDecode）：boom")
+
 # 卡面 manifest 送給瀏覽器時拿掉烘焙用的欄位，畫面要的欄位全留著。
 _slim = json.loads(server.slim_card_manifest(json.dumps({
     "red hair": {"file": "red_hair.webp", "seed": 7, "positive": "1girl, red hair", "negative": "x", "rating": "general",
@@ -1753,6 +1766,14 @@ try:
 finally:
     _ls.lora_manager_list, _ls.comfy_model_dirs, server.models_from_comfy, server.lm_checkpoints = _saved
     _ls.reset_cache()
+
+# 出圖日誌：上次寫到半行就斷電，下一筆不能黏在殘行後面一起丟掉。
+import gen_log as _gl
+_glp = _gl._path()
+with _glp.open("a", encoding="utf-8") as _f:
+    _f.write('{"t":"gen","id":"torn-half","at":1,"pos')
+_gl._append({"t": "gen", "id": "after-torn", "at": 2})
+ok("gen log: entry after a torn line survives", any(r.get("id") == "after-torn" for r in _gl._load()))
 
 if failed:
     print(f"\n{failed} failed")

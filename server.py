@@ -317,6 +317,52 @@ def comfy_base() -> str:
     return str(cfg("comfy.api", "", "http://127.0.0.1:8188")).rstrip("/")
 
 
+class ComfyRejected(RuntimeError):
+    """ComfyUI 收到工作流就退件（驗證失敗）：訊息已經是給人看的中文。"""
+
+
+def comfy_rejection_text(body: dict) -> str:
+    """把 ComfyUI /prompt 的 400 回應翻成一句看得懂的話。以前畫面上只有「HTTP Error 400: Bad Request」。"""
+    err = body.get("error") if isinstance(body.get("error"), dict) else {}
+    parts: list[str] = []
+    if err.get("type") == "missing_node_type":
+        node = (err.get("extra_info") or {}).get("class_type") or ""
+        m = re.search(r"Node '([^']+)'", str(err.get("message") or ""))
+        node = node or (m.group(1) if m else "?")
+        return f"ComfyUI 沒有裝「{node}」這個節點：用 ComfyUI-Manager 的「Install Missing Custom Nodes」裝好、重開 ComfyUI 再試"
+    for nid, ne in (body.get("node_errors") or {}).items():
+        if not isinstance(ne, dict):
+            continue
+        ct = ne.get("class_type") or "?"
+        for e in ne.get("errors") or []:
+            kind = e.get("type")
+            details = str(e.get("details") or "")
+            if kind == "value_not_in_list":
+                field, _, rest = details.partition(":")
+                m = re.search(r"'([^']*)'", rest)
+                value = m.group(1) if m else rest.strip()[:80]
+                parts.append(f"節點 {ct}（#{nid}）的 {field.strip()} 是「{value}」，ComfyUI 裡沒有這個")
+            elif kind == "required_input_missing":
+                parts.append(f"節點 {ct}（#{nid}）少了輸入 {details or e.get('message') or ''}".strip())
+            else:
+                parts.append(f"節點 {ct}（#{nid}）：{(details or str(e.get('message') or ''))[:160]}")
+    if not parts:
+        parts.append(str(err.get("message") or err.get("details") or "工作流被退件")[:200])
+    more = f"（另外還有 {len(parts) - 1} 個）" if len(parts) > 1 else ""
+    return f"ComfyUI 退件：{parts[0]}{more}"
+
+
+def comfy_exec_error_text(d: dict) -> str:
+    """跑到一半出錯（websocket 的 execution_error）。顯示卡記憶體不夠最常見，說下一步。"""
+    msg = str(d.get("exception_message") or "").strip()
+    node = str(d.get("node_type") or "").strip()
+    where = f"（{node}）" if node else ""
+    if re.search(r"out of memory|allocation on device|CUDA error: out of memory", msg, re.I):
+        return f"顯示卡記憶體不夠{where}：尺寸調小、先不要 Hires，或關掉同時在跑的東西再試"
+    first = msg.splitlines()[0][:200] if msg else "沒有說原因"
+    return f"ComfyUI 跑到一半出錯{where}：{first}"
+
+
 def api(method: str, path: str, data=None, timeout: float = 60):
     url = comfy_base() + path
     body = None if data is None else json.dumps(data).encode("utf-8")
@@ -326,7 +372,18 @@ def api(method: str, path: str, data=None, timeout: float = 60):
         method=method,
         headers={"Content-Type": "application/json"} if body else {},
     )
-    with urllib.request.urlopen(req, timeout=timeout) as resp:
+    try:
+        resp_cm = urllib.request.urlopen(req, timeout=timeout)
+    except urllib.error.HTTPError as exc:
+        if path == "/prompt" and exc.code == 400:
+            try:
+                got = json.loads(exc.read().decode("utf-8") or "{}")
+            except Exception:
+                got = {}
+            if isinstance(got, dict) and (got.get("error") or got.get("node_errors")):
+                raise ComfyRejected(comfy_rejection_text(got)) from exc
+        raise
+    with resp_cm as resp:
         raw = resp.read()
         if not raw:
             return None
@@ -2218,7 +2275,9 @@ def gen_via_ws(width: int, height: int, seed: int, positive: str, wf: dict, hire
                     },
                 )
             elif typ == "execution_error":
-                raise RuntimeError(str(d.get("exception_message") or d or "Comfy error"))
+                if d.get("prompt_id") and d.get("prompt_id") != prompt_id:
+                    continue
+                raise RuntimeError(comfy_exec_error_text(d))
             elif typ == "execution_interrupted" and d.get("prompt_id") == prompt_id:
                 # 這則是廣播給所有連線的：只認自己那張的 prompt_id，別張被中斷不關我的事。
                 raise RuntimeError("ComfyUI 中斷了這張")

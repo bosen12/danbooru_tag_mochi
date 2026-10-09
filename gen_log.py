@@ -105,6 +105,15 @@ def _append(row: dict) -> None:
     line = json.dumps(row, ensure_ascii=False, separators=(",", ":")) + "\n"
     with _LOCK:
         path.parent.mkdir(parents=True, exist_ok=True)
+        # 上次寫到一半斷電、當機，檔尾會是沒換行的半行：新的一筆接在它後面會變成同一行壞資料，
+        # 兩筆一起丟。先補一個換行，殘行自己當一行壞行（讀的時候跳過）。
+        try:
+            with path.open("rb") as tail:
+                tail.seek(-1, os.SEEK_END)
+                if tail.read(1) != b"\n":
+                    line = "\n" + line
+        except OSError:
+            pass
         with path.open("a", encoding="utf-8") as f:
             f.write(line)
 

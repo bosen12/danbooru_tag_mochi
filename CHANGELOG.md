@@ -15,6 +15,8 @@ The public application release [v1.0](https://github.com/bosen12/danbooru_tag_mo
 - Windows test diagnostics use UTF-8, and launcher fixtures isolate both ProgramFiles and ProgramW6432.
 - Added contribution instructions, issue forms, this changelog and verification evidence.
 - Community post drafts are kept locally and excluded from the public repository.
+- When ComfyUI rejects a workflow, the failed image says which node and value instead of “HTTP Error 400: Bad Request” (a model ComfyUI does not have, a custom node that is not installed). Running out of GPU memory says what to try.
+- The generation history survives a crash mid-write: the next entry no longer joins the broken line and gets lost with it.
 - Your own workflow: drop any PNG ComfyUI made with it (the image carries the workflow), not only an Export (API) JSON.
 - Every sampler's seed is controlled: KSamplerAdvanced's `noise_seed`, two-pass Hires and seeds wired from a primitive used to stay fixed, so every image reused the workflow's seed and the gallery recorded the wrong one. Workflows imported earlier are fixed automatically.
 - LoRAs picked in the LoRA panel are added after the checkpoint when the workflow has no LoRA node mapped, instead of being silently dropped.
