@@ -805,6 +805,8 @@ function ensureTwTip() {
   return TW_TIP_EL;
 }
 function showTwTip(anchor, text) {
+  // 觸發詞本來就是英文：英文版翻成中文沒有用，也不必把詞送去 Google 翻譯。
+  if (/^en\b/i.test(document.documentElement.lang || "")) return;
   TW_TIP_FOR = anchor;
   const tip = ensureTwTip();
   tip.textContent = "翻譯中…";

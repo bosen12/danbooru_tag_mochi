@@ -2309,6 +2309,7 @@
     "web6/paste-prompt.js",
     "web6/pose-editor.js",
     "web6/pose.js",
+    "web6/setup-panel.js",
     "web6/sfx.js",
     "web6/skeleton-picker.js",
     "web6/store.js",

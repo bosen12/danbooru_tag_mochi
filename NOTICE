@@ -30,6 +30,8 @@ Separate material and third-party notices
 - Release card illustrations: CC BY 4.0. Credit "card art from
   danbooru_tag_mochi by bosen12". See https://creativecommons.org/licenses/by/4.0/.
 - Chiron Hei HK font: SIL Open Font License 1.1; see web/fonts/OFL.txt.
+- IBM Plex Mono font (unmodified, Reserved Font Name "Plex"): SIL Open Font License 1.1; see web/fonts/OFL-IBMPlexMono.txt.
+- Noto Serif TC font (subset for the films): SIL Open Font License 1.1; see web/fonts/OFL-NotoSerifTC.txt.
 - three.js: MIT; see web/vendor/three/LICENSE.
 Keep the copyright and license notices for those components intact.
 ComfyUI, checkpoints, LoRAs and downloaded models retain their own terms;

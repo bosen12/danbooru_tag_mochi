@@ -1,7 +1,7 @@
 /* Hallmark · route: custom (tuned) · genre: atmospheric · structure: workbench — library rail, ink pool, print wall
  * idea: "drag type into the ink pool; the engine sets the rest; every print shows its own type underneath"
  * paper: oklch(15.5% 0.012 250) ink-black · accent: oklch(60% 0.19 33) vermilion · pool: oklch(62% 0.09 225)
- * display: Chiron Hei HK · body: Noto Sans TC · mono: IBM Plex Mono
+ * display + body: Chiron Hei HK · mono: IBM Plex Mono（都在 web6/fonts/，不連 Google）
  * axes: dark / grotesk-sans / warm accent on cool paper · differs from 字鋪 on display style + paper hue
  */
 :root {
@@ -46,8 +46,9 @@
   --suit-scene: oklch(72% 0.1 72);
   --suit-style: oklch(74% 0.09 115);
 
-  --font-display: "Chiron Hei HK", "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif;
-  --font-body: "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif;
+  --font-display: "Chiron Hei HK", "PingFang TC", "Microsoft JhengHei", sans-serif;
+  /* 內文也用本機的 Chiron Hei HK（同一個檔、可變粗細 200–900）：以前內文向 Google 要 Noto Sans TC，每頁十幾個請求。 */
+  --font-body: "Chiron Hei HK", "PingFang TC", "Microsoft JhengHei", sans-serif;
   --font-mono: "IBM Plex Mono", ui-monospace, "Cascadia Mono", monospace;
 
   --space-3xs: 0.125rem;

@@ -66,7 +66,7 @@ function drawCard(g, i, card, img) {
     g.fillRect(ax, 2, CW - ax, CH);
     g.globalAlpha = 1;
     g.fillStyle = "#e9e6dc";
-    g.font = '800 54px "Chiron Hei HK", "Noto Sans TC", sans-serif';
+    g.font = '800 54px "Chiron Hei HK", sans-serif';
     g.textAlign = "center";
     g.textBaseline = "middle";
     g.fillText([...card.zh][0], ax + (CW - ax) / 2, CH / 2);
@@ -95,9 +95,9 @@ function drawCard(g, i, card, img) {
     g.fillStyle = "#12151b";
     g.textAlign = "center";
     g.textBaseline = "middle";
-    g.font = '800 17px "Chiron Hei HK", "Noto Sans TC", sans-serif';
+    g.font = '800 17px "Chiron Hei HK", sans-serif';
     g.fillText(card.glyph, 16, 20);
-    g.font = '700 14px "Chiron Hei HK", "Noto Sans TC", sans-serif';
+    g.font = '700 14px "Chiron Hei HK", sans-serif';
     [...card.zh].slice(0, 7).forEach((ch, k) => g.fillText(ch, 16, 44 + k * 17));
   }
   g.restore();

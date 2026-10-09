@@ -9,8 +9,9 @@ The Traditional Chinese display family, glyphs and font weights are preserved.
 The English edition uses system fonts and horizontal card labels.
 `../fonts.css` serves one local variable WOFF2 for current WEB6 source text and the
 lexicon. It covers 2,229 codepoints and is 875,064 bytes. The full source `wght`
-axis (200–900), hinting, names, and layout features are retained; CSS exposes the
-same requested weights 700–800 as the previous Google Fonts stylesheet.
+axis (200–900), hinting, names, and layout features are retained, and CSS exposes
+the whole axis: headings and body text share this one file. WEB6 makes no Google
+Fonts requests (privacy, offline use, and about a second off every page load).
 
 The conservative corpus includes all WEB6 HTML/CSS/JS text (including comments),
 recursively imported shared modules resolved with the server's `web6` → `web`
@@ -18,13 +19,23 @@ fallback, decoded HTML entities/Unicode escapes, and `web/lexicon.json`. This
 includes intro/tutorial and inherits card seals and labels from shared modules.
 It is broader than a labels-only corpus and therefore a little larger.
 
-New vocabulary or dynamic text uses complementary Google WOFF2 faces of the same
-font version. Their ranges exclude every local codepoint and each other. Broad
-Chinese ranges also exclude the granular shards, so a single new character does
-not trigger the full Chinese font. Unicode outside the original Google web faces
-continues through the existing body/system fallback chain. An author can add text
-without rebuilding fonts. The coverage command reports characters using upstream
-or system fallback and validates the saved font checksum and generated CSS.
+New vocabulary or dynamic text outside the subset (user deck names, new labels)
+uses the system fallback chain (PingFang TC, Microsoft JhengHei) until the subset is
+rebuilt. An author can add text without rebuilding fonts; the coverage command lists
+characters outside the subset and validates the saved font checksum and generated CSS.
+
+## Noto Serif TC (films)
+
+The intro film and tutorial set their largest titles in Noto Serif TC 900. `noto-serif-tc-film.woff2`
+is that weight, instanced from the variable source pinned in `scripts/build_web6_fonts.py` and
+subset to the characters in the film/tutorial sources. Only elements using that family load it.
+Rebuild with `python scripts/build_web6_fonts.py --build-serif --download`. License: `OFL-NotoSerifTC.txt`.
+
+## IBM Plex Mono
+
+Seeds and counts use IBM Plex Mono 1.1.0 Regular and Medium, the unmodified complete
+WOFF2 files from IBM's `@ibm/plex-mono` package. The font's OFL reserves the name
+"Plex", so these files are shipped as released, not subset. License: `OFL-IBMPlexMono.txt`.
 
 ## Source and license
 

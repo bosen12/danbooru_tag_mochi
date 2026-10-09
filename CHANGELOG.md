@@ -20,6 +20,8 @@ The public application release [v1.0](https://github.com/bosen12/danbooru_tag_mo
 - The Comfy indicator in the top bar opens the ComfyUI URL setting (Ink Pool, Fuse Bed), as the README describes. When ComfyUI is unreachable, the failed image says what to do next, in English too.
 - English layout fixes: headings and buttons spaced for Chinese (“S t a r t  y o u r”) use normal letter spacing; Card Book sort arrows no longer touch their labels; the Fuse Bed touch hint is its own line.
 - Windows launcher test reads cmd output in any console code page.
+- No Google Fonts requests (privacy, offline use, about a second per page). Body text uses the bundled Chiron Hei HK (same file as the headings, full weight range); seeds use bundled IBM Plex Mono; the films' serif titles use a bundled Noto Serif TC subset. Characters outside the subsets use system fonts.
+- The English edition no longer sends LoRA trigger words to Google Translate on hover (the Chinese tooltip is not useful there).
 
 ### Tested scope and limitations
 
