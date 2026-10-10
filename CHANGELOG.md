@@ -2,7 +2,8 @@
 
 ## Unreleased
 
-- Characters: 430 adult anime and game characters as a new **Characters** suit, grouped into Anime and Games and then by series (58 series). Pin several at once, or turn on **Draw characters** (one per person by gender, up to three), **Same series only** and **Add series name**. With a character in the image the engine stops drawing hair, eye, body and species traits. 1,328 characters (underage, students, child-looking, real people / VTubers, non-human, unknown age) are banned: not cards, dropped from pasted prompts, and refused by the server.
+- Characters: 612 adult anime and game characters as a new **Characters** suit, grouped into Anime and Games and then by series (76 series). Pin several at once, or turn on **Draw characters** (one per person by gender, up to three), **Same series only** and **Add series name**. With a character in the image the engine stops drawing hair, eye, body and species traits. 1,874 characters (underage, students, child-looking, real people / VTubers, non-human, unknown age) are banned: not cards, dropped from pasted prompts, and refused by the server.
+- 182 of those characters were added on 2026-10-11 (Fate servants, Genshin adults, capital ships, JoJo adults, and others). The other 546 additions stay banned under the same rules.
 - Character card art is not published (copyrighted). Each start checks it; up to 20 missing are baked straight away, more than that and the setup panel asks first (Bake / Not now / Never ask).
 - 25 new cards for two-person poses that work clothed at every rating: side-by-side, face-to-face, head on another's shoulder, cheek-to-cheek, high five, headpat, shared umbrella and more (2,708 → 2,733). Their all-ages art is not in card-art-v5 yet; the first start bakes them with your ComfyUI.
 
