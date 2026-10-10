@@ -187,13 +187,46 @@ def save_manifest(path: Path, manifest: dict) -> None:
             time.sleep(0.25 * (attempt + 1))
 
 
+def pid_alive(pid: int) -> bool:
+    """這個 pid 的程式還在不在。查不出來就當作還在（寧可多等，不要兩個烘焙同時跑）。"""
+    if pid <= 0:
+        return False
+    if os.name == "nt":
+        # Windows 不能用 os.kill(pid, 0)：0 以外的訊號會直接把那個程式殺掉。
+        import ctypes
+
+        kernel32 = ctypes.windll.kernel32
+        handle = kernel32.OpenProcess(0x1000, False, pid)  # PROCESS_QUERY_LIMITED_INFORMATION
+        if not handle:
+            return False
+        try:
+            code = ctypes.c_ulong()
+            if not kernel32.GetExitCodeProcess(handle, ctypes.byref(code)):
+                return True
+            return code.value == 259  # STILL_ACTIVE
+        finally:
+            kernel32.CloseHandle(handle)
+    try:
+        os.kill(pid, 0)
+    except ProcessLookupError:
+        return False
+    except OSError:
+        return True
+    return True
+
+
 def lock_state(out_dir: Path) -> bool:
-    """另一個烘焙正在跑嗎（心跳檔夠新）。"""
+    """另一個烘焙正在跑嗎：心跳檔夠新，而且寫它的那個程式還在。
+    網頁上按「停止」是直接結束程式（Windows 來不及跑 release），鎖檔會留著、時間還很新；
+    只看時間的話，十分鐘內重開就以為「另一個視窗正在烘」，角色、成人卡面也就不問了。"""
     lock = out_dir / LOCK_NAME
     try:
-        return time.time() - lock.stat().st_mtime < LOCK_STALE
+        if time.time() - lock.stat().st_mtime >= LOCK_STALE:
+            return False
+        text = lock.read_text(encoding="utf-8").strip()
     except OSError:
         return False
+    return pid_alive(int(text)) if text.isdigit() else True
 
 
 def heartbeat(out_dir: Path) -> None:

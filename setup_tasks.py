@@ -157,6 +157,16 @@ def stop(key: str) -> tuple[bool, str]:
         proc.terminate()
     except OSError:
         pass
+    if key.startswith("bake"):
+        # 直接結束的烘焙來不及刪鎖檔：留著的話下次啟動會以為「另一個視窗正在烘」。
+        try:
+            proc.wait(timeout=5)
+        except Exception:  # noqa: BLE001 —— 等不到也照樣清
+            pass
+        try:
+            (ROOT / "web" / "cards" / ".baking").unlink()
+        except OSError:
+            pass
     _log(f"{key}: stopped from the page")
     return True, ""
 # 烘一張卡面大約幾秒（RTX 級顯卡實測 6.4 秒；估時用，寧可說多一點）。
@@ -213,6 +223,15 @@ def chars_ask_text(status_line: str) -> str:
     n = int(m.group(1))
     minutes = max(1, round(n * BAKE_SECONDS / 60))
     return f"版權角色不在公開下載包；用你的底模烘 {n} 張，大約 {minutes} 分鐘"
+
+
+def _not_now(code: int) -> str:
+    """bake_card_art --status 不是 0（都有了）也不是 10（缺、可以烘）時，面板上寫的原因。"""
+    if code == 12:
+        return "另一個視窗正在烘；那邊烘完、重開一次就會接著檢查"
+    if code == 11:
+        return "ComfyUI 沒開：下次啟動再檢查"
+    return _failed("檢查失敗") + "（下次啟動再檢查）"
 
 
 def _missing(status_line: str) -> int:
@@ -433,10 +452,14 @@ def _bake() -> None:
         _set("bake", "done", "烘好了：重新整理網頁就有圖", reload=True)
     else:
         _set("bake", "done", "")
-    if _check("bake_card_art.py") == 10:
+    code = _check("bake_card_art.py")
+    if code == 10:
         _set("bake_adult", "ask", bake_ask_text(_last_check[0]), answers=["yes", "no"])
-    else:
+    elif code == 0:
         _set("bake_adult", "done", "")
+    else:
+        # 12 另一個視窗正在烘、11 ComfyUI 沒開、其他是出錯：都不是「好了」，照實說，下次啟動再看。
+        _set("bake_adult", "skip", _not_now(code))
     _chars()
 
 
@@ -446,8 +469,12 @@ def _chars() -> None:
     if (ROOT / ".no-character-bake").exists():
         _set("bake_chars", "skip", "不再問（刪掉 .no-character-bake 就會再問）")
         return
-    if _check("bake_card_art.py", "--kind", "character") != 10:
+    code = _check("bake_card_art.py", "--kind", "character")
+    if code == 0:
         _set("bake_chars", "done", "")
+        return
+    if code != 10:
+        _set("bake_chars", "skip", _not_now(code))
         return
     if _missing(_last_check[0]) <= CHARS_AUTO:
         _bake_chars()

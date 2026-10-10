@@ -245,6 +245,24 @@ ran = chars_world(0)
 st._chars()
 ok("角色卡面都有了：算好", state("bake_chars") == "done" and ("bake_card_art.py", "--kind", "character") not in ran, str(ran))
 
+# 11. 按停止後留下的鎖檔：寫它的程式已經不在了，就不算「另一個視窗正在烘」。
+sys.path.insert(0, str(ROOT / "scripts"))
+import bake_card_art as bca  # noqa: E402
+lock_dir = tmp / "lockcheck"
+lock_dir.mkdir()
+(lock_dir / bca.LOCK_NAME).write_text("999999", encoding="utf-8")
+ok("鎖檔的程式已經結束：不算正在烘", not bca.lock_state(lock_dir))
+(lock_dir / bca.LOCK_NAME).write_text(str(os.getpid()), encoding="utf-8")
+ok("鎖檔的程式還在：算正在烘", bca.lock_state(lock_dir))
+
+# 12. 角色、成人卡面：只有「都有了」才算好；另一個視窗正在烘、ComfyUI 沒開要照實寫，不能寫完成。
+ran = reset({("bake_card_art.py", "--status", "--kind", "character"): 12})
+st._chars()
+ok("角色卡面：另一個視窗正在烘 → 不算完成", state("bake_chars") == "skip" and "另一個視窗" in st._state["bake_chars"]["text"], str(st._state["bake_chars"]))
+ran = reset({("bake_card_art.py", "--status", "--kind", "character"): 11})
+st._chars()
+ok("角色卡面：ComfyUI 沒開 → 不算完成", state("bake_chars") == "skip" and "ComfyUI" in st._state["bake_chars"]["text"], str(st._state["bake_chars"]))
+
 # 10. 要下載卡面時先說缺什麼、缺幾張。
 cm = st.cards_missing_text
 ok("缺卡面：寫張數和例子", cm("card art check: 12 missing, 3 outdated; e.g. red hair | rain").startswith("偵測到缺 12 張全年齡卡面、3 張是舊版（例："), cm("card art check: 12 missing, 3 outdated; e.g. red hair | rain"))
