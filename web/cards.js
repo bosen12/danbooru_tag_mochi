@@ -60,6 +60,16 @@ export function buildLibrary(data, { ratingBlocked }) {
 }
 
 /**
+ * 搜尋框的字對不對得上這張牌（q 已經轉小寫）：中文名、標籤；
+ * 角色牌另外對作品——打「航海王」「one piece」就列出那部作品的角色。
+ */
+export function cardMatches(c, q) {
+  if (!q) return true;
+  if (c.zh.toLowerCase().includes(q) || c.tag.includes(q)) return true;
+  return c.suit === "chara" && ((c.groupZh || "").toLowerCase().includes(q) || (c.item?.series || "").includes(q));
+}
+
+/**
  * 字盒的分類籤（細分類，見 scripts/subgroups.py）。
  * 同一家族（「地點・住家」的「地點」）連在一起的收成一串：家族名寫一次，籤上只寫後半，
  * 一個花色三十幾格也只佔幾行。章只在整格的牌都是同一個章時才標（細分類可能跨小分類收字）。

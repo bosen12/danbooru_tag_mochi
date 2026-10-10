@@ -407,6 +407,8 @@ Enter 放上第一張，↓ 走進字盒|Enter adds the first result; ↓ moves 
 更多規則：每段張數與選格、尺寸、場景、職業、角色|More rules: categories, size, scene, occupations, characters
 抽角色|Draw characters
 加入系列名|Add series name
+只抽同系列|Same series only
+抽的角色都跟釘的角色同一部作品；沒釘就先挑一部人數、性別湊得齊的|Drawn characters all come from the pinned character's series; with none pinned, one series that fits the cast is picked first
 照人數、性別替每個人抽一個角色，一張最多三個|Draw a character for each person by gender, up to three per image
 角色後面接作品名（例：yor briar, spy x family）；釘的角色也一樣|Add the series after each character (e.g. yor briar, spy x family); pinned characters too
 角色|Characters

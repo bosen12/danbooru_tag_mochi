@@ -9394,6 +9394,29 @@ function indoorOutdoorClash(have) {
   const twoSeries = drawOne(lex, { ...s, characterSeries: true }, pinTwo, new Set(), mulberry32(933100), 933100).positive.split(", ");
   eq("角色：同作品兩個角色，作品名只寫一次", twoSeries.filter((t) => t === "spy x family").length, 1);
 
+  // 只抽同系列：釘了約兒＋2girls 1boy → 另外兩個都是間諜家家酒；沒開就不挑作品。
+  let pinS = applyPin(lex, new Set(), new Set(), "yor briar").pinned;
+  pinS = applyPin(lex, pinS, new Set(), "2girls").pinned;
+  pinS = applyPin(lex, pinS, new Set(), "1boy").pinned;
+  let sameAll = 0;
+  let mixed = 0;
+  for (let i = 0; i < 40; i++) {
+    const seed = 934000 + i;
+    const cs = charsOf(drawOne(lex, { ...on, characterSameSeries: true }, pinS, new Set(), mulberry32(seed), seed).positive);
+    if (cs.length === 3 && cs.every((t) => lex.byTag.get(t).series === "spy x family")) sameAll += 1;
+    const free = charsOf(drawOne(lex, on, pinS, new Set(), mulberry32(seed), seed).positive);
+    if (free.some((t) => lex.byTag.get(t).series !== "spy x family")) mixed += 1;
+  }
+  eq("角色：只抽同系列＋釘約兒（2 女 1 男）：另外兩個都是同作品、性別對", sameAll, 40);
+  ok("角色：沒開只抽同系列就不挑作品（不會一直抽到間諜家家酒）", mixed > 30, `${mixed}/40`);
+  const pin3 = applyPin(lex, new Set(), new Set(), "3girls").pinned;
+  let oneSeries = 0;
+  for (let i = 0; i < 30; i++) {
+    const cs = charsOf(drawOne(lex, { ...on, characterSameSeries: true }, pin3, new Set(), mulberry32(934500 + i), 934500 + i).positive);
+    if (cs.length === 3 && new Set(cs.map((t) => lex.byTag.get(t).series)).size === 1) oneSeries += 1;
+  }
+  eq("角色：只抽同系列、沒釘角色、3girls：先挑湊得齊三個女角色的作品", oneSeries, 30);
+
   const ban = new Set(data.characterBan || []);
   ok("角色：characterBan 有清單（未成年、學生、童顏、真人、非人形）", ban.size > 1000 && ban.has("anya (spy x family)"), String(ban.size));
   eq("角色：被 ban 的角色不是詞庫的牌", data.tags.filter((t) => ban.has(t.tag)).length, 0);

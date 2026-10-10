@@ -37,7 +37,7 @@ import { SCENE_MODES, SCENE_MODE_LABELS, heatBlockedByRating } from "./scene-pol
 import { initLoraPicker, currentLorasPayload, currentTriggerText, currentCkpt, handleLoraKeys } from "./lora.js";
 import { initWorkflow, currentWorkflowId, currentSampling, wfHandleKeys } from "./workflow.js";
 import { HARD_BANNED } from "./card-art.js";
-import { buildLibrary, groupChips, createAssets, cardNode, setCardFlag, setEnterTarget, eagerArt, cardFacts, CARD_SUIT_INFO, CARD_SUITS, RATING_ZH } from "./cards.js";
+import { buildLibrary, groupChips, createAssets, cardNode, setCardFlag, setEnterTarget, eagerArt, cardFacts, cardMatches, CARD_SUIT_INFO, CARD_SUITS, RATING_ZH } from "./cards.js";
 import { bindArt, artFallback } from "./card-images.js";
 import { el, openSheet, anyOverlay, toast, runToastAction, ICONS } from "./ui.js";
 import { mountKeysHelp } from "./keys-help.js";
@@ -588,7 +588,7 @@ function renderLibrary() {
       )
     );
   }
-  const list = inSuit.filter((c) => (!ui.group || c.group === ui.group) && (!q || c.zh.toLowerCase().includes(q) || c.tag.includes(q)));
+  const list = inSuit.filter((c) => (!ui.group || c.group === ui.group) && cardMatches(c, q));
   countLine(list.length);
   const grid = $("lib-grid");
   const was = $("library").dataset.search;
@@ -1473,6 +1473,7 @@ function renderRules() {
   const job = switchBox("抽職業", settings.drawJob, (v) => setSettings({ drawJob: v }));
   // 抽角色：照畫面上的人數、性別替每個人抽一張角色卡（一張最多三個）。加入系列名：角色後面接作品名，釘的角色也照這個。
   const chara = switchBox("抽角色", settings.drawCharacter, (v) => setSettings({ drawCharacter: v }), "照人數、性別替每個人抽一個角色，一張最多三個");
+  const sameSeries = switchBox("只抽同系列", settings.characterSameSeries, (v) => setSettings({ characterSameSeries: v }), "抽的角色都跟釘的角色同一部作品；沒釘就先挑一部人數、性別湊得齊的");
   const series = switchBox("加入系列名", settings.characterSeries, (v) => setSettings({ characterSeries: v }), "角色後面接作品名（例：yor briar, spy x family）；釘的角色也一樣");
   const eraOnly = switchBox("字盒只看這個時代", ui.eraOnly, (v) => {
     ui.eraOnly = v;
@@ -1501,7 +1502,7 @@ function renderRules() {
         el("div", { class: "rule-row" }, el("span", { class: "rule-label" }, "每段抽幾個"), counts),
         picker.node,
         el("div", { class: "rule-row" }, rulePair("尺寸", sizeSel), rulePair("場景", sceneSel), job, eraOnly),
-        el("div", { class: "rule-row" }, rulePair("角色", el("span", { class: "rule-pair" }, chara, series)))
+        el("div", { class: "rule-row" }, rulePair("角色", el("span", { class: "rule-pair" }, chara, sameSeries, series)))
       )
     )
   );

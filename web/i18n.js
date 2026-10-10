@@ -36,7 +36,7 @@ const echo = /(^|[·:\n]\s*)([^()·:\n]+?) \(\2\)/g;
 export function registerLexicon(data) {
   for (const item of data.tags || []) if (item.zh && !labels.has(item.zh)) labels.set(item.zh, item.tag);
   for (const [id, zh] of Object.entries(data.groupZh || {})) {
-    const en = groups[id] || id.replace(/_/g, " ").replace(/\b\w/, (c) => c.toUpperCase());
+    const en = groups[id] || data.groupEn?.[id] || id.replace(/_/g, " ").replace(/\b\w/, (c) => c.toUpperCase());
     if (!messages[zh]) labels.set(zh, en);
     const parts = zh.split("・"), names = en.split(" · ");
     if (parts.length === 2) {

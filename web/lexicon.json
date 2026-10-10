@@ -233,9 +233,64 @@
     "style_era": "畫風・年代題材",
     "cast_mix": "人數・組成",
     "pairing": "配對",
-    "char_anime": "角色・動畫漫畫",
-    "char_game": "角色・遊戲",
-    "char_other": "角色・其他",
+    "char_jojo_no_kimyou_na_bouken": "動漫・JoJo",
+    "char_one_piece": "動漫・航海王",
+    "char_dragon_ball": "動漫・七龍珠",
+    "char_boku_no_hero_academia": "動漫・我的英雄學院",
+    "char_bleach": "動漫・死神",
+    "char_gundam": "動漫・鋼彈",
+    "char_kimetsu_no_yaiba": "動漫・鬼滅之刃",
+    "char_chainsaw_man": "動漫・鏈鋸人",
+    "char_dungeon_meshi": "動漫・迷宮飯",
+    "char_jujutsu_kaisen": "動漫・咒術迴戰",
+    "char_naruto_series": "動漫・火影忍者",
+    "char_shingeki_no_kyojin": "動漫・進擊的巨人",
+    "char_one_punch_man": "動漫・一拳超人",
+    "char_spy_x_family": "動漫・間諜家家酒",
+    "char_lupin_iii": "動漫・魯邦三世",
+    "char_sousou_no_frieren": "動漫・葬送的芙莉蓮",
+    "char_hunter_x_hunter": "動漫・獵人",
+    "char_neon_genesis_evangelion": "動漫・福音戰士",
+    "char_fullmetal_alchemist": "動漫・鋼之鍊金術師",
+    "char_kobayashi_san_chi_no_maidragon": "動漫・龍女僕",
+    "char_tengen_toppa_gurren_lagann": "動漫・天元突破",
+    "char_bocchi_the_rock": "動漫・孤獨搖滾",
+    "char_kono_subarashii_sekai_ni_shukufuku_wo": "動漫・為美好的世界",
+    "char_code_geass": "動漫・Code Geass",
+    "char_kill_la_kill": "動漫・斬服少女",
+    "char_overlord_maruyama": "動漫・OVERLORD",
+    "char_mushoku_tensei": "動漫・無職轉生",
+    "char_mahou_shoujo_madoka_magica": "動漫・魔法少女小圓",
+    "char_toaru_majutsu_no_index": "動漫・魔法禁書目錄",
+    "char_death_note": "動漫・死亡筆記本",
+    "char_girls_und_panzer": "動漫・少女與戰車",
+    "char_zombie_land_saga": "動漫・佐賀偶像",
+    "char_kanojo_okarishimasu": "動漫・出租女友",
+    "char_meitantei_conan": "動漫・名偵探柯南",
+    "char_mob_psycho_100": "動漫・路人超能100",
+    "char_tensei_shitara_slime_datta_ken": "動漫・轉生史萊姆",
+    "char_re_zero_kara_hajimeru_isekai_seikatsu": "動漫・Re：從零開始",
+    "char_oshi_no_ko": "動漫・我推的孩子",
+    "char_k_on": "動漫・K-ON！",
+    "char_en_en_no_shouboutai": "動漫・炎炎消防隊",
+    "char_yahari_ore_no_seishun_lovecome_wa_machigatteiru": "動漫・果然我的青春",
+    "char_arknights": "遊戲・明日方舟",
+    "char_azur_lane": "遊戲・碧藍航線",
+    "char_honkai_star_rail": "遊戲・星穹鐵道",
+    "char_genshin_impact": "遊戲・原神",
+    "char_fate_series": "遊戲・Fate",
+    "char_kantai_collection": "遊戲・艦隊收藏",
+    "char_goddess_of_victory_nikke": "遊戲・妮姬",
+    "char_touhou": "遊戲・東方",
+    "char_pokemon": "遊戲・寶可夢",
+    "char_idolmaster": "遊戲・偶像大師",
+    "char_persona": "遊戲・女神異聞錄",
+    "char_steins_gate": "遊戲・命運石之門",
+    "char_umamusume": "遊戲・賽馬娘",
+    "char_princess_connect": "遊戲・公主連結",
+    "char_blue_archive": "遊戲・蔚藍檔案",
+    "char_zenless_zone_zero": "遊戲・絕區零",
+    "char_vocaloid": "其他・VOCALOID",
     "hair_shape": "髮型・綁法造型",
     "hair_detail": "髮型・瀏海髮質",
     "wear_bits": "髮飾兜帽",
@@ -359,6 +414,66 @@
     "obj_fest": "節慶",
     "obj_theme": "題材"
   },
+  "groupEn": {
+    "char_jojo_no_kimyou_na_bouken": "Anime · JoJo's Bizarre Adventure",
+    "char_one_piece": "Anime · One Piece",
+    "char_dragon_ball": "Anime · Dragon Ball",
+    "char_boku_no_hero_academia": "Anime · My Hero Academia",
+    "char_bleach": "Anime · Bleach",
+    "char_gundam": "Anime · Gundam",
+    "char_kimetsu_no_yaiba": "Anime · Demon Slayer",
+    "char_chainsaw_man": "Anime · Chainsaw Man",
+    "char_dungeon_meshi": "Anime · Delicious in Dungeon",
+    "char_jujutsu_kaisen": "Anime · Jujutsu Kaisen",
+    "char_naruto_series": "Anime · Naruto",
+    "char_shingeki_no_kyojin": "Anime · Attack on Titan",
+    "char_one_punch_man": "Anime · One-Punch Man",
+    "char_spy_x_family": "Anime · Spy x Family",
+    "char_lupin_iii": "Anime · Lupin the Third",
+    "char_sousou_no_frieren": "Anime · Frieren",
+    "char_hunter_x_hunter": "Anime · Hunter x Hunter",
+    "char_neon_genesis_evangelion": "Anime · Evangelion",
+    "char_fullmetal_alchemist": "Anime · Fullmetal Alchemist",
+    "char_kobayashi_san_chi_no_maidragon": "Anime · Miss Kobayashi's Dragon Maid",
+    "char_tengen_toppa_gurren_lagann": "Anime · Gurren Lagann",
+    "char_bocchi_the_rock": "Anime · Bocchi the Rock!",
+    "char_kono_subarashii_sekai_ni_shukufuku_wo": "Anime · KonoSuba",
+    "char_code_geass": "Anime · Code Geass",
+    "char_kill_la_kill": "Anime · Kill la Kill",
+    "char_overlord_maruyama": "Anime · Overlord",
+    "char_mushoku_tensei": "Anime · Mushoku Tensei",
+    "char_mahou_shoujo_madoka_magica": "Anime · Madoka Magica",
+    "char_toaru_majutsu_no_index": "Anime · A Certain Magical Index",
+    "char_death_note": "Anime · Death Note",
+    "char_girls_und_panzer": "Anime · Girls und Panzer",
+    "char_zombie_land_saga": "Anime · Zombie Land Saga",
+    "char_kanojo_okarishimasu": "Anime · Rent-A-Girlfriend",
+    "char_meitantei_conan": "Anime · Detective Conan",
+    "char_mob_psycho_100": "Anime · Mob Psycho 100",
+    "char_tensei_shitara_slime_datta_ken": "Anime · That Time I Got Reincarnated as a Slime",
+    "char_re_zero_kara_hajimeru_isekai_seikatsu": "Anime · Re:Zero",
+    "char_oshi_no_ko": "Anime · Oshi no Ko",
+    "char_k_on": "Anime · K-On!",
+    "char_en_en_no_shouboutai": "Anime · Fire Force",
+    "char_yahari_ore_no_seishun_lovecome_wa_machigatteiru": "Anime · My Teen Romantic Comedy SNAFU",
+    "char_arknights": "Games · Arknights",
+    "char_azur_lane": "Games · Azur Lane",
+    "char_honkai_star_rail": "Games · Honkai: Star Rail",
+    "char_genshin_impact": "Games · Genshin Impact",
+    "char_fate_series": "Games · Fate",
+    "char_kantai_collection": "Games · Kantai Collection",
+    "char_goddess_of_victory_nikke": "Games · Goddess of Victory: Nikke",
+    "char_touhou": "Games · Touhou Project",
+    "char_pokemon": "Games · Pokemon",
+    "char_idolmaster": "Games · The Idolmaster",
+    "char_persona": "Games · Persona",
+    "char_steins_gate": "Games · Steins;Gate",
+    "char_umamusume": "Games · Umamusume",
+    "char_princess_connect": "Games · Princess Connect!",
+    "char_blue_archive": "Games · Blue Archive",
+    "char_zenless_zone_zero": "Games · Zenless Zone Zero",
+    "char_vocaloid": "Other · Vocaloid"
+  },
   "subOrder": {
     "quality": [
       "fixed",
@@ -372,9 +487,64 @@
       "count_m",
       "cast_mix",
       "pairing",
-      "char_anime",
-      "char_game",
-      "char_other"
+      "char_jojo_no_kimyou_na_bouken",
+      "char_one_piece",
+      "char_dragon_ball",
+      "char_boku_no_hero_academia",
+      "char_bleach",
+      "char_gundam",
+      "char_kimetsu_no_yaiba",
+      "char_chainsaw_man",
+      "char_dungeon_meshi",
+      "char_jujutsu_kaisen",
+      "char_naruto_series",
+      "char_shingeki_no_kyojin",
+      "char_one_punch_man",
+      "char_spy_x_family",
+      "char_lupin_iii",
+      "char_sousou_no_frieren",
+      "char_hunter_x_hunter",
+      "char_neon_genesis_evangelion",
+      "char_fullmetal_alchemist",
+      "char_kobayashi_san_chi_no_maidragon",
+      "char_tengen_toppa_gurren_lagann",
+      "char_bocchi_the_rock",
+      "char_kono_subarashii_sekai_ni_shukufuku_wo",
+      "char_code_geass",
+      "char_kill_la_kill",
+      "char_overlord_maruyama",
+      "char_mushoku_tensei",
+      "char_mahou_shoujo_madoka_magica",
+      "char_toaru_majutsu_no_index",
+      "char_death_note",
+      "char_girls_und_panzer",
+      "char_zombie_land_saga",
+      "char_kanojo_okarishimasu",
+      "char_meitantei_conan",
+      "char_mob_psycho_100",
+      "char_tensei_shitara_slime_datta_ken",
+      "char_re_zero_kara_hajimeru_isekai_seikatsu",
+      "char_oshi_no_ko",
+      "char_k_on",
+      "char_en_en_no_shouboutai",
+      "char_yahari_ore_no_seishun_lovecome_wa_machigatteiru",
+      "char_arknights",
+      "char_azur_lane",
+      "char_honkai_star_rail",
+      "char_genshin_impact",
+      "char_fate_series",
+      "char_kantai_collection",
+      "char_goddess_of_victory_nikke",
+      "char_touhou",
+      "char_pokemon",
+      "char_idolmaster",
+      "char_persona",
+      "char_steins_gate",
+      "char_umamusume",
+      "char_princess_connect",
+      "char_blue_archive",
+      "char_zenless_zone_zero",
+      "char_vocaloid"
     ],
     "feature": [
       "hair_len",
@@ -60819,7 +60989,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_spy_x_family",
       "series": "spy x family",
       "cardPositive": "1girl, yor briar, spy x family, masterpiece, best quality, amazing quality",
       "needs": [
@@ -60844,7 +61014,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_spy_x_family",
       "series": "spy x family",
       "cardPositive": "1boy, twilight (spy x family), spy x family, masterpiece, best quality, amazing quality",
       "needs": [
@@ -60869,7 +61039,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_spy_x_family",
       "series": "spy x family",
       "cardPositive": "1boy, yuri briar, spy x family, masterpiece, best quality, amazing quality",
       "needs": [
@@ -60894,7 +61064,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_spy_x_family",
       "series": "spy x family",
       "cardPositive": "1girl, fiona frost, spy x family, masterpiece, best quality, amazing quality",
       "needs": [
@@ -60919,7 +61089,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_kimetsu_no_yaiba",
       "series": "kimetsu no yaiba",
       "cardPositive": "1girl, kochou shinobu, kimetsu no yaiba, masterpiece, best quality, amazing quality",
       "needs": [
@@ -60944,7 +61114,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_kimetsu_no_yaiba",
       "series": "kimetsu no yaiba",
       "cardPositive": "1girl, kanroji mitsuri, kimetsu no yaiba, masterpiece, best quality, amazing quality",
       "needs": [
@@ -60969,7 +61139,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_kimetsu_no_yaiba",
       "series": "kimetsu no yaiba",
       "cardPositive": "1boy, rengoku kyoujurou, kimetsu no yaiba, masterpiece, best quality, amazing quality",
       "needs": [
@@ -60994,7 +61164,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_kimetsu_no_yaiba",
       "series": "kimetsu no yaiba",
       "cardPositive": "1boy, tomioka giyuu, kimetsu no yaiba, masterpiece, best quality, amazing quality",
       "needs": [
@@ -61019,7 +61189,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_kimetsu_no_yaiba",
       "series": "kimetsu no yaiba",
       "cardPositive": "1boy, shinazugawa sanemi, kimetsu no yaiba, masterpiece, best quality, amazing quality",
       "needs": [
@@ -61044,7 +61214,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_kimetsu_no_yaiba",
       "series": "kimetsu no yaiba",
       "cardPositive": "1boy, iguro obanai, kimetsu no yaiba, masterpiece, best quality, amazing quality",
       "needs": [
@@ -61069,7 +61239,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_kimetsu_no_yaiba",
       "series": "kimetsu no yaiba",
       "cardPositive": "1boy, uzui tengen, kimetsu no yaiba, masterpiece, best quality, amazing quality",
       "needs": [
@@ -61094,7 +61264,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_kimetsu_no_yaiba",
       "series": "kimetsu no yaiba",
       "cardPositive": "1boy, douma (kimetsu no yaiba), kimetsu no yaiba, masterpiece, best quality, amazing quality",
       "needs": [
@@ -61119,7 +61289,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_shingeki_no_kyojin",
       "series": "shingeki no kyojin",
       "cardPositive": "1boy, levi (shingeki no kyojin), shingeki no kyojin, masterpiece, best quality, amazing quality",
       "needs": [
@@ -61144,7 +61314,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_shingeki_no_kyojin",
       "series": "shingeki no kyojin",
       "cardPositive": "1girl, hange zoe, shingeki no kyojin, masterpiece, best quality, amazing quality",
       "needs": [
@@ -61169,7 +61339,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_shingeki_no_kyojin",
       "series": "shingeki no kyojin",
       "cardPositive": "1boy, erwin smith, shingeki no kyojin, masterpiece, best quality, amazing quality",
       "needs": [
@@ -61194,7 +61364,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_shingeki_no_kyojin",
       "series": "shingeki no kyojin",
       "cardPositive": "1girl, petra ral, shingeki no kyojin, masterpiece, best quality, amazing quality",
       "needs": [
@@ -61219,7 +61389,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_shingeki_no_kyojin",
       "series": "shingeki no kyojin",
       "cardPositive": "1girl, pieck finger, shingeki no kyojin, masterpiece, best quality, amazing quality",
       "needs": [
@@ -61244,7 +61414,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_shingeki_no_kyojin",
       "series": "shingeki no kyojin",
       "cardPositive": "1boy, porco galliard, shingeki no kyojin, masterpiece, best quality, amazing quality",
       "needs": [
@@ -61269,7 +61439,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_kanojo_okarishimasu",
       "series": "kanojo okarishimasu",
       "cardPositive": "1girl, mizuhara chizuru, kanojo okarishimasu, masterpiece, best quality, amazing quality",
       "needs": [
@@ -61294,7 +61464,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_lupin_iii",
       "series": "lupin iii",
       "cardPositive": "1boy, arsene lupin iii, lupin iii, masterpiece, best quality, amazing quality",
       "needs": [
@@ -61319,7 +61489,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_lupin_iii",
       "series": "lupin iii",
       "cardPositive": "1boy, jigen daisuke, lupin iii, masterpiece, best quality, amazing quality",
       "needs": [
@@ -61344,7 +61514,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_lupin_iii",
       "series": "lupin iii",
       "cardPositive": "1girl, mine fujiko, lupin iii, masterpiece, best quality, amazing quality",
       "needs": [
@@ -61369,7 +61539,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_lupin_iii",
       "series": "lupin iii",
       "cardPositive": "1boy, ishikawa goemon xiii, lupin iii, masterpiece, best quality, amazing quality",
       "needs": [
@@ -61394,7 +61564,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_mushoku_tensei",
       "series": "mushoku tensei",
       "cardPositive": "1girl, ghislaine dedoldia, mushoku tensei, masterpiece, best quality, amazing quality",
       "needs": [
@@ -61419,7 +61589,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_mushoku_tensei",
       "series": "mushoku tensei",
       "cardPositive": "1girl, eris greyrat (adult), mushoku tensei, masterpiece, best quality, amazing quality",
       "needs": [
@@ -61444,7 +61614,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_jujutsu_kaisen",
       "series": "jujutsu kaisen",
       "cardPositive": "1boy, gojo satoru, jujutsu kaisen, masterpiece, best quality, amazing quality",
       "needs": [
@@ -61469,7 +61639,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_jujutsu_kaisen",
       "series": "jujutsu kaisen",
       "cardPositive": "1boy, nanami kento, jujutsu kaisen, masterpiece, best quality, amazing quality",
       "needs": [
@@ -61494,7 +61664,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_jujutsu_kaisen",
       "series": "jujutsu kaisen",
       "cardPositive": "1boy, fushiguro toji, jujutsu kaisen, masterpiece, best quality, amazing quality",
       "needs": [
@@ -61519,7 +61689,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_jujutsu_kaisen",
       "series": "jujutsu kaisen",
       "cardPositive": "1boy, choso (jujutsu kaisen), jujutsu kaisen, masterpiece, best quality, amazing quality",
       "needs": [
@@ -61544,7 +61714,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_jujutsu_kaisen",
       "series": "jujutsu kaisen",
       "cardPositive": "1boy, mahito (jujutsu kaisen), jujutsu kaisen, masterpiece, best quality, amazing quality",
       "needs": [
@@ -61569,7 +61739,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_jujutsu_kaisen",
       "series": "jujutsu kaisen",
       "cardPositive": "1girl, mei mei (jujutsu kaisen), jujutsu kaisen, masterpiece, best quality, amazing quality",
       "needs": [
@@ -61594,7 +61764,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_jujutsu_kaisen",
       "series": "jujutsu kaisen",
       "cardPositive": "1girl, iori utahime, jujutsu kaisen, masterpiece, best quality, amazing quality",
       "needs": [
@@ -61619,7 +61789,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_meitantei_conan",
       "series": "meitantei conan",
       "cardPositive": "1boy, amuro tooru, meitantei conan, masterpiece, best quality, amazing quality",
       "needs": [
@@ -61644,7 +61814,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_sousou_no_frieren",
       "series": "sousou no frieren",
       "cardPositive": "1girl, ubel (sousou no frieren), sousou no frieren, masterpiece, best quality, amazing quality",
       "needs": [
@@ -61669,7 +61839,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_sousou_no_frieren",
       "series": "sousou no frieren",
       "cardPositive": "1boy, himmel (sousou no frieren), sousou no frieren, masterpiece, best quality, amazing quality",
       "needs": [
@@ -61694,7 +61864,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_sousou_no_frieren",
       "series": "sousou no frieren",
       "cardPositive": "1boy, eisen (sousou no frieren), sousou no frieren, masterpiece, best quality, amazing quality",
       "needs": [
@@ -61719,7 +61889,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_sousou_no_frieren",
       "series": "sousou no frieren",
       "cardPositive": "1boy, heiter, sousou no frieren, masterpiece, best quality, amazing quality",
       "needs": [
@@ -61744,7 +61914,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_hunter_x_hunter",
       "series": "hunter x hunter",
       "cardPositive": "1boy, hisoka morow, hunter x hunter, masterpiece, best quality, amazing quality",
       "needs": [
@@ -61769,7 +61939,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_hunter_x_hunter",
       "series": "hunter x hunter",
       "cardPositive": "1boy, chrollo lucilfer, hunter x hunter, masterpiece, best quality, amazing quality",
       "needs": [
@@ -61794,7 +61964,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_hunter_x_hunter",
       "series": "hunter x hunter",
       "cardPositive": "1boy, illumi zoldyck, hunter x hunter, masterpiece, best quality, amazing quality",
       "needs": [
@@ -61819,7 +61989,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_hunter_x_hunter",
       "series": "hunter x hunter",
       "cardPositive": "1boy, leorio paladiknight, hunter x hunter, masterpiece, best quality, amazing quality",
       "needs": [
@@ -61844,7 +62014,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_mob_psycho_100",
       "series": "mob psycho 100",
       "cardPositive": "1boy, reigen arataka, mob psycho 100, masterpiece, best quality, amazing quality",
       "needs": [
@@ -61869,7 +62039,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_tensei_shitara_slime_datta_ken",
       "series": "tensei shitara slime datta ken",
       "cardPositive": "1girl, shion (tensura), tensei shitara slime datta ken, masterpiece, best quality, amazing quality",
       "needs": [
@@ -61894,7 +62064,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_boku_no_hero_academia",
       "series": "boku no hero academia",
       "cardPositive": "1girl, mirko, boku no hero academia, masterpiece, best quality, amazing quality",
       "needs": [
@@ -61919,7 +62089,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_boku_no_hero_academia",
       "series": "boku no hero academia",
       "cardPositive": "1boy, endeavor (boku no hero academia), boku no hero academia, masterpiece, best quality, amazing quality",
       "needs": [
@@ -61944,7 +62114,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_boku_no_hero_academia",
       "series": "boku no hero academia",
       "cardPositive": "1boy, hawks (boku no hero academia), boku no hero academia, masterpiece, best quality, amazing quality",
       "needs": [
@@ -61969,7 +62139,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_boku_no_hero_academia",
       "series": "boku no hero academia",
       "cardPositive": "1boy, aizawa shota, boku no hero academia, masterpiece, best quality, amazing quality",
       "needs": [
@@ -61994,7 +62164,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_boku_no_hero_academia",
       "series": "boku no hero academia",
       "cardPositive": "1boy, all might, boku no hero academia, masterpiece, best quality, amazing quality",
       "needs": [
@@ -62019,7 +62189,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_boku_no_hero_academia",
       "series": "boku no hero academia",
       "cardPositive": "1boy, shigaraki tomura, boku no hero academia, masterpiece, best quality, amazing quality",
       "needs": [
@@ -62044,7 +62214,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_boku_no_hero_academia",
       "series": "boku no hero academia",
       "cardPositive": "1boy, dabi (boku no hero academia), boku no hero academia, masterpiece, best quality, amazing quality",
       "needs": [
@@ -62069,7 +62239,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_boku_no_hero_academia",
       "series": "boku no hero academia",
       "cardPositive": "1boy, yagi toshinori, boku no hero academia, masterpiece, best quality, amazing quality",
       "needs": [
@@ -62094,7 +62264,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_boku_no_hero_academia",
       "series": "boku no hero academia",
       "cardPositive": "1girl, mount lady, boku no hero academia, masterpiece, best quality, amazing quality",
       "needs": [
@@ -62119,7 +62289,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_boku_no_hero_academia",
       "series": "boku no hero academia",
       "cardPositive": "1girl, midnight (boku no hero academia), boku no hero academia, masterpiece, best quality, amazing quality",
       "needs": [
@@ -62144,7 +62314,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_boku_no_hero_academia",
       "series": "boku no hero academia",
       "cardPositive": "1girl, bakugou mitsuki, boku no hero academia, masterpiece, best quality, amazing quality",
       "needs": [
@@ -62169,7 +62339,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_boku_no_hero_academia",
       "series": "boku no hero academia",
       "cardPositive": "1girl, lady nagant, boku no hero academia, masterpiece, best quality, amazing quality",
       "needs": [
@@ -62194,7 +62364,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_re_zero_kara_hajimeru_isekai_seikatsu",
       "series": "re:zero kara hajimeru isekai seikatsu",
       "cardPositive": "1girl, echidna (re:zero), re:zero kara hajimeru isekai seikatsu, masterpiece, best quality, amazing quality",
       "needs": [
@@ -62219,7 +62389,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_one_punch_man",
       "series": "one-punch man",
       "cardPositive": "1girl, tatsumaki, one-punch man, masterpiece, best quality, amazing quality",
       "needs": [
@@ -62244,7 +62414,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_one_punch_man",
       "series": "one-punch man",
       "cardPositive": "1girl, fubuki (one-punch man), one-punch man, masterpiece, best quality, amazing quality",
       "needs": [
@@ -62269,7 +62439,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_one_punch_man",
       "series": "one-punch man",
       "cardPositive": "1boy, saitama (one-punch man), one-punch man, masterpiece, best quality, amazing quality",
       "needs": [
@@ -62294,7 +62464,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_one_punch_man",
       "series": "one-punch man",
       "cardPositive": "1boy, genos, one-punch man, masterpiece, best quality, amazing quality",
       "needs": [
@@ -62319,7 +62489,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_one_punch_man",
       "series": "one-punch man",
       "cardPositive": "1boy, onsoku no sonic, one-punch man, masterpiece, best quality, amazing quality",
       "needs": [
@@ -62344,7 +62514,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_one_piece",
       "series": "one piece",
       "cardPositive": "1girl, nami (one piece), one piece, masterpiece, best quality, amazing quality",
       "needs": [
@@ -62369,7 +62539,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_one_piece",
       "series": "one piece",
       "cardPositive": "1girl, nico robin, one piece, masterpiece, best quality, amazing quality",
       "needs": [
@@ -62394,7 +62564,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_one_piece",
       "series": "one piece",
       "cardPositive": "1boy, roronoa zoro, one piece, masterpiece, best quality, amazing quality",
       "needs": [
@@ -62419,7 +62589,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_one_piece",
       "series": "one piece",
       "cardPositive": "1boy, sanji (one piece), one piece, masterpiece, best quality, amazing quality",
       "needs": [
@@ -62444,7 +62614,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_one_piece",
       "series": "one piece",
       "cardPositive": "1boy, trafalgar law, one piece, masterpiece, best quality, amazing quality",
       "needs": [
@@ -62469,7 +62639,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_one_piece",
       "series": "one piece",
       "cardPositive": "1girl, yamato (one piece), one piece, masterpiece, best quality, amazing quality",
       "needs": [
@@ -62494,7 +62664,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_one_piece",
       "series": "one piece",
       "cardPositive": "1girl, boa hancock, one piece, masterpiece, best quality, amazing quality",
       "needs": [
@@ -62519,7 +62689,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_one_piece",
       "series": "one piece",
       "cardPositive": "1boy, portgas d. ace, one piece, masterpiece, best quality, amazing quality",
       "needs": [
@@ -62544,7 +62714,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_one_piece",
       "series": "one piece",
       "cardPositive": "1girl, perona, one piece, masterpiece, best quality, amazing quality",
       "needs": [
@@ -62569,7 +62739,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_one_piece",
       "series": "one piece",
       "cardPositive": "1girl, uta (one piece), one piece, masterpiece, best quality, amazing quality",
       "needs": [
@@ -62594,7 +62764,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_one_piece",
       "series": "one piece",
       "cardPositive": "1boy, donquixote doflamingo, one piece, masterpiece, best quality, amazing quality",
       "needs": [
@@ -62619,7 +62789,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_one_piece",
       "series": "one piece",
       "cardPositive": "1boy, crocodile (one piece), one piece, masterpiece, best quality, amazing quality",
       "needs": [
@@ -62644,7 +62814,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_one_piece",
       "series": "one piece",
       "cardPositive": "1boy, franky (one piece), one piece, masterpiece, best quality, amazing quality",
       "needs": [
@@ -62669,7 +62839,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_one_piece",
       "series": "one piece",
       "cardPositive": "1boy, brook (one piece), one piece, masterpiece, best quality, amazing quality",
       "needs": [
@@ -62694,7 +62864,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_one_piece",
       "series": "one piece",
       "cardPositive": "1boy, sabo (one piece), one piece, masterpiece, best quality, amazing quality",
       "needs": [
@@ -62719,7 +62889,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_one_piece",
       "series": "one piece",
       "cardPositive": "1boy, smoker (one piece), one piece, masterpiece, best quality, amazing quality",
       "needs": [
@@ -62744,7 +62914,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_one_piece",
       "series": "one piece",
       "cardPositive": "1boy, dracule mihawk, one piece, masterpiece, best quality, amazing quality",
       "needs": [
@@ -62769,7 +62939,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_one_piece",
       "series": "one piece",
       "cardPositive": "1boy, donquixote rocinante, one piece, masterpiece, best quality, amazing quality",
       "needs": [
@@ -62794,7 +62964,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_one_piece",
       "series": "one piece",
       "cardPositive": "1boy, shanks (one piece), one piece, masterpiece, best quality, amazing quality",
       "needs": [
@@ -62819,7 +62989,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_one_piece",
       "series": "one piece",
       "cardPositive": "1boy, eustass kid, one piece, masterpiece, best quality, amazing quality",
       "needs": [
@@ -62844,7 +63014,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_one_piece",
       "series": "one piece",
       "cardPositive": "1boy, jinbe (one piece), one piece, masterpiece, best quality, amazing quality",
       "needs": [
@@ -62869,7 +63039,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_one_piece",
       "series": "one piece",
       "cardPositive": "1boy, kaidou (one piece), one piece, masterpiece, best quality, amazing quality",
       "needs": [
@@ -62894,7 +63064,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_one_piece",
       "series": "one piece",
       "cardPositive": "1girl, law-chan, one piece, masterpiece, best quality, amazing quality",
       "needs": [
@@ -62919,7 +63089,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_one_piece",
       "series": "one piece",
       "cardPositive": "1boy, buggy the clown, one piece, masterpiece, best quality, amazing quality",
       "needs": [
@@ -62944,7 +63114,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_one_piece",
       "series": "one piece",
       "cardPositive": "1boy, marco (one piece), one piece, masterpiece, best quality, amazing quality",
       "needs": [
@@ -62969,7 +63139,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_one_piece",
       "series": "one piece",
       "cardPositive": "1girl, tashigi, one piece, masterpiece, best quality, amazing quality",
       "needs": [
@@ -62994,7 +63164,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_naruto_series",
       "series": "naruto (series)",
       "cardPositive": "1girl, tsunade (naruto), naruto (series), masterpiece, best quality, amazing quality",
       "needs": [
@@ -63019,7 +63189,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_naruto_series",
       "series": "naruto (series)",
       "cardPositive": "1boy, hatake kakashi, naruto (series), masterpiece, best quality, amazing quality",
       "needs": [
@@ -63044,7 +63214,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_naruto_series",
       "series": "naruto (series)",
       "cardPositive": "1girl, konan (naruto), naruto (series), masterpiece, best quality, amazing quality",
       "needs": [
@@ -63069,7 +63239,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_naruto_series",
       "series": "naruto (series)",
       "cardPositive": "1girl, uzumaki kushina, naruto (series), masterpiece, best quality, amazing quality",
       "needs": [
@@ -63094,7 +63264,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_naruto_series",
       "series": "naruto (series)",
       "cardPositive": "1boy, namikaze minato, naruto (series), masterpiece, best quality, amazing quality",
       "needs": [
@@ -63119,7 +63289,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_naruto_series",
       "series": "naruto (series)",
       "cardPositive": "1boy, deidara (naruto), naruto (series), masterpiece, best quality, amazing quality",
       "needs": [
@@ -63144,7 +63314,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_naruto_series",
       "series": "naruto (series)",
       "cardPositive": "1girl, mitarashi anko, naruto (series), masterpiece, best quality, amazing quality",
       "needs": [
@@ -63169,7 +63339,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_dragon_ball",
       "series": "dragon ball",
       "cardPositive": "1girl, android 18, dragon ball, masterpiece, best quality, amazing quality",
       "needs": [
@@ -63194,7 +63364,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_dragon_ball",
       "series": "dragon ball",
       "cardPositive": "1boy, vegeta, dragon ball, masterpiece, best quality, amazing quality",
       "needs": [
@@ -63219,7 +63389,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_dragon_ball",
       "series": "dragon ball",
       "cardPositive": "1girl, android 21, dragon ball, masterpiece, best quality, amazing quality",
       "needs": [
@@ -63244,7 +63414,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_dragon_ball",
       "series": "dragon ball",
       "cardPositive": "1boy, piccolo, dragon ball, masterpiece, best quality, amazing quality",
       "needs": [
@@ -63269,7 +63439,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_dragon_ball",
       "series": "dragon ball",
       "cardPositive": "1girl, majin android 21, dragon ball, masterpiece, best quality, amazing quality",
       "needs": [
@@ -63294,7 +63464,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_dragon_ball",
       "series": "dragon ball",
       "cardPositive": "1boy, gogeta, dragon ball, masterpiece, best quality, amazing quality",
       "needs": [
@@ -63319,7 +63489,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_dragon_ball",
       "series": "dragon ball",
       "cardPositive": "1boy, broly (dragon ball super), dragon ball, masterpiece, best quality, amazing quality",
       "needs": [
@@ -63344,7 +63514,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_dragon_ball",
       "series": "dragon ball",
       "cardPositive": "1boy, frieza, dragon ball, masterpiece, best quality, amazing quality",
       "needs": [
@@ -63369,7 +63539,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_dragon_ball",
       "series": "dragon ball",
       "cardPositive": "1boy, vegetto, dragon ball, masterpiece, best quality, amazing quality",
       "needs": [
@@ -63394,7 +63564,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_dragon_ball",
       "series": "dragon ball",
       "cardPositive": "1boy, broly (dragon ball z), dragon ball, masterpiece, best quality, amazing quality",
       "needs": [
@@ -63419,7 +63589,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_dragon_ball",
       "series": "dragon ball",
       "cardPositive": "1girl, cheelai, dragon ball, masterpiece, best quality, amazing quality",
       "needs": [
@@ -63444,7 +63614,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_dragon_ball",
       "series": "dragon ball",
       "cardPositive": "1girl, lunch (dragon ball), dragon ball, masterpiece, best quality, amazing quality",
       "needs": [
@@ -63469,7 +63639,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_dragon_ball",
       "series": "dragon ball",
       "cardPositive": "1boy, bardock, dragon ball, masterpiece, best quality, amazing quality",
       "needs": [
@@ -63494,7 +63664,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_dragon_ball",
       "series": "dragon ball",
       "cardPositive": "1boy, muten roushi, dragon ball, masterpiece, best quality, amazing quality",
       "needs": [
@@ -63519,7 +63689,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_dragon_ball",
       "series": "dragon ball",
       "cardPositive": "1boy, final form frieza, dragon ball, masterpiece, best quality, amazing quality",
       "needs": [
@@ -63544,7 +63714,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_dragon_ball",
       "series": "dragon ball",
       "cardPositive": "1boy, android 17, dragon ball, masterpiece, best quality, amazing quality",
       "needs": [
@@ -63569,7 +63739,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_dragon_ball",
       "series": "dragon ball",
       "cardPositive": "1girl, lunch (bad) (dragon ball), dragon ball, masterpiece, best quality, amazing quality",
       "needs": [
@@ -63594,7 +63764,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_dragon_ball",
       "series": "dragon ball",
       "cardPositive": "1boy, goku black, dragon ball, masterpiece, best quality, amazing quality",
       "needs": [
@@ -63619,7 +63789,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_bleach",
       "series": "bleach",
       "cardPositive": "1girl, shihouin yoruichi, bleach, masterpiece, best quality, amazing quality",
       "needs": [
@@ -63644,7 +63814,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_bleach",
       "series": "bleach",
       "cardPositive": "1girl, matsumoto rangiku, bleach, masterpiece, best quality, amazing quality",
       "needs": [
@@ -63669,7 +63839,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_bleach",
       "series": "bleach",
       "cardPositive": "1girl, sui-feng, bleach, masterpiece, best quality, amazing quality",
       "needs": [
@@ -63694,7 +63864,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_bleach",
       "series": "bleach",
       "cardPositive": "1girl, tier harribel, bleach, masterpiece, best quality, amazing quality",
       "needs": [
@@ -63719,7 +63889,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_bleach",
       "series": "bleach",
       "cardPositive": "1girl, unohana retsu, bleach, masterpiece, best quality, amazing quality",
       "needs": [
@@ -63744,7 +63914,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_bleach",
       "series": "bleach",
       "cardPositive": "1boy, ulquiorra cifer, bleach, masterpiece, best quality, amazing quality",
       "needs": [
@@ -63769,7 +63939,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_bleach",
       "series": "bleach",
       "cardPositive": "1boy, grimmjow jaegerjaquez, bleach, masterpiece, best quality, amazing quality",
       "needs": [
@@ -63794,7 +63964,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_bleach",
       "series": "bleach",
       "cardPositive": "1girl, bambietta basterbine, bleach, masterpiece, best quality, amazing quality",
       "needs": [
@@ -63819,7 +63989,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_bleach",
       "series": "bleach",
       "cardPositive": "1boy, abarai renji, bleach, masterpiece, best quality, amazing quality",
       "needs": [
@@ -63844,7 +64014,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_neon_genesis_evangelion",
       "series": "neon genesis evangelion",
       "cardPositive": "1girl, katsuragi misato, neon genesis evangelion, masterpiece, best quality, amazing quality",
       "needs": [
@@ -63869,7 +64039,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_neon_genesis_evangelion",
       "series": "neon genesis evangelion",
       "cardPositive": "1girl, akagi ritsuko, neon genesis evangelion, masterpiece, best quality, amazing quality",
       "needs": [
@@ -63894,7 +64064,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_neon_genesis_evangelion",
       "series": "neon genesis evangelion",
       "cardPositive": "1boy, ikari gendou, neon genesis evangelion, masterpiece, best quality, amazing quality",
       "needs": [
@@ -63919,7 +64089,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_neon_genesis_evangelion",
       "series": "neon genesis evangelion",
       "cardPositive": "1girl, ibuki maya, neon genesis evangelion, masterpiece, best quality, amazing quality",
       "needs": [
@@ -63944,7 +64114,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_fate_series",
       "series": "fate (series)",
       "cardPositive": "1girl, jeanne d'arc alter (fate), fate (series), masterpiece, best quality, amazing quality",
       "needs": [
@@ -63969,7 +64139,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_fate_series",
       "series": "fate (series)",
       "cardPositive": "1girl, nero claudius (fate), fate (series), masterpiece, best quality, amazing quality",
       "needs": [
@@ -63994,7 +64164,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_fate_series",
       "series": "fate (series)",
       "cardPositive": "1girl, scathach (fate), fate (series), masterpiece, best quality, amazing quality",
       "needs": [
@@ -64019,7 +64189,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_fate_series",
       "series": "fate (series)",
       "cardPositive": "1girl, tamamo no mae (fate), fate (series), masterpiece, best quality, amazing quality",
       "needs": [
@@ -64044,7 +64214,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_fate_series",
       "series": "fate (series)",
       "cardPositive": "1girl, jeanne d'arc (fate), fate (series), masterpiece, best quality, amazing quality",
       "needs": [
@@ -64069,7 +64239,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_fate_series",
       "series": "fate (series)",
       "cardPositive": "1boy, gilgamesh (fate), fate (series), masterpiece, best quality, amazing quality",
       "needs": [
@@ -64094,7 +64264,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_fate_series",
       "series": "fate (series)",
       "cardPositive": "1boy, cu chulainn (fate), fate (series), masterpiece, best quality, amazing quality",
       "needs": [
@@ -64119,7 +64289,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_fate_series",
       "series": "fate (series)",
       "cardPositive": "1girl, minamoto no raikou (fate), fate (series), masterpiece, best quality, amazing quality",
       "needs": [
@@ -64144,7 +64314,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_fate_series",
       "series": "fate (series)",
       "cardPositive": "1boy, archer (fate), fate (series), masterpiece, best quality, amazing quality",
       "needs": [
@@ -64169,7 +64339,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_fate_series",
       "series": "fate (series)",
       "cardPositive": "1girl, medusa (fate), fate (series), masterpiece, best quality, amazing quality",
       "needs": [
@@ -64194,7 +64364,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_fate_series",
       "series": "fate (series)",
       "cardPositive": "1girl, artoria pendragon (lancer) (fate), fate (series), masterpiece, best quality, amazing quality",
       "needs": [
@@ -64219,7 +64389,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_fate_series",
       "series": "fate (series)",
       "cardPositive": "1girl, miyamoto musashi (fate), fate (series), masterpiece, best quality, amazing quality",
       "needs": [
@@ -64244,7 +64414,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_fate_series",
       "series": "fate (series)",
       "cardPositive": "1boy, cu chulainn (lancer) (fate), fate (series), masterpiece, best quality, amazing quality",
       "needs": [
@@ -64269,7 +64439,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_fate_series",
       "series": "fate (series)",
       "cardPositive": "1girl, florence nightingale (fate), fate (series), masterpiece, best quality, amazing quality",
       "needs": [
@@ -64294,7 +64464,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_fate_series",
       "series": "fate (series)",
       "cardPositive": "1boy, kotomine kirei, fate (series), masterpiece, best quality, amazing quality",
       "needs": [
@@ -64319,7 +64489,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_fate_series",
       "series": "fate (series)",
       "cardPositive": "1boy, iskandar (fate), fate (series), masterpiece, best quality, amazing quality",
       "needs": [
@@ -64344,7 +64514,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_fate_series",
       "series": "fate (series)",
       "cardPositive": "1boy, waver velvet, fate (series), masterpiece, best quality, amazing quality",
       "needs": [
@@ -64369,7 +64539,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_fate_series",
       "series": "fate (series)",
       "cardPositive": "1girl, jeanne d'arc alter (avenger) (fate), fate (series), masterpiece, best quality, amazing quality",
       "needs": [
@@ -64394,7 +64564,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_fate_series",
       "series": "fate (series)",
       "cardPositive": "1girl, jeanne d'arc (ruler) (fate), fate (series), masterpiece, best quality, amazing quality",
       "needs": [
@@ -64419,7 +64589,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_genshin_impact",
       "series": "genshin impact",
       "cardPositive": "1girl, ganyu (genshin impact), genshin impact, masterpiece, best quality, amazing quality",
       "needs": [
@@ -64444,7 +64614,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_genshin_impact",
       "series": "genshin impact",
       "cardPositive": "1girl, raiden shogun, genshin impact, masterpiece, best quality, amazing quality",
       "needs": [
@@ -64469,7 +64639,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_genshin_impact",
       "series": "genshin impact",
       "cardPositive": "1girl, yae miko, genshin impact, masterpiece, best quality, amazing quality",
       "needs": [
@@ -64494,7 +64664,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_genshin_impact",
       "series": "genshin impact",
       "cardPositive": "1boy, zhongli (genshin impact), genshin impact, masterpiece, best quality, amazing quality",
       "needs": [
@@ -64519,7 +64689,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_genshin_impact",
       "series": "genshin impact",
       "cardPositive": "1boy, tartaglia (genshin impact), genshin impact, masterpiece, best quality, amazing quality",
       "needs": [
@@ -64544,7 +64714,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_genshin_impact",
       "series": "genshin impact",
       "cardPositive": "1girl, eula (genshin impact), genshin impact, masterpiece, best quality, amazing quality",
       "needs": [
@@ -64569,7 +64739,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_genshin_impact",
       "series": "genshin impact",
       "cardPositive": "1girl, shenhe (genshin impact), genshin impact, masterpiece, best quality, amazing quality",
       "needs": [
@@ -64594,7 +64764,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_genshin_impact",
       "series": "genshin impact",
       "cardPositive": "1girl, yelan (genshin impact), genshin impact, masterpiece, best quality, amazing quality",
       "needs": [
@@ -64619,7 +64789,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_genshin_impact",
       "series": "genshin impact",
       "cardPositive": "1girl, jean (genshin impact), genshin impact, masterpiece, best quality, amazing quality",
       "needs": [
@@ -64644,7 +64814,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_genshin_impact",
       "series": "genshin impact",
       "cardPositive": "1girl, arlecchino (genshin impact), genshin impact, masterpiece, best quality, amazing quality",
       "needs": [
@@ -64669,7 +64839,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_genshin_impact",
       "series": "genshin impact",
       "cardPositive": "1boy, diluc (genshin impact), genshin impact, masterpiece, best quality, amazing quality",
       "needs": [
@@ -64694,7 +64864,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_genshin_impact",
       "series": "genshin impact",
       "cardPositive": "1boy, alhaitham (genshin impact), genshin impact, masterpiece, best quality, amazing quality",
       "needs": [
@@ -64719,7 +64889,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_genshin_impact",
       "series": "genshin impact",
       "cardPositive": "1girl, ningguang (genshin impact), genshin impact, masterpiece, best quality, amazing quality",
       "needs": [
@@ -64744,7 +64914,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_genshin_impact",
       "series": "genshin impact",
       "cardPositive": "1boy, kaeya (genshin impact), genshin impact, masterpiece, best quality, amazing quality",
       "needs": [
@@ -64769,7 +64939,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_genshin_impact",
       "series": "genshin impact",
       "cardPositive": "1girl, kujou sara, genshin impact, masterpiece, best quality, amazing quality",
       "needs": [
@@ -64794,7 +64964,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_genshin_impact",
       "series": "genshin impact",
       "cardPositive": "1girl, lisa (genshin impact), genshin impact, masterpiece, best quality, amazing quality",
       "needs": [
@@ -64819,7 +64989,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_genshin_impact",
       "series": "genshin impact",
       "cardPositive": "1boy, neuvillette (genshin impact), genshin impact, masterpiece, best quality, amazing quality",
       "needs": [
@@ -64844,7 +65014,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_genshin_impact",
       "series": "genshin impact",
       "cardPositive": "1boy, kaveh (genshin impact), genshin impact, masterpiece, best quality, amazing quality",
       "needs": [
@@ -64869,7 +65039,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_genshin_impact",
       "series": "genshin impact",
       "cardPositive": "1girl, clorinde (genshin impact), genshin impact, masterpiece, best quality, amazing quality",
       "needs": [
@@ -64894,7 +65064,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_genshin_impact",
       "series": "genshin impact",
       "cardPositive": "1girl, navia (genshin impact), genshin impact, masterpiece, best quality, amazing quality",
       "needs": [
@@ -64919,7 +65089,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_honkai_star_rail",
       "series": "honkai: star rail",
       "cardPositive": "1girl, kafka (honkai: star rail), honkai: star rail, masterpiece, best quality, amazing quality",
       "needs": [
@@ -64944,7 +65114,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_honkai_star_rail",
       "series": "honkai: star rail",
       "cardPositive": "1girl, acheron (honkai: star rail), honkai: star rail, masterpiece, best quality, amazing quality",
       "needs": [
@@ -64969,7 +65139,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_honkai_star_rail",
       "series": "honkai: star rail",
       "cardPositive": "1boy, aventurine (honkai: star rail), honkai: star rail, masterpiece, best quality, amazing quality",
       "needs": [
@@ -64994,7 +65164,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_honkai_star_rail",
       "series": "honkai: star rail",
       "cardPositive": "1girl, robin (honkai: star rail), honkai: star rail, masterpiece, best quality, amazing quality",
       "needs": [
@@ -65019,7 +65189,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_honkai_star_rail",
       "series": "honkai: star rail",
       "cardPositive": "1boy, blade (honkai: star rail), honkai: star rail, masterpiece, best quality, amazing quality",
       "needs": [
@@ -65044,7 +65214,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_honkai_star_rail",
       "series": "honkai: star rail",
       "cardPositive": "1girl, black swan (honkai: star rail), honkai: star rail, masterpiece, best quality, amazing quality",
       "needs": [
@@ -65069,7 +65239,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_honkai_star_rail",
       "series": "honkai: star rail",
       "cardPositive": "1boy, dr. ratio (honkai: star rail), honkai: star rail, masterpiece, best quality, amazing quality",
       "needs": [
@@ -65094,7 +65264,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_honkai_star_rail",
       "series": "honkai: star rail",
       "cardPositive": "1girl, jingliu (honkai: star rail), honkai: star rail, masterpiece, best quality, amazing quality",
       "needs": [
@@ -65119,7 +65289,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_honkai_star_rail",
       "series": "honkai: star rail",
       "cardPositive": "1girl, himeko (honkai: star rail), honkai: star rail, masterpiece, best quality, amazing quality",
       "needs": [
@@ -65144,7 +65314,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_honkai_star_rail",
       "series": "honkai: star rail",
       "cardPositive": "1girl, ruan mei (honkai: star rail), honkai: star rail, masterpiece, best quality, amazing quality",
       "needs": [
@@ -65169,7 +65339,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_honkai_star_rail",
       "series": "honkai: star rail",
       "cardPositive": "1boy, sunday (honkai: star rail), honkai: star rail, masterpiece, best quality, amazing quality",
       "needs": [
@@ -65194,7 +65364,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_honkai_star_rail",
       "series": "honkai: star rail",
       "cardPositive": "1boy, jing yuan, honkai: star rail, masterpiece, best quality, amazing quality",
       "needs": [
@@ -65219,7 +65389,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_honkai_star_rail",
       "series": "honkai: star rail",
       "cardPositive": "1girl, acheron (slashed dream) (honkai: star rail), honkai: star rail, masterpiece, best quality, amazing quality",
       "needs": [
@@ -65244,7 +65414,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_honkai_star_rail",
       "series": "honkai: star rail",
       "cardPositive": "1girl, tingyun (honkai: star rail), honkai: star rail, masterpiece, best quality, amazing quality",
       "needs": [
@@ -65269,7 +65439,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_honkai_star_rail",
       "series": "honkai: star rail",
       "cardPositive": "1boy, sunday (sacerdos' relived ordeal) (honkai: star rail), honkai: star rail, masterpiece, best quality, amazing quality",
       "needs": [
@@ -65294,7 +65464,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_honkai_star_rail",
       "series": "honkai: star rail",
       "cardPositive": "1boy, boothill (honkai: star rail), honkai: star rail, masterpiece, best quality, amazing quality",
       "needs": [
@@ -65319,7 +65489,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_honkai_star_rail",
       "series": "honkai: star rail",
       "cardPositive": "1boy, welt yang, honkai: star rail, masterpiece, best quality, amazing quality",
       "needs": [
@@ -65344,7 +65514,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_honkai_star_rail",
       "series": "honkai: star rail",
       "cardPositive": "1girl, tingyun (harmony) (honkai: star rail), honkai: star rail, masterpiece, best quality, amazing quality",
       "needs": [
@@ -65369,7 +65539,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_honkai_star_rail",
       "series": "honkai: star rail",
       "cardPositive": "1boy, luocha (honkai: star rail), honkai: star rail, masterpiece, best quality, amazing quality",
       "needs": [
@@ -65394,7 +65564,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_honkai_star_rail",
       "series": "honkai: star rail",
       "cardPositive": "1boy, sampo koski, honkai: star rail, masterpiece, best quality, amazing quality",
       "needs": [
@@ -65419,7 +65589,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_honkai_star_rail",
       "series": "honkai: star rail",
       "cardPositive": "1boy, gepard landau, honkai: star rail, masterpiece, best quality, amazing quality",
       "needs": [
@@ -65444,7 +65614,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_blue_archive",
       "series": "blue archive",
       "cardPositive": "1boy, sensei (blue archive), blue archive, masterpiece, best quality, amazing quality",
       "needs": [
@@ -65469,7 +65639,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_touhou",
       "series": "touhou",
       "cardPositive": "1girl, izayoi sakuya, touhou, masterpiece, best quality, amazing quality",
       "needs": [
@@ -65494,7 +65664,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_touhou",
       "series": "touhou",
       "cardPositive": "1girl, yakumo yukari, touhou, masterpiece, best quality, amazing quality",
       "needs": [
@@ -65519,7 +65689,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_touhou",
       "series": "touhou",
       "cardPositive": "1girl, hong meiling, touhou, masterpiece, best quality, amazing quality",
       "needs": [
@@ -65544,7 +65714,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_touhou",
       "series": "touhou",
       "cardPositive": "1girl, saigyouji yuyuko, touhou, masterpiece, best quality, amazing quality",
       "needs": [
@@ -65569,7 +65739,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_touhou",
       "series": "touhou",
       "cardPositive": "1girl, yakumo ran, touhou, masterpiece, best quality, amazing quality",
       "needs": [
@@ -65594,7 +65764,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_touhou",
       "series": "touhou",
       "cardPositive": "1girl, kazami yuuka, touhou, masterpiece, best quality, amazing quality",
       "needs": [
@@ -65619,7 +65789,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_touhou",
       "series": "touhou",
       "cardPositive": "1girl, kamishirasawa keine, touhou, masterpiece, best quality, amazing quality",
       "needs": [
@@ -65644,7 +65814,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_touhou",
       "series": "touhou",
       "cardPositive": "1girl, hijiri byakuren, touhou, masterpiece, best quality, amazing quality",
       "needs": [
@@ -65669,7 +65839,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_touhou",
       "series": "touhou",
       "cardPositive": "1girl, yasaka kanako, touhou, masterpiece, best quality, amazing quality",
       "needs": [
@@ -65694,7 +65864,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_touhou",
       "series": "touhou",
       "cardPositive": "1girl, yagokoro eirin, touhou, masterpiece, best quality, amazing quality",
       "needs": [
@@ -65719,7 +65889,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_touhou",
       "series": "touhou",
       "cardPositive": "1boy, morichika rinnosuke, touhou, masterpiece, best quality, amazing quality",
       "needs": [
@@ -65744,7 +65914,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_touhou",
       "series": "touhou",
       "cardPositive": "1girl, hoshiguma yuugi, touhou, masterpiece, best quality, amazing quality",
       "needs": [
@@ -65769,7 +65939,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_other",
+      "sub": "char_vocaloid",
       "series": "vocaloid",
       "cardPositive": "1girl, megurine luka, vocaloid, masterpiece, best quality, amazing quality",
       "needs": [
@@ -65794,7 +65964,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_other",
+      "sub": "char_vocaloid",
       "series": "vocaloid",
       "cardPositive": "1boy, kaito (vocaloid), vocaloid, masterpiece, best quality, amazing quality",
       "needs": [
@@ -65819,7 +65989,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_other",
+      "sub": "char_vocaloid",
       "series": "vocaloid",
       "cardPositive": "1girl, meiko (vocaloid), vocaloid, masterpiece, best quality, amazing quality",
       "needs": [
@@ -65844,7 +66014,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_other",
+      "sub": "char_vocaloid",
       "series": "vocaloid",
       "cardPositive": "1girl, yowane haku, vocaloid, masterpiece, best quality, amazing quality",
       "needs": [
@@ -65869,7 +66039,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_other",
+      "sub": "char_vocaloid",
       "series": "vocaloid",
       "cardPositive": "1boy, kamui gakupo, vocaloid, masterpiece, best quality, amazing quality",
       "needs": [
@@ -65894,7 +66064,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_pokemon",
       "series": "pokemon",
       "cardPositive": "1girl, cynthia (pokemon), pokemon, masterpiece, best quality, amazing quality",
       "needs": [
@@ -65919,7 +66089,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_pokemon",
       "series": "pokemon",
       "cardPositive": "1boy, leon (pokemon), pokemon, masterpiece, best quality, amazing quality",
       "needs": [
@@ -65944,7 +66114,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_pokemon",
       "series": "pokemon",
       "cardPositive": "1boy, raihan (pokemon), pokemon, masterpiece, best quality, amazing quality",
       "needs": [
@@ -65969,7 +66139,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_pokemon",
       "series": "pokemon",
       "cardPositive": "1girl, nessa (pokemon), pokemon, masterpiece, best quality, amazing quality",
       "needs": [
@@ -65994,7 +66164,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_pokemon",
       "series": "pokemon",
       "cardPositive": "1girl, hex maniac (pokemon), pokemon, masterpiece, best quality, amazing quality",
       "needs": [
@@ -66019,7 +66189,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_pokemon",
       "series": "pokemon",
       "cardPositive": "1girl, hex maniac (pokemon xy), pokemon, masterpiece, best quality, amazing quality",
       "needs": [
@@ -66044,7 +66214,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_pokemon",
       "series": "pokemon",
       "cardPositive": "1girl, sonia (pokemon), pokemon, masterpiece, best quality, amazing quality",
       "needs": [
@@ -66069,7 +66239,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_pokemon",
       "series": "pokemon",
       "cardPositive": "1girl, rika (pokemon), pokemon, masterpiece, best quality, amazing quality",
       "needs": [
@@ -66094,7 +66264,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_pokemon",
       "series": "pokemon",
       "cardPositive": "1boy, n (pokemon), pokemon, masterpiece, best quality, amazing quality",
       "needs": [
@@ -66119,7 +66289,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_pokemon",
       "series": "pokemon",
       "cardPositive": "1girl, lusamine (pokemon), pokemon, masterpiece, best quality, amazing quality",
       "needs": [
@@ -66144,7 +66314,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_pokemon",
       "series": "pokemon",
       "cardPositive": "1girl, skyla (pokemon), pokemon, masterpiece, best quality, amazing quality",
       "needs": [
@@ -66169,7 +66339,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_jojo_no_kimyou_na_bouken",
       "series": "jojo no kimyou na bouken",
       "cardPositive": "1boy, joseph joestar, jojo no kimyou na bouken, masterpiece, best quality, amazing quality",
       "needs": [
@@ -66194,7 +66364,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_jojo_no_kimyou_na_bouken",
       "series": "jojo no kimyou na bouken",
       "cardPositive": "1boy, joseph joestar (young), jojo no kimyou na bouken, masterpiece, best quality, amazing quality",
       "needs": [
@@ -66219,7 +66389,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_jojo_no_kimyou_na_bouken",
       "series": "jojo no kimyou na bouken",
       "cardPositive": "1boy, caesar anthonio zeppeli, jojo no kimyou na bouken, masterpiece, best quality, amazing quality",
       "needs": [
@@ -66244,7 +66414,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_jojo_no_kimyou_na_bouken",
       "series": "jojo no kimyou na bouken",
       "cardPositive": "1girl, kujo jolyne, jojo no kimyou na bouken, masterpiece, best quality, amazing quality",
       "needs": [
@@ -66269,7 +66439,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_jojo_no_kimyou_na_bouken",
       "series": "jojo no kimyou na bouken",
       "cardPositive": "1boy, johnny joestar, jojo no kimyou na bouken, masterpiece, best quality, amazing quality",
       "needs": [
@@ -66294,7 +66464,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_jojo_no_kimyou_na_bouken",
       "series": "jojo no kimyou na bouken",
       "cardPositive": "1boy, kishibe rohan, jojo no kimyou na bouken, masterpiece, best quality, amazing quality",
       "needs": [
@@ -66319,7 +66489,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_jojo_no_kimyou_na_bouken",
       "series": "jojo no kimyou na bouken",
       "cardPositive": "1boy, jean pierre polnareff, jojo no kimyou na bouken, masterpiece, best quality, amazing quality",
       "needs": [
@@ -66344,7 +66514,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_jojo_no_kimyou_na_bouken",
       "series": "jojo no kimyou na bouken",
       "cardPositive": "1boy, bruno bucciarati, jojo no kimyou na bouken, masterpiece, best quality, amazing quality",
       "needs": [
@@ -66369,7 +66539,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_jojo_no_kimyou_na_bouken",
       "series": "jojo no kimyou na bouken",
       "cardPositive": "1boy, joseph joestar (old), jojo no kimyou na bouken, masterpiece, best quality, amazing quality",
       "needs": [
@@ -66394,7 +66564,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_jojo_no_kimyou_na_bouken",
       "series": "jojo no kimyou na bouken",
       "cardPositive": "1boy, gyro zeppeli, jojo no kimyou na bouken, masterpiece, best quality, amazing quality",
       "needs": [
@@ -66419,7 +66589,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_jojo_no_kimyou_na_bouken",
       "series": "jojo no kimyou na bouken",
       "cardPositive": "1boy, guido mista, jojo no kimyou na bouken, masterpiece, best quality, amazing quality",
       "needs": [
@@ -66444,7 +66614,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_jojo_no_kimyou_na_bouken",
       "series": "jojo no kimyou na bouken",
       "cardPositive": "1boy, kars (jojo), jojo no kimyou na bouken, masterpiece, best quality, amazing quality",
       "needs": [
@@ -66469,7 +66639,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_jojo_no_kimyou_na_bouken",
       "series": "jojo no kimyou na bouken",
       "cardPositive": "1boy, kira yoshikage, jojo no kimyou na bouken, masterpiece, best quality, amazing quality",
       "needs": [
@@ -66494,7 +66664,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_jojo_no_kimyou_na_bouken",
       "series": "jojo no kimyou na bouken",
       "cardPositive": "1boy, diego brando, jojo no kimyou na bouken, masterpiece, best quality, amazing quality",
       "needs": [
@@ -66519,7 +66689,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_jojo_no_kimyou_na_bouken",
       "series": "jojo no kimyou na bouken",
       "cardPositive": "1boy, mohammed avdol, jojo no kimyou na bouken, masterpiece, best quality, amazing quality",
       "needs": [
@@ -66544,7 +66714,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_jojo_no_kimyou_na_bouken",
       "series": "jojo no kimyou na bouken",
       "cardPositive": "1boy, diavolo, jojo no kimyou na bouken, masterpiece, best quality, amazing quality",
       "needs": [
@@ -66569,7 +66739,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_jojo_no_kimyou_na_bouken",
       "series": "jojo no kimyou na bouken",
       "cardPositive": "1boy, leone abbacchio, jojo no kimyou na bouken, masterpiece, best quality, amazing quality",
       "needs": [
@@ -66594,7 +66764,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_jojo_no_kimyou_na_bouken",
       "series": "jojo no kimyou na bouken",
       "cardPositive": "1boy, higashikata josuke (jojolion), jojo no kimyou na bouken, masterpiece, best quality, amazing quality",
       "needs": [
@@ -66619,7 +66789,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_jojo_no_kimyou_na_bouken",
       "series": "jojo no kimyou na bouken",
       "cardPositive": "1boy, prosciutto (jojo), jojo no kimyou na bouken, masterpiece, best quality, amazing quality",
       "needs": [
@@ -66644,7 +66814,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_jojo_no_kimyou_na_bouken",
       "series": "jojo no kimyou na bouken",
       "cardPositive": "1girl, lisa lisa, jojo no kimyou na bouken, masterpiece, best quality, amazing quality",
       "needs": [
@@ -66669,7 +66839,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_jojo_no_kimyou_na_bouken",
       "series": "jojo no kimyou na bouken",
       "cardPositive": "1boy, risotto nero, jojo no kimyou na bouken, masterpiece, best quality, amazing quality",
       "needs": [
@@ -66694,7 +66864,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_jojo_no_kimyou_na_bouken",
       "series": "jojo no kimyou na bouken",
       "cardPositive": "1boy, narciso anasui, jojo no kimyou na bouken, masterpiece, best quality, amazing quality",
       "needs": [
@@ -66719,7 +66889,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_jojo_no_kimyou_na_bouken",
       "series": "jojo no kimyou na bouken",
       "cardPositive": "1girl, suzi q, jojo no kimyou na bouken, masterpiece, best quality, amazing quality",
       "needs": [
@@ -66744,7 +66914,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_jojo_no_kimyou_na_bouken",
       "series": "jojo no kimyou na bouken",
       "cardPositive": "1boy, enrico pucci, jojo no kimyou na bouken, masterpiece, best quality, amazing quality",
       "needs": [
@@ -66769,7 +66939,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_jojo_no_kimyou_na_bouken",
       "series": "jojo no kimyou na bouken",
       "cardPositive": "1boy, robert e. o. speedwagon, jojo no kimyou na bouken, masterpiece, best quality, amazing quality",
       "needs": [
@@ -66794,7 +66964,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_jojo_no_kimyou_na_bouken",
       "series": "jojo no kimyou na bouken",
       "cardPositive": "1boy, wamuu, jojo no kimyou na bouken, masterpiece, best quality, amazing quality",
       "needs": [
@@ -66819,7 +66989,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_jojo_no_kimyou_na_bouken",
       "series": "jojo no kimyou na bouken",
       "cardPositive": "1boy, melone, jojo no kimyou na bouken, masterpiece, best quality, amazing quality",
       "needs": [
@@ -66844,7 +67014,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_jojo_no_kimyou_na_bouken",
       "series": "jojo no kimyou na bouken",
       "cardPositive": "1boy, ghiaccio, jojo no kimyou na bouken, masterpiece, best quality, amazing quality",
       "needs": [
@@ -66869,7 +67039,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_chainsaw_man",
       "series": "chainsaw man",
       "cardPositive": "1girl, makima (chainsaw man), chainsaw man, masterpiece, best quality, amazing quality",
       "needs": [
@@ -66894,7 +67064,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_chainsaw_man",
       "series": "chainsaw man",
       "cardPositive": "1girl, power (chainsaw man), chainsaw man, masterpiece, best quality, amazing quality",
       "needs": [
@@ -66919,7 +67089,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_chainsaw_man",
       "series": "chainsaw man",
       "cardPositive": "1girl, higashiyama kobeni, chainsaw man, masterpiece, best quality, amazing quality",
       "needs": [
@@ -66944,7 +67114,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_chainsaw_man",
       "series": "chainsaw man",
       "cardPositive": "1boy, hayakawa aki, chainsaw man, masterpiece, best quality, amazing quality",
       "needs": [
@@ -66969,7 +67139,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_chainsaw_man",
       "series": "chainsaw man",
       "cardPositive": "1girl, himeno (chainsaw man), chainsaw man, masterpiece, best quality, amazing quality",
       "needs": [
@@ -66994,7 +67164,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_chainsaw_man",
       "series": "chainsaw man",
       "cardPositive": "1girl, quanxi (chainsaw man), chainsaw man, masterpiece, best quality, amazing quality",
       "needs": [
@@ -67019,7 +67189,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_chainsaw_man",
       "series": "chainsaw man",
       "cardPositive": "1boy, kishibe (chainsaw man), chainsaw man, masterpiece, best quality, amazing quality",
       "needs": [
@@ -67044,7 +67214,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_chainsaw_man",
       "series": "chainsaw man",
       "cardPositive": "1boy, katana man (chainsaw man), chainsaw man, masterpiece, best quality, amazing quality",
       "needs": [
@@ -67069,7 +67239,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_bocchi_the_rock",
       "series": "bocchi the rock!",
       "cardPositive": "1girl, hiroi kikuri, bocchi the rock!, masterpiece, best quality, amazing quality",
       "needs": [
@@ -67094,7 +67264,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_bocchi_the_rock",
       "series": "bocchi the rock!",
       "cardPositive": "1girl, ijichi seika, bocchi the rock!, masterpiece, best quality, amazing quality",
       "needs": [
@@ -67119,7 +67289,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_bocchi_the_rock",
       "series": "bocchi the rock!",
       "cardPositive": "1girl, pa-san, bocchi the rock!, masterpiece, best quality, amazing quality",
       "needs": [
@@ -67144,7 +67314,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_oshi_no_ko",
       "series": "oshi no ko",
       "cardPositive": "1girl, memcho, oshi no ko, masterpiece, best quality, amazing quality",
       "needs": [
@@ -67169,7 +67339,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_idolmaster",
       "series": "idolmaster",
       "cardPositive": "1boy, producer (idolmaster), idolmaster, masterpiece, best quality, amazing quality",
       "needs": [
@@ -67194,7 +67364,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_idolmaster",
       "series": "idolmaster",
       "cardPositive": "1girl, shijou takane, idolmaster, masterpiece, best quality, amazing quality",
       "needs": [
@@ -67219,7 +67389,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_idolmaster",
       "series": "idolmaster",
       "cardPositive": "1girl, takagaki kaede, idolmaster, masterpiece, best quality, amazing quality",
       "needs": [
@@ -67244,7 +67414,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_idolmaster",
       "series": "idolmaster",
       "cardPositive": "1girl, miura azusa, idolmaster, masterpiece, best quality, amazing quality",
       "needs": [
@@ -67269,7 +67439,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_idolmaster",
       "series": "idolmaster",
       "cardPositive": "1girl, akizuki ritsuko, idolmaster, masterpiece, best quality, amazing quality",
       "needs": [
@@ -67294,7 +67464,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_idolmaster",
       "series": "idolmaster",
       "cardPositive": "1boy, p-head producer, idolmaster, masterpiece, best quality, amazing quality",
       "needs": [
@@ -67319,7 +67489,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_kantai_collection",
       "series": "kantai collection",
       "cardPositive": "1boy, admiral (kancolle), kantai collection, masterpiece, best quality, amazing quality",
       "needs": [
@@ -67344,7 +67514,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_kantai_collection",
       "series": "kantai collection",
       "cardPositive": "1girl, kaga (kancolle), kantai collection, masterpiece, best quality, amazing quality",
       "needs": [
@@ -67369,7 +67539,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_kantai_collection",
       "series": "kantai collection",
       "cardPositive": "1girl, kongou (kancolle), kantai collection, masterpiece, best quality, amazing quality",
       "needs": [
@@ -67394,7 +67564,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_kantai_collection",
       "series": "kantai collection",
       "cardPositive": "1girl, akagi (kancolle), kantai collection, masterpiece, best quality, amazing quality",
       "needs": [
@@ -67419,7 +67589,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_kantai_collection",
       "series": "kantai collection",
       "cardPositive": "1girl, haruna (kancolle), kantai collection, masterpiece, best quality, amazing quality",
       "needs": [
@@ -67444,7 +67614,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_kantai_collection",
       "series": "kantai collection",
       "cardPositive": "1girl, nagato (kancolle), kantai collection, masterpiece, best quality, amazing quality",
       "needs": [
@@ -67469,7 +67639,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_kantai_collection",
       "series": "kantai collection",
       "cardPositive": "1girl, kashima (kancolle), kantai collection, masterpiece, best quality, amazing quality",
       "needs": [
@@ -67494,7 +67664,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_kantai_collection",
       "series": "kantai collection",
       "cardPositive": "1girl, houshou (kancolle), kantai collection, masterpiece, best quality, amazing quality",
       "needs": [
@@ -67519,7 +67689,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_kantai_collection",
       "series": "kantai collection",
       "cardPositive": "1girl, yamato (kancolle), kantai collection, masterpiece, best quality, amazing quality",
       "needs": [
@@ -67544,7 +67714,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_kantai_collection",
       "series": "kantai collection",
       "cardPositive": "1girl, atago (kancolle), kantai collection, masterpiece, best quality, amazing quality",
       "needs": [
@@ -67569,7 +67739,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_kantai_collection",
       "series": "kantai collection",
       "cardPositive": "1girl, shoukaku (kancolle), kantai collection, masterpiece, best quality, amazing quality",
       "needs": [
@@ -67594,7 +67764,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_kantai_collection",
       "series": "kantai collection",
       "cardPositive": "1girl, mutsu (kancolle), kantai collection, masterpiece, best quality, amazing quality",
       "needs": [
@@ -67619,7 +67789,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_kantai_collection",
       "series": "kantai collection",
       "cardPositive": "1girl, female admiral (kancolle), kantai collection, masterpiece, best quality, amazing quality",
       "needs": [
@@ -67644,7 +67814,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_kantai_collection",
       "series": "kantai collection",
       "cardPositive": "1girl, bismarck (kancolle), kantai collection, masterpiece, best quality, amazing quality",
       "needs": [
@@ -67669,7 +67839,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_kantai_collection",
       "series": "kantai collection",
       "cardPositive": "1girl, musashi (kancolle), kantai collection, masterpiece, best quality, amazing quality",
       "needs": [
@@ -67694,7 +67864,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_kantai_collection",
       "series": "kantai collection",
       "cardPositive": "1girl, takao (kancolle), kantai collection, masterpiece, best quality, amazing quality",
       "needs": [
@@ -67719,7 +67889,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_kantai_collection",
       "series": "kantai collection",
       "cardPositive": "1girl, souryuu (kancolle), kantai collection, masterpiece, best quality, amazing quality",
       "needs": [
@@ -67744,7 +67914,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_azur_lane",
       "series": "azur lane",
       "cardPositive": "1girl, taihou (azur lane), azur lane, masterpiece, best quality, amazing quality",
       "needs": [
@@ -67769,7 +67939,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_azur_lane",
       "series": "azur lane",
       "cardPositive": "1girl, bremerton (azur lane), azur lane, masterpiece, best quality, amazing quality",
       "needs": [
@@ -67794,7 +67964,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_azur_lane",
       "series": "azur lane",
       "cardPositive": "1girl, atago (azur lane), azur lane, masterpiece, best quality, amazing quality",
       "needs": [
@@ -67819,7 +67989,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_azur_lane",
       "series": "azur lane",
       "cardPositive": "1girl, prinz eugen (azur lane), azur lane, masterpiece, best quality, amazing quality",
       "needs": [
@@ -67844,7 +68014,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_azur_lane",
       "series": "azur lane",
       "cardPositive": "1girl, formidable (azur lane), azur lane, masterpiece, best quality, amazing quality",
       "needs": [
@@ -67869,7 +68039,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_azur_lane",
       "series": "azur lane",
       "cardPositive": "1boy, commander (azur lane), azur lane, masterpiece, best quality, amazing quality",
       "needs": [
@@ -67894,7 +68064,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_azur_lane",
       "series": "azur lane",
       "cardPositive": "1girl, belfast (azur lane), azur lane, masterpiece, best quality, amazing quality",
       "needs": [
@@ -67919,7 +68089,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_azur_lane",
       "series": "azur lane",
       "cardPositive": "1girl, sirius (azur lane), azur lane, masterpiece, best quality, amazing quality",
       "needs": [
@@ -67944,7 +68114,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_azur_lane",
       "series": "azur lane",
       "cardPositive": "1girl, illustrious (azur lane), azur lane, masterpiece, best quality, amazing quality",
       "needs": [
@@ -67969,7 +68139,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_azur_lane",
       "series": "azur lane",
       "cardPositive": "1girl, kaga (azur lane), azur lane, masterpiece, best quality, amazing quality",
       "needs": [
@@ -67994,7 +68164,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_azur_lane",
       "series": "azur lane",
       "cardPositive": "1girl, enterprise (azur lane), azur lane, masterpiece, best quality, amazing quality",
       "needs": [
@@ -68019,7 +68189,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_azur_lane",
       "series": "azur lane",
       "cardPositive": "1girl, takao (azur lane), azur lane, masterpiece, best quality, amazing quality",
       "needs": [
@@ -68044,7 +68214,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_azur_lane",
       "series": "azur lane",
       "cardPositive": "1girl, akagi (azur lane), azur lane, masterpiece, best quality, amazing quality",
       "needs": [
@@ -68069,7 +68239,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_azur_lane",
       "series": "azur lane",
       "cardPositive": "1girl, st. louis (azur lane), azur lane, masterpiece, best quality, amazing quality",
       "needs": [
@@ -68094,7 +68264,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_azur_lane",
       "series": "azur lane",
       "cardPositive": "1girl, bremerton (scorching-hot training) (azur lane), azur lane, masterpiece, best quality, amazing quality",
       "needs": [
@@ -68119,7 +68289,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_azur_lane",
       "series": "azur lane",
       "cardPositive": "1girl, honolulu (azur lane), azur lane, masterpiece, best quality, amazing quality",
       "needs": [
@@ -68144,7 +68314,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_azur_lane",
       "series": "azur lane",
       "cardPositive": "1girl, baltimore (azur lane), azur lane, masterpiece, best quality, amazing quality",
       "needs": [
@@ -68169,7 +68339,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_azur_lane",
       "series": "azur lane",
       "cardPositive": "1girl, dido (azur lane), azur lane, masterpiece, best quality, amazing quality",
       "needs": [
@@ -68194,7 +68364,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_azur_lane",
       "series": "azur lane",
       "cardPositive": "1girl, shinano (azur lane), azur lane, masterpiece, best quality, amazing quality",
       "needs": [
@@ -68219,7 +68389,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_azur_lane",
       "series": "azur lane",
       "cardPositive": "1girl, kashino (azur lane), azur lane, masterpiece, best quality, amazing quality",
       "needs": [
@@ -68244,7 +68414,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_azur_lane",
       "series": "azur lane",
       "cardPositive": "1girl, zara (azur lane), azur lane, masterpiece, best quality, amazing quality",
       "needs": [
@@ -68269,7 +68439,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_azur_lane",
       "series": "azur lane",
       "cardPositive": "1girl, prinz eugen (unfading smile) (azur lane), azur lane, masterpiece, best quality, amazing quality",
       "needs": [
@@ -68294,7 +68464,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_azur_lane",
       "series": "azur lane",
       "cardPositive": "1girl, new jersey (azur lane), azur lane, masterpiece, best quality, amazing quality",
       "needs": [
@@ -68319,7 +68489,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_azur_lane",
       "series": "azur lane",
       "cardPositive": "1girl, amagi (azur lane), azur lane, masterpiece, best quality, amazing quality",
       "needs": [
@@ -68344,7 +68514,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_azur_lane",
       "series": "azur lane",
       "cardPositive": "1girl, aegir (azur lane), azur lane, masterpiece, best quality, amazing quality",
       "needs": [
@@ -68369,7 +68539,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_azur_lane",
       "series": "azur lane",
       "cardPositive": "1girl, taihou (enraptured companion) (azur lane), azur lane, masterpiece, best quality, amazing quality",
       "needs": [
@@ -68394,7 +68564,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_azur_lane",
       "series": "azur lane",
       "cardPositive": "1girl, graf zeppelin (azur lane), azur lane, masterpiece, best quality, amazing quality",
       "needs": [
@@ -68419,7 +68589,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_azur_lane",
       "series": "azur lane",
       "cardPositive": "1girl, zara (poolside coincidence) (azur lane), azur lane, masterpiece, best quality, amazing quality",
       "needs": [
@@ -68444,7 +68614,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_azur_lane",
       "series": "azur lane",
       "cardPositive": "1girl, atago (stunning speedster) (azur lane), azur lane, masterpiece, best quality, amazing quality",
       "needs": [
@@ -68469,7 +68639,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_azur_lane",
       "series": "azur lane",
       "cardPositive": "1girl, bismarck (azur lane), azur lane, masterpiece, best quality, amazing quality",
       "needs": [
@@ -68494,7 +68664,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_azur_lane",
       "series": "azur lane",
       "cardPositive": "1girl, roon (azur lane), azur lane, masterpiece, best quality, amazing quality",
       "needs": [
@@ -68519,7 +68689,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_azur_lane",
       "series": "azur lane",
       "cardPositive": "1girl, st. louis (luxurious wheels) (azur lane), azur lane, masterpiece, best quality, amazing quality",
       "needs": [
@@ -68544,7 +68714,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_azur_lane",
       "series": "azur lane",
       "cardPositive": "1girl, shoukaku (azur lane), azur lane, masterpiece, best quality, amazing quality",
       "needs": [
@@ -68569,7 +68739,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_arknights",
       "series": "arknights",
       "cardPositive": "1girl, doctor (arknights), arknights, masterpiece, best quality, amazing quality",
       "needs": [
@@ -68594,7 +68764,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_arknights",
       "series": "arknights",
       "cardPositive": "1girl, texas (arknights), arknights, masterpiece, best quality, amazing quality",
       "needs": [
@@ -68619,7 +68789,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_arknights",
       "series": "arknights",
       "cardPositive": "1girl, skadi (arknights), arknights, masterpiece, best quality, amazing quality",
       "needs": [
@@ -68644,7 +68814,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_arknights",
       "series": "arknights",
       "cardPositive": "1girl, lappland (arknights), arknights, masterpiece, best quality, amazing quality",
       "needs": [
@@ -68669,7 +68839,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_arknights",
       "series": "arknights",
       "cardPositive": "1girl, ch'en (arknights), arknights, masterpiece, best quality, amazing quality",
       "needs": [
@@ -68694,7 +68864,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_arknights",
       "series": "arknights",
       "cardPositive": "1girl, kal'tsit (arknights), arknights, masterpiece, best quality, amazing quality",
       "needs": [
@@ -68719,7 +68889,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_arknights",
       "series": "arknights",
       "cardPositive": "1girl, mudrock (arknights), arknights, masterpiece, best quality, amazing quality",
       "needs": [
@@ -68744,7 +68914,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_arknights",
       "series": "arknights",
       "cardPositive": "1girl, w (arknights), arknights, masterpiece, best quality, amazing quality",
       "needs": [
@@ -68769,7 +68939,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_arknights",
       "series": "arknights",
       "cardPositive": "1girl, mostima (arknights), arknights, masterpiece, best quality, amazing quality",
       "needs": [
@@ -68794,7 +68964,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_arknights",
       "series": "arknights",
       "cardPositive": "1girl, nian (arknights), arknights, masterpiece, best quality, amazing quality",
       "needs": [
@@ -68819,7 +68989,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_arknights",
       "series": "arknights",
       "cardPositive": "1girl, specter (arknights), arknights, masterpiece, best quality, amazing quality",
       "needs": [
@@ -68844,7 +69014,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_arknights",
       "series": "arknights",
       "cardPositive": "1girl, dusk (arknights), arknights, masterpiece, best quality, amazing quality",
       "needs": [
@@ -68869,7 +69039,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_arknights",
       "series": "arknights",
       "cardPositive": "1girl, skadi the corrupting heart (arknights), arknights, masterpiece, best quality, amazing quality",
       "needs": [
@@ -68894,7 +69064,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_arknights",
       "series": "arknights",
       "cardPositive": "1girl, saria (arknights), arknights, masterpiece, best quality, amazing quality",
       "needs": [
@@ -68919,7 +69089,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_arknights",
       "series": "arknights",
       "cardPositive": "1girl, hoshiguma (arknights), arknights, masterpiece, best quality, amazing quality",
       "needs": [
@@ -68944,7 +69114,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_arknights",
       "series": "arknights",
       "cardPositive": "1girl, blue poison (arknights), arknights, masterpiece, best quality, amazing quality",
       "needs": [
@@ -68969,7 +69139,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_arknights",
       "series": "arknights",
       "cardPositive": "1girl, schwarz (arknights), arknights, masterpiece, best quality, amazing quality",
       "needs": [
@@ -68994,7 +69164,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_arknights",
       "series": "arknights",
       "cardPositive": "1boy, mountain (arknights), arknights, masterpiece, best quality, amazing quality",
       "needs": [
@@ -69019,7 +69189,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_arknights",
       "series": "arknights",
       "cardPositive": "1girl, siege (arknights), arknights, masterpiece, best quality, amazing quality",
       "needs": [
@@ -69044,7 +69214,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_arknights",
       "series": "arknights",
       "cardPositive": "1girl, irene (arknights), arknights, masterpiece, best quality, amazing quality",
       "needs": [
@@ -69069,7 +69239,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_arknights",
       "series": "arknights",
       "cardPositive": "1girl, silence (arknights), arknights, masterpiece, best quality, amazing quality",
       "needs": [
@@ -69094,7 +69264,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_arknights",
       "series": "arknights",
       "cardPositive": "1girl, blaze (arknights), arknights, masterpiece, best quality, amazing quality",
       "needs": [
@@ -69119,7 +69289,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_arknights",
       "series": "arknights",
       "cardPositive": "1girl, swire (arknights), arknights, masterpiece, best quality, amazing quality",
       "needs": [
@@ -69144,7 +69314,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_arknights",
       "series": "arknights",
       "cardPositive": "1girl, nearl (arknights), arknights, masterpiece, best quality, amazing quality",
       "needs": [
@@ -69169,7 +69339,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_arknights",
       "series": "arknights",
       "cardPositive": "1girl, utage (arknights), arknights, masterpiece, best quality, amazing quality",
       "needs": [
@@ -69194,7 +69364,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_arknights",
       "series": "arknights",
       "cardPositive": "1girl, platinum (arknights), arknights, masterpiece, best quality, amazing quality",
       "needs": [
@@ -69219,7 +69389,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_arknights",
       "series": "arknights",
       "cardPositive": "1girl, ling (arknights), arknights, masterpiece, best quality, amazing quality",
       "needs": [
@@ -69244,7 +69414,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_arknights",
       "series": "arknights",
       "cardPositive": "1boy, male doctor (arknights), arknights, masterpiece, best quality, amazing quality",
       "needs": [
@@ -69269,7 +69439,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_arknights",
       "series": "arknights",
       "cardPositive": "1girl, shu (arknights), arknights, masterpiece, best quality, amazing quality",
       "needs": [
@@ -69294,7 +69464,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_arknights",
       "series": "arknights",
       "cardPositive": "1girl, ho'olheyak (arknights), arknights, masterpiece, best quality, amazing quality",
       "needs": [
@@ -69319,7 +69489,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_arknights",
       "series": "arknights",
       "cardPositive": "1girl, virtuosa (arknights), arknights, masterpiece, best quality, amazing quality",
       "needs": [
@@ -69344,7 +69514,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_arknights",
       "series": "arknights",
       "cardPositive": "1boy, chongyue (arknights), arknights, masterpiece, best quality, amazing quality",
       "needs": [
@@ -69369,7 +69539,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_arknights",
       "series": "arknights",
       "cardPositive": "1girl, fiammetta (arknights), arknights, masterpiece, best quality, amazing quality",
       "needs": [
@@ -69394,7 +69564,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_arknights",
       "series": "arknights",
       "cardPositive": "1girl, texas the omertosa (arknights), arknights, masterpiece, best quality, amazing quality",
       "needs": [
@@ -69419,7 +69589,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_arknights",
       "series": "arknights",
       "cardPositive": "1girl, muelsyse (arknights), arknights, masterpiece, best quality, amazing quality",
       "needs": [
@@ -69444,7 +69614,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_arknights",
       "series": "arknights",
       "cardPositive": "1girl, reed (arknights), arknights, masterpiece, best quality, amazing quality",
       "needs": [
@@ -69469,7 +69639,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_umamusume",
       "series": "umamusume",
       "cardPositive": "1boy, trainer (umamusume), umamusume, masterpiece, best quality, amazing quality",
       "needs": [
@@ -69494,7 +69664,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_umamusume",
       "series": "umamusume",
       "cardPositive": "1boy, t-head trainer (umamusume), umamusume, masterpiece, best quality, amazing quality",
       "needs": [
@@ -69519,7 +69689,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_gundam",
       "series": "gundam",
       "cardPositive": "1boy, char aznable, gundam, masterpiece, best quality, amazing quality",
       "needs": [
@@ -69544,7 +69714,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_gundam",
       "series": "gundam",
       "cardPositive": "1boy, tieria erde, gundam, masterpiece, best quality, amazing quality",
       "needs": [
@@ -69569,7 +69739,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_gundam",
       "series": "gundam",
       "cardPositive": "1girl, iori rinko, gundam, masterpiece, best quality, amazing quality",
       "needs": [
@@ -69594,7 +69764,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_gundam",
       "series": "gundam",
       "cardPositive": "1girl, haman karn, gundam, masterpiece, best quality, amazing quality",
       "needs": [
@@ -69619,7 +69789,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_gundam",
       "series": "gundam",
       "cardPositive": "1boy, lockon stratos, gundam, masterpiece, best quality, amazing quality",
       "needs": [
@@ -69644,7 +69814,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_gundam",
       "series": "gundam",
       "cardPositive": "1boy, allelujah haptism, gundam, masterpiece, best quality, amazing quality",
       "needs": [
@@ -69669,7 +69839,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_gundam",
       "series": "gundam",
       "cardPositive": "1girl, sumeragi lee noriega, gundam, masterpiece, best quality, amazing quality",
       "needs": [
@@ -69694,7 +69864,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_gundam",
       "series": "gundam",
       "cardPositive": "1girl, marina ismail, gundam, masterpiece, best quality, amazing quality",
       "needs": [
@@ -69719,7 +69889,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_gundam",
       "series": "gundam",
       "cardPositive": "1boy, quattro bajeena, gundam, masterpiece, best quality, amazing quality",
       "needs": [
@@ -69744,7 +69914,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_mahou_shoujo_madoka_magica",
       "series": "mahou shoujo madoka magica",
       "cardPositive": "1girl, nanami yachiyo, mahou shoujo madoka magica, masterpiece, best quality, amazing quality",
       "needs": [
@@ -69769,7 +69939,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_mahou_shoujo_madoka_magica",
       "series": "mahou shoujo madoka magica",
       "cardPositive": "1girl, kaname junko, mahou shoujo madoka magica, masterpiece, best quality, amazing quality",
       "needs": [
@@ -69794,7 +69964,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_k_on",
       "series": "k-on!",
       "cardPositive": "1girl, yamanaka sawako, k-on!, masterpiece, best quality, amazing quality",
       "needs": [
@@ -69819,7 +69989,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_kono_subarashii_sekai_ni_shukufuku_wo",
       "series": "kono subarashii sekai ni shukufuku wo!",
       "cardPositive": "1girl, aqua (konosuba), kono subarashii sekai ni shukufuku wo!, masterpiece, best quality, amazing quality",
       "needs": [
@@ -69844,7 +70014,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_kono_subarashii_sekai_ni_shukufuku_wo",
       "series": "kono subarashii sekai ni shukufuku wo!",
       "cardPositive": "1girl, darkness (konosuba), kono subarashii sekai ni shukufuku wo!, masterpiece, best quality, amazing quality",
       "needs": [
@@ -69869,7 +70039,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_kono_subarashii_sekai_ni_shukufuku_wo",
       "series": "kono subarashii sekai ni shukufuku wo!",
       "cardPositive": "1girl, wiz (konosuba), kono subarashii sekai ni shukufuku wo!, masterpiece, best quality, amazing quality",
       "needs": [
@@ -69894,7 +70064,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_steins_gate",
       "series": "steins;gate",
       "cardPositive": "1girl, makise kurisu, steins;gate, masterpiece, best quality, amazing quality",
       "needs": [
@@ -69919,7 +70089,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_steins_gate",
       "series": "steins;gate",
       "cardPositive": "1boy, okabe rintarou, steins;gate, masterpiece, best quality, amazing quality",
       "needs": [
@@ -69944,7 +70114,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_steins_gate",
       "series": "steins;gate",
       "cardPositive": "1girl, kiryuu moeka, steins;gate, masterpiece, best quality, amazing quality",
       "needs": [
@@ -69969,7 +70139,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_steins_gate",
       "series": "steins;gate",
       "cardPositive": "1boy, hashida itaru, steins;gate, masterpiece, best quality, amazing quality",
       "needs": [
@@ -69994,7 +70164,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_code_geass",
       "series": "code geass",
       "cardPositive": "1girl, villetta nu, code geass, masterpiece, best quality, amazing quality",
       "needs": [
@@ -70019,7 +70189,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_code_geass",
       "series": "code geass",
       "cardPositive": "1girl, cornelia li britannia, code geass, masterpiece, best quality, amazing quality",
       "needs": [
@@ -70044,7 +70214,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_code_geass",
       "series": "code geass",
       "cardPositive": "1boy, jeremiah gottwald, code geass, masterpiece, best quality, amazing quality",
       "needs": [
@@ -70069,7 +70239,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_toaru_majutsu_no_index",
       "series": "toaru majutsu no index",
       "cardPositive": "1girl, kanzaki kaori, toaru majutsu no index, masterpiece, best quality, amazing quality",
       "needs": [
@@ -70094,7 +70264,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_toaru_majutsu_no_index",
       "series": "toaru majutsu no index",
       "cardPositive": "1girl, kiyama harumi, toaru majutsu no index, masterpiece, best quality, amazing quality",
       "needs": [
@@ -70119,7 +70289,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_en_en_no_shouboutai",
       "series": "en'en no shouboutai",
       "cardPositive": "1girl, maki oze, en'en no shouboutai, masterpiece, best quality, amazing quality",
       "needs": [
@@ -70144,7 +70314,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_death_note",
       "series": "death note",
       "cardPositive": "1boy, l (death note), death note, masterpiece, best quality, amazing quality",
       "needs": [
@@ -70169,7 +70339,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_death_note",
       "series": "death note",
       "cardPositive": "1girl, amane misa, death note, masterpiece, best quality, amazing quality",
       "needs": [
@@ -70194,7 +70364,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_fullmetal_alchemist",
       "series": "fullmetal alchemist",
       "cardPositive": "1girl, riza hawkeye, fullmetal alchemist, masterpiece, best quality, amazing quality",
       "needs": [
@@ -70219,7 +70389,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_fullmetal_alchemist",
       "series": "fullmetal alchemist",
       "cardPositive": "1boy, roy mustang, fullmetal alchemist, masterpiece, best quality, amazing quality",
       "needs": [
@@ -70244,7 +70414,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_fullmetal_alchemist",
       "series": "fullmetal alchemist",
       "cardPositive": "1girl, lust (fma), fullmetal alchemist, masterpiece, best quality, amazing quality",
       "needs": [
@@ -70269,7 +70439,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_fullmetal_alchemist",
       "series": "fullmetal alchemist",
       "cardPositive": "1girl, olivier mira armstrong, fullmetal alchemist, masterpiece, best quality, amazing quality",
       "needs": [
@@ -70294,7 +70464,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_girls_und_panzer",
       "series": "girls und panzer",
       "cardPositive": "1girl, nishizumi shiho, girls und panzer, masterpiece, best quality, amazing quality",
       "needs": [
@@ -70319,7 +70489,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_girls_und_panzer",
       "series": "girls und panzer",
       "cardPositive": "1girl, shimada chiyo, girls und panzer, masterpiece, best quality, amazing quality",
       "needs": [
@@ -70344,7 +70514,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_kill_la_kill",
       "series": "kill la kill",
       "cardPositive": "1boy, mikisugi aikurou, kill la kill, masterpiece, best quality, amazing quality",
       "needs": [
@@ -70369,7 +70539,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_kill_la_kill",
       "series": "kill la kill",
       "cardPositive": "1girl, kiryuuin ragyou, kill la kill, masterpiece, best quality, amazing quality",
       "needs": [
@@ -70394,7 +70564,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_kill_la_kill",
       "series": "kill la kill",
       "cardPositive": "1boy, kinagase tsumugu, kill la kill, masterpiece, best quality, amazing quality",
       "needs": [
@@ -70419,7 +70589,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_zombie_land_saga",
       "series": "zombie land saga",
       "cardPositive": "1girl, konno junko, zombie land saga, masterpiece, best quality, amazing quality",
       "needs": [
@@ -70444,7 +70614,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_zombie_land_saga",
       "series": "zombie land saga",
       "cardPositive": "1boy, tatsumi koutarou, zombie land saga, masterpiece, best quality, amazing quality",
       "needs": [
@@ -70469,7 +70639,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_kobayashi_san_chi_no_maidragon",
       "series": "kobayashi-san chi no maidragon",
       "cardPositive": "1girl, tohru (maidragon), kobayashi-san chi no maidragon, masterpiece, best quality, amazing quality",
       "needs": [
@@ -70494,7 +70664,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_kobayashi_san_chi_no_maidragon",
       "series": "kobayashi-san chi no maidragon",
       "cardPositive": "1girl, lucoa (maidragon), kobayashi-san chi no maidragon, masterpiece, best quality, amazing quality",
       "needs": [
@@ -70519,7 +70689,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_kobayashi_san_chi_no_maidragon",
       "series": "kobayashi-san chi no maidragon",
       "cardPositive": "1girl, kobayashi (maidragon), kobayashi-san chi no maidragon, masterpiece, best quality, amazing quality",
       "needs": [
@@ -70544,7 +70714,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_kobayashi_san_chi_no_maidragon",
       "series": "kobayashi-san chi no maidragon",
       "cardPositive": "1girl, elma (maidragon), kobayashi-san chi no maidragon, masterpiece, best quality, amazing quality",
       "needs": [
@@ -70569,7 +70739,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_princess_connect",
       "series": "princess connect!",
       "cardPositive": "1girl, christina (princess connect!), princess connect!, masterpiece, best quality, amazing quality",
       "needs": [
@@ -70594,7 +70764,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_princess_connect",
       "series": "princess connect!",
       "cardPositive": "1girl, misato (princess connect!), princess connect!, masterpiece, best quality, amazing quality",
       "needs": [
@@ -70619,7 +70789,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_overlord_maruyama",
       "series": "overlord (maruyama)",
       "cardPositive": "1girl, albedo (overlord), overlord (maruyama), masterpiece, best quality, amazing quality",
       "needs": [
@@ -70644,7 +70814,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_overlord_maruyama",
       "series": "overlord (maruyama)",
       "cardPositive": "1boy, ainz ooal gown, overlord (maruyama), masterpiece, best quality, amazing quality",
       "needs": [
@@ -70669,7 +70839,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_overlord_maruyama",
       "series": "overlord (maruyama)",
       "cardPositive": "1girl, narberal gamma, overlord (maruyama), masterpiece, best quality, amazing quality",
       "needs": [
@@ -70694,7 +70864,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_dungeon_meshi",
       "series": "dungeon meshi",
       "cardPositive": "1girl, marcille donato, dungeon meshi, masterpiece, best quality, amazing quality",
       "needs": [
@@ -70719,7 +70889,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_dungeon_meshi",
       "series": "dungeon meshi",
       "cardPositive": "1boy, laios touden, dungeon meshi, masterpiece, best quality, amazing quality",
       "needs": [
@@ -70744,7 +70914,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_dungeon_meshi",
       "series": "dungeon meshi",
       "cardPositive": "1girl, falin touden, dungeon meshi, masterpiece, best quality, amazing quality",
       "needs": [
@@ -70769,7 +70939,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_dungeon_meshi",
       "series": "dungeon meshi",
       "cardPositive": "1boy, senshi (dungeon meshi), dungeon meshi, masterpiece, best quality, amazing quality",
       "needs": [
@@ -70794,7 +70964,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_dungeon_meshi",
       "series": "dungeon meshi",
       "cardPositive": "1girl, falin touden (tallman), dungeon meshi, masterpiece, best quality, amazing quality",
       "needs": [
@@ -70819,7 +70989,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_dungeon_meshi",
       "series": "dungeon meshi",
       "cardPositive": "1boy, mithrun, dungeon meshi, masterpiece, best quality, amazing quality",
       "needs": [
@@ -70844,7 +71014,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_dungeon_meshi",
       "series": "dungeon meshi",
       "cardPositive": "1boy, kabru, dungeon meshi, masterpiece, best quality, amazing quality",
       "needs": [
@@ -70869,7 +71039,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_dungeon_meshi",
       "series": "dungeon meshi",
       "cardPositive": "1girl, marcille donato (lord), dungeon meshi, masterpiece, best quality, amazing quality",
       "needs": [
@@ -70894,7 +71064,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_persona",
       "series": "persona",
       "cardPositive": "1girl, kawakami sadayo, persona, masterpiece, best quality, amazing quality",
       "needs": [
@@ -70919,7 +71089,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_persona",
       "series": "persona",
       "cardPositive": "1boy, adachi tohru, persona, masterpiece, best quality, amazing quality",
       "needs": [
@@ -70944,7 +71114,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_persona",
       "series": "persona",
       "cardPositive": "1girl, elizabeth (persona), persona, masterpiece, best quality, amazing quality",
       "needs": [
@@ -70969,7 +71139,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_persona",
       "series": "persona",
       "cardPositive": "1girl, takemi tae, persona, masterpiece, best quality, amazing quality",
       "needs": [
@@ -70994,7 +71164,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_persona",
       "series": "persona",
       "cardPositive": "1boy, doujima ryoutarou, persona, masterpiece, best quality, amazing quality",
       "needs": [
@@ -71019,7 +71189,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_persona",
       "series": "persona",
       "cardPositive": "1girl, niijima sae, persona, masterpiece, best quality, amazing quality",
       "needs": [
@@ -71044,7 +71214,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_tengen_toppa_gurren_lagann",
       "series": "tengen toppa gurren lagann",
       "cardPositive": "1boy, viral (ttgl), tengen toppa gurren lagann, masterpiece, best quality, amazing quality",
       "needs": [
@@ -71069,7 +71239,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_tengen_toppa_gurren_lagann",
       "series": "tengen toppa gurren lagann",
       "cardPositive": "1boy, kittan bachika, tengen toppa gurren lagann, masterpiece, best quality, amazing quality",
       "needs": [
@@ -71094,7 +71264,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_tengen_toppa_gurren_lagann",
       "series": "tengen toppa gurren lagann",
       "cardPositive": "1girl, space yoko, tengen toppa gurren lagann, masterpiece, best quality, amazing quality",
       "needs": [
@@ -71119,7 +71289,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_tengen_toppa_gurren_lagann",
       "series": "tengen toppa gurren lagann",
       "cardPositive": "1girl, adiane, tengen toppa gurren lagann, masterpiece, best quality, amazing quality",
       "needs": [
@@ -71144,7 +71314,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_anime",
+      "sub": "char_yahari_ore_no_seishun_lovecome_wa_machigatteiru",
       "series": "yahari ore no seishun lovecome wa machigatteiru.",
       "cardPositive": "1girl, yuigahama yui's mother, yahari ore no seishun lovecome wa machigatteiru., masterpiece, best quality, amazing quality",
       "needs": [
@@ -71169,7 +71339,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_zenless_zone_zero",
       "series": "zenless zone zero",
       "cardPositive": "1girl, nicole demara, zenless zone zero, masterpiece, best quality, amazing quality",
       "needs": [
@@ -71194,7 +71364,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_goddess_of_victory_nikke",
       "series": "goddess of victory: nikke",
       "cardPositive": "1girl, rapi (nikke), goddess of victory: nikke, masterpiece, best quality, amazing quality",
       "needs": [
@@ -71219,7 +71389,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_goddess_of_victory_nikke",
       "series": "goddess of victory: nikke",
       "cardPositive": "1boy, commander (nikke), goddess of victory: nikke, masterpiece, best quality, amazing quality",
       "needs": [
@@ -71244,7 +71414,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_goddess_of_victory_nikke",
       "series": "goddess of victory: nikke",
       "cardPositive": "1girl, viper (nikke), goddess of victory: nikke, masterpiece, best quality, amazing quality",
       "needs": [
@@ -71269,7 +71439,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_goddess_of_victory_nikke",
       "series": "goddess of victory: nikke",
       "cardPositive": "1girl, helm (nikke), goddess of victory: nikke, masterpiece, best quality, amazing quality",
       "needs": [
@@ -71294,7 +71464,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_goddess_of_victory_nikke",
       "series": "goddess of victory: nikke",
       "cardPositive": "1girl, noir (nikke), goddess of victory: nikke, masterpiece, best quality, amazing quality",
       "needs": [
@@ -71319,7 +71489,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_goddess_of_victory_nikke",
       "series": "goddess of victory: nikke",
       "cardPositive": "1girl, soda (nikke), goddess of victory: nikke, masterpiece, best quality, amazing quality",
       "needs": [
@@ -71344,7 +71514,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_goddess_of_victory_nikke",
       "series": "goddess of victory: nikke",
       "cardPositive": "1girl, red hood (nikke), goddess of victory: nikke, masterpiece, best quality, amazing quality",
       "needs": [
@@ -71369,7 +71539,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_goddess_of_victory_nikke",
       "series": "goddess of victory: nikke",
       "cardPositive": "1girl, blanc (nikke), goddess of victory: nikke, masterpiece, best quality, amazing quality",
       "needs": [
@@ -71394,7 +71564,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_goddess_of_victory_nikke",
       "series": "goddess of victory: nikke",
       "cardPositive": "1girl, dorothy (nikke), goddess of victory: nikke, masterpiece, best quality, amazing quality",
       "needs": [
@@ -71419,7 +71589,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_goddess_of_victory_nikke",
       "series": "goddess of victory: nikke",
       "cardPositive": "1girl, scarlet (nikke), goddess of victory: nikke, masterpiece, best quality, amazing quality",
       "needs": [
@@ -71444,7 +71614,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_goddess_of_victory_nikke",
       "series": "goddess of victory: nikke",
       "cardPositive": "1girl, snow white (nikke), goddess of victory: nikke, masterpiece, best quality, amazing quality",
       "needs": [
@@ -71469,7 +71639,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_goddess_of_victory_nikke",
       "series": "goddess of victory: nikke",
       "cardPositive": "1girl, modernia (nikke), goddess of victory: nikke, masterpiece, best quality, amazing quality",
       "needs": [
@@ -71494,7 +71664,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_goddess_of_victory_nikke",
       "series": "goddess of victory: nikke",
       "cardPositive": "1girl, mary (nikke), goddess of victory: nikke, masterpiece, best quality, amazing quality",
       "needs": [
@@ -71519,7 +71689,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_goddess_of_victory_nikke",
       "series": "goddess of victory: nikke",
       "cardPositive": "1girl, privaty (nikke), goddess of victory: nikke, masterpiece, best quality, amazing quality",
       "needs": [
@@ -71544,7 +71714,7 @@
         "any"
       ],
       "group": "character",
-      "sub": "char_game",
+      "sub": "char_goddess_of_victory_nikke",
       "series": "goddess of victory: nikke",
       "cardPositive": "1girl, brid (nikke), goddess of victory: nikke, masterpiece, best quality, amazing quality",
       "needs": [

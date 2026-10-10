@@ -6479,7 +6479,8 @@ export function drawOne(lex, settings, pinned, userBanned, rand, seed, opts) {
   // 同類已存在時 fillSlot 的 mutex／fillGroup 的 group 檢查會避免重複補牌。
 
   // 角色：釘的照收（上面 forcePin 已經進場）；「抽角色」打開時，替還沒有角色的人照性別各抽一個，
-  // 一張最多 CHARACTER_MAX 個。用 seed 派生的亂數流：勾選開不開，其餘的抽牌一模一樣。
+  // 一張最多 CHARACTER_MAX 個，作品不挑（「只抽同系列」打開才限同一部）。
+  // 用 seed 派生的亂數流：勾選開不開，其餘的抽牌一模一樣。
   if (settings.drawCharacter) {
     const charRand = Number.isFinite(seed) ? mulberry32(((seed >>> 0) ^ 0x0c4a2c7e) >>> 0) : rand;
     const have = [...used].map((t) => lex.byTag.get(t)).filter(isCharacter);
@@ -6488,19 +6489,35 @@ export function drawOne(lex, settings, pinned, userBanned, rand, seed, opts) {
       male: Math.max(0, genderCount(cast, false) - have.filter((it) => it.gate === "male").length),
     };
     let room = CHARACTER_MAX - have.length;
-    const series = new Set(have.map((it) => it.series).filter(Boolean));
     const all = (lex.byGroup && lex.byGroup.get("subject:character")) || [];
+    const usable = (it) => !userBanned.has(it.tag) && allow(it);
+    // 只抽同系列：抽的角色都跟釘的同一部作品；沒釘角色就先挑一部「人數、性別湊得齊」的作品。
+    // 那部作品這個性別的角色不夠，剩下的人就照舊是一般人物，不跨作品補。
+    let only = null;
+    if (settings.characterSameSeries) {
+      only = new Set(have.map((it) => it.series).filter(Boolean));
+      if (!only.size) {
+        const per = new Map();
+        for (const it of all) {
+          if (!it.series || !usable(it)) continue;
+          const c = per.get(it.series) || { female: 0, male: 0 };
+          c[it.gate === "male" ? "male" : "female"] += 1;
+          per.set(it.series, c);
+        }
+        const cover = (c) => Math.min(c.female, want.female) + Math.min(c.male, want.male);
+        const best = Math.max(0, ...[...per.values()].map(cover));
+        const pickable = [...per.keys()].filter((k) => best > 0 && cover(per.get(k)) === best).sort();
+        if (pickable.length) only.add(pickable[Math.floor(charRand() * pickable.length)]);
+      }
+    }
     commitMeta.source = SOURCES.random;
     for (const gate of ["female", "male"]) {
-      while (want[gate] > 0 && room > 0) {
-        const pool = all.filter((it) => it.gate === gate && !userBanned.has(it.tag) && allow(it));
-        if (!pool.length) break;
-        // 已經有角色的作品優先：同作品的兩個人模型分得清楚，跨作品的常混成同一張臉（2026-10-10 實測）。
-        const same = pool.filter((it) => series.has(it.series));
-        const from = same.length && charRand() < CHARACTER_SAME_SERIES ? same : pool;
-        const pick = from[Math.floor(charRand() * from.length)];
-        if (!commit(pick.tag)) break;
-        if (pick.series) series.add(pick.series);
+      if (want[gate] <= 0 || room <= 0) continue;
+      // 這個性別的池子篩一次，抽走的拿掉：角色之間不互斥，抽一個不會讓別的變得不能用。
+      const pool = all.filter((it) => it.gate === gate && (!only || only.has(it.series)) && usable(it));
+      while (want[gate] > 0 && room > 0 && pool.length) {
+        const pick = pool.splice(Math.floor(charRand() * pool.length), 1)[0];
+        if (!commit(pick.tag)) continue;
         want[gate] -= 1;
         room -= 1;
       }
@@ -7989,8 +8006,6 @@ export function isCharacter(item) {
 }
 // 一張圖最多抽幾個角色：再多模型幾乎一定把臉混在一起，提示詞也太長。釘的不受限。
 export const CHARACTER_MAX = 3;
-// 已經有角色時，下一個從同一部作品抽的機率。
-const CHARACTER_SAME_SERIES = 0.7;
 // 角色自帶的長相：有角色就不再隨機抽這幾格。
 const CHARACTER_LOOK_GROUPS = new Set(["hair_len", "hair_color", "hair_style", "eyes", "race"]);
 // 同理，會改掉角色是誰的細節：獸耳翅膀尾巴、中性長相、體型身高、膚色、刺青。
@@ -8155,6 +8170,7 @@ export function defaultSettings(data) {
     // 抽角色：替畫面上的人照性別抽角色卡。加入系列名：角色後面接作品名（釘的角色也照這個）。
     drawCharacter: false,
     characterSeries: false,
+    characterSameSeries: false,
     rating: "explicit",
     pinSportActivity: false,
     lockScene: true,
@@ -8203,6 +8219,7 @@ export function sanitizeSettings(raw, data) {
     drawJob: raw.drawJob === true,
     drawCharacter: raw.drawCharacter === true,
     characterSeries: raw.characterSeries === true,
+    characterSameSeries: raw.characterSameSeries === true,
     // 舊存檔存的是布林 sfw，沿用時對應到全年齡。
     rating: RATINGS.includes(raw.rating)
       ? raw.rating

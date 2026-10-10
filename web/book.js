@@ -12,7 +12,7 @@ import { dateLocale, english } from "./i18n.js";
  */
 import { indexLexicon } from "./engine.js";
 import { ratingBlocked, RATING_LABEL } from "./rules/rating.js";
-import { buildLibrary, groupChips, createAssets, cardNode, cardFacts, setCardFlag, eagerArt, CARD_SUIT_INFO, CARD_SUITS } from "./cards.js";
+import { buildLibrary, groupChips, createAssets, cardNode, cardFacts, setCardFlag, eagerArt, cardMatches, CARD_SUIT_INFO, CARD_SUITS } from "./cards.js";
 import { el, openSheet, toast } from "./ui.js";
 import { mountKeysHelp } from "./keys-help.js";
 import { mountTour } from "./tour.js";
@@ -497,7 +497,7 @@ function listNow() {
       (!ui.group || c.group === ui.group) &&
       (!ui.usedOnly || countOf(c.tag) > 0) &&
       (!isWar() || warOf(c.tag)[0] >= WAR_MIN) &&
-      (!q || c.zh.toLowerCase().includes(q) || c.tag.includes(q))
+      cardMatches(c, q)
   );
   if (isWar()) return out.sort((a, b) => warScore(b.tag) - warScore(a.tag) || warOf(b.tag)[0] - warOf(a.tag)[0] || order.get(a.tag) - order.get(b.tag));
   // 次數一樣時：多到少看誰最近用過，少到多照字盒的順序（花色 → 細分類）。
