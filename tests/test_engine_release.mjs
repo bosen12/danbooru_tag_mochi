@@ -43,8 +43,9 @@ for (const rating of ['general', 'sensitive', 'explicit']) {
   assert.ok(share('medium breasts') > share('gigantic breasts') * 3, 'Medium breasts are far more common than gigantic');
 }
 // Free feature slots add details, not new premises: in Normal scenes non-human traits stay rare.
+// The real share is about 0.13-0.14; 400 draws wobble past 0.15 whenever new cards shift the random order, so sample 2000.
 {
-  const N = 400;
+  const N = 2000;
   const nonhuman = (sceneMode) => {
     const settings = { ...defaultSettings(data), girl: true, boy: false, rating: 'general', eras: ['modern'], sceneMode };
     let n = 0;

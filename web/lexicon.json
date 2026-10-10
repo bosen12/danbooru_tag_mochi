@@ -57235,6 +57235,589 @@
       "zh": "隱形人"
     },
     {
+      "tag": "side-by-side",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "tease",
+      "sub": "pose_two",
+      "needs": [
+        "pair"
+      ],
+      "zh": "並肩"
+    },
+    {
+      "tag": "face-to-face",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [
+        "facing another"
+      ],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "tease",
+      "sub": "pose_two",
+      "needs": [
+        "pair"
+      ],
+      "zh": "面對面"
+    },
+    {
+      "tag": "facing another",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "tease",
+      "sub": "pose_two",
+      "needs": [
+        "pair"
+      ],
+      "zh": "面向對方"
+    },
+    {
+      "tag": "symmetrical pose",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "tease",
+      "sub": "pose_two",
+      "needs": [
+        "pair"
+      ],
+      "zh": "對稱姿勢"
+    },
+    {
+      "tag": "lineup",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "tease",
+      "sub": "pose_two",
+      "needs": [
+        "group"
+      ],
+      "zh": "排排站"
+    },
+    {
+      "tag": "head on another's shoulder",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "tease",
+      "sub": "pose_two",
+      "needs": [
+        "pair"
+      ],
+      "zh": "靠肩"
+    },
+    {
+      "tag": "cheek-to-cheek",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "tease",
+      "sub": "pose_two",
+      "needs": [
+        "pair"
+      ],
+      "zh": "貼臉"
+    },
+    {
+      "tag": "heads together",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "tease",
+      "sub": "pose_two",
+      "needs": [
+        "pair"
+      ],
+      "zh": "頭靠頭"
+    },
+    {
+      "tag": "forehead-to-forehead",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "tease",
+      "sub": "pose_two",
+      "needs": [
+        "pair"
+      ],
+      "zh": "碰額頭"
+    },
+    {
+      "tag": "leaning on person",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "tease",
+      "sub": "pose_two",
+      "needs": [
+        "pair"
+      ],
+      "zh": "倚靠對方"
+    },
+    {
+      "tag": "group hug",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "tease",
+      "sub": "pose_two",
+      "needs": [
+        "group"
+      ],
+      "zh": "團抱"
+    },
+    {
+      "tag": "arm around shoulder",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "tease",
+      "sub": "pose_two",
+      "needs": [
+        "pair"
+      ],
+      "zh": "摟肩"
+    },
+    {
+      "tag": "hand on another's waist",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "tease",
+      "sub": "pose_two",
+      "needs": [
+        "pair"
+      ],
+      "zh": "摟腰"
+    },
+    {
+      "tag": "hands on another's shoulders",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "tease",
+      "sub": "pose_two",
+      "needs": [
+        "pair"
+      ],
+      "zh": "雙手搭肩"
+    },
+    {
+      "tag": "holding another's arm",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "tease",
+      "sub": "pose_two",
+      "needs": [
+        "pair"
+      ],
+      "zh": "拉手臂"
+    },
+    {
+      "tag": "headpat",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "tease",
+      "sub": "pose_two",
+      "needs": [
+        "pair"
+      ],
+      "zh": "摸頭"
+    },
+    {
+      "tag": "cheek poking",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "tease",
+      "sub": "pose_two",
+      "needs": [
+        "pair"
+      ],
+      "zh": "戳臉頰"
+    },
+    {
+      "tag": "pointing at another",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "tease",
+      "sub": "pose_two",
+      "needs": [
+        "pair"
+      ],
+      "zh": "指著對方"
+    },
+    {
+      "tag": "high five",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "tease",
+      "sub": "pose_two",
+      "needs": [
+        "pair"
+      ],
+      "zh": "擊掌"
+    },
+    {
+      "tag": "fist bump",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "tease",
+      "sub": "pose_two",
+      "needs": [
+        "pair"
+      ],
+      "zh": "碰拳"
+    },
+    {
+      "tag": "whispering",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "tease",
+      "sub": "pose_two",
+      "needs": [
+        "pair"
+      ],
+      "zh": "耳語"
+    },
+    {
+      "tag": "shared umbrella",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [
+        "umbrella"
+      ],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "tease",
+      "sub": "pose_two",
+      "needs": [
+        "pair"
+      ],
+      "zh": "同撐傘"
+    },
+    {
+      "tag": "shared scarf",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [
+        "scarf"
+      ],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "tease",
+      "sub": "pose_two",
+      "needs": [
+        "pair"
+      ],
+      "zh": "共圍巾"
+    },
+    {
+      "tag": "shared earphones",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [
+        "earbuds"
+      ],
+      "layer": "normal",
+      "era": [
+        "modern"
+      ],
+      "group": "tease",
+      "sub": "pose_two",
+      "needs": [
+        "pair"
+      ],
+      "zh": "共聽耳機"
+    },
+    {
+      "tag": "matching outfits",
+      "section": "feature",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "other",
+      "sub": "relation",
+      "needs": [
+        "pair"
+      ],
+      "zh": "同款穿搭"
+    },
+    {
       "tag": "petite",
       "section": "feature",
       "gate": "female",

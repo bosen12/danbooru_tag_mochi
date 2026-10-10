@@ -5250,11 +5250,13 @@ function indoorOutdoorClash(have) {
   const pinKit = applyPin(lex, new Set(), new Set(), "kitchen").pinned;
   let kitMaid = 0;
   // maid 在這組設定下本來就稀有（約 0.9%），80 個 seed 的窗口太容易整段落空。
-  for (let i = 0; i < 400; i++) {
+  // 2026-10-10：兩人互動補 25 個字，亂數順序跟著變，這 400 張剛好 0。3000 張改前 16、改後 11（約 0.4%），
+  // 規則沒變（抽得到），樣本放大到 2000。
+  for (let i = 0; i < 2000; i++) {
     const h = tagsOf(drawOne(lex, sJob, pinKit, new Set(), mulberry32(440840 + i), 440840 + i));
     if (h.has("maid")) kitMaid += 1;
   }
-  ok("pinned kitchen can still draw maid", kitMaid > 0, `maid=${kitMaid}/400`);
+  ok("pinned kitchen can still draw maid", kitMaid > 0, `maid=${kitMaid}/2000`);
   eq("diverse eating fits classroom", placeFitsActs("classroom", new Set(["eating"]), false), true);
   eq("normal eating does not fit classroom", placeFitsActs("classroom", new Set(["eating"]), true), false);
   const pinEat = applyPin(lex, new Set(), new Set(), "eating").pinned;
@@ -7616,7 +7618,9 @@ function indoorOutdoorClash(have) {
   for (const era of ERAS) {
     s.eras = [era];
     const m = new Map();
-    const N = 1200;
+    // 2026-10-10：兩人互動補 25 個字，亂數順序跟著變，現代大街在 1200 張裡剛好 0（4000 張改前 9、改後 11）。
+    // 規則沒變，覆蓋改看 2000 張。
+    const N = 2000;
     for (let i = 1; i <= N; i++) {
       const h = tagsOf(drawOne(lex, s, new Set(), new Set(), mulberry32(i), i));
       for (const t of h) {

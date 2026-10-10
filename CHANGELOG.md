@@ -1,5 +1,9 @@
 # Release notes
 
+## Unreleased
+
+- 25 new cards for two-person poses that work clothed at every rating: side-by-side, face-to-face, head on another's shoulder, cheek-to-cheek, high five, headpat, shared umbrella and more (2,708 → 2,733). Their all-ages art is not in card-art-v5 yet; the first start bakes them with your ComfyUI.
+
 ## v1.1 — 2026-10-10
 
 Changes since [v1.0](https://github.com/bosen12/danbooru_tag_mochi/releases/tag/v1.0) (2026-10-08).
