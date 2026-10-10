@@ -70,6 +70,15 @@ export function cardMatches(c, q) {
 }
 
 /**
+ * 角色頁的「性別：全部／女／男」一串籤（墨池字盒、卡冊共用）。pick(g, 按鈕)；g 是 ""、"female"、"male"。
+ */
+export function genderChips(current, pick) {
+  const btn = (g, label) =>
+    el("button", { class: "group-chip pressable", type: "button", dataset: { gender: g }, "aria-pressed": current === g ? "true" : "false", onclick: (e) => pick(g, e.currentTarget) }, label);
+  return el("span", { class: "chip-run chip-gender", role: "group", "aria-label": "性別" }, el("span", { class: "chip-fam", "aria-hidden": "true" }, "性別"), btn("", "全部"), btn("female", "女"), btn("male", "男"));
+}
+
+/**
  * 字盒的分類籤（細分類，見 scripts/subgroups.py）。
  * 同一家族（「地點・住家」的「地點」）連在一起的收成一串：家族名寫一次，籤上只寫後半，
  * 一個花色三十幾格也只佔幾行。章只在整格的牌都是同一個章時才標（細分類可能跨小分類收字）。

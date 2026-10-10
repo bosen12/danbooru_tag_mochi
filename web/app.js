@@ -37,7 +37,7 @@ import { SCENE_MODES, SCENE_MODE_LABELS, heatBlockedByRating } from "./scene-pol
 import { initLoraPicker, currentLorasPayload, currentTriggerText, currentCkpt, handleLoraKeys } from "./lora.js";
 import { initWorkflow, currentWorkflowId, currentSampling, wfHandleKeys } from "./workflow.js";
 import { HARD_BANNED } from "./card-art.js";
-import { buildLibrary, groupChips, createAssets, cardNode, setCardFlag, setEnterTarget, eagerArt, cardFacts, cardMatches, CARD_SUIT_INFO, CARD_SUITS, RATING_ZH } from "./cards.js";
+import { buildLibrary, groupChips, genderChips, createAssets, cardNode, setCardFlag, setEnterTarget, eagerArt, cardFacts, cardMatches, CARD_SUIT_INFO, CARD_SUITS, RATING_ZH } from "./cards.js";
 import { bindArt, artFallback } from "./card-images.js";
 import { el, openSheet, anyOverlay, toast, runToastAction, ICONS } from "./ui.js";
 import { mountKeysHelp } from "./keys-help.js";
@@ -95,7 +95,7 @@ let infinite = false;
 let stopAsked = false;
 // 無限抽印完一輪、還沒排下一輪的那一小段空檔：照樣算「在忙」，「停」不能在這時候閃掉。
 let looping = false;
-const ui = { suit: "all", group: "", query: "", eraOnly: true, collapsed: matchMedia("(max-width: 63.99rem)").matches, ...S.loadUi() };
+const ui = { suit: "all", group: "", query: "", eraOnly: true, charGender: "", collapsed: matchMedia("(max-width: 63.99rem)").matches, ...S.loadUi() };
 const $ = (id) => document.getElementById(id);
 
 // 數字換版時只讓字面輕輕落定，讀屏仍直接讀到最後的數值。
@@ -203,7 +203,7 @@ function setSettings(patch) {
 }
 
 function saveUi() {
-  S.saveUi({ suit: ui.suit, group: ui.group, eraOnly: ui.eraOnly, collapsed: ui.collapsed });
+  S.saveUi({ suit: ui.suit, group: ui.group, eraOnly: ui.eraOnly, collapsed: ui.collapsed, charGender: ui.charGender });
 }
 
 /* ================= 分級與 Comfy ================= */
@@ -556,7 +556,7 @@ function countLine(shown) {
 
 function renderLibrary() {
   const q = ui.query.toLowerCase();
-  const inSuit = lib.cards.filter((c) => (ui.suit === "all" || c.suit === ui.suit) && visible(c));
+  const inSuit = lib.cards.filter((c) => (ui.suit === "all" || c.suit === ui.suit) && visible(c) && genderOk(c));
   // 小分類晶片：只在選了某一種花色時出現
   const chips = $("group-chips");
   if (ui.suit === "all") {
@@ -575,6 +575,7 @@ function renderLibrary() {
         i.short
       );
     chips.replaceChildren(
+      ui.suit === "chara" ? genderChips(ui.charGender, pickGender) : null,
       el("button", { class: "group-chip pressable", type: "button", "aria-pressed": ui.group === "" ? "true" : "false", onclick: (e) => pickGroup("", e.currentTarget) }, "全部"),
       ...runs.map((r) =>
         r.fam
@@ -596,7 +597,13 @@ function renderLibrary() {
   // 打到沒有符合的那一下，搜尋框輕輕搖頭（跟疊印台的找牌框一樣）。之後繼續打、仍然沒有，不再搖。
   if (q && !list.length && was !== "empty") refuse($("lib-q"));
   if (!list.length) {
-    grid.replaceChildren(q ? libraryMiss(q) : el("p", { class: "lib-empty" }, "這一格沒有字。"));
+    // 角色頁選了「男」，規則的「人物」卻沒開男生：男角色全被收起來了，說清楚，不要只寫「沒有字」。
+    const offSide = ui.suit === "chara" && ((ui.charGender === "male" && !settings.boy) || (ui.charGender === "female" && !settings.girl));
+    grid.replaceChildren(
+      q ? libraryMiss(q)
+        : offSide ? el("p", { class: "lib-empty" }, ui.charGender === "male" ? "規則的「人物」沒開男生，男角色都收起來了。" : "規則的「人物」沒開女生，女角色都收起來了。")
+        : el("p", { class: "lib-empty" }, "這一格沒有字。")
+    );
     markEnterTarget();
     return;
   }
@@ -770,9 +777,24 @@ function pickGroup(g, from) {
   libBackToTop();
   dealLibrary = true;
   renderLibrary();
-  const selected = $("group-chips").querySelector('[aria-pressed="true"]');
+  const selected = $("group-chips").querySelector('[aria-pressed="true"]:not([data-gender])');
   if (focused) selected?.focus({ preventScroll: true });
   seat(selected);
+}
+
+/** 角色頁的「性別：全部／女／男」。只是瀏覽篩選；畫面裡要不要有男生、女生是規則的「人物」開關。 */
+const genderOk = (c) => ui.suit !== "chara" || !ui.charGender || c.gate === ui.charGender;
+
+function pickGender(g, from) {
+  if (ui.charGender === g) return;
+  const focused = document.activeElement === from;
+  ui.charGender = g;
+  saveUi();
+  libBackToTop();
+  dealLibrary = true;
+  renderLibrary();
+  const selected = $("group-chips").querySelector(`[data-gender="${g}"]`);
+  if (focused) selected?.focus({ preventScroll: true });
 }
 
 let hand = null;

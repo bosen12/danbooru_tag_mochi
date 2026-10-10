@@ -12,7 +12,7 @@ import { dateLocale, english } from "./i18n.js";
  */
 import { indexLexicon } from "./engine.js";
 import { ratingBlocked, RATING_LABEL } from "./rules/rating.js";
-import { buildLibrary, groupChips, createAssets, cardNode, cardFacts, setCardFlag, eagerArt, cardMatches, CARD_SUIT_INFO, CARD_SUITS } from "./cards.js";
+import { buildLibrary, groupChips, genderChips, createAssets, cardNode, cardFacts, setCardFlag, eagerArt, cardMatches, CARD_SUIT_INFO, CARD_SUITS } from "./cards.js";
 import { el, openSheet, toast } from "./ui.js";
 import { mountKeysHelp } from "./keys-help.js";
 import { mountTour } from "./tour.js";
@@ -76,7 +76,7 @@ let list = [];
 let shown = 0;
 // 牌的節點留著重用：換排序時同一張牌是同一個節點，才滑得過去，圖也不必重載。
 const cells = new Map();
-const ui = { suit: "all", group: "", query: "", order: "desc", usedOnly: false, ...readUi() };
+const ui = { suit: "all", group: "", query: "", order: "desc", usedOnly: false, charGender: "", ...readUi() };
 
 function readUi() {
   try {
@@ -88,7 +88,7 @@ function readUi() {
 }
 function saveUi() {
   try {
-    localStorage.setItem(UI_KEY, JSON.stringify({ suit: ui.suit, group: ui.group, order: ui.order, usedOnly: ui.usedOnly }));
+    localStorage.setItem(UI_KEY, JSON.stringify({ suit: ui.suit, group: ui.group, order: ui.order, usedOnly: ui.usedOnly, charGender: ui.charGender }));
   } catch {
     /* 存不了就算了 */
   }
@@ -372,7 +372,7 @@ function renderGroups() {
     b.replaceChildren();
   }
   if (ui.suit === "all") return;
-  const runs = groupChips(lib.cards.filter((c) => c.suit === ui.suit && visibleCard(c)));
+  const runs = groupChips(lib.cards.filter((c) => c.suit === ui.suit && visibleCard(c) && genderOk(c)));
   if (ui.group && !runs.some((r) => r.items.some((i) => i.g === ui.group))) ui.group = "";
   const count = runs.reduce((n, r) => n + r.items.length, 0);
   const many = !!flow && FLOW_GROUP_SUITS.has(ui.suit);
@@ -396,6 +396,7 @@ function renderGroups() {
       i.short
     );
   box.replaceChildren(
+    ui.suit === "chara" ? genderChips(ui.charGender, pickGender) : null,
     el("button", { class: "group-chip pressable", type: "button", "aria-pressed": ui.group === "" ? "true" : "false", onclick: (e) => pickGroup("", e.currentTarget) }, "全部"),
     ...runs.map((r) =>
       r.fam
@@ -415,7 +416,7 @@ function pickGroup(g, from) {
   ui.group = g;
   saveUi();
   renderGroups();
-  const selected = [...groupsBox().querySelectorAll(".group-chip")].find((b) => b.getAttribute("aria-pressed") === "true");
+  const selected = [...groupsBox().querySelectorAll(".group-chip:not([data-gender])")].find((b) => b.getAttribute("aria-pressed") === "true");
   if (from && document.activeElement === from) selected?.focus({ preventScroll: true });
   seat(selected);
   backToTop();
@@ -513,12 +514,27 @@ function visibleCard(card) {
   return !ratingBlocked(card.item, rating);
 }
 
+/** 角色頁的「性別：全部／女／男」：只是瀏覽篩選，不影響花色的點亮數。 */
+const genderOk = (c) => ui.suit !== "chara" || !ui.charGender || c.gate === ui.charGender;
+
+function pickGender(g, from) {
+  if (ui.charGender === g) return;
+  const focused = document.activeElement === from;
+  ui.charGender = g;
+  saveUi();
+  renderGroups();
+  if (focused) groupsBox().querySelector(`[data-gender="${g}"]`)?.focus({ preventScroll: true });
+  backToTop();
+  render();
+}
+
 function listNow() {
   const q = ui.query.toLowerCase();
   const order = new Map(lib.cards.map((c, i) => [c.tag, i]));
   const out = lib.cards.filter(
     (c) =>
       visibleCard(c) &&
+      genderOk(c) &&
       (ui.suit === "all" || c.suit === ui.suit) &&
       (!ui.group || c.group === ui.group) &&
       (!ui.usedOnly || countOf(c.tag) > 0) &&

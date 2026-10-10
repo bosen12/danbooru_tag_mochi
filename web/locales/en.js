@@ -394,6 +394,9 @@ Enter 放上第一張，↓ 走進字盒|Enter adds the first result; ↓ moves 
 畫面裡有誰|Characters
 女|Women
 男|Men
+性別|Gender
+規則的「人物」沒開男生，男角色都收起來了。|Men are off under People in the rules, so male characters are hidden.
+規則的「人物」沒開女生，女角色都收起來了。|Women are off under People in the rules, so female characters are hidden.
 不限|Any
 混合（每張隨機）|Mixed · Random per image
 每張隨機|Random each
