@@ -2090,13 +2090,15 @@ async function boot() {
 
   // ---- 星河（three.js）：有插畫的全年齡牌，照花色排 ----
   const R = rng(3);
+  // 影片的星河照原本六個花色排（六條旋臂）：角色牌（版權角色，不公開）不上影片。
+  const FILM_SUITS = ["cast", "look", "wear", "pose", "scene", "style"];
   const glCards = lib.cards
-    .filter((c) => hasArt(c.tag))
+    .filter((c) => FILM_SUITS.includes(c.suit) && hasArt(c.tag))
     .map((c) => ({ c, k: R() }))
     .sort((a, b) => a.k - b.k)
     .slice(0, 640)
     .map(({ c }) => c)
-    .sort((a, b) => CARD_SUITS.indexOf(a.suit) - CARD_SUITS.indexOf(b.suit));
+    .sort((a, b) => FILM_SUITS.indexOf(a.suit) - FILM_SUITS.indexOf(b.suit));
   const COLOR = { cast: "#8ea6c9", look: "#d07f8e", wear: "#a58bcf", pose: "#5fb096", scene: "#c9a45e", style: "#a9b76a" };
   const thumbOf = (tag) => {
     const s = assets.sources(tag);
@@ -2105,7 +2107,7 @@ async function boot() {
   status.textContent = "排星河 · Building the galaxy";
   gl = await createGL(
     $("gl"),
-    glCards.map((c) => ({ zh: english ? c.tag : c.zh, glyph: english ? ["C", "A", "W", "P", "S", "F"][CARD_SUITS.indexOf(c.suit)] : CARD_SUIT_INFO[c.suit].glyph, color: COLOR[c.suit], suitIndex: CARD_SUITS.indexOf(c.suit), src: thumbOf(c.tag) })),
+    glCards.map((c) => ({ zh: english ? c.tag : c.zh, glyph: english ? ["C", "A", "W", "P", "S", "F"][FILM_SUITS.indexOf(c.suit)] : CARD_SUIT_INFO[c.suit].glyph, color: COLOR[c.suit], suitIndex: FILM_SUITS.indexOf(c.suit), src: thumbOf(c.tag) })),
     {
       onProgress(done, total) {
         loadBar.style.transform = `scaleX(${((done / total) * 0.5).toFixed(3)})`;

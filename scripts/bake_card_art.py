@@ -70,8 +70,8 @@ def card_job_list() -> list[dict]:
 def card_jobs() -> list[dict]:
     return [
         {"key": j["tag"], "file": j["file"], "positive": j["positive"], "negative": j.get("negative", ""),
-         "rating": j["rating"], "width": CARD_W, "height": CARD_H, "thumb": (THUMB_W, THUMB_H), "seed": SEED,
-         "small": True}
+         "rating": j["rating"], "kind": j.get("kind", "card"), "width": CARD_W, "height": CARD_H,
+         "thumb": (THUMB_W, THUMB_H), "seed": SEED, "small": True}
         for j in card_job_list()
     ]
 
@@ -241,7 +241,8 @@ def status(args, out_dir: Path, manifest: dict, jobs: list[dict]) -> int:
     """給啟動檔用。退出碼：0 都有了、10 缺圖且 ComfyUI 開著、11 缺圖但 ComfyUI 沒開、12 已經在烤了。
     輸出只用英文：cmd 的主控台字碼頁不是 UTF-8，中文會變亂碼。"""
     todo = pending(jobs, out_dir, manifest)
-    what = "zipu extras" if args.extras else f"card art ({args.rating or 'all ratings'})"
+    what = "zipu extras" if args.extras else (
+        "character art" if args.kind == "character" else f"card art ({args.rating or 'all ratings'})")
     have = len(jobs) - len(todo)
     if not todo:
         print(f"{what}: {have}/{len(jobs)} ready")
@@ -262,6 +263,8 @@ def main() -> int:
     ap.add_argument("--force", action="store_true")
     ap.add_argument("--limit", type=int, default=0)
     ap.add_argument("--rating", choices=["general", "sensitive", "explicit"], default="")
+    # 角色牌（版權角色）另外烘：不混進「全年齡缺的直接烘」，那一步會一次烘幾百張而不先問。
+    ap.add_argument("--kind", choices=["card", "character"], default="card")
     ap.add_argument("--ckpt", default="", help="用哪個底模烤（ComfyUI 裡的名稱）；不給就用預設的，沒有就挑一個有的")
     args = ap.parse_args()
 
@@ -271,6 +274,8 @@ def main() -> int:
     manifest = json.loads(manifest_path.read_text(encoding="utf-8")) if manifest_path.exists() else {}
 
     jobs = extra_jobs() if args.extras else card_jobs()
+    if not args.extras:
+        jobs = [j for j in jobs if j.get("kind", "card") == args.kind]
     if args.rating:
         jobs = [j for j in jobs if j.get("rating", "general") == args.rating]
     if args.only:
@@ -321,6 +326,8 @@ def bake(jobs, out_dir, manifest_path, manifest, t_all) -> int:
             entry = {"file": job["file"], "seed": job["seed"], "positive": job["positive"],
                      "negative": job.get("negative", ""), "rating": job.get("rating", "general"),
                      "v": hashlib.sha1(full).hexdigest()[:10]}
+            if job.get("kind") == "character":
+                entry["kind"] = "character"
             if job.get("small"):
                 try:
                     (out_dir / THUMB_DIR_NAME).mkdir(exist_ok=True)

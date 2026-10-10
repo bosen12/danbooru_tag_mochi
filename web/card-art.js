@@ -65,9 +65,11 @@ export function groupSeal(item) {
   return (item && GROUP_SEAL[`${item.section}|${item.group}`]) || null;
 }
 
-export const CARD_SUITS = ["cast", "look", "wear", "pose", "scene", "style"];
+export const CARD_SUITS = ["cast", "chara", "look", "wear", "pose", "scene", "style"];
 export const CARD_SUIT_INFO = {
   cast: { zh: "人數", glyph: "人" },
+  // 動漫角色（詞庫 subject／character）。只有人數放不下一千多個名字，自己一個花色。
+  chara: { zh: "角色", glyph: "角" },
   look: { zh: "長相", glyph: "容" },
   wear: { zh: "服裝", glyph: "衣" },
   pose: { zh: "姿勢", glyph: "姿" },
@@ -80,6 +82,7 @@ const SECTION_SUIT = { subject: "cast", feature: "look", clothing: "wear", pose:
 export function cardSuit(item) {
   if (!item) return null;
   if (item.group === "job") return "wear";
+  if (item.group === "character") return "chara";
   if (item.section === "quality" && item.group !== "style" && item.group !== "boost") return null;
   return SECTION_SUIT[item.section] || null;
 }
@@ -521,6 +524,17 @@ function castOf(item) {
  */
 export function artPrompt(item, ctx = {}) {
   if (!isCard(item) || NO_ART.has(item.tag)) return null;
+  // 角色牌：詞庫的 cardPositive（1girl／1boy、角色、作品、畫質詞），再接跟其他人物牌一樣的
+  // 單人、成人、上半身、看觀眾、白底、全年齡尾巴。只寫角色名的話 WAI 預設畫成背影翹臀、張腿露內褲
+  // （2026-10-10 烘 10 張實測），這是每個分級都看得到的牌面，不行。上半身、看觀眾：牌面認得出是誰。
+  // 一律照全年齡烘；kind 讓烘焙、打包分開處理（角色是版權角色，不進公開卡面包，每台自己烘）。
+  if (item.group === "character") {
+    if (!item.cardPositive) return null;
+    const quality = new Set(QUALITY.split(", "));
+    const core = item.cardPositive.split(",").map((s) => s.trim()).filter((t) => t && !quality.has(t));
+    const tags = [...core, "solo", "adult", "upper body", "looking at viewer", "simple background", "white background"];
+    return { positive: `${tags.join(", ")}, ${TAIL.general}, ${QUALITY}`, rating: "general", negative: artNegative(tags), kind: "character" };
+  }
   const rating = ratingTier(item, ctx.ratingBlocked);
   const byTag = ctx.byTag || new Map();
   const skip = ART_SKIP_IMPLY[item.tag];

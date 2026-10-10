@@ -1,7 +1,7 @@
 /**
  * 第一次使用的準備面板：伺服器在背景做的事（setup_tasks.py → /api/setup）攤在畫面左下角。
  *   卡面下載、LoRA Manager、放大模型、姿勢參考、烘焙卡面：進度一行一行跟著更新；
- *   要問的（姿勢參考、成人卡面）在這裡按；要重開 ComfyUI 也是這裡一顆鈕（透過 ComfyUI-Manager）。
+ *   要問的（姿勢參考、成人卡面、角色卡面）在這裡按；要重開 ComfyUI 也是這裡一顆鈕（透過 ComfyUI-Manager）。
  * 什麼都不用做的人（第二次以後）完全看不到它。四個房間共用，頁面載入就自己掛上。
  * 伺服器端的 setup_tasks 只在這個檔存在的版面才會開（server.py main）。
  */
@@ -14,6 +14,7 @@ const ANSWER = {
   lora: [["yes", "允許", true], ["no", "這次不要"], ["never", "不要再問"]],
   pose: [["yes", "安裝", true], ["no", "這次不要"], ["never", "不要再問"]],
   bake_adult: [["yes", "烘", true], ["no", "這次不要"]],
+  bake_chars: [["yes", "烘", true], ["no", "這次不要"], ["never", "不要再問"]],
 };
 
 let box = null;
@@ -55,7 +56,7 @@ function render(snap) {
 }
 
 // 跑很久的（烘幾百張卡面、下載 2.5 GB）可以停；已經做好的留著，下次啟動接著做或再問。
-const STOPPABLE = new Set(["bake", "bake_adult", "pose"]);
+const STOPPABLE = new Set(["bake", "bake_adult", "bake_chars", "pose"]);
 
 function row(it) {
   const answers = it.state === "ask" ? ANSWER[it.id] || [] : it.state === "run" && STOPPABLE.has(it.id) ? [["stop", "停止"]] : [];

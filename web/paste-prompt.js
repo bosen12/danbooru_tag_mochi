@@ -69,12 +69,13 @@ function variants(piece) {
 /**
  * 拆一段提示詞。
  *   lexTags：詞庫的每一個字（含不是牌的）；isCard(tag)：它是不是一張牌；zh(tag)：中文名。
+ *   banned：不能用的角色（詞庫的 characterBan，未成年、真人…）：跟禁用字一樣列在「不收」。
  * 回傳 { cards: [{ tag, raw }], quality, loras, engine, blocked, unknown }（字串陣列；cards 照出現順序、不重複）。
  */
-export function parsePrompt(text, { lexTags, isCard, zh }) {
+export function parsePrompt(text, { lexTags, isCard, zh, banned = [] }) {
   const byLower = new Map(lexTags.map((t) => [t.toLowerCase(), t]));
   const byZh = new Map(lexTags.filter(isCard).map((t) => [zh(t), t]));
-  const hard = new Set(HARD_BANNED.map((t) => t.toLowerCase()));
+  const hard = new Set([...HARD_BANNED, ...banned].map((t) => t.toLowerCase()));
   const res = { cards: [], quality: [], loras: [], engine: [], blocked: [], unknown: [] };
   const seen = new Set();
   const src = String(text || "").replace(LORA, (_, name) => {
@@ -119,7 +120,7 @@ export function parsePrompt(text, { lexTags, isCard, zh }) {
  *   off(tag)：這張牌現在用不了的原因（分級擋掉、在廢字簍…），沒有就回 null。
  *     預覽上先標出來，不要放進去才發現；照樣算「會變成牌」，放不放由各頁照原本的規矩。
  */
-export function openPaste({ where, text = "", lexTags, isCard, zh, apply, off = () => null }) {
+export function openPaste({ where, text = "", lexTags, isCard, zh, banned = [], apply, off = () => null }) {
   const area = el("textarea", {
     class: "paste-text",
     rows: "5",
@@ -144,7 +145,7 @@ export function openPaste({ where, text = "", lexTags, isCard, zh, apply, off = 
   const chip = (text, title) => el("span", { class: "paste-chip", title: title || null }, text);
 
   const paint = () => {
-    parsed = parsePrompt(area.value, { lexTags, isCard, zh });
+    parsed = parsePrompt(area.value, { lexTags, isCard, zh, banned });
     const n = parsed.cards.length;
     replaceBtn.disabled = !n;
     addBtn.disabled = !n;

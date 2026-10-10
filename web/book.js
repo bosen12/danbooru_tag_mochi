@@ -1398,6 +1398,7 @@ function openBoxDecks() {
       openPaste({
         where: "卡盒",
         lexTags: data.tags.map((t) => t.tag),
+        banned: data.characterBan || [],
         isCard: (t) => lib.byTag.has(t),
         zh,
         apply: (tags, { replace }) => deckToBox({ name: "貼上的提示詞", tags: replace ? tags : [...box, ...tags.filter((t) => !box.includes(t))] }),

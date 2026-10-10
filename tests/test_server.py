@@ -588,6 +588,21 @@ finally:
     server.WEBP_DIR = _real_webp_dir
 
 
+# === 不能用的角色、未成年字：伺服器最後一道 ====================================
+_bip = server.banned_in_prompt
+_ban = server.character_ban()
+ok("詞庫的 characterBan 讀得到", "anya (spy x family)" in _ban, str(len(_ban)))
+ok("跳脫括號、底線、權重括號都認得出被 ban 的角色",
+   _bip("1girl, anya \(spy x family\), smile") == ["anya (spy x family)"]
+   and _bip("(anya_(spy_x_family):1.2)") == ["anya (spy x family)"], str(_bip("(anya_(spy_x_family):1.2)")))
+ok("loli、shota 照擋", _bip("1girl, loli, shota") == ["loli", "shota"])
+ok("能用的角色不擋（自己的括號留著）", _bip("((makima (chainsaw man))), yor briar") == [])
+try:
+    server.prepare_workflow({"positive": "1girl, anya (spy x family)"})
+    ok("被 ban 的角色送不出去", False)
+except server.PromptBlocked as exc:
+    ok("被 ban 的角色送不出去，訊息寫出是哪個字", "anya (spy x family)" in str(exc), str(exc))
+
 # === HTML 裡自己的程式檔帶版本（versioned_html）==================================
 # 走 Tailscale 時每次重新整理要把二十幾個 .js 逐一回來問；換成帶內容雜湊的網址就整年快取。
 _V = {"boot.js": "aaaaaaaaaa", "engine.js": "bbbbbbbbbb", "app.js": "cccccccccc", "styles.css": "dddddddddd"}

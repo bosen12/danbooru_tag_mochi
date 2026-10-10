@@ -80,7 +80,7 @@ function translate(source, depth) {
 // dictionary word for that character (風 is the Style seal, not "wind"). Applied to the element and
 // again to its text node, because some rooms fill a seal's text after inserting it.
 const GLYPH_SEL = ".card-suit, .tab-dot, .reg-glyph, .suit-seal, .suit-glyph, .suit-tab > b, .chip-seal, .card-peek-suit, .card-peek-seal, .ach-suit-glyph, .ach-medal, .tchip > b, .rk, .chip > b, .plate-head > b, b.tb.tl";
-const GLYPHS = { 人: "C", 容: "A", 衣: "W", 姿: "P", 景: "S", 風: "F", 動: "A", 身: "B", 鏡: "C", 表: "E", 視: "G", 誘: "T", 走: "X", 性: "X", 上: "T", 下: "B", 外: "O", 連: "D", 內: "U", 襪: "L", 鞋: "F", 飾: "A", 材: "M", 時: "E", 裸: "N", 色: "C", 長: "L", 型: "H", 眼: "E", 膚: "S", 妝: "M", 體: "B", 職: "J", 族: "R", 地: "L", 光: "L", 背: "B", 效: "F", 晝: "T", 天: "S", 氣: "W", 室: "I", 坐: "F", 女: "F", 男: "M" };
+const GLYPHS = { 人: "C", 角: "R", 容: "A", 衣: "W", 姿: "P", 景: "S", 風: "F", 動: "A", 身: "B", 鏡: "C", 表: "E", 視: "G", 誘: "T", 走: "X", 性: "X", 上: "T", 下: "B", 外: "O", 連: "D", 內: "U", 襪: "L", 鞋: "F", 飾: "A", 材: "M", 時: "E", 裸: "N", 色: "C", 長: "L", 型: "H", 眼: "E", 膚: "S", 妝: "M", 體: "B", 職: "J", 族: "R", 地: "L", 光: "L", 背: "B", 效: "F", 晝: "T", 天: "S", 氣: "W", 室: "I", 坐: "F", 女: "F", 男: "M" };
 const MEDALS = { 牌: "C", 門: "S", 花: "F", 友: "★", 手: "+", 印: "P", 藏: "★", 眼: "✓", 日: "D", 百: "100", 夜: "N" };
 function glyph(node) {
   if (!node.matches(GLYPH_SEL)) return false;

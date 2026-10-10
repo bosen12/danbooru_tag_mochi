@@ -66,4 +66,14 @@ for (const rating of ['general', 'sensitive', 'explicit']) {
   const pin = applyPin(lex, new Set(), new Set(), 'giant hand').pinned;
   assert.ok(drawOne(lex, settings, pin, new Set(), mulberry32(7), 7).positive.includes('giant hand'), 'A pinned hand motif still appears');
 }
+// Characters: never drawn unless "Draw characters" is on; banned characters (underage, real people…) are not cards.
+{
+  const settings = { ...defaultSettings(data), girl: true, boy: true };
+  let n = 0;
+  for (let i = 1; i <= 200; i++) for (const tag of drawOne(lex, settings, new Set(), new Set(), mulberry32(i), i).positive.split(', ')) if (lex.byTag.get(tag)?.group === 'character') n++;
+  assert.equal(n, 0, 'Characters stay out of draws while Draw characters is off');
+  const ban = new Set(data.characterBan || []);
+  assert.ok(ban.has('anya (spy x family)'), 'Underage characters are on the ban list');
+  assert.equal(data.tags.filter(t => ban.has(t.tag)).length, 0, 'Banned characters are not cards');
+}
 console.log(`Release engine invariants: ${draws} draws across three ratings passed`);

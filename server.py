@@ -1736,9 +1736,58 @@ def prepare_hires(payload: dict) -> tuple[dict, dict]:
     return wf, meta
 
 
+# 不能用的字：未成年相關（web/card-art.js 的 HARD_BANNED），加上詞庫的 characterBan（未成年、學生、
+# 童顏、真人、非人形的角色）。畫面上已經擋了；這裡是最後一道：自己組請求、貼進工作流的也一樣不收。
+_HARD_BANNED = {"loli", "shota"}
+_CHAR_BAN: dict = {"mtime": None, "tags": frozenset()}
+
+
+def character_ban() -> frozenset:
+    """詞庫的 characterBan（小寫、空格格式）。詞庫改了自動重讀；讀不到就空的（HARD_BANNED 照擋）。"""
+    path = WEB / "lexicon.json"
+    try:
+        mtime = path.stat().st_mtime
+    except OSError:
+        return _CHAR_BAN["tags"]
+    if _CHAR_BAN["mtime"] != mtime:
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+            tags = data.get("characterBan") if isinstance(data, dict) else None
+            _CHAR_BAN["tags"] = frozenset(str(t).lower() for t in (tags or []))
+        except (OSError, ValueError):
+            _CHAR_BAN["tags"] = frozenset()
+        _CHAR_BAN["mtime"] = mtime
+    return _CHAR_BAN["tags"]
+
+
+def banned_in_prompt(positive: str) -> list[str]:
+    """提示詞裡不能用的字（照出現順序）。底線、跳脫括號、權重括號都先還原。"""
+    banned = character_ban()
+    out = []
+    for raw in str(positive or "").split(","):
+        t = raw.strip().replace("\\(", "(").replace("\\)", ")")
+        t = re.sub(r"^[(\[{]+", "", t)
+        t = re.sub(r":\s*-?[\d.]+\s*[)\]}]*$", "", t)
+        # 權重括號留下的右括號：比左括號多才拿掉（anya (spy x family) 自己的括號要留）。
+        while t and t[-1] in ")]}" and t.count(")") + t.count("]") + t.count("}") > t.count("(") + t.count("[") + t.count("{"):
+            t = t[:-1].rstrip()
+        t = t.replace("_", " ").strip().lower()
+        t = " ".join(t.split())
+        if t and (t in _HARD_BANNED or t in banned) and t not in out:
+            out.append(t)
+    return out
+
+
+class PromptBlocked(ValueError):
+    """提示詞裡有不能用的字。訊息直接給畫面看。"""
+
+
 def prepare_workflow(payload: dict):
     """Builtin graph, or deepcopy of a stored API workflow with mapping applied."""
     payload = payload or {}
+    blocked = banned_in_prompt(payload.get("positive"))
+    if blocked:
+        raise PromptBlocked("提示詞裡有不能用的字（未成年、真人等角色不收）：" + "、".join(blocked))
     if payload.get("hires"):
         return prepare_hires(payload)
     positive = str(payload.get("positive") or "").strip()
@@ -4359,7 +4408,7 @@ class Handler(BaseHTTPRequestHandler):
                 return
             try:
                 self._json(200, gen(payload))
-            except HiresError as exc:
+            except (HiresError, PromptBlocked) as exc:
                 self._json(400, {"ok": False, "error": str(exc)})
             except Exception as exc:
                 self._json(500, {"ok": False, "error": str(exc)})

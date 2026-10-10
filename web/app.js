@@ -1471,6 +1471,9 @@ function renderRules() {
   sceneSel.value = settings.sceneMode;
   sceneSel.onchange = () => { setSettings({ sceneMode: sceneSel.value }); seat(sceneSel); };
   const job = switchBox("抽職業", settings.drawJob, (v) => setSettings({ drawJob: v }));
+  // 抽角色：照畫面上的人數、性別替每個人抽一張角色卡（一張最多三個）。加入系列名：角色後面接作品名，釘的角色也照這個。
+  const chara = switchBox("抽角色", settings.drawCharacter, (v) => setSettings({ drawCharacter: v }), "照人數、性別替每個人抽一個角色，一張最多三個");
+  const series = switchBox("加入系列名", settings.characterSeries, (v) => setSettings({ characterSeries: v }), "角色後面接作品名（例：yor briar, spy x family）；釘的角色也一樣");
   const eraOnly = switchBox("字盒只看這個時代", ui.eraOnly, (v) => {
     ui.eraOnly = v;
     saveUi();
@@ -1491,13 +1494,14 @@ function renderRules() {
     el(
       "details",
       { class: "more-rules", open: moreOpen },
-      el("summary", { class: "pressable" }, "更多規則：每段張數與選格、尺寸、場景、職業"),
+      el("summary", { class: "pressable" }, "更多規則：每段張數與選格、尺寸、場景、職業、角色"),
       el(
         "div",
         {},
         el("div", { class: "rule-row" }, el("span", { class: "rule-label" }, "每段抽幾個"), counts),
         picker.node,
-        el("div", { class: "rule-row" }, rulePair("尺寸", sizeSel), rulePair("場景", sceneSel), job, eraOnly)
+        el("div", { class: "rule-row" }, rulePair("尺寸", sizeSel), rulePair("場景", sceneSel), job, eraOnly),
+        el("div", { class: "rule-row" }, rulePair("角色", el("span", { class: "rule-pair" }, chara, series)))
       )
     )
   );
@@ -2778,6 +2782,7 @@ function openPastePool(text = "") {
     where: "合成池",
     text,
     lexTags: data.tags.map((t) => t.tag),
+    banned: data.characterBan || [],
     isCard: (t) => lib.byTag.has(t),
     zh,
     apply: (tags, { replace, weights: w }) => applyCards(tags, { replace, label: "貼上的提示詞", weights: w }),

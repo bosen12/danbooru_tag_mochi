@@ -45,6 +45,7 @@ TITLES = {
     "pose": "姿勢參考",
     "bake": "烘焙卡面",
     "bake_adult": "敏感、色情卡面",
+    "bake_chars": "角色卡面",
 }
 ORDER = list(TITLES)
 
@@ -143,7 +144,7 @@ _last_check = [""]
 # 正在跑的子程序（烘焙、姿勢參考下載可以按「停止」）。
 _procs: dict = {}
 _stopped: set = set()
-STOPPABLE = ("bake", "bake_adult", "pose")
+STOPPABLE = ("bake", "bake_adult", "bake_chars", "pose")
 
 
 def stop(key: str) -> tuple[bool, str]:
@@ -170,6 +171,25 @@ def bake_ask_text(status_line: str) -> str:
     n = int(m.group(1))
     minutes = max(1, round(n * BAKE_SECONDS / 60))
     return f"不在公開下載包裡；用你的底模烘 {n} 張，大約 {minutes} 分鐘"
+
+
+# 角色卡面缺這麼多張以內（更新後多了幾個角色）直接烘，不問。再多就先問（第一次可能幾百張、一小時）。
+CHARS_AUTO = 20
+
+
+def chars_ask_text(status_line: str) -> str:
+    """問要不要烘角色卡面：張數、時間照 bake_card_art --status --kind character 實際缺的算。"""
+    m = re.search(r"(\d+) missing", status_line or "")
+    if not m:
+        return "版權角色不在公開下載包；用你的底模烘，要一段時間"
+    n = int(m.group(1))
+    minutes = max(1, round(n * BAKE_SECONDS / 60))
+    return f"版權角色不在公開下載包；用你的底模烘 {n} 張，大約 {minutes} 分鐘"
+
+
+def _missing(status_line: str) -> int:
+    m = re.search(r"(\d+) missing", status_line or "")
+    return int(m.group(1)) if m else 0
 
 
 def _check(script: str, *args: str) -> int:
@@ -359,11 +379,13 @@ def _bake() -> None:
     if os.environ.get("NO_CARD_BAKE") or (ROOT / ".no-card-bake").exists():
         _set("bake", "skip", "")
         _set("bake_adult", "skip", "")
+        _set("bake_chars", "skip", "")
         return
     code = _check("bake_card_art.py", "--rating", "general")
     if code == 12:
         _set("bake", "skip", "另一個視窗正在烘")
         _set("bake_adult", "skip", "")
+        _set("bake_chars", "skip", "")
         return
     if code == 10:
         _set("bake", "run", "用你的 ComfyUI 烘還沒有的全年齡卡面")
@@ -371,10 +393,12 @@ def _bake() -> None:
         if "bake" in _stopped:
             _set("bake", "skip", "停了：已經烘好的留著；下次啟動接著烘", reload=True)
             _set("bake_adult", "skip", "")
+            _set("bake_chars", "skip", "")
             return
         if rc != 0:
             _set("bake", "error", _failed("烘焙失敗"))
             _set("bake_adult", "skip", "")
+            _set("bake_chars", "skip", "")
             return
         _set("bake", "done", "烘好了：重新整理網頁就有圖", reload=True)
     else:
@@ -383,6 +407,31 @@ def _bake() -> None:
         _set("bake_adult", "ask", bake_ask_text(_last_check[0]), answers=["yes", "no"])
     else:
         _set("bake_adult", "done", "")
+    _chars()
+
+
+def _chars() -> None:
+    """角色卡面：每次啟動都看一遍 character_ban=false 的角色是不是都有卡面。
+    缺得少（更新後多幾個）直接烘；缺得多先問（張數、時間寫在網頁的準備面板上）。"""
+    if (ROOT / ".no-character-bake").exists():
+        _set("bake_chars", "skip", "不再問（刪掉 .no-character-bake 就會再問）")
+        return
+    if _check("bake_card_art.py", "--kind", "character") != 10:
+        _set("bake_chars", "done", "")
+        return
+    if _missing(_last_check[0]) <= CHARS_AUTO:
+        _bake_chars()
+        return
+    _set("bake_chars", "ask", chars_ask_text(_last_check[0]), answers=["yes", "no", "never"])
+
+
+def _bake_chars() -> None:
+    _set("bake_chars", "run", "用你的 ComfyUI 烘角色卡面")
+    rc = _run("bake_chars", ["bake_card_art.py", "--kind", "character"])
+    if "bake_chars" in _stopped:
+        _set("bake_chars", "skip", "停了：已經烘好的留著，重新整理就看得到；下次啟動會再問", reload=True)
+        return
+    _set("bake_chars", "done" if rc == 0 else "error", "烘好了：重新整理網頁就有圖" if rc == 0 else _failed("烘焙失敗"), reload=rc == 0)
 
 
 def _bake_adult() -> None:
@@ -400,7 +449,7 @@ def _thread(fn, *a) -> None:
 
 def _main() -> None:
     _thread(_cards)
-    comfy_keys = ["lora", "upscale", "pose", "bake", "bake_adult"]
+    comfy_keys = ["lora", "upscale", "pose", "bake", "bake_adult", "bake_chars"]
     _wait_comfy(comfy_keys)
     if comfy_local():
         _lora()
@@ -428,9 +477,9 @@ def answer(key: str, value: str) -> tuple[bool, str]:
         if key == "lora":
             _thread(_lora_install, cur.get("action", "install"))
         else:
-            _thread(_pose_install if key == "pose" else _bake_adult)
-    elif value == "never" and key in ("pose", "lora"):
-        marker = ".no-pose-fetch" if key == "pose" else ".no-lora-manager-fetch"
+            _thread({"pose": _pose_install, "bake_chars": _bake_chars}.get(key, _bake_adult))
+    elif value == "never" and key in ("pose", "lora", "bake_chars"):
+        marker = {"pose": ".no-pose-fetch", "lora": ".no-lora-manager-fetch", "bake_chars": ".no-character-bake"}[key]
         try:
             (ROOT / marker).write_text("", encoding="utf-8")
         except OSError:

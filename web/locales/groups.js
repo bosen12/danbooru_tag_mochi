@@ -1,6 +1,6 @@
 // English taxonomy labels. IDs come from the existing lexicon; tags stay unchanged.
 export const groups = {
-  fixed: "Fixed", style: "Style", boost: "Resolution / Aesthetics", count_f: "Cast · Women", count_m: "Cast · Men", extra: "Other",
+  fixed: "Fixed", style: "Style", boost: "Resolution / Aesthetics", count_f: "Cast · Women", count_m: "Cast · Men", character: "Characters", char_anime: "Characters · Anime / Manga", char_game: "Characters · Games", char_other: "Characters · Other", extra: "Other",
   hair_len: "Hair length", hair_color: "Hair color", hair_style: "Hairstyle", eyes: "Eyes", body_f: "Body · Female", body_m: "Body · Male", race: "Species · Male", skin: "Skin / Marks",
   body: "Body pose", camera: "Camera", gaze: "Gaze", face: "Expression", tease: "Suggestive", flash: "Exposure", sex: "Sexual", activity: "Activity", makeup: "Makeup", job: "Occupation", nude: "Nudity", era: "Period clothing",
   onepiece: "One-piece / Outfit", top: "Tops", bottom: "Bottoms", underwear: "Underwear", legs: "Legwear", feet: "Footwear", outer: "Outerwear", fabric: "Fabric / Sleeves", acc: "Accessories",

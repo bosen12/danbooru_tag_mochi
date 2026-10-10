@@ -514,6 +514,7 @@ body.fuse {
 }
 
 .case-tab[data-suit="cast"] .tab-dot { background: var(--suit-cast); }
+.case-tab[data-suit="chara"] .tab-dot { background: var(--suit-chara); }
 .case-tab[data-suit="look"] .tab-dot { background: var(--suit-look); }
 .case-tab[data-suit="wear"] .tab-dot { background: var(--suit-wear); }
 .case-tab[data-suit="pose"] .tab-dot { background: var(--suit-pose); }
@@ -781,6 +782,7 @@ body.fuse {
 }
 
 .register[data-suit="cast"] { --suit: var(--suit-cast); }
+.register[data-suit="chara"] { --suit: var(--suit-chara); }
 .register[data-suit="look"] { --suit: var(--suit-look); }
 .register[data-suit="wear"] { --suit: var(--suit-wear); }
 .register[data-suit="pose"] { --suit: var(--suit-pose); }

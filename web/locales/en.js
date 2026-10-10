@@ -404,6 +404,12 @@ Enter 放上第一張，↓ 走進字盒|Enter adds the first result; ↓ moves 
 抽職業|Include occupations
 字盒只看這個時代|Filter library by era
 更多規則：每段張數與選格、尺寸、場景、職業|More rules: categories, size, scene, occupations
+更多規則：每段張數與選格、尺寸、場景、職業、角色|More rules: categories, size, scene, occupations, characters
+抽角色|Draw characters
+加入系列名|Add series name
+照人數、性別替每個人抽一個角色，一張最多三個|Draw a character for each person by gender, up to three per image
+角色後面接作品名（例：yor briar, spy x family）；釘的角色也一樣|Add the series after each character (e.g. yor briar, spy x family); pinned characters too
+角色|Characters
 ▸ 更多規則：每段張數與選格、尺寸、場景、職業|More rules: categories, size, scene, occupations
 疊印台自己的規則，跟墨池分開。改了之後四張試印會立刻重抽。|Fuse Bed has its own rules. Changes redraw all four proofs immediately.
 一次|Batch
@@ -822,6 +828,7 @@ LoRA 資料夾路徑|LoRA folder path
 卡面插畫|Card art
 烘焙卡面|Bake card art
 敏感、色情卡面|Sensitive and explicit card art
+角色卡面|Character card art
 Hires 放大模型|Hires upscale model
 安裝|Install
 允許|Allow
@@ -856,6 +863,9 @@ ComfyUI 在別台電腦：這台不動它|ComfyUI runs on another computer. Noth
 另一個視窗正在烘|Already baking in another window
 用你的 ComfyUI 烘還沒有的全年齡卡面|Baking missing all-ages cards with your ComfyUI
 用你的 ComfyUI 烘敏感、色情卡面|Baking sensitive and explicit cards with your ComfyUI
+用你的 ComfyUI 烘角色卡面|Baking character cards with your ComfyUI
+版權角色不在公開下載包；用你的底模烘，要一段時間|Characters are copyrighted and not in the public download. Baking them with your checkpoint takes a while.
+不再問（刪掉 .no-character-bake 就會再問）|Will not ask again (delete .no-character-bake to be asked)
 不在公開下載包裡；用你的底模烘，要一段時間|Not in the public download. Baking them with your checkpoint takes a while.
 不再問（刪掉 .no-pose-fetch 就會再問）|Will not ask again (delete .no-pose-fetch to be asked)
 不再問（刪掉 .no-lora-manager-fetch 就會再問）|Will not ask again (delete .no-lora-manager-fetch to be asked)
@@ -1420,7 +1430,9 @@ LoRA：沒設定 paths.loraRoot，改問 ComfyUI 也失敗了：{0}|LoRA: no LoR
 第一次使用：準備中 {0}/{1}|First-time setup {0}/{1}
 重開失敗（{0}）：請自己重開 ComfyUI|Restart failed ({0!}). Restart ComfyUI yourself.
 {0}（下次啟動接著抓）|{0} (resumes next launch)
+提示詞裡有不能用的字（未成年、真人等角色不收）：{0!}|The prompt has blocked tags (underage, real-person and similar characters are not allowed): {0!}
 不在公開下載包裡；用你的底模烘 {0} 張，大約 {1} 分鐘|Not in the public download. Baking {0} cards with your checkpoint takes about {1} minutes.
+版權角色不在公開下載包；用你的底模烘 {0} 張，大約 {1} 分鐘|Characters are copyrighted and not in the public download. Baking {0} cards with your checkpoint takes about {1} minutes.
 顯示卡記憶體不夠（{0}）：尺寸調小、先不要 Hires，或關掉同時在跑的東西再試|Out of GPU memory ({0!}). Use a smaller size, skip Hires, or close whatever else is running, then try again.
 顯示卡記憶體不夠：尺寸調小、先不要 Hires，或關掉同時在跑的東西再試|Out of GPU memory. Use a smaller size, skip Hires, or close whatever else is running, then try again.
 ComfyUI 跑到一半出錯（{0}）：{1}|ComfyUI failed while generating ({0!}): {1!}

@@ -212,6 +212,39 @@ st._bake_adult()
 ok("停了：不算失敗，提示重新整理看已烘好的", state("bake_adult") == "skip" and st._state["bake_adult"].get("reload"), str(st._state["bake_adult"]))
 st._stopped.clear()
 
+# 9. 角色卡面：每次啟動都看；缺得少直接烘，缺得多先問；不要再問寫記號。
+def chars_world(missing):
+    ran = reset({})
+    def fake(key, args, show=True):
+        ran.append(tuple(args))
+        if args[:3] == ["bake_card_art.py", "--status", "--kind"]:
+            st._last_check[0] = f"character art: 0/430 ready, {missing} missing; ComfyUI is running" if missing else "character art: 430/430 ready"
+            return 10 if missing else 0
+        return 0
+    st._run = fake
+    return ran
+ran = chars_world(5)
+st._chars()
+ok("角色卡面缺 5 張：直接烘，不問", ("bake_card_art.py", "--kind", "character") in ran and state("bake_chars") == "done", str(ran))
+ran = chars_world(430)
+st._chars()
+ok("角色卡面缺 430 張：先問，寫出張數和時間", state("bake_chars") == "ask" and "430 張" in st._state["bake_chars"]["text"]
+   and ("bake_card_art.py", "--kind", "character") not in ran, str(st._state["bake_chars"]))
+ok("回答「烘」才烘", st.answer("bake_chars", "yes")[0])
+threading.Event().wait(0.2)
+ok("烘角色卡面", ("bake_card_art.py", "--kind", "character") in ran and state("bake_chars") == "done", str(ran))
+ran = chars_world(430)
+st._chars()
+st.answer("bake_chars", "never")
+ok("不要再問：寫 .no-character-bake", state("bake_chars") == "skip" and (tmp / ".no-character-bake").exists())
+ran = chars_world(430)
+st._chars()
+ok("有 .no-character-bake：不檢查也不問", state("bake_chars") == "skip" and ran == [], str(ran))
+(tmp / ".no-character-bake").unlink()
+ran = chars_world(0)
+st._chars()
+ok("角色卡面都有了：算好", state("bake_chars") == "done" and ("bake_card_art.py", "--kind", "character") not in ran, str(ran))
+
 # 7. 腳本印給終端機的英文不上畫面：進度換成中文（英文版再由 en.js 翻），其他行不顯示。
 pt = st.progress_text
 ok("下載進度換成中文", pt("45%   12.3/100.0 MB  2.31 MB/s") == "下載中 45%（12.3/100.0 MB）", pt("45%   12.3/100.0 MB"))

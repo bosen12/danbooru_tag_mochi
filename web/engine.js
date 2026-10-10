@@ -3164,6 +3164,9 @@ function ensureCast(parts, settings, ctx) {
   if (ctx.needMale && !ctx.needYuri && !hasMale(out)) out.push("1boy");
   if (ctx.need2Female && !ctx.needYaoi) out = bumpGender(out, true, 2);
   if (ctx.need2Male && !ctx.needYuri) out = bumpGender(out, false, 2);
+  // 釘了兩個女角色就要兩個女生：釘的人數牌比角色少時往上補（約兒＋瑪奇瑪＋1girl → 2girls）。
+  if (ctx.charGirls > 1 && !ctx.needYaoi) out = bumpGender(out, true, Math.min(ctx.charGirls, 5));
+  if (ctx.charBoys > 1 && !ctx.needYuri) out = bumpGender(out, false, Math.min(ctx.charBoys, 3));
   // 排比胸、被胸包圍要多個女生再湊滿四人。男女都開時，下面的平衡會補成兩女兩男；
   // 丹維幾乎沒有兩個男生。別的牌自己要求人群（輪姦、4P、5P）時不走這裡。
   // 已經有男生就留著，差的人數補女生，不要再補第二個男生。
@@ -3374,12 +3377,19 @@ function pinContext(lex, pinned) {
   let needYaoi = false;
   let girlCrowd = 0;
   let otherCrowd = false;
+  // 釘了幾個角色（角色卡，group character）：一個角色就是畫面上一個人，人數要跟著補。
+  let charGirls = 0;
+  let charBoys = 0;
   const heatLists = [];
   const eraLists = [];
   for (const tag of pinned) {
     const item = lex.byTag.get(tag);
     if (!item) continue;
     const needs = item.needs || [];
+    if (item.group === "character") {
+      if (item.gate === "male") charBoys += 1;
+      else charGirls += 1;
+    }
     if (item.gate === "female" || needs.includes("female") || FEMALE_COUNT.has(tag)) {
       needFemale = true;
     }
@@ -3426,7 +3436,9 @@ function pinContext(lex, pinned) {
     if (e) eraLists.push(e);
   }
   if (otherCrowd || needYaoi) girlCrowd = 0;
-  return { needFemale, needMale, needPair, needGroup, needCrowd, needFive, need2Male, need2Female, needYuri, needYaoi, girlCrowd, heatLists, eraLists };
+  if (charGirls + charBoys >= 2) needPair = true;
+  if (charGirls + charBoys >= 3) needGroup = true;
+  return { needFemale, needMale, needPair, needGroup, needCrowd, needFive, need2Male, need2Female, needYuri, needYaoi, girlCrowd, charGirls, charBoys, heatLists, eraLists };
 }
 
 function intersectOrUnion(lists) {
@@ -6466,16 +6478,49 @@ export function drawOne(lex, settings, pinned, userBanned, rand, seed, opts) {
   // 釘選／必抽額外保留，不覆蓋使用者選中的分類。
   // 同類已存在時 fillSlot 的 mutex／fillGroup 的 group 檢查會避免重複補牌。
 
-  fillSlot("feature", "hair_length");
-  fillSlot("feature", "eye_color");
-  if (!used.has("bald")) {
-    fillSlot("feature", "hair_color");
-    fillGroup("feature", "hair_style");
+  // 角色：釘的照收（上面 forcePin 已經進場）；「抽角色」打開時，替還沒有角色的人照性別各抽一個，
+  // 一張最多 CHARACTER_MAX 個。用 seed 派生的亂數流：勾選開不開，其餘的抽牌一模一樣。
+  if (settings.drawCharacter) {
+    const charRand = Number.isFinite(seed) ? mulberry32(((seed >>> 0) ^ 0x0c4a2c7e) >>> 0) : rand;
+    const have = [...used].map((t) => lex.byTag.get(t)).filter(isCharacter);
+    const want = {
+      female: Math.max(0, genderCount(cast, true) - have.filter((it) => it.gate !== "male").length),
+      male: Math.max(0, genderCount(cast, false) - have.filter((it) => it.gate === "male").length),
+    };
+    let room = CHARACTER_MAX - have.length;
+    const series = new Set(have.map((it) => it.series).filter(Boolean));
+    const all = (lex.byGroup && lex.byGroup.get("subject:character")) || [];
+    commitMeta.source = SOURCES.random;
+    for (const gate of ["female", "male"]) {
+      while (want[gate] > 0 && room > 0) {
+        const pool = all.filter((it) => it.gate === gate && !userBanned.has(it.tag) && allow(it));
+        if (!pool.length) break;
+        // 已經有角色的作品優先：同作品的兩個人模型分得清楚，跨作品的常混成同一張臉（2026-10-10 實測）。
+        const same = pool.filter((it) => series.has(it.series));
+        const from = same.length && charRand() < CHARACTER_SAME_SERIES ? same : pool;
+        const pick = from[Math.floor(charRand() * from.length)];
+        if (!commit(pick.tag)) break;
+        if (pick.series) series.add(pick.series);
+        want[gate] -= 1;
+        room -= 1;
+      }
+    }
   }
-  if (female) fillBreastSize();
+  // 有角色就不再抽髮長、瞳色、髮色、髮型、胸部大小、人種：角色自己帶著，抽一個只會打架（約兒變金髮）。
+  // 釘的照留，使用者明講要換髮色就換。
+  const withCharacter = someUsed((it) => isCharacter(it));
+  if (!withCharacter) {
+    fillSlot("feature", "hair_length");
+    fillSlot("feature", "eye_color");
+    if (!used.has("bald")) {
+      fillSlot("feature", "hair_color");
+      fillGroup("feature", "hair_style");
+    }
+    if (female) fillBreastSize();
+  }
   // 人種格在正常模式由 allow() 擋掉。多元／奇葩才擲。以前只在有男生時擲，
   // 女角的惡魔娘、史萊姆娘、乳牛娘就永遠進不了只有女生的多元圖。
-  if (!real && (female || male) && rand() < 0.38) fillSlot("feature", "race");
+  if (!real && (female || male) && rand() < 0.38 && !withCharacter) fillSlot("feature", "race");
   if (settings.drawJob && !used.has("maid")) fillSlot("feature", "job");
   if (heat !== "sex" && !someUsed((it) => it.mutex === "sex_act" || it.tag === "sex")) {
     fillSlot("pose", "activity", sportActivityPrefer() || undefined);
@@ -6485,6 +6530,7 @@ export function drawOne(lex, settings, pinned, userBanned, rand, seed, opts) {
     // 具體人種由上面的 fillSlot("feature", "race") 負責，它會連帶 implies 出父標籤。
     if (item.group === "race") return false;
     if (item.mutex === "job" && (!settings.drawJob || used.has("maid"))) return false;
+    if (withCharacter && (CHARACTER_LOOK_GROUPS.has(item.group) || CHARACTER_LOOK_SUBS.has(item.sub) || item.mutex === "breast_size")) return false;
     return true;
   });
 
@@ -7795,6 +7841,8 @@ export function drawOne(lex, settings, pinned, userBanned, rand, seed, opts) {
     if (!item) continue;
     if (item.section === "subject") {
       if (!subject.includes(tag)) subject.push(tag);
+      // 作品名緊接在角色後面（Danbooru 的寫法）。同作品兩個角色只寫一次，下面去重。
+      if (settings.characterSeries && isCharacter(item) && item.series) subject.push(item.series);
     } else if (item.section === "quality") {
       if (!quality.includes(tag) && !style.includes(tag)) style.push(tag);
     } else if (bucket[item.section] && !bucket[item.section].includes(tag)) {
@@ -7935,6 +7983,20 @@ export const MUST_MAX = 20;
 // 「保留的優先序」—— 數字設得比骨架少時，從最後面開始不補。三個介面都從這裡讀。
 // 服裝刻意不列：它的骨架是「最低限度要穿衣服」，拆不成固定的小分類。
 // 性愛動作、走光動作不是骨架格，由尺度那一排管（沒勾那個尺度就根本不會出現）。
+/** 角色卡（詞庫 subject／character）。 */
+export function isCharacter(item) {
+  return !!item && item.group === "character";
+}
+// 一張圖最多抽幾個角色：再多模型幾乎一定把臉混在一起，提示詞也太長。釘的不受限。
+export const CHARACTER_MAX = 3;
+// 已經有角色時，下一個從同一部作品抽的機率。
+const CHARACTER_SAME_SERIES = 0.7;
+// 角色自帶的長相：有角色就不再隨機抽這幾格。
+const CHARACTER_LOOK_GROUPS = new Set(["hair_len", "hair_color", "hair_style", "eyes", "race"]);
+// 同理，會改掉角色是誰的細節：獸耳翅膀尾巴、中性長相、體型身高、膚色、刺青。
+// 妝、眼淚、濕髮這種當下的樣子照抽。
+const CHARACTER_LOOK_SUBS = new Set(["nonhuman", "persona", "bm_build", "bf_shape", "bf_breast", "skin_tone", "tattoo"]);
+
 export const SKELETON = {
   feature: [
     ["hair_len", "髮長"],
@@ -8090,6 +8152,9 @@ export function defaultSettings(data) {
     eras: d.eras ? [...d.eras] : [...ERAS],
     samePerson: false,
     drawJob: false,
+    // 抽角色：替畫面上的人照性別抽角色卡。加入系列名：角色後面接作品名（釘的角色也照這個）。
+    drawCharacter: false,
+    characterSeries: false,
     rating: "explicit",
     pinSportActivity: false,
     lockScene: true,
@@ -8136,6 +8201,8 @@ export function sanitizeSettings(raw, data) {
     eras: eras.length ? eras : [...base.eras],
     samePerson: raw.samePerson === true,
     drawJob: raw.drawJob === true,
+    drawCharacter: raw.drawCharacter === true,
+    characterSeries: raw.characterSeries === true,
     // 舊存檔存的是布林 sfw，沿用時對應到全年齡。
     rating: RATINGS.includes(raw.rating)
       ? raw.rating

@@ -36,6 +36,9 @@
 .card[data-suit="cast"] {
   --suit: var(--suit-cast);
 }
+.card[data-suit="chara"] {
+  --suit: var(--suit-chara);
+}
 .card[data-suit="look"] {
   --suit: var(--suit-look);
 }

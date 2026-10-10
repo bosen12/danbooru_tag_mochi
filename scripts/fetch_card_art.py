@@ -80,7 +80,9 @@ def have_enough() -> bool:
     except (OSError, ValueError):
         jobs = None
     if jobs:
-        wanted = [j for j in jobs if isinstance(j, dict) and j.get("rating", "general") == "general" and j.get("file")]
+        # 角色牌不在公開包裡（版權角色，每台自己烘）：缺角色圖不是下載的理由。
+        wanted = [j for j in jobs if isinstance(j, dict) and j.get("rating", "general") == "general"
+                  and j.get("kind", "card") != "character" and j.get("file")]
         if not wanted or not all((CARDS / str(j["file"])).exists() for j in wanted):
             return False
         # 圖都在，但有的是舊版的（本機記的提示詞跟現在的卡面清單不一樣，例如 v4 把髮色、髮型改成頭肩特寫）：
@@ -95,7 +97,8 @@ def have_enough() -> bool:
     ready = sum(
         1
         for v in manifest.values()
-        if isinstance(v, dict) and v.get("rating", "general") == "general" and (CARDS / str(v.get("file", ""))).exists()
+        if isinstance(v, dict) and v.get("rating", "general") == "general" and v.get("kind") != "character"
+        and (CARDS / str(v.get("file", ""))).exists()
     )
     return ready >= EXPECTED
 

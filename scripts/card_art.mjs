@@ -32,7 +32,7 @@ export function cardArtJobs() {
     if (!isCard(item)) continue;
     cards.push(item);
     const art = artPrompt(item, ctx);
-    if (art) jobs.push({ tag: item.tag, file: artFile(item.tag), positive: art.positive, negative: art.negative, rating: art.rating });
+    if (art) jobs.push({ tag: item.tag, file: artFile(item.tag), positive: art.positive, negative: art.negative, rating: art.rating, ...(art.kind ? { kind: art.kind } : {}) });
   }
   return { data, cards, jobs };
 }

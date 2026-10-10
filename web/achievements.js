@@ -18,10 +18,13 @@ const TIER = ["銅", "銀", "金", "白金"];
  * 每一項：goals 是每一級的門檻（一級的就是「達成」），value(f) 算現在到哪。
  * unit 寫在進度後面；needsLog：要有出圖日誌才算得出來。
  */
+// 花色大全不算角色：角色是選用的（要自己開「抽角色」或釘），四百多張也集不滿。
+const ACH_SUITS = CARD_SUITS.filter((s) => s !== "chara");
+
 export const ACHIEVEMENTS = [
   { id: "kinds", name: "牌友", glyph: "牌", goals: [50, 200, 500, 1000], unit: "種", desc: (g) => `用過 ${g} 種不同的牌`, value: (f) => f.kinds },
   { id: "group", name: "一門到底", glyph: "門", goals: [1, 10, 30], unit: "個", desc: (g) => `集滿 ${g} 個細分類（裡面每張都用過）`, value: (f) => f.groupsFull },
-  { id: "suit", name: "花色大全", glyph: "花", goals: [1, 3, CARD_SUITS.length], unit: "個", desc: (g) => (g === CARD_SUITS.length ? `${g} 個花色全部集滿` : `集滿 ${g} 個花色`), value: (f) => f.suitsFull },
+  { id: "suit", name: "花色大全", glyph: "花", goals: [1, 3, ACH_SUITS.length], unit: "個", desc: (g) => (g === ACH_SUITS.length ? `${g} 個花色全部集滿` : `集滿 ${g} 個花色`), value: (f) => f.suitsFull },
   { id: "loyal", name: "老朋友", glyph: "友", goals: [25, 100, 500], unit: "次", desc: (g) => `同一張牌用過 ${g} 次`, value: (f) => f.maxCard },
   { id: "hands", name: "親手挑", glyph: "手", goals: [50, 300, 1000], unit: "次", desc: (g) => `親手放進池子的牌累計 ${g} 次`, value: (f) => f.mine },
   { id: "prints", name: "印刷工", glyph: "印", goals: [10, 100, 500, 2000], unit: "張", desc: (g) => `印好 ${g} 張`, value: (f) => f.prints, needsLog: true },
@@ -35,7 +38,7 @@ export const ACHIEVEMENTS = [
 /** 卡冊的資料 → 算成就要的數字。cards：目前分級看得到的牌。 */
 export function measure({ cards, usage, war }) {
   const count = (t) => usage.counts[t] || 0;
-  const suits = CARD_SUITS.map((s) => {
+  const suits = ACH_SUITS.map((s) => {
     const list = cards.filter((c) => c.suit === s);
     return { suit: s, total: list.length, used: list.filter((c) => count(c.tag) > 0).length };
   });
