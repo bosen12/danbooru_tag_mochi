@@ -15,6 +15,8 @@ The public application release [v1.0](https://github.com/bosen12/danbooru_tag_mo
 - Windows test diagnostics use UTF-8, and launcher fixtures isolate both ProgramFiles and ProgramW6432.
 - Added contribution instructions, issue forms, this changelog and verification evidence.
 - Community post drafts are kept locally and excluded from the public repository.
+- A device that is not allowed (often a phone on the same Wi-Fi) sees a page explaining why and how to allow it, instead of a bare JSON error; the server window notes the refused address once.
+- `start.sh` listens on all interfaces like `start.bat` (still only this computer and Tailscale are allowed), so phones on Tailscale can connect on macOS and Linux too.
 - Long setup steps can be stopped from the setup panel (baking hundreds of cards, the 2.5 GB pose download). Finished cards and partial downloads are kept; you are asked again next launch.
 - The launchers no longer open the browser before the server is up (fast machines showed “can't reach this page” first); the server opens it once it accepts connections, and also when Mochi was already running.
 - The server window says whether ComfyUI was found, instead of always printing an address.

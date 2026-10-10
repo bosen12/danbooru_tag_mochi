@@ -242,6 +242,36 @@ def parse_allow_nets(raw: str | None = None):
 
 
 ALLOW_NETS = parse_allow_nets()
+_REFUSED_SEEN: set = set()
+
+
+def refused_page(addr: str) -> bytes:
+    """不在允許清單的裝置（多半是同一個 Wi-Fi 的手機）打開網頁：說為什麼、怎麼辦。
+    以前只回一行 {"ok":false,"error":"forbidden"}。安全預設不變：家用網路要使用者自己開。"""
+    try:
+        ip = ipaddress.ip_address(addr)
+        if ip.version == 6 and ip.ipv4_mapped is not None:
+            ip = ip.ipv4_mapped
+        net = str(ipaddress.ip_network(f"{ip}/24", strict=False)) if ip.version == 4 else str(ip)
+    except ValueError:
+        net = addr
+    allow = ",".join(str(n) for n in ALLOW_NETS) + "," + net
+    page = f"""<!doctype html><html lang="zh-Hant"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>墨池 · 這台裝置還不能連</title>
+<style>body{{font:16px/1.6 system-ui,sans-serif;max-width:40rem;margin:2rem auto;padding:0 1rem;background:#111;color:#eee}}
+code{{background:#222;padding:.1em .35em;border-radius:4px;word-break:break-all}}h1{{font-size:1.3rem}}h2{{font-size:1rem;margin-top:1.6rem}}p,li{{color:#ccc}}</style></head><body>
+<h1>這台裝置（{addr}）還不能連墨池</h1>
+<p>為了安全，墨池預設只接受這台電腦自己，和 Tailscale 裡的裝置。同一個 Wi-Fi 的其他裝置要你自己開放。</p>
+<h2>推薦：用 Tailscale</h2>
+<p>電腦和手機都裝 <a href="https://tailscale.com/download" style="color:#9cf">Tailscale</a> 並登入同一個帳號，再用啟動黑窗印出的 <code>Tailscale http://100.x.x.x:…</code> 那個網址開。出門在外也能用。</p>
+<h2>或是開放家用網路</h2>
+<p>在電腦上關掉墨池，設好下面這個再啟動（Windows 在 <code>start.bat</code> 前一行、或命令列先打）：</p>
+<p><code>set ALLOW_NET={allow}</code></p>
+<p>macOS／Linux：<code>ALLOW_NET={allow} ./start.sh</code>。也可以寫進 <code>config.json</code> 的 <code>server.allowNet</code>。同一個 Wi-Fi 上的裝置就都能用你的 ComfyUI 出圖。</p>
+<hr style="border-color:#333;margin:2rem 0">
+<p lang="en">This device ({addr}) is not allowed yet. Mochi only accepts this computer and Tailscale devices by default. Use Tailscale (recommended), or restart Mochi with <code>ALLOW_NET={allow}</code> (or <code>server.allowNet</code> in <code>config.json</code>) to allow your home network.</p>
+</body></html>"""
+    return page.encode("utf-8")
 
 
 def allowed_client(addr: str, nets=None) -> bool:
@@ -3809,6 +3839,22 @@ class Handler(BaseHTTPRequestHandler):
         if allowed_client(self.client_address[0]):
             return True
         self.close_connection = True
+        addr = self.client_address[0]
+        if addr not in _REFUSED_SEEN:
+            _REFUSED_SEEN.add(addr)
+            print(f"refused  {addr} 想連墨池但不在允許清單（同一個 Wi-Fi 的手機？）。用 Tailscale，或設 ALLOW_NET 加上它的網段，見那台裝置上的說明頁。")
+        path = urllib.parse.urlparse(getattr(self, "path", "") or "").path
+        command = getattr(self, "command", "")
+        if command in ("GET", "HEAD") and path and not path.startswith("/api/"):
+            body = refused_page(addr)
+            self.send_response(403)
+            self.send_header("Content-Type", "text/html; charset=utf-8")
+            self.send_header("Content-Length", str(len(body)))
+            self.send_header("Cache-Control", "no-store")
+            self.end_headers()
+            if command == "GET":
+                self.wfile.write(body)
+            return False
         self._json(403, {"ok": False, "error": "forbidden"})
         return False
 

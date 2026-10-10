@@ -137,6 +137,7 @@ tests/               node tests/test_i18n.mjs
 - **The `.bat` window closes at once.** Install Python 3 with *Add python.exe to PATH* ticked, or run `py -3 server.py` in this folder to read the error.
 - **"Port 8796 is already in use".** Mochi is probably already running: open <http://127.0.0.1:8796/>. To run a second copy, set `PORT` to another port first.
 - **The top bar keeps saying Comfy is offline.** Start ComfyUI; Mochi finds it on 8188 or ComfyUI Desktop's 8000 by itself and connects within seconds. If ComfyUI runs elsewhere (another port, another computer), click the Comfy indicator and enter its URL.
+- **A phone on the same Wi-Fi gets “not allowed”.** By default only this computer and Tailscale devices can connect. Use Tailscale (works away from home too), or restart Mochi with `ALLOW_NET` including your home network; the page on the phone shows the exact line to use.
 - **Cards show only text, no pictures.** First start is still downloading the card art (about 100 MB); the panel in the lower-left shows progress and tells you when to reload.
 - **The LoRA panel has no previews or trigger words.** Allow the ComfyUI LoRA Manager install in the setup panel, then restart ComfyUI once.
 - **"Could not load the card library".** Open Mochi through `start.bat`, `start.sh` or `server.py`, not by opening the HTML file.
@@ -242,6 +243,7 @@ LoRA 面板的「詳情」在 ComfyUI 的 LoRA Manager 直接打開那一個 LoR
 - **bat 一閃就關**：要先裝 Python 3，安裝時勾 *Add python.exe to PATH*；或在本資料夾跑 `py -3 server.py` 看錯誤。
 - **「8796 已經有程式在用」**：多半是墨池已經開著，直接開 <http://127.0.0.1:8796/>。要同時開第二份，先設 `PORT=別的埠`。
 - **一直顯示 Comfy 未連上**：先開 ComfyUI；一般版 8188、ComfyUI Desktop 的 8000 墨池會自己找到，幾秒內接上。ComfyUI 在別的埠或別台電腦，就點頂欄的 Comfy 燈號填網址。
+- **同一個 Wi-Fi 的手機打開說「還不能連」**：預設只接受這台電腦和 Tailscale 裡的裝置。用 Tailscale（出門也能用），或設 `ALLOW_NET` 加上家用網段再啟動；手機上的說明頁會寫好要填的那一行。
 - **牌只有字、沒有圖**：第一次啟動還在下載卡面（約 100 MB），左下角的面板有進度，好了會叫你重新整理。
 - **LoRA 面板沒有預覽圖和觸發詞**：在準備面板允許安裝 ComfyUI LoRA Manager，裝好重開 ComfyUI 一次。
 - **「讀不到詞庫」**：用 `start.bat`／`start.sh`／`server.py` 開，不要直接點 HTML。

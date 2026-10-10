@@ -1804,6 +1804,28 @@ ok("open browser: opens the local page", _opened == ["http://127.0.0.1:8796/"], 
 _env_os.environ.pop("OPEN_BROWSER", None)
 _wb.open = _old_open
 
+# 不在允許清單的裝置（同一個 Wi-Fi 的手機）打開網頁：拿到說明頁（為什麼、怎麼開），API 照舊回 JSON 403。
+import urllib.request as _ur, urllib.error as _ue
+_old_nets = server.ALLOW_NETS
+server.ALLOW_NETS = parse_allow_nets("10.0.0.0/8")
+_srv = server.AppServer(("127.0.0.1", 0), server.Handler)
+_th.Thread(target=_srv.serve_forever, daemon=True).start()
+_base_url = f"http://127.0.0.1:{_srv.server_address[1]}"
+try:
+    _ur.urlopen(_base_url + "/", timeout=5)
+    ok("refused page: blocked device gets 403", False)
+except _ue.HTTPError as _e:
+    _body = _e.read().decode("utf-8")
+    ok("refused page: blocked device gets an explanation page", _e.code == 403 and "Tailscale" in _body and "ALLOW_NET=" in _body and "127.0.0.0/24" in _body, _body[:200])
+try:
+    _ur.urlopen(_base_url + "/api/ping", timeout=5)
+    ok("refused page: API stays JSON", False)
+except _ue.HTTPError as _e:
+    ok("refused page: API stays JSON", _e.code == 403 and json.loads(_e.read()).get("error") == "forbidden")
+_srv.shutdown()
+_srv.server_close()
+server.ALLOW_NETS = _old_nets
+
 # 出圖日誌：上次寫到半行就斷電，下一筆不能黏在殘行後面一起丟掉。
 import gen_log as _gl
 _glp = _gl._path()

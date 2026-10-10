@@ -11,7 +11,10 @@ if [ -z "$PY" ]; then
   exit 1
 fi
 PORT="${PORT:-8796}"
-export PORT PYTHONUTF8=1
+# Listen on every interface like start.bat, so phones on Tailscale can connect.
+# Only this computer and Tailscale (100.64.0.0/10) are allowed unless ALLOW_NET says otherwise.
+HOST="${HOST:-0.0.0.0}"
+export PORT HOST PYTHONUTF8=1
 URL="http://127.0.0.1:$PORT/"
 echo "Mochi  $URL"
 # The server opens the browser once it accepts connections.
