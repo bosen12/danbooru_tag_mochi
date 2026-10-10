@@ -103,6 +103,31 @@ def have_enough() -> bool:
     return ready >= EXPECTED
 
 
+def missing_report() -> tuple[int, int, list[str]]:
+    """缺什麼：(沒有圖的張數, 圖在但是舊版的張數, 幾個例子的 tag)。照 have_enough() 同一套判斷，
+    給 --check 印出來（第一次準備的面板寫「缺幾張、例如哪些」）。讀不到卡面清單就回 (0, 0, [])。"""
+    try:
+        jobs = json.loads(JOBS.read_text(encoding="utf-8"))
+        jobs = jobs if isinstance(jobs, list) else jobs.get("jobs", [])
+    except (OSError, ValueError):
+        return 0, 0, []
+    wanted = [j for j in jobs if isinstance(j, dict) and j.get("rating", "general") == "general"
+              and j.get("kind", "card") != "character" and j.get("file")]
+    absent = [j for j in wanted if not (CARDS / str(j["file"])).exists()]
+    try:
+        manifest = json.loads((CARDS / "manifest.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        manifest = {}
+    stale = []
+    if isinstance(manifest, dict):
+        for j in wanted:
+            have = manifest.get(j.get("tag"))
+            if (CARDS / str(j["file"])).exists() and isinstance(have, dict) and have.get("positive")                     and j.get("positive") and have["positive"] != j["positive"]:
+                stale.append(j)
+    examples = [str(j.get("tag")) for j in (absent or stale)[:5]]
+    return len(absent), len(stale), examples
+
+
 # GitHub 放 release 檔的伺服器到台灣很慢（實測單一連線約 0.17 MB/s，55 MB 要 5 分多）。
 # 切成幾段同時抓大約快一倍；每一段抓到哪裡都留在 PARTS 裡，斷線或下次啟動從斷的地方接著抓，不從頭來。
 PARTS = CARDS / ".card-art-download"
@@ -310,7 +335,12 @@ def main() -> int:
     force = "--force" in sys.argv
     if "--check" in sys.argv:
         # 啟動檔用：只看要不要下載，不下載。0 夠了、3 缺（啟動檔另開一個視窗去抓，網頁不用等）。
-        return 0 if have_enough() else 3
+        if have_enough():
+            return 0
+        # 缺什麼印一行（只用英文：cmd 的主控台不是 UTF-8）。第一次準備的面板照這行寫中文。
+        absent, stale, examples = missing_report()
+        print(f"card art check: {absent} missing, {stale} outdated; e.g. {' | '.join(examples)}")
+        return 3
     if not force and have_enough():
         return 0
     print("Card illustrations are missing. Downloading the all-ages set (about 100 MB) from GitHub...")

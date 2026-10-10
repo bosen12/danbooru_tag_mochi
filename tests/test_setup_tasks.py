@@ -245,6 +245,12 @@ ran = chars_world(0)
 st._chars()
 ok("角色卡面都有了：算好", state("bake_chars") == "done" and ("bake_card_art.py", "--kind", "character") not in ran, str(ran))
 
+# 10. 要下載卡面時先說缺什麼、缺幾張。
+cm = st.cards_missing_text
+ok("缺卡面：寫張數和例子", cm("card art check: 12 missing, 3 outdated; e.g. red hair | rain").startswith("偵測到缺 12 張全年齡卡面、3 張是舊版（例："), cm("card art check: 12 missing, 3 outdated; e.g. red hair | rain"))
+ok("只有舊版：不寫缺 0 張", cm("card art check: 0 missing, 4 outdated; e.g. rain").startswith("偵測到4 張是舊版"), cm("card art check: 0 missing, 4 outdated; e.g. rain"))
+ok("認不得的行：不加說明", cm("garbage") == "")
+
 # 7. 腳本印給終端機的英文不上畫面：進度換成中文（英文版再由 en.js 翻），其他行不顯示。
 pt = st.progress_text
 ok("下載進度換成中文", pt("45%   12.3/100.0 MB  2.31 MB/s") == "下載中 45%（12.3/100.0 MB）", pt("45%   12.3/100.0 MB"))

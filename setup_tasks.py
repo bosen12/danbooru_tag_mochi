@@ -173,6 +173,34 @@ def bake_ask_text(status_line: str) -> str:
     return f"不在公開下載包裡；用你的底模烘 {n} 張，大約 {minutes} 分鐘"
 
 
+def _zh_names() -> dict:
+    """詞庫的 tag → 中文名（缺卡面時舉例用）。讀不到就空的，照舊寫英文 tag。"""
+    try:
+        data = json.loads((ROOT / "web" / "lexicon.json").read_text(encoding="utf-8"))
+        return {t["tag"]: t.get("zh") or t["tag"] for t in data.get("tags", []) if isinstance(t, dict)}
+    except (OSError, ValueError, KeyError):
+        return {}
+
+
+def cards_missing_text(status_line: str) -> str:
+    """fetch_card_art --check 印的「card art check: 12 missing, 3 outdated; e.g. a | b」→ 面板上的中文。
+    認不得就回空字串（面板照舊只寫「從 GitHub 下載」）。"""
+    m = re.search(r"(\d+) missing, (\d+) outdated; e\.g\. (.*)$", status_line or "")
+    if not m:
+        return ""
+    absent, stale = int(m.group(1)), int(m.group(2))
+    names = _zh_names()
+    examples = "、".join(names.get(t, t) for t in m.group(3).split(" | ") if t)
+    parts = []
+    if absent:
+        parts.append(f"缺 {absent} 張全年齡卡面")
+    if stale:
+        parts.append(f"{stale} 張是舊版")
+    if not parts:
+        return ""
+    return "偵測到" + "、".join(parts) + (f"（例：{examples}）" if examples else "")
+
+
 # 角色卡面缺這麼多張以內（更新後多了幾個角色）直接烘，不問。再多就先問（第一次可能幾百張、一小時）。
 CHARS_AUTO = 20
 
@@ -265,7 +293,9 @@ def _cards() -> None:
         if _check("fetch_card_art.py") == 0:
             _set("cards", "done", "")
             return
-        _set("cards", "run", "從 GitHub 下載全年齡卡面（約 100 MB）")
+        # 先說缺什麼、缺幾張，再說要下載：使用者才知道為什麼要抓 100 MB。
+        why = cards_missing_text(_last_check[0])
+        _set("cards", "run", (why + "：" if why else "") + "從 GitHub 下載全年齡卡面（約 100 MB）")
         code = _run("cards", ["fetch_card_art.py"])
         if code == 0:
             _set("cards", "done", "下載好了：重新整理網頁就有圖", reload=True)
