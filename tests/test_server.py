@@ -616,6 +616,9 @@ ok("modulepreload、入口模組、樣式表都換成帶版本的網址",
    'href="boot.js?v=aaaaaaaaaa"' in _out and 'src="app.js?v=cccccccccc"' in _out and 'href="styles.css?v=dddddddddd"' in _out, _out)
 ok("外部網址、找不到的檔、icon 都不動",
    'href="https://fonts.googleapis.com/css2?family=X"' in _out and 'href="missing.css"' in _out and 'href="logo.svg"' in _out, _out)
+_classic = server.versioned_html('<head><script src="language.js"></script><script>var x=1</script></head>', lambda r: "eeeeeeeeee" if r == "language.js" else None, [])
+ok("一般的 <script src> 也帶版本（擋在 head 裡，沒版本每次換頁都要回去問）；行內 script 不動",
+   'src="language.js?v=eeeeeeeeee"' in _classic and "<script>var x=1</script>" in _classic, _classic)
 ok("看不懂原本的 import map 就整頁照舊", server.versioned_html('<head><script type="importmap">{bad</script></head>', lambda r: "x", ["a.js"]) == '<head><script type="importmap">{bad</script></head>')
 ok("第三方的 vendor 不收進 import map", not any(f.startswith("vendor/") or "/vendor/" in f for f in server.own_js_files()), str([f for f in server.own_js_files() if "vendor" in f][:3]))
 

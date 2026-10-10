@@ -3,7 +3,8 @@
  * paper: oklch(15.5% 0.012 250) · accent: oklch(60% 0.19 33) · display + body: Chiron Hei HK
  * axes: dark / grotesk-sans / warm-on-cool · motion: drop into the pool, cards deal under each print
  */
-@import url("tokens.css");
+/* tokens.css 由各頁 <link> 直接載（在這支前面）：以前在這裡 @import，要等這支下載完才知道要抓它，
+   而且伺服器沒辦法替 @import 的網址加版本，每次換頁都要回去問一次。走 Tailscale 時就是多兩趟來回才畫得出來。 */
 
 *,
 *::before,

@@ -4,6 +4,7 @@
 
 The public application release [v1.0](https://github.com/bosen12/danbooru_tag_mochi/releases/tag/v1.0) was published on 2026-10-08. The changes below follow that release on the main branch. They are not included in the existing v1.0 tag; clone the latest main to get them.
 
+- Switching pages over a remote connection is faster: `language.js` and `tokens.css` are now versioned and cached like the other files instead of being re-checked on every page. Content shows in about 125 ms instead of 330 ms (simulated 80 ms latency). The LoRA Manager long-poll now waits until the page has loaded, so it no longer takes one of the browser's six connections while cards load.
 - Card Book is faster over remote connections such as Tailscale: off-screen cards are no longer laid out or painted, so relayout with all 1,972 cards dropped from about 2.4 s to 14 ms. Card art up to three screens ahead now starts loading early, and search waits until an IME finishes composing a character.
 - Changed the current Mochi code distribution from MIT to GPLv3 only (`GPL-3.0-only`) on 2026-10-08; preserved the earlier MIT notice and existing permissions, separate card-art/font/vendor licenses, and identified bosen12 as the original creator. New code contributions use GPLv3.
 - Windows launcher preserves explicit PORT/HOST and rejects Python below 3.9.

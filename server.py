@@ -522,7 +522,8 @@ def versioned_html(html: str, version_of, module_files) -> str:
         tag = m.group(0)
         low = tag.lower()
         if low.startswith("<script"):
-            if 'type="module"' not in low:
+            # 一般的 <script src>（language.js）也換：它擋在 <head> 裡，沒版本就每次換頁都要回去問一次才畫得出來。
+            if 'type="module"' not in low and "src=" not in low:
                 return tag
         elif ('rel="modulepreload"' not in low and 'rel="stylesheet"' not in low
               and not ('rel="preload"' in low and 'as="fetch"' in low)):

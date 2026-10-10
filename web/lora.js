@@ -1707,5 +1707,8 @@ export function initLoraPicker() {
   $("shortcuts-overlay").addEventListener("click", (e) => {
     if (e.target.id === "shortcuts-overlay") closeHelp();
   });
-  pollLoraPush();
+  // 等頁面載完再開始聽：長輪詢一開就佔住一條連線 25 秒，瀏覽器對同一台最多只開 6 條，
+  // 手機走 Tailscale 開頁時正在抓幾十張卡圖、模組，少一條就慢一截。
+  if (document.readyState === "complete") setTimeout(pollLoraPush, 1500);
+  else addEventListener("load", () => setTimeout(pollLoraPush, 1500), { once: true });
 }
