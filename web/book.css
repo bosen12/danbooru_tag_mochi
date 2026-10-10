@@ -128,6 +128,21 @@
   padding: 0;
 }
 
+/* 角色的小分類（作品）放在工具列外面，跟牌一起捲走（book.js renderGroups）。 */
+.book-groups-flow:not([hidden]) {
+  margin-top: var(--space-sm);
+}
+
+/* 籤捲走之後，黏住的工具列上留一顆「現在篩的這一格 ✕」。手機的工具列不黏，籤就在眼前，不用這顆。 */
+.book-group-now {
+  display: none;
+}
+@media (min-width: 40.0625rem) {
+  .book-group-now:not([hidden]) {
+    display: flex;
+  }
+}
+
 /* ---------- 牌格 ---------- */
 
 .book-grid {

@@ -123,8 +123,11 @@
             </div>
           </div>
           <div class="group-chips book-groups" id="book-groups" role="group" aria-label="小分類" hidden></div>
+          <!-- 小分類太多（角色有幾十部作品）時籤放到下面跟著捲；捲走了也看得到現在篩的是哪一格（book.js renderGroups）。 -->
+          <div class="book-group-now" id="book-group-now" hidden></div>
         </div>
       </div>
+      <div class="group-chips book-groups book-groups-flow" id="book-groups-flow" role="group" aria-label="小分類" hidden></div>
       <p class="book-hint" id="book-hint" hidden><b>還沒有使用紀錄。</b><span>在墨池抽牌、或在疊印台付印，用到的牌會記在這裡，越用越往前排。</span><a class="btn btn-small" href="./">去墨池抽幾張</a></p>
       <div class="book-grid" id="book-grid" role="list" aria-label="卡冊：點一張牌看它用過幾次"></div>
     </main>

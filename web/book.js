@@ -353,15 +353,41 @@ function pickSuit(s, from) {
   render();
 }
 
+// 角色的小分類是作品（七十幾部），黏在工具列裡會佔掉半個畫面：只有角色這頁把籤放在牌上面跟著捲。
+const FLOW_GROUP_SUITS = new Set(["chara"]);
+
+/** 現在放小分類籤的那一格：籤少黏在工具列裡，籤多跟著捲。 */
+function groupsBox() {
+  const flow = $("book-groups-flow");
+  return flow && !flow.hidden ? flow : $("book-groups");
+}
+
 function renderGroups() {
-  const box = $("book-groups");
-  if (ui.suit === "all") {
-    box.hidden = true;
-    return box.replaceChildren();
+  const sticky = $("book-groups");
+  const flow = $("book-groups-flow");
+  const now = $("book-group-now");
+  for (const b of [sticky, flow, now]) {
+    if (!b) continue;
+    b.hidden = true;
+    b.replaceChildren();
   }
+  if (ui.suit === "all") return;
   const runs = groupChips(lib.cards.filter((c) => c.suit === ui.suit && visibleCard(c)));
   if (ui.group && !runs.some((r) => r.items.some((i) => i.g === ui.group))) ui.group = "";
-  box.hidden = runs.reduce((n, r) => n + r.items.length, 0) < 2;
+  const count = runs.reduce((n, r) => n + r.items.length, 0);
+  const many = !!flow && FLOW_GROUP_SUITS.has(ui.suit);
+  const box = many ? flow : sticky;
+  box.hidden = count < 2;
+  // 籤跟著捲走了：黏住的工具列留一顆「現在篩的這一格 ✕」，捲到多下面都知道在看哪一格，點一下回到全部。
+  if (many && ui.group && now) {
+    const cur = runs.flatMap((r) => r.items).find((i) => i.g === ui.group);
+    if (cur) {
+      now.hidden = false;
+      now.replaceChildren(
+        el("button", { class: "group-chip pressable", type: "button", "aria-pressed": "true", "aria-label": `${cur.zh}：清掉篩選`, onclick: (e) => pickGroup("", e.currentTarget) }, cur.short, el("span", { "aria-hidden": "true" }, " ✕"))
+      );
+    }
+  }
   const chip = (i, inRun) =>
     el(
       "button",
@@ -389,7 +415,7 @@ function pickGroup(g, from) {
   ui.group = g;
   saveUi();
   renderGroups();
-  const selected = [...$("book-groups").querySelectorAll(".group-chip")].find((b) => b.getAttribute("aria-pressed") === "true");
+  const selected = [...groupsBox().querySelectorAll(".group-chip")].find((b) => b.getAttribute("aria-pressed") === "true");
   if (from && document.activeElement === from) selected?.focus({ preventScroll: true });
   seat(selected);
   backToTop();
