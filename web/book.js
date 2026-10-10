@@ -396,7 +396,7 @@ function renderGroups() {
       i.short
     );
   box.replaceChildren(
-    ui.suit === "chara" ? genderChips(ui.charGender, pickGender) : null,
+    ...(ui.suit === "chara" ? [genderChips(ui.charGender, pickGender)] : []),
     el("button", { class: "group-chip pressable", type: "button", "aria-pressed": ui.group === "" ? "true" : "false", onclick: (e) => pickGroup("", e.currentTarget) }, "全部"),
     ...runs.map((r) =>
       r.fam
