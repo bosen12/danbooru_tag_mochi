@@ -159,13 +159,22 @@ function artImg(sources, mini) {
   const i = bindArt(el("img", { alt: "", decoding: "async", draggable: "false" }), mini, sources);
   // 挑的細縮圖不見了就退回原圖；原圖也沒有才拿掉，露出底下的字。
   i.addEventListener("error", () => artFallback(i) || i.remove());
-  // 圖晚到的（新換上來的影子、捲進來的字盒、連線慢的時候）：淡進來，不要啪一下蓋上去。
+  // 圖晚到的（新換上來的影子、捲進來的字盒、連線慢的時候）：像印上去一樣顯影——從稍大、透明沉到定位，
+  // 不要啪一下蓋上去。等的時候牌面有一道掃光（card.css 的 .card-art:has(> img:not([data-ready]))）。
   // 本來就在快取裡的（60ms 內就到）直接出現 —— 不能一律先藏起來等 load，那會讓每次重畫都閃一格空白。
   const born = performance.now();
   i.addEventListener(
     "load",
     () => {
-      if (performance.now() - born > 60 && !reducedMotion()) i.animate([{ opacity: 0 }, { opacity: 1 }], { duration: DUR.short, easing: css(CURVE.out) });
+      i.dataset.ready = "1";
+      if (performance.now() - born > 60 && !reducedMotion())
+        i.animate(
+          [
+            { opacity: 0, transform: "scale(1.08)" },
+            { opacity: 1, transform: "none" },
+          ],
+          { duration: DUR.long, easing: css(CURVE.out) }
+        );
     },
     { once: true }
   );

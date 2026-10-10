@@ -157,6 +157,53 @@
   pointer-events: none;
 }
 
+/* 插畫還在路上（走 Tailscale、捲得快）：牌面一道掃光，看得出來「在來了」，不是壞掉的空白。
+   晚一下才浮出來：快取裡的圖一兩格畫面內就到，不能每次重畫都閃一下掃光。圖到了（cards.js 標 data-ready）就收掉。 */
+.card-art:has(> img:not([data-ready]))::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    100deg,
+    transparent 25%,
+    color-mix(in oklch, var(--color-stock-3) 80%, transparent) 50%,
+    transparent 75%
+  );
+  animation:
+    art-wait-in var(--dur-medium) var(--ease-out) var(--dur-short) both,
+    art-wait-sweep var(--dur-breath) var(--ease-in-out) infinite;
+  pointer-events: none;
+}
+/* 慢的圖會一段一段畫出來（上半截先出現），到齊時又從透明顯影一次，看起來閃一下。
+   一樣晚一下才藏（快取裡的不受影響），藏到 data-ready 才交給 cards.js 的顯影。 */
+.card-art img:not([data-ready]) {
+  animation: art-hold var(--dur-micro) step-start var(--dur-short) forwards;
+}
+@keyframes art-hold {
+  to {
+    opacity: 0;
+  }
+}
+@keyframes art-wait-in {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes art-wait-sweep {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(100%);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .card-art:has(> img:not([data-ready]))::before {
+    animation: art-wait-in var(--dur-medium) var(--ease-out) var(--dur-short) both;
+    transform: none;
+  }
+}
+
 .card-glyph {
   position: absolute;
   inset: 0;
