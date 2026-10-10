@@ -1,9 +1,10 @@
 # Release notes
 
-## Unreleased — readiness fixes after v1.0
+## v1.1 — 2026-10-10
 
-The public application release [v1.0](https://github.com/bosen12/danbooru_tag_mochi/releases/tag/v1.0) was published on 2026-10-08. The changes below follow that release on the main branch. They are not included in the existing v1.0 tag; clone the latest main to get them.
+Changes since [v1.0](https://github.com/bosen12/danbooru_tag_mochi/releases/tag/v1.0) (2026-10-08).
 
+- Card art pack [card-art-v5](https://github.com/bosen12/danbooru_tag_mochi/releases/tag/card-art-v5): 1,963 all-ages cards (+29 for chest interactions, hand motifs and hugs; `group picture` and `sandwiched` redrawn). Existing v4 installs download it once on the next start and only add what is missing; cards you baked yourself are never overwritten.
 - Card art that arrives late (slow connection, fast scrolling) no longer pops in or paints half an image: the card face shows a soft sweep while waiting, then the art fades in and settles from a slight zoom. Art already in the cache appears immediately as before.
 - Switching pages over a remote connection is faster: `language.js` and `tokens.css` are now versioned and cached like the other files instead of being re-checked on every page. Content shows in about 125 ms instead of 330 ms (simulated 80 ms latency). The LoRA Manager long-poll now waits until the page has loaded, so it no longer takes one of the browser's six connections while cards load.
 - Card Book is faster over remote connections such as Tailscale: off-screen cards are no longer laid out or painted, so relayout with all 1,972 cards dropped from about 2.4 s to 14 ms. Card art up to three screens ahead now starts loading early, and search waits until an IME finishes composing a character.

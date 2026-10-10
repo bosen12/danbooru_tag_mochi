@@ -70,7 +70,7 @@ Keep the server window open. After updating, reload the page with **Ctrl+F5**.
 
 | What | Size | How | Skip |
 |---|---|---|---|
-| Card art, all ages (1934 files) | ~100 MB | Downloaded from this repo's [release](https://github.com/bosen12/danbooru_tag_mochi/releases/tag/card-art-v4), checked with SHA-256, unpacked into `web/cards/`. Resumes if interrupted; never overwrites cards you baked yourself | `NO_CARD_FETCH=1` |
+| Card art, all ages (1963 files) | ~101 MB | Downloaded from this repo's [release](https://github.com/bosen12/danbooru_tag_mochi/releases/tag/card-art-v5), checked with SHA-256, unpacked into `web/cards/`. Resumes if interrupted; never overwrites cards you baked yourself | `NO_CARD_FETCH=1` |
 | Sensitive / explicit card art | — | Not published. Once the download is in, the page asks whether to bake them with your checkpoint (`scripts/bake_card_art.py`). Missing or outdated all-ages cards are baked without asking | `NO_CARD_BAKE=1` or a `.no-card-bake` file |
 | Hires upscale model `RealESRGAN_x4plus_anime_6B` | ~18 MB | Saved to ComfyUI's `models/upscale_models` | `NO_UPSCALE_FETCH=1` |
 | [ComfyUI LoRA Manager](https://github.com/willmiao/ComfyUI-Lora-Manager) (custom node) | small | The LoRA panel takes its list, preview images and Civitai trigger words from it, and the checkpoint panel its names and previews. Optional: the setup panel asks before installing it into `custom_nodes`, installing packages with ComfyUI's own Python, or adding the Details link patch. Choose Allow / Not now / Never ask; restart ComfyUI after installation | `NO_LORA_MANAGER_FETCH=1` |
@@ -78,7 +78,7 @@ Keep the server window open. After updating, reload the page with **Ctrl+F5**.
 
 **One launch does all of it**, on Windows, macOS and Linux alike. The server does the work in the background and a panel in the lower-left corner of the page shows each step, asks before optional LoRA installation/patching, pose setup and adult card baking, and offers **Restart ComfyUI** after something is installed into it (through ComfyUI-Manager; otherwise restart it yourself). If ComfyUI is not running yet, the steps that need it wait and continue as soon as you start it; there is no need to run `start.bat` again. The page opens straight away with placeholder cards; the panel tells you when to reload. Everything is logged in `data/setup.log`. People who already have everything never see the panel.
 
-The public repository has a v1.0 release. The latest main includes additional readiness fixes after that tag. See [release notes](CHANGELOG.md) and the [verification record](docs/RELEASE_VERIFICATION.md) for tested environments and limitations.
+The latest release is v1.1 (v1.0 was the first public release). See [release notes](CHANGELOG.md) and the [verification record](docs/RELEASE_VERIFICATION.md) for tested environments and limitations.
 
 ## Configuration
 
@@ -214,7 +214,7 @@ cd danbooru_tag_mochi
 
 | 東西 | 大小 | 怎麼來 | 不想要 |
 |---|---|---|---|
-| 卡牌插畫（全年齡 1934 個檔） | 約 100 MB | 從本 repo 的 [Release](https://github.com/bosen12/danbooru_tag_mochi/releases/tag/card-art-v4) 下載、驗 SHA-256、解到 `web/cards/`。斷了會接著抓；自己烘的圖不覆蓋 | `NO_CARD_FETCH=1` |
+| 卡牌插畫（全年齡 1963 個檔） | 約 101 MB | 從本 repo 的 [Release](https://github.com/bosen12/danbooru_tag_mochi/releases/tag/card-art-v5) 下載、驗 SHA-256、解到 `web/cards/`。斷了會接著抓；自己烘的圖不覆蓋 | `NO_CARD_FETCH=1` |
 | 敏感／色情分級的卡面 | — | 不公開。卡面下載好之後，網頁上問你要不要用你的底模烘；全年齡卡缺的、過時的直接烘，不問 | `NO_CARD_BAKE=1` 或 `.no-card-bake` 檔 |
 | Hires 放大模型 | 約 18 MB | 放進 ComfyUI 的 `models/upscale_models` | `NO_UPSCALE_FETCH=1` |
 | [ComfyUI LoRA Manager](https://github.com/willmiao/ComfyUI-Lora-Manager)（custom node） | 不大 | LoRA 面板的清單、預覽圖、Civitai 觸發詞，底模面板的名稱和預覽圖都從它來。選用：準備面板先問「允許／這次不要／不要再問」，才裝進 `custom_nodes`、用 ComfyUI 自己的 Python 裝套件或補詳情連結；安裝完重開一次 ComfyUI | `NO_LORA_MANAGER_FETCH=1` |
@@ -222,7 +222,7 @@ cd danbooru_tag_mochi
 
 **啟動一次就全部做完**（Windows、macOS、Linux 都一樣）：伺服器在背景做，網頁左下角的面板顯示每一步、詢問 LoRA 安裝／修補、姿勢參考與成人卡面烘焙，裝進 ComfyUI 的東西需要重開時給一顆「重開 ComfyUI」（透過 ComfyUI-Manager；沒有就自己重開）。ComfyUI 還沒開的話，要用到它的步驟會等，一開就接著做，不用再跑一次 `start.bat`。網頁照常先開（先是字的佔位牌），面板會告訴你什麼時候重新整理。過程記在 `data/setup.log`。東西都已經有的人完全看不到這個面板。
 
-v1.0 已公開；最新 main 已加入該標籤之後的發布準備修正。已測環境和限制見 [發布紀錄](CHANGELOG.md) 與 [驗證紀錄](docs/RELEASE_VERIFICATION.md)。
+最新版本是 v1.1（v1.0 是第一個公開版本）。已測環境和限制見 [發布紀錄](CHANGELOG.md) 與 [驗證紀錄](docs/RELEASE_VERIFICATION.md)。
 
 ## 設定
 

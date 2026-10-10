@@ -29,7 +29,7 @@ Mochi 目前以 GPLv3（GPL-3.0-only）發布，見 LICENSE 與 NOTICE。新 GPL
 - CI（GitHub Actions）：Linux Python 3.9／3.13、Windows／macOS Python 3.13 跑編譯與 `tests/run.py`；另一個 Linux 工作跑兩套 Playwright 中英文瀏覽器測試。手動 dispatch 另跑完整歷史引擎回歸。新增頁面或唯讀 API 時加進 smoke test 的清單。新 CI 必須推送後才有遠端結果，不能拿舊版綠燈當作新版證明。
 
 - `.bat` 一律 CRLF（`.gitattributes` 管）：LF 的批次檔 `goto` 會失效。
-- 卡面插畫從**這個 repo 的 Release** `card-art-v4` 下載。上游發新卡面包時，這邊也要發同一個 zip（`gh release create card-art-vN ... -R bosen12/danbooru_tag_mochi`）。
+- 卡面插畫從**這個 repo 的 Release** `card-art-v5` 下載。上游發新卡面包時，這邊也要發同一個 zip（`gh release create card-art-vN ... -R bosen12/danbooru_tag_mochi`）。
 - 給陌生人用：改了啟動流程、第一次啟動會下載或安裝的東西，README 的〈Prepared on first start〉兩種語言都要跟著改。
 
 ## 第一次使用的準備
