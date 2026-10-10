@@ -143,6 +143,12 @@
   display: grid;
   gap: 6px;
   justify-items: center;
+  /* 捲出畫面的格子不排版、不繪製：捲到底時格子上千，以前每補一批牌整片網格都要重排
+   * （1972 格重排一次 2.4 秒），越往下越卡、搜尋拆掉重畫也慢。auto 記得排過的實際高度，捲回來不跳。 */
+  content-visibility: auto;
+  contain-intrinsic-size: auto 96px auto 190px;
+  /* 名次章蓋下去會放大一下、牌有陰影：content-visibility 會裁掉溢出去的，留一點邊。 */
+  overflow-clip-margin: 12px;
 }
 
 .book-cell .card {

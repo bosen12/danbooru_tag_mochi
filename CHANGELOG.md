@@ -4,6 +4,7 @@
 
 The public application release [v1.0](https://github.com/bosen12/danbooru_tag_mochi/releases/tag/v1.0) was published on 2026-10-08. The changes below follow that release on the main branch. They are not included in the existing v1.0 tag; clone the latest main to get them.
 
+- Card Book is faster over remote connections such as Tailscale: off-screen cards are no longer laid out or painted, so relayout with all 1,972 cards dropped from about 2.4 s to 14 ms. Card art up to three screens ahead now starts loading early, and search waits until an IME finishes composing a character.
 - Changed the current Mochi code distribution from MIT to GPLv3 only (`GPL-3.0-only`) on 2026-10-08; preserved the earlier MIT notice and existing permissions, separate card-art/font/vendor licenses, and identified bosen12 as the original creator. New code contributions use GPLv3.
 - Windows launcher preserves explicit PORT/HOST and rejects Python below 3.9.
 - Optional LoRA Manager installation and the Details link patch ask first in English or Traditional Chinese. Not now skips this launch; Never ask saves a local preference.

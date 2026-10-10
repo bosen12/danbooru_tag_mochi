@@ -447,15 +447,21 @@ function wireSearch() {
   const q = $("book-q");
   q.value = ui.query;
   let timer = 0;
-  q.addEventListener("input", () => {
+  const apply = () => {
     clearTimeout(timer);
+    if (ui.query === q.value.trim()) return;
+    ui.query = q.value.trim();
+    backToTop();
+    render();
+  };
+  q.addEventListener("input", (e) => {
+    clearTimeout(timer);
+    // 注音、倉頡組字中不排：每按一鍵就用半個字搜一次，整片閃「沒有符合」，看起來像在等。選完字（compositionend）立刻排。
+    if (e.isComposing) return;
     // 打字時等一下下再排：每打一個字就整片滑一次太吵。
-    timer = setTimeout(() => {
-      ui.query = q.value.trim();
-      backToTop();
-      render();
-    }, 140);
+    timer = setTimeout(apply, 140);
   });
+  q.addEventListener("compositionend", apply);
   q.addEventListener("keydown", (e) => {
     if (e.key === "Escape" && q.value) {
       q.value = "";
@@ -715,13 +721,34 @@ function restoreSpot() {
 function watchMore() {
   if (typeof IntersectionObserver !== "function") return;
   if (!observer) {
+    // 提前兩屏多補下一批（格子現在不在畫面就不排版，多補不花力氣），抓圖才有時間跑在前面。
     observer = new IntersectionObserver((entries) => {
       if (entries.some((e) => e.isIntersecting)) moreCells();
-    }, { rootMargin: "600px" });
+    }, { rootMargin: "1800px" });
   }
   observer.disconnect();
   if (shown < list.length && more) observer.observe(more);
+  queuePrefetch();
 }
+
+/* 遠端（手機走 Tailscale）時，懶載入的牌圖要捲到附近才開始抓，每張一趟來回：捲得快就一格一格等。
+ * 畫面下方 PREFETCH_SCREENS 屏內的牌先改成立刻載入，往下捲時這條線跟著往前推。
+ * 圖的網址在格子排好時就照實際大小挑好了（card-images.js），這裡只是提早開始抓同一張。 */
+const PREFETCH_SCREENS = 3;
+let prefetchFrame = 0;
+function queuePrefetch() {
+  if (!prefetchFrame) prefetchFrame = requestAnimationFrame(prefetchAhead);
+}
+function prefetchAhead() {
+  prefetchFrame = 0;
+  const limit = innerHeight * (1 + PREFETCH_SCREENS);
+  for (const img of $("book-grid").querySelectorAll('.book-cell img[loading="lazy"]')) {
+    const top = img.closest(".book-cell").getBoundingClientRect().top;
+    if (top > limit) break;
+    if (top > -innerHeight) img.loading = "eager";
+  }
+}
+addEventListener("scroll", queuePrefetch, { passive: true });
 
 function moreCells() {
   if (shown >= list.length) return;
