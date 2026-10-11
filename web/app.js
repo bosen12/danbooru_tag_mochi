@@ -37,7 +37,7 @@ import { SCENE_MODES, SCENE_MODE_LABELS, heatBlockedByRating } from "./scene-pol
 import { initLoraPicker, currentLorasPayload, currentTriggerText, currentCkpt, handleLoraKeys } from "./lora.js";
 import { initWorkflow, currentWorkflowId, currentSampling, wfHandleKeys } from "./workflow.js";
 import { HARD_BANNED } from "./card-art.js";
-import { buildLibrary, groupChips, genderChips, createAssets, cardNode, setCardFlag, setEnterTarget, eagerArt, cardFacts, cardMatches, CARD_SUIT_INFO, CARD_SUITS, RATING_ZH } from "./cards.js";
+import { buildLibrary, groupChips, genderChips, chipRun, createAssets, cardNode, setCardFlag, setEnterTarget, eagerArt, cardFacts, cardMatches, CARD_SUIT_INFO, CARD_SUITS, RATING_ZH } from "./cards.js";
 import { bindArt, artFallback } from "./card-images.js";
 import { el, openSheet, anyOverlay, toast, runToastAction, ICONS } from "./ui.js";
 import { mountKeysHelp } from "./keys-help.js";
@@ -566,7 +566,8 @@ function renderLibrary() {
     const count = runs.reduce((n, r) => n + r.items.length, 0);
     // 存檔裡的分類籤可能是改版前的小分類（例如 other），對不上就回到「全部」，不然整盒是空的。
     if (ui.group && !runs.some((r) => r.items.some((i) => i.g === ui.group))) ui.group = "";
-    chips.hidden = count < 2;
+    // 角色頁一律留著：性別籤在這一排，篩到沒牌時也要能切回來。
+    chips.hidden = ui.suit !== "chara" && count < 2;
     const chip = (i, inRun) =>
       el(
         "button",
@@ -579,12 +580,7 @@ function renderLibrary() {
       el("button", { class: "group-chip pressable", type: "button", "aria-pressed": ui.group === "" ? "true" : "false", onclick: (e) => pickGroup("", e.currentTarget) }, "全部"),
       ...runs.map((r) =>
         r.fam
-          ? el(
-              "span",
-              { class: "chip-run" },
-              el("span", { class: "chip-fam", "aria-hidden": "true" }, r.seal ? el("b", { class: "chip-seal" }, r.seal) : null, r.fam),
-              ...r.items.map((i) => chip(i, true))
-            )
+          ? chipRun(r, r.items.map((i) => chip(i, true)), { fold: ui.suit === "chara", picked: ui.group })
           : chip(r.items[0], false)
       )
     );

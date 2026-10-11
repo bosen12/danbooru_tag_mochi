@@ -79,7 +79,7 @@ html[lang="en"] .chip-fam { letter-spacing: 0; }
 /* 給中文排的寬字距，英文字母會一個一個散開（「S t a r t  y o u r」）。 */
 html[lang="en"] :is(.pool-start-lead, .trials-title) { letter-spacing: -0.02em; }
 html[lang="en"] :is(.pb-go[data-wide="true"], .print-float[data-wide="true"] .pf-label, .pill-label, .deal-label) { letter-spacing: 0.02em; }
-html[lang="en"] .chip-fam::after { content: ":"; }
+html[lang="en"] .chip-fam:not(.chip-fold)::after { content: ":"; }
 html[lang="en"] .lib-search input { font-size: 0.8125rem; }
 html[lang="en"] .case-grid { grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); }
 html[lang="en"] .book-grid { grid-template-columns: repeat(auto-fill, minmax(114px, 1fr)); }

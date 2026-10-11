@@ -37,7 +37,7 @@ import { heatBlockedByRating } from "./scene-policy.js";
 import { initLoraPicker, currentLorasPayload, currentTriggerText, currentCkpt, handleLoraKeys } from "./lora.js";
 import { initWorkflow, currentWorkflowId, currentSampling, wfHandleKeys } from "./workflow.js";
 import { HARD_BANNED, applyArtSources } from "./card-art.js";
-import { buildLibrary, groupChips, createAssets, cardNode, cardFacts, setEnterTarget, eagerArt, CARD_SUIT_INFO, CARD_SUITS, RATING_ZH, ERA_ZH } from "./cards.js";
+import { buildLibrary, groupChips, genderChips, chipRun, createAssets, cardNode, cardFacts, setEnterTarget, eagerArt, CARD_SUIT_INFO, CARD_SUITS, RATING_ZH, ERA_ZH } from "./cards.js";
 import { el, openSheet, anyOverlay, toast } from "./ui.js";
 import { mountKeysHelp } from "./keys-help.js";
 import { mountTour } from "./tour.js";
@@ -144,6 +144,8 @@ let plateNotice = null;
 let lastRelKeys = new Set();
 let caseTab = "all";
 let caseGroup = "";
+// 角色頁的「性別：全部／女／男」（墨池字盒、卡冊也有同一排）。
+let caseGender = "";
 let caseQuery = "";
 let caseList = [];
 let caseShown = 0;
@@ -3196,7 +3198,8 @@ function renderCaseGroups(inSuit) {
   const suitTab = CARD_SUITS.includes(caseTab);
   const runs = suitTab ? groupChips(inSuit) : [];
   if (caseGroup && !runs.some((r) => r.items.some((i) => i.g === caseGroup))) caseGroup = "";
-  box.hidden = runs.reduce((n, r) => n + r.items.length, 0) < 2;
+  // 角色頁一律留著：性別籤在這一排，篩到沒牌時也要能切回來。
+  box.hidden = caseTab !== "chara" && runs.reduce((n, r) => n + r.items.length, 0) < 2;
   if (box.hidden) return box.replaceChildren();
   const chip = (g, label, seal, full) =>
     el(
@@ -3211,22 +3214,25 @@ function renderCaseGroups(inSuit) {
           caseBackToTop();
           dealCase = true;
           renderCase();
-          seat($("case-groups").querySelector('[aria-pressed="true"]'));
+          seat($("case-groups").querySelector('[aria-pressed="true"]:not([data-gender])'));
         },
       },
       seal ? el("b", { class: "chip-seal", "aria-hidden": "true" }, seal) : null,
       label
     );
+  const pickGender = (g) => {
+    if (caseGender === g) return;
+    caseGender = g;
+    caseBackToTop();
+    dealCase = true;
+    renderCase();
+  };
   box.replaceChildren(
+    ...(caseTab === "chara" ? [genderChips(caseGender, pickGender)] : []),
     chip("", "全部", null),
     ...runs.map((r) =>
       r.fam
-        ? el(
-            "span",
-            { class: "chip-run" },
-            el("span", { class: "chip-fam", "aria-hidden": "true" }, r.seal ? el("b", { class: "chip-seal" }, r.seal) : null, r.fam),
-            ...r.items.map((i) => chip(i.g, i.short, null, i.zh))
-          )
+        ? chipRun(r, r.items.map((i) => chip(i.g, i.short, null, i.zh)), { fold: caseTab === "chara", picked: caseGroup })
         : chip(r.items[0].g, r.items[0].short, r.items[0].seal, r.items[0].zh)
     )
   );
@@ -3257,6 +3263,8 @@ function renderCase() {
     list = lib.cards.filter((c) => caseTab === "all" || c.suit === caseTab);
   }
   list = list.filter(visibleCard);
+  // 角色頁的性別篩選：先篩再算細分類籤，籤上只剩有這個性別的作品。
+  if (caseTab === "chara" && caseGender) list = list.filter((c) => c.gate === caseGender);
   renderCaseGroups(list);
   if (caseGroup) list = list.filter((c) => c.group === caseGroup);
   if (q) list = list.filter((c) => c.zh.toLowerCase().includes(q) || c.tag.includes(q) || (c.groupZh || "").includes(q));
@@ -3285,7 +3293,13 @@ function renderCase() {
       : el(
           "p",
           { class: "case-empty" },
-          caseTab === "match" && !bed.pins.length ? "放一張牌上版，這裡會列出跟它呼應的牌，和引擎常常補進來的牌。" : "沒有符合的牌。"
+          caseTab === "match" && !bed.pins.length
+            ? "放一張牌上版，這裡會列出跟它呼應的牌，和引擎常常補進來的牌。"
+            : caseTab === "chara" && caseGender === "male" && !settings.boy
+              ? "規則的「人物」沒開男生，男角色都收起來了。"
+              : caseTab === "chara" && caseGender === "female" && !settings.girl
+                ? "規則的「人物」沒開女生，女角色都收起來了。"
+                : "沒有符合的牌。"
         );
     grid.append(empty);
     if (emptyKey !== caseEmptyShown) {

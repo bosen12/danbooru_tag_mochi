@@ -12,7 +12,7 @@ import { dateLocale, english } from "./i18n.js";
  */
 import { indexLexicon } from "./engine.js";
 import { ratingBlocked, RATING_LABEL } from "./rules/rating.js";
-import { buildLibrary, groupChips, genderChips, createAssets, cardNode, cardFacts, setCardFlag, eagerArt, cardMatches, CARD_SUIT_INFO, CARD_SUITS } from "./cards.js";
+import { buildLibrary, groupChips, genderChips, chipRun, createAssets, cardNode, cardFacts, setCardFlag, eagerArt, cardMatches, CARD_SUIT_INFO, CARD_SUITS } from "./cards.js";
 import { el, openSheet, toast } from "./ui.js";
 import { mountKeysHelp } from "./keys-help.js";
 import { mountTour } from "./tour.js";
@@ -377,7 +377,8 @@ function renderGroups() {
   const count = runs.reduce((n, r) => n + r.items.length, 0);
   const many = !!flow && FLOW_GROUP_SUITS.has(ui.suit);
   const box = many ? flow : sticky;
-  box.hidden = count < 2;
+  // 角色頁一律留著：性別籤在這一排，篩到沒牌時也要能切回來。
+  box.hidden = ui.suit !== "chara" && count < 2;
   // 籤跟著捲走了：黏住的工具列留一顆「現在篩的這一格 ✕」，捲到多下面都知道在看哪一格，點一下回到全部。
   if (many && ui.group && now) {
     const cur = runs.flatMap((r) => r.items).find((i) => i.g === ui.group);
@@ -400,12 +401,7 @@ function renderGroups() {
     el("button", { class: "group-chip pressable", type: "button", "aria-pressed": ui.group === "" ? "true" : "false", onclick: (e) => pickGroup("", e.currentTarget) }, "全部"),
     ...runs.map((r) =>
       r.fam
-        ? el(
-            "span",
-            { class: "chip-run" },
-            el("span", { class: "chip-fam", "aria-hidden": "true" }, r.seal ? el("b", { class: "chip-seal" }, r.seal) : null, r.fam),
-            ...r.items.map((i) => chip(i, true))
-          )
+        ? chipRun(r, r.items.map((i) => chip(i, true)), { fold: ui.suit === "chara", picked: ui.group })
         : chip(r.items[0], false)
     )
   );

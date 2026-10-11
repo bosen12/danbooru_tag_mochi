@@ -942,6 +942,53 @@ body #wf-pick-btn.has {
   font-weight: 400;
 }
 
+/* 角色頁的「動漫 41 ▸」：家族名是一顆按鈕，收著時整串只露這一顆，點了才展開那串作品籤（cards.js 的 chipRun）。
+   選中的作品在收著的那串裡：按鈕用墨色，看得出篩選藏在裡面。 */
+.chip-fold {
+  gap: 0.35em;
+  padding: 0 var(--space-xs);
+  border: 1px solid var(--color-rule-2);
+  border-radius: var(--radius-xs);
+  background: var(--color-paper);
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.chip-fold::after {
+  content: none;
+}
+
+.chip-fold-n {
+  color: var(--color-muted);
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
+}
+
+.chip-fold-mark {
+  display: inline-block;
+  font-weight: 400;
+  transition: transform var(--dur-short) var(--ease-out);
+}
+
+.chip-run[data-fold="open"] .chip-fold-mark {
+  transform: rotate(90deg);
+}
+
+.chip-run[data-fold="shut"] > .group-chip {
+  display: none;
+}
+
+.chip-run[data-fold="shut"][data-picked] .chip-fold {
+  color: var(--color-ink);
+  border-color: var(--color-ink-2);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .chip-fold:hover {
+    color: var(--color-ink);
+  }
+}
+
 /* 一串後面接著單獨的籤（鏡頭那串後面的「視線」）：拉開一點，不要看起來像同一串。
    手機上每串自己一行，單獨的籤排在串與串之間。 */
 .chip-run {

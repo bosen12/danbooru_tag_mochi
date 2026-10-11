@@ -79,6 +79,40 @@ export function genderChips(current, pick) {
 }
 
 /**
+ * 一串細分類籤（groupChips 回傳的一個 fam 不是 null 的 run）。chips 是這串的籤按鈕。
+ * fold：角色頁一部作品一顆籤，「動漫」「遊戲」兩串加起來七十幾顆，整排擠滿。
+ * 家族名改成按鈕「動漫 41 ▸」，預設收著，點了才展開；沒動過的串，選中的作品在裡面就開著。
+ * 開合只在這裡切（不重畫整排），焦點留在按鈕上；記在 famOpen，同一頁重畫也不會彈回去。
+ */
+const famOpen = new Map();
+export function chipRun(r, chips, { fold = false, picked = "" } = {}) {
+  const name = () => [r.seal ? el("b", { class: "chip-seal", "aria-hidden": "true" }, r.seal) : null, r.fam];
+  if (!fold) return el("span", { class: "chip-run" }, el("span", { class: "chip-fam", "aria-hidden": "true" }, ...name()), ...chips);
+  const has = r.items.some((i) => i.g === picked);
+  const open = famOpen.has(r.fam) ? famOpen.get(r.fam) : has;
+  const run = el("span", { class: "chip-run", dataset: { fold: open ? "open" : "shut", ...(has ? { picked: "true" } : {}) } });
+  const btn = el(
+    "button",
+    {
+      class: "chip-fam chip-fold pressable",
+      type: "button",
+      "aria-expanded": open ? "true" : "false",
+      onclick: () => {
+        const now = run.dataset.fold !== "open";
+        famOpen.set(r.fam, now);
+        run.dataset.fold = now ? "open" : "shut";
+        btn.setAttribute("aria-expanded", now ? "true" : "false");
+      },
+    },
+    ...name(),
+    el("span", { class: "chip-fold-n" }, String(r.items.length)),
+    el("span", { class: "chip-fold-mark", "aria-hidden": "true" }, "▸")
+  );
+  run.append(btn, ...chips);
+  return run;
+}
+
+/**
  * 字盒的分類籤（細分類，見 scripts/subgroups.py）。
  * 同一家族（「地點・住家」的「地點」）連在一起的收成一串：家族名寫一次，籤上只寫後半，
  * 一個花色三十幾格也只佔幾行。章只在整格的牌都是同一個章時才標（細分類可能跨小分類收字）。

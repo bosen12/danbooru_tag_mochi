@@ -95,7 +95,8 @@ def wait_for(predicate):
 
 t = threading.Thread(target=st._lora, daemon=True)
 t.start()
-t.join(0.2)
+# 卡在等回答就永遠不會結束；給 2 秒是怕機器忙（同時跑別的測試）時 0.2 秒來不及，誤報失敗。
+t.join(2)
 ok("LoRA Manager：沒有先問、不自動裝", state("lora") == "ask" and ("fetch_lora_manager.py",) not in ran, str(st._state["lora"]))
 ok("安裝問題不阻擋其餘準備步驟", not t.is_alive())
 if state("lora") == "ask":
