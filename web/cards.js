@@ -83,25 +83,26 @@ export function genderChips(current, pick) {
  * fold：角色頁一部作品一顆籤，「動漫」「遊戲」兩串加起來七十幾顆，整排擠滿。
  * 家族名改成按鈕「動漫 41 ▸」，預設收著，點了才展開；沒動過的串，選中的作品在裡面就開著。
  * 開合只在這裡切（不重畫整排），焦點留在按鈕上；記在 famOpen，同一頁重畫也不會彈回去。
+ * 開合有過場（foldMotion）；切完發一個 chipfold 事件（groupNow 要重新看選中的籤還在不在）。
  */
 const famOpen = new Map();
 export function chipRun(r, chips, { fold = false, picked = "" } = {}) {
   const name = () => [r.seal ? el("b", { class: "chip-seal", "aria-hidden": "true" }, r.seal) : null, r.fam];
   if (!fold) return el("span", { class: "chip-run" }, el("span", { class: "chip-fam", "aria-hidden": "true" }, ...name()), ...chips);
   const has = r.items.some((i) => i.g === picked);
-  const open = famOpen.has(r.fam) ? famOpen.get(r.fam) : has;
-  const run = el("span", { class: "chip-run", dataset: { fold: open ? "open" : "shut", ...(has ? { picked: "true" } : {}) } });
+  let want = famOpen.has(r.fam) ? famOpen.get(r.fam) : has;
+  const run = el("span", { class: "chip-run", dataset: { fold: want ? "open" : "shut", ...(has ? { picked: "true" } : {}) } });
   const btn = el(
     "button",
     {
       class: "chip-fam chip-fold pressable",
       type: "button",
-      "aria-expanded": open ? "true" : "false",
+      "aria-expanded": want ? "true" : "false",
       onclick: () => {
-        const now = run.dataset.fold !== "open";
-        famOpen.set(r.fam, now);
-        run.dataset.fold = now ? "open" : "shut";
-        btn.setAttribute("aria-expanded", now ? "true" : "false");
+        want = !want;
+        famOpen.set(r.fam, want);
+        btn.setAttribute("aria-expanded", want ? "true" : "false");
+        foldMotion(run, chips, want);
       },
     },
     ...name(),
@@ -110,6 +111,60 @@ export function chipRun(r, chips, { fold = false, picked = "" } = {}) {
   );
   run.append(btn, ...chips);
   return run;
+}
+
+/**
+ * 開合的過場。直接切 display 的話，幾十顆籤一下子冒出來或消失、底下的牌跟著跳，看起來像版面壞掉。
+ *   展開：整排籤列的高度從舊的長到新的（多出來的先藏著，像抽屜拉開），後面的串從舊位置滑過去（FLIP），
+ *         這串的籤依序淡進來（錯開的總長封頂，五十幾顆也不會拖太久）。
+ *   收合：這串的籤先淡掉，再收高度、後面的串滑回來。
+ * 動到一半又按：淡出中改回展開就停掉淡出；其他情況把正在跑的收尾，從現在的樣子接著動。
+ */
+function foldMotion(run, chips, open) {
+  const box = run.closest(".group-chips") || run.parentElement;
+  const apply = () => {
+    run.dataset.fold = open ? "open" : "shut";
+    run.dispatchEvent(new Event("chipfold", { bubbles: true }));
+  };
+  for (const a of run._fold || []) a.cancel();
+  run._fold = [];
+  if (reducedMotion()) return apply();
+  if (open && run.dataset.fold === "open") return; // 淡出到一半改回展開：取消淡出就回來了
+  const reflow = () => {
+    // 會被擠動的是整串（連左邊那條線一起走，包括按的這一串自己）和「系列」裡單獨的籤；串裡的籤跟著串走，不另外算。
+    const movers = [...box.querySelectorAll(".chip-run[data-fold], .chip-series > .group-chip")].filter((n) => n.getClientRects().length);
+    const before = new Map(movers.map((n) => [n, n.getBoundingClientRect()]));
+    const h0 = box.getBoundingClientRect().height;
+    box._grow?.cancel(); // 上一次還在長：從現在的高度接著動
+    apply();
+    const h1 = box.getBoundingClientRect().height;
+    for (const [n, a] of before) {
+      const b = n.getBoundingClientRect();
+      const dx = a.left - b.left;
+      const dy = a.top - b.top;
+      if (Math.abs(dx) >= 1 || Math.abs(dy) >= 1) n.animate([{ transform: `translate(${dx}px, ${dy}px)` }, { transform: "none" }], { duration: DUR.medium, easing: css(CURVE.out) });
+    }
+    box.style.overflow = "";
+    if (Math.abs(h1 - h0) >= 1) {
+      box.style.overflow = "clip";
+      const grow = (box._grow = box.animate([{ height: `${h0}px` }, { height: `${h1}px` }], { duration: DUR.medium, easing: css(CURVE.inOut) }));
+      grow.onfinish = () => (box.style.overflow = "");
+    }
+    if (!open) return;
+    const step = Math.min(14, 260 / Math.max(1, chips.length));
+    run._fold = chips.map((c, i) =>
+      c.animate([{ opacity: 0, transform: "translateY(-3px) scale(0.96)" }, { opacity: 1, transform: "none" }], { duration: DUR.short, delay: 40 + i * step, easing: css(CURVE.out), fill: "backwards" })
+    );
+  };
+  if (open) return reflow();
+  const fade = chips.map((c) => c.animate([{ opacity: 1 }, { opacity: 0, transform: "scale(0.96)" }], { duration: DUR.micro, easing: css(CURVE.exit), fill: "forwards" }));
+  run._fold = fade;
+  fade[0]
+    ? fade[0].finished.then(() => {
+        reflow();
+        for (const a of fade) a.cancel();
+      }, () => {})
+    : reflow();
 }
 
 /**
@@ -148,7 +203,7 @@ export function groupNow(box, chips) {
       check();
     });
   }, { capture: true, passive: true });
-  chips.addEventListener("click", (e) => e.target.closest(".chip-fold") && check());
+  chips.addEventListener("chipfold", check);
   return (cur, clear) => {
     on = !!cur;
     box.hidden = !cur;

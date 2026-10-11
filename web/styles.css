@@ -879,6 +879,8 @@ body #wf-pick-btn.has {
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-2xs);
+  /* 開合「動漫」時籤列的高度在動（cards.js 的 foldMotion）：行一律疊在上面，多出來的高度不要被平均分給每一行。 */
+  align-content: flex-start;
   padding: var(--space-xs) var(--space-md) var(--space-xs);
 }
 
@@ -956,6 +958,11 @@ body #wf-pick-btn.has {
 
 .chip-fold::after {
   content: none;
+}
+
+/* 角色頁的「系列：」那一串自己一行：開合「動漫」時，上面「性別」那一排不會跟著跳。 */
+.chip-series {
+  flex-basis: 100%;
 }
 
 .chip-fold-n {
