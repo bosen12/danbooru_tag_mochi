@@ -469,9 +469,9 @@ body.fuse {
   display: none;
 }
 
-/* 籤列捲走後的「航海王 ✕」：疊印台字盒的欄位自己有間距。 */
-.case-group-now {
-  padding: 0;
+/* 籤列捲走後的「航海王」清除鈕：疊印台字盒的欄位自己有間距，貼齊左邊。 */
+.case-group-now > .group-chip {
+  left: 0;
 }
 
 .case-tab {

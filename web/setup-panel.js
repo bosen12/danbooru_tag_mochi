@@ -6,6 +6,7 @@
  * 伺服器端的 setup_tasks 只在這個檔存在的版面才會開（server.py main）。
  */
 import { el } from "./ui.js";
+import { DUR, CURVE, css, reducedMotion } from "./motion.js";
 
 const POLL_MS = 2500;
 const ICON = { wait: "…", run: "", ask: "?", restart: "↻", done: "✓", skip: "–", error: "!" };
@@ -65,9 +66,6 @@ function render(snap) {
   box.dataset.sig = sig;
   const done = shown.filter((it) => it.state === "done" || it.state === "skip").length;
   box.querySelector(".setup-title").textContent = snap.active ? `第一次使用：準備中 ${done}/${shown.length}` : "準備好了";
-  const asking = shown.filter((it) => it.state === "ask").map((it) => it.id).join();
-  if (asking && asking !== stored(ASKED_KEY)) setCollapsed(false);
-  store(ASKED_KEY, asking);
   box.dataset.collapsed = collapsed ? "true" : "false";
   list.replaceChildren(...shown.map(row));
   const acts = [];
@@ -75,13 +73,30 @@ function render(snap) {
   if (reload) acts.push(el("button", { class: "btn btn-small", type: "button", onclick: () => location.reload() }, "重新整理看新圖"));
   foot.replaceChildren(...acts);
   foot.hidden = !acts.length;
+  // 內容換好才量：展開的過場要長到新內容的大小。
+  const asking = shown.filter((it) => it.state === "ask").map((it) => it.id).join();
+  if (asking && asking !== stored(ASKED_KEY)) setCollapsed(false);
+  store(ASKED_KEY, asking);
 }
 
+/**
+ * 收合／展開。面板大小直接跳的話（手機上寬度 359 → 202px）很突兀：從舊的大小長到新的，
+ * 展開時清單跟著淡進來。量大小用 FLIP：先量、切狀態、再量，從舊的動到新的。
+ */
 function setCollapsed(v) {
+  const was = box.getBoundingClientRect();
   collapsed = v;
   store(COLLAPSED_KEY, v ? "1" : "0");
   box.querySelector(".setup-head").setAttribute("aria-expanded", v ? "false" : "true");
   box.dataset.collapsed = v ? "true" : "false";
+  if (reducedMotion() || !was.width) return;
+  const now = box.getBoundingClientRect();
+  if (Math.abs(now.width - was.width) < 1 && Math.abs(now.height - was.height) < 1) return;
+  box._size?.cancel();
+  box.style.overflow = "hidden";
+  box._size = box.animate([{ width: `${was.width}px`, height: `${was.height}px` }, { width: `${now.width}px`, height: `${now.height}px` }], { duration: DUR.short, easing: css(CURVE.out) });
+  box._size.onfinish = () => (box.style.overflow = "");
+  if (!v) for (const n of [list, note]) n.animate([{ opacity: 0, transform: "translateY(-4px)" }, { opacity: 1, transform: "none" }], { duration: DUR.short, delay: 60, easing: css(CURVE.out), fill: "backwards" });
 }
 
 // 跑很久的（烘幾百張卡面、下載 2.5 GB）可以停；已經做好的留著，下次啟動接著做或再問。

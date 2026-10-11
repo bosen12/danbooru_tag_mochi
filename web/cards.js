@@ -130,6 +130,8 @@ function foldMotion(run, chips, open) {
   run._fold = [];
   if (reducedMotion()) return apply();
   if (open && run.dataset.fold === "open") return; // 淡出到一半改回展開：取消淡出就回來了
+  // 收比開快：離開不拖（淡出 120ms＋收 220ms；展開連依序淡入要半秒多）。
+  const dur = open ? DUR.medium : DUR.short;
   const reflow = () => {
     // 會被擠動的是整串（連左邊那條線一起走，包括按的這一串自己）和「系列」裡單獨的籤；串裡的籤跟著串走，不另外算。
     const movers = [...box.querySelectorAll(".chip-run[data-fold], .chip-series > .group-chip")].filter((n) => n.getClientRects().length);
@@ -142,12 +144,12 @@ function foldMotion(run, chips, open) {
       const b = n.getBoundingClientRect();
       const dx = a.left - b.left;
       const dy = a.top - b.top;
-      if (Math.abs(dx) >= 1 || Math.abs(dy) >= 1) n.animate([{ transform: `translate(${dx}px, ${dy}px)` }, { transform: "none" }], { duration: DUR.medium, easing: css(CURVE.out) });
+      if (Math.abs(dx) >= 1 || Math.abs(dy) >= 1) n.animate([{ transform: `translate(${dx}px, ${dy}px)` }, { transform: "none" }], { duration: dur, easing: css(CURVE.out) });
     }
     box.style.overflow = "";
     if (Math.abs(h1 - h0) >= 1) {
       box.style.overflow = "clip";
-      const grow = (box._grow = box.animate([{ height: `${h0}px` }, { height: `${h1}px` }], { duration: DUR.medium, easing: css(CURVE.inOut) }));
+      const grow = (box._grow = box.animate([{ height: `${h0}px` }, { height: `${h1}px` }], { duration: dur, easing: css(CURVE.inOut) }));
       grow.onfinish = () => (box.style.overflow = "");
     }
     if (!open) return;
