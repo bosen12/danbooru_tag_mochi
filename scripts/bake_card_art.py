@@ -20,6 +20,9 @@ loli、shota 不在清單裡（web/card-art.js 的 HARD_BANNED），永遠不畫
 
 插畫取決於你的底模，所以產物不進版控；沒有烘焙過的卡，遊戲會用純字版卡面。
 """
+# 開源版 CI 還跑 Python 3.9：「str | None」這種型別註記要延後求值，不然一 import 就 TypeError。
+from __future__ import annotations
+
 import argparse
 import hashlib
 import json
