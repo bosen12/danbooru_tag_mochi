@@ -989,6 +989,32 @@ body #wf-pick-btn.has {
   }
 }
 
+/* 籤列捲走後的「航海王 ✕」（cards.js 的 groupNow）：篩了一格、籤列捲到看不見時才出現。 */
+.group-now {
+  display: flex;
+  padding: var(--space-xs) var(--space-md) 0;
+}
+
+.group-now:is([hidden], :not([data-out="true"])) {
+  display: none;
+}
+
+/* 卡冊工具列那一顆的 ✕：按鈕是 inline-flex，字前面的空白會被吃掉，用間距隔開。 */
+.book-group-now .group-chip > span {
+  margin-left: 0.4em;
+}
+
+/* 字盒、疊印台那一顆用關閉圖示（這兩個房間不用 ✓ ✕ 當標記）。 */
+.group-now-x {
+  display: inline-flex;
+  margin-left: 0.4em;
+}
+
+.group-now-x svg {
+  width: 0.9em;
+  height: 0.9em;
+}
+
 /* 一串後面接著單獨的籤（鏡頭那串後面的「視線」）：拉開一點，不要看起來像同一串。
    手機上每串自己一行，單獨的籤排在串與串之間。 */
 .chip-run {
@@ -999,6 +1025,10 @@ body #wf-pick-btn.has {
   .chip-run {
     flex-basis: 100%;
     margin-right: 0;
+  }
+  /* 收著的串只有一顆「動漫 58 ▸」：跟「全部」排同一行，不要一串佔一行。 */
+  .chip-run[data-fold="shut"] {
+    flex-basis: auto;
   }
 }
 
@@ -5774,6 +5804,10 @@ html[data-setup] .tour-offer {
     left: 8px;
     width: calc(100vw - 16px);
     max-height: 60dvh;
+  }
+  /* 收起來只剩標題列：縮成一顆，少蓋一點頁首。 */
+  .setup-panel[data-collapsed="true"] {
+    width: auto;
   }
 }
 @media (prefers-reduced-motion: reduce) {

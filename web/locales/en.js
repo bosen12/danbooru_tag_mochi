@@ -395,6 +395,7 @@ Enter 放上第一張，↓ 走進字盒|Enter adds the first result; ↓ moves 
 女|Women
 男|Men
 性別|Gender
+系列|Series
 規則的「人物」沒開男生，男角色都收起來了。|Men are off under People in the rules, so male characters are hidden.
 規則的「人物」沒開女生，女角色都收起來了。|Women are off under People in the rules, so female characters are hidden.
 不限|Any
@@ -1438,7 +1439,7 @@ LoRA：沒設定 paths.loraRoot，改問 ComfyUI 也失敗了：{0}|LoRA: no LoR
 第一次使用：準備中 {0}/{1}|First-time setup {0}/{1}
 重開失敗（{0}）：請自己重開 ComfyUI|Restart failed ({0!}). Restart ComfyUI yourself.
 {0}（下次啟動接著抓）|{0} (resumes next launch)
-{0!}：清掉篩選|{0!}: clear filter
+{0}：清掉篩選|{0}: clear filter
 偵測到缺 {0} 張全年齡卡面、{1} 張是舊版（例：{2}）：從 GitHub 下載全年齡卡面（約 100 MB）|Found {0} all-ages cards missing and {1} outdated (e.g. {2}): downloading the all-ages card art from GitHub (about 100 MB)
 偵測到缺 {0} 張全年齡卡面（例：{1}）：從 GitHub 下載全年齡卡面（約 100 MB）|Found {0} all-ages cards missing (e.g. {1}): downloading the all-ages card art from GitHub (about 100 MB)
 偵測到{0} 張是舊版（例：{1}）：從 GitHub 下載全年齡卡面（約 100 MB）|Found {0} outdated all-ages cards (e.g. {1}): downloading the all-ages card art from GitHub (about 100 MB)

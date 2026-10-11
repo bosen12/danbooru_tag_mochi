@@ -37,7 +37,7 @@ import { SCENE_MODES, SCENE_MODE_LABELS, heatBlockedByRating } from "./scene-pol
 import { initLoraPicker, currentLorasPayload, currentTriggerText, currentCkpt, handleLoraKeys } from "./lora.js";
 import { initWorkflow, currentWorkflowId, currentSampling, wfHandleKeys } from "./workflow.js";
 import { HARD_BANNED } from "./card-art.js";
-import { buildLibrary, groupChips, genderChips, chipRun, createAssets, cardNode, setCardFlag, setEnterTarget, eagerArt, cardFacts, cardMatches, CARD_SUIT_INFO, CARD_SUITS, RATING_ZH } from "./cards.js";
+import { buildLibrary, groupChips, genderChips, chipRun, seriesRun, groupNow, createAssets, cardNode, setCardFlag, setEnterTarget, eagerArt, cardFacts, cardMatches, CARD_SUIT_INFO, CARD_SUITS, RATING_ZH } from "./cards.js";
 import { bindArt, artFallback } from "./card-images.js";
 import { el, openSheet, anyOverlay, toast, runToastAction, ICONS } from "./ui.js";
 import { mountKeysHelp } from "./keys-help.js";
@@ -520,6 +520,8 @@ function pickSuit(s, from) {
 
 // 下一次畫字盒時，第一批牌要不要依序發進來（換花色、換小分類才要）。
 let dealLibrary = false;
+// 籤列捲走後，搜尋框下面那顆「航海王」清除鈕（cards.js 的 groupNow）。第一次畫字盒時接上。
+let libNow = null;
 
 /** 字盒裡看不看得到：分級擋掉的、性別不合的、（只看這時代時）時代不合的收起來。釘選的字永遠看得到。 */
 function visible(card) {
@@ -559,8 +561,10 @@ function renderLibrary() {
   const inSuit = lib.cards.filter((c) => (ui.suit === "all" || c.suit === ui.suit) && visible(c) && genderOk(c));
   // 小分類晶片：只在選了某一種花色時出現
   const chips = $("group-chips");
+  libNow ||= groupNow($("lib-group-now"), chips);
   if (ui.suit === "all") {
     chips.hidden = true;
+    libNow(null);
   } else {
     const runs = groupChips(inSuit);
     const count = runs.reduce((n, r) => n + r.items.length, 0);
@@ -575,15 +579,16 @@ function renderLibrary() {
         i.seal && !inRun ? el("b", { class: "chip-seal", "aria-hidden": "true" }, i.seal) : null,
         i.short
       );
-    chips.replaceChildren(
-      ...(ui.suit === "chara" ? [genderChips(ui.charGender, pickGender)] : []),
+    const all = [
       el("button", { class: "group-chip pressable", type: "button", "aria-pressed": ui.group === "" ? "true" : "false", onclick: (e) => pickGroup("", e.currentTarget) }, "全部"),
       ...runs.map((r) =>
         r.fam
           ? chipRun(r, r.items.map((i) => chip(i, true)), { fold: ui.suit === "chara", picked: ui.group })
           : chip(r.items[0], false)
-      )
-    );
+      ),
+    ];
+    chips.replaceChildren(...(ui.suit === "chara" ? [genderChips(ui.charGender, pickGender), seriesRun(all)] : all));
+    libNow(ui.group ? runs.flatMap((r) => r.items).find((i) => i.g === ui.group) : null, (e) => pickGroup("", e.currentTarget));
   }
   const list = inSuit.filter((c) => (!ui.group || c.group === ui.group) && cardMatches(c, q));
   countLine(list.length);

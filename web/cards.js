@@ -3,7 +3,7 @@
  * 花色、分級、插畫檔名都來自 web/card-art.js（字鋪、烘焙腳本共用同一份）。
  */
 import { isCard, cardSuit, ratingTier, artFile, artSources, artUrl, groupSeal, CARD_SUIT_INFO, CARD_SUITS } from "./card-art.js";
-import { el } from "./ui.js";
+import { el, ICONS } from "./ui.js";
 import { miniSet, bindArt, artFallback } from "./card-images.js";
 import { DUR, CURVE, css, reducedMotion } from "./motion.js";
 import { english, registerLexicon, t } from "./i18n.js";
@@ -110,6 +110,51 @@ export function chipRun(r, chips, { fold = false, picked = "" } = {}) {
   );
   run.append(btn, ...chips);
   return run;
+}
+
+/**
+ * 角色頁的作品籤收成一串「系列：全部 動漫 41 ▸ 遊戲 17 ▸ …」。前面已經有「性別：全部 女 男」，
+ * 不寫標頭會讀成兩個「全部」並排，看不出第二個在說作品。
+ */
+export function seriesRun(chips) {
+  return el("span", { class: "chip-run chip-series", role: "group", "aria-label": "系列" }, el("span", { class: "chip-fam", "aria-hidden": "true" }, "系列"), ...chips);
+}
+
+/**
+ * 篩了一格、往下捲到選中的籤看不見（或它那串收起來了）：籤列上面（不跟著捲的地方）露一顆「航海王」清除鈕，
+ * 捲到多下面都知道在看哪一格，點一下回到全部（卡冊工具列的那一顆見 book.js）。
+ * box 平常收著，看不見選中的籤才出現（styles.css 的 .group-now）。
+ * 回傳 show(cur, clear)：cur 是 groupChips 的 item，沒篩就給 null。
+ */
+export function groupNow(box, chips) {
+  let on = false;
+  const check = () => {
+    const sel = on && chips.querySelector('.group-chip[aria-pressed="true"]:not([data-gender])');
+    let out = false;
+    if (sel) {
+      // 捲動層（.lib-scroll／.case-scroll）的上緣；窄螢幕那一層不捲（display: contents，量起來是 0），就看視窗上緣。
+      const edge = chips.parentElement.getBoundingClientRect();
+      const r = sel.getBoundingClientRect();
+      out = !r.height || r.bottom <= (edge.height ? edge.top : 0) + 1;
+    }
+    box.dataset.out = on && (out || !sel) ? "true" : "false";
+  };
+  let queued = false;
+  document.addEventListener("scroll", () => {
+    if (queued) return;
+    queued = true;
+    requestAnimationFrame(() => {
+      queued = false;
+      check();
+    });
+  }, { capture: true, passive: true });
+  chips.addEventListener("click", (e) => e.target.closest(".chip-fold") && check());
+  return (cur, clear) => {
+    on = !!cur;
+    box.hidden = !cur;
+    box.replaceChildren(...(cur ? [el("button", { class: "group-chip pressable", type: "button", "aria-pressed": "true", "aria-label": `${cur.zh}：清掉篩選`, onclick: clear }, cur.short, el("span", { class: "group-now-x", html: ICONS.close }))] : []));
+    check();
+  };
 }
 
 /**

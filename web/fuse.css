@@ -469,6 +469,11 @@ body.fuse {
   display: none;
 }
 
+/* 籤列捲走後的「航海王 ✕」：疊印台字盒的欄位自己有間距。 */
+.case-group-now {
+  padding: 0;
+}
+
 .case-tab {
   display: inline-flex;
   align-items: center;

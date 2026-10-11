@@ -37,7 +37,7 @@ import { heatBlockedByRating } from "./scene-policy.js";
 import { initLoraPicker, currentLorasPayload, currentTriggerText, currentCkpt, handleLoraKeys } from "./lora.js";
 import { initWorkflow, currentWorkflowId, currentSampling, wfHandleKeys } from "./workflow.js";
 import { HARD_BANNED, applyArtSources } from "./card-art.js";
-import { buildLibrary, groupChips, genderChips, chipRun, createAssets, cardNode, cardFacts, setEnterTarget, eagerArt, CARD_SUIT_INFO, CARD_SUITS, RATING_ZH, ERA_ZH } from "./cards.js";
+import { buildLibrary, groupChips, genderChips, chipRun, seriesRun, groupNow, cardMatches, createAssets, cardNode, cardFacts, setEnterTarget, eagerArt, CARD_SUIT_INFO, CARD_SUITS, RATING_ZH, ERA_ZH } from "./cards.js";
 import { el, openSheet, anyOverlay, toast } from "./ui.js";
 import { mountKeysHelp } from "./keys-help.js";
 import { mountTour } from "./tour.js";
@@ -146,6 +146,8 @@ let caseTab = "all";
 let caseGroup = "";
 // 角色頁的「性別：全部／女／男」（墨池字盒、卡冊也有同一排）。
 let caseGender = "";
+// 籤列捲走後，找牌框下面那顆「航海王」清除鈕（cards.js 的 groupNow）。
+let caseNow = null;
 let caseQuery = "";
 let caseList = [];
 let caseShown = 0;
@@ -3200,7 +3202,11 @@ function renderCaseGroups(inSuit) {
   if (caseGroup && !runs.some((r) => r.items.some((i) => i.g === caseGroup))) caseGroup = "";
   // 角色頁一律留著：性別籤在這一排，篩到沒牌時也要能切回來。
   box.hidden = caseTab !== "chara" && runs.reduce((n, r) => n + r.items.length, 0) < 2;
-  if (box.hidden) return box.replaceChildren();
+  caseNow ||= groupNow($("case-group-now"), box);
+  if (box.hidden) {
+    caseNow(null);
+    return box.replaceChildren();
+  }
   const chip = (g, label, seal, full) =>
     el(
       "button",
@@ -3227,15 +3233,20 @@ function renderCaseGroups(inSuit) {
     dealCase = true;
     renderCase();
   };
-  box.replaceChildren(
-    ...(caseTab === "chara" ? [genderChips(caseGender, pickGender)] : []),
+  const all = [
     chip("", "全部", null),
     ...runs.map((r) =>
       r.fam
         ? chipRun(r, r.items.map((i) => chip(i.g, i.short, null, i.zh)), { fold: caseTab === "chara", picked: caseGroup })
         : chip(r.items[0].g, r.items[0].short, r.items[0].seal, r.items[0].zh)
-    )
-  );
+    ),
+  ];
+  box.replaceChildren(...(caseTab === "chara" ? [genderChips(caseGender, pickGender), seriesRun(all)] : all));
+  // 籤列捲走後的「航海王」清除鈕：按下去跟點「全部」一樣，焦點落到「全部」上。
+  caseNow(caseGroup ? runs.flatMap((r) => r.items).find((i) => i.g === caseGroup) : null, () => {
+    all[0].click();
+    $("case-groups").querySelector('[aria-pressed="true"]:not([data-gender])')?.focus({ preventScroll: true });
+  });
 }
 
 /**
@@ -3267,7 +3278,8 @@ function renderCase() {
   if (caseTab === "chara" && caseGender) list = list.filter((c) => c.gate === caseGender);
   renderCaseGroups(list);
   if (caseGroup) list = list.filter((c) => c.group === caseGroup);
-  if (q) list = list.filter((c) => c.zh.toLowerCase().includes(q) || c.tag.includes(q) || (c.groupZh || "").includes(q));
+  // 跟墨池字盒同一套（cards.js 的 cardMatches，角色牌對得上作品名「one piece」）；這裡另外也對小分類名。
+  if (q) list = list.filter((c) => cardMatches(c, q) || (c.groupZh || "").toLowerCase().includes(q));
   caseList = list;
   caseShown = 0;
   const grid = $("case-grid");

@@ -23,7 +23,26 @@ let foot = null;
 let note = null;
 let quiet = null; // 第一次拿到時就已經好了（或不用做）的項目：不列出來
 let timer = 0;
-let collapsed = false;
+// 收合記在這個分頁：墨池、疊印台、卡冊、作品冊是四個頁面，不記的話每換一頁又展開
+//（手機上它在最上面，會蓋住頁籤和分級）。
+const COLLAPSED_KEY = "mochi.setup.collapsed";
+// 收著的時候冒出新的問題（要不要烘、要不要裝）就打開：記下這個分頁看過哪些問題。
+const ASKED_KEY = "mochi.setup.asked";
+const stored = (key) => {
+  try {
+    return sessionStorage.getItem(key) || "";
+  } catch {
+    return "";
+  }
+};
+const store = (key, value) => {
+  try {
+    sessionStorage.setItem(key, value);
+  } catch {
+    /* 存不了就只記這一頁。 */
+  }
+};
+let collapsed = stored(COLLAPSED_KEY) === "1";
 let finishedAt = 0;
 
 function render(snap) {
@@ -46,6 +65,9 @@ function render(snap) {
   box.dataset.sig = sig;
   const done = shown.filter((it) => it.state === "done" || it.state === "skip").length;
   box.querySelector(".setup-title").textContent = snap.active ? `第一次使用：準備中 ${done}/${shown.length}` : "準備好了";
+  const asking = shown.filter((it) => it.state === "ask").map((it) => it.id).join();
+  if (asking && asking !== stored(ASKED_KEY)) setCollapsed(false);
+  store(ASKED_KEY, asking);
   box.dataset.collapsed = collapsed ? "true" : "false";
   list.replaceChildren(...shown.map(row));
   const acts = [];
@@ -53,6 +75,13 @@ function render(snap) {
   if (reload) acts.push(el("button", { class: "btn btn-small", type: "button", onclick: () => location.reload() }, "重新整理看新圖"));
   foot.replaceChildren(...acts);
   foot.hidden = !acts.length;
+}
+
+function setCollapsed(v) {
+  collapsed = v;
+  store(COLLAPSED_KEY, v ? "1" : "0");
+  box.querySelector(".setup-head").setAttribute("aria-expanded", v ? "false" : "true");
+  box.dataset.collapsed = v ? "true" : "false";
 }
 
 // 跑很久的（烘幾百張卡面、下載 2.5 GB）可以停；已經做好的留著，下次啟動接著做或再問。
@@ -88,10 +117,8 @@ function mount() {
   note = el("p", { class: "setup-note", role: "status", "aria-live": "polite" });
   const head = el(
     "button",
-    { class: "setup-head", type: "button", "aria-expanded": "true", onclick: () => {
-      collapsed = !collapsed;
-      head.setAttribute("aria-expanded", collapsed ? "false" : "true");
-      box.dataset.collapsed = collapsed ? "true" : "false";
+    { class: "setup-head", type: "button", "aria-expanded": collapsed ? "false" : "true", onclick: () => {
+      setCollapsed(!collapsed);
     } },
     el("b", { class: "setup-title" }),
     el("span", { class: "setup-chev", "aria-hidden": "true" }, "▾")

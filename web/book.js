@@ -12,7 +12,7 @@ import { dateLocale, english } from "./i18n.js";
  */
 import { indexLexicon } from "./engine.js";
 import { ratingBlocked, RATING_LABEL } from "./rules/rating.js";
-import { buildLibrary, groupChips, genderChips, chipRun, createAssets, cardNode, cardFacts, setCardFlag, eagerArt, cardMatches, CARD_SUIT_INFO, CARD_SUITS } from "./cards.js";
+import { buildLibrary, groupChips, genderChips, chipRun, seriesRun, createAssets, cardNode, cardFacts, setCardFlag, eagerArt, cardMatches, CARD_SUIT_INFO, CARD_SUITS } from "./cards.js";
 import { el, openSheet, toast } from "./ui.js";
 import { mountKeysHelp } from "./keys-help.js";
 import { mountTour } from "./tour.js";
@@ -396,15 +396,15 @@ function renderGroups() {
       i.seal && !inRun ? el("b", { class: "chip-seal", "aria-hidden": "true" }, i.seal) : null,
       i.short
     );
-  box.replaceChildren(
-    ...(ui.suit === "chara" ? [genderChips(ui.charGender, pickGender)] : []),
+  const all = [
     el("button", { class: "group-chip pressable", type: "button", "aria-pressed": ui.group === "" ? "true" : "false", onclick: (e) => pickGroup("", e.currentTarget) }, "全部"),
     ...runs.map((r) =>
       r.fam
         ? chipRun(r, r.items.map((i) => chip(i, true)), { fold: ui.suit === "chara", picked: ui.group })
         : chip(r.items[0], false)
-    )
-  );
+    ),
+  ];
+  box.replaceChildren(...(ui.suit === "chara" ? [genderChips(ui.charGender, pickGender), seriesRun(all)] : all));
 }
 
 function pickGroup(g, from) {
