@@ -1,6 +1,45 @@
 /* English UI copy. Chinese source phrases are stable presentation keys.
  * Keep canonical Danbooru tags and user-provided names out of this catalog. */
 const copy = String.raw`
+體型|Body type
+膚質／標記|Skin / markings
+種族|Species
+其他長相|Other appearance
+成人特徵|Adult features
+裸身／衣著程度|Nudity / coverage
+材質／衣服狀態|Fabric / garment state
+主題／裝飾|Theme / decoration
+道具|Props
+鏡頭效果|Lens effects
+更多種類|More kinds
+種族需使用「多元／奇葩」場景。|Species require Diverse or Weird scene mode.
+種類仍受分級、尺度與場景限制；沒有相容牌時留空。|Rating, content level and scene still apply; kinds with no compatible card stay empty.
+只補 1 種、每種一件，點一顆換過去；釘選只佔同類格|Add 1 type, one item. Click a slot to change it. Pins occupy their own slot.
+性愛與走光也受選格限制；仍須符合尺度與情境，無可用牌時會留空。|Sex and exposure follow the selected kinds too. Content level and context still apply; unavailable kinds are left empty.
+選格時職業依這裡的選擇；自由補抽時依「抽職業」開關。體型依人物性別補。|In slot mode, the job choice here applies; in free mode, Draw jobs applies. Body types follow character gender.
+長相、服裝、姿勢設 1–4，場景設 1–3，可選擇補抽種類；更高的數字為自由補抽。釘選、指定必抽與必要附帶照樣保留。|Choose kinds at 1–4 for appearance, clothing and pose, or 1–3 for scene. Higher counts use free drawing. Pinned cards, required draws and their dependencies stay.
+點字盒的牌放進來，也可以拖曳|Click a library card to add it, or drag it here
+選牌後直接生成。疊印台可先比較四組提示詞；兩邊的選牌與規則各自獨立。|Choose cards and generate directly. The proofing press lets you compare four prompts first; each workspace has its own cards and settings.
+比較四組候選提示詞，選好再付印生圖。選牌與規則和墨池各自獨立。|Compare four candidate prompts, then print to generate an image. Cards and settings are independent from Mochi.
+帶牌去疊印台|Take cards to the press
+帶牌去墨池|Take cards to Mochi
+無法交接選牌，請檢查瀏覽器儲存空間。|Could not transfer cards. Check browser storage.
+更多規則：每段張數與選格、場景、職業、角色|More rules: counts and slots, scene, jobs, characters
+這是候選提示詞，尚未生成圖片。按「付印」才會生圖。|This is a candidate prompt, with no image yet. Print to generate it.
+四組候選提示詞，還不是圖片。≠ 表示與已選試印不同。|Four candidate prompts, with no images yet. ≠ marks differences from the selected proof.
+與已選試印不同|Different from the selected proof
+髮色|Hair color
+特色|Highlight
+看提示詞|View prompt
+複製提示詞|Copy prompt
+只有配方，尚無圖片|Recipe only, no image yet
+圖片讀取失敗|Image could not load
+圖片讀取失敗。可以重試，或把牌帶回墨池重新生成。|Image could not load. Retry, or take the cards to Mochi to generate it again.
+重試讀取圖片|Retry image
+這件作品只存了配方。把牌帶回墨池，就能重新生成圖片。|This work contains a recipe only. Take its cards to Mochi to generate an image.
+牌組保存整組選牌與權重，之後可以重新套用；偏好卡牌則是每個工作區常用的單張牌。|Decks save a full selection and its weights for reuse. Favorites hold individual cards for each workspace.
+常用單張牌，最多十張；每個工作區各自保存。|Up to ten favorite cards, saved separately for each workspace.
+卡盒用來收集待用的牌，最多二十四張。想重複使用整組，請存成牌組。|The card box holds up to 24 cards to use next. Save a deck to reuse a whole selection.
 送到 Discord|Share to Discord
 尚未設定。貼上 webhook 網址再按存設定。|Not configured. Paste a webhook URL and save.
 連接方式|Connection
@@ -413,7 +452,7 @@ Enter 放上第一張，↓ 走進字盒|Enter adds the first result; ↓ moves 
 加入系列名|Add series name
 只抽同系列|Same series only
 抽的角色都跟釘的角色同一部作品；沒釘就先挑一部人數、性別湊得齊的|Drawn characters all come from the pinned character's series; with none pinned, one series that fits the cast is picked first
-照人數、性別替每個人抽一個角色，一張最多三個|Draw a character for each person by gender, up to three per image
+只替「人物」選中的性別抽角色，一張最多三個；手動釘的角色照留|Draw characters only for the selected gender, up to three per image; pinned characters stay
 角色後面接作品名（例：yor briar, spy x family）；釘的角色也一樣|Add the series after each character (e.g. yor briar, spy x family); pinned characters too
 角色|Characters
 ▸ 更多規則：每段張數與選格、尺寸、場景、職業|More rules: categories, size, scene, occupations
@@ -1525,6 +1564,11 @@ LoRA：沒設定偏好路徑，改問 ComfyUI 也失敗了：{0}|LoRA: no prefer
 {0}・排隊中|{0} · Queued
 {0}・排隊|{0} · Queued
 {0}沒做成：{1}|{0} failed: {1}
+已選試印 {0}|Proof {0} selected
+起手：{0}|Starter: {0}
+已選試印 {0}，尚未生成圖片|Proof {0} selected, no image generated yet
+試印 {0} 的提示詞|Prompt for proof {0}
+從墨池帶來 {0} 張牌；規則沿用疊印台的設定。|Brought {0} cards from Mochi; using the press settings.
 試印 {0}|Proof {0}
 常補 {0}/4|Used in {0}/4 proofs
 你的 {0} 張・引擎補 {1} 張|{0} pinned · {1} engine additions

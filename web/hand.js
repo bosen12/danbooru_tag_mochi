@@ -25,6 +25,7 @@
  *   decorate(n,t)  托盤上的牌做好之後給房間掛東西（拖曳）
  */
 import { flight, CURVE, DUR, css } from "./motion.js";
+import { cloneCard } from "./card-images.js";
 import { setCardFlag } from "./cards.js";
 const reduced = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
 const ICON =
@@ -327,7 +328,7 @@ export function createHand({
     pick.textContent = editing ? "完成" : "＋ 挑牌";
     pick.setAttribute("aria-pressed", editing ? "true" : "false");
     pick.title = editing ? "挑好了（Esc）" : "點字盒裡的牌加進來，再點一次拿掉";
-    hint.textContent = editing ? "點字盒裡的牌加進來，再點一次拿掉" : placed ? `${placed} 張在卡池裡` : "";
+    hint.textContent = editing ? "點字盒裡的牌加進來，再點一次拿掉" : placed ? `${placed} 張在卡池裡` : "常用單張牌，最多十張；每個工作區各自保存。";
   }
 
   /** 只重排位置（指到別張、視窗變寬窄），不動節點。 */
@@ -697,7 +698,7 @@ export function createHand({
 
   function flyInto(slot, from) {
     const card = slot.querySelector(".fav-card");
-    const f = card.cloneNode(true);
+    const f = cloneCard(card);
     f.classList.remove("fav-card");
     // 起飛時跟字盒那張一樣大：字級照寬度比例放回去（手機上托盤的牌是縮過的）。
     f.style.fontSize = (parseFloat(getComputedStyle(card).fontSize) * from.width) / (card.offsetWidth || from.width) + "px";
@@ -817,7 +818,7 @@ export function createHand({
       arriveAt(tag, d + 2400);
       const slotCard = open ? slots.get(tag)?.querySelector(".fav-card") : null;
       // 影子用托盤那張（同一張牌，沒有卡池上的墨點、附帶章）：離開卡池就是手上的那張了。
-      const ghost = (slotCard || makeNode(tag)).cloneNode(true);
+      const ghost = cloneCard(slotCard || makeNode(tag));
       ghost.classList.remove("fav-card", "is-related", "is-stamped", "is-popped");
       ghost.style.visibility = "";
       ghost.removeAttribute("tabindex");

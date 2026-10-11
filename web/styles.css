@@ -1311,6 +1311,43 @@ body #wf-pick-btn.has {
   max-width: 32em;
 }
 
+.workspace-purpose {
+  margin: 0;
+  padding: 0.55rem var(--space-md);
+  font-size: var(--text-xs);
+  line-height: 1.6;
+  color: var(--color-muted);
+  overflow-wrap: anywhere;
+}
+.workspace-purpose .link-btn { margin-inline-start: 0.4rem; }
+.quick-starters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+.quick-starters > span { flex-basis: 100%; }
+.album-image-note { display: grid; gap: 0.6rem; }
+.album-image-note[hidden] { display: none; }
+.album-image-note button { justify-self: start; }
+.album-noimg[hidden] { display: none; }
+.album-big img[hidden] { display: none; }
+.mobile-tool-label { display: none; }
+@media (max-width: 40rem) {
+  .mobile-tool-label { display: inline; font-size: var(--text-xs); }
+  .mast-tools #rules-btn { display: flex; gap: 0.25rem; }
+  .mast-tools #ckpt-pick-btn .gen-pick-label {
+    position: static;
+    width: auto;
+    height: auto;
+    clip-path: none;
+    overflow: visible;
+  }
+  .mast .mast-controls { flex-wrap: wrap; overflow-x: visible; }
+}
+
 .pool-empty b {
   font-family: var(--font-display);
   font-size: var(--text-lg);
@@ -1653,6 +1690,15 @@ body #wf-pick-btn.has {
   display: grid;
   min-width: 0;
 }
+.skel-guide {
+  margin: var(--space-xs) 0;
+  font-size: var(--text-xs);
+  line-height: 1.6;
+  color: var(--color-muted);
+}
+.skel-more { flex-basis: 100%; min-width: 0; }
+.skel-more summary { width: fit-content; font-size: var(--text-xs); color: var(--color-ink-2); cursor: pointer; padding: 0.35rem 0; }
+.skel-more .skel-chips { padding-block: 0.25rem; }
 
 .skel-row {
   display: grid;

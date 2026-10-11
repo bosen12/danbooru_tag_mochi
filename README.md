@@ -40,7 +40,13 @@ Mochi is the card interface of [danbooru_tag_random](https://github.com/bosen12/
 | **Card Book** `/book.html` | How often each card was used, its save and discard rates, and the images it appeared in. Achievements. |
 | **Gallery** `/album.html` | Saved images, the full generation history, and a report card for every checkpoint and LoRA. Send a work's cards back to the Ink Pool. |
 
-**Characters.** 612 adult anime and game characters (Yor, Makima, Raiden Shogun, Levi…) are cards in their own suit, grouped by series under Anime and Games (One Piece, Demon Slayer…; Arknights, Genshin Impact…). Pin one or several, or turn on **Draw characters** in the Ink Pool rules to give each person in the image a character by gender (up to three, any series). **Same series only** keeps every drawn character in the pinned character's series, or picks one series that fits the cast when none is pinned. **Add series name** puts the series tag after each character. While a character is in the image the engine stops drawing hair color, hairstyle, eye color, body type and similar traits that would change who it is. Characters who are underage, school students, child-looking, real people or VTubers, non-human, or of unknown age are banned: they are not cards, pasted prompts drop them, and the server refuses any prompt that contains them.
+**Choose a workflow.** The Ink Pool randomly picks three starters from the same 30-story catalog as the Fuse Bed and has a visible size selector. Use **More starters** for another group; an empty workspace picks a new group when reopened or cleared, while ordinary redraws keep the current choices. The Fuse Bed shows four candidate prompts, with readable hair, clothing, pose and scene summaries; ≠ marks differences from the selected proof. Printing generates the image. On phones, the candidates appear before the card layers. Each workspace keeps its own cards and settings; use **Take cards** to transfer the selection and its weights explicitly.
+
+**Choose supplemental kinds.** At counts 1–4 for appearance, clothing and pose, or 1–3 for scene, choose the kinds to supplement. Each kind receives at most one random card; required dependencies may add related tags. Higher counts retain free drawing. **More kinds** includes species, makeup, nudity, garment state, sex, exposure, weather, props and lens effects. Selecting a content level permits candidates; it does not override your chosen kinds. Pinned cards, required draws and their necessary dependencies stay, subject to compatibility rules.
+
+**Keep cards for later.** Favorites hold up to ten individual cards per workspace; the Card Book's box holds up to 24 cards to use next. Decks save a full selection and its weights for reuse. The Gallery distinguishes recipe-only works from images that failed to load, and offers a retry for the latter.
+
+**Characters.** 612 adult anime and game characters (Yor, Makima, Raiden Shogun, Levi…) are cards in their own suit, grouped by series under Anime and Games (One Piece, Demon Slayer…; Arknights, Genshin Impact…). Pin one or several, or turn on **Draw characters** in the Ink Pool rules to give people of the selected gender named characters (up to three, any series). Pinned characters remain even when their gender is switched off. **Same series only** keeps every drawn character in the pinned character's series, or picks one series that fits the cast when none is pinned. **Add series name** puts the series tag after each character. While a character is in the image the engine stops drawing hair color, hairstyle, eye color, body type and similar traits that would change who it is. Characters who are underage, school students, child-looking, real people or VTubers, non-human, or of unknown age are banned: they are not cards, pasted prompts drop them, and the server refuses any prompt that contains them.
 
 The **Intro film** (`/intro.html`, 3 min) and the **Tutorial** (`/tutorial.html`, 4.5 min) are rendered live in the page with the real engine and cards. **Tour** in the top bar walks you through each room step by step.
 
@@ -196,7 +202,13 @@ Mochi code is distributed under **GNU GPLv3 only (`GPL-3.0-only`)**, see [LICENS
 | **卡冊** `/book.html` | 每張牌用過幾次、收藏和撤下的比例、這張牌進過哪些圖。成就牆。 |
 | **作品冊** `/album.html` | 收藏的成品、每一張出圖的日誌、每個底模和 LoRA 的成績單；作品上的牌可以帶回墨池再印。 |
 
-**角色**：612 個成年的動漫、遊戲角色（約兒、瑪奇瑪、雷電將軍、里維…）自己一個花色，分動漫、遊戲兩串，再照作品分格（航海王、鬼滅之刃…；明日方舟、原神…）。可以釘一個或好幾個，或在墨池的規則打開「抽角色」，照畫面上的人數、性別替每個人抽一個角色（最多三個，作品不挑）。「只抽同系列」打開時，抽的角色都跟釘的角色同一部作品；沒釘就先挑一部人數、性別湊得齊的。「加入系列名」會在角色後面接作品名。畫面裡有角色時，引擎不再抽髮色、髮型、瞳色、體型這些會改掉角色是誰的特徵。未成年、學生、外觀像兒童、真人或 VTuber、非人形、年齡查不到的角色一律禁用：不是牌、貼上提示詞會被拿掉、送去生圖伺服器也會擋。
+**選擇操作方式**：墨池與疊印台共用三十組起手式，每次重新開頁或清空後隨機選三組，也可按「換一組」換掉；一般畫面重畫會保留當前選項。尺寸直接可選。疊印台先比較四組候選提示詞，髮色、服裝、姿勢與場景都有文字摘要，≠ 標出與已選試印不同的內容；按付印才會生成圖片。手機會先顯示候選，再往下看卡牌。兩個工作區的選牌與規則各自獨立，按「帶牌」才會明確交接選牌與權重。
+
+**選擇補抽種類**：長相、服裝、姿勢設 1–4，場景設 1–3 時，可指定補抽種類，每種最多一張隨機牌，必要附帶可能增加相關標籤；更高數字沿用自由補抽。「更多種類」可選種族、妝容、裸身、衣服狀態、性愛、走光、天氣、道具與鏡頭效果。尺度只決定候選是否允許，不會越過選格；釘選、指定必抽及必要附帶照樣保留，仍須符合相容規則。
+
+**保存牌**：偏好卡牌是每個工作區最多十張常用單張牌；卡冊的卡盒收集最多二十四張待用的牌；牌組保存整組選牌與權重，方便重複套用。作品冊會區分只有配方與圖片讀取失敗，後者可以重試。
+
+**角色**：612 個成年的動漫、遊戲角色（約兒、瑪奇瑪、雷電將軍、里維…）自己一個花色，分動漫、遊戲兩串，再照作品分格（航海王、鬼滅之刃…；明日方舟、原神…）。可以釘一個或好幾個，或在墨池的規則打開「抽角色」，只替「人物」選中的性別抽角色（最多三個，作品不挑）；手動釘的角色照留。「只抽同系列」打開時，抽的角色都跟釘的角色同一部作品；沒釘就先挑一部人數、性別湊得齊的。「加入系列名」會在角色後面接作品名。畫面裡有角色時，引擎不再抽髮色、髮型、瞳色、體型這些會改掉角色是誰的特徵。未成年、學生、外觀像兒童、真人或 VTuber、非人形、年齡查不到的角色一律禁用：不是牌、貼上提示詞會被拿掉、送去生圖伺服器也會擋。
 
 另外有兩支在頁面裡即時產生的影片：**介紹影片**（`/intro.html`，3 分鐘）和**使用教學**（`/tutorial.html`，4 分半）。頂欄的「導覽」會一步一步帶你操作。
 

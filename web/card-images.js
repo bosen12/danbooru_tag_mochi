@@ -169,6 +169,38 @@ export function artFallback(img) {
   return true;
 }
 
+/**
+ * 移動中的牌是 DOM 副本，但 cloneNode 不會複製載入事件／WeakMap 的 fallback。
+ * 沿用已解碼的來源縮圖，不在飛行中重新挑高解析圖；尚未載好的也能在 load 後揭牌。
+ * artSource 可是起飛的字盒牌，node 則保留落點牌的樣式與章。
+ */
+export function cloneCard(node, artSource = node) {
+  const clone = node.cloneNode(true);
+  const own = [...node.querySelectorAll("img")];
+  const from = [...artSource.querySelectorAll("img")];
+  for (const [i, img] of [...clone.querySelectorAll("img")].entries()) {
+    const candidate = from[i];
+    const source = candidate?.complete && candidate.naturalWidth ? candidate : own[i];
+    if (!source) continue;
+    const binding = bound.get(source);
+    if (binding) bound.set(img, binding);
+    // 動畫只縮放已選好的那張；不讓 srcset 依副本放大的寬度多抓一張原圖。
+    img.removeAttribute("srcset");
+    img.removeAttribute("sizes");
+    img.removeAttribute("data-art-pick"); // resize／DPR 重量尺寸只照顧真正的牌。
+    img.loading = "eager";
+    img.decoding = "async";
+    const ready = () => { if (img.naturalWidth) img.dataset.ready = "1"; };
+    img.addEventListener("load", ready);
+    img.addEventListener("error", () => { if (!artFallback(img)) img.remove(); });
+    img.src = source.currentSrc || source.src;
+    if (source.complete && source.naturalWidth) img.dataset.ready = "1";
+    else delete img.dataset.ready;
+    if (img.complete) ready();
+  }
+  return clone;
+}
+
 /** 測試用：現在有幾張圖等著量、上一次量到的大小。 */
 export function _artStats() {
   return { pending: pending.size, guess: { ...guess } };

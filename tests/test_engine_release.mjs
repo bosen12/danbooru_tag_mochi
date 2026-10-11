@@ -3,8 +3,87 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { indexLexicon, defaultSettings, applyPin, drawOne, mulberry32, missingPins, ratingBlocked } from '../web/engine.js';
+import { genderCount } from '../web/rules/cast.js';
 const data = JSON.parse(readFileSync(resolve(import.meta.dirname, '../web/lexicon.json'), 'utf8'));
 const lex = indexLexicon(data);
+// The cast may include explicitly pinned people outside the selected gender;
+// automatic named characters must still respect the user's gender selection.
+{
+  const base = { ...defaultSettings(data), drawCharacter: true, rating: 'general', eras: ['modern'], heats: ['activity'], counts: { feature: 0, clothing: 0, pose: 0, env: 0 } };
+  const femaleCharacter = data.tags.find(it => it.group === 'character' && it.gate === 'female' && it.series);
+  const maleCharacter = data.tags.find(it => it.group === 'character' && it.gate === 'male' && it.series);
+  assert.ok(femaleCharacter && maleCharacter, 'Both genders have character cards');
+  const scenarios = [
+    { name: 'Female selection, only a pinned man', girl: true, boy: false, pins: ['1boy'], female: 0, male: 0 },
+    { name: 'Male selection, only a pinned woman', girl: false, boy: true, pins: ['1girl'], female: 0, male: 0 },
+    { name: 'Female selection, mixed cast', girl: true, boy: false, pins: ['1girl', '1boy'], female: 1, male: 0 },
+    { name: 'Male selection, mixed cast', girl: false, boy: true, pins: ['1girl', '1boy'], female: 0, male: 1 },
+    { name: 'Both selected, mixed cast', girl: true, boy: true, pins: ['1girl', '1boy'], female: 1, male: 1 },
+    { name: 'Female selection, manual male character', girl: true, boy: false, pins: ['1girl', '1boy', maleCharacter.tag], female: 1, male: 1 },
+    { name: 'Male selection, manual female character', girl: false, boy: true, pins: ['1girl', '1boy', femaleCharacter.tag], female: 1, male: 1 },
+  ];
+  for (const scenario of scenarios) for (const characterSameSeries of [false, true]) for (let i = 0; i < 12; i++) {
+    const seed = 711000 + i;
+    const settings = { ...base, girl: scenario.girl, boy: scenario.boy, characterSameSeries };
+    let pins = new Set();
+    for (const tag of scenario.pins) pins = applyPin(lex, pins, new Set(), tag).pinned;
+    const shot = drawOne(lex, settings, pins, new Set(), mulberry32(seed), seed);
+    const tags = shot.positive.split(', ');
+    const chars = tags.map(t => lex.byTag.get(t)).filter(it => it?.group === 'character');
+    assert.ok(scenario.pins.every(t => tags.includes(t)), `${scenario.name}: manual pins survive`);
+    assert.equal(genderCount(tags, true), scenario.pins.includes('1girl') ? 1 : 0, `${scenario.name}: character draws do not add women`);
+    assert.equal(genderCount(tags, false), scenario.pins.includes('1boy') ? 1 : 0, `${scenario.name}: character draws do not add men`);
+    // A pinned character's series may lack the selected gender. Never fill from another series.
+    const requiredFemale = characterSameSeries && scenario.pins.includes(maleCharacter.tag) ? 0 : scenario.female;
+    const requiredMale = characterSameSeries && scenario.pins.includes(femaleCharacter.tag) ? 0 : scenario.male;
+    assert.ok(chars.filter(it => it.gate === 'female').length >= requiredFemale, `${scenario.name}: selected women get characters when available`);
+    assert.ok(chars.filter(it => it.gate === 'male').length >= requiredMale, `${scenario.name}: selected men get characters when available`);
+    assert.ok(chars.filter(it => it.gate === 'female').length <= scenario.female, `${scenario.name}: no extra female characters`);
+    assert.ok(chars.filter(it => it.gate === 'male').length <= scenario.male, `${scenario.name}: no extra male characters`);
+    if (!scenario.girl && !scenario.pins.includes(femaleCharacter.tag)) assert.ok(chars.every(it => it.gate !== 'female'), `${scenario.name}: no randomly added female characters`);
+    if (!scenario.boy && !scenario.pins.includes(maleCharacter.tag)) assert.ok(chars.every(it => it.gate !== 'male'), `${scenario.name}: no randomly added male characters`);
+    if (characterSameSeries) assert.ok(new Set(chars.map(it => it.series)).size <= 1, 'Same-series rule still applies');
+  }
+  const characterBans = new Set(data.tags.filter(it => it.group === 'character').map(it => it.tag));
+  for (const characterSameSeries of [false, true]) {
+    const seed = 711100;
+    const tags = drawOne(lex, { ...base, girl: true, boy: false, characterSameSeries }, new Set(['1girl', '1boy']), characterBans, mulberry32(seed), seed).positive.split(', ');
+    assert.ok(tags.includes('1girl') && tags.includes('1boy'), 'Banning characters keeps the cast');
+    assert.ok(tags.every(t => !characterBans.has(t)), 'Empty eligible character pools never fall back to banned characters or other genders');
+  }
+  console.log('Character gender filtering: 168 draws plus empty-pool checks passed');
+}
+// Selfies describe the view; they do not require a phone to be visible in the picture.
+{
+  const settings = { ...defaultSettings(data), girl: true, boy: false, rating: 'general', eras: ['modern'], heats: ['activity'], counts: { feature: 0, clothing: 0, pose: 0, env: 0 } };
+  const tagsFor = (pins, seed) => new Set(drawOne(lex, settings, pins, new Set(), mulberry32(seed), seed).positive.split(', '));
+  for (const activity of ['selfie', 'mirror selfie']) {
+    const pins = applyPin(lex, new Set(), new Set(), activity).pinned;
+    for (let i = 0; i < 20; i++) {
+      const tags = tagsFor(pins, 441760 + i);
+      assert.ok(tags.has(activity), `${activity} stays available without a phone`);
+      for (const prop of ['cellphone', 'smartphone', 'camera', 'selfie stick']) assert.equal(tags.has(prop), false, `${activity} does not automatically add ${prop}`);
+      if (activity === 'mirror selfie') assert.ok(tags.has('mirror'), 'Mirror selfies keep their mirror');
+      const withPhone = tagsFor(applyPin(lex, pins, new Set(), 'cellphone').pinned, 441760 + i);
+      assert.ok(withPhone.has(activity) && withPhone.has('cellphone'), 'An explicitly selected phone stays with the selfie');
+      const restored = tagsFor(new Set([activity, 'smartphone']), 441760 + i);
+      assert.ok(restored.has(activity) && restored.has('smartphone') && restored.has('cellphone'), 'Restored smartphone pins keep their cellphone dependency');
+    }
+  }
+  const phoneOnlyBans = new Set(data.tags.filter(item => ['act_daily', 'obj_hand'].includes(item.sub) && !['selfie', 'smartphone', 'cellphone'].includes(item.tag)).map(item => item.tag));
+  const mustPhone = { ...settings, heats: ['tease'], weights: { activity: 0, tease: 1, flash: 0, sex: 0 }, mustDraw: { 'pose:act_daily': 1, 'env:obj_hand': 1 } };
+  for (let i = 0; i < 20; i++) {
+    const tags = new Set(drawOne(lex, mustPhone, new Set(), phoneOnlyBans, mulberry32(441760 + i), 441760 + i).positive.split(', '));
+    assert.ok(tags.has('selfie') && tags.has('smartphone') && tags.has('cellphone'), 'A must-draw smartphone keeps its cellphone dependency alongside the selfie');
+  }
+  for (const [activity, props] of [['talking on phone', ['cellphone']], ['taking picture', ['cellphone', 'camera']], ['livestream', ['cellphone']]]) {
+    const pins = applyPin(lex, new Set(), new Set(), activity).pinned;
+    for (let i = 0; i < 20; i++) {
+      const tags = tagsFor(pins, 441860 + i);
+      assert.ok(tags.has(activity) && props.some(prop => tags.has(prop)), `${activity} keeps its activity prop`);
+    }
+  }
+}
 let pinned = applyPin(lex, new Set(), new Set(), 'black hair').pinned;
 pinned = applyPin(lex, pinned, new Set(), 'red hair').pinned;
 assert.ok(pinned.has('red hair') && !pinned.has('black hair'), 'Selecting a hair color replaces a conflicting pin');

@@ -1331,7 +1331,7 @@ const ACT_PROP = {
   studying: ["book"],
   writing: ["calligraphy brush", "quill", "pen", "pencil"],
   "talking on phone": ["cellphone"],
-  selfie: ["cellphone"],
+  // 自拍描述視角，不強制把手機畫進畫面；需要手機時由使用者另選。
   "taking picture": ["cellphone", "camera"],
   smoking: ["kiseru", "smoking pipe", "cigar", "cigarette"],
   cooking: ["frying pan", "ladle"],
@@ -4219,39 +4219,32 @@ export function drawOne(lex, settings, pinned, userBanned, rand, seed, opts) {
   // 釘選走 forcePin 不經過這裡；釘選 implies／bind 帶上來的、必抽、人物（subject 不在
   // QUOTA_SECTIONS）、畫質字都照舊。
   const zeroSections = new Set(QUOTA_SECTIONS.filter((s) => settings.counts && Number(settings.counts[s]) === 0));
-  // 骨架格的開關（2026-09-29 專案主決定）：同一道閘門細到「段:小分類」。
-  // 骨架格不看數字，以前「姿勢 1」照樣補五格；現在數字比骨架少時，只補 skeletonLit()
-  // 選中的那幾格，其他的在這裡擋掉。
-  // 數字比骨架少時，那一段的「擲骰格」（天氣、坐臥面、背景、人種…）也一起停：
-  // 使用者說的是「只要 N 個」。背景是地點的替代品，跟著地點那格走。
-  // 不擋的：性愛／走光動作（尺度管）、職業（「抽職業」開關管）、場景的「其他」
-  // （多半是活動附帶的道具，釣魚要有釣竿）。
-  const offGroups = new Set();
-  const groupsBySection = lex._groupsBySection || (lex._groupsBySection = (() => {
-    const m = {};
-    for (const it of lex.data.tags || []) (m[it.section] ||= new Set()).add(it.group);
-    return m;
-  })());
-  for (const section of Object.keys(SKELETON)) {
-    if (zeroSections.has(section)) continue;
-    const keys = skeletonKeys(section);
-    const lit = new Set(skeletonLit(settings, section));
-    if (lit.size >= keys.length) continue;
-    if (lit.has("env:place")) lit.add("env:background");
-    for (const g of groupsBySection[section] || []) {
-      const k = section + ":" + g;
-      if (!lit.has(k) && !SKELETON_KEEP.has(k)) offGroups.add(k);
-    }
-  }
-  const offKeysOf = (it) =>
-    it.section === "clothing" ? clothingKindKeys(it) : [it.section + ":" + it.group];
+  // 補抽種類的開關：同一道閘門細到「段:種類」。以前「姿勢 1」照樣補五格；
+  // 現在數字低於自由補抽門檻時，只補 skeletonLit() 選中的種類。
+  // 獨立擲骰（天氣、坐臥面、背景、種族…）也受同樣限制。
+  // 選格只約束引擎自己補的牌；釘選、指定必抽與它們的必要相依仍保留。
+  // 不再用尺度為性愛／走光／裸身／其他道具開後門。
+  const selectedSlots = new Map(Object.keys(SKELETON)
+    .filter(section => !zeroSections.has(section) && Number(settings.counts?.[section]) < skeletonCap(section))
+    .map(section => [section, new Set(skeletonLit(settings, section))]));
+  const offKeysOf = supplementKindKeys;
   const ENGINE_FILL = new Set([SOURCES.random, SOURCES.era_anchor, SOURCES.repair]);
-  const innerCommit = zeroSections.size || offGroups.size
+  const innerCommit = zeroSections.size || selectedSlots.size
     ? (tag) => {
         if (ENGINE_FILL.has(commitMeta.source)) {
           const it = lex.byTag.get(tag);
           if (zeroSections.has(it?.section)) return false;
-          if (it && offKeysOf(it).some((k) => offGroups.has(k))) return false;
+          const selected = selectedSlots.get(it?.section);
+          if (selected) {
+            const keys = offKeysOf(it).filter(k => selected.has(k));
+            if (!keys.length) return false;
+            // 後段的獨立擲骰也不能替已滿的種類多補一件。相依字由 rawCommit
+            // 一次帶入，不經這道隨機根牌的限制。
+            if (!keys.some(key => ![...used].some(t => {
+              const existing = lex.byTag.get(t);
+              return existing?.section === it.section && offKeysOf(existing).includes(key);
+            }))) return false;
+          }
         }
         return rawCommit(tag);
       }
@@ -6172,9 +6165,6 @@ export function drawOne(lex, settings, pinned, userBanned, rand, seed, opts) {
   };
   // 選格模式按已滿足的分類計數；不同分類的釘選、同義父字不吃掉其他格。
   // 全開模式沿用原來的段落張數，保持既有抽牌結果。
-  const selectedSlots = new Map(Object.keys(SKELETON)
-    .filter((section) => Number(counts[section]) < skeletonCap(section))
-    .map((section) => [section, new Set(skeletonLit(settings, section))]));
   const countSection = (section) => {
     const selected = selectedSlots.get(section);
     if (selected) {
@@ -6478,15 +6468,16 @@ export function drawOne(lex, settings, pinned, userBanned, rand, seed, opts) {
   // 釘選／必抽額外保留，不覆蓋使用者選中的分類。
   // 同類已存在時 fillSlot 的 mutex／fillGroup 的 group 檢查會避免重複補牌。
 
-  // 角色：釘的照收（上面 forcePin 已經進場）；「抽角色」打開時，替還沒有角色的人照性別各抽一個，
+  // 角色：釘的照收（上面 forcePin 已經進場）；「抽角色」只補人物設定開啟的性別，
+  // 明示人數能加入另一性別的人，但不代表同意替他抽具名角色；不為了抽角色增加人物。
   // 一張最多 CHARACTER_MAX 個，作品不挑（「只抽同系列」打開才限同一部）。
   // 用 seed 派生的亂數流：勾選開不開，其餘的抽牌一模一樣。
   if (settings.drawCharacter) {
     const charRand = Number.isFinite(seed) ? mulberry32(((seed >>> 0) ^ 0x0c4a2c7e) >>> 0) : rand;
     const have = [...used].map((t) => lex.byTag.get(t)).filter(isCharacter);
     const want = {
-      female: Math.max(0, genderCount(cast, true) - have.filter((it) => it.gate !== "male").length),
-      male: Math.max(0, genderCount(cast, false) - have.filter((it) => it.gate === "male").length),
+      female: settings.girl ? Math.max(0, genderCount(cast, true) - have.filter((it) => it.gate !== "male").length) : 0,
+      male: settings.boy ? Math.max(0, genderCount(cast, false) - have.filter((it) => it.gate === "male").length) : 0,
     };
     let room = CHARACTER_MAX - have.length;
     const all = (lex.byGroup && lex.byGroup.get("subject:character")) || [];
@@ -6535,10 +6526,12 @@ export function drawOne(lex, settings, pinned, userBanned, rand, seed, opts) {
     }
     if (female) fillBreastSize();
   }
-  // 人種格在正常模式由 allow() 擋掉。多元／奇葩才擲。以前只在有男生時擲，
+  // 種族格在正常模式由 allow() 擋掉。多元／奇葩的自由補抽才擲機率，選格則直接嘗試。
+  // 以前只在有男生時擲，
   // 女角的惡魔娘、史萊姆娘、乳牛娘就永遠進不了只有女生的多元圖。
-  if (!real && (female || male) && rand() < 0.38 && !withCharacter) fillSlot("feature", "race");
-  if (settings.drawJob && !used.has("maid")) fillSlot("feature", "job");
+  if (!real && (female || male) && (selectedSlots.get("feature")?.has("feature:race") || rand() < 0.38) && !withCharacter) fillSlot("feature", "race");
+  const drawJob = selectedSlots.has("feature") ? selectedSlots.get("feature").has("feature:job") : settings.drawJob;
+  if (drawJob && !used.has("maid")) fillSlot("feature", "job");
   if (heat !== "sex" && !someUsed((it) => it.mutex === "sex_act" || it.tag === "sex")) {
     fillSlot("pose", "activity", sportActivityPrefer() || undefined);
   }
@@ -6546,7 +6539,7 @@ export function drawOne(lex, settings, pinned, userBanned, rand, seed, opts) {
     // 同上：一般補牌也要看 group，否則傘狀的 monster boy 會自己被補進來。
     // 具體人種由上面的 fillSlot("feature", "race") 負責，它會連帶 implies 出父標籤。
     if (item.group === "race") return false;
-    if (item.mutex === "job" && (!settings.drawJob || used.has("maid"))) return false;
+    if (item.mutex === "job" && (!drawJob || used.has("maid"))) return false;
     if (withCharacter && (CHARACTER_LOOK_GROUPS.has(item.group) || CHARACTER_LOOK_SUBS.has(item.sub) || item.mutex === "breast_size")) return false;
     return true;
   });
@@ -6630,7 +6623,7 @@ export function drawOne(lex, settings, pinned, userBanned, rand, seed, opts) {
       takeFromPool(pool, 1, rand, commit, clothingPrefer, allow, mPre);
     }
     fill("clothing", (item) => {
-      if (item.layer === "skin") return false;
+      if (item.layer === "skin") return !!selectedSlots.get("clothing")?.has("clothing:nude");
       if (item.layer === "garment" && !item.mutex) {
         if (item.group === "fabric") return true;
         return someUsed((it) => relOf(it).has(item.tag));
@@ -6721,8 +6714,19 @@ export function drawOne(lex, settings, pinned, userBanned, rand, seed, opts) {
       // 那是無條件 break，清單一旦有多個字，第一個被 commit 拒絕（互斥格已被
       // 別的活動佔走）就整個放棄，後面的字連試都不會試到。
       const start = Math.floor(rand() * fit.length);
-      for (let k = 0; k < fit.length; k += 1) {
-        if (commit(fit[(start + k) % fit.length])) break;
+      const intent = mustPins();
+      const required = intent.has(a) || [...intent].some(t => implyChain(lex, t).includes(a));
+      const previous = { ...commitMeta };
+      if (required) {
+        commitMeta.source = SOURCES.implies;
+        commitMeta.parent = a;
+      }
+      try {
+        for (let k = 0; k < fit.length; k += 1) {
+          if (commit(fit[(start + k) % fit.length])) break;
+        }
+      } finally {
+        Object.assign(commitMeta, previous);
       }
     }
   };
@@ -7753,13 +7757,16 @@ export function drawOne(lex, settings, pinned, userBanned, rand, seed, opts) {
   {
     const acts = usedActs(used, lex);
     const needed = new Set();
+    // 明示或必抽的手機不是活動贈品；還原的 smartphone 釘選也要保留 cellphone 相依。
+    const phoneIntent = mustPins();
+    const keepSelectedPhone = [...phoneIntent].some(t => t === "cellphone" || implyChain(lex, t).includes("cellphone"));
     for (const a of acts) {
       for (const p of ACT_PROP[a] || []) needed.add(p);
     }
     for (const [act, props] of Object.entries(ACT_PROP)) {
       if (acts.has(act)) continue;
       for (const p of props) {
-        if (pinned.has(p) || needed.has(p)) continue;
+        if (pinned.has(p) || needed.has(p) || (p === "cellphone" && keepSelectedPhone)) continue;
         const it = lex.byTag.get(p);
         used.delete(p);
         if (it) {
@@ -7996,10 +8003,9 @@ export const QUOTA_SECTIONS = ["feature", "pose", "clothing", "env"];
 
 export const MUST_MAX = 20;
 
-// 骨架格：每張各補一個、不看 counts 的那幾格（fillSlot／fillGroup）。排列順序就是
-// 「保留的優先序」—— 數字設得比骨架少時，從最後面開始不補。三個介面都從這裡讀。
-// 服裝刻意不列：它的骨架是「最低限度要穿衣服」，拆不成固定的小分類。
-// 性愛動作、走光動作不是骨架格，由尺度那一排管（沒勾那個尺度就根本不會出現）。
+// 補抽種類：前幾種是原來的常用骨架，其餘供選格模式指定。
+// 排列順序就是預設保留的優先序。完整自由補抽仍沿用原來的程序與門檻。
+// 尺度只管允許的候選；選格時，性愛與走光也必須是選中的種類。
 /** 角色卡（詞庫 subject／character）。 */
 export function isCharacter(item) {
   return !!item && item.group === "character";
@@ -8018,7 +8024,13 @@ export const SKELETON = {
     ["eyes", "眼睛"],
     ["hair_color", "髮色"],
     ["hair_style", "髮型"],
-    ["body_f", "身材（女）"],
+    ["body_f", "體型"],
+    ["skin", "膚質／標記"],
+    ["makeup", "妝容"],
+    ["race", "種族"],
+    ["job", "職業"],
+    ["other", "其他長相"],
+    ["sex", "成人特徵"],
   ],
   pose: [
     ["body", "身體姿勢"],
@@ -8026,12 +8038,23 @@ export const SKELETON = {
     ["camera", "鏡頭"],
     ["gaze", "視線"],
     ["activity", "活動"],
+    ["tease", "誘惑"],
+    ["flash", "走光"],
+    ["sex", "性愛"],
   ],
   env: [
     ["place", "地點"],
     ["inout", "室內外"],
     ["time", "晝夜"],
     ["light", "光線"],
+    ["weather", "天氣"],
+    ["sky", "天空"],
+    ["furniture", "坐臥面"],
+    ["background", "背景"],
+    ["props", "道具"],
+    ["theme", "主題／裝飾"],
+    ["lens", "鏡頭效果"],
+    ["effect", "畫面特效"],
   ],
   // 服裝沒有每張必補的固定格，數字本來就接近「幾件」。所以門檻是預設值 5 而不是 8：
   // 設 5 以上照舊自由補；1～4 只補亮著的那幾種、每種一件（2026-09-29 專案主：衣服有時候
@@ -8046,11 +8069,14 @@ export const SKELETON = {
     ["bottom", "下身"],
     ["outer", "外套"],
     ["underwear", "內衣"],
+    ["nude", "裸身／衣著程度"],
+    ["fabric", "材質／衣服狀態"],
   ],
 };
 
-// 數字低於這個才展開選格。沒寫的就是骨架格數。
-const SKELETON_CAP = { clothing: 5 };
+// 數字低於這個才進入選格；完整種類數不作為自由補抽門檻。
+// Keep legacy free-draw thresholds so opening an existing/default recipe does not change it.
+const SKELETON_CAP = { feature: 5, pose: 5, env: 4, clothing: 5 };
 
 /** 這一段數字低於多少時要選格。 */
 export function skeletonCap(section) {
@@ -8071,9 +8097,24 @@ export function clothingKindKeys(item) {
   return out;
 }
 
-// 數字比骨架少時也不擋的小分類（理由見 drawOne 的 offGroups）。
-// 服裝：日式服裝這種時代總稱字、裸身不佔格（佔格子的時代服裝由 clothingKindKeys 對到那一格）。
-const SKELETON_KEEP = new Set(["pose:sex", "pose:flash", "feature:job", "env:other", "clothing:era", "clothing:nude"]);
+/** UI and engine counting share these logical kinds without changing canonical tags. */
+export function supplementKindKeys(item) {
+  if (!item) return [];
+  if (item.section === "clothing") {
+    const keys = clothingKindKeys(item);
+    // An era garment occupies its actual garment slot; a generic era label is an implied parent.
+    return keys.length > 1 ? keys.filter(k => k !== "clothing:era") : keys;
+  }
+  if (item.section === "feature" && item.group === "body_m") return ["feature:body_f"];
+  if (item.section === "env" && item.group === "other") {
+    if (item.sub === "fx_lens") return ["env:lens"];
+    if (item.sub?.startsWith("fx_")) return ["env:effect"];
+    if (["weather", "sky", "light"].includes(item.sub)) return [`env:${item.sub}`];
+    if (["obj_theme", "obj_fest"].includes(item.sub)) return ["env:theme"];
+    return ["env:props"];
+  }
+  return [`${item.section}:${item.group}`];
+}
 
 const skeletonKeys = (section) => (SKELETON[section] || []).map(([g]) => section + ":" + g);
 
@@ -8167,7 +8208,7 @@ export function defaultSettings(data) {
     eras: d.eras ? [...d.eras] : [...ERAS],
     samePerson: false,
     drawJob: false,
-    // 抽角色：替畫面上的人照性別抽角色卡。加入系列名：角色後面接作品名（釘的角色也照這個）。
+    // 抽角色：只替人物設定啟用的性別抽角色卡。加入系列名：角色後面接作品名（釘的角色也照這個）。
     drawCharacter: false,
     characterSeries: false,
     characterSameSeries: false,

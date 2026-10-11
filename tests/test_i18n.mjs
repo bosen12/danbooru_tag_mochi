@@ -41,6 +41,10 @@ assert.equal(restricted.MochiLanguage.resolve(), 'zh-Hant');
 globalThis.MochiLanguage = { resolve: () => 'en' };
 const { t, registerLexicon, takeLanguageState } = await import(pathToFileURL(resolve(root, 'web/i18n.js')));
 registerLexicon(JSON.parse(readFileSync(resolve(root, 'web/lexicon.json'), 'utf8')));
+const { SKELETON } = await import(pathToFileURL(resolve(root, 'web/engine.js')));
+for (const slots of Object.values(SKELETON)) for (const [, label] of slots) {
+  assert.ok(!/[\u3400-\u9fff]/.test(t(label)), `Supplement kind must be translated: ${label}`);
+}
 assert.equal(t('紅髮'), 'red hair');
 assert.equal(t('紅髮 1.2'), 'red hair 1.2');
 assert.equal(t('試印 C：你的 1 張，引擎補 28 張'), 'Proof C · 1 pinned · 28 engine additions');
@@ -56,6 +60,10 @@ assert.equal(t('紅髮（red hair）・長相'), 'red hair · Appearance', 'The 
 assert.equal(t('牌組「$&紅髮」'), 'Deck “$&紅髮”', 'Replacement patterns in user content stay literal');
 assert.equal(t('尺度'), 'Content level', 'Content level and rating are different controls');
 assert.equal(t('分級'), 'Rating');
+assert.equal(t('起手：雨夜街角'), 'Starter: ' + t('雨夜街角'), 'Starter announcements must be translated');
+assert.equal(t('已選試印 B，尚未生成圖片'), 'Proof B selected, no image generated yet');
+assert.match(t('只補 1 種、每種一件，點一顆換過去；釘選只佔同類格'), /Add 1 type, one item/);
+assert.match(t('種族需使用「多元／奇葩」場景。'), /Diverse or Weird/);
 globalThis.location = { pathname: '/fuse.html' };
 globalThis.history = { state: null, replaceState(value) { this.state = value; } };
 const snapshots = new Map();

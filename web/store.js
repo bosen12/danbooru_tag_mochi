@@ -1,12 +1,13 @@
 /**
  * 墨池的 localStorage：廢字簍、規則、成品、字盒的篩選。讀寫失敗就當沒有。
- * 合成池不存：重新整理就是空的池子。唯一的例外是疊印台「把這一版放進墨池的合成池」——
- * 那是一次性的交接，墨池下一次打開時拿走就刪掉，放太久（30 分鐘）也不算數。
+ * 合成池與疊印台的版不存：重新整理就是空的。明確按「帶牌」時才留下交接便條，
+ * 目的頁下一次打開時拿走就刪掉，放太久（30 分鐘）也不算數。
  */
 
 const KEY = {
   pool: "mochi.pool.v1", // 舊版一直存著的合成池：讀到就刪
   handoff: "mochi.pool.handoff.v1",
+  fuseHandoff: "mochi.fuse.handoff.v1",
   bans: "mochi.bans.v1",
   settings: "mochi.settings.v1",
   shots: "mochi.shots.v1",
@@ -34,12 +35,24 @@ function read(key, fallback) {
 function write(key, value) {
   try {
     localStorage.setItem(key, JSON.stringify(value));
+    return true;
   } catch {
     /* 存不了就算了 */
+    return false;
   }
 }
 
 const HANDOFF_MS = 30 * 60 * 1000;
+
+/** Explicit, one-shot transfer; ordinary navigation still opens an empty bed. */
+export const handOffFuse = (tags, weights = {}) => write(KEY.fuseHandoff, { tags: [...tags], weights, at: Date.now() });
+export function takeFuse() {
+  const note = read(KEY.fuseHandoff, null);
+  try { localStorage.removeItem(KEY.fuseHandoff); } catch { return null; }
+  const age = Date.now() - Number(note?.at);
+  if (!note || !Array.isArray(note.tags) || !(age >= 0 && age < HANDOFF_MS)) return null;
+  return { tags: note.tags.filter(t => typeof t === "string"), weights: note.weights && typeof note.weights === "object" ? note.weights : {} };
+}
 
 /** 疊印台把一版牌交給墨池：寫一張便條，墨池下次打開時拿走。 */
 /** from：從哪裡交過來（"fuse"、"book"），墨池接到時跟使用者說一聲。 */

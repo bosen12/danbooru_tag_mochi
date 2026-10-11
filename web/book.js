@@ -1536,6 +1536,7 @@ function buildBox() {
         el("button", { class: "box-close", type: "button", "aria-label": "收起卡盒", onclick: () => setBoxOpen(false) }, "×")
       ),
       el("p", { class: "box-empty" }, "按牌右下角的「＋」，把想用的牌放進來，再一起放進墨池。"),
+      el("p", { class: "workspace-purpose" }, "卡盒用來收集待用的牌，最多二十四張。想重複使用整組，請存成牌組。"),
       el("div", { class: "box-grid" }),
       el(
         "div",

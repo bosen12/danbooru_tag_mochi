@@ -8,6 +8,7 @@
  */
 
 import { getSfx } from "./sfx.js";
+import { cloneCard } from "./card-images.js";
 
 export const reducedMotion = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
 
@@ -677,7 +678,7 @@ export function gatherHome(snaps, pile, home, { cls = "", duration = DUR.xl, sta
   snaps.forEach((snap, i) => {
     const r = snap.rect;
     if (!r.width) return;
-    const g = snap.node.cloneNode(true);
+    const g = cloneCard(snap.node);
     if (cls) g.classList.add(cls);
     g.classList.remove("is-related", "is-stamped", "is-clash", "is-returned");
     Object.assign(g.style, { position: "fixed", left: r.left + "px", top: r.top + "px", width: r.width + "px", margin: "0", zIndex: String(80 + i), pointerEvents: "none" });

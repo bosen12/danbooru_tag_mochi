@@ -5377,12 +5377,16 @@ function indoorOutdoorClash(have) {
   eq("pinned reading always keeps something to read", readBook, 40);
   ok("reading prop is not always the same one", readProps.size >= 2, [...readProps].join("/"));
   const pinSelfie = applyPin(lex, new Set(), new Set(), "selfie").pinned;
+  const sSelfie = { ...s, counts: { ...s.counts, env: 0 } };
   let selfiePhone = 0;
+  let selfies = 0;
   for (let i = 0; i < 40; i++) {
-    const h = tagsOf(drawOne(lex, s, pinSelfie, new Set(), mulberry32(441760 + i), 441760 + i));
+    const h = tagsOf(drawOne(lex, sSelfie, pinSelfie, new Set(), mulberry32(441760 + i), 441760 + i));
+    if (h.has("selfie")) selfies += 1;
     if (h.has("cellphone")) selfiePhone += 1;
   }
-  eq("pinned selfie always keeps cellphone", selfiePhone, 40);
+  eq("pinned selfie stays without requiring a cellphone", selfies, 40);
+  eq("pinned selfie does not automatically add cellphone", selfiePhone, 0);
   const pinBathRoom = applyPin(lex, new Set(), new Set(), "bathroom").pinned;
   let bathCasual = 0;
   for (let i = 0; i < 40; i++) {

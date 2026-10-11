@@ -47,7 +47,7 @@ const server = createServer(async (req, res) => {
 await new Promise(r => server.listen(0, '127.0.0.1', r));
 let browser;
 try {
-  browser = await chromium.launch({ headless: true });
+  browser = await chromium.launch({ headless: true, ...(process.env.PLAYWRIGHT_CHANNEL ? { channel: process.env.PLAYWRIGHT_CHANNEL } : {}) });
   for (const locale of ['en-US', 'zh-TW']) for (const action of ['install', 'patch']) {
     snap = { started: true, active: true, restart: false, items: [{ id: 'lora', title: 'LoRA Manager', state: 'ask', action, text: texts[action], answers: ['yes', 'no', 'never'] }] };
     answers = [];

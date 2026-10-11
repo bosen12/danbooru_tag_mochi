@@ -99,7 +99,7 @@
       <div class="mast-controls">
         <div class="segmented" id="rating" data-kind="rating" role="radiogroup" aria-label="尺度分級"></div>
         <div class="mast-tools" id="mast-tools">
-          <button class="ghost icon-btn" id="rules-btn" type="button" aria-label="規則" title="規則（尺寸、人物、時代、情境、每段補幾張）"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M4 6h9M17 6h3M4 12h3M11 12h9M4 18h11M19 18h1"/><circle cx="15" cy="6" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="17" cy="18" r="2"/></svg></button>
+          <button class="ghost icon-btn" id="rules-btn" type="button" aria-label="規則" title="規則（尺寸、人物、時代、情境、每段補幾張）"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M4 6h9M17 6h3M4 12h3M11 12h9M4 18h11M19 18h1"/><circle cx="15" cy="6" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="17" cy="18" r="2"/></svg><span class="mobile-tool-label">規則</span></button>
           <button class="ghost icon-btn" id="sound-btn" type="button" aria-pressed="true" aria-label="聲音：開" title="聲音：開" data-sfx="off"></button>
           <div class="ping" id="ping" data-ok=""><i></i><span>Comfy…</span></div>
         </div>
@@ -139,6 +139,8 @@
             <button class="quiet-btn pressable" id="clear" type="button" disabled>清版</button>
           </div>
         </div>
+        <p class="workspace-purpose">比較四組候選提示詞，選好再付印生圖。選牌與規則和墨池各自獨立。</p>
+        <div class="mobile-proofs" id="mobile-proofs"></div>
         <div class="plate-scroll" id="plate-scroll">
           <div class="registers" id="registers"></div>
         </div>
@@ -154,7 +156,7 @@
         <div class="proof-flow">
           <div class="trials-head">
             <h2 class="trials-title" id="trials-title">試印</h2>
-            <p class="trials-hint">同一批種子，每疊一張就重抽一次。</p>
+            <p class="trials-hint">四組候選提示詞，還不是圖片。≠ 表示與已選試印不同。</p>
             <button class="quiet-btn pressable" id="reroll" type="button" title="換一批種子（R）">換一批</button>
           </div>
           <div class="trials" id="trials" role="radiogroup" aria-labelledby="trials-title"></div>

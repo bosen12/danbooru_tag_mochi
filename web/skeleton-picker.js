@@ -1,11 +1,9 @@
 /**
  * 「每段抽幾個」底下的選格（墨池、疊印台共用）。
  *
- * 每段有幾格骨架是每張都會補的（姿勢：身體／表情／鏡頭／視線／活動）。以前數字設得比
- * 骨架少時等於沒作用；現在數字就是格數，按到骨架以下，這一段就在步進器底下展開，
- * 列出它的骨架格，亮著的格數＝數字。點一顆暗的就換過去（數字不變），要多要少按 ＋／−。
- * 數字 ≥ 骨架格數、或設 0（整段不補）時收起來。服裝的門檻是 5（預設值）：
- * 設 1～4 才展開，列 8 種，只補亮著的、每種一件。
+ * 低於原來的自由補抽門檻時展開選格，亮著的格數＝數字。
+ * 點暗的種類換格，數字不變；常用種類直接顯示，新增细項放「更多種類」。
+ * 門檻保留舊值，避免既有預設抽牌改變。0 是整段不補。
  *
  * 切換只改那一顆的狀態、不重畫：劃線、蓋章、展開的動效才播得出來。
  */
@@ -15,6 +13,7 @@ import { SKELETON, skeletonCap, skeletonLit, swapSkeleton } from "./engine.js";
 
 const SECTION_ZH = { feature: "長相", clothing: "服裝", pose: "姿勢", env: "場景" };
 const ORDER = ["feature", "clothing", "pose", "env"];
+const COMMON = { feature: 5, clothing: 8, pose: 5, env: 4 };
 
 export function skeletonPicker({ settings, save }) {
   // 每段記住「亮起來的先後」：換格時熄掉最早亮的那一顆（數字 1 就是單選）。
@@ -48,6 +47,8 @@ export function skeletonPicker({ settings, save }) {
       row._openTimer = setTimeout(() => row.classList.remove("is-opening"), 900);
     }
     row.querySelector(".skel-note").textContent = now ? noteOf(section) : "";
+    const more = row.querySelector(".skel-more");
+    if (more && lit.some(k => SKELETON[section].slice(COMMON[section]).some(([g]) => k === `${section}:${g}`))) more.open = true;
     // 一開始：優先序越後面的越「舊」，先被換掉。之後按 ＋ 亮起來的算最新。
     if (!recent[section]) recent[section] = [...lit].reverse();
     else {
@@ -106,14 +107,17 @@ export function skeletonPicker({ settings, save }) {
           "div",
           { class: "skel-body", role: "group", "aria-label": `${SECTION_ZH[section]}補哪幾格` },
           el("span", { class: "skel-name" }, SECTION_ZH[section]),
-          el("div", { class: "skel-chips" }, chips),
-          el("span", { class: "skel-note", "aria-live": "polite" })
+          el("div", { class: "skel-chips" }, chips.slice(0, COMMON[section])),
+          el("details", { class: "skel-more" }, el("summary", {}, "更多種類"), el("div", { class: "skel-chips" }, chips.slice(COMMON[section]))),
+          el("span", { class: "skel-note", "aria-live": "polite" }),
+          section === "pose" ? el("span", { class: "skel-note" }, "性愛與走光也受選格限制；仍須符合尺度與情境，無可用牌時會留空。") : null,
+          section === "feature" ? el("span", { class: "skel-note" }, "選格時職業依這裡的選擇；自由補抽時依「抽職業」開關。體型依人物性別補。", " ", "種族需使用「多元／奇葩」場景。") : null
         )
       )
     );
   }
 
-  const node = el("div", { class: "skel-picker" }, ORDER.map((s) => rows[s]));
+  const node = el("div", { class: "skel-picker" }, el("p", { class: "skel-guide" }, "長相、服裝、姿勢設 1–4，場景設 1–3，可選擇補抽種類；更高的數字為自由補抽。釘選、指定必抽與必要附帶照樣保留。", " ", "種類仍受分級、尺度與場景限制；沒有相容牌時留空。"), ORDER.map((s) => rows[s]));
   for (const s of ORDER) syncRow(s);
   // 第一次畫出來就開著的（重新整理前設過）不要播展開。
   for (const s of ORDER) rows[s].classList.remove("is-opening");

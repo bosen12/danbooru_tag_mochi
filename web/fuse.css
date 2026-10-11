@@ -1997,6 +1997,28 @@ body.fuse {
   min-width: 0;
 }
 
+.trial-summary {
+  display: grid;
+  gap: 0.12rem;
+  font-size: var(--text-xs);
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+.trial-summary .is-different { color: var(--color-accent); }
+.pb-size {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  font-size: var(--text-xs);
+  color: var(--color-muted);
+}
+.mobile-proofs { display: none; }
+@media (max-width: 40rem) {
+  .mobile-proofs { display: block; }
+  .mobile-proofs .trials-head { padding-top: var(--space-sm); }
+}
+
 .trial-meta {
   display: flex;
   flex-wrap: wrap;
@@ -2704,7 +2726,7 @@ body.fuse {
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
   .trials-hint {
-    display: none;
+    display: block;
   }
 }
 

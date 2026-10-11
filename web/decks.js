@@ -98,7 +98,7 @@ export function openDecks({ where, current, has, zh, apply, paste, weightsNow = 
         "貼上提示詞變成牌…"
       )
     : null;
-  const { close } = openSheet("牌組", el("div", { class: "decks" }, pasteBtn, form, list));
+  const { close } = openSheet("牌組", el("div", { class: "decks" }, el("p", { class: "workspace-purpose" }, "牌組保存整組選牌與權重，之後可以重新套用；偏好卡牌則是每個工作區常用的單張牌。"), pasteBtn, form, list));
 
   const row = (d) => {
     const tags = d.tags.filter(has);

@@ -5,7 +5,7 @@
  * 多元：同一個動作每次都不完全一樣（音高、音色、長短各自抖一點，有的有兩三種版本輪著出），
  * 連續放十張牌不會像同一段錄音重播十次；一次帶上來好幾張的附帶牌照五聲音階往上走。
  * 音量：總線放大一些，後面接一個壓縮器，幾個聲音疊在一起也不會破音。
- * 可以關（設定記在這台瀏覽器，兩頁共用）。AudioContext 等第一次手勢才建立。
+ * 可以關（設定記在這台瀏覽器，兩頁共用）。AudioContext 閒置時先準備，手勢後才恢復播放。
  */
 
 const KEY = "mochi.fuse.sound.v1";
@@ -50,7 +50,7 @@ function build() {
     return false;
   };
 
-  function ac() {
+  function prepareAudio() {
     if (!on) return null;
     if (!ctx) {
       const C = window.AudioContext || window.webkitAudioContext;
@@ -66,9 +66,26 @@ function build() {
       bus.gain.value = MASTER;
       bus.connect(comp).connect(ctx.destination);
     }
-    if (ctx.state === "suspended") ctx.resume().catch(() => {});
     return ctx;
   }
+
+  function ac() {
+    const a = prepareAudio();
+    if (a?.state === "suspended") a.resume().catch(() => {});
+    return a;
+  }
+
+  // 冷啟動有時要數百毫秒：先讓網頁畫出來，再利用閒置時段建立暫停的音效引擎。
+  // 這裡不 resume、不播放；聲音關著也不配置音效資源。
+  const warmIdle = () => {
+    if (!on || ctx) return;
+    const warm = () => { if (!document.hidden) prepareAudio(); };
+    if (typeof requestIdleCallback === "function") requestIdleCallback(warm);
+    else setTimeout(warm, 200);
+  };
+  const afterPaint = () => requestAnimationFrame(() => requestAnimationFrame(warmIdle));
+  if (document.readyState === "complete") afterPaint();
+  else addEventListener("load", afterPaint, { once: true });
 
   // 第一次點下去才建音效引擎要 10～50ms，剛好卡在「點牌 → 畫面動」中間。手指一按下就在背景先建好：
   // 觸控的 pointerdown 還不算使用者手勢，這時建出來的是暫停的，真正要響的那一下 ac() 會叫 resume()，幾乎不花時間。

@@ -2303,17 +2303,39 @@ def gen_via_ws(width: int, height: int, seed: int, positive: str, wf: dict, hire
         t0 = time.time()
         beat = t0
         last_pv = 0.0
+        last_history = t0
+
+        def completed_image():
+            nonlocal last_history
+            last_history = time.time()
+            # 完成通知可能早於 history 可見，也可能在斷線時遺失。
+            # 補查失敗只是暫時的連線問題，不賠掉仍可從 websocket 收到的成品。
+            try:
+                hist = api("GET", f"/history/{prompt_id}", timeout=8)
+            except (OSError, urllib.error.URLError):
+                return None
+            return first_image_src(hist[prompt_id], save_ids) if hist and prompt_id in hist else None
+
         while time.time() - t0 < GEN_TIMEOUT:
+            # 其他工作的廣播可能讓 recv 永遠不逾時；不能只在安靜時查完成紀錄。
+            if time.time() - last_history >= 5:
+                image = completed_image()
+                if image:
+                    yield ("done", _job(seed, width, height, positive, image, ckpt, hires))
+                    return
+            # 忙碌的外來廣播也不能餓死心跳；前端看門狗與取消檢查靠它續行。
+            now = time.time()
+            if now - beat >= 5:
+                beat = now
+                yield ("ping", {"waited": round(now - t0, 1)})
             try:
                 ws.sock.settimeout(2.0)
                 op, data = ws.recv()
             except socket.timeout:
-                hist = api("GET", f"/history/{prompt_id}", timeout=20)
-                if hist and prompt_id in hist:
-                    image = first_image_src(hist[prompt_id], save_ids)
-                    if image:
-                        yield ("done", _job(seed, width, height, positive, image, ckpt, hires))
-                        return
+                image = completed_image() if time.time() - last_history >= 2 else None
+                if image:
+                    yield ("done", _job(seed, width, height, positive, image, ckpt, hires))
+                    return
                 # 心跳：載模型的時候 Comfy 可以安靜一分鐘以上。沒有這一下，前端分不出
                 # 「還在載」和「伺服器這條執行緒卡死了」，寫也寫不出去的斷線也發現不了。
                 now = time.time()
@@ -2352,6 +2374,8 @@ def gen_via_ws(width: int, height: int, seed: int, positive: str, wf: dict, hire
                 continue
             typ = msg.get("type")
             d = msg.get("data") or {}
+            if d.get("prompt_id") and d["prompt_id"] != prompt_id:
+                continue
             if typ == "progress":
                 yield (
                     "progress",
@@ -2371,12 +2395,10 @@ def gen_via_ws(width: int, height: int, seed: int, positive: str, wf: dict, hire
                 nid = str(d.get("node") or "")
                 if typ == "executed" and save_ids and nid not in save_ids:
                     continue
-                hist = api("GET", f"/history/{prompt_id}", timeout=30)
-                if hist and prompt_id in hist:
-                    image = first_image_src(hist[prompt_id], save_ids)
-                    if image:
-                        yield ("done", _job(seed, width, height, positive, image, ckpt, hires))
-                        return
+                image = completed_image()
+                if image:
+                    yield ("done", _job(seed, width, height, positive, image, ckpt, hires))
+                    return
         raise TimeoutError(f"Comfy 超過 {GEN_TIMEOUT} 秒沒有產出（prompt {prompt_id}）")
     finally:
         ws.close()

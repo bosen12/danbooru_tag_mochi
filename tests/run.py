@@ -16,6 +16,9 @@ ROOT = Path(__file__).resolve().parents[1]
 standalone = (ROOT / "tests/test_i18n.mjs").exists()
 checks = [
     ("test_engine_release.mjs", "test_mochi_engine.mjs"), ("test_i18n.mjs", "test_web6_i18n.mjs"),
+    ("test_ux.mjs", "test_web6_ux.mjs"),
+    ("test_gen_completion.py", "test_gen_completion.py"),
+    ("test_supplement.mjs", "test_supplement.mjs"),
     ("test_fetch_lora_manager.py", "test_fetch_lora_manager.py"), ("test_setup_tasks.py", "test_setup_tasks.py"),
     ("test_fetch_card_art.py", "test_fetch_card_art.py"), ("test_fetch_upscale.py", "test_fetch_upscale.py"),
     ("test_fetch_pose.py", "test_fetch_pose.py"), ("test_server.py", "test_server.py"),
@@ -26,6 +29,8 @@ if "--full" in sys.argv:
 if "--browser" in sys.argv:
     checks.append(("test_i18n_browser.mjs", "test_web6_i18n_browser.mjs"))
     checks.append(("test_setup_browser.mjs", "test_mochi_setup_browser.mjs"))
+    checks.append(("test_ux_browser.mjs", "test_web6_ux_browser.mjs"))
+    checks.append(("test_flight_browser.mjs", "test_web6_flight_browser.mjs"))
 node = shutil.which("node")
 if not node:
     sys.exit("Node.js 20+ is required to run the development tests")

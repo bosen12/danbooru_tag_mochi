@@ -50,6 +50,7 @@ import { paintWeight, wireWeightInput, weightRow, weightPositive } from "./weigh
 import { favButton } from "./album-save.js";
 import { createDrag, inkRing } from "./drag.js";
 import { initMotion, settleMotion, replayDeal, flip, flipBy, leave, enter, confirmButton, gatherHome, flight, seat, refuse, reducedMotion, CURVE, DUR, css } from "./motion.js";
+import { cloneCard } from "./card-images.js";
 import { createHand } from "./hand.js";
 import { createTrashPanel } from "./trash-panel.js";
 import { createGenerator, comfyOnline, viewSrc, tabTitle, watchLink, LINK_LABEL, markGenLog } from "./gen.js";
@@ -61,6 +62,7 @@ import { recordUses } from "./usage.js";
 import { getSfx } from "./sfx.js";
 import { mountDiscord } from "./discord-link.js";
 import { english, t, takeLanguageState } from "./i18n.js";
+import { pickStarters, refreshStarters } from "./starters.js";
 
 const sfx = getSfx();
 // 聲音引擎第一次建立要幾十毫秒：第一個手勢時先在下一輪建好，等真的要出聲時已經在了。
@@ -85,6 +87,8 @@ let lib = null;
 let assets = null;
 let settings = null;
 let pool = new Set();
+// 空池抽一次，普通重畫保留；放牌後重設，清空時再抽。
+let starterPick = null;
 // 合成池裡每張牌的份量（weights.js）：只記調過的（不是 1.0 的）。
 let weights = new Map();
 // 被同一格擠掉的牌原本的份量：按「換回」時一起回來。
@@ -729,8 +733,9 @@ function libKeys(e) {
 
 // 字盒一次畫 821 張牌（每張六七個節點＋一張圖）載入時會卡住主執行緒約 270ms，
 // 而一開始看得到的只有二三十張。先畫一個畫面的份量，捲到快見底再接下一批。
-const LIB_FIRST = 48;
-const LIB_PAGE = 96;
+// 縮小首次與捲動的批次，避免冷載入角色卡時一次解碼、排版近百張。
+const LIB_FIRST = 24;
+const LIB_PAGE = 24;
 let libList = [];
 let libShown = 0;
 let libObserver = null;
@@ -901,7 +906,7 @@ function flyInto(tag, from, { delay = 0, src = null, startRotate = 0, startScale
   }
   // 飛的是一張影子；池裡那一格（牌＋×）先藏著，影子落地才一起出現。路上池子重畫（又放了一張、
   // 帶進來的牌擠開位置）也一樣：renderPool 看 poolInbound 把新那格藏著，影子追的是新位置。
-  const ghost = (src || target).cloneNode(true);
+  const ghost = cloneCard(src || target, src || libCardNode(tag) || target);
   ghost.classList.remove("dropped", "is-related", "is-clashing", "fav-card");
   ghost.style.visibility = "";
   const tok = claimPoolInbound(tag);
@@ -1118,7 +1123,7 @@ function liftOut({ node, rect }, delay = 0) {
   if (to) {
     // 偏好卡牌的牌回托盤：托盤那一格先藏著，影子落地才亮（hand.reveal）。
     if (hand?.has(tag)) hand.arriveAt(tag, 1400);
-    const ghost = node.cloneNode(true);
+    const ghost = cloneCard(node);
     ghost.classList.remove("is-related", "is-clash", "is-clashing", "dropped");
     // 追著落點飛：字盒捲動、托盤變寬都跟得上，落在那張牌上、壓一下。
     flight(ghost, rect, goingHome ? () => (inView(homeNow()?.getBoundingClientRect()) ? homeNow() : to) : to, {
@@ -1134,7 +1139,7 @@ function liftOut({ node, rect }, delay = 0) {
     });
     return;
   }
-  const ghost = node.cloneNode(true);
+  const ghost = cloneCard(node);
   Object.assign(ghost.style, { position: "fixed", left: rect.left + "px", top: rect.top + "px", width: rect.width + "px", margin: "0", zIndex: "80", pointerEvents: "none" });
   ghost.style.setProperty("--card-w", rect.width + "px");
   document.body.append(ghost);
@@ -1182,7 +1187,7 @@ function ban(tag, { viaDrag = false, from = null } = {}) {
   const intoPanel = !!(trashPanel?.isOpen && src && src.rect.width && !reducedMotion());
   if (src && !intoPanel) flyToTrash(src);
   // 影子在蓋章之前複製（彩色的那張），路上才慢慢褪成灰。
-  const ghost = intoPanel ? src.node.cloneNode(true) : null;
+  const ghost = intoPanel ? cloneCard(src.node) : null;
   if (hand?.has(tag)) hand.remove(tag, { quiet: true });
   // 揉紙聲在牌被吸進簍子的那一刻（拖的在放開後落進去，按的要先飛過去）。
   setTimeout(() => sfx.trash(), viaDrag ? DUR.short : DUR.long);
@@ -1204,7 +1209,7 @@ function flyToTrash({ node, rect }) {
   if (matchMedia("(prefers-reduced-motion: reduce)").matches || !rect.width) return;
   const bin = $("trash")?.getBoundingClientRect();
   if (!bin || !bin.width) return;
-  const ghost = node.cloneNode(true);
+  const ghost = cloneCard(node);
   Object.assign(ghost.style, { position: "fixed", left: rect.left + "px", top: rect.top + "px", width: rect.width + "px", margin: "0", zIndex: "80", pointerEvents: "none" });
   ghost.style.setProperty("--card-w", rect.width + "px");
   document.body.append(ghost);
@@ -1283,13 +1288,25 @@ function greetHandoff() {
   setTimeout(() => toast(`從${from}帶來 ${pool.size} 張牌，已經放進合成池`), DUR.long);
 }
 
+const starterAllowed = tag => lib.byTag.has(tag) && !ratingBlocked(lib.byTag.get(tag).item, settings.rating) && !bans.has(tag);
+
+function reshuffleStarters() {
+  starterPick = pickStarters(starterAllowed, (starterPick || []).map(s => s.name));
+  renderPool();
+  $("pool-well").querySelector(".quick-starters-more")?.focus({ preventScroll: true });
+  sfx.shuffle?.();
+}
+
 function renderPool(fresh) {
   updatePickerFoot();
   const well = $("pool-well");
   const tags = [...pool].filter((t) => lib.byTag.has(t));
   settleText($("pool-count"), tags.length ? `${tags.length} 張會一定進圖` : "");
   $("pool-clear").hidden = !tags.length;
+  $("pool-to-fuse").hidden = !tags.length;
   if (!tags.length) {
+    starterPick = refreshStarters(starterPick, starterAllowed);
+    const starters = starterPick;
     lastClash = new Set();
     renderPoolClash([]);
     well.replaceChildren(
@@ -1297,15 +1314,29 @@ function renderPool(fresh) {
         "div",
         { class: "pool-empty" },
         // 觸控裝置沒有「拖」這個第一直覺：寫點一下就放（拖也還是可以）。
-        el("b", {}, pickerMode() ? "按上面的「挑牌」選牌放進來" : matchMedia("(hover: none)").matches ? "點字盒的牌放進來" : "把字拖進來"),
+        el("b", {}, pickerMode() ? "按上面的「挑牌」選牌放進來" : "點字盒的牌放進來，也可以拖曳"),
         // 一行就好：兩句操作說明（點字盒也能放、點 × 拿出來）做了就會發現，寫在這裡只是把合成池撐高。
         el("span", {}, "放進來的字，每一張圖都一定有；其他格子引擎補。"),
         // 手機上看詳情只有長按（沒有右鍵、沒有懸停），寫在第一次要放牌的這裡。
-        matchMedia("(hover: none)").matches ? el("span", {}, "長按一張牌放開，可以看它的詳情。") : null
+        matchMedia("(hover: none)").matches ? el("span", {}, "長按一張牌放開，可以看它的詳情。") : null,
+        starters.length ? el("div", { class: "quick-starters" },
+          el("span", {}, "或者從這裡起手", " ", el("button", { class: "quick-starters-more link-btn pressable", type: "button", onclick: reshuffleStarters }, "換一組")),
+          starters.map(starter => {
+            const tags = starter.tags;
+            return el("button", { class: "btn btn-small btn-ghost", type: "button", dataset: { starter: starter.name }, title: tags.map(zh).join("、"), onclick: () => {
+              let next = new Set(pool);
+              for (const tag of tags) next = applyPin(lex, next, bans, tag).pinned;
+              pool = next;
+              commitPins();
+              announce(`起手：${starter.name}`);
+            } }, starter.name);
+          })
+        ) : null
       )
     );
     return;
   }
+  starterPick = null;
   // 牌跟牌的關係（跟疊印台同一套 relationsOf）：誰帶誰進來、哪兩張放不到一起、活動配場地。
   // 以前池子是一排互不相干的牌：白背景帶進來的素色背景看不出是跟著來的；白背景配星空這種
   // 成立不了的組合也不吭聲，引擎悄悄摘掉一張，人只會覺得「我明明放了」。
@@ -1495,8 +1526,8 @@ function renderRules() {
   sceneSel.value = settings.sceneMode;
   sceneSel.onchange = () => { setSettings({ sceneMode: sceneSel.value }); seat(sceneSel); };
   const job = switchBox("抽職業", settings.drawJob, (v) => setSettings({ drawJob: v }));
-  // 抽角色：照畫面上的人數、性別替每個人抽一張角色卡（一張最多三個）。加入系列名：角色後面接作品名，釘的角色也照這個。
-  const chara = switchBox("抽角色", settings.drawCharacter, (v) => setSettings({ drawCharacter: v }), "照人數、性別替每個人抽一個角色，一張最多三個");
+  // 抽角色遵從人物設定的性別；手動釘選的角色照留。一張最多隨機抽三個。
+  const chara = switchBox("抽角色", settings.drawCharacter, (v) => setSettings({ drawCharacter: v }), "只替「人物」選中的性別抽角色，一張最多三個；手動釘的角色照留");
   const sameSeries = switchBox("只抽同系列", settings.characterSameSeries, (v) => setSettings({ characterSameSeries: v }), "抽的角色都跟釘的角色同一部作品；沒釘就先挑一部人數、性別湊得齊的");
   const series = switchBox("加入系列名", settings.characterSeries, (v) => setSettings({ characterSeries: v }), "角色後面接作品名（例：yor briar, spy x family）；釘的角色也一樣");
   const eraOnly = switchBox("字盒只看這個時代", ui.eraOnly, (v) => {
@@ -1513,19 +1544,20 @@ function renderRules() {
       rulePair("尺度", heatRow),
       rulePair("時代", eraSel),
       rulePair("人物", whoRow),
+      rulePair("尺寸", sizeSel),
       // 姿勢參考：人物照一張圖的姿勢擺（pose.js）。
       rulePair("姿勢", poseButton({ recent: poseRecent, wf: currentWorkflowId, rating: () => settings.rating, size: () => ({ w: settings.width, h: settings.height }) }))
     ),
     el(
       "details",
       { class: "more-rules", open: moreOpen },
-      el("summary", { class: "pressable" }, "更多規則：每段張數與選格、尺寸、場景、職業、角色"),
+      el("summary", { class: "pressable" }, "更多規則：每段張數與選格、場景、職業、角色"),
       el(
         "div",
         {},
         el("div", { class: "rule-row" }, el("span", { class: "rule-label" }, "每段抽幾個"), counts),
         picker.node,
-        el("div", { class: "rule-row" }, rulePair("尺寸", sizeSel), rulePair("場景", sceneSel), job, eraOnly),
+        el("div", { class: "rule-row" }, rulePair("場景", sceneSel), job, eraOnly),
         el("div", { class: "rule-row" }, rulePair("角色", el("span", { class: "rule-pair" }, chara, sameSeries, series)))
       )
     )
@@ -2069,7 +2101,6 @@ function shotNode(shot, deal) {
       el("code", {}, seedUseButton(shot.seed)),
       el("span", {}, [ERA_LABELS[shot.era] || "", heatBlockedByRating(shot.heat, shot.rating) ? "" : HEAT_ZH[shot.heat] || ""].filter(Boolean).join("・"))
     ),
-    cards,
     el(
       "div",
       { class: "shot-actions" },
@@ -2088,10 +2119,11 @@ function shotNode(shot, deal) {
       ),
       // 收進作品冊（album.html）：印好了才出現。
       favButton(shot, { zh, persist: () => S.saveShots(shots) }),
-      el("button", { class: "btn btn-small btn-ghost", type: "button", onclick: (e) => copyPos(shot, e.currentTarget) }, "複製 POS"),
+      el("button", { class: "btn btn-small btn-ghost", type: "button", onclick: (e) => copyPos(shot, e.currentTarget) }, "複製提示詞"),
       el("button", { class: "btn btn-small btn-ghost", type: "button", onclick: () => reprint(shot), title: "同樣的 POS、同一顆種子再送一次" }, "同種子重印"),
       el("button", { class: "btn btn-small btn-ghost shot-remove", type: "button", onclick: () => removeShot(shot) }, "撤下")
-    )
+    ),
+    cards
   );
   node._setOpen = setOpen;
   // 就地送去印的那張，圖一出來就把自動攤開的牌收起來（使用者自己點開的不動）。
@@ -2610,7 +2642,7 @@ function flyToDetail(src, sheetEl) {
   const to = dst.getBoundingClientRect();
   for (const a of anims) a.currentTime = 0;
   if (!to.width) return;
-  const f = (src.querySelector(".card-art") || src).cloneNode(true);
+  const f = cloneCard(src.querySelector(".card-art") || src);
   // 複製品直接放在落點、用落點的大小，從起點「縮放＋位移」過去（FLIP）。以前動的是
   // left／top／width／height，每一格都要排版，生圖時主執行緒一忙就掉格；transform 交給合成器。
   // 用大的尺寸往小的縮，圖不會在放大途中糊掉。
@@ -2816,6 +2848,12 @@ function openPastePool(text = "") {
   });
 }
 $("pool-paste").addEventListener("click", () => openPastePool());
+$("pool-to-fuse").addEventListener("click", (e) => {
+  if (!pool.size || !S.handOffFuse(pool, Object.fromEntries(weights))) {
+    e.preventDefault();
+    toast("無法交接選牌，請檢查瀏覽器儲存空間。");
+  }
+});
 listenPaste((text) => {
   if (!pickerOpen) openPastePool(text);
 });

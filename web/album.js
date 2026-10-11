@@ -404,12 +404,17 @@ function tile(w) {
         alt: "",
         loading: "lazy",
         decoding: "async",
+        onerror: (e) => {
+          const full = fileUrl(w.image);
+          if (full && e.currentTarget.getAttribute("src") !== full) e.currentTarget.src = full;
+          else e.currentTarget.replaceWith(el("span", { class: "album-noimg" }, "圖片讀取失敗"));
+        },
         onload: (e) => {
           // 晚到的圖淡進來；本來就在快取裡的直接出現（不閃一格空白）。
           if (performance.now() - born > 80 && !reducedMotion()) e.currentTarget.animate([{ opacity: 0 }, { opacity: 1 }], { duration: DUR.medium, easing: css(CURVE.out) });
         },
       })
-    : el("span", { class: "album-noimg" }, "沒有圖");
+    : el("span", { class: "album-noimg" }, "只有配方，尚無圖片");
   const node = el(
     "button",
     { class: "album-tile pressable", type: "button", role: "listitem", dataset: { id: w.id }, "aria-label": `${w.name}，${dateText(w.createdAt)}` },
@@ -446,7 +451,7 @@ function similarBox(w, sheetOf) {
               setTimeout(() => openWork(x), reducedMotion() ? 0 : DUR.short);
             },
           },
-          el("span", { class: "album-frame", style: x.width && x.height ? `aspect-ratio: ${x.width} / ${x.height}` : "" }, src ? el("img", { src, alt: "", loading: "lazy", decoding: "async" }) : el("span", { class: "album-noimg" }, "沒有圖")),
+          el("span", { class: "album-frame", style: x.width && x.height ? `aspect-ratio: ${x.width} / ${x.height}` : "" }, src ? el("img", { src, alt: "", loading: "lazy", decoding: "async", onerror: e => e.currentTarget.replaceWith(el("span", { class: "album-noimg" }, "圖片讀取失敗")) }) : el("span", { class: "album-noimg" }, "只有配方，尚無圖片")),
           el("small", {}, `${both} 張一樣`)
         );
       })
@@ -499,6 +504,26 @@ function openWork(w) {
     ["收藏於", dateText(w.createdAt)],
   ];
   let sheet = null;
+  const imageNote = el("p", { class: "album-image-note", role: "status", hidden: true },
+    el("span", {}, "圖片讀取失敗。可以重試，或把牌帶回墨池重新生成。"),
+    el("button", { class: "btn btn-small", type: "button", onclick: () => {
+      imageNote.hidden = true;
+      image.src = `${full}${full.includes("?") ? "&" : "?"}retry=${Date.now()}`;
+    } }, "重試讀取圖片")
+  );
+  const image = full ? el("img", { src: full, alt: w.name, onerror: () => {
+    image.hidden = true;
+    imageNote.hidden = false;
+    big.removeAttribute("href");
+    imageBlank.hidden = false;
+  }, onload: () => {
+    image.hidden = false;
+    imageNote.hidden = true;
+    imageBlank.hidden = true;
+    big.href = full;
+  } }) : null;
+  const imageBlank = el("span", { class: "album-noimg", hidden: !!full }, full ? "圖片讀取失敗" : "只有配方，尚無圖片");
+  const big = el(full ? "a" : "div", { class: "album-big", href: full || undefined, target: full ? "_blank" : undefined, rel: full ? "noopener" : undefined, style: w.width && w.height ? `aspect-ratio: ${w.width} / ${w.height}` : "" }, image, imageBlank);
   const del = el("button", { class: "btn btn-small album-del", type: "button" }, "從作品冊拿掉");
   let armed = 0;
   del.addEventListener("click", async () => {
@@ -531,14 +556,11 @@ function openWork(w) {
   const body = el(
     "div",
     { class: "album-detail" },
-    el(
-      "a",
-      { class: "album-big", href: full || "#", target: "_blank", rel: "noopener", style: w.width && w.height ? `aspect-ratio: ${w.width} / ${w.height}` : "" },
-      full ? el("img", { src: full, alt: w.name }) : el("span", { class: "album-noimg" }, "沒有圖")
-    ),
+    big,
     el(
       "div",
       { class: "album-info" },
+      full ? imageNote : el("p", { class: "workspace-purpose" }, "這件作品只存了配方。把牌帶回墨池，就能重新生成圖片。"),
       el("dl", { class: "album-facts" }, facts.flatMap(([k, v]) => [el("dt", {}, k), el("dd", {}, v)])),
       mine.length ? el("section", {}, el("h3", {}, `你選的牌・${mine.length}`), chips(mine, "mine", weightsOfPositive(w.positive))) : null,
       rest.length ? el("section", {}, el("h3", {}, `${mine.length ? "引擎補的" : "這張用到的牌"}・${rest.length}`), chips(rest, "drawn")) : null,

@@ -18,6 +18,7 @@
  *   decorate(n, t)  面板上的牌做好之後給房間掛東西（拖曳）
  */
 import { flip, flight, CURVE, DUR, css } from "./motion.js";
+import { cloneCard } from "./card-images.js";
 
 const reduced = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
 // 面板收成簍子那個角（右下，尖角的位置）；::after 的尖角在面板外面，底下多留 12px 不要被切掉。
@@ -159,7 +160,7 @@ export function createTrashPanel({ anchor, makeNode, onRescue, onRescueAll, onTo
         ? gone.slice(0, MAX_FLY).map((t) => {
             const n = nodes.get(t);
             const rect = n.getBoundingClientRect();
-            const ghost = n.cloneNode(true);
+            const ghost = cloneCard(n);
             ghost.style.visibility = "";
             return { t, snap: { ghost, rect } };
           }).filter((s) => s.snap.rect.width)

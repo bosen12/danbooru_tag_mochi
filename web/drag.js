@@ -22,6 +22,7 @@
  */
 
 import { getSfx } from "./sfx.js";
+import { cloneCard } from "./card-images.js";
 import { CURVE, DUR, css } from "./motion.js";
 
 const MOUSE_SLOP = 5;
@@ -117,7 +118,7 @@ export function createDrag({ zones, onDrop, onOver, onMove, onHold }) {
   function begin(state, x, y) {
     state.node.classList.remove("is-pressing");
     const r = state.node.getBoundingClientRect();
-    const card = state.node.cloneNode(true);
+    const card = cloneCard(state.node);
     card.removeAttribute("id");
     card.classList.remove("is-pressing", "is-stamped", "is-carried", "is-clashing", "is-landed", "dropped");
     card.style.width = r.width + "px";

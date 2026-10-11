@@ -48,6 +48,7 @@ import { openPaste, listenPaste } from "./paste-prompt.js";
 import { paintWeight, wireWeightInput, weightRow, weightPositive } from "./weights.js";
 import { favButton } from "./album-save.js";
 import { initMotion, settleMotion, flip, flipBy, leave, gatherHome, flight, enter, seat, refuse, CURVE, DUR, css } from "./motion.js";
+import { cloneCard } from "./card-images.js";
 import { createHand } from "./hand.js";
 import { createDrag, inkRing } from "./drag.js";
 import { createGenerator, comfyOnline, viewSrc, tabTitle, watchLink, LINK_LABEL, markGenLog } from "./gen.js";
@@ -60,12 +61,14 @@ import { createSfx } from "./fuse-sfx.js";
 import { genSeed, isFixedSeed, mountSeedControl, onSeedChange, restoreSeed, seedState, seedUseButton, useSeed } from "./seed-control.js";
 import { mountDiscord } from "./discord-link.js";
 import { t as translate, takeLanguageState } from "./i18n.js";
+import { candidateSummary } from "./composition.js";
+import { pickStarters as chooseStarters, refreshStarters } from "./starters.js";
 
 const $ = (id) => document.getElementById(id);
 const LETTERS = ["A", "B", "C", "D"];
 const TRIALS = 4;
 // 字盒一次長出幾張：第一眼只看得到十幾張，捲到接近底部（IntersectionObserver，提早 400px）再補下一批。
-const PAGE = 40;
+const PAGE = 24;
 const PRINT_MAX = 40;
 const HISTORY_MAX = 60;
 const RATING_RANK = { general: 0, sensitive: 1, explicit: 2 };
@@ -81,41 +84,6 @@ const SECTION_ORDER = ["subject", "feature", "clothing", "pose", "env", "style",
 const FK = { prints: "mochi.fuse.prints.v1", tab: "mochi.fuse.tab.v1", settings: "mochi.fuse.settings.v1" };
 const FK_OLD = ["mochi.fuse.bed.v1", "mochi.fuse.seeds.v1", "mochi.fuse.picked.v1"];
 
-// 第一次打開的起手式：三組一點就疊好的版。只收詞庫裡有、這個尺度看得到的。
-const STARTERS = [
-  // 現代
-  { name: "雨夜街角", tags: ["umbrella", "rain", "night", "street"] },
-  { name: "書房午後", tags: ["reading", "library", "glasses"] },
-  { name: "海邊黃昏", tags: ["sundress", "beach", "sunset"] },
-  { name: "咖啡店", tags: ["apron", "cafe", "smile"] },
-  { name: "放學教室", tags: ["school uniform", "classroom", "sunset"] },
-  { name: "屋頂星空", tags: ["rooftop", "starry sky", "night"] },
-  { name: "白底立繪", tags: ["white background", "standing", "smile"] },
-  { name: "閃亮舞台", tags: ["idol", "spotlight", "microphone", "sparkle"] },
-  { name: "霓虹街頭", tags: ["jacket", "city lights", "neon lights", "night"] },
-  { name: "櫻花校園", tags: ["school uniform", "falling petals", "cherry blossoms"] },
-  { name: "雨後公園", tags: ["umbrella", "park", "rain"] },
-  { name: "夏日泳池", tags: ["one-piece swimsuit", "pool", "splashing", "blue sky"] },
-  { name: "單車兜風", tags: ["riding bicycle", "blue sky", "smile"] },
-  { name: "早晨廚房", tags: ["apron", "kitchen", "cooking", "window light"] },
-  { name: "賴床", tags: ["pajamas", "bedroom", "sleeping"] },
-  { name: "樹影散步", tags: ["dress", "forest", "dappled sunlight"] },
-  { name: "秋日落葉", tags: ["sweater", "park", "falling leaves"] },
-  { name: "街頭帽T", tags: ["hoodie", "street", "day"] },
-  { name: "溫泉", tags: ["onsen", "steam", "towel"] },
-  { name: "電車窗邊", tags: ["train interior", "sitting", "window light"] },
-  { name: "像素小品", tags: ["pixel art", "simple background", "smile"] },
-  { name: "九〇年代", tags: ["1990s (style)", "anime coloring", "looking at viewer"] },
-  { name: "魔法光點", tags: ["magic", "light particles", "fantasy"] },
-  // 其他時代
-  { name: "春日和服", tags: ["kimono", "cherry blossoms", "smile"] },
-  { name: "夏祭浴衣", tags: ["yukata", "paper lantern", "festival", "night"] },
-  { name: "道場", tags: ["hakama", "dojo"] },
-  { name: "古風庭園", tags: ["hanfu", "east asian architecture", "bamboo forest"] },
-  { name: "城堡騎士", tags: ["armor", "castle", "cape"] },
-  { name: "維多利亞茶會", tags: ["victorian", "dress", "teacup"] },
-  { name: "希臘神殿", tags: ["ancient greek clothes", "greco-roman architecture", "sunlight"] },
-];
 // 空白的版每次放三組上來：版變空的那一刻抽一次，之後重畫（滑鼠經過、換試印）不重抽，
 // 按「換一組」才換。
 let starterPick = null;
@@ -251,6 +219,14 @@ async function boot() {
   settings = sanitizeSettings(readJ(FK.settings, null) || S.loadSettings() || { rating: "general" }, data);
   bans = new Set(S.loadBans().filter((t) => lib.byTag.has(t)));
   bed = emptyBed();
+  const handoff = S.takeFuse();
+  if (handoff) {
+    for (const tag of handoff.tags) {
+      const item = lib.byTag.get(tag);
+      if (item && !bans.has(tag) && !ratingBlocked(item.item, settings.rating) && !HARD_BANNED.includes(tag)) bed = placeCard(bed, tag, { lex, applyPin }).bed;
+    }
+    bed = sanitizeBed({ ...bed, weights: handoff.weights }, tag => lib.byTag.has(tag));
+  }
   seeds = freshSeeds();
   picked = 0;
   const languageState = takeLanguageState();
@@ -279,6 +255,7 @@ async function boot() {
   buildHand();
   buildPreview();
   buildTrialShells();
+  dockMobileTrials();
   renderRating();
   renderCaseTabs();
   // 字盒先畫完。四次試印抽牌跟字盒排在同一個任務裡會超過 50ms。
@@ -293,6 +270,7 @@ async function boot() {
   retrial(2, seeds.length);
   await yoke();
   renderAll();
+  if (handoff) toast(`從墨池帶來 ${bed.pins.length} 張牌；規則沿用疊印台的設定。`);
   if (caseTab === "match") renderCase();
   renderLine();
   for (const p of prints) if (p.status === "queued" && p.live && p.job) generator.resume(p);
@@ -1267,14 +1245,14 @@ function renderPreview({ develop = false } = {}) {
     else img.addEventListener("load", go, { once: true });
   }
   pv.sheet.disabled = !src;
-  pv.sheet.setAttribute("aria-label", src ? `試印 ${t.letter} 的成品，點開看大圖` : p ? `試印 ${t.letter}：${previewState(p)}` : "預覽：選試印後付印");
+  pv.sheet.setAttribute("aria-label", src ? `試印 ${t.letter} 的成品，點開看大圖` : p ? `試印 ${t.letter}：${previewState(p)}` : `已選試印 ${t.letter}，尚未生成圖片`);
   pv.blank.hidden = !!src;
   if (!src) {
     put(
       pv.blank,
-      p ? el("b", { class: "pv-letter", "aria-hidden": "true" }, t.letter) : null,
-      el("span", { class: "pv-state" }, p ? previewState(p) : "選試印後付印"),
-      !p ? el("span", { class: "pv-hint" }, otherPrinting() ? "晾紙繩上還有一張在印；這一版也可以先付印。" : "從下方選一張試印，再付印成圖。") : null,
+      el("b", { class: "pv-letter", "aria-hidden": "true" }, t.letter),
+      el("span", { class: "pv-state" }, p ? previewState(p) : `已選試印 ${t.letter}`),
+      !p ? el("span", { class: "pv-hint" }, "這是候選提示詞，尚未生成圖片。按「付印」才會生圖。", otherPrinting() ? el("span", {}, "晾紙繩上還有一張在印；這一版也可以先付印。") : null) : null,
       p && p.status === "failed" && p.note ? el("span", { class: "pv-hint" }, p.note) : null,
       p && p._gone ? el("span", { class: "pv-hint" }, "ComfyUI 的輸出資料夾裡找不到這張，可能被刪掉了。按「再印一次」照原樣重印。") : null
     );
@@ -1309,11 +1287,12 @@ function buildTrialShells() {
     const face = el("span", { class: "trial-face", "aria-hidden": "true" }, el("b", { class: "trial-letter" }, letter));
     const meta = el("span", { class: "trial-meta" });
     const picks = el("span", { class: "trial-picks", "aria-hidden": "true" });
+    const summary = el("span", { class: "trial-summary" });
     const node = el(
       "button",
       { class: "trial pressable", type: "button", role: "radio", dataset: { i: String(i) }, onclick: () => pick(i) },
       face,
-      el("span", { class: "trial-body" }, meta, picks)
+      el("span", { class: "trial-body" }, meta, summary, picks)
     );
     // 滑鼠停一下（160ms，掃過去不算）就先預覽這張試印補的牌；移開就回到選中的那張。只看滑鼠 ——
     // 觸控沒有「停在上面」這回事，點下去就直接換過去了。
@@ -1334,9 +1313,24 @@ function buildTrialShells() {
       pick(j);
       trialNodes[j].node.focus();
     });
-    return { node, face, meta, picks };
+    return { node, face, meta, picks, summary };
   });
   box.replaceChildren(...trialNodes.map((n) => n.node));
+}
+
+// Move the existing controls, rather than creating a second radiogroup on phones.
+function dockMobileTrials() {
+  const mq = matchMedia("(max-width: 40rem)");
+  const flow = document.querySelector(".proof-flow"), mobile = $("mobile-proofs");
+  const head = flow.querySelector(".trials-head"), trials = $("trials");
+  const dock = () => {
+    const focused = document.activeElement;
+    if (mq.matches) mobile.append(head, trials);
+    else flow.prepend(head, trials);
+    if (focused && (head.contains(focused) || trials.contains(focused))) focused.focus({ preventScroll: true });
+  };
+  dock();
+  mq.addEventListener("change", dock);
 }
 
 function peekAt(i) {
@@ -1351,6 +1345,7 @@ function peekAt(i) {
 }
 
 function renderTrials() {
+  const reference = new Map(candidateSummary(trials[picked], lex.byTag).map(x => [x.kind, x.tag]));
   trials.forEach((t, i) => {
     const n = trialNodes[i];
     n.node.setAttribute("aria-checked", i === picked ? "true" : "false");
@@ -1379,9 +1374,19 @@ function renderTrials() {
       );
     }
     paintTrialFace(i, p);
+    const summary = candidateSummary(t, lex.byTag);
+    const summaryKey = summary.map(x => `${x.kind}:${x.tag}:${reference.get(x.kind)}`).join("|");
+    if (n.summary.dataset.key !== summaryKey) {
+      n.summary.dataset.key = summaryKey;
+      put(n.summary, summary.map(x => {
+        const different = reference.get(x.kind) !== x.tag;
+        return el("span", { class: different ? "is-different" : "", title: `${translate(x.kind)}：${translate(x.label)}${different ? ` · ${translate("與已選試印不同")}` : ""}` },
+          different ? el("span", { "aria-hidden": "true" }, "≠ ") : null, x.label);
+      }));
+    }
     n.node.setAttribute(
       "aria-label",
-      `試印 ${t.letter}：引擎補 ${t.extra.length} 張，${ERA_ZH[t.era] || ""}${t.missing.length ? `，有 ${t.missing.length} 張你的牌沒進去` : ""}${p ? `，${previewState(p)}` : ""}`
+      `${translate(`試印 ${t.letter}：引擎補 ${t.extra.length} 張，${ERA_ZH[t.era] || ""}${t.missing.length ? `，有 ${t.missing.length} 張你的牌沒進去` : ""}${p ? `，${previewState(p)}` : ""}`)} · ${summary.map(x => `${translate(x.kind)}: ${translate(x.label)}${reference.get(x.kind) !== x.tag ? ` (${translate("與已選試印不同")})` : ""}`).join(", ")}`
     );
   });
 }
@@ -1539,7 +1544,10 @@ function planPool(t, empty) {
   return { w, caps: sim(w, false).caps, cardsW };
 }
 
+let fitRevision = 0;
+
 function applyFit(plan) {
+  const revision = ++fitRevision;
   const box = $("registers");
   box.querySelector(".rel-layer")?.remove();
   poolFit.caps = plan.caps;
@@ -1564,6 +1572,17 @@ function applyFit(plan) {
     });
     return;
   }
+  poolFit.w = w;
+  // 新卡池與字盒的樣式一起變動時，當場讀尺寸會強制整頁同步排版。
+  // 先畫計算好的牌寬，下一格畫完後再核對；新版卡池會使舊的量測失效。
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    if (revision !== fitRevision || !wideLayout.matches) return;
+    validateFit(plan, box);
+  }));
+}
+
+function validateFit(plan, box) {
+  let w = plan.w;
   const head = box.querySelector(".reg-head");
   if (head && head.offsetHeight) poolFit.headH = head.offsetHeight;
   // 算的跟畫出來的對不上（第一次畫、欄寬剛變）：等一下照實際的寬再排一次。
@@ -1705,7 +1724,7 @@ function renderPlate(events = []) {
   let sheet = null;
   if (morph) {
     const r = box.getBoundingClientRect();
-    const g = box.cloneNode(true);
+    const g = cloneCard(box);
     g.removeAttribute("id");
     g.querySelector(".rel-layer")?.remove();
     // 你的牌不跟著這張紙走：清版、撤回、拿下來各有自己的路線（掃回字盒、飛回托盤）。留著的話會同時看到兩份。
@@ -1774,14 +1793,7 @@ function morphPlate(box, sheet) {
 }
 
 function pickStarters(avoid = []) {
-  const ok = STARTERS.filter((s) => s.tags.every((t) => lib.byTag.has(t) && rankOk(cardOf(t)) && !bans.has(t)));
-  // 換一組時盡量不要又出現剛剛那三組。
-  const fresh = ok.filter((s) => !avoid.includes(s.name));
-  const pool = fresh.length >= 3 ? fresh : ok;
-  const out = [];
-  const bag = [...pool];
-  while (out.length < 3 && bag.length) out.push(bag.splice(Math.floor(Math.random() * bag.length), 1)[0]);
-  return out;
+  return chooseStarters(t => lib.byTag.has(t) && rankOk(cardOf(t)) && !bans.has(t), avoid);
 }
 
 function reshuffleStarters() {
@@ -1870,8 +1882,8 @@ function deckStarters() {
 }
 
 function startBlock() {
-  if (!starterPick) starterPick = pickStarters();
-  const starters = starterPick.filter((s) => s.tags.every((t) => lib.byTag.has(t) && rankOk(cardOf(t)) && !bans.has(t)));
+  starterPick = refreshStarters(starterPick, t => lib.byTag.has(t) && rankOk(cardOf(t)) && !bans.has(t));
+  const starters = starterPick;
   return el(
     "div",
     { class: "pool-start" },
@@ -2420,7 +2432,7 @@ function flyIn(tag, from, { delay = 0, src = null, startRotate = 0, startScale =
   }
   // 飛的是一張影子，版上那張先藏著，影子落地才亮出來。飛的路上版可能整塊重畫（卡池大小變了、
   // 影子張數重排）：重畫出來的新那張也要藏著（plateCard 看 inbound），影子追的也是新那張的位置。
-  const ghost = (src || target).cloneNode(true);
+  const ghost = cloneCard(src || target, src || caseCard(tag) || target);
   ghost.classList.add("flying");
   ghost.classList.remove("is-related", "is-stamped", "is-popped", "fav-card");
   ghost.style.visibility = "";
@@ -2459,7 +2471,7 @@ function releaseInbound(tag, tok) {
 }
 
 function flyToPill(target, from, pill) {
-  const ghost = target.cloneNode(true);
+  const ghost = cloneCard(target);
   ghost.classList.add("flying");
   // 落點是那顆標籤的中心，牌縮成原本的兩成被吸進去。
   const into = () => {
@@ -2504,7 +2516,7 @@ function flyHome(snap, delay = 0) {
     to = inView(grid) ? { left: grid.left + grid.width / 2 - 20, top: Math.max(grid.top, 0) + 20, width: 40, height: 56 } : null;
   }
   if (!to) return liftAway(snap, "aside");
-  const ghost = snap.node.cloneNode(true);
+  const ghost = cloneCard(snap.node);
   ghost.classList.add("flying");
   ghost.classList.remove("is-related", "is-stamped", "is-popped");
   // 追著落點飛（字盒捲動、托盤變寬都跟得上）；落地那一刻托盤那張才亮、字盒那張壓一下。
@@ -2546,7 +2558,7 @@ function sweepHome(snaps, tags, { start = 0 } = {}) {
 
 function liftAway(snap, dir) {
   if (reduced() || !snap.rect.width) return;
-  const clone = snap.node.cloneNode(true);
+  const clone = cloneCard(snap.node);
   clone.classList.add("flying");
   Object.assign(clone.style, { left: snap.rect.left + "px", top: snap.rect.top + "px", width: snap.rect.width + "px" });
   clone.style.setProperty("--card-w", snap.rect.width + "px");
@@ -2677,6 +2689,9 @@ function renderPrintBar() {
     return syncPrintFloat();
   }
   const p = printFor(sigOf(t));
+  const sizeId = (SIZES.find(s => s.w === settings.width && s.h === settings.height) || SIZES[0]).id;
+  const currentSize = bar.querySelector(".pb-size select");
+  if (currentSize) currentSize.value = sizeId;
   const busy = p && (p.status === "queued" || p.status === "running");
   const offline = comfyOk === false;
   let label = "付印";
@@ -2746,6 +2761,12 @@ function renderPrintBar() {
       )
     ),
     t.missing.length ? el("p", { class: "pb-warn" }, `這張沒收到：${t.missing.map(zh).join("、")}`) : null,
+    el("label", { class: "pb-size" }, "尺寸", el("select", { class: "select", "aria-label": "尺寸", onchange: (e) => {
+      const hadFocus = document.activeElement === e.currentTarget;
+      const size = SIZES.find(s => s.id === e.currentTarget.value);
+      setSettings({ width: size.w, height: size.h });
+      if (hadFocus) $("print-bar").querySelector(".pb-size select")?.focus({ preventScroll: true });
+    } }, SIZES.map(s => el("option", { value: s.id, selected: s.id === sizeId }, `${translate(s.zh)} ${s.w}×${s.h}`)))),
     el(
       "div",
       { class: "pb-acts" },
@@ -2770,17 +2791,15 @@ function renderPrintBar() {
       ? el("p", { class: "pb-hint", dataset: { fresh: wasOffline ? "0" : "1" } }, linkNow === "net" ? "連不到主機（網路斷了？）。可以繼續疊版、挑試印，接上了再付印。" : "印刷機（ComfyUI）沒開。可以繼續疊版、挑試印，開了再付印。")
       : null,
     p && p.status === "failed" ? el("p", { class: "pb-hint", dataset: { kind: "err" } }, p.note || "印壞了") : null,
+    el("p", { class: "pb-links" },
+      el("button", { class: "link-btn pressable", type: "button", onclick: showPos }, "看提示詞"),
+      bed.pins.length ? el("a", { class: "link-btn pressable", href: "./", onclick: sendToPool }, "帶牌去墨池") : null
+    ),
     el(
       "details",
       { class: "pb-more" },
       el("summary", {}, "更多設定與操作"),
-      seedNode || (seedNode = mountSeedControl(null, { compact: true })),
-      el(
-        "p",
-        { class: "pb-links" },
-        el("button", { class: "link-btn pressable", type: "button", onclick: showPos }, "看 POS"),
-        el("button", { class: "link-btn pressable", type: "button", onclick: sendToPool, disabled: !bed.pins.length || undefined }, "把這一版放進墨池的合成池")
-      )
+      seedNode || (seedNode = mountSeedControl(null, { compact: true }))
     )
   );
   if (moreOpen) bar.querySelector(".pb-more").open = true;
@@ -2793,7 +2812,7 @@ function showPos() {
   const t = trials[picked];
   if (!t) return;
   openSheet(
-    `試印 ${t.letter} 的 POS`,
+    `試印 ${t.letter} 的提示詞`,
     el(
       "div",
       {},
@@ -2817,19 +2836,18 @@ function showPos() {
               }
             },
           },
-          "複製 POS"
+          "複製提示詞"
         ),
       ],
     }
   );
 }
 
-function sendToPool() {
-  if (!bed.pins.length) return;
-  S.handOffPool(bed.pins, "fuse", bed.weights || {});
-  const b = $("print-bar").querySelector(".pb-links button:last-child");
-  if (b) b.textContent = "放好了：回墨池工作臺就看得到";
-  announce("這一版的牌放進墨池的合成池了");
+function sendToPool(e) {
+  if (!bed.pins.length || !S.handOffPool(bed.pins, "fuse", bed.weights || {})) {
+    e.preventDefault();
+    toast("無法交接選牌，請檢查瀏覽器儲存空間。");
+  }
 }
 
 /* ================= 晾紙繩 ================= */
@@ -3354,9 +3372,10 @@ function moreCase() {
   caseShown += slice.length;
   const reasons = grid._reasons;
   const has = new Set(bed.pins);
-  for (const card of slice) {
+  const hasCards = !!grid.querySelector(".card");
+  const nodes = slice.map((card, i) => {
     const node = cardNode(card, assets, { src: reasons ? reasons.get(card.tag) : null });
-    node.tabIndex = grid.querySelector(".card") ? -1 : 0;
+    node.tabIndex = hasCards || i ? -1 : 0;
     if (has.has(card.tag)) node.dataset.state = "pinned";
     node.setAttribute("aria-pressed", has.has(card.tag) ? "true" : "false");
     node.addEventListener("click", () => {
@@ -3365,8 +3384,9 @@ function moreCase() {
     });
     if (hand?.has(card.tag)) node.dataset.inHand = "true";
     drag.attach(node, { tag: card.tag, from: "case" });
-    grid.append(node);
-  }
+    return node;
+  });
+  grid.append(...nodes);
   if (caseShown < caseList.length) {
     const more = el("span", { class: "case-more", "aria-hidden": "true" });
     grid.append(more);
