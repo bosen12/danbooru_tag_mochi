@@ -91,6 +91,8 @@ html[lang="en"] .book-grid { grid-template-columns: repeat(auto-fill, minmax(114
  * down. Pool cards narrower than ~100px keep an 8px floor for legibility. Two lines of name fit inside the suit-seal height, so every
  * label bar in a row is equally tall. */
 html[lang="en"] :is(.card, .card-peek-face) { container-type: inline-size; }
+/* Grids of equal-width cards measure the width once (cards.js sizeCards, --card-cq = 1% of the card width), so the cards are not containers there. */
+html[lang="en"] [data-sized] .card { container-type: normal; }
 html[lang="en"] .card {
   grid-template-columns: minmax(0, 1fr);
   grid-template-rows: minmax(0, 1fr) auto;
@@ -109,6 +111,7 @@ html[lang="en"] :is(.card-spine, .card-peek-spine) {
   border: 0;
   border-top: 2px solid var(--suit, var(--peek-suit));
 }
+html[lang="en"] [data-sized] .card-spine { --u: max(8px, calc(var(--card-cq) * 9)); }
 html[lang="en"] :is(.card-suit, .card-peek-suit) { flex: none; width: calc(var(--u) * 1.875); height: calc(var(--u) * 1.875); font-size: var(--u); }
 html[lang="en"] :is(.card-name, .card-peek-name) {
   flex: 1 1 auto;

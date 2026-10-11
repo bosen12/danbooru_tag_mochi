@@ -215,6 +215,27 @@ export function groupNow(box, chips) {
 }
 
 /**
+ * 一整格同樣寬的牌（卡冊、字盒、疊印台字盒）：量一次牌寬，寫在格子上（--card-cq＝牌寬的 1%），
+ * 格子裡的牌就不必各自當 container query 的容器（styles.css 的 [data-sized]）。
+ * 每張牌都是容器的話，格子裡任何一張有變動（圖到了、動畫收尾），整片 grid 重排時每張牌都要把
+ * 樣式重算一遍：卡冊換花色卡將近一秒。量到之前不標 data-sized，牌照舊自己量，不會一開始字級是錯的。
+ * ResizeObserver 在排版之後、畫之前回報，量到的寬度當格就用上。
+ */
+export function sizeCards(grid) {
+  if (!grid || typeof ResizeObserver !== "function") return;
+  let last = 0;
+  new ResizeObserver(() => {
+    // 排版上的寬（不受發牌動畫的縮放影響，也不像 offsetWidth 四捨五入）。
+    const c = grid.querySelector(".card");
+    const w = c ? parseFloat(getComputedStyle(c).width) || 0 : 0;
+    if (!w || w === last) return;
+    last = w;
+    grid.style.setProperty("--card-cq", `${w / 100}px`);
+    grid.dataset.sized = "";
+  }).observe(grid);
+}
+
+/**
  * 字盒的分類籤（細分類，見 scripts/subgroups.py）。
  * 同一家族（「地點・住家」的「地點」）連在一起的收成一串：家族名寫一次，籤上只寫後半，
  * 一個花色三十幾格也只佔幾行。章只在整格的牌都是同一個章時才標（細分類可能跨小分類收字）。

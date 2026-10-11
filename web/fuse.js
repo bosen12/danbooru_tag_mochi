@@ -37,7 +37,7 @@ import { heatBlockedByRating } from "./scene-policy.js";
 import { initLoraPicker, currentLorasPayload, currentTriggerText, currentCkpt, handleLoraKeys } from "./lora.js";
 import { initWorkflow, currentWorkflowId, currentSampling, wfHandleKeys } from "./workflow.js";
 import { HARD_BANNED, applyArtSources } from "./card-art.js";
-import { buildLibrary, groupChips, genderChips, chipRun, seriesRun, groupNow, cardMatches, createAssets, cardNode, cardFacts, setEnterTarget, eagerArt, CARD_SUIT_INFO, CARD_SUITS, RATING_ZH, ERA_ZH } from "./cards.js";
+import { buildLibrary, sizeCards, groupChips, genderChips, chipRun, seriesRun, groupNow, cardMatches, createAssets, cardNode, cardFacts, setEnterTarget, eagerArt, CARD_SUIT_INFO, CARD_SUITS, RATING_ZH, ERA_ZH } from "./cards.js";
 import { el, openSheet, anyOverlay, toast } from "./ui.js";
 import { mountKeysHelp } from "./keys-help.js";
 import { mountTour } from "./tour.js";
@@ -305,6 +305,7 @@ async function boot() {
   if (waiting.length) toast(`接著印剛才排著的 ${waiting.length} 張`);
   for (const p of prints) if (p.status === "done" && p.hiresJob) hiresRun.resume(p, p.hiresJob);
   attachPeek($("case-grid"), ".card[data-tag]", peekInfo);
+  sizeCards($("case-grid"));
   // 生圖種子一換，同一張試印對應的成品就不一樣了：成品、付印那條、試印上的小圖都要重畫。
   onSeedChange(() => {
     renderPreview();

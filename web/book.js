@@ -12,7 +12,7 @@ import { dateLocale, english } from "./i18n.js";
  */
 import { indexLexicon } from "./engine.js";
 import { ratingBlocked, RATING_LABEL } from "./rules/rating.js";
-import { buildLibrary, groupChips, genderChips, chipRun, seriesRun, createAssets, cardNode, cardFacts, setCardFlag, eagerArt, cardMatches, CARD_SUIT_INFO, CARD_SUITS } from "./cards.js";
+import { buildLibrary, sizeCards, groupChips, genderChips, chipRun, seriesRun, createAssets, cardNode, cardFacts, setCardFlag, eagerArt, cardMatches, CARD_SUIT_INFO, CARD_SUITS } from "./cards.js";
 import { el, openSheet, toast } from "./ui.js";
 import { mountKeysHelp } from "./keys-help.js";
 import { mountTour } from "./tour.js";
@@ -167,6 +167,7 @@ async function boot() {
   renderAch();
   // 滑鼠停在牌上：跟墨池、疊印台同一張浮空放大卡，多一行用過幾次。
   attachPeek($("book-grid"), ".card[data-tag]", peekInfo);
+  sizeCards($("book-grid"));
   settleMotion();
 }
 

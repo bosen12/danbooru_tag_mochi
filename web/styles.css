@@ -1151,9 +1151,11 @@ body #wf-pick-btn.has {
   --reg: color-mix(in oklch, var(--color-pool) 62%, transparent);
   --reg-len: 18px;
   --reg-w: 1.5px;
+  --pool-card-w: clamp(64px, 7vw, 92px);
   position: relative;
   margin: var(--space-sm) var(--space-md);
-  min-height: 150px;
+  /* 空的時候就留一張牌的高度（牌 480:702＋上下留白）：放第一張牌時框不長高，底下的規則、抽牌列不會被推一下。 */
+  min-height: max(150px, calc(var(--pool-card-w) * 702 / 480 + 2 * var(--space-md)));
   padding: var(--space-md) var(--space-lg);
   border-radius: var(--radius-xs);
   background:
@@ -1180,7 +1182,7 @@ body #wf-pick-btn.has {
 }
 
 .pool-well .card {
-  --card-w: clamp(64px, 7vw, 92px);
+  --card-w: var(--pool-card-w);
 }
 
 .pool-well[data-over="true"] {

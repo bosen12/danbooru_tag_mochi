@@ -971,6 +971,12 @@ body[data-hand-edit="true"] :is(#case-grid, #lib-grid) .card[data-in-hand="true"
 .card > :is(.card-spine, .card-art) {
   font-size: var(--card-f);
 }
+/* 整格同樣寬的牌（卡冊、字盒、疊印台字盒）：牌寬由格子量好寫在 --card-cq（cards.js 的 sizeCards），
+   牌就不當容器。每張都是容器的話，grid 一重排每張牌都要重算樣式（卡冊換花色卡將近一秒）。 */
+[data-sized] .card {
+  container-type: normal;
+  --card-f: calc(var(--card-cq) * 12.5);
+}
 
 /* 放大卡跟小牌同一份尺寸：書脊 26%、章、字、小分類章都照 .card-spine 的 em 比例（card-peek.js 的
  * 樣式是寫死 px 的共用版，這裡多一層選擇器蓋過去）。英文的書脊是橫的底條，在 locale.css。 */

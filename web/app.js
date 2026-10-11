@@ -37,7 +37,7 @@ import { SCENE_MODES, SCENE_MODE_LABELS, heatBlockedByRating } from "./scene-pol
 import { initLoraPicker, currentLorasPayload, currentTriggerText, currentCkpt, handleLoraKeys } from "./lora.js";
 import { initWorkflow, currentWorkflowId, currentSampling, wfHandleKeys } from "./workflow.js";
 import { HARD_BANNED } from "./card-art.js";
-import { buildLibrary, groupChips, genderChips, chipRun, seriesRun, groupNow, createAssets, cardNode, setCardFlag, setEnterTarget, eagerArt, cardFacts, cardMatches, CARD_SUIT_INFO, CARD_SUITS, RATING_ZH } from "./cards.js";
+import { buildLibrary, sizeCards, groupChips, genderChips, chipRun, seriesRun, groupNow, createAssets, cardNode, setCardFlag, setEnterTarget, eagerArt, cardFacts, cardMatches, CARD_SUIT_INFO, CARD_SUITS, RATING_ZH } from "./cards.js";
 import { bindArt, artFallback } from "./card-images.js";
 import { el, openSheet, anyOverlay, toast, runToastAction, ICONS } from "./ui.js";
 import { mountKeysHelp } from "./keys-help.js";
@@ -180,6 +180,7 @@ async function boot() {
   // Hires 做到一半就重新整理的：接回去。
   for (const s of shots) if (s.status === "done" && s.hiresJob) hiresRun.resume(s, s.hiresJob);
   for (const root of [$("lib-grid"), $("pool-well"), $("wall"), hand?.fan]) attachPeek(root, ".card[data-tag]", peekInfo);
+  sizeCards($("lib-grid"));
   // 觸控裝置沒有實體鍵盤：搜尋框不提「按 /」（手機上只會把提示擠到看不完）。
   if (matchMedia("(hover: none)").matches) $("lib-q").placeholder = $("lib-q").placeholder.replace(/（按[^）]*）/, "");
   document.addEventListener("keydown", onKey);
