@@ -223,7 +223,19 @@ export function groupNow(box, chips) {
  */
 export function sizeCards(grid) {
   if (!grid || typeof ResizeObserver !== "function") return;
+  // 先用上次量到的寬度：第一次排版就不必走「每張牌各自當容器」那條慢路（卡冊開頁那一下要 200ms）。
+  // 這次量到的不一樣，ResizeObserver 一樣在畫出來之前改掉。
+  const key = `mochi.cardcq.${grid.id}`;
   let last = 0;
+  try {
+    const was = Number(localStorage.getItem(key));
+    if (was > 0) {
+      grid.style.setProperty("--card-cq", `${was}px`);
+      grid.dataset.sized = "";
+    }
+  } catch {
+    /* 讀不到就照舊：量到之前牌自己量 */
+  }
   new ResizeObserver(() => {
     // 排版上的寬（不受發牌動畫的縮放影響，也不像 offsetWidth 四捨五入）。
     const c = grid.querySelector(".card");
@@ -232,6 +244,11 @@ export function sizeCards(grid) {
     last = w;
     grid.style.setProperty("--card-cq", `${w / 100}px`);
     grid.dataset.sized = "";
+    try {
+      localStorage.setItem(key, String(w / 100));
+    } catch {
+      /* 存不了就下次再量 */
+    }
   }).observe(grid);
 }
 
