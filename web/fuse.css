@@ -1146,26 +1146,6 @@ body.fuse {
   }
 }
 
-/* 起手：換一組時三張往上翻過來。 */
-.starters.is-shuffled .starter {
-  animation: starter-in var(--dur-medium) var(--ease-out) backwards;
-}
-
-.starters.is-shuffled .starter:nth-of-type(2) {
-  animation-delay: 60ms;
-}
-
-.starters.is-shuffled .starter:nth-of-type(3) {
-  animation-delay: 120ms;
-}
-
-@keyframes starter-in {
-  from {
-    opacity: 0;
-    transform: translateY(10px) rotateX(35deg);
-  }
-}
-
 .starters-more {
   margin-left: var(--space-sm);
 }
@@ -2005,6 +1985,17 @@ body.fuse {
   overflow-wrap: anywhere;
 }
 .trial-summary .is-different { color: var(--color-accent); }
+.trial-summary > span { transition: color var(--dur-short) var(--ease-out); }
+.trial-diff {
+  display: inline-block;
+  width: 1.2em;
+  opacity: 0;
+  transition: opacity var(--dur-short) var(--ease-out);
+}
+.is-different > .trial-diff { opacity: 1; }
+@media (prefers-reduced-motion: reduce) {
+  .trial-summary > span, .trial-diff { transition: none; }
+}
 .pb-size {
   display: flex;
   align-items: center;

@@ -36,6 +36,7 @@ const copy = String.raw`
 圖片讀取失敗|Image could not load
 圖片讀取失敗。可以重試，或把牌帶回墨池重新生成。|Image could not load. Retry, or take the cards to Mochi to generate it again.
 重試讀取圖片|Retry image
+正在重新讀取圖片…|Reloading image…
 這件作品只存了配方。把牌帶回墨池，就能重新生成圖片。|This work contains a recipe only. Take its cards to Mochi to generate an image.
 牌組保存整組選牌與權重，之後可以重新套用；偏好卡牌則是每個工作區常用的單張牌。|Decks save a full selection and its weights for reuse. Favorites hold individual cards for each workspace.
 常用單張牌，最多十張；每個工作區各自保存。|Up to ten favorite cards, saved separately for each workspace.

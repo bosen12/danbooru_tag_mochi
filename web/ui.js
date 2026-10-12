@@ -31,6 +31,13 @@ export const ICONS = {
 
 let openOverlays = [];
 
+function sheetTabStops(sheet) {
+  return [...sheet.querySelectorAll("*")].filter((n) =>
+    n.tabIndex >= 0 && !n.matches(":disabled") && !n.closest("[inert]") &&
+    n.getClientRects().length && n.checkVisibility({ visibilityProperty: true })
+  ).sort((a, b) => (a.tabIndex || Infinity) - (b.tabIndex || Infinity));
+}
+
 export function openSheet(title, body, { wide = false, onClose, foot, translateTitle = true } = {}) {
   const lastFocus = document.activeElement;
   const titleId = "sheet-" + Math.random().toString(36).slice(2, 8);
@@ -39,7 +46,7 @@ export function openSheet(title, body, { wide = false, onClose, foot, translateT
   const grip = el("div", { class: "sheet-grip", "aria-hidden": "true" });
   const sheet = el(
     "div",
-    { class: wide ? "sheet sheet-wide" : "sheet", role: "dialog", "aria-modal": "true", "aria-labelledby": titleId },
+    { class: wide ? "sheet sheet-wide" : "sheet", role: "dialog", tabindex: "-1", "aria-modal": "true", "aria-labelledby": titleId },
     grip,
     el("h2", { id: titleId, dataset: translateTitle ? {} : { noI18n: "" } }, title),
     closeBtn,
@@ -53,6 +60,8 @@ export function openSheet(title, body, { wide = false, onClose, foot, translateT
   const close = () => {
     if (!overlay.isConnected || overlay.dataset.closing) return;
     overlay.dataset.closing = "true";
+    // 拉紙時停掉的 CSS 進場，關閉時交回 closing 的離場；回彈本身不重播進場。
+    sheet.style.animation = "";
     document.removeEventListener("keydown", onKey, true);
     openOverlays = openOverlays.filter((o) => o !== overlay);
     unlockScroll(overlayId);
@@ -71,12 +80,17 @@ export function openSheet(title, body, { wide = false, onClose, foot, translateT
       e.stopPropagation();
       close();
     } else if (e.key === "Tab") {
-      const f = [...sheet.querySelectorAll("button, [href], input, select, [tabindex]:not([tabindex='-1'])")].filter((n) => !n.disabled);
-      if (!f.length) return;
-      if (e.shiftKey && document.activeElement === f[0]) {
+      const f = sheetTabStops(sheet);
+      if (!f.length) {
+        e.preventDefault();
+        sheet.focus({ preventScroll: true });
+        return;
+      }
+      const at = f.indexOf(document.activeElement);
+      if (e.shiftKey && at <= 0) {
         e.preventDefault();
         f.at(-1).focus();
-      } else if (!e.shiftKey && document.activeElement === f.at(-1)) {
+      } else if (!e.shiftKey && (at === -1 || at === f.length - 1)) {
         e.preventDefault();
         f[0].focus();
       }
@@ -116,12 +130,12 @@ function swipeToClose(sheet, close) {
     sheet.style.animation = "none";
     sheet.style.transform = `translateY(${drag.dy.toFixed(1)}px)`;
   });
-  const end = (e) => {
+  const end = (e, cancelled = false) => {
     if (!drag || e.pointerId !== drag.id) return;
     const { dy, t } = drag;
     drag = null;
     const speed = dy / Math.max(1, performance.now() - t);
-    if (dy > 90 || (dy > 24 && speed > 0.6)) {
+    if (!cancelled && (dy > 90 || (dy > 24 && speed > 0.6))) {
       if (!reducedMotion()) {
         sheet.animate([{ transform: `translateY(${dy}px)` }, { transform: "translateY(100%)" }], {
           duration: DUR.short,
@@ -138,7 +152,7 @@ function swipeToClose(sheet, close) {
     sheet.style.transform = "";
   };
   sheet.addEventListener("pointerup", end);
-  sheet.addEventListener("pointercancel", end);
+  sheet.addEventListener("pointercancel", (e) => end(e, true));
 }
 
 export function anyOverlay() {

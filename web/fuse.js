@@ -1375,15 +1375,17 @@ function renderTrials() {
     }
     paintTrialFace(i, p);
     const summary = candidateSummary(t, lex.byTag);
-    const summaryKey = summary.map(x => `${x.kind}:${x.tag}:${reference.get(x.kind)}`).join("|");
+    // 換已選試印只改差異標記；保留文字節點讓顏色過渡、不打斷閱讀。
+    const summaryKey = summary.map(x => `${x.kind}:${x.tag}`).join("|");
     if (n.summary.dataset.key !== summaryKey) {
       n.summary.dataset.key = summaryKey;
-      put(n.summary, summary.map(x => {
-        const different = reference.get(x.kind) !== x.tag;
-        return el("span", { class: different ? "is-different" : "", title: `${translate(x.kind)}：${translate(x.label)}${different ? ` · ${translate("與已選試印不同")}` : ""}` },
-          different ? el("span", { "aria-hidden": "true" }, "≠ ") : null, x.label);
-      }));
+      put(n.summary, summary.map(x => el("span", {}, el("span", { class: "trial-diff", "aria-hidden": "true" }, "≠ "), x.label)));
     }
+    summary.forEach((x, j) => {
+      const row = n.summary.children[j], different = reference.get(x.kind) !== x.tag;
+      row.classList.toggle("is-different", different);
+      row.title = `${translate(x.kind)}：${translate(x.label)}${different ? ` · ${translate("與已選試印不同")}` : ""}`;
+    });
     n.node.setAttribute(
       "aria-label",
       `${translate(`試印 ${t.letter}：引擎補 ${t.extra.length} 張，${ERA_ZH[t.era] || ""}${t.missing.length ? `，有 ${t.missing.length} 張你的牌沒進去` : ""}${p ? `，${previewState(p)}` : ""}`)} · ${summary.map(x => `${translate(x.kind)}: ${translate(x.label)}${reference.get(x.kind) !== x.tag ? ` (${translate("與已選試印不同")})` : ""}`).join(", ")}`

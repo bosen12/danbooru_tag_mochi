@@ -1329,6 +1329,22 @@ body #wf-pick-btn.has {
   margin-top: 0.5rem;
 }
 .quick-starters > span { flex-basis: 100%; }
+/* 兩個工作區共用起手換組節奏；普通重畫不重播。 */
+.starters.is-shuffled .starter,
+.quick-starters.is-shuffled [data-starter] {
+  animation: starter-in var(--dur-medium) var(--ease-out) backwards;
+}
+.starters.is-shuffled .starter:nth-of-type(2),
+.quick-starters.is-shuffled [data-starter]:nth-of-type(2) { animation-delay: 60ms; }
+.starters.is-shuffled .starter:nth-of-type(3),
+.quick-starters.is-shuffled [data-starter]:nth-of-type(3) { animation-delay: 120ms; }
+@keyframes starter-in {
+  from { opacity: 0; transform: translateY(10px) rotateX(35deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .starters.is-shuffled .starter,
+  .quick-starters.is-shuffled [data-starter] { animation: none; }
+}
 .album-image-note { display: grid; gap: 0.6rem; }
 .album-image-note[hidden] { display: none; }
 .album-image-note button { justify-self: start; }
@@ -1604,7 +1620,7 @@ body #wf-pick-btn.has {
   cursor: not-allowed;
 }
 
-.more-rules summary {
+:is(.more-rules, .skel-more) > summary {
   cursor: pointer;
   font-size: var(--text-xs);
   color: var(--color-muted);
@@ -1612,23 +1628,23 @@ body #wf-pick-btn.has {
   list-style: none;
 }
 
-.more-rules summary::-webkit-details-marker {
+:is(.more-rules, .skel-more) > summary::-webkit-details-marker {
   display: none;
 }
 
 /* 箭頭：一個 ▸ 轉 90° 變 ▾，不換字。 */
-.more-rules summary::before {
+:is(.more-rules, .skel-more) > summary::before {
   content: "▸";
   display: inline-block;
   width: 1em;
   transition: rotate var(--dur-short) var(--ease-out);
 }
 
-.more-rules[open] summary::before {
+:is(.more-rules, .skel-more)[open] > summary::before {
   rotate: 90deg;
 }
 
-.more-rules summary:hover {
+:is(.more-rules, .skel-more) > summary:hover {
   color: var(--color-ink);
 }
 
@@ -1636,11 +1652,11 @@ body #wf-pick-btn.has {
  * 收起時一按就開始縮、內容先淡掉，不再一格就消失。content-visibility 用 allow-discrete
  * 撐到收完才藏。不支援 ::details-content 的瀏覽器照舊瞬間開合。
  * overflow-clip-margin：開到一半時裁切邊，但別把步進器、選單的焦點框切掉。 */
-.more-rules {
+:is(.more-rules, .skel-more) {
   interpolate-size: allow-keywords;
 }
 
-.more-rules::details-content {
+:is(.more-rules, .skel-more)::details-content {
   height: 0;
   overflow: clip;
   overflow-clip-margin: 4px;
@@ -1649,7 +1665,7 @@ body #wf-pick-btn.has {
     content-visibility var(--dur-short) allow-discrete;
 }
 
-.more-rules[open]::details-content {
+:is(.more-rules, .skel-more)[open]::details-content {
   height: auto;
   transition:
     height var(--dur-medium) var(--ease-out),
@@ -1661,6 +1677,9 @@ body #wf-pick-btn.has {
   gap: var(--space-sm);
   /* padding 不用 margin：margin 會穿過高度 0 的外框露在外面，收完那一格才一次跳掉 12px。 */
   padding-top: var(--space-sm);
+}
+
+:is(.more-rules, .skel-more) > div {
   opacity: 0;
   translate: 0 calc(var(--space-sm) * -1);
   transition:
@@ -1668,7 +1687,7 @@ body #wf-pick-btn.has {
     translate var(--dur-short) var(--ease-out);
 }
 
-.more-rules[open] > div {
+:is(.more-rules, .skel-more)[open] > div {
   opacity: 1;
   translate: 0;
   transition:
@@ -1677,9 +1696,11 @@ body #wf-pick-btn.has {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .more-rules summary::before,
-  .more-rules::details-content,
-  .more-rules > div {
+  :is(.more-rules, .skel-more) > summary::before,
+  :is(.more-rules, .skel-more)::details-content,
+  :is(.more-rules, .skel-more)[open]::details-content,
+  :is(.more-rules, .skel-more) > div,
+  :is(.more-rules, .skel-more)[open] > div {
     transition: none;
   }
 }

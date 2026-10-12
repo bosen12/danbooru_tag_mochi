@@ -108,7 +108,7 @@ export function skeletonPicker({ settings, save }) {
           { class: "skel-body", role: "group", "aria-label": `${SECTION_ZH[section]}補哪幾格` },
           el("span", { class: "skel-name" }, SECTION_ZH[section]),
           el("div", { class: "skel-chips" }, chips.slice(0, COMMON[section])),
-          el("details", { class: "skel-more" }, el("summary", {}, "更多種類"), el("div", { class: "skel-chips" }, chips.slice(COMMON[section]))),
+          el("details", { class: "skel-more" }, el("summary", { class: "pressable" }, "更多種類"), el("div", { class: "skel-chips" }, chips.slice(COMMON[section]))),
           el("span", { class: "skel-note", "aria-live": "polite" }),
           section === "pose" ? el("span", { class: "skel-note" }, "性愛與走光也受選格限制；仍須符合尺度與情境，無可用牌時會留空。") : null,
           section === "feature" ? el("span", { class: "skel-note" }, "選格時職業依這裡的選擇；自由補抽時依「抽職業」開關。體型依人物性別補。", " ", "種族需使用「多元／奇葩」場景。") : null

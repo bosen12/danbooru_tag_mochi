@@ -62,6 +62,7 @@ assert.equal(t('尺度'), 'Content level', 'Content level and rating are differe
 assert.equal(t('分級'), 'Rating');
 assert.equal(t('起手：雨夜街角'), 'Starter: ' + t('雨夜街角'), 'Starter announcements must be translated');
 assert.equal(t('已選試印 B，尚未生成圖片'), 'Proof B selected, no image generated yet');
+assert.equal(t('正在重新讀取圖片…'), 'Reloading image…', 'Image retries expose translated waiting feedback');
 assert.match(t('只補 1 種、每種一件，點一顆換過去；釘選只佔同類格'), /Add 1 type, one item/);
 assert.match(t('種族需使用「多元／奇葩」場景。'), /Diverse or Weird/);
 globalThis.location = { pathname: '/fuse.html' };

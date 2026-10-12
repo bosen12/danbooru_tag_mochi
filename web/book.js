@@ -1,4 +1,5 @@
 import { dateLocale, english } from "./i18n.js";
+import { cloneCard } from "./card-images.js";
 /**
  * 卡冊：每張牌進過幾張圖。
  *
@@ -902,7 +903,10 @@ function openCard(card, srcNode) {
             type: "button",
             onclick: (e) => {
               // 交接便條：墨池下次打開時把它放進合成池（30 分鐘內有效，見 store.js）。
-              S.handOffPool([card.tag], "book");
+              if (!S.handOffPool([card.tag], "book")) {
+                refuse(e.currentTarget);
+                return toast("無法交接選牌，請檢查瀏覽器儲存空間。");
+              }
               sfx.tap?.();
               e.currentTarget.textContent = "帶過去了…";
               setTimeout(() => (location.href = "./"), reducedMotion() ? 0 : DUR.short);
@@ -1108,7 +1112,10 @@ function openWork(x, thumb) {
                 onclick: (e) => {
                   // 份量（weights.js）從提示詞讀回來：帶回去還是那個份量。
                   const all = weightsOfPositive(x.positive);
-                  S.handOffPool(cards, "book", Object.fromEntries(cards.filter((t) => all[t]).map((t) => [t, all[t]])));
+                  if (!S.handOffPool(cards, "book", Object.fromEntries(cards.filter((t) => all[t]).map((t) => [t, all[t]])))) {
+                    refuse(e.currentTarget);
+                    return toast("無法交接選牌，請檢查瀏覽器儲存空間。");
+                  }
                   e.currentTarget.textContent = "帶過去了…";
                   setTimeout(() => (location.href = "./"), reducedMotion() ? 0 : DUR.short);
                 },
@@ -1167,7 +1174,7 @@ function flyToDetail(src, sheetEl) {
   const to = dst.getBoundingClientRect();
   for (const a of anims) a.currentTime = 0;
   if (!to.width) return;
-  const f = (src.querySelector(".card-art") || src).cloneNode(true);
+  const f = cloneCard(src.querySelector(".card-art") || src);
   Object.assign(f.style, { position: "fixed", left: to.left + "px", top: to.top + "px", width: to.width + "px", height: to.height + "px", margin: "0", zIndex: "200", pointerEvents: "none", overflow: "hidden", borderRadius: "6px", transformOrigin: "0 0", willChange: "transform" });
   document.body.append(f);
   dst.style.visibility = "hidden";
@@ -1271,7 +1278,7 @@ function flyIntoBox(fromNode) {
   if (!fromNode || reducedMotion()) return bumpPill();
   const r = fromNode.getBoundingClientRect();
   if (!r.width || r.bottom < 0 || r.top > innerHeight) return bumpPill();
-  const ghost = fromNode.cloneNode(true);
+  const ghost = cloneCard(fromNode);
   ghost.classList.add("box-ghost");
   ghost.querySelector(".book-rank")?.remove();
   document.body.append(ghost);
@@ -1345,6 +1352,8 @@ function setBoxOpen(on) {
     }
     panel.querySelector(".box-close")?.focus({ preventScroll: true });
   } else {
+    // 鍵盤從盒內收起時回到開關；從盒外操作時保留原本的焦點。
+    if (panel.contains(document.activeElement)) pill.focus({ preventScroll: true });
     const done = () => {
       if (!boxOpen) panel.hidden = true;
     };
@@ -1504,7 +1513,10 @@ function clearBox() {
 /** 全部放進墨池：牌依序往上飛走，交接便條寫好，換版過去（牌已經在合成池裡）。 */
 function boxToMochi() {
   if (!box.length) return refuse($("box-panel").querySelector(".box-go"));
-  S.handOffPool(box, "book");
+  if (!S.handOffPool(box, "book")) {
+    refuse($("box-panel").querySelector(".box-go"));
+    return toast("無法交接選牌，請檢查瀏覽器儲存空間。");
+  }
   const n = box.length;
   box = [];
   saveBox();

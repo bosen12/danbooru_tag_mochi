@@ -1293,7 +1293,9 @@ const starterAllowed = tag => lib.byTag.has(tag) && !ratingBlocked(lib.byTag.get
 function reshuffleStarters() {
   starterPick = pickStarters(starterAllowed, (starterPick || []).map(s => s.name));
   renderPool();
-  $("pool-well").querySelector(".quick-starters-more")?.focus({ preventScroll: true });
+  const starters = $("pool-well").querySelector(".quick-starters");
+  if (!reducedMotion()) starters?.classList.add("is-shuffled");
+  starters?.querySelector(".quick-starters-more")?.focus({ preventScroll: true });
   sfx.shuffle?.();
 }
 

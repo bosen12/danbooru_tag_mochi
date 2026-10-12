@@ -9,13 +9,20 @@ import { el, openSheet, toast } from "./ui.js";
 import { enter, leave, refuse, reducedMotion, DUR, CURVE, css } from "./motion.js";
 
 let cache = null;
+let revision = 0;
+let loadRequest = 0;
+let writeQueue = Promise.resolve();
 
-export async function loadDecks() {
+export async function loadDecks({ strict = false } = {}) {
+  const request = ++loadRequest, startedAt = revision;
   try {
     const r = await fetch("/api/decks", { cache: "no-store" });
     if (!r.ok) throw new Error(String(r.status));
-    cache = (await r.json()).decks || [];
-  } catch {
+    const decks = (await r.json()).decks || [];
+    // 較晚開始的讀取，或已完成的增刪，才代表目前的牌組。
+    if (request === loadRequest && startedAt === revision) cache = decks;
+  } catch (err) {
+    if (strict) throw err;
     return cache;
   }
   return cache;
@@ -24,7 +31,14 @@ export async function loadDecks() {
 /** 上一次讀到的牌組（還沒讀過是 null）：要立刻畫出來的地方先用它，再背景更新。 */
 export const cachedDecks = () => cache;
 
-async function call(url, method, body) {
+function call(url, method, body) {
+  // 伺服器每次回完整清單。把增刪（含復原）依序送出，回應與實際寫入順序才一致。
+  const pending = writeQueue.then(() => requestWrite(url, method, body));
+  writeQueue = pending.catch(() => {}); // 一筆失敗不能卡住後面的重試／其他牌組。
+  return pending;
+}
+
+async function requestWrite(url, method, body) {
   const r = await fetch(url, {
     method,
     headers: body ? { "Content-Type": "application/json" } : {},
@@ -32,6 +46,7 @@ async function call(url, method, body) {
   });
   const j = await r.json().catch(() => ({}));
   if (!r.ok || !j.ok) throw new Error(j.error || `伺服器回 ${r.status}`);
+  revision++;
   cache = j.decks || cache;
   return j.deck;
 }
@@ -76,6 +91,9 @@ export function openDecks({ where, current, has, zh, apply, paste, weightsNow = 
       )
     : el("p", { class: "deck-note deck-save-empty" }, `${where}是空的：先放幾張牌，就能存成一組。`);
   let decks = cache || [];
+  let saving = false;
+  const deleting = new Set();
+  let initialLoad;
   // 名字跟存過的一樣：按下去是更新那一組（按鈕上寫清楚），不會多出兩組同名的。
   const same = () => decks.find((d) => d.name === name.value.trim());
   const label = () => {
@@ -135,6 +153,7 @@ export function openDecks({ where, current, has, zh, apply, paste, weightsNow = 
           {
             class: "deck-del link-btn pressable",
             type: "button",
+            disabled: deleting.has(d.id) || undefined,
             "aria-label": `刪掉牌組「${d.name}」`,
             onclick: (e) => remove(d, node, e.currentTarget),
           },
@@ -154,14 +173,23 @@ export function openDecks({ where, current, has, zh, apply, paste, weightsNow = 
   };
 
   const remove = async (d, node, btn) => {
+    if (deleting.has(d.id)) return;
+    deleting.add(d.id);
+    btn.disabled = true;
+    btn.setAttribute("aria-busy", "true");
     try {
       await deleteDeck(d.id);
     } catch (err) {
+      deleting.delete(d.id);
+      btn.disabled = false;
+      btn.removeAttribute("aria-busy");
       refuse(btn);
       return toast(`刪不掉：${err.message}`);
     }
+    btn.removeAttribute("aria-busy");
     decks = cache || decks.filter((x) => x.id !== d.id);
     leave(node, () => {
+      deleting.delete(d.id);
       paint();
       label();
     });
@@ -186,11 +214,28 @@ export function openDecks({ where, current, has, zh, apply, paste, weightsNow = 
 
   form.addEventListener?.("submit", async (e) => {
     e.preventDefault();
+    if (saving) return;
+    saving = true;
+    saveBtn.disabled = true;
+    saveBtn.setAttribute("aria-busy", "true");
     const tags = current().filter(has);
     const n = name.value.trim() || suggestName(tags, zh);
-    const hit = decks.find((d) => d.name === n);
-    saveBtn.disabled = true;
     try {
+      // 舊快取還沒有這個名字時，先等面板這次讀取，避免把別處新增的同名牌組另存一份。
+      if (!decks.some((d) => d.name === n)) {
+        const fresh = await initialLoad;
+        if (fresh === null) {
+          try {
+            await loadDecks({ strict: true });
+          } catch {
+            refuse(saveBtn);
+            toast("讀不到牌組：伺服器沒開，或連不到主機。");
+            return;
+          }
+        }
+      }
+      decks = cache || decks;
+      const hit = decks.find((d) => d.name === n);
       const w = weightsNow();
       const weights = Object.fromEntries(tags.filter((t) => w[t] && w[t] !== 1).map((t) => [t, w[t]]));
       const deck = await saveDeck({ id: hit?.id, name: n, tags, weights });
@@ -211,21 +256,27 @@ export function openDecks({ where, current, has, zh, apply, paste, weightsNow = 
       refuse(saveBtn);
       toast(`存不了：${err.message}`);
     } finally {
+      saving = false;
       saveBtn.disabled = false;
+      saveBtn.removeAttribute("aria-busy");
     }
   });
 
   // 讀過就先畫上次的（馬上看得到），沒讀過就留著「讀取牌組…」，不先閃一句「還沒有牌組」。
   if (cache) paint();
-  loadDecks().then((fresh) => {
-    if (!list.isConnected) return;
+  initialLoad = loadDecks({ strict: true }).then((fresh) => {
+    if (!list.isConnected) return fresh;
     if (fresh === null) {
       list.replaceChildren(el("p", { class: "deck-note" }, "讀不到牌組：伺服器沒開，或連不到主機。"));
-      return;
+      return null;
     }
     decks = fresh;
     paint();
     label();
+    return fresh;
+  }).catch(() => {
+    if (list.isConnected && cache === null) list.replaceChildren(el("p", { class: "deck-note" }, "讀不到牌組：伺服器沒開，或連不到主機。"));
+    return null;
   });
   if (now.length) requestAnimationFrame(() => name.select());
 }

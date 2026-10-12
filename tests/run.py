@@ -31,6 +31,9 @@ if "--browser" in sys.argv:
     checks.append(("test_setup_browser.mjs", "test_mochi_setup_browser.mjs"))
     checks.append(("test_ux_browser.mjs", "test_web6_ux_browser.mjs"))
     checks.append(("test_flight_browser.mjs", "test_web6_flight_browser.mjs"))
+    checks.append(("test_motion_details_browser.mjs", "test_web6_motion_details_browser.mjs"))
+    checks.append(("test_shared_interactions_browser.mjs", "test_web6_shared_interactions_browser.mjs"))
+    checks.append(("test_collection_interactions_browser.mjs", "test_web6_collection_interactions_browser.mjs"))
 node = shutil.which("node")
 if not node:
     sys.exit("Node.js 20+ is required to run the development tests")

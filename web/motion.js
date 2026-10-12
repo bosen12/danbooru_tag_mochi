@@ -514,7 +514,7 @@ function wirePress() {
   // 第一次寫上屬性是畫出來，不是使用者切換。那時蓋章會為了重播動畫去量版面，載入就多一次整頁排版。
   new MutationObserver((records) => {
     for (const r of records) {
-      if (r.oldValue === null) continue;
+      if (r.oldValue === null || r.oldValue === r.target.getAttribute("aria-pressed")) continue;
       if (r.target.matches?.(PRESS)) seat(r.target);
     }
   }).observe(document.body, { subtree: true, attributes: true, attributeOldValue: true, attributeFilter: ["aria-pressed"] });
@@ -607,27 +607,70 @@ export function initMotion() {
 
 /* ---------- FLIP：清單增減時，旁邊的東西滑到新位置，不是一格一格跳 ---------- */
 
+const flipAnimations = new WeakMap();
+const activeFlips = new Map();
+let flipMedia = null;
+function stopFlipWatch() {
+  if (activeFlips.size || !flipMedia) return;
+  flipMedia.removeEventListener?.("change", settleFlips);
+  flipMedia = null;
+}
+function settleFlips() {
+  if (!flipMedia?.matches) return;
+  for (const node of activeFlips.values()) cancelFlip(node);
+}
+function cancelFlip(node) {
+  const animation = flipAnimations.get(node);
+  if (!animation) return;
+  animation.cancel();
+  flipAnimations.delete(node);
+  activeFlips.delete(animation);
+  stopFlipWatch();
+}
+function animateFlip(node, from, to, duration) {
+  const dx = from.left - to.left;
+  const dy = from.top - to.top;
+  if (Math.abs(dx) < 1 && Math.abs(dy) < 1) return;
+  const animation = node.animate([{ transform: `translate(${dx}px, ${dy}px)` }, { transform: "none" }], { duration, easing: css(CURVE.out) });
+  flipAnimations.set(node, animation);
+  activeFlips.set(animation, node);
+  if (!flipMedia) {
+    flipMedia = matchMedia("(prefers-reduced-motion: reduce)");
+    flipMedia.addEventListener?.("change", settleFlips);
+  }
+  const release = () => {
+    if (flipAnimations.get(node) === animation) flipAnimations.delete(node);
+    activeFlips.delete(animation);
+    stopFlipWatch();
+  };
+  animation.onfinish = release;
+  animation.oncancel = release;
+}
+// 偏好在讓位途中改成減少動作：直接落定，只取消這兩個 helper 自己開的動畫。
+// change 只在有讓位動畫時監聽，全部落定就放掉。
+
 /**
  * flip(container, () => { ...改 DOM... })：改之前量一次每個子元素的位置，改完再量一次，
  * 位置變了的從舊位置滑過去。新加進來的不管（呼叫端自己決定它怎麼進場）。
  */
 export function flip(container, mutate, { duration = DUR.medium } = {}) {
-  if (!container || reducedMotion()) {
+  if (!container) {
+    mutate();
+    return;
+  }
+  const nodes = [...container.children];
+  if (reducedMotion()) {
+    for (const n of nodes) cancelFlip(n);
     mutate();
     return;
   }
   const before = new Map();
-  for (const n of container.children) before.set(n, n.getBoundingClientRect());
+  // 先量所有「現在看見」的位置，再取消舊讓位；落點不能混到上一段的 transform。
+  for (const n of nodes) before.set(n, n.getBoundingClientRect());
+  for (const n of nodes) cancelFlip(n);
   mutate();
   const after = [...container.children].filter((n) => before.has(n)).map((n) => [n, n.getBoundingClientRect()]);
-  for (const [n, b] of after) {
-    const a = before.get(n);
-    if (!a) continue;
-    const dx = a.left - b.left;
-    const dy = a.top - b.top;
-    if (Math.abs(dx) < 1 && Math.abs(dy) < 1) continue;
-    n.animate([{ transform: `translate(${dx}px, ${dy}px)` }, { transform: "none" }], { duration, easing: css(CURVE.out) });
-  }
+  for (const [n, b] of after) animateFlip(n, before.get(n), b, duration);
 }
 
 /**
@@ -637,15 +680,22 @@ export function flip(container, mutate, { duration = DUR.medium } = {}) {
  * 就從影子的位置滑進去。
  */
 export function flipBy(container, selector, key, mutate, { duration = DUR.medium, alias = null } = {}) {
-  if (!container || reducedMotion()) {
+  if (!container) {
+    mutate();
+    return;
+  }
+  const nodes = [...container.querySelectorAll(selector)];
+  if (reducedMotion()) {
+    for (const n of nodes) cancelFlip(n);
     mutate();
     return;
   }
   const before = new Map();
-  for (const n of container.querySelectorAll(selector)) {
+  for (const n of nodes) {
     const k = key(n);
     if (k && !before.has(k)) before.set(k, n.getBoundingClientRect());
   }
+  for (const n of nodes) cancelFlip(n);
   mutate();
   if (!before.size) return;
   const after = [];
@@ -655,12 +705,7 @@ export function flipBy(container, selector, key, mutate, { duration = DUR.medium
     if (!a) continue;
     after.push([n, a, n.getBoundingClientRect()]);
   }
-  for (const [n, a, b] of after) {
-    const dx = a.left - b.left;
-    const dy = a.top - b.top;
-    if (Math.abs(dx) < 1 && Math.abs(dy) < 1) continue;
-    n.animate([{ transform: `translate(${dx}px, ${dy}px)` }, { transform: "none" }], { duration, easing: css(CURVE.out) });
-  }
+  for (const [n, a, b] of after) animateFlip(n, a, b, duration);
 }
 
 /**

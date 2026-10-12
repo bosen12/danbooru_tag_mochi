@@ -479,10 +479,14 @@ function chips(tags, kind, weights = {}) {
   return el("div", { class: `album-chips is-${kind}` }, tags.map((t) => el("span", { class: "album-chip", title: t }, zh(t) + (weights[t] ? ` ${weights[t]}` : ""))));
 }
 
-function toMochi(tags, label, w) {
+function toMochi(tags, label, w, button = document.activeElement) {
   // 份量（weights.js）從提示詞讀回來：收藏時調過的牌，帶回去還是那個份量。
   const all = weightsOfPositive(w?.positive);
-  S.handOffPool(tags, "album", Object.fromEntries(tags.filter((t) => all[t]).map((t) => [t, all[t]])));
+  if (!S.handOffPool(tags, "album", Object.fromEntries(tags.filter((t) => all[t]).map((t) => [t, all[t]])))) {
+    if (button?.matches?.("button")) refuse(button);
+    toast("無法交接選牌，請檢查瀏覽器儲存空間。");
+    return false;
+  }
   toast(`${label}帶去墨池…`);
   setTimeout(() => (location.href = "./"), reducedMotion() ? 0 : DUR.short);
 }
@@ -504,23 +508,44 @@ function openWork(w) {
     ["收藏於", dateText(w.createdAt)],
   ];
   let sheet = null;
-  const imageNote = el("p", { class: "album-image-note", role: "status", hidden: true },
-    el("span", {}, "圖片讀取失敗。可以重試，或把牌帶回墨池重新生成。"),
-    el("button", { class: "btn btn-small", type: "button", onclick: () => {
-      imageNote.hidden = true;
-      image.src = `${full}${full.includes("?") ? "&" : "?"}retry=${Date.now()}`;
-    } }, "重試讀取圖片")
-  );
+  const failedImageText = "圖片讀取失敗。可以重試，或把牌帶回墨池重新生成。";
+  const imageStatus = el("span", {}, failedImageText);
+  let retrying = false;
+  const retryImage = el("button", { class: "btn btn-small", type: "button", onclick: () => {
+    if (retrying) return;
+    retrying = true;
+    // disabled 按鈕在部分瀏覽器會失去焦點；先移到仍可讀的狀態，再按讀取結果接回去。
+    if (document.activeElement === retryImage) imageNote.focus({ preventScroll: true });
+    retryImage.disabled = true;
+    imageNote.setAttribute("aria-busy", "true");
+    imageStatus.textContent = "正在重新讀取圖片…";
+    imageBlank.textContent = "正在重新讀取圖片…";
+    image.src = `${full}${full.includes("?") ? "&" : "?"}retry=${Date.now()}`;
+  } }, "重試讀取圖片");
+  const imageNote = el("p", { class: "album-image-note", role: "status", tabindex: "-1", hidden: true }, imageStatus, retryImage);
   const image = full ? el("img", { src: full, alt: w.name, onerror: () => {
+    retrying = false;
+    retryImage.disabled = false;
+    imageNote.removeAttribute("aria-busy");
+    imageStatus.textContent = failedImageText;
     image.hidden = true;
     imageNote.hidden = false;
+    if (document.activeElement === imageNote) retryImage.focus({ preventScroll: true });
     big.removeAttribute("href");
     imageBlank.hidden = false;
+    imageBlank.textContent = "圖片讀取失敗";
   }, onload: () => {
+    const recovered = retrying;
+    retrying = false;
+    retryImage.disabled = false;
+    imageNote.removeAttribute("aria-busy");
     image.hidden = false;
-    imageNote.hidden = true;
     imageBlank.hidden = true;
     big.href = full;
+    // 重試成功後按鈕會收起；仍在按鈕上的鍵盤焦點移到已恢復的原圖連結。
+    if (document.activeElement === retryImage || document.activeElement === imageNote) big.focus({ preventScroll: true });
+    imageNote.hidden = true;
+    if (recovered && !reducedMotion()) image.animate([{ opacity: 0 }, { opacity: 1 }], { duration: DUR.medium, easing: css(CURVE.out) });
   } }) : null;
   const imageBlank = el("span", { class: "album-noimg", hidden: !!full }, full ? "圖片讀取失敗" : "只有配方，尚無圖片");
   const big = el(full ? "a" : "div", { class: "album-big", href: full || undefined, target: full ? "_blank" : undefined, rel: full ? "noopener" : undefined, style: w.width && w.height ? `aspect-ratio: ${w.width} / ${w.height}` : "" }, image, imageBlank);
