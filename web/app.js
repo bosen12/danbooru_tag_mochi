@@ -49,7 +49,7 @@ import { openPaste, listenPaste } from "./paste-prompt.js";
 import { paintWeight, wireWeightInput, weightRow, weightPositive } from "./weights.js";
 import { favButton } from "./album-save.js";
 import { createDrag, inkRing } from "./drag.js";
-import { initMotion, settleMotion, replayDeal, flip, flipBy, leave, enter, confirmButton, gatherHome, flight, seat, refuse, reducedMotion, CURVE, DUR, css } from "./motion.js";
+import { initMotion, settleMotion, replayDeal, flip, flipBy, leave, enter, confirmButton, gatherHome, flight, seat, refuse, reducedMotion, swapIn, CURVE, DUR, css } from "./motion.js";
 import { cloneCard } from "./card-images.js";
 import { createHand } from "./hand.js";
 import { createTrashPanel } from "./trash-panel.js";
@@ -593,6 +593,7 @@ function renderLibrary() {
       ),
     ];
     chips.replaceChildren(...(ui.suit === "chara" ? [genderChips(ui.charGender, pickGender), seriesRun(all)] : all));
+    swapIn(chips, ui.suit);
     libNow(ui.group ? runs.flatMap((r) => r.items).find((i) => i.g === ui.group) : null, (e) => pickGroup("", e.currentTarget));
   }
   const list = inSuit.filter((c) => (!ui.group || c.group === ui.group) && cardMatches(c, q));
@@ -1089,8 +1090,32 @@ function renderPoolNote() {
     box = el("p", { class: "pool-note", id: "pool-note" });
     $("pool-well").after(box);
   }
-  box.hidden = !poolNote;
-  if (!poolNote) return box.replaceChildren();
+  box._collapse?.cancel();
+  if (!poolNote) {
+    if (box.hidden || reducedMotion() || !box.offsetHeight) {
+      box.hidden = true;
+      return box.replaceChildren();
+    }
+    // 收起來時高度跟著縮：底下的規則列、抽牌列滑上去，不是一格跳上去。
+    const cs = getComputedStyle(box);
+    box.style.overflow = "hidden";
+    const a = (box._collapse = box.animate(
+      [{ height: box.offsetHeight + "px", marginTop: cs.marginTop, opacity: 1 }, { height: "0px", marginTop: "0px", opacity: 0 }],
+      { duration: DUR.short, easing: css(CURVE.exit) }
+    ));
+    a.onfinish = () => {
+      box._collapse = null;
+      box.style.overflow = "";
+      if (poolNote) return;
+      box.hidden = true;
+      box.replaceChildren();
+    };
+    a.oncancel = () => {
+      box.style.overflow = "";
+    };
+    return;
+  }
+  box.hidden = false;
   const back = poolNote.back;
   box.replaceChildren(
     el("span", {}, poolNote.text),
@@ -1299,13 +1324,45 @@ function reshuffleStarters() {
   sfx.shuffle?.();
 }
 
+/**
+ * 「清空」「帶牌去疊印台」這種跟著池子有沒有牌出現的小東西：沒牌時收起來但留著位置，
+ * 旁邊的「貼上」「牌組」不會一下左一下右；出現、消失只淡一下（styles.css 的 .is-off）。
+ * inert：收著的時候點不到、Tab 走不到、讀屏也略過。
+ */
+function shownInPlace(node, on) {
+  if (!node) return;
+  node.classList.toggle("is-off", !on);
+  node.inert = !on;
+}
+
+/**
+ * 空池的說明在第一張牌進來時淡掉，不是一下就不見：牌還在路上，框裡不該先空一拍。
+ * 影子疊在原位（不佔版面，.is-leaving 也不算「空池」），淡完就拿掉。
+ */
+function fadeOutPoolEmpty(well) {
+  const old = well.querySelector(":scope > .pool-empty");
+  if (!old || reducedMotion() || !old.offsetWidth) return null;
+  const at = { left: old.offsetLeft, top: old.offsetTop, width: old.offsetWidth };
+  return () => {
+    old.classList.add("is-leaving");
+    old.inert = true;
+    Object.assign(old.style, { position: "absolute", left: at.left + "px", top: at.top + "px", width: at.width + "px", margin: "0", pointerEvents: "none", animation: "none" });
+    well.append(old);
+    const a = old.animate([{ opacity: 1 }, { opacity: 0, transform: "translateY(-4px)" }], { duration: DUR.short, easing: css(CURVE.exit), fill: "forwards" });
+    const drop = () => old.remove();
+    a.onfinish = drop;
+    a.oncancel = drop;
+    setTimeout(drop, DUR.short + 150);
+  };
+}
+
 function renderPool(fresh) {
   updatePickerFoot();
   const well = $("pool-well");
   const tags = [...pool].filter((t) => lib.byTag.has(t));
   settleText($("pool-count"), tags.length ? `${tags.length} 張會一定進圖` : "");
-  $("pool-clear").hidden = !tags.length;
-  $("pool-to-fuse").hidden = !tags.length;
+  shownInPlace($("pool-clear"), tags.length);
+  shownInPlace($("pool-to-fuse"), tags.length);
   if (!tags.length) {
     starterPick = refreshStarters(starterPick, starterAllowed);
     const starters = starterPick;
@@ -1367,6 +1424,7 @@ function renderPool(fresh) {
   }
   const newlyClashing = [...clashing].filter((t) => !lastClash.has(t));
   lastClash = clashing;
+  const ghostEmpty = fadeOutPoolEmpty(well);
   well.replaceChildren(
     ...tags.map((t) => {
       const card = lib.byTag.get(t);
@@ -1402,6 +1460,7 @@ function renderPool(fresh) {
       );
     })
   );
+  ghostEmpty?.();
   renderPoolClash(clashPairs);
 }
 
@@ -1919,9 +1978,12 @@ async function drawBatchNow(gen, intent, epoch) {
   sfx.deal(made.length > 1 ? made.length + 3 : 5);
   if (gen && epoch === drawEpoch) setTimeout(() => sfx.roll(), 160);
   const wall = $("wall");
-  for (const shot of made.slice().reverse()) {
-    const node = shotNode(shot, true);
-    wall.prepend(node);
+  const fresh = made.slice().reverse().map((shot) => [shot, shotNode(shot, true)]);
+  // 舊的成品讓位：從原來的格子滑到新位置（跟同種子重印同一個 flip），不是一格跳過去。
+  flip(wall, () => {
+    for (const [, node] of fresh) wall.prepend(node);
+  });
+  for (const [shot, node] of fresh) {
     // 一次抽很多張：由上往下一張接一張落下（像一疊印好的紙依序攤開），不要全部同一瞬間冒出來。
     // 前八張錯開，後面的跟第八張一起，整段不會拖太久。
     const v = made.indexOf(shot);

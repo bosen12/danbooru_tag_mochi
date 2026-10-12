@@ -21,7 +21,7 @@ import { mountGenStatus } from "./gen-status.js";
 import { openDecks } from "./decks.js";
 import { openPaste } from "./paste-prompt.js";
 import { measure, evaluate, announce, openWall } from "./achievements.js";
-import { initMotion, settleMotion, seat, refuse, flight, reducedMotion, CURVE, DUR, css } from "./motion.js";
+import { initMotion, settleMotion, seat, refuse, flight, reducedMotion, swapIn, CURVE, DUR, css } from "./motion.js";
 import { watchLink, LINK_LABEL, viewSrc } from "./gen.js";
 import { getSfx } from "./sfx.js";
 import { attachPeek } from "./card-peek.js";
@@ -407,6 +407,7 @@ function renderGroups() {
     ),
   ];
   box.replaceChildren(...(ui.suit === "chara" ? [genderChips(ui.charGender, pickGender), seriesRun(all)] : all));
+  swapIn(box, ui.suit);
 }
 
 function pickGroup(g, from) {

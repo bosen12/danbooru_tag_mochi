@@ -47,7 +47,7 @@ import { openDecks, loadDecks, cachedDecks } from "./decks.js";
 import { openPaste, listenPaste } from "./paste-prompt.js";
 import { paintWeight, wireWeightInput, weightRow, weightPositive } from "./weights.js";
 import { favButton } from "./album-save.js";
-import { initMotion, settleMotion, flip, flipBy, leave, gatherHome, flight, enter, seat, refuse, CURVE, DUR, css } from "./motion.js";
+import { initMotion, settleMotion, flip, flipBy, leave, gatherHome, flight, enter, seat, refuse, swapIn, CURVE, DUR, css } from "./motion.js";
 import { cloneCard } from "./card-images.js";
 import { createHand } from "./hand.js";
 import { createDrag, inkRing } from "./drag.js";
@@ -2224,17 +2224,36 @@ function drawRelations(events = []) {
   layer.append(...labels);
   box.append(layer);
   // 新出現的線一筆畫出來；畫完把虛線樣式還給 CSS（附帶、相剋本來就是虛線）。
-  for (const path of drawIn) {
-    const len = Math.ceil(path.getTotalLength());
-    path.style.strokeDasharray = String(len);
-    path.style.strokeDashoffset = String(len);
-    path.animate([{ strokeDashoffset: len }, { strokeDashoffset: 0 }], { duration: DUR.xl, easing: css(CURVE.out), fill: "forwards" });
-    setTimeout(() => {
-      path.getAnimations().forEach((a) => a.cancel());
-      path.style.strokeDasharray = "";
-      path.style.strokeDashoffset = "";
-    }, 640);
-  }
+  const drawLines = () => {
+    for (const path of drawIn) {
+      const len = Math.ceil(path.getTotalLength());
+      path.style.strokeDasharray = String(len);
+      path.style.strokeDashoffset = String(len);
+      path.animate([{ strokeDashoffset: len }, { strokeDashoffset: 0 }], { duration: DUR.xl, easing: css(CURVE.out), fill: "forwards" });
+      setTimeout(() => {
+        path.getAnimations().forEach((a) => a.cancel());
+        path.style.strokeDasharray = "";
+        path.style.strokeDashoffset = "";
+      }, 640);
+    }
+  };
+  // 牌還在一張張發進來（起手式、清版後放牌）：線和「附帶」「相剋」等牌落定才淡進來、再一筆畫出，
+  // 不要先在空白的版上漂著。位置本來就是照最後的版面量的，等的只是時機。
+  const entering = reduced() ? [] : [...box.querySelectorAll(".plate-card")]
+    .flatMap((c) => c.getAnimations())
+    .filter((a) => a.playState !== "finished" && a.effect?.getTiming().iterations !== Infinity);
+  if (!entering.length) return drawLines();
+  layer.style.opacity = "0";
+  let shown = false;
+  const show = () => {
+    if (shown || !layer.isConnected) return;
+    shown = true;
+    layer.style.opacity = "";
+    layer.animate([{ opacity: 0 }, { opacity: 1 }], { duration: DUR.short, easing: css(CURVE.out) });
+    drawLines();
+  };
+  Promise.all(entering.map((a) => a.finished.catch(() => {}))).then(show);
+  setTimeout(show, 1600);
 }
 
 /** 指著（或 Tab 到）一張牌：它的關係線亮起來，其他的淡下去，另一端那張也描一圈。 */
@@ -2800,7 +2819,7 @@ function renderPrintBar() {
     el(
       "details",
       { class: "pb-more" },
-      el("summary", {}, "更多設定與操作"),
+      el("summary", { class: "pressable" }, "更多設定與操作"),
       seedNode || (seedNode = mountSeedControl(null, { compact: true }))
     )
   );
@@ -3263,6 +3282,7 @@ function renderCaseGroups(inSuit) {
     ),
   ];
   box.replaceChildren(...(caseTab === "chara" ? [genderChips(caseGender, pickGender), seriesRun(all)] : all));
+  swapIn(box, caseTab);
   // 籤列捲走後的「航海王」清除鈕：按下去跟點「全部」一樣，焦點落到「全部」上。
   caseNow(caseGroup ? runs.flatMap((r) => r.items).find((i) => i.g === caseGroup) : null, () => {
     all[0].click();

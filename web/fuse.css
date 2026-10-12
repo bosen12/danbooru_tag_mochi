@@ -678,10 +678,19 @@ body.fuse {
 
 .plate {
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr) auto;
+  /* 頂欄、用途說明、手機的試印、卡池（吃掉剩下的高度、自己捲）、圖例。每一列都寫死位置：
+     用途說明後來才插進來，沒寫位置時它佔了吃高度的那一列 —— 空的版上方多一大片空白，
+     放了牌之後說明又疊在第一層（風）上面。 */
+  grid-template-rows: auto auto auto minmax(0, 1fr) auto;
   background: var(--press-bed);
   transition: background-color var(--dur-short) var(--ease-out);
 }
+
+.plate > .plate-head { grid-row: 1; }
+.plate > .workspace-purpose { grid-row: 2; }
+.plate > .mobile-proofs { grid-row: 3; }
+.plate > .plate-scroll { grid-row: 4; }
+.plate > .pool-legend { grid-row: 5; }
 
 .plate-head {
   display: grid;

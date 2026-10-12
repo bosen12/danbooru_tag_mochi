@@ -424,6 +424,38 @@ body #wf-pick-btn.has {
   margin-left: var(--space-xs);
 }
 
+/* 頂欄的分頁和小連結（介紹影片、教學、導覽）、種子的「隨機／固定」：滑過的顏色淡一下，
+   按下去沉一點，跟其他按鈕同一種手感；它們是字或膠囊，不壓內陰影。 */
+.page-switch a,
+.mast-extra,
+.tour-btn {
+  transition: color var(--dur-micro) var(--ease-out), scale var(--dur-short) var(--ease-settle);
+}
+
+.seed-ctl-mode button {
+  transition:
+    background-color var(--dur-micro) var(--ease-out),
+    color var(--dur-micro) var(--ease-out),
+    scale var(--dur-short) var(--ease-settle);
+}
+
+.page-switch a:active,
+.mast-extra:active,
+.tour-btn:active,
+.seed-ctl-mode button:active:not([aria-checked="true"]) {
+  scale: 0.96;
+  transition-duration: var(--dur-micro);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page-switch a,
+  .mast-extra,
+  .tour-btn,
+  .seed-ctl-mode button {
+    transition: none;
+  }
+}
+
 .wordmark small {
   font-family: var(--font-body);
   font-weight: 400;
@@ -1177,7 +1209,7 @@ body #wf-pick-btn.has {
 }
 
 /* 空的時候說明靠左、像版面上的圖說，不是置中的召喚區。 */
-.pool-well:has(> .pool-empty) {
+.pool-well:has(> .pool-empty:not(.is-leaving)) {
   justify-content: flex-start;
 }
 
@@ -1207,6 +1239,36 @@ body #wf-pick-btn.has {
 
 .pool-note[hidden] {
   display: none;
+}
+
+/* 跟著池子有沒有牌出現的小東西（清空、帶牌去疊印台）：收著時留位置，只淡出淡入（app.js shownInPlace）。
+   出現比收起慢一點；visibility 跟著延後切，淡出的那一下還看得到。 */
+/* 按鈕本來的按壓、底色過渡要留著，所以把 .btn 那一串照抄再加上 opacity、visibility。 */
+#pool-clear {
+  transition:
+    transform var(--dur-short) var(--ease-settle),
+    background-color var(--dur-micro) var(--ease-out),
+    border-color var(--dur-micro) var(--ease-out),
+    box-shadow var(--dur-short) var(--ease-out),
+    opacity var(--dur-short) var(--ease-out),
+    visibility 0s;
+}
+
+#pool-to-fuse {
+  transition: opacity var(--dur-short) var(--ease-out), visibility 0s;
+}
+
+:is(#pool-clear, #pool-to-fuse).is-off {
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity var(--dur-micro) var(--ease-out), visibility 0s var(--dur-micro);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :is(#pool-clear, #pool-to-fuse),
+  :is(#pool-clear, #pool-to-fuse).is-off {
+    transition: none;
+  }
 }
 
 /* 池子裡放不到一起的兩張：虛線框起來，底下一行說是哪兩張。 */
@@ -3118,7 +3180,7 @@ body[data-dragging="true"] .library[data-over="true"] {
 
 /* 手機：空的合成池不必 150px 高 —— 一行說明配四角的套準線就夠，首屏多留給字盒和按鈕。 */
 @media (max-width: 40rem) {
-  .pool-well:has(> .pool-empty) {
+  .pool-well:has(> .pool-empty:not(.is-leaving)) {
     min-height: 0;
     padding-block: var(--space-md);
   }
@@ -3261,9 +3323,17 @@ body[data-dragging="true"] .library[data-over="true"] {
   color: var(--color-ink);
 }
 
+/* 「這裡沒有東西」的說明一律淡進來，不是一格就冒出來：字盒、合成池、成品牆、卡冊、卡盒、
+   作品冊、疊印台找牌。換排序、搜到沒有、撤下最後一張時都看得到這一下。 */
 .lib-empty,
 .pool-empty,
-.lora-empty {
+.lora-empty,
+.wall-empty,
+.book-empty,
+.book-works-empty,
+.box-empty,
+.album-empty,
+.case-empty {
   animation: ink-empty-in var(--dur-medium) var(--ease-out) both;
 }
 
@@ -3352,6 +3422,12 @@ body .lora-modal .lm-none {
   .lib-empty,
   .pool-empty,
   .lora-empty,
+  .wall-empty,
+  .book-empty,
+  .book-works-empty,
+  .box-empty,
+  .album-empty,
+  .case-empty,
   .shot[data-status="queued"] .status,
   .shot[data-status="running"] .status,
   body .lora-modal .lm-none {

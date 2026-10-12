@@ -783,6 +783,21 @@ export function leave(node, done, { duration = DUR.short } = {}) {
   setTimeout(end, duration + 150);
 }
 
+/**
+ * 一整塊內容換成另一組（換花色後的分類籤）：淡進來、落一點點，跟底下發牌同一拍。
+ * key 沒變（點分類籤、打字搜尋時整排重畫）就不演，免得每按一下整排閃一次。第一次畫也不演（開頁有自己的進場）。
+ */
+export function swapIn(node, key) {
+  if (!node || node.dataset.swapKey === key) return;
+  const first = node.dataset.swapKey === undefined;
+  node.dataset.swapKey = key;
+  if (first || node.hidden || reducedMotion()) return;
+  node.animate(
+    [{ opacity: 0, transform: "translateY(-4px)" }, { opacity: 1, transform: "none" }],
+    { duration: DUR.short, easing: css(CURVE.out) }
+  );
+}
+
 /** 一個東西進場：從上面一點浮下來。 */
 export function enter(node, { delay = 0 } = {}) {
   if (!node || reducedMotion()) return;
