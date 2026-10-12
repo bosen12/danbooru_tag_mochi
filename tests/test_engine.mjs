@@ -1215,8 +1215,11 @@ function indoorOutdoorClash(have) {
     const d = drawOne(lex, s, new Set(), new Set(), mulberry32(25000 + i), 25000 + i);
     const have = tagsOf(d);
     const got = [...have].filter((t) => lex.byTag.get(t)?.mutex === "race");
+    // 2026-10-12：東方龍、西方龍 implies 龍（Danbooru 的父子），三個都在種族格。
+    // 子字帶出來的父字是同一個種族，不算兩個。
+    const distinct = got.filter((t) => !got.some((o) => o !== t && (lex.byTag.get(o)?.implies || []).includes(t)));
     if (got.length) races += 1;
-    if (got.length > 1) clash += 1;
+    if (distinct.length > 1) clash += 1;
   }
   const sg = settings();
   sg.girl = true;
@@ -5679,7 +5682,9 @@ function indoorOutdoorClash(have) {
     // 第三十八次（2026-10-09）：第三、四輪 38 個現役詞進池。這張換成大量泌乳、觸手夾乳、玄關。
     // 仍是 1girl solo，沒有男生，也沒有人類陰莖。
     // 第三十九次（2026-10-09）：正常場景不再自己補手的構圖母題（HAND_MOTIF）。只有觸手夾乳換成乳頭牽繩。仍是 1girl solo，沒有男生。
-    "1girl, solo, very short hair, yellow eyes, aqua hair, undercut, huge breasts, hair flower, excessive lactation, lactation, completely nude, jewelry, glasses, neck ribbon, ribbon, masturbation, squatting, portrait, averting eyes, naughty face, nipple leash, genkan, indoors, twilight, moonlight, confetti, nsfw, explicit, masterpiece, best quality, amazing quality");
+    // 第四十次（2026-10-12）：Grok 的角色追加、一般標籤、焦點共 648 個字進池，Opus 驗收補上時代與場景規則。
+    // 這張換成瞇眼笑（閉眼，沒有視線）、哥德風、束縛、自由女神。仍是 1girl solo，沒有男生，也沒有人類陰莖。
+    "1girl, solo, very short hair, yellow eyes, aqua hair, sidelocks, large breasts, tsurime, long legs, ^ ^, camisole, plaid clothes, animal costume, goth fashion, ankle socks, socks, pencil skirt, skirt, shibari, bound wrists, female masturbation, knees to chest, facing away, evil smile, hogtie, bondage, fingering, statue of liberty, outdoors, twilight, dark, european architecture, graffiti, nsfw, explicit, masterpiece, best quality, amazing quality");
   ok("drawOne exposes shadow diagnostics", Array.isArray(shadowIntegrationDraw.shadowViolations));
 
   const eatProneShadow = validateSupportShadow({
@@ -6582,7 +6587,8 @@ function indoorOutdoorClash(have) {
 
   // 先證明這些字在這個設定下本來就抽得到，否則下面的斷言會空過。
   ok("twilight control: starry sky 抽得到", seenWith("night", "starry sky") > 0);
-  ok("twilight control: market stall 抽得到", seenWith("night", "market stall") > 0);
+  // 2026-10-12：道具池多了六十幾個食物、花、節慶字，市集攤每 1500 張只剩約 5 張。對照組也搜到 600。
+  ok("twilight control: market stall 抽得到", seenWith("night", "market stall", "weird", 600) > 0);
   ok("twilight control: dusk 抽得到", seenWith("outdoors", "dusk") > 0);
 
   // 過渡時段和夜側可以共存，而且兩個方向都要通（換順序結果相同）。
@@ -7391,7 +7397,10 @@ function indoorOutdoorClash(have) {
   };
   const isOnepiece = (t) => lex.byTag.get(t)?.mutex === "onepiece";
   const h = tagsOf(drawOne(lex, s, new Set(["white shirt", "coat"]), new Set(), mulberry32(63001), 63001));
-  ok("外套不能冒充下著：上衣＋coat 會補 bottom，不疊穿 onepiece", [...h].some(isBottom) && ![...h].some(isOnepiece), [...h].join(", "));
+  // 2026-10-12：內褲在 LOWER_COVER_TAGS 裡，「上衣＋內褲」是誘惑本來就有的穿法，修復不補下著
+  // （HEAD 釘這兩件 200 張也有 25 張這樣）。這條要守的是 coat 不算數，所以內褲也算交代了下半身。
+  const lowerStated = [...h].some(isBottom) || h.has("panties");
+  ok("外套不能冒充下著：上衣＋coat 會補 bottom，不疊穿 onepiece", lowerStated && ![...h].some(isOnepiece), [...h].join(", "));
   const s1 = { ...s, counts: { ...s.counts, clothing: 1 } };
   const h1 = tagsOf(drawOne(lex, s1, new Set(["white shirt", "coat"]), new Set(), mulberry32(63001), 63001));
   ok("服裝 1、釘了上衣＋coat：釘選已佔滿，不再補下身", ![...h1].some(isBottom), [...h1].join(", "));

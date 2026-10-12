@@ -32,9 +32,11 @@ export const ICONS = {
 let openOverlays = [];
 
 function sheetTabStops(sheet) {
+  // 沒有 href 的 <a>（作品圖讀取失敗時拿掉連結）tabIndex 仍是 0，但拿不到焦點，不能當頭尾。
+  // checkVisibility 舊版 Safari 沒有，那時只靠 getClientRects 判斷。
   return [...sheet.querySelectorAll("*")].filter((n) =>
-    n.tabIndex >= 0 && !n.matches(":disabled") && !n.closest("[inert]") &&
-    n.getClientRects().length && n.checkVisibility({ visibilityProperty: true })
+    n.tabIndex >= 0 && !n.matches(":disabled, a:not([href]), area:not([href])") && !n.closest("[inert]") &&
+    n.getClientRects().length && (n.checkVisibility?.({ visibilityProperty: true }) ?? true)
   ).sort((a, b) => (a.tabIndex || Infinity) - (b.tabIndex || Infinity));
 }
 

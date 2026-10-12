@@ -198,6 +198,11 @@ const SLEEVE_WORD = new Set([
   // 第六輪。無袖也是在講「那件衣服」，只穿內衣時沒有那一件。
   "sleeveless", "puffy short sleeves", "puffy long sleeves", "sleeves past wrists",
   "juliet sleeves", "frilled sleeves", "layered sleeves",
+  // 2026-10-12 新進的袖子（顏色、裁法、袖口）。只穿內衣時一樣沒有那一件。
+  "white sleeves", "black sleeves", "blue sleeves", "red sleeves", "purple sleeves",
+  "pink sleeves", "green sleeves", "grey sleeves", "ribbon-trimmed sleeves", "sleeve cuffs",
+  "fur-trimmed sleeves", "striped sleeves", "torn sleeves", "short over long sleeves",
+  "single sleeve", "sleeves pushed up", "three-quarter sleeves", "sleeves past fingers",
 ]);
 const underwearOnlyClash = (item) =>
   !!item &&
@@ -393,6 +398,20 @@ function synonymClash(tag, used) {
 }
 
 const FACELESS_CAM = new Set(["head out of frame", "lower body"]);
+// 眼睛出框只切掉眼睛，嘴和表情還在畫面上，所以不放進 FACELESS_CAM。
+// 擋的是眼睛那一串：瞳色、眼型、視線、閉眼、眼鏡（2026-10-12：以前 40/40 張帶著眼睛的字）。
+const EYELESS_CAM = new Set(["eyes out of frame"]);
+const needsEyes = (item) =>
+  !!item &&
+  (item.mutex === "gaze" ||
+    item.mutex === "eye_color" ||
+    item.group === "eyes" ||
+    EYE_EXTRA.has(item.tag) ||
+    item.tag === "closed eyes" ||
+    item.tag === "glasses" ||
+    item.tag === "one eye closed" ||
+    item.tag === "eye contact" ||
+    /^looking /.test(item.tag));
 const FACE_NEED_TAGS = new Set([
   "closed eyes",
   "facial",
@@ -492,8 +511,12 @@ const CHEST_NEED_TAGS = new Set([
 ]);
 const BED_PLACE = new Set(["bedroom", "bed", "hotel room", "love hotel", "futon"]);
 const SKY_EXTRA = new Set(["sky", "blue sky", "orange sky"]);
-const DAY_MARK = new Set(["day", "sunrise", "sunlight", "sunbeam", "dappled sunlight", "sunbathing", "blue sky", "orange sky"]);
-const NIGHT_MARK = new Set(["night", "starry sky", "moonlight", "market stall"]);
+// 太陽、蔭影、樹蔭（2026-10-12）是白天的東西：以前 1500 張裡 night＋sun 12 張。
+const DAY_MARK = new Set([
+  "day", "sunrise", "sunlight", "sunbeam", "dappled sunlight", "sunbathing", "blue sky", "orange sky",
+  "sun", "shade", "tree shade",
+]);
+const NIGHT_MARK = new Set(["night", "starry sky", "moonlight", "market stall", "crescent moon", "star (sky)"]);
 // 這些光源本身就交代了「天是暗的」：篝火、火把、燭光、油燈、街燈。
 // 它們不在 NIGHT_MARK 裡，因為 NIGHT_MARK 的成員彼此互斥（一張圖只能有一個
 // 夜的講法），而光源是另一個槽，可以和 night 並存 —— 只是不能和白天並存。
@@ -509,6 +532,10 @@ const DARK_LIGHT = new Set([
   "chandelier",
   "candelabra",
   "lamppost",
+  // 2026-10-12：昏暗、黑暗、手電筒。白天配手電筒以前 23/1500。
+  "dark",
+  "darkness",
+  "flashlight",
 ]);
 const SLEEP_BAD_POSE = new Set([
   "partially submerged",
@@ -539,6 +566,8 @@ const SLEEP_BAD_EXPR = new Set([
   "embarrassed",
   "nervous",
 ]);
+// 閉著的眼睛。眼睛的表情符號裡瞇眼笑 ^ ^、緊閉眼 > <、無言眼 = = 也是閉眼，不能再看哪裡（2026-10-12）。
+const CLOSED_EYES = new Set(["closed eyes", "^ ^", "> <", "= ="]);
 const EYE_EXTRA = new Set(["one eye closed", "empty eyes", "sparkling eyes", "half-closed eyes", "rolling eyes", "crazy eyes"]);
 const MOUTH_EXTRA = new Set([
   "open mouth",
@@ -571,6 +600,24 @@ const OUTDOOR_LEFTOVER = new Set([
   "pine tree",
   "willow",
   "rice paddy",
+  // 2026-10-12：天上的東西、樹蔭。以前室內配太陽 22/1500、配樹蔭 23/1500。
+  // 極光、月亮、雲這幾個舊的天空字也一直漏在這張表外（seed 1 室內麵包店抽到極光）。
+  "aurora",
+  "moon",
+  "milky way",
+  "cloud",
+  "cloudy sky",
+  "clear sky",
+  "sun",
+  "shade",
+  "tree shade",
+  "crescent moon",
+  "star (sky)",
+  "gradient sky",
+  "purple sky",
+  "red sky",
+  "sky focus",
+  "aerial fireworks",
 ]);
 
 function usedMutexTags(used, lex, mutex) {
@@ -3713,12 +3760,27 @@ const FEATURE_SHARE = {
 // 多元：非人特徵、人設放寬（人種格也是多元才開）。
 const FEATURE_SHARE_DIVERSE = { ...FEATURE_SHARE, nonhuman: 8, persona: 3, mark: 6, tattoo: 5 };
 const HAND_MOTIF = new Set(["disembodied hand", "shadow hands", "giant hand", "too many hands"]);
+// 2026-10-12 進池的非人五官與「整張圖變成介面」的構圖。跟 HAND_MOTIF 同一種：
+// 會改寫角色是什麼、畫面是什麼。正常場景不自己補（以前 1500 張裡裂嘴 26、無嘴 22、
+// 無眼 20、假截圖類 102），釘它、必抽、或開多元／奇葩照舊抽得到。
+const ODD_MOTIF = new Set([
+  "split mouth", "no mouth", "no nose", "faceless", "no eyes", "extra eyes", "eyeball",
+  "third eye", "one-eyed", "black sclera", "yellow sclera", "extra ears", "patchwork skin",
+  "metal skin", "fake screenshot", "fake phone screenshot", "viewfinder",
+]);
+// 只當父字用的動作：騎乘要有騎的東西（騎馬、騎車、騎掃帚帶出來）。自己被抽到時
+// 畫面沒有坐騎（以前 41 張裡 11 張）。釘它、必抽照收。
+const PARENT_ONLY = new Set(["riding"]);
 const FEATURE_SHARE_HEAT = { flash: { intimate: 8, touch: 5 }, sex: { intimate: 9, touch: 6 } };
 const FEATURE_LOUD = new Set([
   "pregnant", "quadruple amputee", "giantess", "minigirl", "old woman", "old man", "obese", "fat man",
   "blood from mouth", "blood on face", "nosebleed", "injury", "whip marks", "bite mark",
   "symbol-shaped pupils", "star-shaped pupils", "ringed eyes", "white pupils", "glowing hair",
   "green skin", "colored skin", "genderswap", "futanari", "saliva", "saliva trail",
+  // 2026-10-12：十種新膚色都帶出 colored skin，有色皮膚從 11/1500 跳到 98/1500。
+  "blue skin", "grey skin", "red skin", "purple skin", "pink skin", "yellow skin",
+  "orange skin", "aqua skin", "multicolored skin", "two-tone skin", "colored extremities",
+  "white eyes", "blank eyes", "no pupils", "body fur", "scales",
 ]);
 const FEATURE_LOUD_FACTOR = 0.3;
 
@@ -4718,6 +4780,21 @@ export function drawOne(lex, settings, pinned, userBanned, rand, seed, opts) {
         }
       }
     }
+    if (needsEyes(item) && usedHas(used, "_eyeless", (t) => EYELESS_CAM.has(t))) return false;
+    if (EYELESS_CAM.has(item.tag) && hasUsed((t) => needsEyes(lex.byTag.get(t)))) return false;
+    // 使用者明講要的（釘選、必抽）不受下面兩條限制。
+    const askedFor = pinned.has(item.tag) || commitMeta.source === SOURCES.must_draw;
+    if (sceneMode === "normal" && ODD_MOTIF.has(item.tag) && !askedFor) return false;
+    if (
+      PARENT_ONLY.has(item.tag) &&
+      !askedFor &&
+      !hasUsed((t) => (lex.byTag.get(t)?.implies || []).includes(item.tag))
+    ) {
+      return false;
+    }
+    // 方便髮是「頭髮剛好遮住裸露的地方」，穿著衣服時沒有東西要遮（以前 49 張裡 45 張穿著衣服）。
+    // 頭髮比衣服先抽，所以自由補抽實際上只會在釘了全裸時出現。
+    if (item.tag === "convenient hair" && !askedFor && !hasUsed((t) => FULL_NUDE.has(t))) return false;
     // 只有「嚴格白天」和「嚴格夜側」互斥，而且兩邊對稱。
     // sunset / dusk 是日夜過渡，兩側都相容，刻意不參與這條硬擋 —— 黃昏看見星星或
     // 月光本來就合理，夜市在日落時分開張也是。它們和 day / night 同屬 day_night
@@ -4759,7 +4836,7 @@ export function drawOne(lex, settings, pinned, userBanned, rand, seed, opts) {
     if (EYE_EXTRA.has(item.tag) && hasUsed((t) => EYE_EXTRA.has(t))) return false;
     if (MOUTH_EXTRA.has(item.tag) && hasUsed((t) => MOUTH_EXTRA.has(t))) return false;
     if (used.has("sleeping") && (EYE_EXTRA.has(item.tag) || MOUTH_EXTRA.has(item.tag))) return false;
-    if (used.has("closed eyes") || used.has("covering own eyes")) {
+    if (used.has("covering own eyes") || hasUsed((t) => CLOSED_EYES.has(t))) {
       if (EYE_EXTRA.has(item.tag) || item.mutex === "gaze" || /^looking /.test(item.tag)) return false;
       for (const d of item.implies || []) {
         if (lex.byTag.get(d)?.mutex === "gaze") return false;
@@ -4838,6 +4915,31 @@ export function drawOne(lex, settings, pinned, userBanned, rand, seed, opts) {
     if (
       NOT_PUBLIC_SCENE.has(item.tag) &&
       (used.has("public nudity") || used.has("public vibrator"))
+    ) {
+      return false;
+    }
+    // 釘了「只穿內衣」：水景、浴場不補內衣，收尾會把這個釘選清掉（場景說了算）。
+    // 所以引擎自己別挑會讓它消失的場地或活動；使用者自己釘的水景照舊（2026-10-12：
+    // 隨機抽到海底，釘選被吃掉）。
+    if (pinned.has("underwear only") && !askedFor && (item.mutex === "place" || item.mutex === "activity")) {
+      const probe = new Set([item.tag, ...(item.implies || [])]);
+      if (isSwimScene(probe) || isBathScene(probe)) return false;
+    }
+    // 看手機帶出手機，手機佔唯一的手持格：彈吉他、讀書這種要拿別的道具的活動就拿不到吉他、書。
+    // 自拍看的是鏡頭，也不另外補手機（見 ACT_PROP 的 selfie）。兩個方向都擋。
+    const otherPropAct = (a) => a === "selfie" || (!!ACT_PROP[a] && !ACT_PROP[a].includes("cellphone"));
+    if (item.tag === "looking at phone" && [...usedActs(used, lex)].some(otherPropAct)) return false;
+    if (item.mutex === "activity" && otherPropAct(item.tag) && used.has("looking at phone")) return false;
+    // 帶出全裸的字（公開裸體、裸緞帶…）不能接在「要有某件衣服」的走光動作後面：
+    // 全裸進場後 reconcile 會把衣服剝光，只剩一個沒有衣服可掀的低胸窺視
+    // （2026-10-12：flash seed 31025 → downblouse, public nudity, nude）。
+    if (
+      !FULL_NUDE.has(item.tag) &&
+      (item.implies || []).some((d) => FULL_NUDE.has(d)) &&
+      hasUsed((t) => {
+        const it = lex.byTag.get(t);
+        return !!it && it.section === "pose" && needsClothingDependency(it) && actionFitsClothes(t, ["nude"]) === 0;
+      })
     ) {
       return false;
     }
@@ -7762,6 +7864,11 @@ export function drawOne(lex, settings, pinned, userBanned, rand, seed, opts) {
     const keepSelectedPhone = [...phoneIntent].some(t => t === "cellphone" || implyChain(lex, t).includes("cellphone"));
     for (const a of acts) {
       for (const p of ACT_PROP[a] || []) needed.add(p);
+    }
+    // 2026-10-12：拿著書、拿著相機、看手機這些字 implies 了道具。以前這裡只認活動，
+    // 會把它們帶進來的書、相機、手機拔掉，剩一個「拿著書」卻沒有書。
+    for (const t of used) {
+      for (const d of lex.byTag.get(t)?.implies || []) needed.add(d);
     }
     for (const [act, props] of Object.entries(ACT_PROP)) {
       if (acts.has(act)) continue;

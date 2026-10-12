@@ -100,7 +100,30 @@ export function ratingTier(item, ratingBlocked) {
   return "explicit";
 }
 
+// 表情符號清掉符號後會變成空檔或互相撞名（:d、;d、d: 都變成 d）。
+// 字母夠的字走原來的規則，v.webp、69.webp 不動。
+const SYMBOL_FILE = {
+  "^ ^": "sym_eyes_smile",
+  "> <": "sym_eyes_shut",
+  "@ @": "sym_eyes_dizzy",
+  "+ +": "sym_eyes_cross",
+  "= =": "sym_eyes_flat",
+  ":<": "sym_mouth_upset",
+  ";)": "sym_wink",
+  ":>": "sym_mouth_smug",
+  ":/": "sym_mouth_flat",
+  ">:)": "sym_mouth_evil",
+  "^^^": "sym_emotion_lines",
+  ";o": "sym_wink_o",
+  ":o": "sym_mouth_o",
+  ":d": "sym_mouth_d",
+  ";d": "sym_wink_d",
+  "d:": "sym_mouth_shock",
+};
+
 export function artFile(tag) {
+  const named = SYMBOL_FILE[tag];
+  if (named) return named + ".webp";
   return tag.replace(/[^a-z0-9]+/gi, "_").replace(/^_+|_+$/g, "").toLowerCase() + ".webp";
 }
 
