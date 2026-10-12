@@ -422,6 +422,29 @@ def _pose_install() -> None:
     _wait_loaded("pose", pose_node_loaded)
 
 
+# 卡面一次只能烘一批（bake_card_art 用 web/cards/.baking 擋第二個）。敏感和角色兩題都答「要」時，
+# 後答的那批排隊等前一批烘完，不能直接開：以前第二批碰到鎖就結束、回報成功，角色卡面標「完成」卻一張沒烘。
+_bake_turn = threading.Lock()
+
+
+def _bake_run(key: str, args: list[str], text: str) -> int:
+    if not _bake_turn.acquire(blocking=False):
+        _set(key, "wait", "等前一批卡面烘完")
+        _bake_turn.acquire()
+    try:
+        if key in _stopped:
+            return 0
+        _set(key, "run", text)
+        return _run(key, args)
+    finally:
+        _bake_turn.release()
+
+
+def _bake_failed(key: str, rc: int) -> str:
+    # 12：別的視窗（例如手動開的烘焙）正在烘，這次沒烘到。
+    return "另一個視窗正在烘：烘完後下次啟動會接著烘" if rc == 12 else _failed("烘焙失敗")
+
+
 def _bake() -> None:
     """卡面下載完接著烘：全年齡缺的、提示詞改過的直接烘；敏感／色情的先問。"""
     _events["cards_done"].wait()
@@ -437,15 +460,14 @@ def _bake() -> None:
         _set("bake_chars", "skip", "")
         return
     if code == 10:
-        _set("bake", "run", "用你的 ComfyUI 烘還沒有的全年齡卡面")
-        rc = _run("bake", ["bake_card_art.py", "--rating", "general"])
+        rc = _bake_run("bake", ["bake_card_art.py", "--rating", "general"], "用你的 ComfyUI 烘還沒有的全年齡卡面")
         if "bake" in _stopped:
             _set("bake", "skip", "停了：已經烘好的留著；下次啟動接著烘", reload=True)
             _set("bake_adult", "skip", "")
             _set("bake_chars", "skip", "")
             return
         if rc != 0:
-            _set("bake", "error", _failed("烘焙失敗"))
+            _set("bake", "skip" if rc == 12 else "error", _bake_failed("bake", rc))
             _set("bake_adult", "skip", "")
             _set("bake_chars", "skip", "")
             return
@@ -483,21 +505,25 @@ def _chars() -> None:
 
 
 def _bake_chars() -> None:
-    _set("bake_chars", "run", "用你的 ComfyUI 烘角色卡面")
-    rc = _run("bake_chars", ["bake_card_art.py", "--kind", "character"])
+    rc = _bake_run("bake_chars", ["bake_card_art.py", "--kind", "character"], "用你的 ComfyUI 烘角色卡面")
     if "bake_chars" in _stopped:
         _set("bake_chars", "skip", "停了：已經烘好的留著，重新整理就看得到；下次啟動會再問", reload=True)
         return
-    _set("bake_chars", "done" if rc == 0 else "error", "烘好了：重新整理網頁就有圖" if rc == 0 else _failed("烘焙失敗"), reload=rc == 0)
+    if rc != 0:
+        _set("bake_chars", "skip" if rc == 12 else "error", _bake_failed("bake_chars", rc))
+        return
+    _set("bake_chars", "done", "烘好了：重新整理網頁就有圖", reload=True)
 
 
 def _bake_adult() -> None:
-    _set("bake_adult", "run", "用你的 ComfyUI 烘敏感、色情卡面")
-    rc = _run("bake_adult", ["bake_card_art.py"])
+    rc = _bake_run("bake_adult", ["bake_card_art.py"], "用你的 ComfyUI 烘敏感、色情卡面")
     if "bake_adult" in _stopped:
         _set("bake_adult", "skip", "停了：已經烘好的留著，重新整理就看得到；下次啟動會再問", reload=True)
         return
-    _set("bake_adult", "done" if rc == 0 else "error", "烘好了：重新整理網頁就有圖" if rc == 0 else _failed("烘焙失敗"), reload=rc == 0)
+    if rc != 0:
+        _set("bake_adult", "skip" if rc == 12 else "error", _bake_failed("bake_adult", rc))
+        return
+    _set("bake_adult", "done", "烘好了：重新整理網頁就有圖", reload=True)
 
 
 def _thread(fn, *a) -> None:

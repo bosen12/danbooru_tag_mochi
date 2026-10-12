@@ -908,6 +908,8 @@ ComfyUI 在別台電腦：這台不動它|ComfyUI runs on another computer. Noth
 安裝節點、下載模型（約 2.5 GB）|Installing the node and downloading the model (about 2.5 GB)
 另一個視窗正在烘|Already baking in another window
 另一個視窗正在烘；那邊烘完、重開一次就會接著檢查|Already baking in another window. Restart once it finishes and the check runs again
+等前一批卡面烘完|Waiting for the other card batch to finish
+另一個視窗正在烘：烘完後下次啟動會接著烘|Already baking in another window. The next launch continues baking
 ComfyUI 沒開：下次啟動再檢查|ComfyUI is not running. It will be checked on the next launch
 檢查失敗，詳情在 data/setup.log（下次啟動再檢查）|Check failed, details in data/setup.log (checked again on the next launch)
 用你的 ComfyUI 烘還沒有的全年齡卡面|Baking missing all-ages cards with your ComfyUI

@@ -71,6 +71,47 @@ ok("回答「烘」才烘", st.answer("bake_adult", "yes")[0])
 threading.Event().wait(0.2)
 ok("烘成人卡面", ("bake_card_art.py",) in ran and state("bake_adult") == "done", str(ran))
 
+# 1b. 敏感和角色兩題都答「要」：後答的排隊，等前一批烘完才烘，不是碰到鎖就標完成（2026-10-12 專案主回報）。
+ran = reset({})
+gate = threading.Event()
+plain_run = st._run
+
+
+def slow_run(key, args, show=True):
+    if key == "bake_adult":
+        gate.wait(5)
+    return plain_run(key, args, show)
+
+
+st._run = slow_run
+st._state["bake_adult"] = {"state": "ask", "text": "", "answers": ["yes", "no"]}
+st._state["bake_chars"] = {"state": "ask", "text": "", "answers": ["yes", "no", "never"]}
+st.answer("bake_adult", "yes")
+for _ in range(50):
+    if state("bake_adult") == "run":
+        break
+    threading.Event().wait(0.02)
+st.answer("bake_chars", "yes")
+for _ in range(50):
+    if state("bake_chars") == "wait":
+        break
+    threading.Event().wait(0.02)
+ok("敏感在烘時答應角色：角色排隊等，不會先標完成", state("bake_chars") == "wait" and ("bake_card_art.py", "--kind", "character") not in ran, str(st._state["bake_chars"]))
+gate.set()
+for _ in range(100):
+    if state("bake_chars") == "done":
+        break
+    threading.Event().wait(0.02)
+ok("前一批烘完，角色接著烘", state("bake_adult") == "done" and state("bake_chars") == "done" and ran.index(("bake_card_art.py",)) < ran.index(("bake_card_art.py", "--kind", "character")), str(ran))
+ran = reset({("bake_card_art.py", "--kind", "character"): 12})
+st._state["bake_chars"] = {"state": "ask", "text": "", "answers": ["yes", "no", "never"]}
+st.answer("bake_chars", "yes")
+for _ in range(100):
+    if state("bake_chars") not in ("ask", "run", "wait"):
+        break
+    threading.Event().wait(0.02)
+ok("別的視窗正在烘（12）：照實說沒烘，不標完成", state("bake_chars") == "skip" and "另一個視窗" in st._state["bake_chars"]["text"], str(st._state["bake_chars"]))
+
 # 2. 烘焙要等卡面下載完（不能先烘下載包裡就有的卡）。
 ran = reset({("fetch_card_art.py", "--check"): 3})
 t = threading.Thread(target=st._bake)

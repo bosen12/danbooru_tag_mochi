@@ -327,8 +327,9 @@ def main() -> int:
         print("nothing to bake", flush=True)
         return 0
     if lock_state(out_dir):
+        # 跟 --status 一樣回 12：呼叫的人才分得出「沒烘」跟「烘好了」（第一次準備以前把這當成功，角色卡面標完成卻一張沒烘）。
         print("another bake is already running (web/cards/.baking); not starting a second one", flush=True)
-        return 0
+        return 12
 
     if not comfy_up():
         print("ComfyUI is not reachable at " + server.comfy_base())
