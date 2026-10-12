@@ -33,36 +33,57 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 CARDS = ROOT / "web" / "cards"
 # 換版時標記跟著換：有 v1 標記、沒有 v2 標記的人，下次啟動會去補 v2 多的那些。
-MARKER = CARDS / ".card-art-v5"
+MARKER = CARDS / ".card-art-v6"
 
 # v3（2026-09-28）：1160 張。跟 v2 只差拿掉 cel shading（Danbooru 停用、意思含糊）。v1、v2 留在 GitHub 給舊版本用。
 # v4（2026-10-07）：1934 張。髮色、髮型改成頭肩特寫（字盒裡分得出差別）重烘；補上 v3 之後詞庫新增的全年齡牌。
 #   已經有 v3 的人：圖都在但提示詞是舊的（have_enough 的 outdated）→ 抓一次，只換 v3 放的那些，自己烘的不碰。
 # v5（2026-10-10）：1963 張。補上胸前互動、手的母題、擁抱的全年齡牌 29 張；group picture、sandwiched 重畫。
 #   已經有 v4 的人：缺那 29 張（have_enough 一張一張看）→ 抓一次補上。
+# v6（2026-10-12）：2564 張。補上 Grok 追加的帽子、手套、花紋、表情符號、焦點等 576 張全年齡牌；
+#   騎馬、騎車、講電話帶出騎乘／說話之後提示詞變了，重畫 3 張。包裡有哪些卡記在 card_art_pack.json。
 # CARD_ART_URL 可以換來源（測試時指向本機的 file:// 包）；大小、雜湊照樣要對。
-URL = os.environ.get("CARD_ART_URL") or "https://github.com/bosen12/danbooru_tag_mochi/releases/download/card-art-v5/card-art-general.zip"
-SIZE = 101518776
-SHA256 = "87ebbbfcc170de54c4172c469a8f549db5f56c8890a1a21c467188323a8bb0b6"
-EXPECTED = 1963  # 這一包裡全年齡的張數
+URL = os.environ.get("CARD_ART_URL") or "https://github.com/bosen12/danbooru_tag_mochi/releases/download/card-art-v6/card-art-general.zip"
+SIZE = 133047159
+SHA256 = "553a293cee3e5381ca15ce895c9009bfe75fe98c863e34bdf52b303162139f73"
+EXPECTED = 2564  # 這一包裡全年齡的張數
 
 
 JOBS = ROOT / "scripts" / "card_jobs.json"
 
 
-def outdated(wanted) -> bool:
-    """本機 manifest 裡，有沒有全年齡卡的提示詞跟卡面清單（card_jobs.json）對不上。"""
+def stale_jobs(wanted) -> list:
+    """本機 manifest 裡，全年齡卡的提示詞跟卡面清單（card_jobs.json）對不上的那些。"""
     try:
         manifest = json.loads((CARDS / "manifest.json").read_text(encoding="utf-8"))
     except (OSError, ValueError):
-        return False
+        return []
     if not isinstance(manifest, dict):
-        return False
+        return []
+    out = []
     for j in wanted:
         have = manifest.get(j.get("tag"))
         if isinstance(have, dict) and have.get("positive") and j.get("positive") and have["positive"] != j["positive"]:
-            return True
-    return False
+            out.append(j)
+    return out
+
+
+def outdated(wanted) -> bool:
+    """本機 manifest 裡，有沒有全年齡卡的提示詞跟卡面清單（card_jobs.json）對不上。"""
+    return bool(stale_jobs(wanted))
+
+
+# 現在這一包公開卡面裡有哪些卡、各是哪一版的提示詞（{tag: positive}），pack_card_art.py 打包時寫。
+# 換新包時跟著 URL、SIZE、SHA256 一起換。讀不到就當作「包裡什麼都可能有」，照舊有缺就抓。
+PACK_LIST = ROOT / "scripts" / "card_art_pack.json"
+
+
+def pack_covers() -> dict | None:
+    try:
+        data = json.loads(PACK_LIST.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    return data if isinstance(data, dict) else None
 
 
 def have_enough() -> bool:
@@ -83,12 +104,21 @@ def have_enough() -> bool:
         # 角色牌不在公開包裡（版權角色，每台自己烘）：缺角色圖不是下載的理由。
         wanted = [j for j in jobs if isinstance(j, dict) and j.get("rating", "general") == "general"
                   and j.get("kind", "card") != "character" and j.get("file")]
-        if not wanted or not all((CARDS / str(j["file"])).exists() for j in wanted):
+        if not wanted:
             return False
+        absent = [j for j in wanted if not (CARDS / str(j["file"])).exists()]
         # 圖都在，但有的是舊版的（本機記的提示詞跟現在的卡面清單不一樣，例如 v4 把髮色、髮型改成頭肩特寫）：
         # 抓一次新的包。解包時只換「上一版公開包放的」那些（cards/previous.json），自己烘的不碰；
         # 抓完寫上這一版的標記，下次就不再抓，不會每次啟動都重抓。
-        return not outdated(wanted)
+        if not absent and not outdated(wanted):
+            return True
+        # 缺的、舊的都不在公開包裡（詞庫比包新，例如 2026-10-12 新加的 576 張）：抓一百 MB 也補不到，
+        # 交給烘焙。包裡有哪些、各是哪一版提示詞記在 PACK_LIST（pack_card_art.py 打包時寫的）。
+        covered = pack_covers()
+        if covered is not None:
+            gaps = absent + stale_jobs(wanted)
+            return not any(covered.get(j.get("tag")) == j.get("positive") for j in gaps)
+        return False
     # 讀不到卡面清單（檔案被刪了）：退回舊的數張數。
     try:
         manifest = json.loads((CARDS / "manifest.json").read_text(encoding="utf-8"))
@@ -343,7 +373,7 @@ def main() -> int:
         return 3
     if not force and have_enough():
         return 0
-    print("Card illustrations are missing. Downloading the all-ages set (about 100 MB) from GitHub...")
+    print("Card illustrations are missing. Downloading the all-ages set (about 130 MB) from GitHub...")
     with tempfile.TemporaryDirectory() as tmpdir:
         zpath = Path(tmpdir) / "card-art.zip"
         try:

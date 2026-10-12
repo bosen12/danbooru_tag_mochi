@@ -312,9 +312,9 @@ def _cards() -> None:
         if _check("fetch_card_art.py") == 0:
             _set("cards", "done", "")
             return
-        # 先說缺什麼、缺幾張，再說要下載：使用者才知道為什麼要抓 100 MB。
+        # 先說缺什麼、缺幾張，再說要下載：使用者才知道為什麼要抓 130 MB。
         why = cards_missing_text(_last_check[0])
-        _set("cards", "run", (why + "：" if why else "") + "從 GitHub 下載全年齡卡面（約 100 MB）")
+        _set("cards", "run", (why + "：" if why else "") + "從 GitHub 下載全年齡卡面（約 130 MB）")
         code = _run("cards", ["fetch_card_art.py"])
         if code == 0:
             _set("cards", "done", "下載好了：重新整理網頁就有圖", reload=True)

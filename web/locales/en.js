@@ -894,7 +894,7 @@ ComfyUI 重開中，大約半分鐘|ComfyUI is restarting. This takes about half
 烘焙失敗，詳情在 data/setup.log|Baking failed. Details are in data/setup.log
 檢查檔案…|Checking the file…
 連線中斷，接著下載…|Connection dropped. Resuming…
-從 GitHub 下載全年齡卡面（約 100 MB）|Downloading the all-ages card art from GitHub (about 100 MB)
+從 GitHub 下載全年齡卡面（約 130 MB）|Downloading the all-ages card art from GitHub (about 130 MB)
 下載好了：重新整理網頁就有圖|Downloaded. Reload the page to see the art.
 烘好了：重新整理網頁就有圖|Baked. Reload the page to see the art.
 等 ComfyUI 開起來|Waiting for ComfyUI to start
@@ -1480,9 +1480,9 @@ LoRA：沒設定 paths.loraRoot，改問 ComfyUI 也失敗了：{0}|LoRA: no LoR
 重開失敗（{0}）：請自己重開 ComfyUI|Restart failed ({0!}). Restart ComfyUI yourself.
 {0}（下次啟動接著抓）|{0} (resumes next launch)
 {0}：清掉篩選|{0}: clear filter
-偵測到缺 {0} 張全年齡卡面、{1} 張是舊版（例：{2}）：從 GitHub 下載全年齡卡面（約 100 MB）|Found {0} all-ages cards missing and {1} outdated (e.g. {2}): downloading the all-ages card art from GitHub (about 100 MB)
-偵測到缺 {0} 張全年齡卡面（例：{1}）：從 GitHub 下載全年齡卡面（約 100 MB）|Found {0} all-ages cards missing (e.g. {1}): downloading the all-ages card art from GitHub (about 100 MB)
-偵測到{0} 張是舊版（例：{1}）：從 GitHub 下載全年齡卡面（約 100 MB）|Found {0} outdated all-ages cards (e.g. {1}): downloading the all-ages card art from GitHub (about 100 MB)
+偵測到缺 {0} 張全年齡卡面、{1} 張是舊版（例：{2}）：從 GitHub 下載全年齡卡面（約 130 MB）|Found {0} all-ages cards missing and {1} outdated (e.g. {2}): downloading the all-ages card art from GitHub (about 130 MB)
+偵測到缺 {0} 張全年齡卡面（例：{1}）：從 GitHub 下載全年齡卡面（約 130 MB）|Found {0} all-ages cards missing (e.g. {1}): downloading the all-ages card art from GitHub (about 130 MB)
+偵測到{0} 張是舊版（例：{1}）：從 GitHub 下載全年齡卡面（約 130 MB）|Found {0} outdated all-ages cards (e.g. {1}): downloading the all-ages card art from GitHub (about 130 MB)
 提示詞裡有不能用的字（未成年、真人等角色不收）：{0!}|The prompt has blocked tags (underage, real-person and similar characters are not allowed): {0!}
 不在公開下載包裡；用你的底模烘 {0} 張，大約 {1} 分鐘|Not in the public download. Baking {0} cards with your checkpoint takes about {1} minutes.
 版權角色不在公開下載包；用你的底模烘 {0} 張，大約 {1} 分鐘|Characters are copyrighted and not in the public download. Baking {0} cards with your checkpoint takes about {1} minutes.

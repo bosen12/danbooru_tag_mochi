@@ -29,6 +29,7 @@ cards.mkdir()
 fc.CARDS = cards
 fc.JOBS = tmp / "card_jobs.json"
 fc.MARKER = cards / ".card-art-test"
+fc.PACK_LIST = tmp / "no-pack-list.json"  # 前幾條測「沒有包內清單」的舊行為，不讀 repo 裡那份
 
 OLD = "1girl, solo, adult, ponytail, upper body"
 NEW = "1girl, solo, adult, ponytail, portrait"
@@ -54,6 +55,23 @@ ok("圖都在但有舊版的（提示詞跟卡面清單不一樣）：要下載�
 fc.MARKER.write_text("x", encoding="utf-8")
 ok("下載過這一版（有標記）：不再抓，不會每次啟動都重抓", fc.have_enough() is True)
 fc.MARKER.unlink()
+
+# 包裡有哪些卡（card_art_pack.json）：缺的、舊的都不在包裡就不下載，交給烘焙。
+fc.PACK_LIST = tmp / "card_art_pack.json"
+fc.PACK_LIST.write_text(json.dumps({"ponytail": OLD, "red hair": "red hair, upper body"}), encoding="utf-8")
+ok("舊版的那張包裡也是舊版：下載補不到，不抓", fc.have_enough() is True)
+fc.PACK_LIST.write_text(json.dumps({"ponytail": NEW}), encoding="utf-8")
+ok("包裡有新版：抓", fc.have_enough() is False)
+(cards / "red_hair.webp").rename(cards / "red_hair.bak")
+manifest({"ponytail": {"file": "ponytail.webp", "positive": NEW}})
+fc.PACK_LIST.write_text(json.dumps({"ponytail": NEW}), encoding="utf-8")
+ok("缺的卡不在包裡（詞庫比包新）：不抓", fc.have_enough() is True)
+fc.PACK_LIST.write_text(json.dumps({"ponytail": NEW, "red hair": "red hair, portrait"}), encoding="utf-8")
+ok("缺的卡在包裡：抓", fc.have_enough() is False)
+fc.PACK_LIST = tmp / "missing.json"
+ok("沒有包內清單：照舊有缺就抓", fc.have_enough() is False)
+(cards / "red_hair.bak").rename(cards / "red_hair.webp")
+manifest({"ponytail": {"file": "ponytail.webp", "positive": OLD}, "red hair": {"file": "red_hair.webp", "positive": "my own red hair"}})
 
 # 解包：只換上一版公開包放的（本機提示詞 = previous.json 記的），自己烘的（red hair）不碰
 pack = tmp / "pack.zip"
