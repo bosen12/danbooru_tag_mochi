@@ -67,7 +67,7 @@ export function genSummary(jobs, room, seen, waiting) {
   let state, text;
   if (active.length) {
     state = "active";
-    const what = active.every((j) => j.kind === "hires") ? "Hires 中" : "印製中";
+    const what = active.every((j) => j.face) ? "修臉中" : active.every((j) => j.kind === "hires") ? "Hires 中" : "印製中";
     text = active.length > 1 ? `${what} ${active.length} 張` : running ? `${what} ${pct}%` : `${what}・排隊`;
   } else if (done.length) {
     state = "done";

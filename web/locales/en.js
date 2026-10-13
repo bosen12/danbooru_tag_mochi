@@ -689,6 +689,7 @@ POS 複製好了|Prompt copied
 預覽中|Previewing
 Comfy 報錯|ComfyUI error
 Hires 中|Upscaling
+修臉中|Fixing faces
 去看|View
 收起偏好卡牌|Collapse favorites
 打開偏好卡牌|Open favorites
@@ -735,6 +736,7 @@ Impact Subpack 的臉部偵測節點|the face detector node (Impact Subpack)
 安裝節點、下載臉部偵測模型（約 50 MB）|Installing the nodes and downloading the face detection model (about 50 MB)
 停了：下次啟動會再問|Stopped. You will be asked again next launch.
 不再問（刪掉 .no-face-fetch 就會再問）|Will not ask again (delete .no-face-fetch to be asked)
+節點在資料夾裡，ComfyUI 卻沒載入：重開 ComfyUI；還是不行，看 ComfyUI 啟動時 Impact Pack 的錯誤訊息|The nodes are installed but ComfyUI has not loaded them. Restart ComfyUI; if that does not help, check Impact Pack's errors in the ComfyUI startup log.
 這張已經太大，不能再放大。|This image is already at the maximum size.
 還原原圖|Restore original
 原圖不在了（ComfyUI 那邊刪掉了）|Original missing from ComfyUI
@@ -1256,7 +1258,9 @@ Hires 深度 {0}×|Detailed upscale {0}×
 「{0}」跟「{1}」同時成立不了，引擎會摘掉其中一個{2}|“{0}” conflicts with “{1}”. The engine will remove one{2}.
 Hires 好了：{0}×{1}|Upscale ready · {0}×{1}
 修臉 {0}%|Face fix {0}%
-缺 {0}：到第一次準備安裝，裝完重開 ComfyUI|Missing {0}. Install from First-time setup, then restart ComfyUI.
+缺 {0}：重開墨池，第一次準備會問要不要裝；裝過了就重開 ComfyUI|Missing {0}. Restart Mochi and First-time setup will offer to install it. Already installed? Restart ComfyUI.
+缺 {0}：之前選了不要再問：刪掉 .no-face-fetch 再重開墨池，第一次準備就會問要不要裝|Missing {0}. You chose not to be asked again: delete .no-face-fetch and restart Mochi, and First-time setup will offer to install it.
+缺 {0}：ComfyUI 在別台電腦，請在那台裝 Impact Pack、Impact Subpack 和 face_yolov8m.pt|Missing {0}. ComfyUI runs on another computer: install Impact Pack, Impact Subpack and face_yolov8m.pt there.
 跟 ComfyUI 要 FaceDetailer 的欄位失敗：{0}|Could not read FaceDetailer inputs from ComfyUI: {0!}
 印製中，還有 {0} 張|Generating · {0} remaining
 牌 · {0}|Cards · {0}

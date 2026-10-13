@@ -1575,8 +1575,18 @@ def face_status(fetch=None) -> dict:
             missing.append("臉部偵測模型 face_yolov8m.pt")
     else:
         missing.append("Impact Subpack 的臉部偵測節點")
-    why = "" if not missing else "缺 " + "、".join(missing) + "：到第一次準備安裝，裝完重開 ComfyUI"
+    why = "" if not missing else "缺 " + "、".join(missing) + "：" + face_fix_hint()
     return {"ready": not missing, "missing": missing, "detector": detector, "why": why}
+
+
+def face_fix_hint() -> str:
+    """缺修臉的東西時，下一步怎麼做（setup_tasks 的「修臉」那一步只動這台電腦上的 ComfyUI）。"""
+    host = (urllib.parse.urlparse(comfy_base()).hostname or "").strip("[]").lower()
+    if host not in {"127.0.0.1", "localhost", "::1"}:
+        return "ComfyUI 在別台電腦，請在那台裝 Impact Pack、Impact Subpack 和 face_yolov8m.pt"
+    if os.environ.get("NO_FACE_FETCH") or (ROOT / ".no-face-fetch").exists():
+        return "之前選了不要再問：刪掉 .no-face-fetch 再重開墨池，第一次準備就會問要不要裝"
+    return "重開墨池，第一次準備會問要不要裝；裝過了就重開 ComfyUI"
 
 
 def face_inputs(spec: dict, links: dict, values: dict) -> dict:
@@ -2630,6 +2640,7 @@ def active_jobs(keep: bool = False) -> list[dict]:
             "id": j.id,
             "origin": j.origin,
             "kind": j.kind,
+            "face": j.face,
             "state": state,
             "progress": round(j.progress, 3),
             "createdAt": int(j.created_at * 1000),
@@ -2698,6 +2709,8 @@ class GenJob:
         src = payload if isinstance(payload, dict) else {}
         self.origin = src.get("origin") if src.get("origin") in ("mochi", "fuse") else ""
         self.kind = "hires" if src.get("hires") else "gen"
+        # 修臉也走 Hires 的路（日誌裡 kind 一樣是 hires）；頂欄要分得出來才寫「修臉中」。
+        self.face = isinstance(src.get("hires"), dict) and src["hires"].get("mode") == "face"
         self.created_at = time.time()
         self.progress = 0.0
         self.started = False

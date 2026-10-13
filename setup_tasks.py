@@ -436,10 +436,10 @@ def _face() -> None:
         _set("face", "skip", "")
         return
     if _check("fetch_face_detailer.py") != 3:
-        # 都在了，只是還沒重開（剛裝完、或自己裝的）：等它載入。
+        # 資料夾裡都有、ComfyUI 卻沒載入：可能只是還沒重開，也可能是節點自己壞了（套件沒裝好）。
+        # 不掛「重開」等它 —— 壞掉的話重開幾次都一樣，面板會永遠收不起來。說一聲就好。
         if comfy_up() and not face_node_loaded():
-            _set("face", "restart", "裝好了，重開 ComfyUI 才會生效")
-            _thread(_wait_loaded, "face", face_node_loaded)
+            _set("face", "skip", "節點在資料夾裡，ComfyUI 卻沒載入：重開 ComfyUI；還是不行，看 ComfyUI 啟動時 Impact Pack 的錯誤訊息")
             return
         _set("face", "done", "")
         return

@@ -1314,6 +1314,19 @@ ok("face status names the missing Subpack", any("Impact Subpack" in m for m in _
 def _down(path):
     raise OSError("refused")
 ok("face status when ComfyUI is down", server.face_status(_down)["ready"] is False and "ComfyUI" in server.face_status(_down)["why"])
+_saved_base, _saved_root = server.comfy_base, server.ROOT
+_hint_root = Path(tempfile.mkdtemp())
+server.ROOT = _hint_root
+server.comfy_base = lambda: "http://127.0.0.1:8188"
+_h1 = server.face_fix_hint()
+(_hint_root / ".no-face-fetch").write_text("")
+_h2 = server.face_fix_hint()
+server.comfy_base = lambda: "http://100.64.0.2:8188"
+_h3 = server.face_fix_hint()
+server.comfy_base, server.ROOT = _saved_base, _saved_root
+ok("face hint: local ComfyUI points to first-run setup", "第一次準備" in _h1 and "重開 ComfyUI" in _h1, _h1)
+ok("face hint: chose never -> delete .no-face-fetch", ".no-face-fetch" in _h2, _h2)
+ok("face hint: remote ComfyUI -> install on that computer", "別台" in _h3, _h3)
 _spec = {
     "image": ["IMAGE"], "model": ["MODEL"], "clip": ["CLIP"], "vae": ["VAE"],
     "guide_size": ["FLOAT", {"default": 512}], "seed": ["INT", {"default": 0}], "steps": ["INT", {"default": 20}],
@@ -1551,6 +1564,9 @@ _act = {j["id"]: j for j in server.active_jobs()}.get(_job.id) or {}
 ok("active: 印好的留著給別頁說「印好了」", _act.get("state") == "done" and _act.get("finishedAt", 0) > 0, str(_act))
 _job.finished_at -= server.GEN_KEEP_DONE_SEC + 1
 ok("active: 太久以前印好的不列", _job.id not in {j["id"] for j in server.active_jobs()})
+_fj = server.GenJob(_events(), {"origin": "mochi", "positive": "x", "hires": {"mode": "face", "image": "/api/image?filename=a.png"}})
+_hj = server.GenJob(_events(), {"origin": "mochi", "positive": "x", "hires": {"mode": "quick", "scale": 1.5, "image": "/api/image?filename=a.png"}})
+ok("active: 修臉日誌照舊記 hires，另外標 face（頂欄寫「修臉中」）", _fj.kind == "hires" and _fj.face is True and _hj.kind == "hires" and _hj.face is False)
 
 # ---- 出圖日誌（gen_log.py）：做完記一行，按停的不記；拿掉的註記、復原 ----
 import gen_log as _gl  # noqa: E402

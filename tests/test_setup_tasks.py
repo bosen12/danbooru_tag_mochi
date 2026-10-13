@@ -234,10 +234,7 @@ threading.Event().wait(0.2)
 ok("修臉重開後載入了：算好", state("face") == "done")
 ran = reset({("fetch_face_detailer.py", "--check"): 0})
 st._face()
-ok("修臉檔案都在、ComfyUI 還沒載入：提示重開", state("face") == "restart", str(st._state["face"]))
-reset.world["face"] = True
-threading.Event().wait(0.2)
-ok("修臉載入後：算好", state("face") == "done")
+ok("修臉檔案都在、ComfyUI 沒載入：說一聲，不掛著等（壞掉的節點重開也不會好）", state("face") == "skip" and "重開" in st._state["face"]["text"] and not st.snapshot()["restart"], str(st._state["face"]))
 ran = reset({("fetch_face_detailer.py", "--check"): 0})
 reset.world["face"] = True
 st._face()
