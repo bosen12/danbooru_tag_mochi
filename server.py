@@ -1845,10 +1845,10 @@ def comfy_root_dir() -> Path | None:
 
 # ---------- ComfyUI output 只留最近幾張 ----------
 # 印出來的圖（case_／hires_／face_）都在 ComfyUI 的 output/danbooru_case，以前從來不清，一千張約 1.2 GB。
-# 專案主 2026-10-14：留最近 100 張，舊的移到資源回收筒（刪錯拿得回來；回收筒滿了 Windows 自己丟最舊的）。
+# 專案主 2026-10-14：留最近 200 張，舊的移到資源回收筒（刪錯拿得回來；回收筒滿了 Windows 自己丟最舊的）。
 # 收進作品冊的另外複製了一份在 data/recipes，不受影響；成品牆上被清掉的那張顯示「原檔不在了」，可以照原樣再印。
 # config.json 的 output.keep 改張數，0 就不清。只清 danbooru_case 裡自己的那三種檔名，別的工作流的圖不碰。
-OUTPUT_KEEP = int(cfg("output.keep", "OUTPUT_KEEP", 100))
+OUTPUT_KEEP = int(cfg("output.keep", "OUTPUT_KEEP", 200))
 OUTPUT_PREFIXES = ("case_", "hires_", "face_")
 _OUTPUT_PRUNE = {"enabled": False, "timer": None}
 

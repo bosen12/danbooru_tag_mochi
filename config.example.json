@@ -36,7 +36,7 @@
   },
   "output": {
     "_comment": "ComfyUI 的 output/danbooru_case 只留最近幾張，舊的移到資源回收筒（收進作品冊的另有一份，不受影響）。0 = 不清",
-    "keep": 100
+    "keep": 200
   },
   "telegram": {
     "api": "https://api.telegram.org",

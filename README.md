@@ -112,7 +112,7 @@ Windows also respects `PORT` and `HOST` set before launch. For example, `set POR
 | `paths.loraRoot` | Only without ComfyUI LoRA Manager: scan this folder for LoRA previews and trigger words. Empty = ask ComfyUI for the bare list |
 | `server.port` / `server.host` / `server.allowNet` | Default `8796`, `127.0.0.1`, loopback and Tailscale only |
 | `client.streamIdleMs` | How long ComfyUI may stay silent before an image is abandoned. Raise it for slow GPUs (for example AMD ROCm) |
-| `output.keep` | Keep only the latest N images Mochi saved in ComfyUI's `output/danbooru_case` (default 100); older ones go to the Recycle Bin (deleted on macOS/Linux). Images saved to the Gallery have their own copy. `0` = never clean up |
+| `output.keep` | Keep only the latest N images Mochi saved in ComfyUI's `output/danbooru_case` (default 200); older ones go to the Recycle Bin (deleted on macOS/Linux). Images saved to the Gallery have their own copy. `0` = never clean up |
 
 Environment variables override the file: `COMFY_API`, `COMFY_CKPT`, `PORT`, `HOST`, `ALLOW_NET`, `LORA_ROOT`.
 
@@ -251,7 +251,7 @@ cd danbooru_tag_mochi
 
 Windows 會保留啟動前設定的 `PORT`／`HOST`；例如先 `set PORT=18812` 再跑 `start.bat`。兩種啟動檔都要求 Python 3.9+。LoRA 選「不要再問」會建立 `.no-lora-manager-fetch`，刪除此檔可恢復詢問；`NO_SETUP=1` 可略過所有背景準備。
 
-新 clone 通常什麼都不用改：底模、LoRA 清單直接問 ComfyUI，有 LoRA Manager（準備面板可選擇安裝）就連預覽圖、觸發詞都有，手機走 Tailscale 也看得到。常用的有 `comfy.api`、`comfy.ckpt`（要跟 ComfyUI 清單一字不差）、`comfy.checkpointDir`（底模預覽圖）、`paths.loraRoot`（沒有 LoRA Manager 時才用：自己掃資料夾拿預覽圖與觸發詞）、`server.port`（預設 8796）、`client.streamIdleMs`（慢顯卡調大）、`output.keep`（ComfyUI 的 output/danbooru_case 只留最近幾張，預設 100，舊的移到資源回收筒；收進作品冊的另有一份；0 不清）。環境變數優先於設定檔。
+新 clone 通常什麼都不用改：底模、LoRA 清單直接問 ComfyUI，有 LoRA Manager（準備面板可選擇安裝）就連預覽圖、觸發詞都有，手機走 Tailscale 也看得到。常用的有 `comfy.api`、`comfy.ckpt`（要跟 ComfyUI 清單一字不差）、`comfy.checkpointDir`（底模預覽圖）、`paths.loraRoot`（沒有 LoRA Manager 時才用：自己掃資料夾拿預覽圖與觸發詞）、`server.port`（預設 8796）、`client.streamIdleMs`（慢顯卡調大）、`output.keep`（ComfyUI 的 output/danbooru_case 只留最近幾張，預設 200，舊的移到資源回收筒；收進作品冊的另有一份；0 不清）。環境變數優先於設定檔。
 
 LoRA 面板的「詳情」在 ComfyUI 的 LoRA Manager 直接打開那一個 LoRA：準備面板取得同意後，墨池才在它的 `static/js/loras.js` 補一小段（`scripts/fetch_lora_manager.py --patch`，不用重開 ComfyUI），LoRA Manager 更新蓋掉後下次啟動會先問再補。手機（Tailscale）上這些連結指向這台的 ComfyUI，ComfyUI 要用 `--listen` 開才點得開；連不到時連結會藏起來，「詳情」改開 Civitai（預覽圖照樣看得到）。
 
