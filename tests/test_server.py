@@ -1514,6 +1514,7 @@ spec = server.parse_hires({"mode": "deep", "scale": 2, "image": "/api/image?file
 ok("sampling: parse_hires 帶出取樣參數", spec["sampling"] == {"steps": 25, "denoise": 0.3}, str(spec.get("sampling")))
 d = server.sampling_defaults()
 ok("sampling: /api/sampling 給兩種 Hires 各自的預設", d["hires"]["quick"]["denoise"] != d["hires"]["deep"]["denoise"] and d["base"]["steps"] == server.STEPS)
+ok("sampling: /api/sampling 也給修臉的預設（工作流面板的修臉那一行）", d["hires"]["face"]["denoise"] == 0.35 and d["hires"]["face"]["steps"] == 20, str(d["hires"].get("face")))
 
 # ---- 頂欄的生圖進度：GET /api/gen/active（gen-status.js）----
 import threading as _th  # noqa: E402

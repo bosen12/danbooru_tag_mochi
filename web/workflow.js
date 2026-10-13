@@ -18,7 +18,7 @@ try {
   WORKFLOW_ID = "";
 }
 
-/* ---------- 取樣參數：生圖的 steps／CFG，兩種 Hires 的 steps／CFG／denoise ----------
+/* ---------- 取樣參數：生圖的 steps／CFG，兩種 Hires 和修臉的 steps／CFG／denoise ----------
  * 只存「改過的」：沒改的不送，伺服器用它自己的預設（config.json），預設換了這裡跟著換。
  * 只有呼叫 initWorkflow({ sampling: true }) 的頁面（墨池、疊印台）才顯示、才送。 */
 const SAMPLING_STORE = "yz-sampling";
@@ -26,6 +26,8 @@ const SAMPLING_ROWS = [
   { id: "base", zh: "生圖", keys: ["steps", "cfg"] },
   { id: "quick", zh: "快速 Hires", keys: ["steps", "cfg", "denoise"] },
   { id: "deep", zh: "深度 Hires", keys: ["steps", "cfg", "denoise"] },
+  // 修臉只有墨池（web6）有：initWorkflow({ faceFix: true }) 才顯示這一行。
+  { id: "face", zh: "修臉", keys: ["steps", "cfg", "denoise"], faceFix: true },
 ];
 const SAMPLING_FIELD = {
   steps: { zh: "Steps", step: 1, digits: 0 },
@@ -34,8 +36,12 @@ const SAMPLING_FIELD = {
 };
 const SAMPLING_LIMITS = { steps: [1, 80], cfg: [1, 15], denoise: [0.05, 1] };
 let samplingOn = false;
+let faceFixOn = false;
+/** 這一頁看得到的那幾行。 */
+const samplingRows = () => SAMPLING_ROWS.filter((r) => !r.faceFix || faceFixOn);
 let samplingDefaults = null;
-let sampling = { base: {}, quick: {}, deep: {} };
+const emptySampling = () => Object.fromEntries(SAMPLING_ROWS.map((r) => [r.id, {}]));
+let sampling = emptySampling();
 try {
   const raw = JSON.parse(localStorage.getItem(SAMPLING_STORE) || "{}");
   for (const r of SAMPLING_ROWS) {
@@ -305,16 +311,16 @@ function renderSampling() {
   reset.type = "button";
   reset.className = "wf-samp-reset";
   reset.textContent = "全部恢復預設";
-  reset.disabled = !SAMPLING_ROWS.some((r) => Object.keys(sampling[r.id]).length);
+  reset.disabled = !samplingRows().some((r) => Object.keys(sampling[r.id]).length);
   reset.addEventListener("click", () => {
-    sampling = { base: {}, quick: {}, deep: {} };
+    sampling = emptySampling();
     saveSampling();
     renderSampling();
     say("取樣參數都回到預設了。");
   });
   head.append(title, reset);
   box.append(head);
-  for (const r of SAMPLING_ROWS) {
+  for (const r of samplingRows()) {
     const row = document.createElement("div");
     row.className = "wf-samp-row";
     row.dataset.row = r.id;
@@ -359,7 +365,7 @@ function renderSampling() {
         input.value = now == null ? "" : Number(now).toFixed(f.digits);
         saveSampling();
         mark();
-        reset.disabled = !SAMPLING_ROWS.some((x) => Object.keys(sampling[x.id]).length);
+        reset.disabled = !samplingRows().some((x) => Object.keys(sampling[x.id]).length);
       });
       wrap.append(name, input);
       row.append(wrap);
@@ -378,7 +384,7 @@ function syncSamplingNote() {
   if (!note) return;
   const custom = !!WORKFLOW_ID;
   note.textContent = custom
-    ? "目前用的是自己的工作流：生圖照它圖裡的 steps／CFG，這裡的「生圖」那一行不套用。Hires 一律用這裡的。"
+    ? `目前用的是自己的工作流：生圖照它圖裡的 steps／CFG，這裡的「生圖」那一行不套用。${faceFixOn ? "Hires、修臉" : "Hires"}一律用這裡的。`
     : "改過的會描一道底線；清空欄位或改回預設值就回到預設。";
   $("wf-sampling").dataset.custom = custom ? "true" : "false";
 }
@@ -810,8 +816,9 @@ function linkPing() {
   });
 }
 
-export function initWorkflow({ sampling: withSampling = false } = {}) {
+export function initWorkflow({ sampling: withSampling = false, faceFix = false } = {}) {
   samplingOn = withSampling;
+  faceFixOn = faceFix;
   ensureDom();
   renderPickBtn();
   // 開頁就知道目前的自訂工作流會不會用頂欄的底模（不必先打開工作流面板）。

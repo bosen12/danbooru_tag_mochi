@@ -247,7 +247,7 @@ async function boot() {
   prints = loadPrints();
 
   initLoraPicker();
-  initWorkflow({ sampling: true });
+  initWorkflow({ sampling: true, faceFix: true });
   discord = mountDiscord(zh, "疊印台");
   pingLoop();
   wireChrome();

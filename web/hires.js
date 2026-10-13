@@ -117,7 +117,7 @@ export function createHires(hooks) {
         rating: t.rating,
         // 工作流面板裡這一種 Hires 改過的 steps／CFG／denoise。修臉從 task.from（修之前那張）開始。
         hires: task.mode === "face"
-          ? { mode: "face", image: task.from }
+          ? { mode: "face", image: task.from, ...(task.sampling || {}) }
           : { mode: task.mode, scale: task.scale, image: t.baseImage || t.image, ...(task.sampling || {}) },
       };
     },
@@ -204,12 +204,12 @@ export function createHires(hooks) {
         mode: "face",
         scale: 1,
         from,
-        sampling: {},
+        sampling: currentHiresSampling("face"),
         positive: t.positive,
         seed: Math.floor(Math.random() * 2 ** 32),
       };
       tasks.set(task.id, task);
-      t.hi = { task: task.id, mode: "face", scale: 1, from, sampling: {}, status: "queued", progress: 0, note: "" };
+      t.hi = { task: task.id, mode: "face", scale: 1, from, sampling: task.sampling, status: "queued", progress: 0, note: "" };
       hooks.update(t);
       gen.enqueue(task);
       return true;

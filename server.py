@@ -1405,7 +1405,7 @@ def sampling_defaults() -> dict:
     return {
         "ok": True,
         "base": {"steps": STEPS, "cfg": CFG},
-        "hires": {"quick": hires_defaults("quick"), "deep": hires_defaults("deep")},
+        "hires": {"quick": hires_defaults("quick"), "deep": hires_defaults("deep"), "face": hires_defaults("face")},
         "limits": {k: list(v) for k, v in SAMPLING_LIMITS.items()},
     }
 

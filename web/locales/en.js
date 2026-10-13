@@ -818,6 +818,7 @@ JSON 太大（上限 5 MB）。|JSON file too large · Maximum 5 MB.
 已刪除，改回內建。|Deleted. Switched to built-in.
 請拖入 .json 檔。|Drop a .json file.
 沒選就是內建。要自己的圖，匯入 ComfyUI「匯出工作流 (API)」的 JSON。|Use the built-in workflow, or import a JSON file from ComfyUI's Export (API).
+目前用的是自己的工作流：生圖照它圖裡的 steps／CFG，這裡的「生圖」那一行不套用。Hires、修臉一律用這裡的。|Your imported workflow controls generation steps and CFG. The Hires and Face fix settings below still apply.
 目前用的是自己的工作流：生圖照它圖裡的 steps／CFG，這裡的「生圖」那一行不套用。Hires 一律用這裡的。|Your imported workflow controls generation steps and CFG. The Hires settings below still apply.
 每張都用這顆種子生圖；抽牌照樣每張隨機|Use this generation seed for every image; card draws remain random.
 每張隨機。填一個數字就固定下來|Random seed per image. Enter a number to use a fixed seed.

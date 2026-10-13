@@ -163,7 +163,7 @@ async function boot() {
   buildTrashPanel();
   buildPicker();
   initLoraPicker();
-  initWorkflow({ sampling: true });
+  initWorkflow({ sampling: true, faceFix: true });
   discord = mountDiscord(zh, "墨池");
   pingLoop();
 
