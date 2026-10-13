@@ -85,6 +85,73 @@ m = json.loads((cards / "manifest.json").read_text(encoding="utf-8"))
 ok("上一版公開包放的舊圖換成新的", (cards / "ponytail.webp").read_bytes() == b"new" and m["ponytail"]["positive"] == NEW)
 ok("自己烘的不被蓋（圖和 manifest 都留著）", (cards / "red_hair.webp").read_bytes() == b"mine" and m["red hair"]["positive"] == "my own red hair")
 
+
+# v7：縮圖包先、原圖包後（兩包都從本機 file:// 抓，不連網）。
+import hashlib  # noqa: E402
+import io  # noqa: E402
+import contextlib  # noqa: E402
+
+src = tmp / "release"
+src.mkdir()
+with zipfile.ZipFile(src / "card-art-thumbs.zip", "w") as z:
+    z.writestr("cards/thumb/ponytail.webp", b"thumb new")
+    z.writestr("cards/thumb/bob.webp", b"thumb bob")
+    z.writestr("cards/manifest.json", json.dumps({"ponytail": {"file": "ponytail.webp", "positive": NEW, "thumb": True}, "bob": {"file": "bob.webp", "positive": "bob, portrait", "thumb": True}}))
+    z.writestr("cards/previous.json", json.dumps({"ponytail": OLD}))
+with zipfile.ZipFile(src / "card-art-full.zip", "w") as z:
+    z.writestr("cards/ponytail.webp", b"full new")
+    z.writestr("cards/bob.webp", b"full bob")
+
+
+def packinfo(name):
+    data = (src / name).read_bytes()
+    return {"name": name, "size": len(data), "sha256": hashlib.sha256(data).hexdigest()}
+
+
+cards2 = tmp / "cards2"
+cards2.mkdir()
+fc.CARDS = cards2
+fc.MARKER = cards2 / ".card-art-v7"
+fc.THUMB_MARKER = cards2 / ".card-art-v7-thumbs"
+fc.UPGRADE = cards2 / ".card-art-upgrade.json"
+fc.PARTS = cards2 / ".card-art-download"
+fc.PACK_LIST = tmp / "missing.json"
+fc.BASE = src.as_uri() + "/"
+fc.THUMBS, fc.FULL = packinfo("card-art-thumbs.zip"), packinfo("card-art-full.zip")
+fc.JOBS.write_text(json.dumps([{"tag": "ponytail", "file": "ponytail.webp", "positive": NEW, "rating": "general"}, {"tag": "bob", "file": "bob.webp", "positive": "bob, portrait", "rating": "general"}]), encoding="utf-8")
+# 本機原本有上一版公開包放的 ponytail（舊提示詞）：兩包都要換成新的。
+(cards2 / "ponytail.webp").write_bytes(b"full old")
+(cards2 / "thumb").mkdir()
+(cards2 / "thumb" / "ponytail.webp").write_bytes(b"thumb old")
+(cards2 / "manifest.json").write_text(json.dumps({"ponytail": {"file": "ponytail.webp", "positive": OLD}}), encoding="utf-8")
+
+# 原圖包抓壞（雜湊對不上）：縮圖已經解好、留著標記，下次只抓原圖包。
+real_full = fc.FULL
+fc.FULL = {**real_full, "sha256": "0" * 64}
+sys.argv = ["fetch_card_art.py"]
+out = io.StringIO()
+with contextlib.redirect_stdout(out):
+    rc = fc.main()
+text = out.getvalue()
+ok("原圖包對不上：回 2，不解", rc == 2 and not (cards2 / "bob.webp").exists(), text)
+ok("縮圖包先好：縮圖、manifest 都在，印出讓面板叫人重新整理的那一行", (cards2 / "thumb" / "bob.webp").read_bytes() == b"thumb bob"
+   and "Card thumbnails ready" in text and json.loads((cards2 / "manifest.json").read_text(encoding="utf-8"))["bob"]["file"] == "bob.webp", text)
+ok("上一版公開包放的縮圖換新；要換的原圖記下來給原圖包", (cards2 / "thumb" / "ponytail.webp").read_bytes() == b"thumb new"
+   and json.loads(fc.UPGRADE.read_text(encoding="utf-8")) == ["ponytail.webp"])
+ok("縮圖好了留標記（下次不重抓縮圖）、這一版還沒完成", fc.THUMB_MARKER.exists() and not fc.MARKER.exists())
+
+fc.FULL = real_full
+(src / "card-art-thumbs.zip").rename(src / "gone.zip")  # 縮圖包不見了也沒關係：這次不該再抓它
+out = io.StringIO()
+with contextlib.redirect_stdout(out):
+    rc = fc.main()
+text = out.getvalue()
+(src / "gone.zip").rename(src / "card-art-thumbs.zip")
+ok("下次啟動：只接著抓原圖包", rc == 0 and "Card thumbnails ready" not in text, text)
+ok("原圖都到了：上一版的舊原圖也換新", (cards2 / "bob.webp").read_bytes() == b"full bob" and (cards2 / "ponytail.webp").read_bytes() == b"full new")
+ok("完成：這一版的標記、縮圖標記和要換的清單都收掉", fc.MARKER.exists() and not fc.THUMB_MARKER.exists() and not fc.UPGRADE.exists())
+ok("裝好之後下次啟動不再下載", fc.have_enough() is True)
+
 if failed:
     print(f"\n{failed} failed")
     sys.exit(1)

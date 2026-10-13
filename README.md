@@ -78,7 +78,7 @@ Keep the server window open. After updating, reload the page with **Ctrl+F5**.
 
 | What | Size | How | Skip |
 |---|---|---|---|
-| Card art, all ages (2564 cards) | ~133 MB | Downloaded from this repo's [release](https://github.com/bosen12/danbooru_tag_mochi/releases/tag/card-art-v6), checked with SHA-256, unpacked into `web/cards/`. Resumes if interrupted; never overwrites cards you baked yourself | `NO_CARD_FETCH=1` |
+| Card art, all ages (2564 cards) | ~30 MB + ~103 MB | Downloaded from this repo's [release](https://github.com/bosen12/danbooru_tag_mochi/releases/tag/card-art-v7) in two parts: thumbnails first (the card library shows pictures after a couple of minutes, reload when the panel says so), then full-size images in the background. Checked with SHA-256, unpacked into `web/cards/`. Resumes if interrupted; never overwrites cards you baked yourself | `NO_CARD_FETCH=1` |
 | Character card art (612 anime and game characters) | — | Not published (copyrighted characters). Every start checks it: up to 20 missing are baked straight away, more than that (about 70 minutes the first time) and the page asks first (Bake / Not now / Never ask) | `.no-character-bake` file or answer *Never ask* |
 | Sensitive / explicit card art | — | Not published. Once the download is in, the page asks whether to bake them with your checkpoint (`scripts/bake_card_art.py`). Missing or outdated all-ages cards are baked without asking | `NO_CARD_BAKE=1` or a `.no-card-bake` file |
 | Hires upscale model `RealESRGAN_x4plus_anime_6B` | ~18 MB | Saved to ComfyUI's `models/upscale_models` | `NO_UPSCALE_FETCH=1` |
@@ -148,7 +148,7 @@ tests/               node tests/test_i18n.mjs
 - **"Port 8796 is already in use".** Mochi is probably already running: open <http://127.0.0.1:8796/>. To run a second copy, set `PORT` to another port first.
 - **The top bar keeps saying Comfy is offline.** Start ComfyUI; Mochi finds it on 8188 or ComfyUI Desktop's 8000 by itself and connects within seconds. If ComfyUI runs elsewhere (another port, another computer), click the Comfy indicator and enter its URL.
 - **A phone on the same Wi-Fi gets “not allowed”.** By default only this computer and Tailscale devices can connect. Use Tailscale (works away from home too), or restart Mochi with `ALLOW_NET` including your home network; the page on the phone shows the exact line to use.
-- **Cards show only text, no pictures.** First start is still downloading the card art (about 133 MB; GitHub release downloads can be slow, often 5–10 minutes); the panel in the lower-left shows progress and tells you when to reload.
+- **Cards show only text, no pictures.** First start is still downloading the card art. Thumbnails (about 30 MB) arrive first, full-size images (about 103 MB) follow; GitHub release downloads can be slow, and the panel shows how many minutes are left; the panel in the lower-left shows progress and tells you when to reload.
 - **The LoRA panel has no previews or trigger words.** Allow the ComfyUI LoRA Manager install in the setup panel, then restart ComfyUI once.
 - **"Could not load the card library".** Open Mochi through `start.bat`, `start.sh` or `server.py`, not by opening the HTML file.
 - **Generation stops half-way.** Raise `client.streamIdleMs` for slow GPUs.
@@ -232,7 +232,7 @@ cd danbooru_tag_mochi
 
 | 東西 | 大小 | 怎麼來 | 不想要 |
 |---|---|---|---|
-| 卡牌插畫（全年齡 2564 張） | 約 133 MB | 從本 repo 的 [Release](https://github.com/bosen12/danbooru_tag_mochi/releases/tag/card-art-v6) 下載、驗 SHA-256、解到 `web/cards/`。斷了會接著抓；自己烘的圖不覆蓋 | `NO_CARD_FETCH=1` |
+| 卡牌插畫（全年齡 2564 張） | 約 30 MB＋103 MB | 從本 repo 的 [Release](https://github.com/bosen12/danbooru_tag_mochi/releases/tag/card-art-v7) 分兩包下載：先抓縮圖（兩分鐘左右字盒就有圖，面板說可以就重新整理），大圖背景接著抓。驗 SHA-256、解到 `web/cards/`。斷了會接著抓；自己烘的圖不覆蓋 | `NO_CARD_FETCH=1` |
 | 角色卡面（612 個動漫、遊戲角色） | — | 不公開（版權角色）。每次啟動都檢查：缺 20 張以內直接烘；更多（第一次約 70 分鐘）網頁上先問（烘／這次不要／不要再問） | `.no-character-bake` 檔或回答「不要再問」 |
 | 敏感／色情分級的卡面 | — | 不公開。卡面下載好之後，網頁上問你要不要用你的底模烘；全年齡卡缺的、過時的直接烘，不問 | `NO_CARD_BAKE=1` 或 `.no-card-bake` 檔 |
 | Hires 放大模型 | 約 18 MB | 放進 ComfyUI 的 `models/upscale_models` | `NO_UPSCALE_FETCH=1` |
@@ -264,7 +264,7 @@ LoRA 面板的「詳情」在 ComfyUI 的 LoRA Manager 直接打開那一個 LoR
 - **「8796 已經有程式在用」**：多半是墨池已經開著，直接開 <http://127.0.0.1:8796/>。要同時開第二份，先設 `PORT=別的埠`。
 - **一直顯示 Comfy 未連上**：先開 ComfyUI；一般版 8188、ComfyUI Desktop 的 8000 墨池會自己找到，幾秒內接上。ComfyUI 在別的埠或別台電腦，就點頂欄的 Comfy 燈號填網址。
 - **同一個 Wi-Fi 的手機打開說「還不能連」**：預設只接受這台電腦和 Tailscale 裡的裝置。用 Tailscale（出門也能用），或設 `ALLOW_NET` 加上家用網段再啟動；手機上的說明頁會寫好要填的那一行。
-- **牌只有字、沒有圖**：第一次啟動還在下載卡面（約 133 MB；GitHub Release 下載常常很慢，五到十分鐘都有可能），左下角的面板有進度，好了會叫你重新整理。
+- **牌只有字、沒有圖**：第一次啟動還在下載卡面：縮圖（約 30 MB）先到、大圖（約 103 MB）接著抓；GitHub Release 下載常常很慢，面板會寫還要幾分鐘，左下角的面板有進度，好了會叫你重新整理。
 - **LoRA 面板沒有預覽圖和觸發詞**：在準備面板允許安裝 ComfyUI LoRA Manager，裝好重開 ComfyUI 一次。
 - **「讀不到詞庫」**：用 `start.bat`／`start.sh`／`server.py` 開，不要直接點 HTML。
 - **生圖到一半停掉**：把 `client.streamIdleMs` 調大。

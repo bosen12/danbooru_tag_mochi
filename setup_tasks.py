@@ -94,26 +94,30 @@ _PROGRESS = [
     (re.compile(r"^(?:Cloning|Downloading) (.+?)(?: \(zip\))? \.\.\."), "下載 {0}…"),
     (re.compile(r"^Installing (.+?)'s python packages"), "安裝 {0} 的 Python 套件…"),
     (re.compile(r"^checking sha256"), "檢查檔案…"),
+    (re.compile(r"^Card thumbnails ready"), "縮圖好了，重新整理就有圖；大圖接著下載"),
     (re.compile(r"retrying|continuing"), "連線中斷，接著下載…"),
 ]
 
 
 # 下載進度帶著速度（卡面包的 "45%  57.2/133.0 MB  0.25 MB/s"）：順便說還要多久。
 # GitHub Release 到台灣常常只有每秒零點幾 MB，133 MB 要等快十分鐘；只看百分比不知道要等多久。
-_SPEED = re.compile(r"^(\d+)%\s+([\d.]+)/([\d.]+) MB\s+([\d.]+) MB/s")
+_SPEED = re.compile(r"^(\[full\]\s+)?(\d+)%\s+([\d.]+)/([\d.]+) MB\s+([\d.]+) MB/s")
 
 
 def progress_text(line: str) -> str:
     """腳本印的是給終端機看的英文；畫面上只換成中文進度（英文版再由 en.js 翻）。認不得的行回空字串。"""
     m = _SPEED.search(line)
     if m:
-        pct, got, total, speed = m.group(1), float(m.group(2)), float(m.group(3)), float(m.group(4))
-        size = f"{m.group(2)}/{m.group(3)} MB"
+        # 卡面的原圖包（縮圖包已經好了）：前面先說可以重新整理，字盒已經有圖。
+        head = "縮圖好了，重新整理就有圖；大圖下載中" if m.group(1) else "下載中"
+        pct, got, total, speed = m.group(2), float(m.group(3)), float(m.group(4)), float(m.group(5))
+        size = f"{m.group(3)}/{m.group(4)} MB"
         if speed >= 0.01 and total > got:
             secs = (total - got) / speed
             if secs >= 60:
-                return f"下載中 {pct}%（{size}，還要約 {max(1, round(secs / 60))} 分鐘）"
-            return f"下載中 {pct}%（{size}，快好了）"
+                return f"{head} {pct}%（{size}，還要約 {max(1, round(secs / 60))} 分鐘）"
+            return f"{head} {pct}%（{size}，快好了）"
+        return f"{head} {pct}%（{size}）"
     for pat, text in _PROGRESS:
         m = pat.search(line)
         if m:
@@ -151,6 +155,9 @@ def _run(key: str, args: list[str], show: bool = True) -> int:
         if text and key in _state:
             with _lock:
                 _state[key]["text"] = text
+                # 卡面縮圖包好了（原圖包還在抓）：面板給「重新整理看新圖」，不必等大圖。
+                if key == "cards" and line.startswith("Card thumbnails ready"):
+                    _state[key]["reload"] = True
     code = proc.wait()
     _procs.pop(key, None)
     return code
@@ -335,9 +342,9 @@ def _cards() -> None:
         if _check("fetch_card_art.py") == 0:
             _set("cards", "done", "")
             return
-        # 先說缺什麼、缺幾張，再說要下載：使用者才知道為什麼要抓 130 MB。
+        # 先說缺什麼、缺幾張，再說要下載：使用者才知道為什麼要抓這麼多。
         why = cards_missing_text(_last_check[0])
-        _set("cards", "run", (why + "：" if why else "") + "從 GitHub 下載全年齡卡面（約 130 MB）")
+        _set("cards", "run", (why + "：" if why else "") + "從 GitHub 下載全年齡卡面：先抓縮圖（約 30 MB），再抓大圖（約 103 MB）")
         code = _run("cards", ["fetch_card_art.py"])
         if code == 0:
             _set("cards", "done", "下載好了：重新整理網頁就有圖", reload=True)
@@ -500,6 +507,23 @@ def _bake_failed(key: str, rc: int) -> str:
     return "另一個視窗正在烘：烘完後下次啟動會接著烘" if rc == 12 else _failed("烘焙失敗")
 
 
+# 全年齡缺超過這麼多張就先問（大約 6 分鐘以上）：少量的（詞庫新加幾張、提示詞改了）直接烘。
+BAKE_GENERAL_ASK_OVER = 50
+
+
+def _bake_general() -> bool:
+    """烘還沒有的全年齡卡面。回 False 表示沒烘完（停了、出錯）：後面的敏感、角色這次不問。"""
+    rc = _bake_run("bake", ["bake_card_art.py", "--rating", "general"], "用你的 ComfyUI 烘還沒有的全年齡卡面")
+    if "bake" in _stopped:
+        _set("bake", "skip", "停了：已經烘好的留著；下次啟動接著烘", reload=True)
+        return False
+    if rc != 0:
+        _set("bake", "skip" if rc == 12 else "error", _bake_failed("bake", rc))
+        return False
+    _set("bake", "done", "烘好了：重新整理網頁就有圖", reload=True)
+    return True
+
+
 def _bake() -> None:
     """卡面下載完接著烘：全年齡缺的、提示詞改過的直接烘；敏感／色情的先問。"""
     _events["cards_done"].wait()
@@ -508,27 +532,27 @@ def _bake() -> None:
         _set("bake_adult", "skip", "")
         _set("bake_chars", "skip", "")
         return
-    code = _check("bake_card_art.py", "--rating", "general")
-    if code == 12:
-        _set("bake", "skip", "另一個視窗正在烘")
-        _set("bake_adult", "skip", "")
-        _set("bake_chars", "skip", "")
-        return
-    if code == 10:
-        rc = _bake_run("bake", ["bake_card_art.py", "--rating", "general"], "用你的 ComfyUI 烘還沒有的全年齡卡面")
-        if "bake" in _stopped:
-            _set("bake", "skip", "停了：已經烘好的留著；下次啟動接著烘", reload=True)
-            _set("bake_adult", "skip", "")
-            _set("bake_chars", "skip", "")
-            return
-        if rc != 0:
-            _set("bake", "skip" if rc == 12 else "error", _bake_failed("bake", rc))
-            _set("bake_adult", "skip", "")
-            _set("bake_chars", "skip", "")
-            return
-        _set("bake", "done", "烘好了：重新整理網頁就有圖", reload=True)
+    # 卡面沒下載成功（GitHub 連不上、檔案對不上）：缺的是整包兩千多張，不能自己用 ComfyUI 烘好幾個鐘頭。
+    # 下次啟動接著下載；真的要烘的人可以自己跑 bake_card_art.py。
+    if (_state.get("cards") or {}).get("state") == "error":
+        _set("bake", "skip", "卡面還沒下載好：下次啟動接著抓，不先用你的 ComfyUI 烘")
     else:
-        _set("bake", "done", "")
+        code = _check("bake_card_art.py", "--rating", "general")
+        if code == 12:
+            _set("bake", "skip", "另一個視窗正在烘")
+            _set("bake_adult", "skip", "")
+            _set("bake_chars", "skip", "")
+            return
+        if code == 10 and _missing(_last_check[0]) > BAKE_GENERAL_ASK_OVER:
+            # 缺很多（詞庫比公開包新很多、或圖被刪了）：要烘很久，先問；後面的敏感、角色照常問。
+            _set("bake", "ask", "公開包裡沒有；" + bake_ask_text(_last_check[0]).split("；", 1)[-1], answers=["yes", "no"])
+        elif code == 10:
+            if not _bake_general():
+                _set("bake_adult", "skip", "")
+                _set("bake_chars", "skip", "")
+                return
+        else:
+            _set("bake", "done", "")
     code = _check("bake_card_art.py")
     if code == 10:
         _set("bake_adult", "ask", bake_ask_text(_last_check[0]), answers=["yes", "no"])
@@ -616,7 +640,7 @@ def answer(key: str, value: str) -> tuple[bool, str]:
         if key == "lora":
             _thread(_lora_install, cur.get("action", "install"))
         else:
-            _thread({"pose": _pose_install, "face": _face_install, "bake_chars": _bake_chars}.get(key, _bake_adult))
+            _thread({"pose": _pose_install, "face": _face_install, "bake_chars": _bake_chars, "bake": _bake_general}.get(key, _bake_adult))
     elif value == "never" and key in ("pose", "face", "lora", "bake_chars"):
         marker = {"pose": ".no-pose-fetch", "face": ".no-face-fetch", "lora": ".no-lora-manager-fetch",
                   "bake_chars": ".no-character-bake"}[key]

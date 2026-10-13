@@ -13,6 +13,7 @@ sys.path.insert(0, str(ROOT))
 for k in ("NO_CARD_FETCH", "NO_LORA_MANAGER_FETCH", "NO_UPSCALE_FETCH", "NO_POSE_FETCH", "NO_FACE_FETCH", "NO_CARD_BAKE", "NO_SETUP"):
     os.environ.pop(k, None)
 import setup_tasks as st  # noqa: E402
+_REAL_RUN = st._run  # reset() 會換成假的；1d 要用真的那支讀進度行
 
 failed = 0
 
@@ -193,6 +194,64 @@ if (tmp / ".no-lora-manager-fetch").exists():
 ran = reset({}, local=False)
 st._lora()
 ok("ComfyUI 在別台：不裝", state("lora") == "skip" and ran == [], str(ran))
+
+# 1b. 卡面沒下載成功：不能自己用 ComfyUI 烘兩千多張（以前會直接開烘，好幾個鐘頭）。
+ran = reset({("fetch_card_art.py", "--check"): 3, ("fetch_card_art.py",): 1, ("bake_card_art.py", "--status", "--rating", "general"): 10, ("bake_card_art.py", "--status"): 10})
+st._cards()
+st._bake()
+ok("下載失敗：全年齡不自己烘，說下次接著抓", state("cards") == "error" and state("bake") == "skip" and ("bake_card_art.py", "--rating", "general") not in ran
+   and "下載" in st._state["bake"]["text"], str((st._state["bake"], ran)))
+ok("下載失敗：敏感、色情照樣只是問", state("bake_adult") == "ask")
+
+# 1c. 下載好了但全年齡缺很多（詞庫比公開包新很多）：先問，答「烘」才烘。
+ran = reset({("fetch_card_art.py", "--check"): 0, ("bake_card_art.py", "--status", "--rating", "general"): 10, ("bake_card_art.py", "--status"): 0})
+_real_fake = st._run
+
+
+def _with_status(key, args, show=True):
+    if tuple(args) == ("bake_card_art.py", "--status", "--rating", "general"):
+        st._last_check[0] = "card art (general): 2000/2564 ready, 564 missing; ComfyUI is running"
+    return _real_fake(key, args, show)
+
+
+st._run = _with_status
+st._cards()
+st._bake()
+ok("全年齡缺很多：先問，寫張數和時間，不自己烘", state("bake") == "ask" and "564" in st._state["bake"]["text"]
+   and ("bake_card_art.py", "--rating", "general") not in ran, str((st._state["bake"], ran)))
+ok("回答「烘」才烘全年齡", st.answer("bake", "yes")[0])
+threading.Event().wait(0.2)
+ok("答了之後：烘全年齡、烘好提示重新整理", ("bake_card_art.py", "--rating", "general") in ran and state("bake") == "done" and st._state["bake"].get("reload"), str((st._state["bake"], ran)))
+st._run = _real_fake
+
+# 1d. 卡面縮圖包先到：面板馬上給「重新整理」，原圖包的進度前面寫縮圖好了。
+reset({})
+st._set("cards", "run", "x")
+
+
+class _P:
+    def __init__(self, lines):
+        self.stdout = iter(lines)
+
+    def wait(self):
+        return 0
+
+    def poll(self):
+        return 0
+
+
+_saved_popen = st.subprocess.Popen
+st.subprocess.Popen = lambda *a, **k: _P([
+    "50%   15.0/29.9 MB  0.30 MB/s\n",
+    "Card thumbnails ready. Reload the page to see them; full-size images continue in the background.\n",
+    "[full]  10%   10.3/103.1 MB  0.30 MB/s\n",
+])
+try:
+    _REAL_RUN("cards", ["fetch_card_art.py"])
+finally:
+    st.subprocess.Popen = _saved_popen
+ok("縮圖包好了：面板馬上給重新整理（不等大圖）", st._state["cards"].get("reload") is True, str(st._state["cards"]))
+ok("大圖下載中：前面寫縮圖好了、還要幾分鐘", st._state["cards"]["text"].startswith("縮圖好了，重新整理就有圖；大圖下載中 10%") and "分鐘" in st._state["cards"]["text"], st._state["cards"]["text"])
 
 # 4. 姿勢參考：先問；never 寫記號、下次不問。
 ran = reset({("fetch_pose_assets.py", "--check"): 3})

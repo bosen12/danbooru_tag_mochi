@@ -1356,6 +1356,20 @@ ok("banned card art is never served (loli/shota, _hard_banned), lolita fashion s
 ok("static_path refuses banned card art even if the file exists", _srv_h.static_path("cards/loli.webp") is None and _srv_h.static_path("cards/_hard_banned/loli.webp") is None)
 _slim = json.loads(_srv_h.slim_card_manifest(json.dumps({"loli": {"v": "a"}, "shota": {"v": "b"}, "lolita fashion": {"v": "c"}, "smile": {"v": "d", "prompt": "x"}}).encode()))
 ok("served card manifest drops banned entries, keeps the rest", sorted(_slim) == ["lolita fashion", "smile"], str(_slim))
+import tempfile as _tf_si  # noqa: E402
+_si_web = Path(_tf_si.mkdtemp())
+(_si_web / "cards" / "thumb").mkdir(parents=True)
+(_si_web / "cards" / "thumb" / "bob.webp").write_bytes(b"thumb")
+(_si_web / "cards" / "thumb" / "both.webp").write_bytes(b"thumb")
+(_si_web / "cards" / "both.webp").write_bytes(b"full")
+_saved_web = (_srv_h.WEB, _srv_h.SHARED)
+_srv_h.WEB = _srv_h.SHARED = _si_web
+try:
+    ok("card art: full image not downloaded yet -> its thumbnail stands in", _srv_h.static_path("cards/bob.webp") == (_si_web / "cards" / "thumb" / "bob.webp").resolve())
+    ok("card art: full image present -> the full image", _srv_h.static_path("cards/both.webp") == (_si_web / "cards" / "both.webp").resolve())
+    ok("card art: no full, no thumb -> 404 as before; non-card paths never stand in", _srv_h.static_path("cards/none.webp") is None and _srv_h.card_stand_in("engine.js") is None and _srv_h.card_stand_in("cards/thumb/a.webp") is None)
+finally:
+    _srv_h.WEB, _srv_h.SHARED = _saved_web
 ok("face status when ComfyUI is down", server.face_status(_down)["ready"] is False and "ComfyUI" in server.face_status(_down)["why"])
 _saved_base, _saved_root = server.comfy_base, server.ROOT
 _hint_root = Path(tempfile.mkdtemp())

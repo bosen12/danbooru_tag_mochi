@@ -269,10 +269,10 @@ Python 3 · 標準函式庫，不用裝任何套件|Python 3 · Standard library
 卡冊|Card Book
 作品冊|Gallery
 排字匣|Danbooru Case
-排字匣 · 墨池|Danbooru Case · Ink Pool
-墨池 · 疊印台|Danbooru Case · Fuse Bed
-墨池 · 卡冊|Danbooru Case · Card Book
-墨池 · 作品冊|Danbooru Case · Gallery
+墨池 · 抽牌生圖|Mochi · Ink Pool
+墨池 · 疊印台|Mochi · Fuse Bed
+墨池 · 卡冊|Mochi · Card Book
+墨池 · 作品冊|Mochi · Gallery
 墨池頁面|Workbench navigation
 介紹影片|Intro film
 教學|Tutorial
@@ -926,7 +926,7 @@ ComfyUI 重開中，大約半分鐘|ComfyUI is restarting. This takes about half
 烘焙失敗，詳情在 data/setup.log|Baking failed. Details are in data/setup.log
 檢查檔案…|Checking the file…
 連線中斷，接著下載…|Connection dropped. Resuming…
-從 GitHub 下載全年齡卡面（約 130 MB）|Downloading the all-ages card art from GitHub (about 130 MB)
+從 GitHub 下載全年齡卡面：先抓縮圖（約 30 MB），再抓大圖（約 103 MB）|Downloading the all-ages card art from GitHub: thumbnails first (about 30 MB), then full size (about 103 MB)
 下載好了：重新整理網頁就有圖|Downloaded. Reload the page to see the art.
 烘好了：重新整理網頁就有圖|Baked. Reload the page to see the art.
 等 ComfyUI 開起來|Waiting for ComfyUI to start
@@ -1209,8 +1209,8 @@ ComfyUI 沒有回報 checkpoint|ComfyUI returned no checkpoints.
 日誌記著印過的每一張：時間、從哪一頁送的、花多久、有沒有收藏。|History records every generation: time, source page, duration and whether you saved it.
 只看收藏的、撤下的、印壞的、Hires。點一列看配方，可以補收藏、把牌帶回墨池。|Filter saved, discarded, failed or upscaled images. Open a row to inspect its recipe, save it or reuse the cards.
 使用教學|Tutorial
-排字匣 · 介紹影片 Intro|Danbooru Case · Intro film
-墨池 · 疊印台 · 使用教學|Ink Pool · Fuse Bed · Tutorial
+墨池 · 介紹影片|Mochi · Intro film
+墨池 · 疊印台 · 使用教學|Mochi · Fuse Bed · Tutorial
 排字匣 · Danbooru case|Danbooru Case
 排字匣 · 墨池 · 疊印台|Danbooru Case · Ink Pool · Fuse Bed
 墨池 & 疊印台 · How to|Ink Pool & Fuse Bed
@@ -1519,9 +1519,9 @@ LoRA：沒設定 paths.loraRoot，改問 ComfyUI 也失敗了：{0}|LoRA: no LoR
 重開失敗（{0}）：請自己重開 ComfyUI|Restart failed ({0!}). Restart ComfyUI yourself.
 {0}（下次啟動接著抓）|{0} (resumes next launch)
 {0}：清掉篩選|{0}: clear filter
-偵測到缺 {0} 張全年齡卡面、{1} 張是舊版（例：{2}）：從 GitHub 下載全年齡卡面（約 130 MB）|Found {0} all-ages cards missing and {1} outdated (e.g. {2}): downloading the all-ages card art from GitHub (about 130 MB)
-偵測到缺 {0} 張全年齡卡面（例：{1}）：從 GitHub 下載全年齡卡面（約 130 MB）|Found {0} all-ages cards missing (e.g. {1}): downloading the all-ages card art from GitHub (about 130 MB)
-偵測到{0} 張是舊版（例：{1}）：從 GitHub 下載全年齡卡面（約 130 MB）|Found {0} outdated all-ages cards (e.g. {1}): downloading the all-ages card art from GitHub (about 130 MB)
+偵測到缺 {0} 張全年齡卡面、{1} 張是舊版（例：{2}）：從 GitHub 下載全年齡卡面：先抓縮圖（約 30 MB），再抓大圖（約 103 MB）|Found {0} all-ages cards missing and {1} outdated (e.g. {2}): downloading the all-ages card art from GitHub, thumbnails first (about 30 MB), then full size (about 103 MB)
+偵測到缺 {0} 張全年齡卡面（例：{1}）：從 GitHub 下載全年齡卡面：先抓縮圖（約 30 MB），再抓大圖（約 103 MB）|Found {0} all-ages cards missing (e.g. {1}): downloading the all-ages card art from GitHub, thumbnails first (about 30 MB), then full size (about 103 MB)
+偵測到{0} 張是舊版（例：{1}）：從 GitHub 下載全年齡卡面：先抓縮圖（約 30 MB），再抓大圖（約 103 MB）|Found {0} outdated all-ages cards (e.g. {1}): downloading the all-ages card art from GitHub, thumbnails first (about 30 MB), then full size (about 103 MB)
 提示詞裡有不能用的字（未成年、真人等角色不收）：{0!}|The prompt has blocked tags (underage, real-person and similar characters are not allowed): {0!}
 不在公開下載包裡；用你的底模烘 {0} 張，大約 {1} 分鐘|Not in the public download. Baking {0} cards with your checkpoint takes about {1} minutes.
 版權角色不在公開下載包；用你的底模烘 {0} 張，大約 {1} 分鐘|Characters are copyrighted and not in the public download. Baking {0} cards with your checkpoint takes about {1} minutes.
@@ -1578,6 +1578,12 @@ ComfyUI 連不上 {0}：先開 ComfyUI；位址不對就點頂欄的 Comfy 燈�
 下載中 {0}%（{1}）|Downloading {0}% ({1!})
 下載中 {0}%（{1}，還要約 {2} 分鐘）|Downloading {0}% ({1!}, about {2} min left)
 下載中 {0}%（{1}，快好了）|Downloading {0}% ({1!}, almost done)
+縮圖好了，重新整理就有圖；大圖接著下載|Thumbnails ready, reload to see them. Full-size images continue in the background
+縮圖好了，重新整理就有圖；大圖下載中 {0}%（{1}，還要約 {2} 分鐘）|Thumbnails ready, reload to see them. Full size {0}% ({1!}, about {2} min left)
+縮圖好了，重新整理就有圖；大圖下載中 {0}%（{1}，快好了）|Thumbnails ready, reload to see them. Full size {0}% ({1!}, almost done)
+縮圖好了，重新整理就有圖；大圖下載中 {0}%（{1}）|Thumbnails ready, reload to see them. Full size {0}% ({1!})
+卡面還沒下載好：下次啟動接著抓，不先用你的 ComfyUI 烘|Card art has not finished downloading. It resumes on the next launch; nothing is baked with your ComfyUI meanwhile
+公開包裡沒有；用你的底模烘 {0} 張，大約 {1} 分鐘|Not in the public pack. Bake {0} cards with your checkpoint, about {1} min
 烘焙中 {0}/{1}|Baking {0}/{1}
 下載 {0}…|Downloading {0!}…
 安裝 {0} 的 Python 套件…|Installing Python packages for {0!}…

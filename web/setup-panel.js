@@ -15,6 +15,7 @@ const ANSWER = {
   lora: [["yes", "允許", true], ["no", "這次不要"], ["never", "不要再問"]],
   pose: [["yes", "安裝", true], ["no", "這次不要"], ["never", "不要再問"]],
   face: [["yes", "安裝", true], ["no", "這次不要"], ["never", "不要再問"]],
+  bake: [["yes", "烘", true], ["no", "這次不要"]],
   bake_adult: [["yes", "烘", true], ["no", "這次不要"]],
   bake_chars: [["yes", "烘", true], ["no", "這次不要"], ["never", "不要再問"]],
 };

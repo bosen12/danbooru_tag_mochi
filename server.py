@@ -480,6 +480,19 @@ def static_path(rel: str) -> Path | None:
     shared = (SHARED / rel).resolve()
     if shared.is_relative_to(SHARED) and shared.is_file():
         return shared
+    # 卡面原圖還沒下載到（第一次啟動，縮圖包先到、原圖包還在抓）：先拿那張的縮圖頂著，牌上不會是破圖。
+    # 回應不能整年快取（見 _serve_static 的 card_stand_in）：原圖一到，重新整理就換成清楚的。
+    stand_in = card_stand_in(rel)
+    if stand_in is not None:
+        return static_path(stand_in)
+    return None
+
+
+def card_stand_in(rel: str) -> str | None:
+    """cards/<檔名>.webp 的縮圖路徑（cards/thumb/<檔名>.webp）；不是卡面原圖就回 None。"""
+    parts = [x for x in str(rel).replace("\\", "/").split("/") if x]
+    if len(parts) == 2 and parts[0] == "cards" and parts[1].endswith(".webp"):
+        return f"cards/thumb/{parts[1]}"
     return None
 
 
@@ -4493,6 +4506,10 @@ class Handler(BaseHTTPRequestHandler):
         # 拿著舊版本號來要的，拿到的是新內容 —— 不能讓新內容被記成舊版本號（之後改回去就會拿錯）。
         # 卡面縮圖的 v 是原圖的雜湊（不是縮圖自己的），所以只驗 .js／.css／.json。
         vq = (urllib.parse.parse_qs(urllib.parse.urlsplit(self.path).query).get("v") or [""])[0]
+        # 要的是原圖、給的是縮圖（原圖還沒下載到）：不能讓瀏覽器把這張記一整年。
+        asked = urllib.parse.unquote(urllib.parse.urlparse(self.path).path).lstrip("/")
+        if card_stand_in(asked) and dest.parent.name == "thumb":
+            vq = ""
         if vq and dest.suffix.lower() in (".js", ".css", ".json"):
             if "v" not in rec:
                 rec["v"] = hashlib.sha1(rec["raw"]).hexdigest()[:10]
@@ -4971,7 +4988,9 @@ def check_ckpt() -> None:
     except Exception:
         return
     if not have:
-        print(f"ckpt     {CKPT}（ComfyUI 沒有回報任何底模）")
+        # 剛裝好的 ComfyUI 常常一個底模都沒有：生圖一定失敗，開機就講清楚要放哪裡。
+        print("ckpt     ComfyUI 沒有任何底模：把 SDXL 底模（推薦 Illustrious／WAI）放進 ComfyUI 的 models/checkpoints，重開 ComfyUI")
+        print("         ComfyUI reports no checkpoints: put an SDXL checkpoint (Illustrious / WAI recommended) in ComfyUI's models/checkpoints and restart it")
         return
     if CKPT in have:
         print(f"ckpt     {CKPT}")
@@ -4979,6 +4998,7 @@ def check_ckpt() -> None:
     # 預設的底模（comfy.ckpt）這台的 ComfyUI 沒有：不是錯，生圖時會自動挑一個（pick_default_ckpt）。
     print(f"ckpt     {pick_default_ckpt(have)}（ComfyUI 沒有預設的 {CKPT}，先用這個；網頁頂欄的模型按鈕可以換，"
           "要固定就設 config.json 的 comfy.ckpt）")
+    print("         using this checkpoint for now; pick another with the model button in the top bar")
 
 
 class AppServer(ThreadingHTTPServer):
@@ -5026,9 +5046,12 @@ def main() -> None:
         comfy_note = "Comfy 還沒開（找過 8188 和 ComfyUI Desktop 的 8000）：開好之後網頁會自動接上 / ComfyUI not found yet; the page connects when it starts"
     else:
         comfy_note = f"Comfy 連不到 {base}：開好 ComfyUI，或在網頁頂欄的 Comfy 燈號改網址 / cannot reach ComfyUI at {base}"
-    print(f"排字匣  http://{host}:{port}   畫面 {WEB.name}   {comfy_note}")
+    # 0.0.0.0 是「聽所有網卡」，不是能打開的網址：印這台自己的。
+    shown = "127.0.0.1" if host in ("0.0.0.0", "::", "") else host
+    name = "墨池 Mochi" if (WEB / "setup-panel.js").is_file() else "排字匣"
+    print(f"{name}  http://{shown}:{port}/   畫面 {WEB.name}   {comfy_note}")
     print("allow    " + ",".join(str(n) for n in ALLOW_NETS))
-    print(f"設定檔  {CONFIG_PATH}" + ("" if CONFIG else "（沒有，全部用預設值）"))
+    print(f"設定檔  {CONFIG_PATH}" + ("" if CONFIG else "（沒有，全部用預設值 / not found, using defaults）"))
     # 第一次 clone 下來最常見的兩個「怎麼是空的」就是這兩項沒設定。
     # 與其讓使用者從空清單反推，開機就講清楚。
     if lora_scan.preferred_path():
@@ -5037,10 +5060,11 @@ def main() -> None:
         print(f"ckpts    偏好路徑 {ckpt_pref()}（在底模面板的「偏好路徑」改）")
     lm_total = lora_scan.lora_manager_count()
     if lm_total is not None:
-        print(f"loras    ComfyUI 的 LoRA Manager：{lm_total} 個，預覽圖和觸發詞從它來（{lora_scan.lm_manager_url()}）")
+        print(f"loras    ComfyUI 的 LoRA Manager：{lm_total} 個，預覽圖和觸發詞從它來 / {lm_total} LoRAs via LoRA Manager（{lora_scan.lm_manager_url()}）")
     elif not lora_scan.LORA_ROOT:
         print("loras    （ComfyUI 沒有 LoRA Manager、也沒設定 paths.loraRoot：LoRA 清單改問 Comfy，沒有預覽圖和觸發詞。"
               "墨池準備面板可選擇安裝 LoRA Manager，裝完重開 ComfyUI）")
+        print("         No LoRA Manager in ComfyUI: LoRAs are listed without previews; the setup panel can install it")
     elif not lora_scan.LORA_ROOT.is_dir():
         print(
             f"loras    {lora_scan.LORA_ROOT}（路徑不存在，LoRA 面板會是空的）\n"
@@ -5054,7 +5078,7 @@ def main() -> None:
             if missing:
                 print(f"         這幾個資料夾不存在：{', '.join(missing)}")
     if not _ckpt_dir:
-        print("ckptdir  （未設定 config.json 的 comfy.checkpointDir，換底模清單改問 Comfy）")
+        print("ckptdir  （未設定 config.json 的 comfy.checkpointDir，換底模清單改問 Comfy / checkpoint list comes from ComfyUI）")
     elif CKPT_DIR is not None and CKPT_DIR.is_dir():
         print(f"ckptdir  {CKPT_DIR}")
         if CKPT_DIR != _ckpt_dir_given:
@@ -5078,6 +5102,8 @@ def main() -> None:
         # 姿勢參考、烘焙都由 setup_tasks 在背景做，ComfyUI 什麼時候開都接得上。
         setup_tasks.start(comfy_base, on_lora_ready=lora_scan.reset_cache)
         print("setup    第一次使用的準備在背景做，進度和要回答的事在網頁上（data/setup.log 有紀錄）")
+        print("         First-time setup runs in the background; progress and questions are in the page (log: data/setup.log)")
+        print("         Keep this window open while you use Mochi / 用的時候這個視窗不要關")
     else:
         start_card_fetch()
     removed = prune_hires_inputs()
