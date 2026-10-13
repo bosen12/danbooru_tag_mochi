@@ -722,6 +722,7 @@ Hires：放大並重畫細節|Hires · Upscale and refine
 這張已經修過臉。|Faces in this image are already fixed.
 ComfyUI 現在做不了修臉|ComfyUI cannot fix faces right now
 修臉做不了|Face fix is unavailable
+這張圖在 ComfyUI 的輸出資料夾裡已經換成別張了（檔名被重用）|This image has been replaced in ComfyUI's output folder (the file name was reused).
 找到臉、只重畫臉（FaceDetailer）|Find faces and redraw only them (FaceDetailer)
 修好臉了：不滿意可以再修一次，或拿掉修臉|Faces fixed. Not happy? Fix again or remove the face fix.
 這張正在修臉，先在圖上按「停」|Faces are being fixed. Press Stop on the image first.

@@ -15,6 +15,7 @@ import uuid
 from pathlib import Path
 
 import card_usage
+import file_lock
 
 ROOT = Path(__file__).resolve().parent
 DECKS_PATH = Path(os.environ.get("CARD_DECKS_PATH") or ROOT / "data" / "card_decks.json")
@@ -67,10 +68,7 @@ def _clean_weights(raw, tags: list[str]) -> dict:
 
 
 def _write(decks: list[dict]) -> None:
-    DECKS_PATH.parent.mkdir(parents=True, exist_ok=True)
-    tmp = DECKS_PATH.with_suffix(".tmp")
-    tmp.write_text(json.dumps({"v": 1, "decks": decks}, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
-    os.replace(tmp, DECKS_PATH)
+    file_lock.write_text(DECKS_PATH, json.dumps({"v": 1, "decks": decks}, ensure_ascii=False, separators=(",", ":")))
 
 
 def _sorted(decks: list[dict]) -> list[dict]:
@@ -80,7 +78,7 @@ def _sorted(decks: list[dict]) -> list[dict]:
 
 
 def load() -> list[dict]:
-    with _LOCK:
+    with _LOCK, file_lock.locked(DECKS_PATH):
         return _sorted(_read())
 
 
@@ -105,7 +103,7 @@ def save(payload: dict) -> dict:
     tags = tags[:MAX_TAGS]
     rid = str(payload.get("id") or "")
     now = int(time.time() * 1000)
-    with _LOCK:
+    with _LOCK, file_lock.locked(DECKS_PATH):
         decks = _read()
         hit = next((d for d in decks if d["id"] == rid), None) if _ID_RE.match(rid) else None
         weights = _clean_weights(payload.get("weights"), tags)
@@ -129,7 +127,7 @@ def save(payload: dict) -> dict:
 
 
 def delete(rid: str) -> dict:
-    with _LOCK:
+    with _LOCK, file_lock.locked(DECKS_PATH):
         decks = _read()
         gone = next((d for d in decks if d["id"] == rid), None)
         if gone is None:

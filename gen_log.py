@@ -26,7 +26,8 @@ MARKS = ("discard",)
 PAGE_MAX = 2000
 
 _LOCK = threading.Lock()
-_WEIGHT_TAIL = re.compile(r"(:[\d.]+)?\)+$")
+# 整段是 (tag:1.2) 才是權重（跟 engine.js 的 parseWeighted 一樣）；字本身的括號（star (sky)）留著。
+_WEIGHTED = re.compile(r"^\((.+):(\d+(?:\.\d+)?)\)$")
 _cache: dict = {"key": None, "items": []}
 
 
@@ -166,18 +167,26 @@ def _load() -> list[dict]:
     for jid, row in items.items():
         m = marks.get(jid)
         out.append({**row, "mark": m} if m else row)
-    out.sort(key=lambda r: r.get("at") or 0, reverse=True)
+    # 時間一樣的照編號排：翻頁的游標是 (at, id)，排序要跟它一致。
+    out.sort(key=lambda r: (r.get("at") or 0, str(r.get("id") or "")), reverse=True)
     with _LOCK:
         _cache["key"] = key
         _cache["items"] = out
     return out
 
 
-def page(limit: int = 200, before: int | None = None) -> dict:
-    """新的在前；before（毫秒）給了就從那之前接著翻。"""
+def page(limit: int = 200, before: int | None = None, before_id: str | None = None) -> dict:
+    """新的在前；before（毫秒）給了就從那之前接著翻。
+
+    游標是上一頁最後一筆的 (at, id)：只用時間的話，好幾筆同一毫秒剛好跨在頁界上，
+    第二頁問「比這個時間早的」就把同一毫秒的其他幾筆永遠跳過（Codex 2026-10-13）。
+    舊網頁只帶 before：照舊只比時間。"""
     items = _load()
     limit = max(1, min(PAGE_MAX, int(limit or 200)))
-    if before:
+    if before and before_id:
+        cursor = (before, str(before_id))
+        items = [r for r in items if ((r.get("at") or 0), str(r.get("id") or "")) < cursor]
+    elif before:
         items = [r for r in items if (r.get("at") or 0) < before]
     return {"items": items[:limit], "more": len(items) > limit, "total": len(_load())}
 
@@ -194,8 +203,10 @@ def tags_of(positive: str) -> list[str]:
     out: list[str] = []
     seen = set()
     for raw in str(positive or "").split(","):
-        t = raw.strip().lstrip("(")
-        t = _WEIGHT_TAIL.sub("", t).strip()
+        t = raw.strip().replace("\\(", "(").replace("\\)", ")")
+        m = _WEIGHTED.match(t)
+        if m:
+            t = m.group(1).strip()
         if t and t not in seen:
             seen.add(t)
             out.append(t)

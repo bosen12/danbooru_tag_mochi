@@ -15,6 +15,8 @@ import urllib.parse
 import urllib.request
 from pathlib import Path
 
+import file_lock
+
 ROOT = Path(__file__).resolve().parent
 DATA_DIR = Path(os.environ.get("WORKFLOW_DATA_DIR") or ROOT / "data" / "workflows")
 SETTINGS_PATH = Path(os.environ.get("APP_SETTINGS") or ROOT / "data" / "settings.json")
@@ -528,7 +530,8 @@ def load_settings() -> dict:
 
 
 def save_settings(data: dict) -> None:
-    with _STORE_LOCK:
+    # 兩個伺服器各存一個偏好（ComfyUI 網址、偏好路徑）：整段讀改寫要排隊，不然後寫的蓋掉先寫的。
+    with _STORE_LOCK, file_lock.locked(SETTINGS_PATH):
         cur = load_settings()
         cur.update(data)
         _write_json(SETTINGS_PATH, cur)

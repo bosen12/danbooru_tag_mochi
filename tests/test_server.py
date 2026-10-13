@@ -1255,7 +1255,7 @@ try:
 finally:
     server.CONFIG = _old_cfg
 
-_hi = server.parse_hires({"mode": "quick", "scale": 9, "image": "/api/image?filename=a.png&type=output&h=abc"})
+_hi = server.parse_hires({"mode": "quick", "scale": 9, "image": "/api/image?filename=a.png&type=output&h=abcdabcdabcdabcd"})
 _lo = server.parse_hires({"mode": "deep", "scale": 0.2, "image": "/api/image?filename=a.png"})
 _mid = server.parse_hires({"mode": "quick", "scale": "1.5", "image": "/api/image?filename=a.png&subfolder=batch&type=output"})
 ok("scale clamps high", _hi["scale"] == 3.0, str(_hi))
@@ -1313,6 +1313,49 @@ _fs4 = server.face_status(lambda path: {} if "FaceDetailer" in path else {})
 ok("face status names the missing Subpack", any("Impact Subpack" in m for m in _fs4["missing"]), str(_fs4))
 def _down(path):
     raise OSError("refused")
+import json as _json_tags  # noqa: E402
+import gen_log as _gl_tags  # noqa: E402
+_lex_tags = [t["tag"] for t in _json_tags.loads((Path(__file__).resolve().parents[1] / "web" / "lexicon.json").read_text(encoding="utf-8"))["tags"]]
+_esc = lambda t: t.replace("(", "\\(").replace(")", "\\)")  # noqa: E731
+_bad_tags = []
+for _t in _lex_tags:
+    if _t in ("1girl", "smile"):
+        continue
+    for _form in (_t, f"({_t}:1.2)", _esc(_t), f"({_esc(_t)}:0.8)"):
+        if _gl_tags.tags_of(f"1girl, {_form}, smile") != ["1girl", _t, "smile"]:
+            _bad_tags.append(_form)
+ok("gen_log.tags_of: every lexicon tag survives plain / weighted / escaped (star (sky), characters)", not _bad_tags, str(_bad_tags[:5]))
+import server as _srv_h  # noqa: E402
+_png_a = b"\x89PNG\r\n\x1a\n" + b"image a"
+_ha = _srv_h.image_digest(_png_a)[:16]
+ok("image_matches: same bytes / old URL without h pass, other bytes fail", _srv_h.image_matches(_png_a, _ha) and _srv_h.image_matches(b"x", "") and not _srv_h.image_matches(b"other", _ha))
+ok("parse_hires keeps the fingerprint (h)", _srv_h.parse_hires({"mode": "face", "image": "/api/image?filename=a.png&h=" + _ha})["h"] == _ha)
+try:
+    _srv_h.parse_hires({"mode": "face", "image": "/api/image?filename=a.png&h=zz"})
+    ok("parse_hires rejects a malformed fingerprint", False)
+except _srv_h.HiresError:
+    ok("parse_hires rejects a malformed fingerprint", True)
+_cd = [_srv_h.inline_disposition(n) for n in ("case_00001_.png", "作品_00001_.png", "絵🎨.png")]
+ok("Content-Disposition: ASCII names unchanged", _cd[0] == 'inline; filename="case_00001_.png"', _cd[0])
+ok("Content-Disposition: CJK / emoji names encode to Latin-1 with filename*", all(c.encode("latin-1") for c in _cd) and "filename*=UTF-8''%E4%BD%9C%E5%93%81" in _cd[1], str(_cd))
+import gen_log as _gl_page  # noqa: E402
+_saved_load = _gl_page._load
+_rows = [{"id": i, "at": 1000} for i in ("a", "b", "c")] + [{"id": "z", "at": 900}]
+_gl_page._load = lambda: sorted(_rows, key=lambda r: (r["at"], r["id"]), reverse=True)
+try:
+    _p1 = _gl_page.page(2)
+    _last = _p1["items"][-1]
+    _p2 = _gl_page.page(2, _last["at"], _last["id"])
+    _seen = [r["id"] for r in _p1["items"] + _p2["items"]]
+    ok("genlog paging: same-millisecond entries across a page break are not skipped", sorted(_seen) == ["a", "b", "c", "z"] and len(_seen) == 4, str(_seen))
+finally:
+    _gl_page._load = _saved_load
+_blocked = {r: _srv_h.blocked_asset(r) for r in ("cards/loli.webp", "cards/thumb/shota.webp", "cards/mini/LOLI.webp", "cards/_hard_banned/a.webp", "cards\\shota.webp", "cards/lolita_fashion.webp", "cards/smile.webp", "engine.js")}
+ok("banned card art is never served (loli/shota, _hard_banned), lolita fashion still is",
+   all(_blocked[r] for r in list(_blocked)[:5]) and not any(_blocked[r] for r in list(_blocked)[5:]), str(_blocked))
+ok("static_path refuses banned card art even if the file exists", _srv_h.static_path("cards/loli.webp") is None and _srv_h.static_path("cards/_hard_banned/loli.webp") is None)
+_slim = json.loads(_srv_h.slim_card_manifest(json.dumps({"loli": {"v": "a"}, "shota": {"v": "b"}, "lolita fashion": {"v": "c"}, "smile": {"v": "d", "prompt": "x"}}).encode()))
+ok("served card manifest drops banned entries, keeps the rest", sorted(_slim) == ["lolita fashion", "smile"], str(_slim))
 ok("face status when ComfyUI is down", server.face_status(_down)["ready"] is False and "ComfyUI" in server.face_status(_down)["why"])
 _saved_base, _saved_root = server.comfy_base, server.ROOT
 _hint_root = Path(tempfile.mkdtemp())
@@ -1507,6 +1550,61 @@ finally:
     server.comfy_upload_image = _saved_upload
     server.models_from_comfy = _saved_models
     server.hires_input_dir = _saved_hires_dir
+
+
+# ---- WebSocket 連不上時的退路（gen_via_poll）：一送出就報 prompt_id、有心跳、按停找得到這張 ----
+import time as _time_poll  # noqa: E402
+
+_saved = (server.api, server.comfy_interrupt, server.POLL_EVERY, server.GEN_TIMEOUT)
+_calls = []
+_done_flag = {"v": False}
+
+
+def _poll_api(method, path, body=None, timeout=None):
+    _calls.append((method, path, body))
+    if path == "/prompt":
+        return {"prompt_id": "poll-1"}
+    if path.startswith("/history/"):
+        if _done_flag["v"]:
+            return {"poll-1": {"outputs": {"9": {"images": [{"filename": "p.png", "subfolder": "", "type": "output"}]}}, "status": {"completed": True}}}
+        return {}
+    return {}
+
+
+server.api = _poll_api
+server.comfy_interrupt = lambda pid=None: _calls.append(("interrupt", pid, None))
+server.POLL_EVERY = 0.02
+try:
+    _wf = {"9": {"class_type": "SaveImage", "inputs": {"filename_prefix": "x", "images": ["8", 0]}}}
+    _job = server.GenJob(server.gen_via_poll(64, 64, 1, "1girl", _wf), {"positive": "1girl"}).start()
+    for _ in range(200):
+        if _job.prompt_id:
+            break
+        _time_poll.sleep(0.01)
+    ok("poll fallback: prompt_id reaches the job right after queueing", _job.prompt_id == "poll-1")
+    _time_poll.sleep(0.1)
+    ok("poll fallback: heartbeats while waiting", sum(1 for ev, _ in _job.log if ev == "ping") >= 2, str(_job.log[:4]))
+    _job.cancel()
+    for _ in range(200):
+        if _job.finished:
+            break
+        _time_poll.sleep(0.01)
+    ok("poll fallback: stop removes this prompt from the queue and interrupts only it",
+       ("POST", "/queue", {"delete": ["poll-1"]}) in _calls and ("interrupt", "poll-1", None) in _calls, str(_calls[-4:]))
+    ok("poll fallback: stopped job never reports done", not any(ev == "done" for ev, _ in _job.log))
+    _calls.clear()
+    _done_flag["v"] = True
+    _events = list(server.gen_via_poll(64, 64, 1, "1girl", _wf))
+    ok("poll fallback: finishes with done when history has the image", _events[-1][0] == "done" and "p.png" in _events[-1][1]["image"], str(_events[-1:]))
+    server.GEN_TIMEOUT = 0.05
+    _done_flag["v"] = False
+    try:
+        list(server.gen_via_poll(64, 64, 1, "1girl", _wf))
+        ok("poll fallback: honours comfy.genTimeoutSec", False)
+    except TimeoutError:
+        ok("poll fallback: honours comfy.genTimeoutSec", True)
+finally:
+    server.api, server.comfy_interrupt, server.POLL_EVERY, server.GEN_TIMEOUT = _saved
 
 
 # ---- 取樣參數（工作流面板）：payload 指定 steps／CFG／denoise，夾在範圍裡，沒給用預設 ----

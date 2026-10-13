@@ -15,6 +15,8 @@ import threading
 import time
 from pathlib import Path
 
+import file_lock
+
 ROOT = Path(__file__).resolve().parent
 USAGE_PATH = Path(os.environ.get("CARD_USAGE_PATH") or ROOT / "data" / "card_usage.json")
 LEXICON_PATH = Path(os.environ.get("CARD_USAGE_LEXICON") or ROOT / "web" / "lexicon.json")
@@ -24,6 +26,10 @@ MAX_ENTRIES = 500
 MAX_TAGS = 200
 
 _LOCK = threading.Lock()
+# 收過的事件編號（每筆成品、第一次的 merge 各一個）：同一筆送兩次只算一次。
+# 回應在路上掉了、瀏覽器重送，或墨池、疊印台兩個分頁同時送同一筆，都會送到第二次。
+# 只要記得住「還可能重送」的那段時間：瀏覽器最多排 300 筆待送，留 5000 個很夠。
+SEEN_MAX = 5000
 _lex_cache: dict = {"mtime": None, "tags": frozenset()}
 
 
@@ -48,7 +54,7 @@ def _known_tags() -> frozenset:
 
 
 def _blank() -> dict:
-    return {"v": 1, "counts": {}, "mine": {}, "last": {}, "updated": 0}
+    return {"v": 1, "counts": {}, "mine": {}, "last": {}, "updated": 0, "seen": []}
 
 
 def _read() -> dict:
@@ -64,26 +70,36 @@ def _read() -> dict:
         if isinstance(val, dict):
             out[key] = {str(k): int(v) for k, v in val.items() if isinstance(v, (int, float)) and v > 0}
     out["updated"] = int(data.get("updated") or 0)
+    seen = data.get("seen")
+    if isinstance(seen, list):
+        out["seen"] = [str(x) for x in seen if isinstance(x, str)][-SEEN_MAX:]
     return out
 
 
+def _public(state: dict) -> dict:
+    """給網頁的：收過的編號只有伺服器自己要用，不跟著每次回應送出去。"""
+    return {k: v for k, v in state.items() if k != "seen"}
+
+
+def _event_id(raw) -> str:
+    return raw[:64] if isinstance(raw, str) and raw.strip() else ""
+
+
 def _write(state: dict) -> None:
-    USAGE_PATH.parent.mkdir(parents=True, exist_ok=True)
-    tmp = USAGE_PATH.with_suffix(".tmp")
-    tmp.write_text(json.dumps(state, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
-    os.replace(tmp, USAGE_PATH)
+    file_lock.write_text(USAGE_PATH, json.dumps(state, ensure_ascii=False, separators=(",", ":")))
 
 
 def load() -> dict:
-    with _LOCK:
-        return _read()
+    with _LOCK, file_lock.locked(USAGE_PATH):
+        return _public(_read())
 
 
 def add(payload: dict) -> dict:
-    """payload：{"entries": [{"tags": [...], "mine": [...], "at": 毫秒}], "merge": {...}}。
+    """payload：{"entries": [{"id", "tags": [...], "mine": [...], "at": 毫秒}], "merge": {...}, "mergeId"}。
 
     entries 每筆＝一張成品。merge 是某個瀏覽器在有伺服器紀錄之前、自己記在本機的累計
-    （{"counts", "mine", "last"}），只在它第一次連上時送一次，加進總數。"""
+    （{"counts", "mine", "last"}），只在它第一次連上時送一次，加進總數。
+    帶 id／mergeId 的收過就不再算（重送、兩個分頁同時送）；沒帶的（舊版網頁）照舊每次都算。"""
     entries = payload.get("entries", []) if isinstance(payload, dict) else None
     if not isinstance(entries, list):
         raise UsageError("entries 要是陣列")
@@ -92,14 +108,22 @@ def add(payload: dict) -> dict:
         raise UsageError(f"一次最多 {MAX_ENTRIES} 筆")
     known = _known_tags()
     now = int(time.time() * 1000)
-    with _LOCK:
+    with _LOCK, file_lock.locked(USAGE_PATH):
         state = _read()
+        seen_ids = state["seen"]
+        seen_set = set(seen_ids)
         for e in entries:
             if not isinstance(e, dict):
                 continue
             tags = e.get("tags")
             if not isinstance(tags, list):
                 continue
+            eid = _event_id(e.get("id"))
+            if eid:
+                if eid in seen_set:
+                    continue
+                seen_ids.append(eid)
+                seen_set.add(eid)
             mine = {str(t) for t in (e.get("mine") or []) if isinstance(t, str)}
             at = e.get("at")
             at = int(at) if isinstance(at, (int, float)) and 0 < at <= now + 60_000 else now
@@ -113,6 +137,11 @@ def add(payload: dict) -> dict:
                     state["mine"][t] = state["mine"].get(t, 0) + 1
                 if state["last"].get(t, 0) < at:
                     state["last"][t] = at
+        mid = _event_id(payload.get("mergeId")) if merge else ""
+        if mid and mid in seen_set:
+            merge = None
+        elif mid:
+            seen_ids.append(mid)
         if merge:
             for key in ("counts", "mine"):
                 src = merge.get(key)
@@ -128,5 +157,6 @@ def add(payload: dict) -> dict:
                         if state["last"].get(t, 0) < at:
                             state["last"][t] = int(at)
         state["updated"] = now
+        state["seen"] = seen_ids[-SEEN_MAX:]
         _write(state)
-        return state
+        return _public(state)

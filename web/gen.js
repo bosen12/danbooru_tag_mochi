@@ -12,7 +12,11 @@
 import { tabProgress } from "./tab-progress.js";
 import { escapeForComfy } from "./engine.js";
 
-const IDLE_MS = 90000;
+// config.json 的 client.streamIdleMs（/api/ping 帶下來，見 linkState）；沒設就 90 秒。
+// 以前寫死 90000：照 README 調大也沒用（Codex 2026-10-13）。夾在 30 秒～30 分之間。
+let IDLE_MS = 90000;
+const IDLE_MIN = 30000;
+const IDLE_MAX = 30 * 60000;
 // 斷線之後重接的間隔。加起來約 23 秒，比伺服器留著等的 30 秒短。
 const REATTACH_WAITS = [800, 1500, 2500, 4000, 6000, 8000];
 
@@ -347,6 +351,8 @@ export async function linkState() {
   try {
     if (!r.ok) return "comfy";
     const j = await r.json();
+    const idle = Number(j.streamIdleMs);
+    if (Number.isFinite(idle) && idle > 0) IDLE_MS = Math.min(IDLE_MAX, Math.max(IDLE_MIN, idle));
     return j.ok ? "ok" : "comfy";
   } catch {
     return "comfy";

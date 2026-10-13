@@ -230,6 +230,8 @@ def slim_card_manifest(raw: bytes) -> bytes:
     out = {
         tag: ({k: v for k, v in entry.items() if k not in _MANIFEST_BUILD_ONLY} if isinstance(entry, dict) else entry)
         for tag, entry in data.items()
+        # 舊版留下來的封鎖字（loli、shota）不給：網頁連名字都拿不到（圖檔本身見 blocked_asset）。
+        if str(tag).replace("_", " ").strip().lower() not in _HARD_BANNED
     }
     return json.dumps(out, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
 
@@ -455,8 +457,23 @@ _TAG_RE = re.compile(r"<(?:script|link)\b[^>]*>", re.I)
 _URL_ATTR_RE = re.compile(r'\b(src|href)="([^"]+)"', re.I)
 
 
+def blocked_asset(rel: str) -> bool:
+    """永遠不給的卡面：HARD_BANNED 的字（loli、shota），以及收它們的 _hard_banned 資料夾。
+    抽牌本來就不會出（card-art.js 的 isCard），但舊版裝過的人 web/cards 底下可能還留著檔，
+    知道網址就打得開 —— 這裡擋掉，不管檔案在不在。"""
+    parts = [x.lower() for x in str(rel).replace("\\", "/").split("/") if x]
+    if "_hard_banned" in parts:
+        return True
+    if "cards" in parts and parts:
+        stem = parts[-1].rsplit(".", 1)[0]
+        return stem in _HARD_BANNED
+    return False
+
+
 def static_path(rel: str) -> Path | None:
     """網站上的相對路徑 → 磁碟上的檔：先找這個房間（WEB），找不到再退回共用的 web/。"""
+    if blocked_asset(rel):
+        return None
     dest = (WEB / rel).resolve()
     if dest.is_relative_to(WEB) and dest.is_file():
         return dest
@@ -1341,8 +1358,11 @@ def parse_hires(raw) -> dict:
     view = comfy_view_query(filename, subfolder, type_)
     if not view:
         raise HiresError("hires.image 路徑不合法")
+    want = (query.get("h") or [""])[0].lower()
+    if want and not valid_image_hash(want):
+        raise HiresError("hires.image 的內容指紋不合法")
     sampling = {k: raw.get(k) for k in ("steps", "cfg", "denoise") if raw.get(k) not in (None, "")}
-    return {"mode": mode, "scale": scale, "view": view, "sampling": sampling}
+    return {"mode": mode, "scale": scale, "view": view, "h": want, "sampling": sampling}
 
 
 def upscale_factor(name: str) -> int:
@@ -1839,6 +1859,9 @@ def prepare_hires(payload: dict) -> tuple[dict, dict]:
     raw = api("GET", "/view?" + spec["view"], timeout=120)
     if not isinstance(raw, (bytes, bytearray)) or not raw:
         raise HiresError("跟 Comfy 要原圖失敗")
+    # Hires、修臉都從這裡拿原圖：檔名被別張用掉的，不能拿別張去放大、修臉。
+    if not image_matches(bytes(raw), spec.get("h") or ""):
+        raise HiresError("這張圖在 ComfyUI 的輸出資料夾裡已經換成別張了（檔名被重用）")
     width, height = png_size(raw)
     mode = spec["mode"]
     scale = spec["scale"]
@@ -2176,8 +2199,28 @@ def comfy_image(q: str, *, require_body: bool = False, timeout: float = 60) -> t
     raise ValueError("unexpected upstream 304")
 
 
+def inline_disposition(filename: str) -> str:
+    """Content-Disposition 的值。HTTP 標頭只能放 Latin-1：中文、日文、emoji 檔名直接塞進去，
+    Python 送標頭時就丟 UnicodeEncodeError（自訂工作流的輸出前綴取中文名就會碰到）。
+    filename= 放 ASCII 的替代名，filename*= 放 UTF-8 百分比編碼的原名（瀏覽器優先用它）。"""
+    name = str(filename or "")
+    ascii_name = "".join(c if 32 <= ord(c) < 127 and c not in '"\\' else "_" for c in name) or "image"
+    if ascii_name == name:
+        return f'inline; filename="{ascii_name}"'
+    return f"inline; filename=\"{ascii_name}\"; filename*=UTF-8''{urllib.parse.quote(name, safe='')}"
+
+
 def valid_image_hash(h: str) -> bool:
     return 8 <= len(h) <= 40 and all(c in "0123456789abcdef" for c in h)
+
+
+def image_matches(raw: bytes, want: str) -> bool:
+    """這次真的拿到的圖，跟網址上的內容指紋（h=）對不對得上。沒帶指紋的舊網址不驗。
+
+    顯示（/api/image）早就驗了；收藏、Hires、修臉以前只拿檔名去 ComfyUI 要圖 —— 輸出資料夾清過、
+    檔名被重用時，會拿別張圖去收藏、放大、修臉，配方卻還掛著原本那張的（Codex 2026-10-13）。
+    驗的是拿到手的這份 bytes，不是先問一次再重抓。"""
+    return not want or image_digest(raw).startswith(want)
 
 
 def image_cache_policy(want: str, digest: str) -> tuple[int, str]:
@@ -2865,16 +2908,57 @@ def gen_events(payload: dict):
         yield ("error", {"error": str(exc)})
         return
     try:
-        yield ("done", gen(payload))
+        # 已經組好的圖直接接著用：以前退回 gen(payload) 會整個再準備一次（Hires 再抓一次原圖、再上傳）。
+        yield from gen_via_poll(width, height, seed, positive, wf, hires=meta.get("hires"))
     except Exception as exc:
         yield ("error", {"error": str(exc)})
+
+
+POLL_EVERY = 2.0
+
+
+def gen_via_poll(width: int, height: int, seed: int, positive: str, wf: dict, hires: dict | None = None):
+    """WebSocket 連不上（代理擋掉、舊版 ComfyUI）時的退路，事件跟 gen_via_ws 一樣。
+
+    以前這條是同步的 gen()：送出之後一路等到畫完才回話 —— prompt_id 沒交給 GenJob，按停
+    刪不掉佇列、也中斷不了；中間沒有心跳，慢一點的圖被前端 90 秒的看門狗當成斷線；等待上限
+    也寫死 600 秒，不管 comfy.genTimeoutSec（Codex 2026-10-13）。現在：送出就報 prompt_id，
+    每 2 秒查一次完成、順便一則心跳（GenJob 每則事件都檢查有沒有按停），上限用 GEN_TIMEOUT。"""
+    ckpt = workflows.ckpt_name_of(wf) or CKPT
+    save_ids = set(workflows.image_output_nodes(wf))
+    posted = api("POST", "/prompt", {"prompt": wf}, timeout=60)
+    prompt_id = (posted or {}).get("prompt_id")
+    if not prompt_id:
+        raise RuntimeError(f"Comfy 沒有回 prompt_id：{posted!r}"[:200])
+    yield ("ping", {"stage": "queued", "prompt_id": prompt_id})
+    t0 = time.time()
+    while time.time() - t0 < GEN_TIMEOUT:
+        try:
+            hist = api("GET", f"/history/{prompt_id}", timeout=8)
+        except (OSError, urllib.error.URLError):
+            hist = None  # 一下子連不上：下一輪再查
+        entry = hist.get(prompt_id) if isinstance(hist, dict) else None
+        if isinstance(entry, dict):
+            image = first_image_src(entry, save_ids)
+            if image:
+                yield ("done", _job(seed, width, height, positive, image, ckpt, hires))
+                return
+            status = entry.get("status") or {}
+            if status.get("status_str") == "error":
+                err = next((m[1] for m in status.get("messages") or [] if isinstance(m, list) and len(m) > 1 and m[0] == "execution_error"), {})
+                raise RuntimeError(comfy_exec_error_text(err if isinstance(err, dict) else {}))
+            if status.get("completed"):
+                raise RuntimeError("Comfy 沒有產出圖片")
+        yield ("ping", {"waited": round(time.time() - t0, 1)})
+        time.sleep(POLL_EVERY)
+    raise TimeoutError(f"Comfy 超過 {GEN_TIMEOUT} 秒沒有產出（prompt {prompt_id}）")
 
 
 def gen(payload: dict) -> dict:
     wf, meta = prepare_workflow(payload)
     seed, width, height, positive = meta["seed"], meta["width"], meta["height"], meta["positive"]
     prompt_id = api("POST", "/prompt", {"prompt": wf}, timeout=60)["prompt_id"]
-    hist = wait_done(prompt_id)
+    hist = wait_done(prompt_id, timeout=GEN_TIMEOUT)
     image = first_image_src(hist)
     if not image:
         raise RuntimeError("Comfy 沒有產出圖片")
@@ -3942,12 +4026,17 @@ class Handler(BaseHTTPRequestHandler):
                     return
                 fn = str((payload or {}).get("filename") or "")
                 q = comfy_view_query(fn, (payload or {}).get("subfolder"), (payload or {}).get("type") or "output")
-                if not q:
+                want = str((payload or {}).get("h") or "").lower()
+                if not q or (want and not valid_image_hash(want)):
                     self._json(400, {"ok": False, "error": "圖片路徑不合法。", "code": "path"})
                     return
                 raw = api("GET", f"/view?{q}", timeout=60)
                 if not isinstance(raw, (bytes, bytearray)):
                     self._json(502, {"ok": False, "error": "not an image"})
+                    return
+                # 收進作品冊的要是畫面上那一張：檔名被別張用掉的不收（網頁那邊會把剛建的那筆刪掉）。
+                if not image_matches(bytes(raw), want):
+                    self._json(409, {"ok": False, "error": "這張圖在 ComfyUI 的輸出資料夾裡已經換成別張了（檔名被重用）", "code": "gone"})
                     return
                 ext = Path(fn).suffix.lower() or ".png"
                 rec = recipes.save_image_bytes(pid, bytes(raw), suffix=ext)
@@ -4312,7 +4401,7 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header("Content-Length", str(len(body)))
         self.send_header("Cache-Control", cache)
         self.send_header("ETag", etag)
-        self.send_header("Content-Disposition", f'inline; filename="{safe}"')
+        self.send_header("Content-Disposition", inline_disposition(safe))
         self.end_headers()
         try:
             self.wfile.write(body)
@@ -4483,7 +4572,8 @@ class Handler(BaseHTTPRequestHandler):
             except ValueError:
                 self._json(400, {"ok": False, "error": "limit、before 要是數字"})
                 return
-            self._json(200, {"ok": True, **gen_log.page(limit, before)})
+            before_id = (qs.get("beforeId") or [""])[0][:64] or None
+            self._json(200, {"ok": True, **gen_log.page(limit, before, before_id)})
             return
         if path == "/api/gen/active":
             self._json(200, {"ok": True, "jobs": active_jobs(keep=urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query).get("keep") == ["1"])})

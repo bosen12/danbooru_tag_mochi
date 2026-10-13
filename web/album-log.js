@@ -76,15 +76,17 @@ export function createLog(ctx) {
     }
   }
 
-  async function fetchPage(before) {
-    const r = await fetch(`/api/genlog?limit=${PAGE}${before ? `&before=${before}` : ""}`, { cache: "no-store" });
+  // 游標是上一頁最後一筆的時間＋編號：同一毫秒好幾筆剛好跨頁時才不會漏（見 gen_log.page）。
+  async function fetchPage(last) {
+    const q = last ? `&before=${last.at}&beforeId=${encodeURIComponent(last.id || "")}` : "";
+    const r = await fetch(`/api/genlog?limit=${PAGE}${q}`, { cache: "no-store" });
     if (!r.ok) throw new Error(String(r.status));
     return r.json();
   }
 
   async function load() {
     try {
-      const j = await fetchPage(0);
+      const j = await fetchPage(null);
       items = j.items || [];
       more = !!j.more;
       failed = false;
@@ -100,7 +102,7 @@ export function createLog(ctx) {
   async function loadMore() {
     const last = items[items.length - 1];
     if (!last) return;
-    const j = await fetchPage(last.at);
+    const j = await fetchPage(last);
     const seen = new Set(items.map((e) => e.id));
     items = items.concat((j.items || []).filter((e) => !seen.has(e.id)));
     more = !!j.more;

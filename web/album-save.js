@@ -14,7 +14,8 @@ export function canSave(item) {
 
 function imageRef(src) {
   const u = new URL(src, location.href);
-  return { filename: u.searchParams.get("filename") || "", subfolder: u.searchParams.get("subfolder") || "", type: u.searchParams.get("type") || "output" };
+  // h＝內容指紋：伺服器拿到的圖要跟畫面上這張一樣才收（檔名可能已經被別張圖用掉）。
+  return { filename: u.searchParams.get("filename") || "", subfolder: u.searchParams.get("subfolder") || "", type: u.searchParams.get("type") || "output", h: u.searchParams.get("h") || "" };
 }
 
 async function call(url, method, body) {

@@ -47,20 +47,29 @@ function blank() {
 export function loadUsage() {
   const u = read(USAGE_KEY, null);
   if (!u || typeof u !== "object" || !u.counts) return blank();
-  return { v: 1, counts: u.counts || {}, mine: u.mine || {}, last: u.last || {}, seeded: !!u.seeded, synced: !!u.synced, updated: u.updated || 0 };
+  return { v: 1, counts: u.counts || {}, mine: u.mine || {}, last: u.last || {}, seeded: !!u.seeded, synced: !!u.synced, updated: u.updated || 0, mergeId: typeof u.mergeId === "string" ? u.mergeId : "" };
 }
 
 const save = (u) => write(USAGE_KEY, u);
 
-/** 成品的提示詞拆回一個個字：去掉權重括號 (tag:1.2)、去重。 */
+/**
+ * 成品的提示詞拆回一個個字、去重。跟 engine.js 的 parseWeighted 同一個規則：整段是 (tag:1.2) 才拆外層，
+ * 字本身的括號留著 —— star (sky)、帶作品名的角色。以前一律削掉結尾的「)」，436 個字（幾乎全是角色）
+ * 認不回來，疊印台的次數、卡冊的戰績、「用它做過的圖」都漏掉它們。送給 ComfyUI 跳脫過的 \( \) 先還原。
+ */
 export function tagsOfPositive(positive) {
   const out = new Set();
   for (const raw of String(positive || "").split(",")) {
-    const t = raw.trim().replace(/^\(+/, "").replace(/(:[\d.]+)?\)+$/, "").trim();
+    let t = raw.trim().split("\\(").join("(").split("\\)").join(")");
+    const m = t.match(/^\((.+):(\d+(?:\.\d+)?)\)$/);
+    if (m) t = m[1].trim();
     if (t) out.add(t);
   }
   return [...out];
 }
+
+/** 每筆成品、第一次的 merge 一個編號：伺服器收過就不再算（重送、兩個分頁同時送）。 */
+const newId = () => Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 10);
 
 function bump(u, tags, mine, at) {
   for (const t of new Set(tags)) {
@@ -79,7 +88,7 @@ export function recordUses(entries, isCard) {
   const now = Date.now();
   const clean = entries
     .filter((e) => e && e.tags && e.tags.length)
-    .map((e) => ({ tags: [...new Set(e.tags)], mine: [...(e.mine || [])], at: e.at || now }));
+    .map((e) => ({ id: newId(), tags: [...new Set(e.tags)], mine: [...(e.mine || [])], at: e.at || now }));
   for (const e of clean) bump(u, e.tags, new Set(e.mine), e.at);
   save(u);
   const pending = read(PENDING_KEY, []);
@@ -153,7 +162,12 @@ export function flushUsage() {
   if (flushing) return flushing;
   flushing = (async () => {
     const u = loadUsage();
-    const pending = read(PENDING_KEY, []) || [];
+    let pending = read(PENDING_KEY, []) || [];
+    // 舊版排著、沒有編號的：先補上編號存回去，之後重送才認得出是同一筆。
+    if (pending.some((e) => e && !e.id)) {
+      pending = pending.map((e) => (e && !e.id ? { ...e, id: newId() } : e));
+      write(PENDING_KEY, pending);
+    }
     const body = { entries: pending.slice(0, 500) };
     if (!u.synced) {
       // 第一次連上：這個瀏覽器記的累計（扣掉還在待送裡、等一下會一筆筆加的）一次併進去。
@@ -165,15 +179,23 @@ export function flushUsage() {
         }
       }
       body.merge = base;
+      // 這一份累計的編號記在本機：回應掉了重送、或另一個分頁也在送，伺服器只加一次。
+      if (!u.mergeId) {
+        u.mergeId = newId();
+        save(u);
+      }
+      body.mergeId = u.mergeId;
     }
     if (!body.entries.length && !body.merge) return fetchUsage();
     try {
       const r = await fetch("/api/usage", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
       if (!r.ok) return u;
       const server = await r.json();
-      // 送出去的那幾筆拿掉（送的途中又記的新成品留著）。
+      // 拿掉的是「這次送出去的那幾筆」（照編號），不是前面幾筆：另一個分頁可能已經拿掉一些、
+      // 送的途中又記了新的 —— 以前照筆數切掉，會把新記的那筆一起丟了（Codex 2026-10-13 重現）。
+      const sent = new Set(body.entries.map((e) => e.id));
       const now = read(PENDING_KEY, []) || [];
-      write(PENDING_KEY, now.slice(body.entries.length));
+      write(PENDING_KEY, now.filter((e) => !e || !sent.has(e.id)));
       return adopt(server);
     } catch {
       return u;
