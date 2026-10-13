@@ -52,6 +52,14 @@ export function mountDiscord(zh, source) {
       const job = { ...shot, width: h.width, height: h.height };
       dcSendCard(null, job, posZh(shot.positive, zh), { source, hires: head });
     },
+    /** 修臉的 done 叫：新圖換上了，尺寸跟修之前一樣（Hires 過的就是大圖的尺寸）。 */
+    face(shot) {
+      if (!shot.face || !shot.image || shot._dcSent === shot.image) return;
+      shot._dcSent = shot.image;
+      const h = shot.hires;
+      const job = h ? { ...shot, width: h.width, height: h.height } : shot;
+      dcSendCard(null, job, posZh(shot.positive, zh), { source, hires: h ? `Hires ${HIRES_MODES[h.mode]?.zh || ""}・修臉`.replace(/\s+/g, " ") : "修臉" });
+    },
     /** 面板開著時吞掉頁面的快捷鍵，Esc 關面板。 */
     keys: dcHandleKeys,
   };

@@ -1318,15 +1318,19 @@ def parse_hires(raw) -> dict:
     if not isinstance(raw, dict):
         raise HiresError("hires 要是物件")
     mode = str(raw.get("mode") or "")
-    if mode not in ("quick", "deep"):
-        raise HiresError("hires.mode 只收 quick 或 deep")
-    try:
-        scale = float(raw.get("scale"))
-    except (TypeError, ValueError):
-        raise HiresError("hires.scale 不是數字")
-    if scale != scale:  # NaN
-        raise HiresError("hires.scale 不是數字")
-    scale = hires_json_float(min(HIRES_SCALE_MAX, max(HIRES_SCALE_MIN, scale)))
+    if mode not in ("quick", "deep", "face"):
+        raise HiresError("hires.mode 只收 quick、deep 或 face")
+    if mode == "face":
+        # 修臉不放大：原尺寸進、原尺寸出。
+        scale = 1.0
+    else:
+        try:
+            scale = float(raw.get("scale"))
+        except (TypeError, ValueError):
+            raise HiresError("hires.scale 不是數字")
+        if scale != scale:  # NaN
+            raise HiresError("hires.scale 不是數字")
+        scale = hires_json_float(min(HIRES_SCALE_MAX, max(HIRES_SCALE_MIN, scale)))
     image = str(raw.get("image") or "")
     if not image.startswith("/api/image?"):
         raise HiresError("hires.image 只收 /api/image? 開頭")
@@ -1374,8 +1378,9 @@ def pick_upscale_model(names: list[str], configured: str = "") -> str:
 
 
 def hires_defaults(mode: str) -> dict:
-    """兩種 Hires 各自的預設（參考工作流）。設定檔 hires.<mode>.* 優先，其次 hires.*（兩種共用）。"""
-    base = {"steps": 20, "cfg": 5.0, "denoise": 0.5 if mode == "quick" else 0.4}
+    """兩種 Hires 和修臉各自的預設（參考工作流）。設定檔 hires.<mode>.* 優先，其次 hires.*（共用）。
+    修臉的重繪強度比 Hires 低一點：只重畫臉，太高會換成另一張臉。"""
+    base = {"steps": 20, "cfg": 5.0, "denoise": {"quick": 0.5, "deep": 0.4, "face": 0.35}.get(mode, 0.4)}
     out = {}
     for k, d in base.items():
         raw = cfg(f"hires.{mode}.{k}", "", None)
@@ -1504,6 +1509,147 @@ def build_hires_workflow(
             "filename_prefix": "danbooru_case/hires",
             "images": [decode, 0],
         },
+    }
+    for lora_name, strength in convert_loras(loras):
+        inject_lora(wf, lora_name, strength)
+    return wf
+
+
+# ---------- 修臉（Impact Pack 的 FaceDetailer）----------
+# 找到臉、把那一塊放大重畫、貼回去；其他地方不動。節點來自 ComfyUI-Impact-Pack，
+# 偵測器（UltralyticsDetectorProvider）來自 ComfyUI-Impact-Subpack，模型在 models/ultralytics/bbox。
+FACE_NODE = "FaceDetailer"
+FACE_DETECTOR_NODE = "UltralyticsDetectorProvider"
+FACE_DETECTOR_PREF = ("face_yolov8m", "face_yolov8s", "face_yolov8n_v2", "face_yolov8n", "face")
+# FaceDetailer 的必填欄位各版不一樣（新版多了 tiled_encode 之類）：照 ComfyUI 這台說的必填欄位填，
+# 這裡有的就用這裡的值，沒列的用它自己的預設。SDXL 的臉放大到 768 重畫，比預設的 512 細。
+FACE_WIDGETS = {
+    "guide_size": 768,
+    "guide_size_for": True,
+    "max_size": 1024,
+    "sampler_name": "euler_ancestral",
+    "scheduler": "normal",
+    "feather": 5,
+    "noise_mask": True,
+    "force_inpaint": True,
+    "bbox_threshold": 0.5,
+    "bbox_dilation": 10,
+    "bbox_crop_factor": 3.0,
+    "drop_size": 10,
+    "wildcard": "",
+    "cycle": 1,
+}
+
+
+def _base_name(name: str) -> str:
+    return str(name).replace(chr(92), "/").split("/")[-1].lower()
+
+
+def pick_face_detector(names: list[str]) -> str:
+    """偵測模型：臉的 bbox 模型，大的優先（m > s > n）。分割（segm）模型不用。"""
+    pool = [str(n) for n in names if str(n).strip()]
+    bbox = [n for n in pool if str(n).replace(chr(92), "/").lower().startswith("bbox/")] or pool
+    for want in FACE_DETECTOR_PREF:
+        for name in bbox:
+            if want in _base_name(name):
+                return name
+    raise HiresError("ComfyUI 沒有臉部偵測模型（models/ultralytics/bbox 底下的 face_yolov8*.pt）")
+
+
+def face_status(fetch=None) -> dict:
+    """修臉做不做得了：兩個節點都載入了、而且有臉部偵測模型。回 {ready, missing, detector, why}。"""
+    fetch = fetch or (lambda path: api("GET", path, timeout=8))
+    try:
+        fd = fetch(f"/object_info/{FACE_NODE}")
+        det = fetch(f"/object_info/{FACE_DETECTOR_NODE}")
+    except Exception:
+        return {"ready": False, "missing": [], "detector": "", "why": "連不到 ComfyUI"}
+    missing = []
+    if not (isinstance(fd, dict) and FACE_NODE in fd):
+        missing.append("Impact Pack 的 FaceDetailer 節點")
+    detector = ""
+    if isinstance(det, dict) and FACE_DETECTOR_NODE in det:
+        try:
+            detector = pick_face_detector(workflows.combo_list(det, FACE_DETECTOR_NODE, "model_name"))
+        except HiresError:
+            missing.append("臉部偵測模型 face_yolov8m.pt")
+    else:
+        missing.append("Impact Subpack 的臉部偵測節點")
+    why = "" if not missing else "缺 " + "、".join(missing) + "：到第一次準備安裝，裝完重開 ComfyUI"
+    return {"ready": not missing, "missing": missing, "detector": detector, "why": why}
+
+
+def face_inputs(spec: dict, links: dict, values: dict) -> dict:
+    """照 /object_info/FaceDetailer 的必填欄位組 inputs。spec 是 input.required。
+    連線（links）照名字接；數值先用 values，選項不在清單裡就用預設或清單第一個，其餘用它的預設。"""
+    out = {}
+    for name, rule in (spec or {}).items():
+        if name in links:
+            out[name] = links[name]
+            continue
+        kind = rule[0] if isinstance(rule, (list, tuple)) and rule else None
+        opts = rule[1] if isinstance(rule, (list, tuple)) and len(rule) > 1 and isinstance(rule[1], dict) else {}
+        # 下拉選單：舊版第一格就是清單，新版是 ["COMBO", {"options": [...]}]（跟 workflows.combo_list 一樣）。
+        if isinstance(kind, (list, tuple)) or kind == "COMBO":
+            choices = list(kind) if isinstance(kind, (list, tuple)) else list(opts.get("options") or [])
+            want = values.get(name, opts.get("default"))
+            if want in choices:
+                out[name] = want
+            elif opts.get("default") in choices:
+                out[name] = opts.get("default")
+            else:
+                out[name] = choices[0] if choices else ""
+            continue
+        if name in values:
+            out[name] = values[name]
+        elif "default" in opts:
+            out[name] = opts["default"]
+        elif kind == "BOOLEAN":
+            out[name] = False
+        elif kind in ("INT", "FLOAT"):
+            out[name] = 0
+        else:
+            out[name] = ""
+    return out
+
+
+def build_face_workflow(
+    positive: str,
+    seed: int,
+    image_name: str,
+    face_spec: dict,
+    detector: str,
+    loras=None,
+    ckpt=None,
+    rating=None,
+    sfw: bool = False,
+    sampling: dict | None = None,
+) -> dict:
+    """內建修臉圖：原圖 → FaceDetailer（同一個底模、提示詞、LoRA）→ 存檔。"""
+    ckpt_name = resolve_ckpt(ckpt)
+    steps, cfg_v, denoise = hires_sampler("face", sampling)
+    negative = negative_for(rating if rating is not None else sfw)
+    wf = {
+        "13": {"class_type": "CheckpointLoaderSimple", "inputs": {"ckpt_name": ckpt_name}},
+        "36": {"class_type": "CLIPTextEncode", "inputs": {"text": positive, "clip": ["13", 1]}},
+        "37": {"class_type": "CLIPTextEncode", "inputs": {"text": negative, "clip": ["13", 1]}},
+        "50": {"class_type": "LoadImage", "inputs": {"image": image_name}},
+        "55": {"class_type": FACE_DETECTOR_NODE, "inputs": {"model_name": detector}},
+    }
+    links = {
+        "image": ["50", 0],
+        "model": ["13", 0],
+        "clip": ["13", 1],
+        "vae": ["13", 2],
+        "positive": ["36", 0],
+        "negative": ["37", 0],
+        "bbox_detector": ["55", 0],
+    }
+    values = {**FACE_WIDGETS, "seed": int(seed), "steps": steps, "cfg": cfg_v, "denoise": denoise}
+    wf["60"] = {"class_type": FACE_NODE, "inputs": face_inputs(face_spec, links, values)}
+    wf["62"] = {
+        "class_type": "SaveImage",
+        "inputs": {"filename_prefix": "danbooru_case/face", "images": ["60", 0]},
     }
     for lora_name, strength in convert_loras(loras):
         inject_lora(wf, lora_name, strength)
@@ -1686,6 +1832,8 @@ def prepare_hires(payload: dict) -> tuple[dict, dict]:
     width, height = png_size(raw)
     mode = spec["mode"]
     scale = spec["scale"]
+    if mode == "face":
+        return prepare_face(payload, spec, bytes(raw), width, height, positive, seed)
     # 深度的輸出尺寸跟模型倍率有關，要先選定模型再量放不放得下。
     if mode == "deep":
         try:
@@ -1732,6 +1880,46 @@ def prepare_hires(payload: dict) -> tuple[dict, dict]:
         "height": out_h,
         "positive": positive,
         "hires": {"mode": mode, "scale": scale},
+    }
+    return wf, meta
+
+
+def prepare_face(payload: dict, spec: dict, raw: bytes, width: int, height: int, positive: str, seed: int) -> tuple[dict, dict]:
+    """修臉：先問 ComfyUI 有沒有 FaceDetailer 和偵測模型，再上傳原圖、組圖。尺寸不變。"""
+    status = face_status()
+    if not status["ready"]:
+        raise HiresError(status["why"] or "修臉做不了")
+    try:
+        info = api("GET", f"/object_info/{FACE_NODE}", timeout=8)
+        face_spec = info[FACE_NODE]["input"]["required"]
+    except Exception as exc:
+        raise HiresError("跟 ComfyUI 要 FaceDetailer 的欄位失敗：" + str(exc)) from exc
+    # 跟 Hires 同一個資料夾、同一套清理：內容雜湊當檔名，同一張再修一次不重傳。
+    filename = "hires_" + image_digest(raw)[:20] + ".png"
+    image_name = comfy_upload_image(raw, filename)
+    try:
+        prune_hires_inputs({filename, image_name})
+    except Exception:
+        pass
+    wf = build_face_workflow(
+        positive,
+        seed,
+        image_name,
+        face_spec,
+        status["detector"],
+        payload.get("loras"),
+        payload.get("ckpt"),
+        payload.get("rating"),
+        sfw=bool(payload.get("sfw")),
+        sampling=spec.get("sampling"),
+    )
+    meta = {
+        "kind": "hires",
+        "seed": seed,
+        "width": width,
+        "height": height,
+        "positive": positive,
+        "hires": {"mode": "face", "scale": 1.0},
     }
     return wf, meta
 
@@ -4316,6 +4504,10 @@ class Handler(BaseHTTPRequestHandler):
             return
         if path == "/api/sampling":
             self._json(200, sampling_defaults())
+            return
+        if path == "/api/face/status":
+            # 成品上的「修臉」要不要停用：ComfyUI 有沒有 FaceDetailer、偵測器和臉部模型。
+            self._json(200, {"ok": True, **face_status()}, cache_control="no-store")
             return
         if path == "/api/models":
             self._serve_models()

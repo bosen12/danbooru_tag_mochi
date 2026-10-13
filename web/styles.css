@@ -3729,9 +3729,25 @@ html[data-vt="back"] .vt-sweep {
   padding: 0 var(--space-md);
 }
 
-/* 成品底下那顆 Hires：正在做的時候字變淡，按下去會搖頭（圖上有停）。 */
-.shot-hires[data-busy="true"] {
+/* 成品底下那顆 Hires、修臉：正在做的時候字變淡，按下去會搖頭（圖上有停）。 */
+:is(.shot-hires, .shot-face)[data-busy="true"] {
   color: var(--color-muted);
+}
+
+/* 修過臉：字旁一個小勾（疊印台付印列的修臉鈕也是）。 */
+.face-mark {
+  display: none;
+  width: 0.45em;
+  height: 0.75em;
+  margin-left: 0.3em;
+  margin-top: -0.2em;
+  border-right: 2px solid var(--color-pool);
+  border-bottom: 2px solid var(--color-pool);
+  rotate: 45deg;
+}
+
+[data-done="true"] > .face-mark {
+  display: inline-block;
 }
 
 /* 圖上的進度：一條朱色套準線照步數由上往下掃，線下還沒重畫的那一段壓暗。
@@ -4631,7 +4647,7 @@ html {
   visibility: hidden;
 }
 
-.shot[data-gone="true"] .shot-hires {
+.shot[data-gone="true"] :is(.shot-hires, .shot-face) {
   display: none;
 }
 

@@ -708,6 +708,33 @@ Hires 中|Upscaling
 開始 Hires|Start upscale
 Hires 方式|Upscale method
 Hires：放大並重畫細節|Hires · Upscale and refine
+修臉|Face fix
+修臉：只重畫臉|Face fix · Redraw faces only
+開始修臉|Fix faces
+再修一次|Fix again
+拿掉修臉|Remove face fix
+拿掉修臉了|Face fix removed
+修過臉|Faces fixed
+正在問 ComfyUI 有沒有 FaceDetailer…|Checking ComfyUI for FaceDetailer…
+找到臉，只把臉放大重畫再貼回去，其他地方不動。全身、多人、臉小的圖最有感。|Finds each face, redraws it larger and pastes it back. Nothing else changes. Works best on full-body shots, groups and small faces.
+會在 Hires 之後的大圖上修。|Runs on the upscaled image.
+這張已經修過臉。|Faces in this image are already fixed.
+ComfyUI 現在做不了修臉|ComfyUI cannot fix faces right now
+修臉做不了|Face fix is unavailable
+找到臉、只重畫臉（FaceDetailer）|Find faces and redraw only them (FaceDetailer)
+修好臉了：不滿意可以再修一次，或拿掉修臉|Faces fixed. Not happy? Fix again or remove the face fix.
+這張正在修臉，先在圖上按「停」|Faces are being fixed. Press Stop on the image first.
+這張正在修臉，圖上可以停|Fixing faces · Press Stop on the image to cancel.
+修臉 排隊中…|Face fix queued…
+連不到 ComfyUI|Cannot reach ComfyUI
+Impact Pack 的 FaceDetailer 節點|the FaceDetailer node (Impact Pack)
+Impact Subpack 的臉部偵測節點|the face detector node (Impact Subpack)
+臉部偵測模型 face_yolov8m.pt|the face detection model face_yolov8m.pt
+修臉（FaceDetailer）|Face fix (FaceDetailer)
+選用：成品下多一顆「修臉」，只重畫臉。要裝 Impact Pack 節點＋臉部偵測模型（約 50 MB），裝完要重開 ComfyUI|Optional: adds a Face fix button under each image that redraws only faces. Installs the Impact Pack nodes and a face detection model (about 50 MB). Restart ComfyUI afterwards.
+安裝節點、下載臉部偵測模型（約 50 MB）|Installing the nodes and downloading the face detection model (about 50 MB)
+停了：下次啟動會再問|Stopped. You will be asked again next launch.
+不再問（刪掉 .no-face-fetch 就會再問）|Will not ask again (delete .no-face-fetch to be asked)
 這張已經太大，不能再放大。|This image is already at the maximum size.
 還原原圖|Restore original
 原圖不在了（ComfyUI 那邊刪掉了）|Original missing from ComfyUI
@@ -1227,6 +1254,9 @@ Hires 深度 {0}×|Detailed upscale {0}×
 （還有 {0} 組）|({0} more conflicts)
 「{0}」跟「{1}」同時成立不了，引擎會摘掉其中一個{2}|“{0}” conflicts with “{1}”. The engine will remove one{2}.
 Hires 好了：{0}×{1}|Upscale ready · {0}×{1}
+修臉 {0}%|Face fix {0}%
+缺 {0}：到第一次準備安裝，裝完重開 ComfyUI|Missing {0}. Install from First-time setup, then restart ComfyUI.
+跟 ComfyUI 要 FaceDetailer 的欄位失敗：{0}|Could not read FaceDetailer inputs from ComfyUI: {0!}
 印製中，還有 {0} 張|Generating · {0} remaining
 牌 · {0}|Cards · {0}
 拖進合成池就釘住，丟進廢字簍就封鎖|Drag to pin or block

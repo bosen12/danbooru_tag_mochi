@@ -56,7 +56,7 @@ import { createTrashPanel } from "./trash-panel.js";
 import { createGenerator, comfyOnline, viewSrc, tabTitle, watchLink, LINK_LABEL, markGenLog } from "./gen.js";
 import { genSeed, mountSeedControl, seedUseButton } from "./seed-control.js";
 import { attachPeek } from "./card-peek.js";
-import { createHires, openHiresPicker, paintHiresVeil, hiresBusy, HIRES_MODES } from "./hires.js";
+import { createHires, openHiresPicker, openFacePicker, paintHiresVeil, hiresBusy, faceBusy, HIRES_MODES } from "./hires.js";
 import * as S from "./store.js";
 import { recordUses } from "./usage.js";
 import { getSfx } from "./sfx.js";
@@ -1743,17 +1743,25 @@ const hiresRun = createHires({
     if (!shot.hi || shot.hi.status === "failed") S.saveShots(shots);
   },
   save: () => S.saveShots(shots),
-  done: (shot) => {
-    discord?.hires(shot);
+  done: (shot, kind) => {
     sfx.hiresDone();
+    if (kind === "face") {
+      discord?.face(shot);
+      toast("修好臉了：不滿意可以再修一次，或拿掉修臉");
+      return;
+    }
+    discord?.hires(shot);
     toast(`Hires 好了：${shot.hires.width}×${shot.hires.height}`);
   },
 });
 
+/** 這張正在做哪一種（Hires 或修臉）：忙的時候按別的鈕要說清楚是誰佔著。 */
+const busyNote = (shot) => (faceBusy(shot) ? "這張正在修臉，圖上可以停" : "這張正在 Hires，圖上可以停");
+
 function openHires(shot, btn) {
   if (!shot.image || shot.status !== "done") return refuse(btn);
   if (hiresBusy(shot)) {
-    toast("這張正在 Hires，圖上可以停");
+    toast(busyNote(shot));
     return refuse(btn);
   }
   openHiresPicker(btn, shot, {
@@ -1766,6 +1774,28 @@ function openHires(shot, btn) {
         shot._hiresFresh = true;
         updateShot(shot);
         toast("換回原圖了");
+      }
+    },
+  });
+}
+
+// 修臉：在現在這張上只重畫臉（FaceDetailer），Hires 過的就修大圖（見 hires.js）。
+function openFace(shot, btn) {
+  if (!shot.image || shot.status !== "done") return refuse(btn);
+  if (hiresBusy(shot)) {
+    toast(busyNote(shot));
+    return refuse(btn);
+  }
+  openFacePicker(btn, shot, {
+    onStart: () => {
+      if (!hiresRun.startFace(shot)) return refuse(btn);
+      sfx.hiresStart();
+    },
+    onUndo: () => {
+      if (hiresRun.undoFace(shot)) {
+        shot._hiresFresh = true;
+        updateShot(shot);
+        toast("拿掉修臉了");
       }
     },
   });
@@ -2196,6 +2226,19 @@ function shotNode(shot, deal) {
         },
         "Hires"
       ),
+      el(
+        "button",
+        {
+          class: "btn btn-small btn-ghost shot-face",
+          type: "button",
+          "aria-haspopup": "dialog",
+          "aria-expanded": "false",
+          title: "找到臉、只重畫臉（FaceDetailer）",
+          onclick: (e) => openFace(shot, e.currentTarget),
+        },
+        "修臉",
+        el("i", { class: "face-mark", "aria-hidden": "true" })
+      ),
       // 收進作品冊（album.html）：印好了才出現。
       favButton(shot, { zh, persist: () => S.saveShots(shots) }),
       el("button", { class: "btn btn-small btn-ghost", type: "button", onclick: (e) => copyPos(shot, e.currentTarget) }, "複製提示詞"),
@@ -2369,7 +2412,13 @@ function paintShot(node, shot) {
   const hiBtn = node.querySelector(".shot-hires");
   if (hiBtn) {
     hiBtn.hidden = !(shot.status === "done" && shot.image);
-    hiBtn.dataset.busy = hiresBusy(shot) ? "true" : "false";
+    hiBtn.dataset.busy = hiresBusy(shot) && !faceBusy(shot) ? "true" : "false";
+  }
+  const faceBtn = node.querySelector(".shot-face");
+  if (faceBtn) {
+    faceBtn.hidden = !(shot.status === "done" && shot.image);
+    faceBtn.dataset.busy = faceBusy(shot) ? "true" : "false";
+    faceBtn.dataset.done = shot.face ? "true" : "false";
   }
   let bar = frame.querySelector(".shot-progress");
   if (shot.status === "running") {
@@ -2382,7 +2431,7 @@ function paintShot(node, shot) {
   const status = node.querySelector(".shot-meta .status");
   status.dataset.kind = shot.status === "failed" ? "err" : "";
   settleText(status,
-    shot.status === "done" ? (shot.hires ? `Hires ${HIRES_MODES[shot.hires.mode]?.zh || ""} ${shot.hires.width}×${shot.hires.height}` : "印好了") : shot.status === "running" ? shot.note || "印製中" : shot.status === "drawn" ? "只抽牌" : words[shot.status] || "");
+    shot.status === "done" ? (shot.hires ? `Hires ${HIRES_MODES[shot.hires.mode]?.zh || ""} ${shot.hires.width}×${shot.hires.height}` : "印好了") + (shot.face ? "・修過臉" : "") : shot.status === "running" ? shot.note || "印製中" : shot.status === "drawn" ? "只抽牌" : words[shot.status] || "");
 }
 
 const REPRINTABLE = new Set(["drawn", "failed", "cancelled", "stopped"]);
@@ -2589,7 +2638,7 @@ function removeShot(shot) {
     return;
   }
   if (hiresBusy(shot)) {
-    toast("這張正在 Hires，先在圖上按「停」");
+    toast(faceBusy(shot) ? "這張正在修臉，先在圖上按「停」" : "這張正在 Hires，先在圖上按「停」");
     return;
   }
   const at = shots.findIndex((s) => s.id === shot.id);

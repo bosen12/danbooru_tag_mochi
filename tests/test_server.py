@@ -1289,6 +1289,50 @@ for _bad_image, _label in (
     except server.HiresError as exc:
         ok(f"path {_label} rejected", "不合法" in str(exc), str(exc))
 
+# 修臉（FaceDetailer）：走 hires 這條路的第三種方式；尺寸不變、欄位照 ComfyUI 說的填。
+_fp = server.parse_hires({"mode": "face", "image": "/api/image?filename=a.png&type=output", "denoise": 0.3})
+ok("face parses without a scale", _fp["mode"] == "face" and _fp["scale"] == 1.0 and _fp["sampling"] == {"denoise": 0.3}, str(_fp))
+ok("face denoise default is gentler than hires", server.hires_defaults("face")["denoise"] < server.hires_defaults("deep")["denoise"])
+_dets = ["bbox/hand_yolov8s.pt", "bbox/face_yolov8n.pt", "bbox/face_yolov8m.pt", "segm/person_yolov8m-seg.pt"]
+ok("face detector prefers face_yolov8m", server.pick_face_detector(_dets) == "bbox/face_yolov8m.pt")
+ok("face detector falls back to a smaller face model", server.pick_face_detector(["bbox/face_yolov8n_v2.pt", "bbox/hand_yolov8s.pt"]) == "bbox/face_yolov8n_v2.pt")
+try:
+    server.pick_face_detector(["bbox/hand_yolov8s.pt"])
+    ok("face detector needs a face model", False)
+except server.HiresError:
+    ok("face detector needs a face model", True)
+_fd_info = {"FaceDetailer": {"input": {"required": {}}}}
+_det_info = {"UltralyticsDetectorProvider": {"input": {"required": {"model_name": [_dets]}}}}
+_fs = server.face_status(lambda path: _fd_info if "FaceDetailer" in path else _det_info)
+ok("face status ready with both nodes and a face model", _fs["ready"] and _fs["detector"] == "bbox/face_yolov8m.pt" and not _fs["why"], str(_fs))
+_fs2 = server.face_status(lambda path: {} if "FaceDetailer" in path else _det_info)
+ok("face status names the missing Impact Pack", not _fs2["ready"] and any("Impact Pack" in m for m in _fs2["missing"]), str(_fs2))
+_fs3 = server.face_status(lambda path: _fd_info if "FaceDetailer" in path else {"UltralyticsDetectorProvider": {"input": {"required": {"model_name": [["bbox/hand_yolov8s.pt"]]}}}})
+ok("face status names the missing face model", not _fs3["ready"] and any("face_yolov8m" in m for m in _fs3["missing"]), str(_fs3))
+_fs4 = server.face_status(lambda path: {} if "FaceDetailer" in path else {})
+ok("face status names the missing Subpack", any("Impact Subpack" in m for m in _fs4["missing"]), str(_fs4))
+def _down(path):
+    raise OSError("refused")
+ok("face status when ComfyUI is down", server.face_status(_down)["ready"] is False and "ComfyUI" in server.face_status(_down)["why"])
+_spec = {
+    "image": ["IMAGE"], "model": ["MODEL"], "clip": ["CLIP"], "vae": ["VAE"],
+    "guide_size": ["FLOAT", {"default": 512}], "seed": ["INT", {"default": 0}], "steps": ["INT", {"default": 20}],
+    "cfg": ["FLOAT", {"default": 8.0}], "sampler_name": [["euler", "euler_ancestral"]],
+    "scheduler": ["COMBO", {"options": ["simple", "normal"]}], "positive": ["CONDITIONING"], "negative": ["CONDITIONING"],
+    "denoise": ["FLOAT", {"default": 0.5}], "sam_detection_hint": [["center-1", "none"]], "bbox_detector": ["BBOX_DETECTOR"],
+    "wildcard": ["STRING", {"multiline": True}], "brand_new_flag": ["BOOLEAN", {"default": True}],
+}
+_fw = server.build_face_workflow("1girl, smile", 9, "danbooru_hires/f.png", _spec, "bbox/face_yolov8m.pt",
+                                 loras=[{"folder": "", "file": "style.safetensors", "strength": 0.7}], rating="general")
+_fi = _fw["60"]["inputs"]
+ok("face graph fills exactly the required inputs", set(_fi) == set(_spec), str(sorted(set(_fi) ^ set(_spec))))
+ok("face graph wires image and detector", _fi["image"] == ["50", 0] and _fi["bbox_detector"] == ["55", 0] and _fw["55"]["inputs"]["model_name"] == "bbox/face_yolov8m.pt")
+ok("face graph uses our widgets and its own defaults", _fi["guide_size"] == 768 and _fi["sampler_name"] == "euler_ancestral" and _fi["scheduler"] == "normal" and _fi["sam_detection_hint"] == "center-1" and _fi["brand_new_flag"] is True and _fi["wildcard"] == "", str(_fi))
+ok("face graph keeps the seed and gentle denoise", _fi["seed"] == 9 and _fi["denoise"] == server.hires_defaults("face")["denoise"])
+ok("face graph saves under danbooru_case/face", _fw["62"]["inputs"]["filename_prefix"] == "danbooru_case/face" and _fw["62"]["inputs"]["images"] == ["60", 0])
+_lora_ids = [k for k, n in _fw.items() if n["class_type"] == "LoraLoader"]
+ok("face graph runs the shot's LoRA on the detailer model", len(_lora_ids) == 1 and _fi["model"] == [_lora_ids[0], 0] and _fi["clip"] == [_lora_ids[0], 1], str(_fi.get("model")))
+
 _pool = [
     "4x-UltraSharp.pth",
     "packs/4x-AnimeSharp.pth",

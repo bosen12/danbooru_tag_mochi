@@ -10,7 +10,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
-for k in ("NO_CARD_FETCH", "NO_LORA_MANAGER_FETCH", "NO_UPSCALE_FETCH", "NO_POSE_FETCH", "NO_CARD_BAKE", "NO_SETUP"):
+for k in ("NO_CARD_FETCH", "NO_LORA_MANAGER_FETCH", "NO_UPSCALE_FETCH", "NO_POSE_FETCH", "NO_FACE_FETCH", "NO_CARD_BAKE", "NO_SETUP"):
     os.environ.pop(k, None)
 import setup_tasks as st  # noqa: E402
 
@@ -35,7 +35,7 @@ st.time.sleep = lambda s: None
 def reset(codes: dict, comfy=True, local=True, lm=False, pose_loaded=False) -> list:
     """codes：('fetch_card_art.py','--check') → 退出碼。回傳跑過的指令。"""
     ran = []
-    world = {"lm": lm, "pose": pose_loaded}
+    world = {"lm": lm, "pose": pose_loaded, "face": False}
 
     def fake_run(key, args, show=True):
         ran.append(tuple(args))
@@ -49,6 +49,7 @@ def reset(codes: dict, comfy=True, local=True, lm=False, pose_loaded=False) -> l
     st.comfy_local = lambda: local
     st.lora_manager_running = lambda: world["lm"]
     st.pose_node_loaded = lambda: world["pose"]
+    st.face_node_loaded = lambda: world["face"]
     st._events["cards_done"] = threading.Event()
     for k in st.ORDER:
         st._state[k] = {"state": "idle", "text": ""}
@@ -212,6 +213,36 @@ ok("回答安裝：裝完沒載入就等重開", ("fetch_pose_assets.py",) in ra
 reset.world["pose"] = True
 threading.Event().wait(0.2)
 ok("重開後載入了：算好", state("pose") == "done")
+
+# 4b. 修臉（FaceDetailer）：跟姿勢參考一樣先問；never 寫 .no-face-fetch。
+ran = reset({("fetch_face_detailer.py", "--check"): 3})
+st._face()
+ok("修臉：缺節點先問", state("face") == "ask" and ("fetch_face_detailer.py",) not in ran, str(st._state["face"]))
+st.answer("face", "never")
+ok("修臉不要再問：寫 .no-face-fetch", state("face") == "skip" and (tmp / ".no-face-fetch").exists())
+ran = reset({("fetch_face_detailer.py", "--check"): 3})
+st._face()
+ok("有 .no-face-fetch：不問也不檢查", state("face") == "skip" and ran == [], str(ran))
+(tmp / ".no-face-fetch").unlink()
+ran = reset({("fetch_face_detailer.py", "--check"): 3})
+st._face()
+st.answer("face", "yes")
+threading.Event().wait(0.2)
+ok("修臉回答安裝：裝完沒載入就等重開", ("fetch_face_detailer.py",) in ran and state("face") == "restart", str(st._state["face"]))
+reset.world["face"] = True
+threading.Event().wait(0.2)
+ok("修臉重開後載入了：算好", state("face") == "done")
+ran = reset({("fetch_face_detailer.py", "--check"): 0})
+st._face()
+ok("修臉檔案都在、ComfyUI 還沒載入：提示重開", state("face") == "restart", str(st._state["face"]))
+reset.world["face"] = True
+threading.Event().wait(0.2)
+ok("修臉載入後：算好", state("face") == "done")
+ran = reset({("fetch_face_detailer.py", "--check"): 0})
+reset.world["face"] = True
+st._face()
+ok("修臉早就裝好：直接完成", state("face") == "done")
+ok("修臉排在姿勢參考後面、可以停", st.ORDER.index("face") == st.ORDER.index("pose") + 1 and "face" in st.STOPPABLE)
 
 # 5. ComfyUI 沒開：不跳過，等它開（同一次啟動接著做）。
 ran = reset({})

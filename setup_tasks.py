@@ -13,6 +13,7 @@
   lora        ComfyUI 的 LoRA Manager：安裝或修補前先問                    （只動這台機器上的 ComfyUI）
   upscale     Hires 放大模型（RealESRGAN_x4plus_anime_6B）                  （同上）
   pose        姿勢參考（ControlNet 節點＋模型，2.5 GB）：先問               （同上）
+  face        修臉（Impact Pack＋Subpack 節點、face_yolov8m 偵測模型）：先問 （同上）
   bake        卡面下載完，全年齡缺的、提示詞改過的直接烘
   bake_adult  敏感／色情卡面不公開下載：先問（每次啟動缺的時候都問，不記答案）
 
@@ -43,6 +44,7 @@ TITLES = {
     "lora": "LoRA Manager",
     "upscale": "Hires 放大模型",
     "pose": "姿勢參考",
+    "face": "修臉（FaceDetailer）",
     "bake": "烘焙卡面",
     "bake_adult": "敏感、色情卡面",
     "bake_chars": "角色卡面",
@@ -144,7 +146,7 @@ _last_check = [""]
 # 正在跑的子程序（烘焙、姿勢參考下載可以按「停止」）。
 _procs: dict = {}
 _stopped: set = set()
-STOPPABLE = ("bake", "bake_adult", "bake_chars", "pose")
+STOPPABLE = ("bake", "bake_adult", "bake_chars", "pose", "face")
 
 
 def stop(key: str) -> tuple[bool, str]:
@@ -276,6 +278,13 @@ def lora_manager_running() -> bool:
 def pose_node_loaded() -> bool:
     info = _get("/object_info/AIO_Preprocessor")
     return bool(info and "AIO_Preprocessor" in info)
+
+
+def face_node_loaded() -> bool:
+    """FaceDetailer（Impact Pack）和臉部偵測（Impact Subpack）都載入了。"""
+    fd = _get("/object_info/FaceDetailer")
+    det = _get("/object_info/UltralyticsDetectorProvider")
+    return bool(fd and "FaceDetailer" in fd and det and "UltralyticsDetectorProvider" in det)
 
 
 def can_restart() -> bool:
@@ -422,6 +431,38 @@ def _pose_install() -> None:
     _wait_loaded("pose", pose_node_loaded)
 
 
+def _face() -> None:
+    if os.environ.get("NO_FACE_FETCH") or (ROOT / ".no-face-fetch").exists():
+        _set("face", "skip", "")
+        return
+    if _check("fetch_face_detailer.py") != 3:
+        # 都在了，只是還沒重開（剛裝完、或自己裝的）：等它載入。
+        if comfy_up() and not face_node_loaded():
+            _set("face", "restart", "裝好了，重開 ComfyUI 才會生效")
+            _thread(_wait_loaded, "face", face_node_loaded)
+            return
+        _set("face", "done", "")
+        return
+    _set("face", "ask", "選用：成品下多一顆「修臉」，只重畫臉。要裝 Impact Pack 節點＋臉部偵測模型（約 50 MB），裝完要重開 ComfyUI",
+         answers=["yes", "no", "never"])
+
+
+def _face_install() -> None:
+    _set("face", "run", "安裝節點、下載臉部偵測模型（約 50 MB）")
+    rc = _run("face", ["fetch_face_detailer.py"])
+    if "face" in _stopped:
+        _set("face", "skip", "停了：下次啟動會再問")
+        return
+    if rc != 0:
+        _set("face", "error", _failed("安裝失敗") + "（下次啟動接著做）")
+        return
+    if face_node_loaded():
+        _set("face", "done", "")
+        return
+    _set("face", "restart", "裝好了，重開 ComfyUI 才會生效")
+    _wait_loaded("face", face_node_loaded)
+
+
 # 卡面一次只能烘一批（bake_card_art 用 web/cards/.baking 擋第二個）。敏感和角色兩題都答「要」時，
 # 後答的那批排隊等前一批烘完，不能直接開：以前第二批碰到鎖就結束、回報成功，角色卡面標「完成」卻一張沒烘。
 _bake_turn = threading.Lock()
@@ -532,20 +573,21 @@ def _thread(fn, *a) -> None:
 
 def _main() -> None:
     _thread(_cards)
-    comfy_keys = ["lora", "upscale", "pose", "bake", "bake_adult", "bake_chars"]
+    comfy_keys = ["lora", "upscale", "pose", "face", "bake", "bake_adult", "bake_chars"]
     _wait_comfy(comfy_keys)
     if comfy_local():
         _lora()
         _upscale()
         _pose()
+        _face()
     else:
-        for k in ("lora", "upscale", "pose"):
+        for k in ("lora", "upscale", "pose", "face"):
             _set(k, "skip", "ComfyUI 在別台電腦：這台不動它")
     _thread(_bake)
 
 
 def answer(key: str, value: str) -> tuple[bool, str]:
-    """網頁上的回答：pose yes/no/never、bake_adult yes/no、restart；跑著的烘焙、姿勢下載可以 stop。"""
+    """網頁上的回答：pose／face yes/no/never、bake_adult yes/no、restart；跑著的烘焙、姿勢／修臉下載可以 stop。"""
     if key == "restart":
         return restart_comfy()
     if value == "stop":
@@ -560,9 +602,10 @@ def answer(key: str, value: str) -> tuple[bool, str]:
         if key == "lora":
             _thread(_lora_install, cur.get("action", "install"))
         else:
-            _thread({"pose": _pose_install, "bake_chars": _bake_chars}.get(key, _bake_adult))
-    elif value == "never" and key in ("pose", "lora", "bake_chars"):
-        marker = {"pose": ".no-pose-fetch", "lora": ".no-lora-manager-fetch", "bake_chars": ".no-character-bake"}[key]
+            _thread({"pose": _pose_install, "face": _face_install, "bake_chars": _bake_chars}.get(key, _bake_adult))
+    elif value == "never" and key in ("pose", "face", "lora", "bake_chars"):
+        marker = {"pose": ".no-pose-fetch", "face": ".no-face-fetch", "lora": ".no-lora-manager-fetch",
+                  "bake_chars": ".no-character-bake"}[key]
         try:
             (ROOT / marker).write_text("", encoding="utf-8")
         except OSError:

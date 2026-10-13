@@ -2178,6 +2178,11 @@ body.fuse {
   gap: var(--space-xs);
 }
 
+/* 印好之後 Hires 旁邊的修臉：跟付印鈕一樣高，不搶它的寬。 */
+.pb-face {
+  min-height: 48px;
+}
+
 .pb-go {
   flex: 1;
   min-height: 48px;

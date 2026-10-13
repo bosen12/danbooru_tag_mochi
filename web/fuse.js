@@ -53,7 +53,7 @@ import { createHand } from "./hand.js";
 import { createDrag, inkRing } from "./drag.js";
 import { createGenerator, comfyOnline, viewSrc, tabTitle, watchLink, LINK_LABEL, markGenLog } from "./gen.js";
 import { attachPeek, hidePeek, showPeek } from "./card-peek.js";
-import { createHires, openHiresPicker, paintHiresVeil, hiresBusy } from "./hires.js";
+import { createHires, openHiresPicker, openFacePicker, paintHiresVeil, hiresBusy, faceBusy } from "./hires.js";
 import * as S from "./store.js";
 import { recordUses, tagsOfPositive } from "./usage.js";
 import { REGISTERS, REGISTER_ROLE, emptyBed, sanitizeBed, placeCard, removeCard, relationsOf } from "./fuse-bed.js";
@@ -821,13 +821,35 @@ const hiresRun = createHires({
     if (!p.hi || p.hi.status === "failed") savePrints();
   },
   save: () => savePrints(),
-  done: (p) => {
-    discord?.hires(p);
+  done: (p, kind) => {
     sfx.hiresDone();
     haptic(14);
+    if (kind === "face") {
+      discord?.face(p);
+      announce("修好臉了：不滿意可以再修一次，或拿掉修臉");
+      return;
+    }
+    discord?.hires(p);
     announce(`Hires 好了：${p.hires.width}×${p.hires.height}`);
   },
 });
+
+// 修臉：在現在這張上只重畫臉（FaceDetailer），Hires 過的就修大圖（見 hires.js）。
+function openFace(p, btn) {
+  if (!p || p.status !== "done" || !p.image) return refuse(btn);
+  if (hiresBusy(p)) return refuse(btn);
+  openFacePicker(btn, p, {
+    onStart: () => {
+      p._hiresFresh = true;
+      if (!hiresRun.startFace(p)) return refuse(btn);
+      sfx.hiresStart();
+    },
+    onUndo: () => {
+      p._hiresFresh = true;
+      if (hiresRun.undoFace(p)) announce("拿掉修臉了");
+    },
+  });
+}
 
 function openHires(p, btn) {
   if (!p || p.status !== "done" || !p.image) return refuse(btn);
@@ -917,7 +939,7 @@ function reprint(p) {
   if (p.status === "queued" || p.status === "running") return refuse($("print-bar").querySelector(".pb-go"));
   if (p._gone) {
     // 原檔被刪的那張：照原樣重印，Hires 的結果不跟著。
-    Object.assign(p, { _gone: false, image: null, hi: null, hires: null, baseImage: null });
+    Object.assign(p, { _gone: false, image: null, hi: null, hires: null, face: null, baseImage: null });
   }
   p.note = "";
   p.preview = null;
@@ -990,6 +1012,7 @@ function savePrints() {
       image: p.image || null,
       baseImage: p.baseImage || null,
       hires: p.hires || null,
+      face: p.face || null,
       hiresJob: S.hiresJobOf(p),
       job: p.job || null,
       live: !!p.job && (p.status === "running" || p.status === "queued"),
@@ -2723,7 +2746,8 @@ function renderPrintBar() {
   } else if (p && p._gone) label = "再印一次";
   else if (p && p.status === "done") {
     // 印好了：這顆鈕換成下一步 —— Hires。做的時候鈕上走進度，跟付印一樣。
-    label = hiresBusy(p) ? (p.hi.status === "running" ? `Hires ${Math.round((p.hi.progress || 0) * 100)}%` : "Hires 排隊中…") : "Hires";
+    const what = faceBusy(p) ? "修臉" : "Hires";
+    label = hiresBusy(p) ? (p.hi.status === "running" ? `${what} ${Math.round((p.hi.progress || 0) * 100)}%` : `${what} 排隊中…`) : "Hires";
     disabled = hiresBusy(p);
   } else if (p && p.status === "failed") label = "再印一次";
   const summary = [
@@ -2740,7 +2764,7 @@ function renderPrintBar() {
   const wasOffline = bar.dataset.offline === "1";
   bar.dataset.offline = offline ? "1" : "0";
   const hiBusy = !!p && p.status === "done" && hiresBusy(p);
-  const key = [t.letter, sigOf(t), p ? p.status : "", p?._gone ? "gone" : "", p?.hi?.status || "", p?.hires?.scale || "", summary.join("・"), detail.join("・"), t.missing.join(","), offline, linkNow, p && p.status === "failed" ? p.note : "", !!bed.pins.length].join("|");
+  const key = [t.letter, sigOf(t), p ? p.status : "", p?._gone ? "gone" : "", p?.hi?.status || "", p?.hi?.mode || "", p?.hires?.scale || "", p?.face ? "face" : "", summary.join("・"), detail.join("・"), t.missing.join(","), offline, linkNow, p && p.status === "failed" ? p.note : "", !!bed.pins.length].join("|");
   const go = bar.querySelector(".pb-go");
   // 放一張牌、換一張試印時，常常只有「試印 A／你的 N 張・引擎補 N 張／時代・分級・尺寸」幾個字變了：
   // 只改字，不把整排（連同收著的種子設定）拆掉重建 —— 手機上每放一張牌都在重建它。
@@ -2806,6 +2830,18 @@ function renderPrintBar() {
         label
       ),
       busy ? el("button", { class: "btn", type: "button", onclick: stopPrinting }, "停") : null,
+      // 印好了、沒在忙：Hires 旁邊多一顆修臉（只重畫臉）。
+      p && p.status === "done" && !p._gone && !hiBusy
+        ? el("button", {
+            class: "btn pb-face",
+            type: "button",
+            "aria-haspopup": "dialog",
+            "aria-expanded": "false",
+            dataset: { done: p.face ? "true" : "false" },
+            title: "找到臉、只重畫臉（FaceDetailer）",
+            onclick: (e) => openFace(p, e.currentTarget),
+          }, "修臉", el("i", { class: "face-mark", "aria-hidden": "true" }))
+        : null,
       hiBusy ? el("button", { class: "btn", type: "button", onclick: () => hiresRun.cancel(p) }, "停") : null
     ),
     offline
@@ -3120,7 +3156,7 @@ function openPrint(p) {
           "p",
           { class: "tag-en" },
           seedUseButton(p.seed),
-          "・" + [ERA_ZH[p.era] || "", p.hires ? `Hires ${p.hires.width}×${p.hires.height}（原圖 ${p.width}×${p.height}）` : `${p.width}×${p.height}`, RATING_ZH[p.rating] || ""].filter(Boolean).join("・")
+          "・" + [ERA_ZH[p.era] || "", p.hires ? `Hires ${p.hires.width}×${p.hires.height}（原圖 ${p.width}×${p.height}）` : `${p.width}×${p.height}`, p.face ? "修過臉" : "", RATING_ZH[p.rating] || ""].filter(Boolean).join("・")
         ),
         el("p", { class: "print-view-label" }, `這一版的牌（${mine.length}）`),
         el("div", { class: "print-view-cards" }, mine.map((t) => cardNode(cardOf(t), assets, { tagName: "div" }))),

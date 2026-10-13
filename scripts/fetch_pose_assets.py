@@ -187,9 +187,18 @@ def install_custom_node(root: Path, dir_name: str, git_url: str, zip_url: str, l
                 return False
     py = embedded_python(root)
     req = dest / "requirements.txt"
+    if py and req.is_file() and not shutil.which("git"):
+        # 沒有 git，pip 裝不了 git+https 那幾行（例如 Impact Pack 選用的 sam2）：拿掉再裝。
+        lines = req.read_text(encoding="utf-8", errors="replace").splitlines()
+        kept = [ln for ln in lines if not ln.strip().lower().startswith("git+")]
+        if len(kept) != len(lines):
+            req = nodes / (".req_" + dir_name + ".txt")
+            req.write_text("\n".join(kept) + "\n", encoding="utf-8")
     if py and req.is_file():
         print(f"Installing {label}'s python packages with ComfyUI's python ...", flush=True)
         code = subprocess.call([str(py), "-s", "-m", "pip", "install", "-r", str(req)])
+        if req.name.startswith(".req_"):
+            req.unlink(missing_ok=True)
         if code != 0:
             print(f"pip did not finish. Open ComfyUI Manager and use 'Try fix' on {dir_name}.")
             return False

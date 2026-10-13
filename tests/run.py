@@ -21,7 +21,8 @@ checks = [
     ("test_supplement.mjs", "test_supplement.mjs"),
     ("test_fetch_lora_manager.py", "test_fetch_lora_manager.py"), ("test_setup_tasks.py", "test_setup_tasks.py"),
     ("test_fetch_card_art.py", "test_fetch_card_art.py"), ("test_fetch_upscale.py", "test_fetch_upscale.py"),
-    ("test_fetch_pose.py", "test_fetch_pose.py"), ("test_server.py", "test_server.py"),
+    ("test_fetch_pose.py", "test_fetch_pose.py"), ("test_fetch_face.py", "test_fetch_face.py"),
+    ("test_server.py", "test_server.py"),
     ("test_launchers.py", "test_mochi_launchers.py"), ("test_smoke.py", "test_mochi_smoke.py"),
 ]
 if "--full" in sys.argv:

@@ -9,6 +9,10 @@
  *
  * target 是墨池的 shot 或疊印台的 print，要有 image、positive、loras、ckpt、rating、width、height。
  * 進行中的狀態掛在 target.hi（不存檔）；做好的結果是 target.hires（存檔）。
+ *
+ * 修臉（FaceDetailer）走同一條佇列，mode 是 "face"：在「現在這張」上找到臉、只重畫臉，尺寸不變，
+ * 所以 Hires 過的就修大圖。結果記在 target.face = { from }：from 是修之前那張，再修一次從它開始
+ * （不會越修越歪），「拿掉修臉」換回它。之後再做 Hires 是從原圖放大，修臉就跟著拿掉。
  */
 import { el } from "./ui.js";
 import { t as translate } from "./i18n.js";
@@ -69,11 +73,30 @@ const baseSize = (t) => [t.width || 1024, t.height || 1024];
 export function hiresLabel(t) {
   const hi = t.hi;
   if (!hi) return "";
-  const head = `Hires ${HIRES_MODES[hi.mode].zh} ${fmt(hi.scale)}`;
+  const head = hi.mode === "face" ? "修臉" : `Hires ${HIRES_MODES[hi.mode].zh} ${fmt(hi.scale)}`;
   return hi.status === "queued" ? `${head}・排隊中` : hi.status === "running" ? `${head}・${hi.note || "重畫中"}` : hi.status === "failed" ? `${head}沒做成：${hi.note}` : head;
 }
 
 export const hiresBusy = (t) => !!t.hi && (t.hi.status === "queued" || t.hi.status === "running");
+
+/** 現在在修臉（或排隊等修）：按鈕上的進度、要不要讓「停」出現。 */
+export const faceBusy = (t) => hiresBusy(t) && t.hi.mode === "face";
+
+/* ---------- 修臉做不做得了（ComfyUI 有沒有 FaceDetailer 和臉部偵測模型）---------- */
+
+let faceCheck = null;
+let faceCheckedAt = 0;
+/** 問伺服器一次，20 秒內重複問用同一個答案；沒裝好的每次打開選單都重問（剛裝完、剛重開 ComfyUI）。 */
+export function faceStatus({ fresh = false } = {}) {
+  const now = Date.now();
+  if (faceCheck && !fresh && now - faceCheckedAt < 20000) return faceCheck;
+  faceCheckedAt = now;
+  faceCheck = fetch("/api/face/status", { cache: "no-store" })
+    .then((r) => r.json())
+    .then((j) => ({ ready: !!j.ready, why: String(j.why || "") }))
+    .catch(() => ({ ready: false, why: "連不到伺服器" }));
+  return faceCheck;
+}
 
 /**
  * 跑 Hires 的佇列（自己一條，跟付印分開：按「停」停付印，不會連 Hires 一起砍）。
@@ -92,8 +115,10 @@ export function createHires(hooks) {
         loras: t.loras,
         ckpt: t.ckpt,
         rating: t.rating,
-        // 工作流面板裡這一種 Hires 改過的 steps／CFG／denoise。
-        hires: { mode: task.mode, scale: task.scale, image: t.baseImage || t.image, ...(task.sampling || {}) },
+        // 工作流面板裡這一種 Hires 改過的 steps／CFG／denoise。修臉從 task.from（修之前那張）開始。
+        hires: task.mode === "face"
+          ? { mode: "face", image: task.from }
+          : { mode: task.mode, scale: task.scale, image: t.baseImage || t.image, ...(task.sampling || {}) },
       };
     },
     update: (task) => {
@@ -104,6 +129,18 @@ export function createHires(hooks) {
         t.hi = { ...t.hi, job: task.job };
         hooks.save && hooks.save(t);
       }
+      if (task.status === "done" && task.mode === "face") {
+        tasks.delete(task.id);
+        // 原圖只記第一次：Hires 過的，baseImage 早就是原圖了。
+        if (!t.baseImage) t.baseImage = task.from;
+        t._hiresUnder = t.hi?.preview || null;
+        t.image = task.image;
+        t.face = { from: task.from, seed: task.seed };
+        t.hi = null;
+        hooks.update(t);
+        hooks.done && hooks.done(t, "face");
+        return;
+      }
       if (task.status === "done") {
         tasks.delete(task.id);
         if (!t.baseImage) t.baseImage = t.image;
@@ -113,6 +150,8 @@ export function createHires(hooks) {
         t._hiresUnder = t.hi?.preview || null;
         t.image = task.image;
         t.hires = { mode: task.mode, scale: task.scale, width: r.width || W, height: r.height || H, seed: task.seed, sampling: task.sampling || {} };
+        // 新的大圖是從原圖放大的，之前修的臉不在上面了。
+        t.face = null;
         t.hi = null;
         hooks.update(t);
         hooks.done && hooks.done(t);
@@ -155,21 +194,52 @@ export function createHires(hooks) {
       gen.enqueue(task);
       return true;
     },
+    /** 修臉：從修之前那張開始（修過的再修一次也是），尺寸不變。 */
+    startFace(t) {
+      const from = t.face?.from || t.image;
+      if (hiresBusy(t) || !from) return false;
+      const task = {
+        id: "h" + Date.now().toString(36) + Math.random().toString(36).slice(2, 5),
+        target: t,
+        mode: "face",
+        scale: 1,
+        from,
+        sampling: {},
+        positive: t.positive,
+        seed: Math.floor(Math.random() * 2 ** 32),
+      };
+      tasks.set(task.id, task);
+      t.hi = { task: task.id, mode: "face", scale: 1, from, sampling: {}, status: "queued", progress: 0, note: "" };
+      hooks.update(t);
+      gen.enqueue(task);
+      return true;
+    },
+    /** 拿掉修臉：換回修之前那張（Hires 過的就回到 Hires 的大圖）。 */
+    undoFace(t) {
+      if (!t.face) return false;
+      t.image = t.face.from;
+      t.face = null;
+      if (!t.hires && t.image === t.baseImage) t.baseImage = null;
+      hooks.update(t);
+      return true;
+    },
     /** 重新整理之前做到一半的那張（存檔裡有 hiresJob）：用工作編號接回去，從頭重播進度。 */
     resume(t, saved) {
-      if (!saved || !saved.job || !HIRES_MODES[saved.mode] || hiresBusy(t)) return false;
+      const face = saved?.mode === "face";
+      if (!saved || !saved.job || !(HIRES_MODES[saved.mode] || (face && saved.from)) || hiresBusy(t)) return false;
       const task = {
         id: "h" + Date.now().toString(36) + Math.random().toString(36).slice(2, 5),
         target: t,
         mode: saved.mode,
-        scale: saved.scale,
+        scale: face ? 1 : saved.scale,
+        from: face ? saved.from : undefined,
         sampling: saved.sampling || {},
         positive: t.positive,
         seed: 0,
         job: saved.job,
       };
       tasks.set(task.id, task);
-      t.hi = { task: task.id, mode: saved.mode, scale: saved.scale, sampling: task.sampling, status: "queued", progress: 0, note: "接回剛才那張…", job: saved.job };
+      t.hi = { task: task.id, mode: saved.mode, scale: task.scale, from: task.from, sampling: task.sampling, status: "queued", progress: 0, note: "接回剛才那張…", job: saved.job };
       hooks.update(t);
       gen.resume(task);
       return true;
@@ -185,12 +255,13 @@ export function createHires(hooks) {
       tasks.delete(id);
       gen.cancelOne(task);
     },
-    /** 換回原圖。 */
+    /** 換回原圖（Hires 和修臉一起拿掉）。 */
     restore(t) {
       if (!t.baseImage) return false;
       t.image = t.baseImage;
       t.baseImage = null;
       t.hires = null;
+      t.face = null;
       hooks.update(t);
       return true;
     },
@@ -334,6 +405,72 @@ export function openHiresPicker(anchor, t, { onStart, onRestore }) {
     onStart(mode, scale);
   };
   sync();
+  mountPop(anchor, node, {
+    focus: () => modes.querySelector('[aria-checked="true"]'),
+    onKey: (e) => {
+      if (e.key === "Enter" && e.target === node.querySelector('[aria-checked="true"]')) {
+        e.preventDefault();
+        go.click();
+        return true;
+      }
+      if ((e.key === "ArrowLeft" || e.key === "ArrowRight") && e.target.closest(".hp-modes")) {
+        e.preventDefault();
+        const other = modes.querySelector('[aria-checked="false"]');
+        other.click();
+        other.focus();
+        return true;
+      }
+      return false;
+    },
+  });
+}
+
+/**
+ * 從 anchor 那顆鈕彈出修臉的小選單：一句說明、現在的狀態、開始（或再修一次／拿掉修臉）。
+ * ComfyUI 還沒裝 FaceDetailer 的，按鈕停用、寫清楚缺什麼、去哪裡裝。
+ */
+export function openFacePicker(anchor, t, { onStart, onUndo }) {
+  if (openPicker && openPicker.anchor === anchor) return closeHiresPicker({ focus: true });
+  closeHiresPicker();
+  const go = el("button", { class: "btn btn-small btn-primary hp-go", type: "button", disabled: true }, t.face ? "再修一次" : "開始修臉");
+  const state = el("p", { class: "hp-note", role: "status" }, "正在問 ComfyUI 有沒有 FaceDetailer…");
+  const undo = t.face
+    ? el("button", { class: "hp-restore", type: "button", onclick: () => { closeHiresPicker({ focus: true }); onUndo && onUndo(); } }, "拿掉修臉")
+    : null;
+  const node = el(
+    "div",
+    { class: "hires-pop face-pop", role: "dialog", "aria-label": "修臉：只重畫臉" },
+    el("div", { class: "hp-head" }, el("b", {}, "修臉"), el("span", { class: "hp-size" }, `${t.hires?.width || t.width}×${t.hires?.height || t.height}`)),
+    el("p", { class: "hp-note" }, "找到臉，只把臉放大重畫再貼回去，其他地方不動。全身、多人、臉小的圖最有感。"),
+    t.hires ? el("p", { class: "hp-note" }, "會在 Hires 之後的大圖上修。") : null,
+    state,
+    t.face ? el("p", { class: "hp-was" }, "這張已經修過臉。", undo) : null,
+    el("div", { class: "hp-acts" }, go)
+  );
+  go.onclick = () => {
+    closeHiresPicker({ focus: true });
+    onStart();
+  };
+  mountPop(anchor, node, { focus: () => go });
+  faceStatus({ fresh: true }).then((st) => {
+    if (!node.isConnected) return;
+    // 說明換了行數、選單變高：重新擺，擺在上方的才不會往下長、蓋住按鈕。
+    const settle = () => openPicker?.node === node && openPicker.place();
+    go.disabled = !st.ready;
+    if (st.ready) {
+      state.remove();
+      if (document.activeElement === document.body || !node.contains(document.activeElement)) go.focus({ preventScroll: true });
+    } else {
+      state.dataset.kind = "err";
+      state.textContent = st.why || "ComfyUI 現在做不了修臉";
+    }
+    // 英文版換字是 MutationObserver（microtask）：排在它後面量。
+    queueMicrotask(settle);
+  });
+}
+
+/** 把選單掛在 anchor 旁邊：放得下就在下方，否則上方；Esc、點外面、頁面捲動就收。onKey 回 true 表示處理掉了。 */
+function mountPop(anchor, node, { focus, onKey: extraKey } = {}) {
   document.body.append(node);
 
   // 擺在按鈕下方，放不下就放上方；左右不超出畫面。
@@ -358,7 +495,7 @@ export function openHiresPicker(anchor, t, { onStart, onRestore }) {
       { duration: DUR.short, easing: css(CURVE.out) }
     );
   }
-  modes.querySelector('[aria-checked="true"]')?.focus({ preventScroll: true });
+  focus?.()?.focus({ preventScroll: true });
 
   const y0 = scrollY;
   const onDown = (e) => {
@@ -369,15 +506,7 @@ export function openHiresPicker(anchor, t, { onStart, onRestore }) {
       e.preventDefault();
       e.stopPropagation();
       closeHiresPicker({ focus: true });
-    } else if (e.key === "Enter" && e.target === node.querySelector('[aria-checked="true"]')) {
-      e.preventDefault();
-      go.click();
-    } else if ((e.key === "ArrowLeft" || e.key === "ArrowRight") && e.target.closest(".hp-modes")) {
-      e.preventDefault();
-      const other = modes.querySelector('[aria-checked="false"]');
-      other.click();
-      other.focus();
-    }
+    } else if (extraKey) extraKey(e);
   };
   // 頁面捲了一段（手機上手指一滑）：選單不跟著跑，直接收掉。
   const onScroll = () => Math.abs(scrollY - y0) > 8 && closeHiresPicker();
@@ -390,6 +519,7 @@ export function openHiresPicker(anchor, t, { onStart, onRestore }) {
     anchor,
     node,
     below,
+    place,
     cleanup() {
       document.removeEventListener("pointerdown", onDown, true);
       document.removeEventListener("keydown", onKey, true);

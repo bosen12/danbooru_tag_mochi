@@ -150,7 +150,7 @@ export function createLog(ctx) {
     const meta = [
       clock(e.at),
       ORIGIN_ZH[e.origin] || "",
-      e.kind === "hires" ? `Hires ${e.hires?.scale ? "×" + e.hires.scale : ""}` : "",
+      e.kind === "hires" ? (e.hires?.mode === "face" ? "修臉" : `Hires ${e.hires?.scale ? "×" + e.hires.scale : ""}`) : "",
       secs(e.ms),
       e.width && e.height ? `${e.width}×${e.height}` : "",
       // 底模名常常很長：放最後，手機上被截掉的是它。
@@ -228,7 +228,7 @@ export function createLog(ctx) {
       ["從", ORIGIN_ZH[e.origin] || "—"],
       ["結果", e.ok ? (e._fav ? "★ 收進作品冊了" : e.mark === "discard" ? "印好了，後來撤下" : "印好了") : `印壞：${e.error || "沒說原因"}`],
       ["耗時", e.drawMs != null && e.ms - e.drawMs > 1500 ? `${secs(e.ms)}（畫 ${secs(e.drawMs)}，前面排隊 ${secs(e.ms - e.drawMs)}）` : secs(e.ms)],
-      e.kind === "hires" ? ["Hires", `${e.hires?.mode || ""} ×${e.hires?.scale ?? "—"}`] : null,
+      e.kind === "hires" ? (e.hires?.mode === "face" ? ["修臉", "FaceDetailer"] : ["Hires", `${e.hires?.mode || ""} ×${e.hires?.scale ?? "—"}`]) : null,
       ["尺寸", e.width && e.height ? `${e.width}×${e.height}` : "—"],
       ["種子", String(e.seed ?? "—")],
       ["分級", RATING_LABEL[e.rating] || e.rating || "—"],
