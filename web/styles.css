@@ -2053,6 +2053,24 @@ body #wf-pick-btn.has {
   align-items: start;
 }
 
+/* 每排固定幾張（成品牆工具列的「每排 N 張」）：寬度夠就剛好 N 欄，太窄自己少幾欄，每張不小於 140px。 */
+.wall[data-cols] {
+  --wall-cols: 3;
+  grid-template-columns: repeat(auto-fill, minmax(max(140px, calc((100% - (var(--wall-cols) - 1) * var(--space-md)) / var(--wall-cols))), 1fr));
+}
+.wall[data-cols="4"] { --wall-cols: 4; }
+.wall[data-cols="5"] { --wall-cols: 5; }
+.wall[data-cols="6"] { --wall-cols: 6; }
+.wall[data-cols="5"],
+.wall[data-cols="6"] {
+  gap: var(--space-sm);
+}
+
+.wall-cols {
+  min-height: 30px;
+  font-size: var(--text-xs);
+}
+
 /* 一張成品是一張印張，不是面板裡的卡片：不包外框、不墊底色，
  * 上緣一條細裁切線（兩端各一小段加粗，像裁紙刀的對位記號）把一張張分開。 */
 .shot {
@@ -2337,6 +2355,18 @@ body #wf-pick-btn.has {
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-2xs);
+}
+
+/* 每排放很多張、一張很窄的時候：按鈕縮一點，不要一排按鈕疊成三四行。 */
+.shot {
+  container: shot / inline-size;
+}
+@container shot (max-width: 240px) {
+  .shot-actions .btn {
+    min-height: 28px;
+    padding-inline: 6px;
+    font-size: 0.72rem;
+  }
 }
 
 /* 撤下是這排唯一會拿掉東西的：推到最右、字色放淡，跟其他動作分開。

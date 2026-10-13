@@ -99,7 +99,9 @@ let infinite = false;
 let stopAsked = false;
 // 無限抽印完一輪、還沒排下一輪的那一小段空檔：照樣算「在忙」，「停」不能在這時候閃掉。
 let looping = false;
-const ui = { suit: "all", group: "", query: "", eraOnly: true, charGender: "", collapsed: matchMedia("(max-width: 63.99rem)").matches, ...S.loadUi() };
+const ui = { suit: "all", group: "", query: "", eraOnly: true, charGender: "", collapsed: matchMedia("(max-width: 63.99rem)").matches, wallCols: "auto", ...S.loadUi() };
+// 成品牆每排幾張：自動（照寬度，每張至少約 19rem）或固定 3～6 張（視窗太窄時自己少幾欄，每張不小於 140px）。
+const WALL_COLS = ["auto", "3", "4", "5", "6"];
 const $ = (id) => document.getElementById(id);
 
 // 數字換版時只讓字面輕輕落定，讀屏仍直接讀到最後的數值。
@@ -208,7 +210,7 @@ function setSettings(patch) {
 }
 
 function saveUi() {
-  S.saveUi({ suit: ui.suit, group: ui.group, eraOnly: ui.eraOnly, collapsed: ui.collapsed, charGender: ui.charGender });
+  S.saveUi({ suit: ui.suit, group: ui.group, eraOnly: ui.eraOnly, collapsed: ui.collapsed, charGender: ui.charGender, wallCols: ui.wallCols });
 }
 
 /* ================= 分級與 Comfy ================= */
@@ -2094,6 +2096,16 @@ function setAllOpen(open) {
   for (const node of $("wall").children) node._setOpen && node._setOpen(open);
 }
 
+/** 每排幾張套到牆上。換的時候讓每張從舊位置滑到新位置（flip），不是一格跳過去。 */
+function applyWallCols(animate) {
+  const wall = $("wall");
+  const cols = WALL_COLS.includes(String(ui.wallCols)) ? String(ui.wallCols) : "auto";
+  if (wall.dataset.cols === cols) return;
+  const set = () => (cols === "auto" ? delete wall.dataset.cols : (wall.dataset.cols = cols));
+  if (animate && !reducedMotion()) flip(wall, set);
+  else set();
+}
+
 function syncWallEmpty(hasShots) {
   $("wall-empty").hidden = hasShots;
   const state = hasShots ? "true" : "false";
@@ -2103,10 +2115,24 @@ function syncWallEmpty(hasShots) {
 
 function renderWall() {
   const tools = $("wall-tools");
+  const cols = WALL_COLS.includes(String(ui.wallCols)) ? String(ui.wallCols) : "auto";
+  const colsSel = el(
+    "select",
+    { class: "select wall-cols", "aria-label": "每排幾張", title: "每排幾張：圖小一點一次看得多，大一點看得清楚" },
+    WALL_COLS.map((v) => el("option", { value: v }, v === "auto" ? "每排自動" : `每排 ${v} 張`))
+  );
+  colsSel.value = cols;
+  colsSel.addEventListener("change", () => {
+    ui.wallCols = colsSel.value;
+    saveUi();
+    applyWallCols(true);
+  });
   tools.replaceChildren(
+    colsSel,
     el("button", { class: "btn btn-small btn-ghost", type: "button", onclick: () => setAllOpen(true) }, "全部展開"),
     el("button", { class: "btn btn-small btn-ghost", type: "button", onclick: () => setAllOpen(false) }, "全部收起")
   );
+  applyWallCols(false);
   const wall = $("wall");
   wall.replaceChildren(...shots.map((s) => shotNode(s, false)));
   syncWallEmpty(shots.length > 0);

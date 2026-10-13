@@ -475,6 +475,9 @@ Enter 放上第一張，↓ 走進字盒|Enter adds the first result; ↓ moves 
 這一輪抽不出東西：合成池的字可能互相卡住，換一兩張試試|No combination found. Try replacing one or two pinned cards.
 全部展開|Expand all
 全部收起|Collapse all
+每排自動|Auto per row
+每排幾張|Images per row
+每排幾張：圖小一點一次看得多，大一點看得清楚|Images per row: smaller shows more at once, larger shows more detail
 展開／收起這張用到的牌|Expand or collapse the cards used in this image
 每張圖用了哪些牌收在「牌 · N」裡：你放進池子的，和引擎抽到的。|Open Cards to see your pins and the engine's additions for each image.
 還沒有成品|Your first image starts here
@@ -1266,6 +1269,7 @@ Hires 深度 {0}×|Detailed upscale {0}×
 （還有 {0} 組）|({0} more conflicts)
 「{0}」跟「{1}」同時成立不了，引擎會摘掉其中一個{2}|“{0}” conflicts with “{1}”. The engine will remove one{2}.
 Hires 好了：{0}×{1}|Upscale ready · {0}×{1}
+每排 {0} 張|{0} per row
 這張修過 {0} 層臉。|Faces fixed {0} times on this image.
 修過臉 ×{0}|Faces fixed ×{0}
 退回上一層了：還有 {0} 層|Undid the last fix: {0} left
