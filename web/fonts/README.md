@@ -8,7 +8,7 @@ Maintainers copy rebuilt assets with `python scripts/sync_mochi.py`.
 The Traditional Chinese display family, glyphs and font weights are preserved.
 The English edition uses system fonts and horizontal card labels.
 `../fonts.css` serves one local variable WOFF2 for current WEB6 source text and the
-lexicon. It covers 2,229 codepoints and is 875,064 bytes. The full source `wght`
+lexicon. It covers 2,532 codepoints and is 986,384 bytes. The full source `wght`
 axis (200–900), hinting, names, and layout features are retained, and CSS exposes
 the whole axis: headings and body text share this one file. WEB6 makes no Google
 Fonts requests (privacy, offline use, and about a second off every page load).
@@ -90,7 +90,7 @@ Recorded verification in `.planning/font-browser-results/results.json`:
   The additional source glyph U+3400 (a regex range endpoint in the source corpus)
   is absent from Google's web faces and is checked against the pinned TTF.
 - Actual index/fuse heading and card-name glyphs use downloaded Chiron. Each
-  initial page requests exactly one 875,064-byte Chiron font, including at native
+  initial page requests exactly one 986,384-byte Chiron font, including at native
   Windows-style DPR 1.25. Other fonts and backend services are stubbed for this
   isolated font contract; this is not a full application screenshot comparison.
 - New character `U+9F4F` renders Chiron at both 700/800 and fetches one shared
