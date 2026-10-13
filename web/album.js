@@ -12,6 +12,7 @@ import { dateLocale, english } from "./i18n.js";
 import { RATING_LABEL, ratingBlocked } from "./rules/rating.js";
 import { buildLibrary, ERA_ZH } from "./cards.js";
 import { el, openSheet, toast } from "./ui.js";
+import { zoomFromThumb } from "./zoom.js";
 import { mountKeysHelp } from "./keys-help.js";
 import { mountTour } from "./tour.js";
 import { mountGenStatus } from "./gen-status.js";
@@ -636,9 +637,13 @@ function openWork(w) {
     ],
   });
   sheet = s;
+  // 圖從作品冊那一格長大到彈窗、關掉時縮回去（zoom.js）；那一格不在畫面上（從網址 #編號 直接打開）就照舊淡進來。
+  const tile = () => $("album-grid").querySelector(`.album-tile[data-id="${CSS.escape(w.id)}"] .album-frame img`);
+  const t = tile();
+  const tr = t && t.getBoundingClientRect();
+  if (full && tr && tr.width && tr.bottom > 0 && tr.top < innerHeight) zoomFromThumb({ from: tile, sheet: s.sheet, to: image, aspect: w.width && w.height ? w.width / w.height : 0 });
+  else if (!reducedMotion()) image?.animate([{ opacity: 0, transform: "scale(0.97)" }, { opacity: 1, transform: "none" }], { duration: DUR.long, easing: css(CURVE.out) });
   if (!reducedMotion()) {
-    const img = body.querySelector(".album-big img");
-    img?.animate([{ opacity: 0, transform: "scale(0.97)" }, { opacity: 1, transform: "none" }], { duration: DUR.long, easing: css(CURVE.out) });
     [...body.querySelectorAll(".album-chip")].slice(0, 30).forEach((c, i) => enter(c, { delay: DUR.short + i * 14 }));
   }
   // 關掉時把 #編號 拿掉：重新整理不會又自己打開。

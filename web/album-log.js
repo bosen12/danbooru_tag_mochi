@@ -8,6 +8,7 @@ import { dateLocale } from "./i18n.js";
  *   - ComfyUI 那邊的原圖刪掉了：縮圖換成「原圖不在了」，也就收藏不了。
  */
 import { el, openSheet } from "./ui.js";
+import { zoomFromThumb } from "./zoom.js";
 import { refuse, enter, reducedMotion, DUR, CURVE, css } from "./motion.js";
 import { viewSrc } from "./gen.js";
 import { tagsOfPositive } from "./usage.js";
@@ -173,7 +174,7 @@ export function createLog(ctx) {
       el("span", { class: "log-main" }, el("b", {}, title(e)), el("small", {}, meta.join("・")), !e.ok && e.error ? el("small", { class: "log-error" }, e.error) : null),
       stateChip(e)
     );
-    node.addEventListener("click", () => openEntry(e));
+    node.addEventListener("click", () => openEntry(e, () => node.querySelector(".log-thumb img")));
     return node;
   }
 
@@ -229,7 +230,7 @@ export function createLog(ctx) {
     return { shown: shown.length, hidden: items.length - inRating.length, total: items.length, more };
   }
 
-  function openEntry(e) {
+  function openEntry(e, from) {
     const c = cards(e);
     const full = e.ok && e.image && !e._gone ? viewSrc(e.image) : e._favImg || null;
     const loras = (e.loras || []).map((l) => `${shortName(l.file)}${l.strength !== 1 ? ` ${l.strength}` : ""}`).join("、");
@@ -279,7 +280,7 @@ export function createLog(ctx) {
         el("details", { class: "album-pos" }, el("summary", {}, "提示詞"), el("pre", { class: "pos-text" }, e.positive || ""))
       )
     );
-    openSheet(title(e), body, {
+    const sheet = openSheet(title(e), body, {
       wide: true,
       foot: [
         c.length ? el("button", { class: "btn btn-small btn-primary", type: "button", onclick: () => ctx.toMochi(c, `這張的 ${c.length} 張牌`, e) }, "牌帶回墨池") : null,
@@ -305,7 +306,11 @@ export function createLog(ctx) {
         full ? el("a", { class: "btn btn-small", href: e.image, target: "_blank", rel: "noopener" }, "開原圖") : null,
       ],
     });
-    if (!reducedMotion()) body.querySelector(".album-big img")?.animate([{ opacity: 0, transform: "scale(0.97)" }, { opacity: 1, transform: "none" }], { duration: DUR.long, easing: css(CURVE.out) });
+    // 圖從那一列的小縮圖長大到彈窗、關掉時縮回去（zoom.js）；沒有縮圖可以接的照舊淡進來。
+    const big = body.querySelector(".album-big img");
+    const t = from?.();
+    if (big && t && t.naturalWidth) zoomFromThumb({ from, sheet: sheet.sheet, to: big, aspect: e.width && e.height ? e.width / e.height : 0 });
+    else if (!reducedMotion()) big?.animate([{ opacity: 0, transform: "scale(0.97)" }, { opacity: 1, transform: "none" }], { duration: DUR.long, easing: css(CURVE.out) });
   }
 
   return {

@@ -62,6 +62,8 @@ export function openSheet(title, body, { wide = false, onClose, foot, translateT
   const close = () => {
     if (!overlay.isConnected || overlay.dataset.closing) return;
     overlay.dataset.closing = "true";
+    // 點縮圖放大的圖（zoom.js）聽這個，從大圖縮回縮圖那一格。
+    sheet.dispatchEvent(new Event("sheet-close"));
     // 拉紙時停掉的 CSS 進場，關閉時交回 closing 的離場；回彈本身不重播進場。
     sheet.style.animation = "";
     document.removeEventListener("keydown", onKey, true);

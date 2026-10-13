@@ -30,6 +30,7 @@ import { compareThumb } from "./compare.js";
 import { watchGone, sweepGone } from "./gone.js";
 import { relationsOf } from "./fuse-bed.js";
 import { drawWithSeed, effectiveHeats, withEffectiveHeats } from "./draw-with-seed.js";
+import { zoomFromThumb } from "./zoom.js";
 import { favChars, withFavChars, paintFavChar, paintFavChars, favCharsButton, openFavChars, favZone, dropToFav, flyToFav, heartIcon } from "./fav-chars.js";
 import { ratingBlocked, RATING_LABEL } from "./rules/rating.js";
 import { searchMiss } from "./lib-hint.js";
@@ -2136,8 +2137,35 @@ function applyWallCols(animate) {
   const cols = WALL_COLS.includes(String(ui.wallCols)) ? String(ui.wallCols) : "auto";
   if (wall.dataset.cols === cols) return;
   const set = () => (cols === "auto" ? delete wall.dataset.cols : (wall.dataset.cols = cols));
-  if (animate && !reducedMotion()) flip(wall, set);
-  else set();
+  if (!animate || reducedMotion()) return set();
+  // 每排張數一換，每張都跟著變大變小：從舊的位置、舊的大小縮放過去（位移＋等比縮放，只動 transform）。
+  // 以前只有位移，大小是一格就跳過去的。只動畫面上看得到的那幾張（捲出去的本來就不排版）。
+  const seen = (r) => r.width && r.bottom > 0 && r.top < innerHeight;
+  const before = new Map();
+  for (const n of wall.children) {
+    const r = n.getBoundingClientRect();
+    if (seen(r)) before.set(n, r);
+  }
+  for (const n of before.keys()) for (const a of n.getAnimations()) if (a.id === "wall-cols") a.cancel();
+  set();
+  for (const [n, a] of before) {
+    const b = n.getBoundingClientRect();
+    if (!b.width || (!seen(b) && !seen(a))) continue;
+    const k = a.width / b.width;
+    if (Math.abs(a.left - b.left) < 1 && Math.abs(a.top - b.top) < 1 && Math.abs(k - 1) < 0.01) continue;
+    n.animate(
+      [
+        { transformOrigin: "0 0", transform: `translate(${(a.left - b.left).toFixed(1)}px, ${(a.top - b.top).toFixed(1)}px) scale(${k.toFixed(4)})` },
+        { transformOrigin: "0 0", transform: "none" },
+      ],
+      { id: "wall-cols", duration: DUR.long, easing: css(CURVE.out) }
+    );
+  }
+  // 變小之後才擠進畫面的那幾張：原地淡進來，不要一格就站在那裡、被滑過來的牌壓著。
+  for (const n of wall.children) {
+    if (before.has(n) || !seen(n.getBoundingClientRect())) continue;
+    n.animate([{ opacity: 0, transform: "scale(0.96)" }, { opacity: 1, transform: "none" }], { id: "wall-cols", duration: DUR.medium, delay: DUR.micro, easing: css(CURVE.out), fill: "backwards" });
+  }
 }
 
 function syncWallEmpty(hasShots) {
@@ -2731,7 +2759,7 @@ function restoreShot(shot, at) {
 function showShot(shot) {
   sfx.open();
   const src = viewSrc(shot.image) || shot.preview;
-  openSheet(
+  const sheet = openSheet(
     `seed ${shot.seed}`,
     el(
       "div",
@@ -2755,6 +2783,13 @@ function showShot(shot) {
       ],
     }
   );
+  // 圖從牆上那一格長大到彈窗中間，關掉時縮回去（zoom.js）。牆可能在看的時候重畫，關的時候重新找那一格。
+  zoomFromThumb({
+    from: () => document.querySelector(`#wall .shot[data-id="${CSS.escape(String(shot.id))}"] .shot-frame img:not(.shot-under)`),
+    sheet: sheet.sheet,
+    to: sheet.sheet.querySelector(".lightbox > img"),
+    aspect: shot.width / shot.height,
+  });
 }
 
 /* ================= 單張牌的詳情 ================= */

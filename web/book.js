@@ -15,6 +15,7 @@ import { indexLexicon } from "./engine.js";
 import { ratingBlocked, RATING_LABEL } from "./rules/rating.js";
 import { buildLibrary, sizeCards, groupChips, genderChips, chipRun, seriesRun, createAssets, cardNode, cardFacts, setCardFlag, eagerArt, cardMatches, CARD_SUIT_INFO, CARD_SUITS } from "./cards.js";
 import { el, openSheet, toast } from "./ui.js";
+import { zoomFromThumb } from "./zoom.js";
 import { mountKeysHelp } from "./keys-help.js";
 import { mountTour } from "./tour.js";
 import { mountGenStatus } from "./gen-status.js";
@@ -36,6 +37,9 @@ const $ = (id) => document.getElementById(id);
 const UI_KEY = "mochi.book.v1";
 // 一次畫幾張：上千張一次畫完會卡；捲到底附近再接著畫（跟字盒同一套）。
 const CHUNK = 72;
+// 捲動時補的那一批小一點：新格子第一次要算樣式、排版（一張牌二十幾個節點），72 張擠在同一格
+// 要 30～40ms，捲動時看得出頓一下。24 張一批，下一批由觀察器在下一格接著補（提前兩屏，來得及）。
+const MORE_CHUNK = 24;
 const ORDER_ZH = { desc: "多到少", asc: "少到多", good: "出好圖", bad: "常撤下" };
 const ORDER_MARK = { desc: "↓", asc: "↑", good: "★", bad: "✕" };
 // 牌的戰績（出好圖／常撤下）：印好的圖裡，用了這張牌的有幾成被收藏、幾成被單張撤下。
@@ -802,7 +806,7 @@ addEventListener("scroll", queuePrefetch, { passive: true });
 function moreCells() {
   if (shown >= list.length) return;
   const grid = $("book-grid");
-  const next = list.slice(shown, shown + CHUNK);
+  const next = list.slice(shown, shown + MORE_CHUNK);
   const frag = document.createDocumentFragment();
   next.forEach((card, k) => {
     const cell = cellOf(card);
@@ -1137,23 +1141,8 @@ function openWork(x, thumb) {
       ],
     }
   );
-  const s2 = sheet.sheet || document.querySelector(".overlay:last-of-type .sheet");
-  const dst = s2 && s2.querySelector(".book-work-full img");
-  if (!dst || reducedMotion()) return;
-  const go = () => {
-    const from = thumb.getBoundingClientRect();
-    const to = dst.getBoundingClientRect();
-    if (!from.width || !to.width) return;
-    dst.animate(
-      [
-        { transform: `translate(${from.left - to.left}px, ${from.top - to.top}px) scale(${from.width / to.width})`, transformOrigin: "0 0", opacity: 0.6 },
-        { transform: "none", transformOrigin: "0 0", opacity: 1 },
-      ],
-      { duration: DUR.long, easing: css(CURVE.out) }
-    );
-  };
-  if (dst.complete && dst.naturalWidth) go();
-  else dst.addEventListener("load", go, { once: true });
+  // 圖從那一格長大到彈窗中間、關掉時縮回去（zoom.js）。
+  zoomFromThumb({ from: () => thumb.querySelector("img"), sheet: sheet.sheet, to: big, aspect: x.width && x.height ? x.width / x.height : 0 });
 }
 
 /** 大數字從 0 數上去（牌飛進來的同時）。 */

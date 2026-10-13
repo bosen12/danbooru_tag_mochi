@@ -40,6 +40,7 @@ import { initWorkflow, currentWorkflowId, currentSampling, wfHandleKeys } from "
 import { HARD_BANNED, applyArtSources } from "./card-art.js";
 import { buildLibrary, sizeCards, groupChips, genderChips, chipRun, seriesRun, groupNow, cardMatches, createAssets, cardNode, cardFacts, setEnterTarget, eagerArt, CARD_SUIT_INFO, CARD_SUITS, RATING_ZH, ERA_ZH } from "./cards.js";
 import { el, openSheet, anyOverlay, toast } from "./ui.js";
+import { zoomFromThumb } from "./zoom.js";
 import { mountKeysHelp } from "./keys-help.js";
 import { mountTour } from "./tour.js";
 import { mountGenStatus } from "./gen-status.js";
@@ -742,7 +743,9 @@ function pick(i, { quiet = false } = {}) {
 
 function reroll() {
   seeds = freshSeeds();
-  retrial();
+  // 先抽選中的那一張（預覽當場換），其他三張在洗牌動畫的頭幾格裡一張一張補（retrialPicked）。
+  // 以前四張一次抽完再重畫，按下去 70ms 多畫面才開始動。
+  retrialPicked();
   const box = $("trials");
   if (!reduced()) {
     box.classList.remove("is-shuffling");
@@ -1093,7 +1096,7 @@ function buildPreview() {
     type: "button",
     onclick: () => {
       const p = printFor(sigOf(trials[picked]));
-      if (p && (p.image || p.preview)) openPrint(p);
+      if (p && (p.image || p.preview)) openPrint(p, () => pv.sheet.querySelector("img:not(.pv-under)"));
     },
   });
   const blank = el("span", { class: "pv-blank" });
@@ -2953,7 +2956,7 @@ function lineItem(p) {
   const face = el("span", { class: "print-face", style: `aspect-ratio: ${p.width} / ${p.height}` });
   const node = el(
     "button",
-    { class: "print pressable", type: "button", dataset: { id: p.id, status: p.status }, onclick: () => openPrint(p) },
+    { class: "print pressable", type: "button", dataset: { id: p.id, status: p.status }, onclick: () => openPrint(p, () => $("line-list").querySelector(`.print[data-id="${cssEsc(p.id)}"] .print-face img`)) },
     el("span", { class: "print-pin", "aria-hidden": "true" }),
     face,
     el("span", { class: "print-ring", "aria-hidden": "true" })
@@ -3077,7 +3080,8 @@ function hideLinePeek() {
   if (linePeek) linePeek.hidden = true;
 }
 
-function openPrint(p) {
+/** 放大看一張試印。from：點的那張縮圖（回傳 <img> 的函式）；圖從那裡長大到彈窗、關掉時縮回去（zoom.js）。 */
+function openPrint(p, from) {
   hideLinePeek();
   sfx.open();
   const src = printSrc(p);
@@ -3151,7 +3155,8 @@ function openPrint(p) {
     el(
       "div",
       { class: "print-view" },
-      src ? el("img", { class: "print-view-img", src, alt: "成品" }) : el("p", { class: "print-view-empty" }, p.note || STATUS_ZH[p.status] || ""),
+      // 先給寬高比：圖還沒載好也排得出大小，放大動畫才量得到落點。
+      src ? el("img", { class: "print-view-img", src, alt: "成品", style: p.width && p.height ? `aspect-ratio: ${p.width} / ${p.height}` : "" }) : el("p", { class: "print-view-empty" }, p.note || STATUS_ZH[p.status] || ""),
       el(
         "div",
         { class: "print-view-side" },
@@ -3170,6 +3175,7 @@ function openPrint(p) {
     ),
     { wide: true, foot }
   );
+  if (from) zoomFromThumb({ from, sheet: sheet.sheet, to: sheet.sheet.querySelector(".print-view-img"), aspect: p.width / p.height });
 }
 
 /* ================= 字盒 ================= */
