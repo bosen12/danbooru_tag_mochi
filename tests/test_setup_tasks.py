@@ -241,6 +241,18 @@ st._face()
 ok("修臉早就裝好：直接完成", state("face") == "done")
 ok("修臉排在姿勢參考後面、可以停", st.ORDER.index("face") == st.ORDER.index("pose") + 1 and "face" in st.STOPPABLE)
 
+# 4c. 網頁面板（setup-panel.js）跟這裡對得上：會問的每一步都有答案鈕、能停的都有「停止」。
+import re as _re  # noqa: E402
+_panel_path = next(p for p in (ROOT / "web6" / "setup-panel.js", ROOT / "web" / "setup-panel.js") if p.exists())
+_panel = _panel_path.read_text(encoding="utf-8")
+_src = (ROOT / "setup_tasks.py").read_text(encoding="utf-8")
+_asks = set(_re.findall(r'_set\("(\w+)", "ask"', _src))
+_answer_block = _panel[_panel.index("const ANSWER = {"):_panel.index("};", _panel.index("const ANSWER = {"))]
+_answer_keys = set(_re.findall(r"^\s*(\w+): \[", _answer_block, _re.M))
+ok("面板：每個會問的步驟都有答案鈕", _asks and _asks <= _answer_keys, f"缺 {_asks - _answer_keys}")
+_stop_js = set(_re.findall(r'"(\w+)"', _panel[_panel.index("const STOPPABLE = new Set(["):].split("]", 1)[0]))
+ok("面板：能停的步驟跟 setup_tasks.STOPPABLE 一樣", _stop_js == set(st.STOPPABLE), f"{_stop_js} vs {set(st.STOPPABLE)}")
+
 # 5. ComfyUI 沒開：不跳過，等它開（同一次啟動接著做）。
 ran = reset({})
 st.comfy_up = lambda: False

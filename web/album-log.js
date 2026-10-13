@@ -23,7 +23,7 @@ export const LOG_FILTERS = [
   ["fav", "★ 收藏的"],
   ["discard", "撤下的"],
   ["failed", "印壞的"],
-  ["hires", "Hires"],
+  ["hires", "Hires・修臉"],
 ];
 
 const shortName = (p) => String(p || "").split(/[\\/]/).pop().replace(/\.safetensors$/i, "");
