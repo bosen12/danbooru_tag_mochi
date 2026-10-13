@@ -14,6 +14,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import os as _env_os  # noqa: E402
 import tempfile as _env_tmp  # noqa: E402
 
+# ComfyUI 的 output 一張都不能被測試清掉（印好一張會排清理；這裡造的假工作也算）。
+_env_os.environ["NO_OUTPUT_PRUNE"] = "1"
 # 出圖日誌（gen_log.py）：這裡會造假的出圖工作，不能寫進真的 data/gen_log.jsonl。
 _env_os.environ["GEN_LOG_PATH"] = str(Path(_env_tmp.mkdtemp()) / "gen_log.jsonl")
 # 使用者在網頁上選的偏好路徑、底模（data/settings.json）不能影響測試，也不能被測試改到。
@@ -1403,6 +1405,32 @@ _wf_nosam = server.build_face_workflow("x", 1, "a.png", {"sam_dilation": ["INT",
 ok("SAM wired in with a dilated mask when ComfyUI has one",
    _wf_sam["56"]["class_type"] == "SAMLoader" and _wf_sam["60"]["inputs"]["sam_model_opt"] == ["56", 0] and _wf_sam["60"]["inputs"]["sam_dilation"] == _srv_h.SAM_DILATION)
 ok("no SAM model: the face fix still works on the whole box", "56" not in _wf_nosam and "sam_model_opt" not in _wf_nosam["60"]["inputs"] and _wf_nosam["60"]["inputs"]["sam_dilation"] == 0)
+import os as _os_op  # noqa: E402
+import tempfile as _tf_op  # noqa: E402
+_op_dir = Path(_tf_op.mkdtemp()) / "danbooru_case"
+_op_dir.mkdir()
+for _i, _name in enumerate(["case_00001_.png", "case_00002_.png", "hires_00001_.png", "face_00001_.png", "case_00003_.png", "mine_00001_.png", "case_00004_.webp"]):
+    (_op_dir / _name).write_bytes(b"x")
+    _os_op.utime(_op_dir / _name, (1000 + _i, 1000 + _i))
+_old = [p.name for p in _srv_h.old_outputs(_op_dir, 3)]
+ok("output: keep the newest N of our own images (case_/hires_/face_ .png), oldest go", _old == ["case_00002_.png", "case_00001_.png"], str(_old))
+ok("output: other workflows' files and non-png are never touched; keep 0 = never", "mine_00001_.png" not in _old and "case_00004_.webp" not in _old and _srv_h.old_outputs(_op_dir, 0) == [])
+_saved_op = (_srv_h.comfy_output_dir, _srv_h.move_to_trash, _srv_h.OUTPUT_KEEP)
+_trashed = []
+_srv_h.comfy_output_dir = lambda: _op_dir.parent
+_srv_h.move_to_trash = lambda ps: _trashed.extend(p.name for p in ps) or len(ps)
+_srv_h.OUTPUT_KEEP = 3
+try:
+    _os_op.environ.pop("NO_OUTPUT_PRUNE", None)
+    ok("output: prune moves the old ones to the trash", _srv_h.prune_outputs() == 2 and sorted(_trashed) == sorted(_old), str(_trashed))
+    _os_op.environ["NO_OUTPUT_PRUNE"] = "1"
+    _trashed.clear()
+    ok("output: NO_OUTPUT_PRUNE (tests) never touches output", _srv_h.prune_outputs() == 0 and not _trashed)
+    _srv_h.schedule_output_prune(0)
+    ok("output: a finished job only schedules a prune inside a real server (main), never on import", _srv_h._OUTPUT_PRUNE["timer"] is None)
+finally:
+    _srv_h.comfy_output_dir, _srv_h.move_to_trash, _srv_h.OUTPUT_KEEP = _saved_op
+    _os_op.environ["NO_OUTPUT_PRUNE"] = "1"
 ok("face status when ComfyUI is down", server.face_status(_down)["ready"] is False and "ComfyUI" in server.face_status(_down)["why"])
 _saved_base, _saved_root = server.comfy_base, server.ROOT
 _hint_root = Path(tempfile.mkdtemp())

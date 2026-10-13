@@ -34,6 +34,10 @@
     "_comment": "streamIdleMs：Comfy 靜默超過這麼久就放棄該張。顯示卡較慢（例如 AMD ROCm 載模型或搬顯存）可以調大。",
     "streamIdleMs": 90000
   },
+  "output": {
+    "_comment": "ComfyUI 的 output/danbooru_case 只留最近幾張，舊的移到資源回收筒（收進作品冊的另有一份，不受影響）。0 = 不清",
+    "keep": 100
+  },
   "telegram": {
     "api": "https://api.telegram.org",
     "queueMax": 200

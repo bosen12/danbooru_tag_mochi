@@ -45,7 +45,7 @@ threading.Thread(target=backend.serve_forever, daemon=True).start()
 env = {**os.environ, "PORT": str(port), "HOST": "127.0.0.1", "WEB_DIR": "web", "COMFY_API": f"http://127.0.0.1:{backend.server_port}", "PYTHONUTF8": "1"}
 env["APP_CONFIG"] = str(stage / "config.json")
 env["APP_SETTINGS"] = str(stage / "data/settings.json")
-for key in ["NO_SETUP", "NO_CARD_FETCH", "NO_CARD_BAKE", "NO_LORA_MANAGER_FETCH", "NO_UPSCALE_FETCH", "NO_POSE_FETCH", "NO_FACE_FETCH", "NO_HIRES_PRUNE"]:
+for key in ["NO_SETUP", "NO_CARD_FETCH", "NO_CARD_BAKE", "NO_LORA_MANAGER_FETCH", "NO_UPSCALE_FETCH", "NO_POSE_FETCH", "NO_FACE_FETCH", "NO_HIRES_PRUNE", "NO_OUTPUT_PRUNE"]:
     env[key] = "1"
 paths = ["/", "/fuse.html", "/book.html", "/album.html", "/intro.html", "/tutorial.html", "/lexicon.json", "/engine.js",
          "/api/ping", "/api/setup", "/api/decks", "/api/usage", "/api/recipes", "/api/genlog", "/api/genlog/stats", "/api/workflows", "/api/checkpoints", "/api/loras", "/api/face/status"]

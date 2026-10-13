@@ -1814,15 +1814,133 @@ def comfy_is_local(base: str | None = None) -> bool:
 
 
 def hires_input_dir(checkpoint_dir: str | Path | None = None) -> Path | None:
-    """checkpointDir 往上找到 models，旁邊就是 Comfy 根目錄的 input/danbooru_hires。"""
+    """checkpointDir 往上找到 models，旁邊就是 Comfy 根目錄的 input/danbooru_hires。
+    沒設 checkpointDir（第一次 clone 的人都沒設）：問開著的本機 ComfyUI 它裝在哪。"""
     text = str(_ckpt_dir if checkpoint_dir is None else checkpoint_dir).strip()
-    if not text:
+    if text:
+        current = Path(text)
+        for parent in [current, *current.parents]:
+            if parent.name.lower() == "models":
+                return parent.parent / "input" / "danbooru_hires"
         return None
-    current = Path(text)
-    for parent in [current, *current.parents]:
-        if parent.name.lower() == "models":
-            return parent.parent / "input" / "danbooru_hires"
+    if checkpoint_dir is not None:
+        return None
+    root = comfy_root_dir()
+    return root / "input" / "danbooru_hires" if root else None
+
+
+def comfy_root_dir() -> Path | None:
+    """本機 ComfyUI 的根目錄：開著的 ComfyUI 回報的 custom_nodes 資料夾的上一層。遠端、沒開都回 None。"""
+    if not comfy_is_local():
+        return None
+    try:
+        paths = api("GET", "/internal/folder_paths", timeout=5)
+    except Exception:
+        return None
+    for p in (paths or {}).get("custom_nodes") or [] if isinstance(paths, dict) else []:
+        if isinstance(p, str) and Path(p).is_dir():
+            return Path(p).parent
     return None
+
+
+# ---------- ComfyUI output 只留最近幾張 ----------
+# 印出來的圖（case_／hires_／face_）都在 ComfyUI 的 output/danbooru_case，以前從來不清，一千張約 1.2 GB。
+# 專案主 2026-10-14：留最近 100 張，舊的移到資源回收筒（刪錯拿得回來；回收筒滿了 Windows 自己丟最舊的）。
+# 收進作品冊的另外複製了一份在 data/recipes，不受影響；成品牆上被清掉的那張顯示「原檔不在了」，可以照原樣再印。
+# config.json 的 output.keep 改張數，0 就不清。只清 danbooru_case 裡自己的那三種檔名，別的工作流的圖不碰。
+OUTPUT_KEEP = int(cfg("output.keep", "OUTPUT_KEEP", 100))
+OUTPUT_PREFIXES = ("case_", "hires_", "face_")
+_OUTPUT_PRUNE = {"enabled": False, "timer": None}
+
+
+def comfy_output_dir() -> Path | None:
+    """本機 ComfyUI 的 output：啟動參數有 --output-directory 就用它，不然是根目錄的 output。"""
+    if not comfy_is_local():
+        return None
+    try:
+        argv = (api("GET", "/system_stats", timeout=5) or {}).get("system", {}).get("argv") or []
+    except Exception:
+        return None
+    if "--output-directory" in argv:
+        i = argv.index("--output-directory")
+        if i + 1 < len(argv):
+            return Path(argv[i + 1])
+    if _ckpt_dir:
+        for parent in [Path(_ckpt_dir), *Path(_ckpt_dir).parents]:
+            if parent.name.lower() == "models":
+                return parent.parent / "output"
+    root = comfy_root_dir()
+    return root / "output" if root else None
+
+
+def old_outputs(folder: Path, keep: int) -> list[Path]:
+    """danbooru_case 裡自己的圖，照修改時間新到舊，第 keep 張以後的。"""
+    if keep <= 0 or not folder.is_dir():
+        return []
+    files = [p for p in folder.iterdir() if p.is_file() and p.suffix.lower() == ".png" and p.name.startswith(OUTPUT_PREFIXES)]
+    files.sort(key=lambda p: p.stat().st_mtime, reverse=True)
+    return files[keep:]
+
+
+def move_to_trash(paths: list[Path]) -> int:
+    """Windows 移到資源回收筒（SHFileOperationW + FOF_ALLOWUNDO）；其他系統直接刪。回傳處理了幾個。"""
+    if not paths:
+        return 0
+    if os.name != "nt":
+        n = 0
+        for p in paths:
+            try:
+                p.unlink()
+                n += 1
+            except OSError:
+                pass
+        return n
+    import ctypes
+    from ctypes import wintypes
+
+    class SHFILEOPSTRUCTW(ctypes.Structure):
+        _fields_ = [("hwnd", wintypes.HWND), ("wFunc", wintypes.UINT), ("pFrom", wintypes.LPCWSTR), ("pTo", wintypes.LPCWSTR),
+                    ("fFlags", ctypes.c_uint16), ("fAnyOperationsAborted", wintypes.BOOL), ("hNameMappings", ctypes.c_void_p),
+                    ("lpszProgressTitle", wintypes.LPCWSTR)]
+
+    FO_DELETE, FOF_SILENT, FOF_NOCONFIRMATION, FOF_ALLOWUNDO, FOF_NOERRORUI = 3, 0x4, 0x10, 0x40, 0x400
+    done = 0
+    for i in range(0, len(paths), 200):
+        chunk = paths[i:i + 200]
+        op = SHFILEOPSTRUCTW(None, FO_DELETE, "\0".join(str(p) for p in chunk) + "\0\0", None,
+                             FOF_SILENT | FOF_NOCONFIRMATION | FOF_ALLOWUNDO | FOF_NOERRORUI, False, None, None)
+        if ctypes.windll.shell32.SHFileOperationW(ctypes.byref(op)) == 0:
+            done += sum(1 for p in chunk if not p.exists())
+    return done
+
+
+def prune_outputs() -> int:
+    """output/danbooru_case 只留最近 OUTPUT_KEEP 張，舊的移到資源回收筒。遠端 ComfyUI、找不到資料夾都不動。"""
+    if os.environ.get("NO_OUTPUT_PRUNE") or OUTPUT_KEEP <= 0:
+        return 0
+    out = comfy_output_dir()
+    if out is None:
+        return 0
+    try:
+        old = old_outputs(out / "danbooru_case", OUTPUT_KEEP)
+        return move_to_trash(old)
+    except OSError:
+        return 0
+
+
+def schedule_output_prune(delay: float = 20.0) -> None:
+    """印好一張就排一次清理（20 秒內再印的併成一次）。只有 main() 開起來的伺服器才清：測試、其他程式 import 這支都不會動到 output。"""
+    if not _OUTPUT_PRUNE["enabled"] or _OUTPUT_PRUNE["timer"] is not None:
+        return
+
+    def run():
+        _OUTPUT_PRUNE["timer"] = None
+        prune_outputs()
+
+    t = threading.Timer(delay, run)
+    t.daemon = True
+    _OUTPUT_PRUNE["timer"] = t
+    t.start()
 
 
 def _hires_basename(image: str) -> str:
@@ -2901,6 +3019,8 @@ class GenJob:
                     finished_at=self.finished_at,
                 )
             )
+            if event == "done":
+                schedule_output_prune()
 
     def abandoned(self) -> bool:
         with self.cond:
@@ -5172,6 +5292,14 @@ def main() -> None:
     removed = prune_hires_inputs()
     if removed:
         print(f"hires    清掉 {len(removed)} 張舊的上傳原圖，input/danbooru_hires 留下最近 {HIRES_INPUT_KEEP} 張")
+    _OUTPUT_PRUNE["enabled"] = True
+    if OUTPUT_KEEP > 0:
+        def _startup_prune():
+            n = prune_outputs()
+            if n:
+                print(f"output   ComfyUI 的 output/danbooru_case 只留最近 {OUTPUT_KEEP} 張：{n} 張舊的移到資源回收筒（config.json 的 output.keep 可改，0 不清）")
+                print(f"         Kept the latest {OUTPUT_KEEP} images in output/danbooru_case; moved {n} older ones to the Recycle Bin (output.keep in config.json, 0 = never)")
+        threading.Thread(target=_startup_prune, daemon=True, name="output-prune").start()
     open_browser(port)
     httpd.serve_forever()
 
