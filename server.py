@@ -1865,7 +1865,12 @@ def comfy_output_dir() -> Path | None:
     if "--output-directory" in argv:
         i = argv.index("--output-directory")
         if i + 1 < len(argv):
-            return Path(argv[i + 1])
+            out = Path(argv[i + 1])
+            if out.is_absolute():
+                return out
+            # 相對路徑是對 ComfyUI 自己的工作目錄說的，不是這個伺服器的：照 ComfyUI 根目錄解，解不出來就不清。
+            root = comfy_root_dir()
+            return (root / out) if root else None
     if _ckpt_dir:
         for parent in [Path(_ckpt_dir), *Path(_ckpt_dir).parents]:
             if parent.name.lower() == "models":
@@ -4262,7 +4267,13 @@ class Handler(BaseHTTPRequestHandler):
                 if not q or (want and not valid_image_hash(want)):
                     self._json(400, {"ok": False, "error": "圖片路徑不合法。", "code": "path"})
                     return
-                raw = api("GET", f"/view?{q}", timeout=60)
+                try:
+                    raw = api("GET", f"/view?{q}", timeout=60)
+                except urllib.error.HTTPError as exc:
+                    if exc.code != 404:
+                        raise
+                    self._json(410, {"ok": False, "error": "原圖已經不在 ComfyUI 的 output 了：收不進作品冊", "code": "gone"})
+                    return
                 if not isinstance(raw, (bytes, bytearray)):
                     self._json(502, {"ok": False, "error": "not an image"})
                     return

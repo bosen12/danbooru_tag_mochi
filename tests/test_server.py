@@ -1420,6 +1420,17 @@ _chain = _srv_h.old_outputs(_op_dir, 3, {"face_00001_.png": "hires_00001_.png", 
 ok("output: originals behind a kept Hires / face fix are kept too (restore, redo from original)", [p.name for p in _chain] == ["case_00002_.png"], str([p.name for p in _chain]))
 ok("output: log entries point at danbooru_case files only", _srv_h._output_name("/api/image?filename=a.png&subfolder=danbooru_case&type=output") == "a.png"
    and _srv_h._output_name("/api/image?filename=a.png&subfolder=other&type=output") == "")
+_saved_api_od, _saved_root_od, _saved_local_od = _srv_h.api, _srv_h.comfy_root_dir, _srv_h.comfy_is_local
+_srv_h.comfy_is_local = lambda: True
+_srv_h.comfy_root_dir = lambda: Path("C:/Comfy")
+try:
+    _srv_h.api = lambda m, p, timeout=None, **k: {"system": {"argv": ["main.py", "--output-directory", "D:/renders"]}}
+    _abs = _srv_h.comfy_output_dir()
+    _srv_h.api = lambda m, p, timeout=None, **k: {"system": {"argv": ["main.py", "--output-directory", "out2"]}}
+    _rel = _srv_h.comfy_output_dir()
+    ok("output dir: --output-directory absolute is used as is, relative resolves against ComfyUI's root (not our cwd)", _abs == Path("D:/renders") and _rel == Path("C:/Comfy/out2"), str((_abs, _rel)))
+finally:
+    _srv_h.api, _srv_h.comfy_root_dir, _srv_h.comfy_is_local = _saved_api_od, _saved_root_od, _saved_local_od
 _saved_op = (_srv_h.comfy_output_dir, _srv_h.move_to_trash, _srv_h.OUTPUT_KEEP)
 _trashed = []
 _srv_h.comfy_output_dir = lambda: _op_dir.parent

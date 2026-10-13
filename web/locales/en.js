@@ -730,6 +730,7 @@ Hires：放大並重畫細節|Hires · Upscale and refine
 這張已經修過臉。|Faces in this image are already fixed.
 ComfyUI 現在做不了修臉|ComfyUI cannot fix faces right now
 修臉做不了|Face fix is unavailable
+原圖已經不在 ComfyUI 的 output 了：收不進作品冊|The original is no longer in ComfyUI's output folder, so it cannot be saved to the Gallery
 這張的原圖已經不在 ComfyUI 的 output 了（只留最近的圖）：沒辦法從它做 Hires、修臉|The original of this image is no longer in ComfyUI's output folder (only recent images are kept), so it cannot be upscaled or face-fixed
 沒找到臉（背對鏡頭、側臉太偏或臉太小）：這張沒有修|No face found (facing away, too far in profile or too small). Nothing was changed.
 這張圖在 ComfyUI 的輸出資料夾裡已經換成別張了（檔名被重用）|This image has been replaced in ComfyUI's output folder (the file name was reused).

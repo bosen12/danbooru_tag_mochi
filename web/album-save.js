@@ -88,6 +88,11 @@ export function favButton(item, { zh, persist, className = "btn btn-small btn-gh
       item.albumId = null;
       persist();
     }
+    // 原圖已經被清掉（output 只留最近的圖）：按了也存不到，先說為什麼。
+    if (item._goneSrc || item._gone) {
+      toast("原圖已經不在 ComfyUI 的 output 了：收不進作品冊");
+      return refuse(b);
+    }
     if (!canSave(item)) return refuse(b);
     b.disabled = true;
     b.textContent = "收藏中…";
