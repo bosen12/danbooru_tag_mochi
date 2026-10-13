@@ -27,7 +27,7 @@ import {
   stepSkeleton,
 } from "./engine.js";
 import { drawWithSeed, effectiveHeats, withEffectiveHeats } from "./draw-with-seed.js";
-import { favChars, withFavChars, paintFavChar, paintFavChars } from "./fav-chars.js";
+import { favChars, withFavChars, paintFavChar, paintFavChars, favZone, dropToFav } from "./fav-chars.js";
 import { skeletonPicker } from "./skeleton-picker.js";
 import { compareThumb } from "./compare.js";
 import { ratingBlocked, RATING_LABEL } from "./rules/rating.js";
@@ -3559,6 +3559,8 @@ let dropRow = null;
 
 const drag = createDrag({
   zones: () => [
+    // 偏好角色：角色牌拖起來時，畫面右緣的愛心滑出來當落點（fav-chars.js）。
+    favZone((t) => lib.byTag.get(t)?.suit === "chara"),
     // 偏好卡牌：字盒、版上的牌都可以拖進來（托盤浮在卡池上面，所以排第一個先認；版上的等於收回手牌）。
     // 托盤上的牌拖一拖又放回托盤：當作沒拖（不能穿過托盤掉到底下的卡池）。
     { id: "hand", el: hand?.el, accepts: () => !!hand },
@@ -3583,6 +3585,7 @@ const drag = createDrag({
     if (info) showPeek(node, info);
   },
   onDrop: (p, zone, at) => {
+    if (zone === "favchars") return dropToFav(p.tag, lib.byTag.get(p.tag)?.zh || p.tag);
     if (zone === "hand") {
       // 放在哪就插在哪（托盤上的牌＝換位置）；滿了收不下，影子彈回原位。
       if (!hand.drop(p.tag, at?.x)) return false;

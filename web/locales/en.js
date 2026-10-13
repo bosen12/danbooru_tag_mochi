@@ -733,8 +733,8 @@ Hires：放大並重畫細節|Hires · Upscale and refine
 「抽角色」也一起打開了|Draw characters was turned on too
 抽角色時只從你的偏好角色裡抽；名單裡沒有那個性別的角色，那個人就照舊是一般人物|Draw characters only from your favorites. If the list has no character of that gender, that person stays an ordinary character
 偏好角色：挑幾個常用的角色，打開「只抽偏好角色」就只從這裡面抽|Favorite characters: pick the ones you use often, then turn on Only favorite characters to draw from them alone
-♥ 加入偏好角色|♥ Add to favorite characters
-♥ 從偏好角色拿掉|♥ Remove from favorite characters
+加入偏好角色|Add to favorite characters
+從偏好角色拿掉|Remove from favorite characters
 從原圖重修|Redo from original
 在這張上再修|Fix this one again
 退回上一層|Undo last fix
@@ -1292,6 +1292,7 @@ Hires 好了：{0}×{1}|Upscale ready · {0}×{1}
 {0} 位|{0} characters
 「{0}」加進偏好角色|Added “{0!}” to favorite characters
 「{0}」拿出偏好角色|Removed “{0!}” from favorite characters
+「{0}」已經是偏好角色|“{0!}” is already a favorite character
 每排 {0} 張|{0} per row
 這張修過 {0} 層臉。|Faces fixed {0} times on this image.
 修過臉 ×{0}|Faces fixed ×{0}

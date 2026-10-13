@@ -6103,6 +6103,14 @@ html[data-setup] .tour-offer {
 /* ---------- 偏好角色（fav-chars.js） ---------- */
 
 /* 字盒裡偏好的角色牌：圖的左下角一顆小愛心（右上角留給「手」「在池」）。 */
+.heart-icon {
+  display: inline-grid;
+  place-items: center;
+  line-height: 0;
+}
+.heart-icon svg {
+  display: block;
+}
 .card-heart {
   position: absolute;
   left: 4px;
@@ -6292,5 +6300,65 @@ html[data-setup] .tour-offer {
   }
   .favc[data-paged="true"] .favc-grid {
     min-height: calc(4 * (92px * 702 / 480 + 1.6em + 10px));
+  }
+}
+
+/* 愛心停靠點：畫面右緣一顆直立的膠囊，平常收在畫面外。
+ * 拖角色牌時滑出來當落點（drag.js 標 data-droppable）、牌拖到上面放大（data-over）；
+ * 點愛心加入時也滑出來一下讓牌飛進去（data-show）。 */
+.favc-dock {
+  position: fixed;
+  right: max(12px, env(safe-area-inset-right));
+  top: 50%;
+  z-index: 355;
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  padding: 14px 10px 12px;
+  border: 1px solid var(--color-rule-2);
+  border-radius: 999px;
+  background: var(--color-paper-2);
+  color: var(--color-ink);
+  box-shadow: var(--shadow-lift);
+  opacity: 0;
+  pointer-events: none;
+  translate: calc(100% + 16px) -50%;
+  transition:
+    translate var(--dur-medium) var(--ease-out),
+    opacity var(--dur-short) var(--ease-out),
+    scale var(--dur-short) var(--ease-settle),
+    border-color var(--dur-short) var(--ease-out);
+}
+.favc-dock[data-droppable="true"],
+.favc-dock[data-show="true"] {
+  opacity: 1;
+  translate: 0 -50%;
+}
+.favc-dock[data-over="true"] {
+  scale: 1.12;
+  border-color: var(--color-accent);
+}
+.favc-dock-heart {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--color-accent);
+  color: var(--color-accent-ink, #fff);
+  font-size: 20px;
+}
+.favc-dock-label {
+  writing-mode: vertical-rl;
+  font-size: var(--text-xs);
+  letter-spacing: 0.1em;
+}
+.favc-dock-count {
+  font-variant-numeric: tabular-nums;
+  font-size: var(--text-sm);
+}
+@media (prefers-reduced-motion: reduce) {
+  .favc-dock {
+    transition: none;
   }
 }

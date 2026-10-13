@@ -1169,3 +1169,60 @@
   color: var(--color-ink-2);
   font-size: var(--text-xs);
 }
+
+/* 角色牌的「加入偏好角色」：跟右下角的「放進卡盒」同一種圓鈕，放在左下角；加了之後愛心變實心、一直亮著。 */
+.fav-add {
+  position: absolute;
+  left: 6px;
+  bottom: calc(1.4em + 12px);
+  z-index: 3;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 1px solid var(--color-rule);
+  border-radius: 50%;
+  background: color-mix(in oklch, var(--color-paper) 86%, transparent);
+  color: var(--color-muted);
+  font-size: 15px;
+  box-shadow: 0 6px 14px -6px var(--color-shade);
+  opacity: 0;
+  transform: translateY(4px) scale(0.85);
+  transition:
+    opacity var(--dur-micro) var(--ease-out),
+    transform var(--dur-short) var(--ease-settle),
+    background-color var(--dur-micro) var(--ease-out),
+    color var(--dur-micro) var(--ease-out);
+  cursor: pointer;
+}
+.book-cell:hover .fav-add,
+.book-cell:focus-within .fav-add,
+.fav-add[aria-pressed="true"] {
+  opacity: 1;
+  transform: none;
+}
+.fav-add[aria-pressed="true"] {
+  border-color: var(--color-accent);
+  background: var(--color-accent);
+  color: var(--color-accent-ink, #fff);
+}
+@media (hover: hover) and (pointer: fine) {
+  .fav-add:hover {
+    color: var(--color-accent);
+  }
+  .fav-add[aria-pressed="true"]:hover {
+    color: var(--color-accent-ink, #fff);
+  }
+}
+@media (hover: none) {
+  .fav-add {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* 卡冊的角色牌有自己的愛心圓鈕（看得出加了沒），牌上的愛心章就不再疊一顆。 */
+.book-cell .card-heart {
+  display: none;
+}

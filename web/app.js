@@ -30,7 +30,7 @@ import { compareThumb } from "./compare.js";
 import { watchGone, sweepGone } from "./gone.js";
 import { relationsOf } from "./fuse-bed.js";
 import { drawWithSeed, effectiveHeats, withEffectiveHeats } from "./draw-with-seed.js";
-import { favChars, withFavChars, paintFavChar, paintFavChars, favCharsButton, openFavChars } from "./fav-chars.js";
+import { favChars, withFavChars, paintFavChar, paintFavChars, favCharsButton, openFavChars, favZone, dropToFav, flyToFav, heartIcon } from "./fav-chars.js";
 import { ratingBlocked, RATING_LABEL } from "./rules/rating.js";
 import { searchMiss } from "./lib-hint.js";
 import { HEATS, toggleHeat } from "./heats.js";
@@ -2798,11 +2798,15 @@ function showCard(tag, from) {
                 class: "btn btn-ghost",
                 type: "button",
                 onclick: () => {
+                  const a = artNow();
                   sheet.close();
-                  toast(favChars.toggle(tag) ? `「${card.zh}」加進偏好角色` : `「${card.zh}」拿出偏好角色`);
+                  const added = favChars.toggle(tag);
+                  toast(added ? `「${card.zh}」加進偏好角色` : `「${card.zh}」拿出偏好角色`);
+                  if (added) flyToFav(a?.node);
                 },
               },
-              favChars.has(tag) ? "♥ 從偏好角色拿掉" : "♥ 加入偏好角色"
+              heartIcon(),
+              favChars.has(tag) ? "從偏好角色拿掉" : "加入偏好角色"
             )
           : null,
         hand && !banned
@@ -2921,6 +2925,8 @@ const libCardNode = (tag) => [...$("lib-grid").querySelectorAll(".card")].find((
 
 const drag = createDrag({
   zones: () => [
+    // 偏好角色：角色牌拖起來時，畫面右緣的愛心滑出來當落點（fav-chars.js）。浮在最上面，先認。
+    favZone((t) => lib.byTag.get(t)?.suit === "chara"),
     // 偏好卡牌：字盒、合成池的牌都可以拖進來（托盤浮在卡池上面，所以排第一個先認；池裡的等於收回手牌）。
     // 托盤上的牌拖一拖又放回托盤：當作沒拖（不能穿過托盤掉到底下的卡池）。
     { id: "hand", el: hand?.el, accepts: (p) => !!hand && p.from !== "trash" },
@@ -2936,6 +2942,7 @@ const drag = createDrag({
   // 回傳落點：影子飛到那張牌的位置落下（drag.js）。
   onHold: (p) => showCard(p.tag, p.from === "pool" || p.from === "library" ? p.from : null),
   onDrop: (p, zone, at) => {
+    if (zone === "favchars") return dropToFav(p.tag, zh(p.tag));
     if (zone === "hand") {
       // 放在哪就插在哪（托盤上的牌＝換位置）；滿了收不下，影子彈回原位。
       if (!hand.drop(p.tag, at?.x)) return false;

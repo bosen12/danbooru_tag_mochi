@@ -25,6 +25,8 @@ import { initMotion, settleMotion, seat, refuse, flight, reducedMotion, swapIn, 
 import { watchLink, LINK_LABEL, viewSrc } from "./gen.js";
 import { getSfx } from "./sfx.js";
 import { attachPeek } from "./card-peek.js";
+import { createDrag } from "./drag.js";
+import { favChars, paintFavChar, favZone, dropToFav, flyToFav, heartIcon } from "./fav-chars.js";
 import * as S from "./store.js";
 import { USAGE_KEY, loadUsage, seedUsage, fetchUsage, tagsOfPositive } from "./usage.js";
 import { weightsOfPositive } from "./weights.js";
@@ -556,6 +558,12 @@ function cellOf(card) {
     const n = el("b", { class: "book-n" });
     const meta = el("span", { class: "book-meta" }, n, el("span", { class: "book-unit" }));
     cell = el("div", { class: "book-cell", role: "listitem", dataset: { tag: card.tag } }, node, meta, boxAddButton(card));
+    // 角色牌：左下角一顆愛心（點一下加進偏好角色），也可以直接拖到畫面右緣的愛心。
+    if (card.suit === "chara") {
+      cell.append(favAddButton(card));
+      paintFavChar(node, card.tag);
+      favDrag().attach(node, { tag: card.tag, from: "book" });
+    }
     cells.set(card.tag, cell);
   }
   return cell;
@@ -1225,6 +1233,45 @@ function saveBox() {
 }
 
 const inBox = (tag) => box.includes(tag);
+
+/* ---------- 偏好角色（fav-chars.js；墨池、疊印台同一份名單） ---------- */
+
+let favDragging = null;
+/** 卡冊只有角色牌能拖、只有一個落點（畫面右緣的愛心）。用到才建。 */
+function favDrag() {
+  return (favDragging ||= createDrag({
+    zones: () => [favZone((t) => lib.byTag.get(t)?.suit === "chara")],
+    onDrop: (p, zone) => (zone === "favchars" ? dropToFav(p.tag, lib.byTag.get(p.tag)?.zh || p.tag) : null),
+  }));
+}
+
+function favAddButton(card) {
+  const b = el("button", { class: "fav-add", type: "button" }, heartIcon());
+  paintFavButton(b, card);
+  b.addEventListener("click", (e) => {
+    e.stopPropagation();
+    const added = favChars.toggle(card.tag);
+    toast(added ? `「${card.zh}」加進偏好角色` : `「${card.zh}」拿出偏好角色`);
+    if (added) flyToFav(cells.get(card.tag)?.querySelector(".card"));
+  });
+  return b;
+}
+
+function paintFavButton(b, card) {
+  const on = favChars.has(card.tag);
+  b.setAttribute("aria-pressed", on ? "true" : "false");
+  b.setAttribute("aria-label", `${on ? "從偏好角色拿掉" : "加入偏好角色"}：${card.zh}`);
+}
+
+// 名單一變（這一頁點的、墨池那邊加的、另一個分頁改的）：牌上的愛心和按鈕跟著換。
+favChars.onChange(() => {
+  for (const [tag, cell] of cells) {
+    const b = cell.querySelector(".fav-add");
+    if (!b) continue;
+    paintFavButton(b, lib.byTag.get(tag));
+    paintFavChar(cell.querySelector(".card"), tag);
+  }
+});
 
 function boxAddButton(card) {
   const b = el("button", { class: "box-add", type: "button", "aria-pressed": "false", "aria-label": `把「${card.zh}」放進卡盒` });

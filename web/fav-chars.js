@@ -9,11 +9,26 @@
  *   點一張就加入／拿掉。「我的偏好」裡拿掉的那張先留在原位變淡，再點一下就回來 ——
  *   換頁、換頁籤、關掉之後才真的不見，所以不用另外跳「復原」。
  * 動態：換頁時舊的一頁往反方向淡出，新的一頁從翻頁的方向一張接一張滑進來；
- *   愛心按下去彈一下；規則上「♥ 偏好角色 N」的數字變了也彈一下。減少動態時都直接換。
+ *   愛心按下去彈一下；規則上「偏好角色 N」的數字變了也彈一下。減少動態時都直接換。
+ *
+ * 愛心停靠點（favDock）：畫面右緣一顆直立的膠囊，平常收著。
+ *   拖一張角色牌：它滑出來當落點，牌拖到上面時放大；放開，牌縮進愛心、數字彈一下。
+ *   點愛心加入（卡冊的牌、詳情）：它也滑出來一下，讓那張牌飛進去，再收回去。
+ *   墨池、疊印台、卡冊三個房間都是同一顆。
+ * 愛心一律用 SVG 畫：畫面上不用表情符號、愛心這類符號字當標記（字型不同長得不一樣）。
  */
-import { el, openSheet } from "./ui.js";
+import { el, openSheet, toast } from "./ui.js";
 import { cardNode, cardMatches } from "./cards.js";
-import { DUR, CURVE, css, reducedMotion } from "./motion.js";
+import { cloneCard } from "./card-images.js";
+import { DUR, CURVE, css, reducedMotion, flight } from "./motion.js";
+
+const HEART =
+  '<svg viewBox="0 0 24 24" width="1em" height="1em" fill="currentColor" aria-hidden="true"><path d="M12 20.6 10.6 19.3C5.5 14.7 2.2 11.7 2.2 8 2.2 5 4.6 2.6 7.6 2.6c1.7 0 3.3.8 4.4 2.1 1.1-1.3 2.7-2.1 4.4-2.1 3 0 5.4 2.4 5.4 5.4 0 3.7-3.3 6.7-8.4 11.3L12 20.6z"/></svg>';
+
+/** 一顆 SVG 愛心（字的大小、顏色跟著外面）。 */
+export function heartIcon(cls = "") {
+  return el("span", { class: ("heart-icon " + cls).trim(), html: HEART, "aria-hidden": "true" });
+}
 
 const KEY = "mochi.fav.chars.v1";
 const listeners = new Set();
@@ -92,7 +107,7 @@ export function paintFavChar(node, tag) {
   const on = favChars.has(tag);
   const h = node.querySelector(".card-heart");
   if (on && !h) {
-    const heart = el("span", { class: "card-heart", "aria-hidden": "true" }, "♥");
+    const heart = heartIcon("card-heart");
     (node.querySelector(".card-art") || node).append(heart);
     if (node.isConnected && !reducedMotion()) pop(heart);
   } else if (!on && h) {
@@ -106,13 +121,13 @@ export function paintFavChars(container) {
   for (const n of container.querySelectorAll('.card[data-suit="chara"]')) paintFavChar(n, n.dataset.tag);
 }
 
-/** 規則上那顆「♥ 偏好角色 N」：數字變了彈一下。 */
+/** 規則上那顆「偏好角色 N」：數字變了彈一下。 */
 export function favCharsButton(onClick) {
   const count = el("span", { class: "favc-count" }, String(favChars.size));
   const btn = el(
     "button",
     { class: "btn btn-small btn-ghost favc-open", type: "button", "aria-haspopup": "dialog", title: "偏好角色：挑幾個常用的角色，打開「只抽偏好角色」就只從這裡面抽" },
-    el("span", { class: "favc-open-heart", "aria-hidden": "true" }, "♥"),
+    heartIcon("favc-open-heart"),
     "偏好角色",
     count
   );
@@ -124,6 +139,72 @@ export function favCharsButton(onClick) {
     if (!reducedMotion()) pop(count);
   });
   return btn;
+}
+
+/* ---------- 愛心停靠點 ---------- */
+
+let dock = null;
+
+/** 畫面右緣的愛心膠囊（只建一次）。 */
+export function favDock() {
+  if (dock && dock.el.isConnected) return dock;
+  const heart = heartIcon("favc-dock-heart");
+  const count = el("b", { class: "favc-dock-count" }, String(favChars.size));
+  const node = el("div", { class: "favc-dock", "aria-hidden": "true" }, heart, el("span", { class: "favc-dock-label" }, "偏好角色"), count);
+  document.body.append(node);
+  favChars.onChange((list) => (count.textContent = String(list.length)));
+  dock = { el: node, heart, count };
+  return dock;
+}
+
+function bumpDock(d) {
+  if (reducedMotion()) return;
+  pop(d.heart);
+  d.count.animate([{ transform: "none" }, { transform: "translateY(-4px) scale(1.25)" }, { transform: "none" }], {
+    duration: DUR.medium,
+    easing: css(CURVE.settle),
+  });
+}
+
+/** 拖曳的落點（drag.js 的 zone）：只收角色牌。isChara(tag)：這張是不是角色牌。 */
+export function favZone(isChara) {
+  return { id: "favchars", el: favDock().el, accepts: (p) => !!p && isChara(p.tag) };
+}
+
+/** 拖到愛心上放開：加進名單，牌縮進愛心（drag.js 的 { el, landed }）。 */
+export function dropToFav(tag, name) {
+  const d = favDock();
+  const added = favChars.add(tag);
+  toast(added ? `「${name}」加進偏好角色` : `「${name}」已經是偏好角色`);
+  return { el: d.heart, landed: () => bumpDock(d) };
+}
+
+let hideTimer = 0;
+/** 點愛心加入：停靠點滑出來，那張牌（fromNode）飛進愛心，再收回去。 */
+export function flyToFav(fromNode) {
+  const d = favDock();
+  clearTimeout(hideTimer);
+  const hide = () => (hideTimer = setTimeout(() => (d.el.dataset.show = "false"), 900));
+  d.el.dataset.show = "true";
+  const r = fromNode && fromNode.getBoundingClientRect();
+  if (reducedMotion() || !r || !r.width || r.bottom < 0 || r.top > innerHeight) {
+    bumpDock(d);
+    return hide();
+  }
+  const ghost = cloneCard(fromNode);
+  ghost.classList.add("favc-ghost");
+  document.body.append(ghost);
+  flight(ghost, { left: r.left, top: r.top, width: r.width, height: r.height }, () => d.heart, {
+    endScale: 0.22,
+    endOpacity: 0.3,
+    arc: 64,
+    tilt: -6,
+    zIndex: 380,
+    onLand: () => {
+      bumpDock(d);
+      hide();
+    },
+  });
 }
 
 function pop(node) {
@@ -199,7 +280,7 @@ export function openFavChars({ cards, assets, tab: firstTab, onClose } = {}) {
 
   function cell(card) {
     const on = favChars.has(card.tag);
-    const heart = el("span", { class: "favc-heart", "aria-hidden": "true" }, "♥");
+    const heart = heartIcon("favc-heart");
     const btn = el(
       "button",
       {
