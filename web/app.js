@@ -1792,11 +1792,10 @@ function openFace(shot, btn) {
       sfx.hiresStart();
     },
     onUndo: () => {
-      if (hiresRun.undoFace(shot)) {
-        shot._hiresFresh = true;
-        updateShot(shot);
-        toast("拿掉修臉了");
-      }
+      // 先標好再換圖：換回修之前那張也要顯影，不是一格跳過去（疊印台同一套）。
+      shot._hiresFresh = true;
+      if (hiresRun.undoFace(shot)) toast("拿掉修臉了");
+      else shot._hiresFresh = false;
     },
   });
 }
@@ -2550,7 +2549,7 @@ function clearShotGone(shot, node) {
 function printAgain(shot) {
   const node = document.querySelector(`.shot[data-id="${shot.id}"]`);
   if (node) clearShotGone(shot, node);
-  Object.assign(shot, { status: "drawn", image: null, preview: null, note: "", hi: null, hires: null, baseImage: null });
+  Object.assign(shot, { status: "drawn", image: null, preview: null, note: "", hi: null, hires: null, face: null, baseImage: null });
   printInPlace(shot);
 }
 
@@ -2617,8 +2616,8 @@ async function copyPos(shot, btn) {
 }
 
 function reprint(shot) {
-  // 重印的是原本的尺寸、原本的圖；Hires 的結果不跟著過去。
-  const copy = { ...shot, id: "s" + shotSeq++, status: "drawn", image: null, preview: null, note: "", hi: null, hires: null, baseImage: null, at: new Date().toISOString() };
+  // 重印的是原本的尺寸、原本的圖；Hires、修臉的結果不跟著過去。
+  const copy = { ...shot, id: "s" + shotSeq++, status: "drawn", image: null, preview: null, note: "", hi: null, hires: null, face: null, baseImage: null, at: new Date().toISOString() };
   shots.unshift(copy);
   noteUses([copy]);
   const node = shotNode(copy, true);
