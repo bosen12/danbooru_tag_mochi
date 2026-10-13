@@ -1849,6 +1849,7 @@ def comfy_root_dir() -> Path | None:
 # 收進作品冊的另外複製了一份在 data/recipes，不受影響；成品牆上被清掉的那張顯示「原檔不在了」，可以照原樣再印。
 # config.json 的 output.keep 改張數，0 就不清。只清 danbooru_case 裡自己的那三種檔名，別的工作流的圖不碰。
 OUTPUT_KEEP = int(cfg("output.keep", "OUTPUT_KEEP", 200))
+GONE_SOURCE_TEXT = "這張的原圖已經不在 ComfyUI 的 output 了（只留最近的圖）：沒辦法從它做 Hires、修臉"
 OUTPUT_PREFIXES = ("case_", "hires_", "face_")
 _OUTPUT_PRUNE = {"enabled": False, "timer": None}
 
@@ -1873,13 +1874,43 @@ def comfy_output_dir() -> Path | None:
     return root / "output" if root else None
 
 
-def old_outputs(folder: Path, keep: int) -> list[Path]:
-    """danbooru_case 裡自己的圖，照修改時間新到舊，第 keep 張以後的。"""
+def _output_name(src) -> str:
+    """/api/image?filename=…&subfolder=danbooru_case 的檔名（別的資料夾的不算）。"""
+    q = urllib.parse.parse_qs(str(src or "").split("?", 1)[-1])
+    if (q.get("subfolder") or [""])[0].replace("\\", "/").strip("/") != "danbooru_case":
+        return ""
+    return (q.get("filename") or [""])[0]
+
+
+def output_sources() -> dict:
+    """日誌裡每一張 Hires、修臉是從哪一張做的：{成品檔名: 原圖檔名}。"""
+    out = {}
+    for e in gen_log.all_items():
+        if e.get("kind") != "hires" or not e.get("ok"):
+            continue
+        made, src = _output_name(e.get("image")), _output_name((e.get("hires") or {}).get("from"))
+        if made and src:
+            out[made] = src
+    return out
+
+
+def old_outputs(folder: Path, keep: int, sources: dict | None = None) -> list[Path]:
+    """danbooru_case 裡自己的圖，照修改時間新到舊，第 keep 張以後的。
+
+    留下來的那幾張如果是 Hires、修臉做出來的，它們的原圖（一路往回追：修臉疊修臉、Hires 再修臉）也留著：
+    不然「還原原圖」「從原圖重修」「拿掉修臉」「再 Hires」都會找不到圖。"""
     if keep <= 0 or not folder.is_dir():
         return []
     files = [p for p in folder.iterdir() if p.is_file() and p.suffix.lower() == ".png" and p.name.startswith(OUTPUT_PREFIXES)]
     files.sort(key=lambda p: p.stat().st_mtime, reverse=True)
-    return files[keep:]
+    protect = {p.name for p in files[:keep]}
+    stack = list(protect)
+    while stack:
+        src = (sources or {}).get(stack.pop())
+        if src and src not in protect:
+            protect.add(src)
+            stack.append(src)
+    return [p for p in files[keep:] if p.name not in protect]
 
 
 def move_to_trash(paths: list[Path]) -> int:
@@ -1922,7 +1953,7 @@ def prune_outputs() -> int:
     if out is None:
         return 0
     try:
-        old = old_outputs(out / "danbooru_case", OUTPUT_KEEP)
+        old = old_outputs(out / "danbooru_case", OUTPUT_KEEP, output_sources())
         return move_to_trash(old)
     except OSError:
         return 0
@@ -2049,7 +2080,12 @@ def prepare_hires(payload: dict) -> tuple[dict, dict]:
     if seed is None or seed == "":
         seed = random.randint(0, SEED_MAX)
     seed = int(seed) & SEED_MAX
-    raw = api("GET", "/view?" + spec["view"], timeout=120)
+    try:
+        raw = api("GET", "/view?" + spec["view"], timeout=120)
+    except urllib.error.HTTPError as exc:
+        if exc.code == 404:
+            raise HiresError(GONE_SOURCE_TEXT) from exc
+        raise
     if not isinstance(raw, (bytes, bytearray)) or not raw:
         raise HiresError("跟 Comfy 要原圖失敗")
     # Hires、修臉都從這裡拿原圖：檔名被別張用掉的，不能拿別張去放大、修臉。

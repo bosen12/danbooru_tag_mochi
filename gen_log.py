@@ -16,6 +16,7 @@ import os
 import re
 import threading
 import time
+import urllib.parse
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
@@ -218,6 +219,13 @@ def fav_key(seed, tags) -> str:
     return f"{seed}|{','.join(sorted(tags))}"
 
 
+def _recipe_image(rec) -> str:
+    """作品冊那一筆的圖（data/recipes 裡複製的那份）。"""
+    img = rec.get("image") if isinstance(rec, dict) else None
+    f = img.get("file") if isinstance(img, dict) else None
+    return "/api/recipes/files/" + urllib.parse.quote(str(f)) if f else ""
+
+
 def _model_name(path: str) -> str:
     name = str(path or "").replace("\\", "/").rsplit("/", 1)[-1]
     return name[:-12] if name.lower().endswith(".safetensors") else name
@@ -233,7 +241,7 @@ def stats(known, favorites) -> dict:
     favs = {}
     for r in favorites or []:
         cards = [t for t in tags_of(r.get("positive")) if t in known]
-        favs[fav_key(r.get("seed"), cards)] = r.get("id")
+        favs[fav_key(r.get("seed"), cards)] = r
     cards: dict[str, list[int]] = {}
     models: dict[str, dict] = {}
     total = 0
@@ -258,7 +266,8 @@ def stats(known, favorites) -> dict:
         first = at if first is None else min(first, at)
         tags = [t for t in tags_of(e.get("positive")) if t in known]
         ok = bool(e.get("ok"))
-        fav = ok and fav_key(e.get("seed"), tags) in favs
+        fav_rec = favs.get(fav_key(e.get("seed"), tags)) if ok else None
+        fav = fav_rec is not None
         drop = ok and e.get("mark") == "discard"
         ms = [model("ckpt", _model_name(e.get("ckpt")) or "預設")] + [model("lora", _model_name(l.get("file"))) for l in e.get("loras") or [] if l.get("file")]
         for m in ms:
@@ -276,7 +285,9 @@ def stats(known, favorites) -> dict:
             # 代表作：收藏過的優先，再來是最新的一張。
             rank = (1 if fav else 0, at)
             if e.get("image") and (m["best"] is None or rank > m["best"][0]):
-                m["best"] = (rank, {"image": e["image"], "width": e.get("width"), "height": e.get("height"), "id": e.get("id"), "rating": e.get("rating") or ""})
+                # 收藏過的用作品冊那一份：ComfyUI 的 output 只留最近幾張，原本那張可能已經清掉了。
+                image = _recipe_image(fav_rec) or e["image"]
+                m["best"] = (rank, {"image": image, "width": e.get("width"), "height": e.get("height"), "id": e.get("id"), "rating": e.get("rating") or ""})
             m["last"] = max(m["last"], at)
         if not ok:
             continue

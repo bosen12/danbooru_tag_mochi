@@ -69,9 +69,12 @@ export function createLog(ctx) {
   const cards = (e) => tagsOfPositive(e.positive).filter(ctx.isCard);
 
   function index() {
-    favs = new Map(ctx.getWorks().map((w) => [favKey(w.seed, w.positive, ctx.isCard), w.id]));
+    favs = new Map(ctx.getWorks().map((w) => [favKey(w.seed, w.positive, ctx.isCard), w]));
     for (const e of items) {
-      e._fav = e.ok ? favs.get(favKey(e.seed, e.positive, ctx.isCard)) || null : null;
+      const w = e.ok ? favs.get(favKey(e.seed, e.positive, ctx.isCard)) : null;
+      e._fav = w ? w.id : null;
+      // 收藏過的作品冊另有一份：ComfyUI 的 output 清掉了（只留最近幾張）也看得到圖。
+      e._favImg = w && w.image && w.image.file ? `/api/recipes/files/${encodeURIComponent(w.image.file)}` : null;
       if (!e._text) e._text = [e.positive, ...cards(e).map(ctx.zh), shortName(e.ckpt), ...(e.loras || []).map((l) => shortName(l.file)), ORIGIN_ZH[e.origin] || ""].join(" ").toLowerCase();
     }
   }
@@ -129,7 +132,12 @@ export function createLog(ctx) {
         alt: "",
         loading: "lazy",
         decoding: "async",
-        onerror: () => {
+        onerror: (ev) => {
+          // output 裡的原圖清掉了：收藏過的換成作品冊那一份，沒收藏的才說不在了。
+          if (e._favImg && ev.currentTarget.getAttribute("src") !== e._favImg) {
+            ev.currentTarget.src = e._favImg;
+            return;
+          }
           e._gone = true;
           box.classList.add("is-gone");
           box.replaceChildren(el("span", {}, "原圖不在了"));
@@ -223,7 +231,7 @@ export function createLog(ctx) {
 
   function openEntry(e) {
     const c = cards(e);
-    const full = e.ok && e.image && !e._gone ? viewSrc(e.image) : null;
+    const full = e.ok && e.image && !e._gone ? viewSrc(e.image) : e._favImg || null;
     const loras = (e.loras || []).map((l) => `${shortName(l.file)}${l.strength !== 1 ? ` ${l.strength}` : ""}`).join("、");
     const facts = [
       ["時間", `${dayLabel(e.at)} ${clock(e.at)}`],

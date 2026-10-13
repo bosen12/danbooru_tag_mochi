@@ -1415,6 +1415,11 @@ for _i, _name in enumerate(["case_00001_.png", "case_00002_.png", "hires_00001_.
 _old = [p.name for p in _srv_h.old_outputs(_op_dir, 3)]
 ok("output: keep the newest N of our own images (case_/hires_/face_ .png), oldest go", _old == ["case_00002_.png", "case_00001_.png"], str(_old))
 ok("output: other workflows' files and non-png are never touched; keep 0 = never", "mine_00001_.png" not in _old and "case_00004_.webp" not in _old and _srv_h.old_outputs(_op_dir, 0) == [])
+# 留下的修臉 face_00001 是從 hires_00001 做的、hires_00001 是從 case_00001 做的：一路往回都留著。
+_chain = _srv_h.old_outputs(_op_dir, 3, {"face_00001_.png": "hires_00001_.png", "hires_00001_.png": "case_00001_.png"})
+ok("output: originals behind a kept Hires / face fix are kept too (restore, redo from original)", [p.name for p in _chain] == ["case_00002_.png"], str([p.name for p in _chain]))
+ok("output: log entries point at danbooru_case files only", _srv_h._output_name("/api/image?filename=a.png&subfolder=danbooru_case&type=output") == "a.png"
+   and _srv_h._output_name("/api/image?filename=a.png&subfolder=other&type=output") == "")
 _saved_op = (_srv_h.comfy_output_dir, _srv_h.move_to_trash, _srv_h.OUTPUT_KEEP)
 _trashed = []
 _srv_h.comfy_output_dir = lambda: _op_dir.parent
