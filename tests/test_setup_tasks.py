@@ -298,6 +298,18 @@ ran = reset({("fetch_face_detailer.py", "--check"): 0})
 reset.world["face"] = True
 st._face()
 ok("修臉早就裝好：直接完成", state("face") == "done")
+ran = reset({("fetch_face_detailer.py", "--check"): 3})
+st._last_check[0] = "face detailer check: nodes ok, model ok, sam missing"
+_real_check = st._check
+st._check = lambda script, *a: 3
+st._face()
+st._check = _real_check
+ok("修臉早就能用、只缺 SAM：問的是加 SAM，不再講多一顆修臉", state("face") == "ask" and "SAM" in st._state["face"]["text"] and "多一顆" not in st._state["face"]["text"], st._state["face"]["text"])
+st._last_check[0] = "face detailer check: nodes missing, model missing, sam missing"
+st._check = lambda script, *a: 3
+st._face()
+st._check = _real_check
+ok("什麼都沒有：問整套（寫大小）", "多一顆" in st._state["face"]["text"] and "425 MB" in st._state["face"]["text"], st._state["face"]["text"])
 ok("修臉排在姿勢參考後面、可以停", st.ORDER.index("face") == st.ORDER.index("pose") + 1 and "face" in st.STOPPABLE)
 
 # 4c. 網頁面板（setup-panel.js）跟這裡對得上：會問的每一步都有答案鈕、能停的都有「停止」。

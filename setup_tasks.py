@@ -464,12 +464,17 @@ def _face() -> None:
             return
         _set("face", "done", "")
         return
-    _set("face", "ask", "選用：成品下多一顆「修臉」，只重畫臉。要裝 Impact Pack 節點＋臉部偵測模型（約 50 MB），裝完要重開 ComfyUI",
+    if "nodes ok, model ok, sam missing" in _last_check[0]:
+        # 修臉早就能用，只缺 SAM：不再講一次「多一顆修臉」，也不用重開 ComfyUI。
+        _set("face", "ask", "選用：修臉加上 SAM，只重畫臉的形狀，瀏海、髮飾、耳環不會跟著變（約 375 MB）",
+             answers=["yes", "no", "never"])
+        return
+    _set("face", "ask", "選用：成品下多一顆「修臉」，只重畫臉。要裝 Impact Pack 節點、臉部偵測模型和 SAM（約 425 MB），裝完要重開 ComfyUI",
          answers=["yes", "no", "never"])
 
 
 def _face_install() -> None:
-    _set("face", "run", "安裝節點、下載臉部偵測模型（約 50 MB）")
+    _set("face", "run", "安裝節點、下載臉部偵測模型和 SAM（約 425 MB）")
     rc = _run("face", ["fetch_face_detailer.py"])
     if "face" in _stopped:
         _set("face", "skip", "停了：下次啟動會再問")

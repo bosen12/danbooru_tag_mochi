@@ -151,6 +151,26 @@ node = root / "custom_nodes" / "comfyui-impact-pack"
 ok("沒有 git：zip 解到 ComfyUI-Manager 用的資料夾名", good and (node / "__init__.py").is_file())
 ok("沒有 git：pip 不裝 git+ 那行，其他照裝", pip_reqs and "git+" not in pip_reqs[0] and "scipy" in pip_reqs[0] and "numpy" in pip_reqs[0], str(pip_reqs))
 
+# SAM：資料夾裡有 sam_vit* 就算有；ComfyUI 開著問 SAMLoader 的清單。
+pose.comfy_get = lambda base, path, timeout=8: None
+ok("SAM 沒有：要下載", ff.status(config)["sam"] is False)
+(root / "models" / "sams").mkdir(parents=True, exist_ok=True)
+(root / "models" / "sams" / "sam_vit_l_0b3195.pth").write_bytes(b"x")
+ok("資料夾裡有任何一個 sam_vit 就算有", ff.status(config)["sam"] is True)
+(root / "models" / "sams" / "sam_vit_l_0b3195.pth").unlink()
+pose.comfy_get = comfy({"FaceDetailer": {}, "UltralyticsDetectorProvider": det, "SAMLoader": {"input": {"required": {"model_name": [["sam_vit_b_01ec64.pth"]]}}}})
+ok("ComfyUI 開著：SAMLoader 清單裡有就算有", ff.status(config)["sam"] is True)
+pose.comfy_get = saved_get
+sam_payload = b"sam-bytes" * 500
+ff.SAM_SIZE, ff.SAM_SHA256 = len(sam_payload), hashlib.sha256(sam_payload).hexdigest()
+saved_open2 = ff.urllib.request.urlopen
+ff.urllib.request.urlopen = lambda req, timeout=0: Resp(sam_payload, 200)
+try:
+    good = ff.download_sam(root)
+finally:
+    ff.urllib.request.urlopen = saved_open2
+ok("SAM 下載到 models/sams、驗過大小和 sha256", good and (root / "models" / "sams" / ff.SAM_NAME).read_bytes() == sam_payload)
+
 ok("zip 的分支名對得上（Impact Pack 是 Main）", ff.NODES[0][2].endswith("/Main.zip") and ff.NODES[1][2].endswith("/main.zip"))
 ok("NO_FACE_FETCH 就什麼都不做", (ff.os.environ.__setitem__("NO_FACE_FETCH", "1") or ff.main(["--check"])) == 0)
 ff.os.environ.pop("NO_FACE_FETCH", None)

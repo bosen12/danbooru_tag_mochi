@@ -6,6 +6,8 @@
      requirements with ComfyUI's own python. ComfyUI must be restarted once afterwards.
   2. The face detector face_yolov8m.pt (Bingsu/adetailer, Apache-2.0) into models/ultralytics/bbox,
      checked by size + sha256.
+  3. SAM ViT-B (Meta segment-anything, Apache-2.0) into models/sams, checked by size + sha256.
+     With it the face fix redraws only the face shape, so bangs, hair ornaments and earrings stay put.
 
     python scripts/fetch_face_detailer.py            # install whatever is missing
     python scripts/fetch_face_detailer.py --check    # 0 nothing to do (or cannot), 3 something missing
@@ -42,6 +44,10 @@ MODEL_URL = "https://huggingface.co/Bingsu/adetailer/resolve/main/face_yolov8m.p
 MODEL_SHA256 = "717923c19b3f4bbf5250b728f1fa6b2cb72a33aed1d236ea9caf0e21ad943e5f"
 MODEL_SIZE = 52026019
 MODEL_NAME = "face_yolov8m.pt"
+SAM_URL = "https://dl.fbaipublicfiles.com/segment_anything/sam_vit_b_01ec64.pth"
+SAM_SHA256 = "ec2df62732614e57411cdcf32a23ffdf28910380d03139ee0f4fcbe91eb8c912"
+SAM_SIZE = 375042383
+SAM_NAME = "sam_vit_b_01ec64.pth"
 UA = {"User-Agent": "danbooru-tag-random/face-detailer"}
 
 
@@ -69,9 +75,14 @@ def model_on_disk(root: Path) -> bool:
     return any(p.is_file() and "face" in p.name.lower() and p.suffix.lower() in (".pt", ".safetensors") for p in folder.iterdir())
 
 
-def detector_names(info) -> list:
+def sam_on_disk(root: Path) -> bool:
+    folder = root / "models" / "sams"
+    return folder.is_dir() and any(p.is_file() and p.name.lower().startswith("sam_vit") for p in folder.iterdir())
+
+
+def detector_names(info, node: str = DETECTOR_NODE) -> list:
     try:
-        rule = info[DETECTOR_NODE]["input"]["required"]["model_name"]
+        rule = info[node]["input"]["required"]["model_name"]
     except (KeyError, TypeError):
         return []
     # Old enum format [[...]]; new ["COMBO", {"options": [...]}].
@@ -103,7 +114,11 @@ def status(config: dict | None = None) -> dict:
     model = any(is_face_model(n) for n in detector_names(det_info))
     if not model and root:
         model = model_on_disk(root)
-    return {"root": root, "nodes": nodes, "model": model, "comfy_up": comfy_up}
+    sam_info = pose.comfy_get(base, "/object_info/SAMLoader") if comfy_up else None
+    sam = any(str(n).lower().startswith("sam_vit") for n in detector_names(sam_info, "SAMLoader"))
+    if not sam and root:
+        sam = sam_on_disk(root)
+    return {"root": root, "nodes": nodes, "model": model, "sam": sam, "comfy_up": comfy_up}
 
 
 def model_folder(root: Path) -> Path:
@@ -111,25 +126,33 @@ def model_folder(root: Path) -> Path:
 
 
 def download_model(root: Path) -> bool:
-    folder = model_folder(root)
+    return _download(MODEL_URL, model_folder(root), MODEL_NAME, MODEL_SIZE, MODEL_SHA256, "face detector")
+
+
+def download_sam(root: Path) -> bool:
+    return _download(SAM_URL, root / "models" / "sams", SAM_NAME, SAM_SIZE, SAM_SHA256, "SAM")
+
+
+def _download(url: str, folder: Path, name: str, size: int, sha256: str, label: str) -> bool:
     folder.mkdir(parents=True, exist_ok=True)
-    dest = folder / MODEL_NAME
-    part = folder / (MODEL_NAME + ".part")
+    dest = folder / name
+    part = folder / (name + ".part")
     last: Exception | None = None
     for attempt in range(4):
         try:
             have = part.stat().st_size if part.is_file() else 0
-            if have >= MODEL_SIZE:
+            if have >= size:
                 part.unlink()
                 have = 0
             headers = dict(UA)
             if have:
                 headers["Range"] = f"bytes={have}-"
-            req = urllib.request.Request(MODEL_URL, headers=headers)
+            req = urllib.request.Request(url, headers=headers)
             with urllib.request.urlopen(req, timeout=120) as resp:
                 mode = "ab" if have and resp.status == 206 else "wb"
                 got = have if mode == "ab" else 0
                 shown = -1
+                t0, start_got = time.time(), got
                 with part.open(mode) as handle:
                     while True:
                         chunk = resp.read(1 << 20)
@@ -137,14 +160,15 @@ def download_model(root: Path) -> bool:
                             break
                         handle.write(chunk)
                         got += len(chunk)
-                        pct = got * 100 // MODEL_SIZE
-                        if pct // 10 != shown:
-                            shown = pct // 10
-                            print(f"  {pct:3d}%  {got / 1e6:.0f}/{MODEL_SIZE / 1e6:.0f} MB", flush=True)
-            if part.stat().st_size < MODEL_SIZE:
+                        pct = got * 100 // size
+                        if pct // 5 != shown:
+                            shown = pct // 5
+                            speed = (got - start_got) / max(0.1, time.time() - t0) / 1e6
+                            print(f"  {pct:3d}%  {got / 1e6:.1f}/{size / 1e6:.1f} MB  {speed:.2f} MB/s", flush=True)
+            if part.stat().st_size < size:
                 raise OSError("connection closed early")
-            if up.commit_part(part, dest, MODEL_SIZE, MODEL_SHA256):
-                print("Face detector saved.")
+            if up.commit_part(part, dest, size, sha256):
+                print(f"{label} saved.")
                 return True
             print("  size or sha256 mismatch. Not saved. It will be tried again next start.", flush=True)
             return False
@@ -153,7 +177,7 @@ def download_model(root: Path) -> bool:
             print(f"  download interrupted ({err}); continuing...", flush=True)
         if attempt < 3:
             time.sleep(3 + attempt * 4)
-    print(f"Could not download the face detector ({last}). It continues from where it stopped next time.")
+    print(f"Could not download the {label} ({last}). It continues from where it stopped next time.")
     return False
 
 
@@ -171,9 +195,12 @@ def main(argv: list[str] | None = None) -> int:
         if not check_only:
             print("Set comfy.checkpointDir in config.json so ComfyUI can be found. Not installing.")
         return 0
-    if all(st["nodes"].values()) and st["model"]:
+    if all(st["nodes"].values()) and st["model"] and st["sam"]:
         return 0
     if check_only:
+        # 第一次準備的面板照這行寫要裝什麼（例如只缺 SAM 的人，不要再講一次「多一顆修臉」）。
+        print(f"face detailer check: nodes {'ok' if all(st['nodes'].values()) else 'missing'}, "
+              f"model {'ok' if st['model'] else 'missing'}, sam {'ok' if st['sam'] else 'missing'}")
         return 3
     ok = True
     for dir_name, git_url, zip_url, _cls in NODES:
@@ -181,6 +208,8 @@ def main(argv: list[str] | None = None) -> int:
             ok = pose.install_custom_node(st["root"], dir_name, git_url, zip_url, dir_name) and ok
     if not st["model"]:
         ok = download_model(st["root"]) and ok
+    if not st["sam"]:
+        ok = download_sam(st["root"]) and ok
     if ok:
         print("Done. Restart ComfyUI once so it loads FaceDetailer.")
     return 0 if ok else 1

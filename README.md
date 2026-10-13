@@ -84,7 +84,7 @@ Keep the server window open. After updating, reload the page with **Ctrl+F5**.
 | Hires upscale model `RealESRGAN_x4plus_anime_6B` | ~18 MB | Saved to ComfyUI's `models/upscale_models` | `NO_UPSCALE_FETCH=1` |
 | [ComfyUI LoRA Manager](https://github.com/willmiao/ComfyUI-Lora-Manager) (custom node) | small | The LoRA panel takes its list, preview images and Civitai trigger words from it, and the checkpoint panel its names and previews. Optional: the setup panel asks before installing it into `custom_nodes`, installing packages with ComfyUI's own Python, or adding the Details link patch. Choose Allow / Not now / Never ask; restart ComfyUI after installation | `NO_LORA_MANAGER_FETCH=1` |
 | Pose reference (OpenPose ControlNet + `comfyui_controlnet_aux`) | ~2.5 GB | Optional. The page asks first (install / not now / never); ComfyUI needs one restart afterwards | `NO_POSE_FETCH=1` or answer *A* |
-| Face fix (FaceDetailer: ComfyUI-Impact-Pack + Impact-Subpack, `face_yolov8m.pt`) | ~50 MB | Optional. The page asks first; ComfyUI needs one restart afterwards. Adds **Face fix** next to Hires under each image | `NO_FACE_FETCH=1` or answer *never* |
+| Face fix (FaceDetailer: ComfyUI-Impact-Pack + Impact-Subpack, `face_yolov8m.pt`, SAM `sam_vit_b`) | ~425 MB | Optional. The page asks first; ComfyUI needs one restart afterwards. Adds **Face fix** next to Hires under each image; with SAM only the face shape is redrawn, so bangs and hair ornaments stay as they are | `NO_FACE_FETCH=1` or answer *never* |
 
 **One launch does all of it**, on Windows, macOS and Linux alike. The server does the work in the background and a panel in the lower-left corner of the page shows each step, asks before optional LoRA installation/patching, pose setup, face fix and adult card baking, and offers **Restart ComfyUI** after something is installed into it (through ComfyUI-Manager; otherwise restart it yourself). If ComfyUI is not running yet, the steps that need it wait and continue as soon as you start it; there is no need to run `start.bat` again. The page opens straight away with placeholder cards; the panel tells you when to reload. Everything is logged in `data/setup.log`. People who already have everything never see the panel.
 
@@ -238,7 +238,7 @@ cd danbooru_tag_mochi
 | Hires 放大模型 | 約 18 MB | 放進 ComfyUI 的 `models/upscale_models` | `NO_UPSCALE_FETCH=1` |
 | [ComfyUI LoRA Manager](https://github.com/willmiao/ComfyUI-Lora-Manager)（custom node） | 不大 | LoRA 面板的清單、預覽圖、Civitai 觸發詞，底模面板的名稱和預覽圖都從它來。選用：準備面板先問「允許／這次不要／不要再問」，才裝進 `custom_nodes`、用 ComfyUI 自己的 Python 裝套件或補詳情連結；安裝完重開一次 ComfyUI | `NO_LORA_MANAGER_FETCH=1` |
 | 姿勢參考（OpenPose ControlNet＋`comfyui_controlnet_aux`） | 約 2.5 GB | 選用。網頁上先問（安裝／這次不要／不要再問），裝完要重開一次 ComfyUI | `NO_POSE_FETCH=1` 或回答 A |
-| 修臉（FaceDetailer：ComfyUI-Impact-Pack＋Impact-Subpack、`face_yolov8m.pt`） | 約 50 MB | 選用。網頁上先問，裝完要重開一次 ComfyUI。成品下 Hires 旁邊多一顆「修臉」 | `NO_FACE_FETCH=1` 或回答「不要再問」 |
+| 修臉（FaceDetailer：ComfyUI-Impact-Pack＋Impact-Subpack、`face_yolov8m.pt`、SAM `sam_vit_b`） | 約 425 MB | 選用。網頁上先問，裝完要重開一次 ComfyUI。成品下 Hires 旁邊多一顆「修臉」；有 SAM 只重畫臉的形狀，瀏海、髮飾不跟著變 | `NO_FACE_FETCH=1` 或回答「不要再問」 |
 
 **啟動一次就全部做完**（Windows、macOS、Linux 都一樣）：伺服器在背景做，網頁左下角的面板顯示每一步、詢問 LoRA 安裝／修補、姿勢參考、修臉與成人卡面烘焙，裝進 ComfyUI 的東西需要重開時給一顆「重開 ComfyUI」（透過 ComfyUI-Manager；沒有就自己重開）。ComfyUI 還沒開的話，要用到它的步驟會等，一開就接著做，不用再跑一次 `start.bat`。網頁照常先開（先是字的佔位牌），面板會告訴你什麼時候重新整理。過程記在 `data/setup.log`。東西都已經有的人完全看不到這個面板。
 

@@ -739,8 +739,9 @@ Impact Pack 的 FaceDetailer 節點|the FaceDetailer node (Impact Pack)
 Impact Subpack 的臉部偵測節點|the face detector node (Impact Subpack)
 臉部偵測模型 face_yolov8m.pt|the face detection model face_yolov8m.pt
 修臉（FaceDetailer）|Face fix (FaceDetailer)
-選用：成品下多一顆「修臉」，只重畫臉。要裝 Impact Pack 節點＋臉部偵測模型（約 50 MB），裝完要重開 ComfyUI|Optional: adds a Face fix button under each image that redraws only faces. Installs the Impact Pack nodes and a face detection model (about 50 MB). Restart ComfyUI afterwards.
-安裝節點、下載臉部偵測模型（約 50 MB）|Installing the nodes and downloading the face detection model (about 50 MB)
+選用：成品下多一顆「修臉」，只重畫臉。要裝 Impact Pack 節點、臉部偵測模型和 SAM（約 425 MB），裝完要重開 ComfyUI|Optional: adds a Face fix button under each image that redraws only faces. Installs the Impact Pack nodes, a face detection model and SAM (about 425 MB). Restart ComfyUI afterwards.
+選用：修臉加上 SAM，只重畫臉的形狀，瀏海、髮飾、耳環不會跟著變（約 375 MB）|Optional: add SAM to Face fix so only the face shape is redrawn and bangs, hair ornaments and earrings stay as they are (about 375 MB).
+安裝節點、下載臉部偵測模型和 SAM（約 425 MB）|Installing the nodes and downloading the face detection model and SAM (about 425 MB)
 停了：下次啟動會再問|Stopped. You will be asked again next launch.
 不再問（刪掉 .no-face-fetch 就會再問）|Will not ask again (delete .no-face-fetch to be asked)
 節點在資料夾裡，ComfyUI 卻沒載入：重開 ComfyUI；還是不行，看 ComfyUI 啟動時 Impact Pack 的錯誤訊息|The nodes are installed but ComfyUI has not loaded them. Restart ComfyUI; if that does not help, check Impact Pack's errors in the ComfyUI startup log.
