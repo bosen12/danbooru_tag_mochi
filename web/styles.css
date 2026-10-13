@@ -6099,3 +6099,198 @@ html[data-setup] .tour-offer {
   align-items: center;
   gap: var(--space-xs) var(--space-sm);
 }
+
+/* ---------- 偏好角色（fav-chars.js） ---------- */
+
+/* 字盒裡偏好的角色牌：圖的左下角一顆小愛心（右上角留給「手」「在池」）。 */
+.card-heart {
+  position: absolute;
+  left: 4px;
+  bottom: 4px;
+  z-index: 3;
+  display: grid;
+  place-items: center;
+  width: 1.55em;
+  height: 1.55em;
+  border-radius: 50%;
+  background: var(--color-accent);
+  color: var(--color-accent-ink, #fff);
+  font-size: 9px;
+  line-height: 1;
+  pointer-events: none;
+}
+
+/* 規則上的「♥ 偏好角色 N」。 */
+.favc-open {
+  gap: 0.35em;
+}
+.favc-open-heart {
+  color: var(--color-accent);
+}
+.favc-count {
+  display: inline-block;
+  min-width: 1.4em;
+  padding: 0 0.35em;
+  border-radius: 999px;
+  background: var(--color-paper-3);
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+/* 名單彈窗 */
+.favc {
+  display: grid;
+  gap: var(--space-sm);
+}
+.favc-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+}
+.favc-tabs {
+  display: inline-flex;
+  padding: 3px;
+  border: 1px solid var(--color-rule);
+  border-radius: 999px;
+}
+.favc-tab {
+  min-height: 32px;
+  padding: 0 var(--space-md);
+  border: 0;
+  border-radius: 999px;
+  background: none;
+  color: var(--color-muted);
+  font: inherit;
+  font-size: var(--text-sm);
+  cursor: pointer;
+  transition: background-color var(--dur-short) var(--ease-out), color var(--dur-short) var(--ease-out);
+}
+.favc-tab[aria-selected="true"] {
+  background: var(--color-ink);
+  color: var(--color-paper);
+}
+.favc-total {
+  color: var(--color-muted);
+  font-size: var(--text-xs);
+  font-variant-numeric: tabular-nums;
+}
+.favc-search {
+  min-height: 38px;
+  padding: 0 var(--space-sm);
+  border: 1px solid var(--color-rule);
+  border-radius: var(--radius-sm);
+  background: var(--color-paper);
+  color: var(--color-ink);
+  font: inherit;
+}
+.favc-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
+  gap: 10px;
+  align-content: start;
+  touch-action: pan-y;
+}
+/* 有好幾頁時，四排的高度先留好：換頁、搜尋時下面的翻頁鈕不會跟著上下跳。只有一頁就不留空白。 */
+.favc[data-paged="true"] .favc-grid {
+  min-height: calc(4 * (104px * 702 / 480 + 1.6em + 10px));
+}
+.favc-cell {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  transition: opacity var(--dur-short) var(--ease-out), filter var(--dur-short) var(--ease-out);
+}
+.favc-cell .card {
+  --card-w: 100%;
+  width: 100%;
+  max-width: 120px;
+}
+/* 「我的偏好」裡拿掉的：先留在原位變淡，再按一下就回來。 */
+.favc[data-tab="mine"] .favc-cell[data-on="false"] {
+  opacity: 0.4;
+  filter: grayscale(0.7);
+}
+.favc-heart {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: color-mix(in oklch, var(--color-paper) 88%, transparent);
+  color: var(--color-muted);
+  font-size: 14px;
+  line-height: 1;
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.25);
+  transition: background-color var(--dur-short) var(--ease-out), color var(--dur-short) var(--ease-out);
+}
+.favc-cell[data-on="true"] .favc-heart {
+  background: var(--color-accent);
+  color: var(--color-accent-ink, #fff);
+}
+@media (hover: hover) and (pointer: fine) {
+  .favc-cell:hover .favc-heart {
+    color: var(--color-accent);
+  }
+  .favc-cell[data-on="true"]:hover .favc-heart {
+    color: var(--color-accent-ink, #fff);
+  }
+}
+.favc-cell:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 3px;
+  border-radius: var(--radius-sm);
+}
+.favc-series {
+  max-width: 100%;
+  overflow: hidden;
+  color: var(--color-muted);
+  font-size: var(--text-xs);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.favc-empty {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-sm);
+  margin: 0;
+  color: var(--color-muted);
+}
+.favc-pager {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-md);
+}
+.favc-pager[hidden] {
+  display: none;
+}
+.favc-pager .btn {
+  min-width: 40px;
+  font-size: 1.1rem;
+}
+.favc-page {
+  min-width: 4.5em;
+  color: var(--color-muted);
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+@media (max-width: 40rem) {
+  .favc-grid {
+    grid-template-columns: repeat(auto-fill, minmax(92px, 1fr));
+  }
+  .favc[data-paged="true"] .favc-grid {
+    min-height: calc(4 * (92px * 702 / 480 + 1.6em + 10px));
+  }
+}

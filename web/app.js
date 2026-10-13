@@ -30,6 +30,7 @@ import { compareThumb } from "./compare.js";
 import { watchGone, sweepGone } from "./gone.js";
 import { relationsOf } from "./fuse-bed.js";
 import { drawWithSeed, effectiveHeats, withEffectiveHeats } from "./draw-with-seed.js";
+import { favChars, withFavChars, paintFavChar, paintFavChars, favCharsButton, openFavChars } from "./fav-chars.js";
 import { ratingBlocked, RATING_LABEL } from "./rules/rating.js";
 import { searchMiss } from "./lib-hint.js";
 import { HEATS, toggleHeat } from "./heats.js";
@@ -840,6 +841,7 @@ function libCard(card) {
   const node = cardNode(card, assets);
   paintState(node, card.tag);
   if (hand?.has(card.tag)) node.dataset.inHand = "true";
+  if (card.suit === "chara") paintFavChar(node, card.tag);
   node.addEventListener("click", () => {
     if (hand?.editing) return void hand.toggle(card.tag, node.getBoundingClientRect());
     // 廢字簍開著：點一下丟進去，再點一次撿回來（可以一直點，不用開關）。
@@ -1593,6 +1595,27 @@ function renderRules() {
   const chara = switchBox("抽角色", settings.drawCharacter, (v) => setSettings({ drawCharacter: v }), "只替「人物」選中的性別抽角色，一張最多三個；手動釘的角色照留");
   const sameSeries = switchBox("只抽同系列", settings.characterSameSeries, (v) => setSettings({ characterSameSeries: v }), "抽的角色都跟釘的角色同一部作品；沒釘就先挑一部人數、性別湊得齊的");
   const series = switchBox("加入系列名", settings.characterSeries, (v) => setSettings({ characterSeries: v }), "角色後面接作品名（例：yor briar, spy x family）；釘的角色也一樣");
+  // 只抽偏好角色：名單是空的就先打開名單去挑（開關彈回去）；開了它、「抽角色」還關著就一起打開。
+  const favOnly = switchBox(
+    "只抽偏好角色",
+    settings.characterFavOnly && favChars.size > 0,
+    (v) => {
+      if (v && !favChars.size) {
+        favOnlyInput.checked = false;
+        toast("先挑幾個偏好角色");
+        manageFavChars(favBtn, "add");
+        return;
+      }
+      setSettings(v && !settings.drawCharacter ? { characterFavOnly: true, drawCharacter: true } : { characterFavOnly: v });
+      if (v && !chara.querySelector("input").checked) {
+        chara.querySelector("input").checked = true;
+        toast("「抽角色」也一起打開了");
+      }
+    },
+    "抽角色時只從你的偏好角色裡抽；名單裡沒有那個性別的角色，那個人就照舊是一般人物"
+  );
+  const favOnlyInput = favOnly.querySelector("input");
+  const favBtn = favCharsButton((btn) => manageFavChars(btn));
   const eraOnly = switchBox("字盒只看這個時代", ui.eraOnly, (v) => {
     ui.eraOnly = v;
     saveUi();
@@ -1621,7 +1644,7 @@ function renderRules() {
         el("div", { class: "rule-row" }, el("span", { class: "rule-label" }, "每段抽幾個"), counts),
         picker.node,
         el("div", { class: "rule-row" }, rulePair("場景", sceneSel), job, eraOnly),
-        el("div", { class: "rule-row" }, rulePair("角色", el("span", { class: "rule-pair" }, chara, sameSeries, series)))
+        el("div", { class: "rule-row" }, rulePair("角色", el("span", { class: "rule-pair" }, chara, favOnly, sameSeries, series, favBtn)))
       )
     )
   );
@@ -1659,6 +1682,17 @@ function stepper(label, value, min, max, onChange) {
   sync();
   return el("span", { class: "stepper" }, el("span", { class: "stepper-label" }, label), minus, out, plus);
 }
+
+/** 偏好角色的名單彈窗（fav-chars.js）。關掉時規則重畫：名單空了「只抽偏好角色」要跟著關。 */
+function manageFavChars(from, tab) {
+  openFavChars({ cards: lib.cards, assets, tab, onClose: () => renderRules() });
+}
+
+// 名單一變（這一頁、或另一個分頁）：字盒的愛心跟著換；名單清空了「只抽偏好角色」也沒意義，關掉。
+favChars.onChange((list) => {
+  paintFavChars($("lib-grid"));
+  if (!list.length && settings?.characterFavOnly) setSettings({ characterFavOnly: false });
+});
 
 function switchBox(label, on, onChange, hint) {
   const input = el("input", { type: "checkbox", role: "switch" });
@@ -1972,7 +2006,7 @@ async function drawBatchNow(gen, intent, epoch) {
       for (const t of identityBans(lex, first)) if (!pins.has(t)) banned.add(t);
     }
     const seed = randomSeed();
-    const drawn = drawWithSeed(lex, withEffectiveHeats(intent.settings), pins, banned, seed, { trace: true });
+    const drawn = drawWithSeed(lex, withFavChars(withEffectiveHeats(intent.settings)), pins, banned, seed, { trace: true });
     if (drawn.positive && String(drawn.positive).trim()) {
       if (!first) first = drawn.positive;
       // 抽牌種子每張隨機；固定的生圖種子跟這輪其他設定一起保存。
@@ -2757,6 +2791,20 @@ function showCard(tag, from) {
     ),
     {
       foot: [
+        card.suit === "chara" && !banned
+          ? el(
+              "button",
+              {
+                class: "btn btn-ghost",
+                type: "button",
+                onclick: () => {
+                  sheet.close();
+                  toast(favChars.toggle(tag) ? `「${card.zh}」加進偏好角色` : `「${card.zh}」拿出偏好角色`);
+                },
+              },
+              favChars.has(tag) ? "♥ 從偏好角色拿掉" : "♥ 加入偏好角色"
+            )
+          : null,
         hand && !banned
           ? el(
               "button",

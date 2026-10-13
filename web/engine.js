@@ -6583,7 +6583,11 @@ export function drawOne(lex, settings, pinned, userBanned, rand, seed, opts) {
     };
     let room = CHARACTER_MAX - have.length;
     const all = (lex.byGroup && lex.byGroup.get("subject:character")) || [];
-    const usable = (it) => !userBanned.has(it.tag) && allow(it);
+    // 只抽偏好角色：池子只剩名單裡的。名單裡沒有這個性別的角色時，那個人就照舊是一般人物（不跨出名單補）。
+    const favs = settings.characterFavOnly && Array.isArray(settings.characterFavorites) && settings.characterFavorites.length
+      ? new Set(settings.characterFavorites)
+      : null;
+    const usable = (it) => !userBanned.has(it.tag) && allow(it) && (!favs || favs.has(it.tag));
     // 只抽同系列：抽的角色都跟釘的同一部作品；沒釘角色就先挑一部「人數、性別湊得齊」的作品。
     // 那部作品這個性別的角色不夠，剩下的人就照舊是一般人物，不跨作品補。
     let only = null;
@@ -8319,6 +8323,8 @@ export function defaultSettings(data) {
     drawCharacter: false,
     characterSeries: false,
     characterSameSeries: false,
+    // 只抽偏好角色：抽角色時只從使用者的偏好角色名單（characterFavorites，抽牌時由網頁帶進來）裡抽。
+    characterFavOnly: false,
     rating: "explicit",
     pinSportActivity: false,
     lockScene: true,
@@ -8368,6 +8374,11 @@ export function sanitizeSettings(raw, data) {
     drawCharacter: raw.drawCharacter === true,
     characterSeries: raw.characterSeries === true,
     characterSameSeries: raw.characterSameSeries === true,
+    characterFavOnly: raw.characterFavOnly === true,
+    // 名單本身不存在設定裡（網頁另外存，抽牌時才帶進來）；有帶就照收，只收字串、最多 5000 個。
+    ...(Array.isArray(raw.characterFavorites)
+      ? { characterFavorites: [...new Set(raw.characterFavorites.filter((t) => typeof t === "string"))].slice(0, 5000) }
+      : {}),
     // 舊存檔存的是布林 sfw，沿用時對應到全年齡。
     rating: RATINGS.includes(raw.rating)
       ? raw.rating

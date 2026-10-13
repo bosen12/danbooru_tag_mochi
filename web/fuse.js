@@ -27,6 +27,7 @@ import {
   stepSkeleton,
 } from "./engine.js";
 import { drawWithSeed, effectiveHeats, withEffectiveHeats } from "./draw-with-seed.js";
+import { favChars, withFavChars, paintFavChar, paintFavChars } from "./fav-chars.js";
 import { skeletonPicker } from "./skeleton-picker.js";
 import { compareThumb } from "./compare.js";
 import { ratingBlocked, RATING_LABEL } from "./rules/rating.js";
@@ -283,6 +284,8 @@ async function boot() {
   if (waiting.length) toast(`接著印剛才排著的 ${waiting.length} 張`);
   for (const p of prints) if (p.status === "done" && p.hiresJob) hiresRun.resume(p, p.hiresJob);
   attachPeek($("case-grid"), ".card[data-tag]", peekInfo);
+  // 偏好角色的名單一變（墨池那邊加的、另一個分頁改的）：卡盒的愛心跟著換。
+  favChars.onChange(() => paintFavChars($("case-grid")));
   sizeCards($("case-grid"));
   // 生圖種子一換，同一張試印對應的成品就不一樣了：成品、付印那條、試印上的小圖都要重畫。
   onSeedChange(() => {
@@ -329,7 +332,7 @@ function retrial(start = 0, end = seeds.length) {
   const batch = [];
   for (let i = start; i < end && i < seeds.length; i++) {
     const seed = seeds[i];
-    const d = drawWithSeed(lex, withEffectiveHeats(settings), pins, banned, seed);
+    const d = drawWithSeed(lex, withFavChars(withEffectiveHeats(settings)), pins, banned, seed);
     const inPos = new Set(String(d.positive || "").split(",").map((x) => x.trim()));
     const extra = [];
     for (const sec of SECTION_ORDER) {
@@ -3441,6 +3444,7 @@ function moreCase() {
       else toggle(card.tag, node);
     });
     if (hand?.has(card.tag)) node.dataset.inHand = "true";
+    if (card.suit === "chara") paintFavChar(node, card.tag);
     drag.attach(node, { tag: card.tag, from: "case" });
     return node;
   });
