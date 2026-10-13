@@ -221,12 +221,13 @@ def _download_parallel(dest: Path) -> None:
     done = threading.Event()
 
     def report() -> None:
-        t0 = time.time()
+        # 速度從第一次量到的那一刻算起（之前已經抓好的、上次接著抓的不算）；以前分母多算了開頭那三秒。
+        t0 = None
         base = None
         while not done.wait(3):
             got = sum(progress)
             if base is None:
-                base = got
+                base, t0 = got, time.time()
             speed = (got - base) / max(0.1, time.time() - t0) / 1e6
             print(f"  {got * 100 // SIZE:3d}%  {got / 1e6:5.1f}/{SIZE / 1e6:.1f} MB  {speed:.2f} MB/s", flush=True)
 

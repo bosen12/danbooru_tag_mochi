@@ -66,7 +66,8 @@ function render(snap) {
   if (sig === box.dataset.sig) return;
   box.dataset.sig = sig;
   const done = shown.filter((it) => it.state === "done" || it.state === "skip").length;
-  box.querySelector(".setup-title").textContent = snap.active ? `第一次使用：準備中 ${done}/${shown.length}` : "準備好了";
+  // 伺服器剛開、每一步都還沒動（全是 idle）：不寫「0/0」。
+  box.querySelector(".setup-title").textContent = !snap.active ? "準備好了" : shown.length ? `第一次使用：準備中 ${done}/${shown.length}` : "第一次使用：準備中…";
   box.dataset.collapsed = collapsed ? "true" : "false";
   list.replaceChildren(...shown.map(row));
   const acts = [];

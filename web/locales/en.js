@@ -915,6 +915,7 @@ Hires 放大模型|Hires upscale model
 重開 ComfyUI|Restart ComfyUI
 重新整理看新圖|Reload for new art
 第一次使用的準備|First-time setup
+第一次使用：準備中…|First-time setup…
 ComfyUI 重開中，大約半分鐘|ComfyUI is restarting. This takes about half a minute.
 已載入|Loaded
 下載失敗|Download failed
@@ -1575,6 +1576,8 @@ ComfyUI 畫的 PNG 或 API JSON，拖進來或點這裡選檔|Drop a ComfyUI PNG
 ComfyUI 網址（點一下修改）|ComfyUI URL (click to change)
 ComfyUI 連不上 {0}：先開 ComfyUI；位址不對就點頂欄的 Comfy 燈號改|Cannot reach ComfyUI at {0!}. Start ComfyUI, or click the Comfy indicator in the top bar to change the URL.
 下載中 {0}%（{1}）|Downloading {0}% ({1!})
+下載中 {0}%（{1}，還要約 {2} 分鐘）|Downloading {0}% ({1!}, about {2} min left)
+下載中 {0}%（{1}，快好了）|Downloading {0}% ({1!}, almost done)
 烘焙中 {0}/{1}|Baking {0}/{1}
 下載 {0}…|Downloading {0!}…
 安裝 {0} 的 Python 套件…|Installing Python packages for {0!}…

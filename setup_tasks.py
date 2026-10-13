@@ -98,8 +98,22 @@ _PROGRESS = [
 ]
 
 
+# 下載進度帶著速度（卡面包的 "45%  57.2/133.0 MB  0.25 MB/s"）：順便說還要多久。
+# GitHub Release 到台灣常常只有每秒零點幾 MB，133 MB 要等快十分鐘；只看百分比不知道要等多久。
+_SPEED = re.compile(r"^(\d+)%\s+([\d.]+)/([\d.]+) MB\s+([\d.]+) MB/s")
+
+
 def progress_text(line: str) -> str:
     """腳本印的是給終端機看的英文；畫面上只換成中文進度（英文版再由 en.js 翻）。認不得的行回空字串。"""
+    m = _SPEED.search(line)
+    if m:
+        pct, got, total, speed = m.group(1), float(m.group(2)), float(m.group(3)), float(m.group(4))
+        size = f"{m.group(2)}/{m.group(3)} MB"
+        if speed >= 0.01 and total > got:
+            secs = (total - got) / speed
+            if secs >= 60:
+                return f"下載中 {pct}%（{size}，還要約 {max(1, round(secs / 60))} 分鐘）"
+            return f"下載中 {pct}%（{size}，快好了）"
     for pat, text in _PROGRESS:
         m = pat.search(line)
         if m:

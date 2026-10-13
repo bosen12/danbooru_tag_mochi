@@ -6049,6 +6049,10 @@ html[data-setup] .tour-offer {
   .setup-panel[data-collapsed="true"] {
     width: auto;
   }
+  /* 面板在的時候頁面往下讓一格：收起來那一顆不再蓋住標誌和「墨池／疊印台」頁籤（第一次用的人點不到）。 */
+  html[data-setup] body {
+    padding-top: calc(76px + env(safe-area-inset-top));
+  }
 }
 @media (prefers-reduced-motion: reduce) {
   .setup-item[data-state="run"] .setup-icon {
