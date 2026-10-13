@@ -209,6 +209,8 @@ export function toast(text, { action = null, ms = action ? 5200 : 2600 } = {}) {
   const t = document.getElementById("toast");
   if (!t) return;
   wireToast(t);
+  // 上一則還掛著就換下一則（複製完馬上撤下一張）：字和寬度不要一格就換掉，蓋一下章表示是新的一則。
+  const replacing = t.dataset.show === "true";
   t.replaceChildren(document.createTextNode(text));
   toastNow = action;
   if (action) {
@@ -237,6 +239,9 @@ export function toast(text, { action = null, ms = action ? 5200 : 2600 } = {}) {
   t.dataset.action = action ? "true" : "false";
   t.dataset.paused = "false";
   t.dataset.show = "true";
+  if (replacing && !reducedMotion()) {
+    t.animate([{ scale: 0.96, opacity: 0.4 }, { scale: 1, opacity: 1 }], { duration: DUR.short, easing: css(CURVE.out) });
+  }
   clearTimeout(toastTimer);
   toastDeadline = Date.now() + ms;
   toastTimer = setTimeout(hideToast, ms);

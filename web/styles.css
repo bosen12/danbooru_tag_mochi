@@ -424,6 +424,20 @@ body #wf-pick-btn.has {
   margin-left: var(--space-xs);
 }
 
+/* 分級（全年齡／敏感／色情）的三顆鈕是腳本畫的：HTML 裡那一格是空的、只有 6px 高。
+   先把畫好之後的大小留出來，開頁時底下整頁才不會在一兩百毫秒後被往下推 30px（手機最明顯）。 */
+#rating.segmented:empty {
+  min-width: 176px;
+  min-height: 38px;
+}
+
+@media (max-width: 34rem) {
+  #rating.segmented:empty {
+    min-width: 126px;
+    min-height: 36px;
+  }
+}
+
 /* 頂欄的分頁和小連結（介紹影片、教學、導覽）、種子的「隨機／固定」：滑過的顏色淡一下，
    按下去沉一點，跟其他按鈕同一種手感；它們是字或膠囊，不壓內陰影。 */
 .page-switch a,
@@ -5004,6 +5018,21 @@ body {
     overflow: visible;
     clip-path: none;
     color: var(--color-accent);
+  }
+}
+
+/* ---------- 開版進場之前：要演的那幾塊先藏著（各頁 <head> 掛 html[data-entering]，motion.js playPageEntrance 拿掉） ----------
+ * 選擇器跟 playPageEntrance 的 groups 同一份（頂欄除外）。換版（data-vt*）、減少動態不藏，那兩條路本來就不演。 */
+@media (prefers-reduced-motion: no-preference) {
+  html[data-entering]:not([data-vt], [data-vt-in], [data-vt-played]) :is(
+    .library .panel-head, .case-head, .lib-search, #case-q, .suit-tabs, .case-tabs,
+    .plate-head, .pool-well, .register, .rules, .trials-head, .preview,
+    .go-bar, .trials, .print-bar, .wall-head, .wall-empty, .line-title, .line-empty,
+    .book-head, .book-bar, .album-head,
+    .lib-grid > .card, .case-grid > .card, .book-grid > .book-cell
+  ) {
+    /* 用 visibility 不用 opacity：空狀態、發牌自己有淡入的 CSS 動畫，動畫會蓋過 opacity，藏不住。 */
+    visibility: hidden;
   }
 }
 

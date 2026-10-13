@@ -2140,12 +2140,27 @@ function shotNode(shot, deal) {
       };
       return;
     }
+    const wasHidden = cards.hidden;
     cards.hidden = !now;
     toggle.setAttribute("aria-expanded", now ? "true" : "false");
     if (now) {
       if (!dealtOnce) {
         dealtOnce = true;
         replayDeal(cards);
+      } else if (!matchMedia("(prefers-reduced-motion: reduce)").matches) {
+        // 再攤開一次：跟收起對稱，從上面一點落下來、淡進來（第一次攤開才一張張發牌）。
+        // 收起還沒演完就又按：把收起倒著播回去，從那一刻的樣子回來，不是先閃回全開。
+        const running = cards.getAnimations();
+        if (running.length) running.forEach((a) => a.reverse());
+        else if (wasHidden) {
+          cards.animate(
+            [
+              { opacity: 0, transform: "translateY(-8px)" },
+              { opacity: 1, transform: "none" },
+            ],
+            { duration: DUR.short, easing: css(CURVE.out) }
+          );
+        }
       }
     }
   };

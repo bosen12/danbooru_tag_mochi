@@ -326,11 +326,15 @@ let pageEntered = false;
 export function playPageEntrance() {
   if (pageEntered) return;
   pageEntered = true;
+  const root = document.documentElement;
+  // <head> 先把要演的幾塊藏著（html[data-entering]）；演不了或不演時要記得露出來。
+  const unveil = () => delete root.dataset.entering;
   const media = matchMedia("(prefers-reduced-motion: reduce)");
   const skip = () => media.matches || document.hidden || window.scrollY > 24 ||
     performance.getEntriesByType("navigation")[0]?.type === "back_forward" ||
-    document.documentElement.dataset.vt || document.documentElement.dataset.vtIn || document.documentElement.dataset.vtPlayed;
-  if (skip()) return;
+    "enterLate" in root.dataset ||
+    root.dataset.vt || root.dataset.vtIn || root.dataset.vtPlayed;
+  if (skip()) return unveil();
 
   let frame = 0;
   let stopped = false;
@@ -340,6 +344,7 @@ export function playPageEntrance() {
   const stop = () => {
     if (stopped) return;
     stopped = true;
+    unveil();
     cancelAnimationFrame(frame);
     for (const animation of animations) animation.cancel();
     animations.clear();
@@ -354,9 +359,12 @@ export function playPageEntrance() {
   media.addEventListener?.("change", preference);
 
   frame = requestAnimationFrame(() => {
-    if (stopped || skip()) return stop();
+    if (stopped || skip()) {
+      unveil();
+      return stop();
+    }
+    // 頂欄不演：它從第一個畫面就在（開機的掃光掛在它底下），演了反而會先消失再浮上來。
     const groups = [
-      [".mast", 0, 6],
       [".library .panel-head, .case-head", 40, 8],
       [".lib-search, #case-q", 65, 8],
       [".suit-tabs, .case-tabs", 85, 8],
@@ -402,6 +410,8 @@ export function playPageEntrance() {
       };
       animation.finished.then(release, release);
     }
+    // 動畫都已經從透明那一格開始（fill: both），這時拿掉遮罩不會閃。
+    unveil();
     if (!animations.size) stop();
   });
 }
@@ -787,11 +797,11 @@ export function leave(node, done, { duration = DUR.short } = {}) {
  * 一整塊內容換成另一組（換花色後的分類籤）：淡進來、落一點點，跟底下發牌同一拍。
  * key 沒變（點分類籤、打字搜尋時整排重畫）就不演，免得每按一下整排閃一次。第一次畫也不演（開頁有自己的進場）。
  */
-export function swapIn(node, key) {
+export function swapIn(node, key, { firstToo = false } = {}) {
   if (!node || node.dataset.swapKey === key) return;
   const first = node.dataset.swapKey === undefined;
   node.dataset.swapKey = key;
-  if (first || node.hidden || reducedMotion()) return;
+  if ((first && !firstToo) || node.hidden || reducedMotion()) return;
   node.animate(
     [{ opacity: 0, transform: "translateY(-4px)" }, { opacity: 1, transform: "none" }],
     { duration: DUR.short, easing: css(CURVE.out) }

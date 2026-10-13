@@ -3054,3 +3054,12 @@ body.fuse {
     visibility: hidden;
   }
 }
+
+/* 手機：疊印台的工具列一定放不進分級那一排（多一顆「規則」），最後總是自己一排。
+   一開始就讓它自己一排：LoRA、設定、工作流、Discord 是腳本晚兩三百毫秒才插進來的，
+   等它們把這排擠到下一行，整頁會往下跳 46px 再彈回來（實測開頁的版面位移 0.6）。 */
+@media (max-width: 34rem) {
+  body.fuse .mast-tools {
+    flex-basis: 100%;
+  }
+}

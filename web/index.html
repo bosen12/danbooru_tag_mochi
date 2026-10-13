@@ -12,6 +12,17 @@
       // 開機做完 settleMotion() 拿掉；讀不到詞庫的話 15 秒後自己收，不會一直轉。
       document.documentElement.dataset.booting = "";
       setTimeout(() => delete document.documentElement.dataset.booting, 15000);
+      // 直接開啟／重新整理：開版進場（motion.js playPageEntrance）要演的那幾塊，第一次畫面就先藏著（styles.css 的
+      // html[data-entering]）。不藏的話骨架先露一兩百毫秒，進場時又整塊消失再浮上來，像閃了一下。
+      // 頂欄不藏：開機的掃光在它底下。詞庫讀得慢、600ms 內進場還沒開始，就直接露出來、不演了。
+      if (performance.getEntriesByType("navigation")[0]?.type !== "back_forward") {
+        document.documentElement.dataset.entering = "";
+        setTimeout(() => {
+          if (!("entering" in document.documentElement.dataset)) return;
+          delete document.documentElement.dataset.entering;
+          document.documentElement.dataset.enterLate = "";
+        }, 600);
+      }
       addEventListener("pagereveal", (e) => {
         const vt = e.viewTransition;
         if (!vt) return;

@@ -15,7 +15,7 @@ import { el, openSheet, toast } from "./ui.js";
 import { mountKeysHelp } from "./keys-help.js";
 import { mountTour } from "./tour.js";
 import { mountGenStatus } from "./gen-status.js";
-import { initMotion, settleMotion, seat, refuse, enter, leave, reducedMotion, CURVE, DUR, css } from "./motion.js";
+import { initMotion, settleMotion, seat, refuse, enter, leave, reducedMotion, swapIn, CURVE, DUR, css } from "./motion.js";
 import { watchLink, LINK_LABEL } from "./gen.js";
 import { getSfx } from "./sfx.js";
 import * as S from "./store.js";
@@ -308,9 +308,13 @@ function renderTabs() {
   $("album-q").placeholder = PLACEHOLDER[tab];
 }
 
+// 第幾次換分頁：換過來的那一頁（和它上面那排篩選）淡進來一次，之後同一頁重畫不再演。
+let tabTurn = 0;
+
 async function pickTab(v) {
   if (tab === v) return;
   tab = v;
+  tabTurn += 1;
   // 換分頁記在網址上：重新整理、上一頁回來還是這一頁（不推新的歷史，免得上一頁要按好幾次）。
   const u = new URL(location.href);
   if (tab === "works") u.searchParams.delete("tab");
@@ -318,6 +322,8 @@ async function pickTab(v) {
   history.replaceState(null, "", u.pathname + u.search + u.hash);
   renderTabs();
   seat($("album-tabs").querySelector('[aria-checked="true"]'));
+  const turn = `${tab}:${tabTurn}`;
+  for (const row of [$("log-filters"), $("works-group")]) if (row && !row.hidden) swapIn(row, turn, { firstToo: true });
   if (tab === "log" && !log.loaded) {
     render();
     await log.load();
@@ -341,6 +347,7 @@ function render({ deal = false } = {}) {
   grid.hidden = tab !== "works";
   logBox.hidden = tab !== "log";
   modelBox.hidden = tab !== "models";
+  if (tabTurn) swapIn({ works: grid, log: logBox, models: modelBox }[tab], `${tab}:${tabTurn}`, { firstToo: true });
   if (tab === "models") {
     $("album-hint").hidden = true;
     const r = models.render(modelBox, { query, rating }, { deal });
@@ -383,6 +390,10 @@ function render({ deal = false } = {}) {
       });
   grid.replaceChildren(...(tiles.length || !works.length ? parts : [el("p", { class: "album-empty" }, query ? `找不到「${query}」` : `這一級分級看不到任何作品`)]));
   if (deal && !reducedMotion()) {
+    // 分段的標題（江戶 3 件…）跟著發牌一起淡進來，不是先整排印好、作品才落下。
+    for (const h of grid.querySelectorAll(":scope > .album-group > .log-day-head")) {
+      h.animate([{ opacity: 0, transform: "translateY(-4px)" }, { opacity: 1, transform: "none" }], { duration: DUR.short, easing: css(CURVE.out), fill: "backwards" });
+    }
     tiles.slice(0, 12).forEach((t, i) =>
       t.animate([{ opacity: 0, transform: "translateY(14px)" }, { opacity: 1, transform: "none" }], {
         duration: DUR.long,
