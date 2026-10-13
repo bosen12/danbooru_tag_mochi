@@ -1396,6 +1396,13 @@ try:
 finally:
     _srv_h.face_missed = _saved_missed
 ok("face workflow previews the refined crops (to tell 'no face found')", server.build_face_workflow("x", 1, "a.png", {}, "bbox/face_yolov8m.pt")[_srv_h.FACE_CROPS_NODE]["inputs"]["images"] == ["60", 1])
+ok("SAM: prefer vit_b, then l, then h; none -> empty", _srv_h.pick_sam(["sam_vit_h_4b8939.pth", "sam_vit_b_01ec64.pth"]) == "sam_vit_b_01ec64.pth"
+   and _srv_h.pick_sam(["sam_vit_l_0b3195.pth"]) == "sam_vit_l_0b3195.pth" and _srv_h.pick_sam([]) == "")
+_wf_sam = server.build_face_workflow("x", 1, "a.png", {"sam_dilation": ["INT", {"default": 0}]}, "bbox/face_yolov8m.pt", sam="sam_vit_b_01ec64.pth")
+_wf_nosam = server.build_face_workflow("x", 1, "a.png", {"sam_dilation": ["INT", {"default": 0}]}, "bbox/face_yolov8m.pt")
+ok("SAM wired in with a dilated mask when ComfyUI has one",
+   _wf_sam["56"]["class_type"] == "SAMLoader" and _wf_sam["60"]["inputs"]["sam_model_opt"] == ["56", 0] and _wf_sam["60"]["inputs"]["sam_dilation"] == _srv_h.SAM_DILATION)
+ok("no SAM model: the face fix still works on the whole box", "56" not in _wf_nosam and "sam_model_opt" not in _wf_nosam["60"]["inputs"] and _wf_nosam["60"]["inputs"]["sam_dilation"] == 0)
 ok("face status when ComfyUI is down", server.face_status(_down)["ready"] is False and "ComfyUI" in server.face_status(_down)["why"])
 _saved_base, _saved_root = server.comfy_base, server.ROOT
 _hint_root = Path(tempfile.mkdtemp())

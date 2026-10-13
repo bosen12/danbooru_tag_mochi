@@ -1590,8 +1590,25 @@ def pick_face_detector(names: list[str]) -> str:
     raise HiresError("ComfyUI 沒有臉部偵測模型（models/ultralytics/bbox 底下的 face_yolov8*.pt）")
 
 
+# SAM：在偵測框裡再切出「臉的形狀」，只重畫臉。沒有它重畫的是整個框（往外擴 10 px），框裡的瀏海、髮飾、
+# 耳環也被輕輕重畫一遍、形狀會跑（2026-10-14 實測：瀏海＋髮飾的圖，改到的像素少了三分之二）。
+# 遮罩外擴 16 px：SAM 切動漫臉偏保守，不擴的話小臉的眼睛周圍會漏修。ComfyUI 有 SAM 模型才用，沒有照舊。
+SAM_PREF = ("sam_vit_b", "sam_vit_l", "sam_vit_h")  # b 最小最快，l／h 對動漫臉沒明顯更好
+SAM_DILATION = 16
+
+
+def pick_sam(names) -> str:
+    pool = [str(n) for n in names or [] if str(n).strip()]
+    for want in SAM_PREF:
+        for name in pool:
+            if want in name.lower():
+                return name
+    return ""
+
+
 def face_status(fetch=None) -> dict:
-    """修臉做不做得了：兩個節點都載入了、而且有臉部偵測模型。回 {ready, missing, detector, why}。"""
+    """修臉做不做得了：兩個節點都載入了、而且有臉部偵測模型。回 {ready, missing, detector, sam, why}。
+    sam 是要用的 SAM 模型（沒有就空字串：修臉照做，只是重畫整個偵測框）。"""
     fetch = fetch or (lambda path: api("GET", path, timeout=8))
     try:
         fd = fetch(f"/object_info/{FACE_NODE}")
@@ -1610,7 +1627,13 @@ def face_status(fetch=None) -> dict:
     else:
         missing.append("Impact Subpack 的臉部偵測節點")
     why = "" if not missing else "缺 " + "、".join(missing) + "：" + face_fix_hint()
-    return {"ready": not missing, "missing": missing, "detector": detector, "why": why}
+    sam = ""
+    if not missing:
+        try:
+            sam = pick_sam(workflows.combo_list(fetch("/object_info/SAMLoader"), "SAMLoader", "model_name"))
+        except Exception:
+            sam = ""
+    return {"ready": not missing, "missing": missing, "detector": detector, "sam": sam, "why": why}
 
 
 def face_fix_hint() -> str:
@@ -1697,8 +1720,9 @@ def build_face_workflow(
     rating=None,
     sfw: bool = False,
     sampling: dict | None = None,
+    sam: str = "",
 ) -> dict:
-    """內建修臉圖：原圖 → FaceDetailer（同一個底模、提示詞、LoRA）→ 存檔。"""
+    """內建修臉圖：原圖 → FaceDetailer（同一個底模、提示詞、LoRA）→ 存檔。sam 給了就只重畫臉的形狀。"""
     ckpt_name = resolve_ckpt(ckpt)
     steps, cfg_v, denoise = hires_sampler("face", sampling)
     negative = negative_for(rating if rating is not None else sfw)
@@ -1719,7 +1743,12 @@ def build_face_workflow(
         "bbox_detector": ["55", 0],
     }
     values = {**FACE_WIDGETS, "seed": int(seed), "steps": steps, "cfg": cfg_v, "denoise": denoise}
+    if sam:
+        values["sam_dilation"] = SAM_DILATION
     wf["60"] = {"class_type": FACE_NODE, "inputs": face_inputs(face_spec, links, values)}
+    if sam:
+        wf["56"] = {"class_type": "SAMLoader", "inputs": {"model_name": sam, "device_mode": "AUTO"}}
+        wf["60"]["inputs"]["sam_model_opt"] = ["56", 0]
     wf["62"] = {
         "class_type": "SaveImage",
         "inputs": {"filename_prefix": "danbooru_case/face", "images": ["60", 0]},
@@ -1991,6 +2020,7 @@ def prepare_face(payload: dict, spec: dict, raw: bytes, width: int, height: int,
         payload.get("rating"),
         sfw=bool(payload.get("sfw")),
         sampling=spec.get("sampling"),
+        sam=status.get("sam") or "",
     )
     meta = {
         "kind": "hires",
