@@ -26,7 +26,7 @@ import {
   ERA_LABELS,
   stepSkeleton,
 } from "./engine.js";
-import { drawWithSeed } from "./draw-with-seed.js";
+import { drawWithSeed, effectiveHeats, withEffectiveHeats } from "./draw-with-seed.js";
 import { skeletonPicker } from "./skeleton-picker.js";
 import { compareThumb } from "./compare.js";
 import { ratingBlocked, RATING_LABEL } from "./rules/rating.js";
@@ -329,7 +329,7 @@ function retrial(start = 0, end = seeds.length) {
   const batch = [];
   for (let i = start; i < end && i < seeds.length; i++) {
     const seed = seeds[i];
-    const d = drawWithSeed(lex, settings, pins, banned, seed);
+    const d = drawWithSeed(lex, withEffectiveHeats(settings), pins, banned, seed);
     const inPos = new Set(String(d.positive || "").split(",").map((x) => x.trim()));
     const extra = [];
     for (const sec of SECTION_ORDER) {
@@ -430,7 +430,7 @@ function missReason(tag) {
   const item = lex.byTag.get(tag);
   if (item && ratingBlocked(item, settings.rating)) return `${RATING_LABEL[settings.rating]}抽不到它`;
   if (trials.some((t) => t.eraClash.includes(tag))) return "跟那一張的時代對不上";
-  if (heatMismatches(lex, [tag], settings.heats).length) return "目前勾的情境不收它";
+  if (heatMismatches(lex, [tag], effectiveHeats(settings)).length) return "目前勾的情境不收它";
   return "被同一格或相剋的字擠掉";
 }
 
@@ -3722,14 +3722,14 @@ function openRules() {
         {
           class: "chip-toggle pressable",
           type: "button",
-          "aria-pressed": settings.heats.includes(h) && !blocked ? "true" : "false",
+          "aria-pressed": effectiveHeats(settings).includes(h) && !blocked ? "true" : "false",
           // 不用 disabled：手機點下去要有反應、說得出為什麼（explainBlockedHeat）。
           "aria-disabled": blocked ? "true" : undefined,
           title: blocked ? `${RATING_LABEL[settings.rating]}不會出現${HEAT_ZH[h]}` : undefined,
           onclick: (e) => {
             if (heatBlockedByRating(h, settings.rating)) return explainBlockedHeat(h, e.currentTarget, settings.rating);
-            setSettings({ heats: toggleHeat(settings.heats, h) });
-            e.currentTarget.setAttribute("aria-pressed", settings.heats.includes(h) ? "true" : "false");
+            setSettings({ heats: toggleHeat(effectiveHeats(settings), h) });
+            e.currentTarget.setAttribute("aria-pressed", effectiveHeats(settings).includes(h) ? "true" : "false");
           },
         },
         HEAT_ZH[h]

@@ -466,7 +466,8 @@ def blocked_asset(rel: str) -> bool:
         return True
     if "cards" in parts and parts:
         stem = parts[-1].rsplit(".", 1)[0]
-        return stem in _HARD_BANNED
+        # 小縮圖的檔名帶內容雜湊（mini/160/loli-6c172addb9.webp）：連字號前面那段也要擋。
+        return stem in _HARD_BANNED or stem.split("-", 1)[0] in _HARD_BANNED
     return False
 
 

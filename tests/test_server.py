@@ -1352,9 +1352,9 @@ try:
     ok("genlog paging: same-millisecond entries across a page break are not skipped", sorted(_seen) == ["a", "b", "c", "z"] and len(_seen) == 4, str(_seen))
 finally:
     _gl_page._load = _saved_load
-_blocked = {r: _srv_h.blocked_asset(r) for r in ("cards/loli.webp", "cards/thumb/shota.webp", "cards/mini/LOLI.webp", "cards/_hard_banned/a.webp", "cards\\shota.webp", "cards/lolita_fashion.webp", "cards/smile.webp", "engine.js")}
+_blocked = {r: _srv_h.blocked_asset(r) for r in ("cards/loli.webp", "cards/thumb/shota.webp", "cards/mini/LOLI.webp", "cards/mini/160/shota-243bdc4095.webp", "cards/_hard_banned/a.webp", "cards\\shota.webp", "cards/lolita_fashion.webp", "cards/smile.webp", "engine.js")}
 ok("banned card art is never served (loli/shota, _hard_banned), lolita fashion still is",
-   all(_blocked[r] for r in list(_blocked)[:5]) and not any(_blocked[r] for r in list(_blocked)[5:]), str(_blocked))
+   all(_blocked[r] for r in list(_blocked)[:6]) and not any(_blocked[r] for r in list(_blocked)[6:]), str(_blocked))
 ok("static_path refuses banned card art even if the file exists", _srv_h.static_path("cards/loli.webp") is None and _srv_h.static_path("cards/_hard_banned/loli.webp") is None)
 _slim = json.loads(_srv_h.slim_card_manifest(json.dumps({"loli": {"v": "a"}, "shota": {"v": "b"}, "lolita fashion": {"v": "c"}, "smile": {"v": "d", "prompt": "x"}}).encode()))
 ok("served card manifest drops banned entries, keeps the rest", sorted(_slim) == ["lolita fashion", "smile"], str(_slim))

@@ -29,7 +29,7 @@ import { skeletonPicker } from "./skeleton-picker.js";
 import { compareThumb } from "./compare.js";
 import { watchGone, sweepGone } from "./gone.js";
 import { relationsOf } from "./fuse-bed.js";
-import { drawWithSeed } from "./draw-with-seed.js";
+import { drawWithSeed, effectiveHeats, withEffectiveHeats } from "./draw-with-seed.js";
 import { ratingBlocked, RATING_LABEL } from "./rules/rating.js";
 import { searchMiss } from "./lib-hint.js";
 import { HEATS, toggleHeat } from "./heats.js";
@@ -1501,7 +1501,7 @@ function renderRules() {
           class: "chip-toggle pressable",
           type: "button",
           dataset: { heat: h },
-          "aria-pressed": settings.heats.includes(h) && !heatBlockedByRating(h, settings.rating) ? "true" : "false",
+          "aria-pressed": effectiveHeats(settings).includes(h) && !heatBlockedByRating(h, settings.rating) ? "true" : "false",
           // 分級擋掉的尺度跟主工具一樣變灰：這一級根本抽不到那種畫面。
           // 不用 disabled：手機沒有滑鼠停留的說明，點下去要有反應、說得出為什麼（explainBlockedHeat）。
           "aria-disabled": heatBlockedByRating(h, settings.rating) ? "true" : undefined,
@@ -1509,7 +1509,7 @@ function renderRules() {
           onclick: (e) => {
             if (heatBlockedByRating(h, settings.rating)) return explainBlockedHeat(h, e.currentTarget, settings.rating);
             const focused = document.activeElement === e.currentTarget;
-            setSettings({ heats: toggleHeat(settings.heats, h) });
+            setSettings({ heats: toggleHeat(effectiveHeats(settings), h) });
             renderRules();
             const selected = $("rules").querySelector(`.chip-toggle[data-heat="${h}"]`);
             if (focused) selected?.focus({ preventScroll: true });
@@ -1972,7 +1972,7 @@ async function drawBatchNow(gen, intent, epoch) {
       for (const t of identityBans(lex, first)) if (!pins.has(t)) banned.add(t);
     }
     const seed = randomSeed();
-    const drawn = drawWithSeed(lex, intent.settings, pins, banned, seed, { trace: true });
+    const drawn = drawWithSeed(lex, withEffectiveHeats(intent.settings), pins, banned, seed, { trace: true });
     if (drawn.positive && String(drawn.positive).trim()) {
       if (!first) first = drawn.positive;
       // 抽牌種子每張隨機；固定的生圖種子跟這輪其他設定一起保存。
