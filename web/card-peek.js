@@ -223,8 +223,12 @@ export function attachPeek(root, selector, getInfo) {
     // 滑鼠只要動一下就接得回來，不必先移出去再移進來。
     const track = (e) => {
       if (e.pointerType && e.pointerType !== "mouse") return;
+      // 滑鼠沒動、是底下的東西換了（關掉詳情、蓋著的面板收起）：瀏覽器補發一次 pointerover 給現在指著的牌。
+      // 那不是「移上去」，不浮放大卡；真的動一下才浮。
+      const still = e.clientX === lastX && e.clientY === lastY;
       lastX = e.clientX;
       lastY = e.clientY;
+      if (still && !current) return;
       const el = e.target.closest(selector);
       if (!el || !root.contains(el)) return;
       if (el === pressedEl) return;
@@ -268,6 +272,9 @@ export function attachPeek(root, selector, getInfo) {
   }
   root.addEventListener("focusin", (e) => {
     const el = e.target.closest(selector);
+    // 關掉這張牌的詳情（Esc）時焦點交回這張牌：剛看完整份詳情，不要馬上又浮一張放大卡蓋在牌上。
+    // 用 Tab 在牌之間走照樣會浮出來。
+    if (e.relatedTarget?.closest?.(".overlay, [role='dialog']")) return;
     if (el && el.matches(":focus-visible")) showPeek(el, getInfo(el));
   });
   root.addEventListener("focusout", (e) => {
