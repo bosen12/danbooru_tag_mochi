@@ -1560,8 +1560,9 @@ FACE_WIDGETS = {
     "guide_size": 768,
     "guide_size_for": True,
     "max_size": 1024,
-    "sampler_name": "euler_ancestral",
-    "scheduler": "normal",
+    # 跟生圖同一個取樣器（config.json 的 comfy.sampler／comfy.scheduler）：改了生圖的，修臉跟著。
+    "sampler_name": SAMPLER,
+    "scheduler": SCHEDULER,
     "feather": 5,
     "noise_mask": True,
     "force_inpaint": True,
@@ -1656,6 +1657,35 @@ def face_inputs(spec: dict, links: dict, values: dict) -> dict:
     return out
 
 
+FACE_CROPS_NODE = "63"
+NO_FACE_TEXT = "沒找到臉（背對鏡頭、側臉太偏或臉太小）：這張沒有修"
+
+
+def face_missed(entry: dict, fetch=None) -> bool:
+    """修臉做完了，但一張臉都沒找到？看 FACE_CROPS_NODE 的預覽：只有一張、而且是 64×64 的空圖。"""
+    fetch = fetch or (lambda q: api("GET", "/view?" + q, timeout=20))
+    images = (((entry or {}).get("outputs") or {}).get(FACE_CROPS_NODE) or {}).get("images") or []
+    if len(images) != 1:
+        return False
+    img = images[0]
+    q = comfy_view_query(img.get("filename"), img.get("subfolder"), img.get("type") or "temp")
+    if not q:
+        return False
+    try:
+        raw = fetch(q)
+        return isinstance(raw, (bytes, bytearray)) and png_size(bytes(raw)) == (64, 64)
+    except Exception:
+        return False
+
+
+def finished_image(entry: dict, save_ids, hires: dict | None) -> str | None:
+    """history 的一筆 → 成品網址；修臉沒找到臉的丟 RuntimeError（網頁那邊顯示「沒找到臉」）。"""
+    image = first_image_src(entry, save_ids)
+    if image and isinstance(hires, dict) and hires.get("mode") == "face" and face_missed(entry):
+        raise RuntimeError(NO_FACE_TEXT)
+    return image
+
+
 def build_face_workflow(
     positive: str,
     seed: int,
@@ -1694,6 +1724,9 @@ def build_face_workflow(
         "class_type": "SaveImage",
         "inputs": {"filename_prefix": "danbooru_case/face", "images": ["60", 0]},
     }
+    # 修到的每張臉（cropped_refined）。一張臉都沒找到時 FaceDetailer 原圖照回、這裡是一張 64×64 的空圖：
+    # 完成時看它（face_missed），不能把沒動過的圖當成「修好臉了」。
+    wf[FACE_CROPS_NODE] = {"class_type": "PreviewImage", "inputs": {"images": ["60", 1]}}
     for lora_name, strength in convert_loras(loras):
         inject_lora(wf, lora_name, strength)
     return wf
@@ -2568,7 +2601,7 @@ def gen_via_ws(width: int, height: int, seed: int, positive: str, wf: dict, hire
                 hist = api("GET", f"/history/{prompt_id}", timeout=8)
             except (OSError, urllib.error.URLError):
                 return None
-            return first_image_src(hist[prompt_id], save_ids) if hist and prompt_id in hist else None
+            return finished_image(hist[prompt_id], save_ids, hires) if hist and prompt_id in hist else None
 
         while time.time() - t0 < GEN_TIMEOUT:
             # 其他工作的廣播可能讓 recv 永遠不逾時；不能只在安靜時查完成紀錄。
@@ -2600,7 +2633,7 @@ def gen_via_ws(width: int, height: int, seed: int, positive: str, wf: dict, hire
             if op == 8:
                 # 對面收線。先撈一次 history —— 圖可能已經存好了，只是收線比 executed 快。
                 hist = api("GET", f"/history/{prompt_id}", timeout=20)
-                image = first_image_src(hist[prompt_id], save_ids) if hist and prompt_id in hist else None
+                image = finished_image(hist[prompt_id], save_ids, hires) if hist and prompt_id in hist else None
                 if image:
                     yield ("done", _job(seed, width, height, positive, image, ckpt, hires))
                     return
@@ -2952,7 +2985,7 @@ def gen_via_poll(width: int, height: int, seed: int, positive: str, wf: dict, hi
             hist = None  # 一下子連不上：下一輪再查
         entry = hist.get(prompt_id) if isinstance(hist, dict) else None
         if isinstance(entry, dict):
-            image = first_image_src(entry, save_ids)
+            image = finished_image(entry, save_ids, hires)
             if image:
                 yield ("done", _job(seed, width, height, positive, image, ckpt, hires))
                 return

@@ -1370,6 +1370,32 @@ try:
     ok("card art: no full, no thumb -> 404 as before; non-card paths never stand in", _srv_h.static_path("cards/none.webp") is None and _srv_h.card_stand_in("engine.js") is None and _srv_h.card_stand_in("cards/thumb/a.webp") is None)
 finally:
     _srv_h.WEB, _srv_h.SHARED = _saved_web
+import struct as _st_nf  # noqa: E402
+import zlib as _zl_nf  # noqa: E402
+
+
+def _png_nf(w, h):
+    ihdr = _st_nf.pack(">IIBBBBB", w, h, 8, 2, 0, 0, 0)
+    chunk = _st_nf.pack(">I", len(ihdr)) + b"IHDR" + ihdr + _st_nf.pack(">I", _zl_nf.crc32(b"IHDR" + ihdr))
+    return b"\x89PNG\r\n\x1a\n" + chunk
+
+
+_nf_entry = lambda n: {"outputs": {"62": {"images": [{"filename": "face_1.png", "subfolder": "danbooru_case", "type": "output"}]},
+                                   _srv_h.FACE_CROPS_NODE: {"images": [{"filename": f"c{i}.png", "subfolder": "", "type": "temp"} for i in range(n)]}}}  # noqa: E731
+ok("face fix: no face found -> the 64x64 empty crop is recognised", _srv_h.face_missed(_nf_entry(1), lambda q: _png_nf(64, 64)))
+ok("face fix: a real crop (or several faces) is not 'missed'", not _srv_h.face_missed(_nf_entry(1), lambda q: _png_nf(768, 1024)) and not _srv_h.face_missed(_nf_entry(2), lambda q: _png_nf(64, 64)))
+_saved_missed = _srv_h.face_missed
+_srv_h.face_missed = lambda entry, fetch=None: True
+try:
+    try:
+        _srv_h.finished_image(_nf_entry(1), {"62"}, {"mode": "face"})
+        ok("face fix: no face -> error with the reason, not a fake 'done'", False)
+    except RuntimeError as _e:
+        ok("face fix: no face -> error with the reason, not a fake 'done'", "沒找到臉" in str(_e), str(_e))
+    ok("Hires jobs are never checked for faces", _srv_h.finished_image(_nf_entry(1), {"62"}, {"mode": "quick"}).startswith("/api/image?filename=face_1.png"))
+finally:
+    _srv_h.face_missed = _saved_missed
+ok("face workflow previews the refined crops (to tell 'no face found')", server.build_face_workflow("x", 1, "a.png", {}, "bbox/face_yolov8m.pt")[_srv_h.FACE_CROPS_NODE]["inputs"]["images"] == ["60", 1])
 ok("face status when ComfyUI is down", server.face_status(_down)["ready"] is False and "ComfyUI" in server.face_status(_down)["why"])
 _saved_base, _saved_root = server.comfy_base, server.ROOT
 _hint_root = Path(tempfile.mkdtemp())
