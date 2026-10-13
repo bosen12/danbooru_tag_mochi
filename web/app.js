@@ -56,7 +56,7 @@ import { createTrashPanel } from "./trash-panel.js";
 import { createGenerator, comfyOnline, viewSrc, tabTitle, watchLink, LINK_LABEL, markGenLog } from "./gen.js";
 import { genSeed, mountSeedControl, seedUseButton } from "./seed-control.js";
 import { attachPeek } from "./card-peek.js";
-import { createHires, openHiresPicker, openFacePicker, paintHiresVeil, hiresBusy, faceBusy, HIRES_MODES } from "./hires.js";
+import { createHires, openHiresPicker, openFacePicker, paintHiresVeil, hiresBusy, faceBusy, faceDepth, HIRES_MODES } from "./hires.js";
 import * as S from "./store.js";
 import { recordUses } from "./usage.js";
 import { getSfx } from "./sfx.js";
@@ -1787,14 +1787,14 @@ function openFace(shot, btn) {
     return refuse(btn);
   }
   openFacePicker(btn, shot, {
-    onStart: () => {
-      if (!hiresRun.startFace(shot)) return refuse(btn);
+    onStart: (how) => {
+      if (!hiresRun.startFace(shot, how)) return refuse(btn);
       sfx.hiresStart();
     },
     onUndo: () => {
       // 先標好再換圖：換回修之前那張也要顯影，不是一格跳過去（疊印台同一套）。
       shot._hiresFresh = true;
-      if (hiresRun.undoFace(shot)) toast("拿掉修臉了");
+      if (hiresRun.undoFace(shot)) toast(shot.face ? `退回上一層了：還有 ${faceDepth(shot)} 層` : "拿掉修臉了");
       else shot._hiresFresh = false;
     },
   });
@@ -2430,7 +2430,7 @@ function paintShot(node, shot) {
   const status = node.querySelector(".shot-meta .status");
   status.dataset.kind = shot.status === "failed" ? "err" : "";
   settleText(status,
-    shot.status === "done" ? (shot.hires ? `Hires ${HIRES_MODES[shot.hires.mode]?.zh || ""} ${shot.hires.width}×${shot.hires.height}` : "印好了") + (shot.face ? "・修過臉" : "") : shot.status === "running" ? shot.note || "印製中" : shot.status === "drawn" ? "只抽牌" : words[shot.status] || "");
+    shot.status === "done" ? (shot.hires ? `Hires ${HIRES_MODES[shot.hires.mode]?.zh || ""} ${shot.hires.width}×${shot.hires.height}` : "印好了") + (faceDepth(shot) > 1 ? `・修過臉 ×${faceDepth(shot)}` : shot.face ? "・修過臉" : "") : shot.status === "running" ? shot.note || "印製中" : shot.status === "drawn" ? "只抽牌" : words[shot.status] || "");
 }
 
 const REPRINTABLE = new Set(["drawn", "failed", "cancelled", "stopped"]);

@@ -3721,7 +3721,9 @@ html[data-vt="back"] .vt-sweep {
 
 .hp-acts {
   display: flex;
+  flex-wrap: wrap;
   justify-content: flex-end;
+  gap: var(--space-xs);
 }
 
 .hp-go {

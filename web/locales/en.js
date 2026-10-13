@@ -715,6 +715,11 @@ Hires：放大並重畫細節|Hires · Upscale and refine
 再修一次|Fix again
 拿掉修臉|Remove face fix
 拿掉修臉了|Face fix removed
+從原圖重修|Redo from original
+在這張上再修|Fix this one again
+退回上一層|Undo last fix
+疊越多層，臉越容易糊、越不像原本的人。|The more fixes you stack, the softer the face gets and the less it looks like the original.
+從原圖重修：換一個版本；在這張上再修：這次的方向對、只是不夠。|Redo from original for a different version; fix this one again when the result is right but not strong enough.
 修過臉|Faces fixed
 正在問 ComfyUI 有沒有 FaceDetailer…|Checking ComfyUI for FaceDetailer…
 找到臉，只把臉放大重畫再貼回去，其他地方不動。全身、多人、臉小的圖最有感。|Finds each face, redraws it larger and pastes it back. Nothing else changes. Works best on full-body shots, groups and small faces.
@@ -1259,6 +1264,9 @@ Hires 深度 {0}×|Detailed upscale {0}×
 （還有 {0} 組）|({0} more conflicts)
 「{0}」跟「{1}」同時成立不了，引擎會摘掉其中一個{2}|“{0}” conflicts with “{1}”. The engine will remove one{2}.
 Hires 好了：{0}×{1}|Upscale ready · {0}×{1}
+這張修過 {0} 層臉。|Faces fixed {0} times on this image.
+修過臉 ×{0}|Faces fixed ×{0}
+退回上一層了：還有 {0} 層|Undid the last fix: {0} left
 修臉 {0}%|Face fix {0}%
 缺 {0}：重開墨池，第一次準備會問要不要裝；裝過了就重開 ComfyUI|Missing {0}. Restart Mochi and First-time setup will offer to install it. Already installed? Restart ComfyUI.
 缺 {0}：之前選了不要再問：刪掉 .no-face-fetch 再重開墨池，第一次準備就會問要不要裝|Missing {0}. You chose not to be asked again: delete .no-face-fetch and restart Mochi, and First-time setup will offer to install it.

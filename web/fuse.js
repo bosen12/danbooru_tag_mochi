@@ -53,7 +53,7 @@ import { createHand } from "./hand.js";
 import { createDrag, inkRing } from "./drag.js";
 import { createGenerator, comfyOnline, viewSrc, tabTitle, watchLink, LINK_LABEL, markGenLog } from "./gen.js";
 import { attachPeek, hidePeek, showPeek } from "./card-peek.js";
-import { createHires, openHiresPicker, openFacePicker, paintHiresVeil, hiresBusy, faceBusy } from "./hires.js";
+import { createHires, openHiresPicker, openFacePicker, paintHiresVeil, hiresBusy, faceBusy, faceDepth } from "./hires.js";
 import * as S from "./store.js";
 import { recordUses, tagsOfPositive } from "./usage.js";
 import { REGISTERS, REGISTER_ROLE, emptyBed, sanitizeBed, placeCard, removeCard, relationsOf } from "./fuse-bed.js";
@@ -839,14 +839,14 @@ function openFace(p, btn) {
   if (!p || p.status !== "done" || !p.image) return refuse(btn);
   if (hiresBusy(p)) return refuse(btn);
   openFacePicker(btn, p, {
-    onStart: () => {
+    onStart: (how) => {
       p._hiresFresh = true;
-      if (!hiresRun.startFace(p)) return refuse(btn);
+      if (!hiresRun.startFace(p, how)) return refuse(btn);
       sfx.hiresStart();
     },
     onUndo: () => {
       p._hiresFresh = true;
-      if (hiresRun.undoFace(p)) announce("拿掉修臉了");
+      if (hiresRun.undoFace(p)) announce(p.face ? `退回上一層了：還有 ${faceDepth(p)} 層` : "拿掉修臉了");
     },
   });
 }
@@ -2764,7 +2764,7 @@ function renderPrintBar() {
   const wasOffline = bar.dataset.offline === "1";
   bar.dataset.offline = offline ? "1" : "0";
   const hiBusy = !!p && p.status === "done" && hiresBusy(p);
-  const key = [t.letter, sigOf(t), p ? p.status : "", p?._gone ? "gone" : "", p?.hi?.status || "", p?.hi?.mode || "", p?.hires?.scale || "", p?.face ? "face" : "", summary.join("・"), detail.join("・"), t.missing.join(","), offline, linkNow, p && p.status === "failed" ? p.note : "", !!bed.pins.length].join("|");
+  const key = [t.letter, sigOf(t), p ? p.status : "", p?._gone ? "gone" : "", p?.hi?.status || "", p?.hi?.mode || "", p?.hires?.scale || "", p?.face ? "face" + faceDepth(p) : "", summary.join("・"), detail.join("・"), t.missing.join(","), offline, linkNow, p && p.status === "failed" ? p.note : "", !!bed.pins.length].join("|");
   const go = bar.querySelector(".pb-go");
   // 放一張牌、換一張試印時，常常只有「試印 A／你的 N 張・引擎補 N 張／時代・分級・尺寸」幾個字變了：
   // 只改字，不把整排（連同收著的種子設定）拆掉重建 —— 手機上每放一張牌都在重建它。
@@ -3156,7 +3156,7 @@ function openPrint(p) {
           "p",
           { class: "tag-en" },
           seedUseButton(p.seed),
-          "・" + [ERA_ZH[p.era] || "", p.hires ? `Hires ${p.hires.width}×${p.hires.height}（原圖 ${p.width}×${p.height}）` : `${p.width}×${p.height}`, p.face ? "修過臉" : "", RATING_ZH[p.rating] || ""].filter(Boolean).join("・")
+          "・" + [ERA_ZH[p.era] || "", p.hires ? `Hires ${p.hires.width}×${p.hires.height}（原圖 ${p.width}×${p.height}）` : `${p.width}×${p.height}`, faceDepth(p) > 1 ? `修過臉 ×${faceDepth(p)}` : p.face ? "修過臉" : "", RATING_ZH[p.rating] || ""].filter(Boolean).join("・")
         ),
         el("p", { class: "print-view-label" }, `這一版的牌（${mine.length}）`),
         el("div", { class: "print-view-cards" }, mine.map((t) => cardNode(cardOf(t), assets, { tagName: "div" }))),

@@ -88,7 +88,7 @@ export const saveUi = (u) => write(KEY.ui, u);
 export function hiresJobOf(t) {
   const hi = t && t.hi;
   return hi && hi.job && (hi.status === "queued" || hi.status === "running")
-    ? { job: hi.job, mode: hi.mode, scale: hi.scale, sampling: hi.sampling || {}, ...(hi.mode === "face" ? { from: hi.from } : {}) }
+    ? { job: hi.job, mode: hi.mode, scale: hi.scale, sampling: hi.sampling || {}, ...(hi.mode === "face" ? { from: hi.from, stack: !!hi.stack } : {}) }
     : null;
 }
 

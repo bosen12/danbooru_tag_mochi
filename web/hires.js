@@ -11,8 +11,10 @@
  * 進行中的狀態掛在 target.hi（不存檔）；做好的結果是 target.hires（存檔）。
  *
  * 修臉（FaceDetailer）走同一條佇列，mode 是 "face"：在「現在這張」上找到臉、只重畫臉，尺寸不變，
- * 所以 Hires 過的就修大圖。結果記在 target.face = { from }：from 是修之前那張，再修一次從它開始
- * （不會越修越歪），「拿掉修臉」換回它。之後再做 Hires 是從原圖放大，修臉就跟著拿掉。
+ * 所以 Hires 過的就修大圖。修過幾層記在 target.face = { from, history }：history 是每一層修之前的那張
+ * （第一格是完全沒修過的），from 是最上面那層修之前的。「從原圖重修」從 history[0] 重來（換一個版本，
+ * 不會越修越歪）；「在這張上再修」在現在這張上再疊一層；「拿掉修臉」一次退一層。
+ * 之後再做 Hires 是從原圖放大，修臉就整個拿掉。舊存檔只有 { from }：當成修過一層。
  */
 import { el } from "./ui.js";
 import { t as translate } from "./i18n.js";
@@ -79,6 +81,12 @@ export function hiresLabel(t) {
 
 export const hiresBusy = (t) => !!t.hi && (t.hi.status === "queued" || t.hi.status === "running");
 
+/** 每一層修之前的那張（第一格是沒修過的原圖）；沒修過是空的。 */
+export const faceHistory = (f) => (!f ? [] : Array.isArray(f.history) && f.history.length ? [...f.history] : f.from ? [f.from] : []);
+
+/** 修過幾層臉。 */
+export const faceDepth = (t) => faceHistory(t && t.face).length;
+
 /** 現在在修臉（或排隊等修）：按鈕上的進度、要不要讓「停」出現。 */
 export const faceBusy = (t) => hiresBusy(t) && t.hi.mode === "face";
 
@@ -135,7 +143,9 @@ export function createHires(hooks) {
         if (!t.baseImage) t.baseImage = task.from;
         t._hiresUnder = t.hi?.preview || null;
         t.image = task.image;
-        t.face = { from: task.from, seed: task.seed };
+        // 疊上去的：前面幾層留著；從原圖重修的：從頭算一層。
+        const history = [...(task.stack ? faceHistory(t.face) : []), task.from];
+        t.face = { from: task.from, seed: task.seed, history };
         t.hi = null;
         hooks.update(t);
         hooks.done && hooks.done(t, "face");
@@ -194,9 +204,9 @@ export function createHires(hooks) {
       gen.enqueue(task);
       return true;
     },
-    /** 修臉：從修之前那張開始（修過的再修一次也是），尺寸不變。 */
-    startFace(t) {
-      const from = t.face?.from || t.image;
+    /** 修臉，尺寸不變。stack：在現在這張（修過的）上再疊一層；不然從沒修過的原圖重修。 */
+    startFace(t, { stack = false } = {}) {
+      const from = stack ? t.image : faceHistory(t.face)[0] || t.image;
       if (hiresBusy(t) || !from) return false;
       const task = {
         id: "h" + Date.now().toString(36) + Math.random().toString(36).slice(2, 5),
@@ -204,22 +214,24 @@ export function createHires(hooks) {
         mode: "face",
         scale: 1,
         from,
+        stack: !!(stack && t.face),
         sampling: currentHiresSampling("face"),
         positive: t.positive,
         seed: Math.floor(Math.random() * 2 ** 32),
       };
       tasks.set(task.id, task);
-      t.hi = { task: task.id, mode: "face", scale: 1, from, sampling: task.sampling, status: "queued", progress: 0, note: "" };
+      t.hi = { task: task.id, mode: "face", scale: 1, from, stack: task.stack, sampling: task.sampling, status: "queued", progress: 0, note: "" };
       hooks.update(t);
       gen.enqueue(task);
       return true;
     },
-    /** 拿掉修臉：換回修之前那張（Hires 過的就回到 Hires 的大圖）。 */
+    /** 拿掉一層修臉：換回這一層修之前那張；拿到沒有了就回到沒修過的（Hires 過的就是 Hires 的大圖）。 */
     undoFace(t) {
-      if (!t.face) return false;
-      t.image = t.face.from;
-      t.face = null;
-      if (!t.hires && t.image === t.baseImage) t.baseImage = null;
+      const history = faceHistory(t.face);
+      if (!history.length) return false;
+      t.image = history.pop();
+      t.face = history.length ? { ...t.face, from: history[history.length - 1], history } : null;
+      if (!t.face && !t.hires && t.image === t.baseImage) t.baseImage = null;
       hooks.update(t);
       return true;
     },
@@ -233,13 +245,14 @@ export function createHires(hooks) {
         mode: saved.mode,
         scale: face ? 1 : saved.scale,
         from: face ? saved.from : undefined,
+        stack: face && !!saved.stack,
         sampling: saved.sampling || {},
         positive: t.positive,
         seed: 0,
         job: saved.job,
       };
       tasks.set(task.id, task);
-      t.hi = { task: task.id, mode: saved.mode, scale: task.scale, from: task.from, sampling: task.sampling, status: "queued", progress: 0, note: "接回剛才那張…", job: saved.job };
+      t.hi = { task: task.id, mode: saved.mode, scale: task.scale, from: task.from, stack: task.stack, sampling: task.sampling, status: "queued", progress: 0, note: "接回剛才那張…", job: saved.job };
       hooks.update(t);
       gen.resume(task);
       return true;
@@ -432,10 +445,13 @@ export function openHiresPicker(anchor, t, { onStart, onRestore }) {
 export function openFacePicker(anchor, t, { onStart, onUndo }) {
   if (openPicker && openPicker.anchor === anchor) return closeHiresPicker({ focus: true });
   closeHiresPicker();
-  const go = el("button", { class: "btn btn-small btn-primary hp-go", type: "button", disabled: true }, t.face ? "再修一次" : "開始修臉");
+  const depth = faceDepth(t);
+  // 沒修過：一顆「開始修臉」。修過了：「從原圖重修」（換一個版本）、「在這張上再修」（再加強一點）。
+  const go = el("button", { class: "btn btn-small btn-primary hp-go", type: "button", disabled: true }, depth ? "從原圖重修" : "開始修臉");
+  const more = depth ? el("button", { class: "btn btn-small hp-go hp-stack", type: "button", disabled: true }, "在這張上再修") : null;
   const state = el("p", { class: "hp-note", role: "status" }, "正在問 ComfyUI 有沒有 FaceDetailer…");
-  const undo = t.face
-    ? el("button", { class: "hp-restore", type: "button", onclick: () => { closeHiresPicker({ focus: true }); onUndo && onUndo(); } }, "拿掉修臉")
+  const undo = depth
+    ? el("button", { class: "hp-restore", type: "button", onclick: () => { closeHiresPicker({ focus: true }); onUndo && onUndo(); } }, depth > 1 ? "退回上一層" : "拿掉修臉")
     : null;
   const node = el(
     "div",
@@ -444,19 +460,26 @@ export function openFacePicker(anchor, t, { onStart, onUndo }) {
     el("p", { class: "hp-note" }, "找到臉，只把臉放大重畫再貼回去，其他地方不動。全身、多人、臉小的圖最有感。"),
     t.hires ? el("p", { class: "hp-note" }, "會在 Hires 之後的大圖上修。") : null,
     state,
-    t.face ? el("p", { class: "hp-was" }, "這張已經修過臉。", undo) : null,
-    el("div", { class: "hp-acts" }, go)
+    depth ? el("p", { class: "hp-was" }, `這張修過 ${depth} 層臉。`, undo) : null,
+    depth ? el("p", { class: "hp-note" }, depth > 1 ? "疊越多層，臉越容易糊、越不像原本的人。" : "從原圖重修：換一個版本；在這張上再修：這次的方向對、只是不夠。") : null,
+    el("div", { class: "hp-acts" }, more, go)
   );
   go.onclick = () => {
     closeHiresPicker({ focus: true });
-    onStart();
+    onStart({ stack: false });
   };
+  if (more)
+    more.onclick = () => {
+      closeHiresPicker({ focus: true });
+      onStart({ stack: true });
+    };
   mountPop(anchor, node, { focus: () => go });
   faceStatus({ fresh: true }).then((st) => {
     if (!node.isConnected) return;
     // 說明換了行數、選單變高：重新擺，擺在上方的才不會往下長、蓋住按鈕。
     const settle = () => openPicker?.node === node && openPicker.place();
     go.disabled = !st.ready;
+    if (more) more.disabled = !st.ready;
     if (st.ready) {
       state.remove();
       if (document.activeElement === document.body || !node.contains(document.activeElement)) go.focus({ preventScroll: true });
