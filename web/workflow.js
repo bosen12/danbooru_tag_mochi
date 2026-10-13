@@ -313,7 +313,8 @@ function renderSampling() {
   reset.textContent = "全部恢復預設";
   reset.disabled = !samplingRows().some((r) => Object.keys(sampling[r.id]).length);
   reset.addEventListener("click", () => {
-    sampling = emptySampling();
+    // 只清這一頁看得到的那幾行：web7 沒有修臉，不能順手把墨池那邊改過的修臉清掉（同一份存檔）。
+    for (const r of samplingRows()) sampling[r.id] = {};
     saveSampling();
     renderSampling();
     say("取樣參數都回到預設了。");
