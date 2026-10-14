@@ -2466,3 +2466,58 @@
   text-decoration: line-through;
   opacity: 0.55;
 }
+
+/* 工作流面板的「修臉細節」（墨池）：收合的一格，展開後一個參數一列 —— 左邊名字＋原本的參數名＋數字框，右邊一句說明。 */
+.wf-face-detail {
+  margin: 6px 0 2px;
+  border-top: 1px dashed var(--line);
+  padding-top: 8px;
+}
+.wf-face-detail > summary {
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--ink);
+  padding: 4px 0;
+}
+.wf-face-lead {
+  margin: 4px 0 8px;
+  font-size: 12px;
+  color: var(--dim);
+  line-height: 1.6;
+}
+.wf-face-row {
+  display: grid;
+  grid-template-columns: minmax(9em, 12em) minmax(0, 1fr);
+  gap: 4px 12px;
+  align-items: start;
+  padding: 6px 0;
+  border-top: 1px solid color-mix(in srgb, var(--line) 60%, transparent);
+}
+.wf-face-name {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 6px;
+}
+.wf-face-name b {
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.wf-face-name code {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: var(--faint);
+}
+.wf-face-desc {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--dim);
+}
+@media (max-width: 34rem) {
+  .wf-face-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

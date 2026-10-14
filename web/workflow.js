@@ -27,8 +27,60 @@ const SAMPLING_ROWS = [
   { id: "quick", zh: "快速 Hires", keys: ["steps", "cfg", "denoise"] },
   { id: "deep", zh: "深度 Hires", keys: ["steps", "cfg", "denoise"] },
   // 修臉只有墨池（web6）有：initWorkflow({ faceFix: true }) 才顯示這一行。
-  { id: "face", zh: "修臉", keys: ["steps", "cfg", "denoise"], faceFix: true },
+  // detail 那幾個存在同一份（sampling.face）、跟著修臉一起送，畫面上另外排成「修臉細節」一格一格寫說明。
+  { id: "face", zh: "修臉", keys: ["steps", "cfg", "denoise"], faceFix: true, detail: ["bbox_threshold", "bbox_dilation", "bbox_crop_factor", "drop_size", "sam_dilation", "sam_threshold"] },
 ];
+/* 修臉細節（FaceDetailer 的偵測框、SAM 遮罩）。預設和範圍以伺服器 /api/sampling 的 faceDetail 為準，這裡的 lo／hi 只是拿不到時的備用。 */
+const FACE_DETAIL_FIELDS = {
+  bbox_threshold: {
+    zh: "偵測門檻",
+    step: 0.05,
+    digits: 2,
+    lo: 0.05,
+    hi: 0.95,
+    desc: "臉部偵測的信心分數要超過多少才算臉。調低：小臉、側臉、半遮的臉比較抓得到，但也比較容易把不是臉的地方當成臉；調高相反。",
+  },
+  bbox_dilation: {
+    zh: "偵測框外擴",
+    step: 1,
+    digits: 0,
+    lo: 0,
+    hi: 64,
+    desc: "偵測到的臉框往外擴幾個像素再處理。太小可能切到下巴、髮際；太大會連周圍一起算進去。",
+  },
+  bbox_crop_factor: {
+    zh: "裁切倍數",
+    step: 0.1,
+    digits: 1,
+    lo: 1,
+    hi: 5,
+    desc: "拿臉框幾倍大的範圍去重畫。倍數越小，臉放得越大、細節越多（裁切最大 1024 像素：3 倍時臉只放到約 340 像素，1.6 倍約 640）；太小則周圍參考少，膚色、光線可能接不上。",
+  },
+  drop_size: {
+    zh: "忽略小臉",
+    step: 1,
+    digits: 0,
+    lo: 1,
+    hi: 128,
+    desc: "比這個還小（像素）的臉不修，多半是背景人物或圖案。",
+  },
+  sam_dilation: {
+    zh: "臉形遮罩外擴",
+    step: 1,
+    digits: 0,
+    lo: 0,
+    hi: 64,
+    desc: "SAM 切出臉的形狀之後再往外擴幾個像素。太小眼角、臉的邊緣可能漏修；太大會連瀏海、髮飾一起重畫。ComfyUI 沒有 SAM 模型時用不到。",
+  },
+  sam_threshold: {
+    zh: "臉形遮罩門檻",
+    step: 0.01,
+    digits: 2,
+    lo: 0.5,
+    hi: 0.99,
+    desc: "SAM 判斷「這塊算臉」的信心門檻。調低遮罩比較大、比較寬鬆；調高只留最確定的部分。ComfyUI 沒有 SAM 模型時用不到。",
+  },
+};
 const SAMPLING_FIELD = {
   steps: { zh: "Steps", step: 1, digits: 0 },
   cfg: { zh: "CFG", step: 0.5, digits: 1 },
@@ -46,7 +98,7 @@ try {
   const raw = JSON.parse(localStorage.getItem(SAMPLING_STORE) || "{}");
   for (const r of SAMPLING_ROWS) {
     const src = raw && typeof raw[r.id] === "object" ? raw[r.id] : {};
-    for (const k of r.keys) if (Number.isFinite(src[k])) sampling[r.id][k] = src[k];
+    for (const k of [...r.keys, ...(r.detail || [])]) if (Number.isFinite(src[k])) sampling[r.id][k] = src[k];
   }
 } catch {
   /* 讀不到就全部用預設 */
@@ -373,10 +425,83 @@ function renderSampling() {
     }
     box.append(row);
   }
+  if (faceFixOn) box.append(faceDetailBlock(reset));
   const note = document.createElement("p");
   note.className = "ckpt-cur-hint wf-samp-note";
   box.append(note);
   syncSamplingNote();
+}
+
+/** 修臉細節：一個參數一列，名字、原本的參數名、數字框、一句說明。收在可以展開的一格裡，平常不佔位置。 */
+let faceDetailOpen = false;
+function faceDetailBlock(reset) {
+  const wrap = document.createElement("details");
+  wrap.className = "wf-face-detail";
+  wrap.open = faceDetailOpen;
+  wrap.addEventListener("toggle", () => (faceDetailOpen = wrap.open));
+  const sum = document.createElement("summary");
+  sum.textContent = "修臉細節（偵測框、臉形遮罩）";
+  wrap.append(sum);
+  const lead = document.createElement("p");
+  lead.className = "wf-face-lead";
+  lead.textContent = "成品上按「修臉」時用。沒把握就用預設；有臉沒被修到，先試著調低偵測門檻；臉修得糊，試著調低裁切倍數。";
+  wrap.append(lead);
+  const face = SAMPLING_ROWS.find((r) => r.id === "face");
+  for (const k of face.detail) {
+    const f = FACE_DETAIL_FIELDS[k];
+    const [lo, hi] = samplingDefaults?.faceDetailLimits?.[k] || [f.lo, f.hi];
+    const def = samplingDefaults?.faceDetail?.[k];
+    const row = document.createElement("div");
+    row.className = "wf-face-row";
+    row.dataset.key = k;
+    const field = document.createElement("label");
+    field.className = "wf-samp-field";
+    const name = document.createElement("span");
+    name.className = "wf-face-name";
+    const zh = document.createElement("b");
+    zh.textContent = f.zh;
+    const code = document.createElement("code");
+    code.textContent = k;
+    code.dataset.noI18n = "";
+    name.append(zh, code);
+    const input = document.createElement("input");
+    input.type = "number";
+    input.inputMode = "decimal";
+    input.min = String(lo);
+    input.max = String(hi);
+    input.step = String(f.step);
+    input.setAttribute("aria-label", `修臉 ${f.zh}`);
+    const shown = sampling.face[k] ?? def;
+    input.value = shown == null ? "" : Number(shown).toFixed(f.digits);
+    if (def != null) input.placeholder = Number(def).toFixed(f.digits);
+    const desc = document.createElement("p");
+    desc.className = "wf-face-desc";
+    desc.textContent = f.desc;
+    const mark = () => {
+      field.dataset.changed = sampling.face[k] != null ? "true" : "false";
+      field.title = def != null ? `預設 ${Number(def).toFixed(f.digits)}` : "";
+    };
+    mark();
+    input.addEventListener("change", () => {
+      const v = parseFloat(input.value);
+      if (!Number.isFinite(v)) delete sampling.face[k];
+      else {
+        const c = Math.min(hi, Math.max(lo, Math.round(v / f.step) * f.step));
+        const val = Number(c.toFixed(f.digits));
+        if (def != null && Math.abs(val - def) < 1e-9) delete sampling.face[k];
+        else sampling.face[k] = val;
+      }
+      const now = sampling.face[k] ?? def;
+      input.value = now == null ? "" : Number(now).toFixed(f.digits);
+      saveSampling();
+      mark();
+      reset.disabled = !samplingRows().some((x) => Object.keys(sampling[x.id]).length);
+    });
+    field.append(name, input);
+    row.append(field, desc);
+    wrap.append(row);
+  }
+  return wrap;
 }
 
 /** 換了工作流：說明跟著換（不重建欄位，打到一半的數字不會被洗掉）。 */

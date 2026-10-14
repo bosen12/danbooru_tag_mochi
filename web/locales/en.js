@@ -823,6 +823,21 @@ ComfyUI 網址|ComfyUI URL
 全部恢復預設|Reset all defaults
 取樣參數都回到預設了。|Sampling parameters reset to defaults.
 改過的會描一道底線；清空欄位或改回預設值就回到預設。|Changed values are underlined. Clear a field or enter its default to reset it.
+修臉細節（偵測框、臉形遮罩）|Face fix details (detection box, face mask)
+成品上按「修臉」時用。沒把握就用預設；有臉沒被修到，先試著調低偵測門檻；臉修得糊，試著調低裁切倍數。|Used when you press “Fix faces” on an image. When in doubt, keep the defaults. If a face was missed, try a lower detection threshold; if fixed faces look soft, try a lower crop factor.
+偵測門檻|Detection threshold
+偵測框外擴|Box dilation
+裁切倍數|Crop factor
+忽略小臉|Skip tiny faces
+臉形遮罩外擴|Mask dilation
+臉形遮罩門檻|Mask threshold
+修臉 {0}|Face fix {0}
+臉部偵測的信心分數要超過多少才算臉。調低：小臉、側臉、半遮的臉比較抓得到，但也比較容易把不是臉的地方當成臉；調高相反。|How confident the face detector must be before something counts as a face. Lower it to catch small, side-on or partly hidden faces, at the risk of treating other things as faces; raise it for the opposite.
+偵測到的臉框往外擴幾個像素再處理。太小可能切到下巴、髮際；太大會連周圍一起算進去。|How many pixels to grow each detected face box. Too small can cut off the chin or hairline; too large pulls in the surroundings.
+拿臉框幾倍大的範圍去重畫。倍數越小，臉放得越大、細節越多（裁切最大 1024 像素：3 倍時臉只放到約 340 像素，1.6 倍約 640）；太小則周圍參考少，膚色、光線可能接不上。|How large an area around the face box to redraw. A smaller factor enlarges the face more and adds detail (the crop is capped at 1024 px, so at 3× the face only reaches about 340 px and at 1.6× about 640); too small leaves little context, so skin tone and lighting may not blend.
+比這個還小（像素）的臉不修，多半是背景人物或圖案。|Faces smaller than this (in pixels) are skipped; they are usually background figures or patterns.
+SAM 切出臉的形狀之後再往外擴幾個像素。太小眼角、臉的邊緣可能漏修；太大會連瀏海、髮飾一起重畫。ComfyUI 沒有 SAM 模型時用不到。|How many pixels to grow the face shape cut out by SAM. Too small can miss the corners of the eyes and the edge of the face; too large redraws bangs and hair accessories too. Unused when ComfyUI has no SAM model.
+SAM 判斷「這塊算臉」的信心門檻。調低遮罩比較大、比較寬鬆；調高只留最確定的部分。ComfyUI 沒有 SAM 模型時用不到。|How confident SAM must be that a region is the face. Lower it for a larger, looser mask; raise it to keep only the surest part. Unused when ComfyUI has no SAM model.
 正向、負向、LoRA 都由排字匣組裝。|Danbooru Case builds the positive prompt, negative prompt and LoRA inputs.
 至少選一個正向節點才能生圖。|Select a positive prompt node to generate images.
 建議|Suggested

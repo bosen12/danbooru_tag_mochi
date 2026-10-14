@@ -1375,7 +1375,8 @@ def parse_hires(raw) -> dict:
     want = (query.get("h") or [""])[0].lower()
     if want and not valid_image_hash(want):
         raise HiresError("hires.image 的內容指紋不合法")
-    sampling = {k: raw.get(k) for k in ("steps", "cfg", "denoise") if raw.get(k) not in (None, "")}
+    keys = ("steps", "cfg", "denoise") + (tuple(FACE_DETAIL) if mode == "face" else ())
+    sampling = {k: raw.get(k) for k in keys if raw.get(k) not in (None, "")}
     return {"mode": mode, "scale": scale, "view": view, "h": want, "sampling": sampling}
 
 
@@ -1441,6 +1442,9 @@ def sampling_defaults() -> dict:
         "base": {"steps": STEPS, "cfg": CFG},
         "hires": {"quick": hires_defaults("quick"), "deep": hires_defaults("deep"), "face": hires_defaults("face")},
         "limits": {k: list(v) for k, v in SAMPLING_LIMITS.items()},
+        # 修臉細節（工作流面板）：預設和可調範圍。
+        "faceDetail": {k: r["default"] for k, r in FACE_DETAIL.items()},
+        "faceDetailLimits": {k: list(r["range"]) for k, r in FACE_DETAIL.items()},
     }
 
 
@@ -1567,13 +1571,50 @@ FACE_WIDGETS = {
     "feather": 5,
     "noise_mask": True,
     "force_inpaint": True,
-    "bbox_threshold": 0.5,
-    "bbox_dilation": 10,
-    "bbox_crop_factor": 3.0,
-    "drop_size": 10,
     "wildcard": "",
     "cycle": 1,
 }
+
+# 偵測框、SAM 遮罩這幾個：工作流面板的「修臉細節」可以每次指定（夾在範圍裡），沒給用這裡的預設。
+# 2026-10-14 跟 Grok 給 WAI 的建議對過：
+#   bbox_threshold 0.5 → 0.45：動漫的小臉、側臉、半遮的臉，信心分數常在 0.45～0.5 之間，漏修比誤修常見。
+#   bbox_crop_factor 3.0 → 1.6：guide_size 是對臉（guide_size_for=bbox）放到 768，但整塊裁切不能超過
+#     max_size 1024 —— 裁切 3 倍時臉其實只放到 1024/3≈341 px，細節不夠；1.6 倍時臉放到約 640 px。
+#     周圍少看一點沒關係：只重畫 SAM 切出的臉（noise_mask），邊緣還有 feather。
+#   drop_size 10 → 12：更小的「臉」多半是背景人物或圖案，修了也看不出來。
+#   sam_dilation 留 16（Grok 建議 8）：SAM 切動漫臉偏保守，實測不擴的話小臉眼睛周圍會漏修；8 在全身圖的
+#     小臉上還是會漏，多重畫一點點臉的邊緣比漏掉眼角好。
+#   sam_threshold 0.93：FaceDetailer 的預設，明寫出來讓面板看得到。
+FACE_DETAIL = {
+    "bbox_threshold": {"default": 0.45, "range": (0.05, 0.95), "int": False},
+    "bbox_dilation": {"default": 10, "range": (0, 64), "int": True},
+    "bbox_crop_factor": {"default": 1.6, "range": (1.0, 5.0), "int": False},
+    "drop_size": {"default": 12, "range": (1, 128), "int": True},
+    "sam_dilation": {"default": 16, "range": (0, 64), "int": True},
+    "sam_threshold": {"default": 0.93, "range": (0.5, 0.99), "int": False},
+}
+FACE_SAM_KEYS = ("sam_dilation", "sam_threshold")
+
+
+def face_detail_values(overrides: dict | None = None, sam: bool = False) -> dict:
+    """修臉偵測的細節：網頁這次指定的（夾在範圍裡）→ 預設。沒有 SAM 時不給 sam_* 兩個（照節點預設）。"""
+    o = overrides or {}
+    out = {}
+    for key, rule in FACE_DETAIL.items():
+        if key in FACE_SAM_KEYS and not sam:
+            continue
+        v = rule["default"]
+        raw = o.get(key)
+        if raw not in (None, "") and not isinstance(raw, bool):
+            try:
+                f = float(raw)
+                if f == f:
+                    lo, hi = rule["range"]
+                    v = min(hi, max(lo, f))
+            except (TypeError, ValueError):
+                pass
+        out[key] = int(round(v)) if rule["int"] else round(float(v), 2)
+    return out
 
 
 def _base_name(name: str) -> str:
@@ -1595,7 +1636,7 @@ def pick_face_detector(names: list[str]) -> str:
 # 耳環也被輕輕重畫一遍、形狀會跑（2026-10-14 實測：瀏海＋髮飾的圖，改到的像素少了三分之二）。
 # 遮罩外擴 16 px：SAM 切動漫臉偏保守，不擴的話小臉的眼睛周圍會漏修。ComfyUI 有 SAM 模型才用，沒有照舊。
 SAM_PREF = ("sam_vit_b", "sam_vit_l", "sam_vit_h")  # b 最小最快，l／h 對動漫臉沒明顯更好
-SAM_DILATION = 16
+SAM_DILATION = FACE_DETAIL["sam_dilation"]["default"]
 
 
 def pick_sam(names) -> str:
@@ -1743,9 +1784,14 @@ def build_face_workflow(
         "negative": ["37", 0],
         "bbox_detector": ["55", 0],
     }
-    values = {**FACE_WIDGETS, "seed": int(seed), "steps": steps, "cfg": cfg_v, "denoise": denoise}
-    if sam:
-        values["sam_dilation"] = SAM_DILATION
+    values = {
+        **FACE_WIDGETS,
+        **face_detail_values(sampling, sam=bool(sam)),
+        "seed": int(seed),
+        "steps": steps,
+        "cfg": cfg_v,
+        "denoise": denoise,
+    }
     wf["60"] = {"class_type": FACE_NODE, "inputs": face_inputs(face_spec, links, values)}
     if sam:
         wf["56"] = {"class_type": "SAMLoader", "inputs": {"model_name": sam, "device_mode": "AUTO"}}

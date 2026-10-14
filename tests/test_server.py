@@ -1405,6 +1405,22 @@ _wf_nosam = server.build_face_workflow("x", 1, "a.png", {"sam_dilation": ["INT",
 ok("SAM wired in with a dilated mask when ComfyUI has one",
    _wf_sam["56"]["class_type"] == "SAMLoader" and _wf_sam["60"]["inputs"]["sam_model_opt"] == ["56", 0] and _wf_sam["60"]["inputs"]["sam_dilation"] == _srv_h.SAM_DILATION)
 ok("no SAM model: the face fix still works on the whole box", "56" not in _wf_nosam and "sam_model_opt" not in _wf_nosam["60"]["inputs"] and _wf_nosam["60"]["inputs"]["sam_dilation"] == 0)
+# 修臉細節（工作流面板，2026-10-14）：預設、夾範圍、只在修臉時收、沒有 SAM 時不給 sam_*。
+_fd_spec = {k: ["FLOAT" if isinstance(v["default"], float) else "INT", {"default": 0}] for k, v in _srv_h.FACE_DETAIL.items()}
+_fd_def = server.build_face_workflow("x", 1, "a.png", _fd_spec, "bbox/face_yolov8m.pt", sam="sam_vit_b_01ec64.pth")["60"]["inputs"]
+ok("face detail defaults reach FaceDetailer (threshold 0.45, crop 1.6, drop 12, SAM 16 / 0.93)",
+   (_fd_def["bbox_threshold"], _fd_def["bbox_crop_factor"], _fd_def["drop_size"], _fd_def["bbox_dilation"], _fd_def["sam_dilation"], _fd_def["sam_threshold"]) == (0.45, 1.6, 12, 10, 16, 0.93))
+_fd_set = server.build_face_workflow("x", 1, "a.png", _fd_spec, "bbox/face_yolov8m.pt", sampling={"bbox_threshold": 0.3, "bbox_crop_factor": 99, "drop_size": "x", "sam_dilation": 8}, sam="sam_vit_b_01ec64.pth")["60"]["inputs"]
+ok("face detail overrides are used and clamped; junk falls back to the default",
+   _fd_set["bbox_threshold"] == 0.3 and _fd_set["bbox_crop_factor"] == 5.0 and _fd_set["drop_size"] == 12 and _fd_set["sam_dilation"] == 8)
+_fd_nosam = server.build_face_workflow("x", 1, "a.png", _fd_spec, "bbox/face_yolov8m.pt", sampling={"sam_dilation": 30})["60"]["inputs"]
+ok("no SAM model: sam_* stay at the node default even if the page sent them", _fd_nosam["sam_dilation"] == 0 and _fd_nosam["sam_threshold"] == 0)
+_img = "/api/image?filename=a.png&type=output"
+ok("face detail is read only for the face fix, not for Hires",
+   server.parse_hires({"mode": "face", "image": _img, "bbox_threshold": 0.4})["sampling"].get("bbox_threshold") == 0.4
+   and "bbox_threshold" not in server.parse_hires({"mode": "quick", "scale": 1.5, "image": _img, "bbox_threshold": 0.4})["sampling"])
+ok("/api/sampling tells the panel the face detail defaults and ranges",
+   server.sampling_defaults()["faceDetail"]["bbox_crop_factor"] == 1.6 and server.sampling_defaults()["faceDetailLimits"]["sam_threshold"] == [0.5, 0.99])
 import os as _os_op  # noqa: E402
 import tempfile as _tf_op  # noqa: E402
 _op_dir = Path(_tf_op.mkdtemp()) / "danbooru_case"
