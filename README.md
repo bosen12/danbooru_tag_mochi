@@ -78,7 +78,7 @@ Keep the server window open. After updating, reload the page with **Ctrl+F5**.
 
 | What | Size | How | Skip |
 |---|---|---|---|
-| Card art, all ages (2564 cards) | ~30 MB + ~103 MB | Downloaded from this repo's [release](https://github.com/bosen12/danbooru_tag_mochi/releases/tag/card-art-v7) in two parts: thumbnails first (the card library shows pictures after a couple of minutes, reload when the panel says so), then full-size images in the background. Checked with SHA-256, unpacked into `web/cards/`. Resumes if interrupted; never overwrites cards you baked yourself | `NO_CARD_FETCH=1` |
+| Card art, all ages (2570 cards) | ~30 MB + ~103 MB | Downloaded from this repo's [release](https://github.com/bosen12/danbooru_tag_mochi/releases/tag/card-art-v8) in two parts: thumbnails first (the card library shows pictures after a couple of minutes, reload when the panel says so), then full-size images in the background. Checked with SHA-256, unpacked into `web/cards/`. Resumes if interrupted; never overwrites cards you baked yourself | `NO_CARD_FETCH=1` |
 | Character card art (612 anime and game characters) | — | Not published (copyrighted characters). Every start checks it: up to 20 missing are baked straight away, more than that (about 70 minutes the first time) and the page asks first (Bake / Not now / Never ask) | `.no-character-bake` file or answer *Never ask* |
 | Sensitive / explicit card art | — | Not published. Once the download is in, the page asks whether to bake them with your checkpoint (`scripts/bake_card_art.py`). Missing or outdated all-ages cards are baked without asking | `NO_CARD_BAKE=1` or a `.no-card-bake` file |
 | Hires upscale model `RealESRGAN_x4plus_anime_6B` | ~18 MB | Saved to ComfyUI's `models/upscale_models` | `NO_UPSCALE_FETCH=1` |
@@ -233,7 +233,7 @@ cd danbooru_tag_mochi
 
 | 東西 | 大小 | 怎麼來 | 不想要 |
 |---|---|---|---|
-| 卡牌插畫（全年齡 2564 張） | 約 30 MB＋103 MB | 從本 repo 的 [Release](https://github.com/bosen12/danbooru_tag_mochi/releases/tag/card-art-v7) 分兩包下載：先抓縮圖（兩分鐘左右字盒就有圖，面板說可以就重新整理），大圖背景接著抓。驗 SHA-256、解到 `web/cards/`。斷了會接著抓；自己烘的圖不覆蓋 | `NO_CARD_FETCH=1` |
+| 卡牌插畫（全年齡 2570 張） | 約 30 MB＋103 MB | 從本 repo 的 [Release](https://github.com/bosen12/danbooru_tag_mochi/releases/tag/card-art-v8) 分兩包下載：先抓縮圖（兩分鐘左右字盒就有圖，面板說可以就重新整理），大圖背景接著抓。驗 SHA-256、解到 `web/cards/`。斷了會接著抓；自己烘的圖不覆蓋 | `NO_CARD_FETCH=1` |
 | 角色卡面（612 個動漫、遊戲角色） | — | 不公開（版權角色）。每次啟動都檢查：缺 20 張以內直接烘；更多（第一次約 70 分鐘）網頁上先問（烘／這次不要／不要再問） | `.no-character-bake` 檔或回答「不要再問」 |
 | 敏感／色情分級的卡面 | — | 不公開。卡面下載好之後，網頁上問你要不要用你的底模烘；全年齡卡缺的、過時的直接烘，不問 | `NO_CARD_BAKE=1` 或 `.no-card-bake` 檔 |
 | Hires 放大模型 | 約 18 MB | 放進 ComfyUI 的 `models/upscale_models` | `NO_UPSCALE_FETCH=1` |
