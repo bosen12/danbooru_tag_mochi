@@ -41,7 +41,8 @@ def _read() -> list[dict]:
     for d in (data.get("decks") if isinstance(data, dict) else None) or []:
         if not isinstance(d, dict) or not _ID_RE.match(str(d.get("id") or "")):
             continue
-        tags = [str(t) for t in d.get("tags") or [] if isinstance(t, str)][:MAX_TAGS]
+        # 詞庫換過名的字：舊名換成新名（card_usage.rename 讀 lexicon.json 的 renamed）。
+        tags = list(dict.fromkeys(card_usage.rename(str(t)) for t in d.get("tags") or [] if isinstance(t, str)))[:MAX_TAGS]
         out.append({
             "id": d["id"],
             "name": str(d.get("name") or "")[:MAX_NAME] or "未命名",
@@ -59,6 +60,7 @@ def _clean_weights(raw, tags: list[str]) -> dict:
     if isinstance(raw, dict):
         keep = set(tags)
         for t, w in raw.items():
+            t = card_usage.rename(str(t))
             if t not in keep or isinstance(w, bool) or not isinstance(w, (int, float)):
                 continue
             n = round(float(w), 1)

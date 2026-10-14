@@ -13,6 +13,8 @@
  * 抽牌規則一條都不在這裡：同格互斥、時代衝突、附帶是 engine 的 applyPin；
  * 相剋是 engine 的 contradictions；補字是 engine 的 drawWithSeed。規則、廢字簍跟墨池工作臺共用。
  */
+// 詞庫換過名的字：存著的舊名先換成新名（一定要第一個 import，見 tag-renames.js）。
+import "./tag-renames.js";
 import {
   indexLexicon,
   sanitizeSettings,

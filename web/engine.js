@@ -1125,7 +1125,6 @@ const DRY_NO_WATER = new Set([
   "running track",
   "bathroom",
   "prison",
-  "colonnade",
   "column",
   "train interior",
   "hallway",
@@ -1182,7 +1181,7 @@ export const ACT_PLACE = {
   floating: new Set(["pool", "ocean", "bathtub", "ofuro", "onsen", "bubble bath", "pond", "river"]),
   "shared bathing": new Set(["onsen", "bathhouse", "ofuro", "bath"]),
   eating: new Set([...MEAL_PLACE, "movie theater", "airplane interior", "convenience store", "izakaya", "festival", "market", "ryokan", "tavern"]),
-  drinking: new Set(["cafe", "maid cafe", "bar (place)", "restaurant", "kitchen", "dining room", "cafeteria", "conveyor belt sushi", "yatai", "living room", "movie theater", "airplane interior", "izakaya", "festival", "market", "ryokan", "tavern", "ballroom", "courtyard", "garden", "balcony", "colonnade", "column", "village"]),
+  drinking: new Set(["cafe", "maid cafe", "bar (place)", "restaurant", "kitchen", "dining room", "cafeteria", "conveyor belt sushi", "yatai", "living room", "movie theater", "airplane interior", "izakaya", "festival", "market", "ryokan", "tavern", "ballroom", "courtyard", "garden", "balcony", "column", "village"]),
   reading: new Set([...DESK_PLACE, "train", "train interior"]),
   cooking: COOK_PLACE,
   // 店和四家子店。子店 implies shop，只加子店時 commit 會因為 shop 不在
@@ -1206,7 +1205,7 @@ export const ACT_PLACE = {
     "flower shop",
     "bookstore",
   ]),
-  singing: new Set(["living room", "bar (place)", "park", "rooftop", "karaoke box", "church", "shrine", "festival", "ballroom", "ryokan", "colonnade", "column", "tavern", "market", "courtyard", "castle"]),
+  singing: new Set(["living room", "bar (place)", "park", "rooftop", "karaoke box", "church", "shrine", "festival", "ballroom", "ryokan", "column", "tavern", "market", "courtyard", "castle"]),
   karaoke: new Set(["bar (place)", "living room", "karaoke box"]),
   "playing guitar": new Set(["bedroom", "living room", "park", "rooftop", "balcony", "garden"]),
   "playing games": new Set([...HOME_PLACE, "internet cafe"]),
@@ -1216,16 +1215,16 @@ export const ACT_PLACE = {
   writing: DESK_PLACE,
   "drawing (action)": new Set(["bedroom", "living room", "classroom", "cafe", "maid cafe", "park", "garden"]),
   "painting (action)": new Set(["bedroom", "living room", "garden", "park", "courtyard", "pavilion", "east asian architecture"]),
-  dancing: new Set(["living room", "park", "rooftop", "school gym", "bar (place)", "fitness gym", "ballroom", "palace", "colonnade", "column", "ryokan", "festival"]),
+  dancing: new Set(["living room", "park", "rooftop", "school gym", "bar (place)", "fitness gym", "ballroom", "palace", "column", "ryokan", "festival"]),
   stretching: new Set(["bedroom", "living room", "fitness gym", "park", "rooftop", "beach"]),
   yoga: new Set(["bedroom", "living room", "fitness gym", "park", "rooftop", "beach"]),
   exercising: SPORT_PLACE,
-  training: new Set([...SPORT_PLACE, "battlefield", "dojo", "castle", "colonnade", "column"]),
+  training: new Set([...SPORT_PLACE, "battlefield", "dojo", "castle", "column"]),
   archery: new Set(["garden", "park", "forest"]),
   fishing: FISH_PLACE,
   camping: new Set(["forest", "park", "bamboo forest", "garden", "ruins", "tent", "river", "field", "cave", "jungle", "rural"]),
   picnic: new Set(["park", "garden", "beach", "forest", "courtyard", "rural", "village"]),
-  hiking: new Set(["forest", "park", "bamboo forest", "garden", "mountain", "river", "bridge", "field", "battlefield", "ruins", "colonnade", "column", "cave", "jungle", "rural"]),
+  hiking: new Set(["forest", "park", "bamboo forest", "garden", "mountain", "river", "bridge", "field", "battlefield", "ruins", "column", "cave", "jungle", "rural"]),
   jogging: new Set(["park", "street", "running track", "stadium", "garden", "city", "cityscape", "alley"]),
   skiing: new Set(["mountain"]),
   diving: new Set(["ocean", "underwater", "pool", "pond", "river"]),
@@ -2847,7 +2846,7 @@ export const BUILTIN_PRESETS = [
   { id: "ninja", name: "忍者", tags: ["ninja", "bamboo forest"], era: ["edo"] },
   { id: "oiran", name: "花魁", tags: ["oiran", "ryokan"], era: ["edo"] },
   { id: "knight", name: "騎士", tags: ["knight", "castle"], era: ["medieval"] },
-  { id: "gladiator", name: "角鬥士", tags: ["gladiator", "colonnade"], era: ["ancient_greece"] },
+  { id: "gladiator", name: "角鬥士", tags: ["gladiator", "column"], era: ["ancient_greece"] },
   { id: "battlefield", name: "戰場", tags: ["battlefield", "banner"], era: ["ancient_china", "medieval", "edo"] },
   { id: "hanfu", name: "漢服庭園", tags: ["hanfu", "courtyard"], era: ["ancient_china"] },
   { id: "palace", name: "宮廷", tags: ["princess", "palace"], era: ["ancient_china", "medieval"] },
@@ -6578,9 +6577,12 @@ export function drawOne(lex, settings, pinned, userBanned, rand, seed, opts) {
   if (settings.drawCharacter) {
     const charRand = Number.isFinite(seed) ? mulberry32(((seed >>> 0) ^ 0x0c4a2c7e) >>> 0) : rand;
     const have = [...used].map((t) => lex.byTag.get(t)).filter(isCharacter);
+    // 人數看畫面上真的有的人數字（1girl、2boys…），不是一開始擲的 cast：釘了 1girl 時 cast 可能還是
+    // 擲出來的 2girls（例如為了要兩個人的動作），最後畫面只有一個女生，卻抽了兩個角色（2026-10-14 專案主回報）。
+    const counted = genderCount(used, true) + genderCount(used, false) > 0 ? used : cast;
     const want = {
-      female: settings.girl ? Math.max(0, genderCount(cast, true) - have.filter((it) => it.gate !== "male").length) : 0,
-      male: settings.boy ? Math.max(0, genderCount(cast, false) - have.filter((it) => it.gate === "male").length) : 0,
+      female: settings.girl ? Math.max(0, genderCount(counted, true) - have.filter((it) => it.gate !== "male").length) : 0,
+      male: settings.boy ? Math.max(0, genderCount(counted, false) - have.filter((it) => it.gate === "male").length) : 0,
     };
     let room = CHARACTER_MAX - have.length;
     const all = (lex.byGroup && lex.byGroup.get("subject:character")) || [];
@@ -8134,8 +8136,10 @@ export const MUST_MAX = 20;
 export function isCharacter(item) {
   return !!item && item.group === "character";
 }
-// 一張圖最多抽幾個角色：再多模型幾乎一定把臉混在一起，提示詞也太長。釘的不受限。
-export const CHARACTER_MAX = 3;
+// 一張圖最多抽幾個角色。釘的不受限。
+// 3 → 5（2026-10-14 專案主：五個女生要抽五個角色）。人多時模型比較容易把臉、衣服混在一起，
+// 提示詞也長；照人數抽，五個以上的其餘照舊是一般人物。
+export const CHARACTER_MAX = 5;
 // 角色自帶的長相：有角色就不再隨機抽這幾格。
 const CHARACTER_LOOK_GROUPS = new Set(["hair_len", "hair_color", "hair_style", "eyes", "race"]);
 // 同理，會改掉角色是誰的細節：獸耳翅膀尾巴、中性長相、體型身高、膚色、刺青。

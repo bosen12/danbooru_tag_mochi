@@ -30,7 +30,7 @@ _LOCK = threading.Lock()
 # 回應在路上掉了、瀏覽器重送，或墨池、疊印台兩個分頁同時送同一筆，都會送到第二次。
 # 只要記得住「還可能重送」的那段時間：瀏覽器最多排 300 筆待送，留 5000 個很夠。
 SEEN_MAX = 5000
-_lex_cache: dict = {"mtime": None, "tags": frozenset()}
+_lex_cache: dict = {"mtime": None, "tags": frozenset(), "renamed": {}}
 
 
 class UsageError(ValueError):
@@ -47,10 +47,22 @@ def _known_tags() -> frozenset:
         try:
             data = json.loads(LEXICON_PATH.read_text(encoding="utf-8"))
             _lex_cache["tags"] = frozenset(str(t.get("tag")) for t in data.get("tags") or [] if t.get("tag"))
+            renamed = data.get("renamed")
+            _lex_cache["renamed"] = {str(k): str(v) for k, v in renamed.items()} if isinstance(renamed, dict) else {}
             _lex_cache["mtime"] = mtime
         except (OSError, ValueError):
             pass
     return _lex_cache["tags"]
+
+
+def renamed_tags() -> dict:
+    """詞庫換過名的字（舊名 -> 新名，lexicon.json 的 renamed）。存著的舊名讀出來時換成新名。"""
+    _known_tags()
+    return _lex_cache["renamed"]
+
+
+def rename(tag: str) -> str:
+    return renamed_tags().get(tag, tag)
 
 
 def _blank() -> dict:
@@ -68,7 +80,14 @@ def _read() -> dict:
     for key in ("counts", "mine", "last"):
         val = data.get(key)
         if isinstance(val, dict):
-            out[key] = {str(k): int(v) for k, v in val.items() if isinstance(v, (int, float)) and v > 0}
+            got: dict = {}
+            for k, v in val.items():
+                if not isinstance(v, (int, float)) or v <= 0:
+                    continue
+                # 換過名的字：舊名的次數併進新名（次數相加；最近一次取較晚的）。
+                name = rename(str(k))
+                got[name] = max(got.get(name, 0), int(v)) if key == "last" else got.get(name, 0) + int(v)
+            out[key] = got
     out["updated"] = int(data.get("updated") or 0)
     seen = data.get("seen")
     if isinstance(seen, list):

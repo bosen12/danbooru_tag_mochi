@@ -2977,6 +2977,15 @@
     "zuihou (kancolle)",
     "zuikaku (kancolle)"
   ],
+  "renamed": {
+    "aizawa shota": "eraser head (boku no hero academia)",
+    "colonnade": "column",
+    "marcille donato (lord)": "marcille donato (dungeon lord)",
+    "missing legwear": "no legwear",
+    "shion (tensura)": "shion (tensei shitara slime datta ken)",
+    "taihou (forbidden fruit) (azur lane)": "taihou (forbidden feast) (azur lane)",
+    "three-quarter sleeves": "sleeves past elbows"
+  },
   "tags": [
     {
       "tag": "1girl",
@@ -23278,28 +23287,6 @@
       "zh": "亭臺"
     },
     {
-      "tag": "colonnade",
-      "section": "env",
-      "gate": "any",
-      "heat": [
-        "tease",
-        "flash",
-        "sex"
-      ],
-      "mutex": "place",
-      "bind": [],
-      "implies": [
-        "outdoors"
-      ],
-      "layer": "normal",
-      "era": [
-        "ancient_greece"
-      ],
-      "group": "place",
-      "sub": "pl_history",
-      "zh": "柱廊"
-    },
-    {
       "tag": "column",
       "section": "env",
       "gate": "any",
@@ -23319,8 +23306,8 @@
       ],
       "group": "place",
       "sub": "pl_history",
-      "altOf": "colonnade",
-      "zh": "柱廊"
+      "zh": "柱廊",
+      "replaces": "colonnade"
     },
     {
       "tag": "goblin",
@@ -43576,32 +43563,6 @@
       "zh": "坐在別人腿間"
     },
     {
-      "tag": "sitting between lap",
-      "section": "pose",
-      "gate": "any",
-      "heat": [
-        "tease",
-        "flash",
-        "sex"
-      ],
-      "mutex": null,
-      "bind": [],
-      "implies": [
-        "sitting"
-      ],
-      "layer": "normal",
-      "era": [
-        "any"
-      ],
-      "group": "tease",
-      "sub": "pose_two",
-      "needs": [
-        "pair"
-      ],
-      "zh": "坐在別人腿間",
-      "altOf": "sitting between legs"
-    },
-    {
       "tag": "torn shirt",
       "section": "clothing",
       "gate": "any",
@@ -56509,27 +56470,6 @@
       "zh": "沒戴帽子"
     },
     {
-      "tag": "no headwear",
-      "section": "clothing",
-      "gate": "any",
-      "heat": [
-        "tease",
-        "flash",
-        "sex"
-      ],
-      "mutex": "headwear",
-      "bind": [],
-      "implies": [],
-      "layer": "accessory",
-      "era": [
-        "any"
-      ],
-      "group": "acc",
-      "sub": "acc_head",
-      "zh": "沒戴帽子",
-      "altOf": "missing headwear"
-    },
-    {
       "tag": "unworn headwear",
       "section": "clothing",
       "gate": "any",
@@ -57246,29 +57186,6 @@
       "zh": "襪帶"
     },
     {
-      "tag": "three-quarter sleeves",
-      "section": "clothing",
-      "gate": "any",
-      "heat": [
-        "tease",
-        "flash",
-        "sex"
-      ],
-      "mutex": null,
-      "bind": [],
-      "implies": [],
-      "layer": "garment",
-      "era": [
-        "any"
-      ],
-      "group": "fabric",
-      "sub": "fab_sleeve",
-      "mutexExtra": [
-        "sleeve_len"
-      ],
-      "zh": "七分袖"
-    },
-    {
       "tag": "sleeves past elbows",
       "section": "clothing",
       "gate": "any",
@@ -57290,7 +57207,7 @@
         "sleeve_len"
       ],
       "zh": "七分袖",
-      "altOf": "three-quarter sleeves"
+      "replaces": "three-quarter sleeves"
     },
     {
       "tag": "sleeves past fingers",
@@ -57630,26 +57547,6 @@
       "zh": "內搭褲襪"
     },
     {
-      "tag": "missing legwear",
-      "section": "clothing",
-      "gate": "any",
-      "heat": [
-        "tease",
-        "flash",
-        "sex"
-      ],
-      "mutex": "legs",
-      "bind": [],
-      "implies": [],
-      "layer": "garment",
-      "era": [
-        "any"
-      ],
-      "group": "legs",
-      "sub": "legs",
-      "zh": "沒穿襪"
-    },
-    {
       "tag": "no legwear",
       "section": "clothing",
       "gate": "any",
@@ -57668,7 +57565,7 @@
       "group": "legs",
       "sub": "legs",
       "zh": "沒穿襪",
-      "altOf": "missing legwear"
+      "replaces": "missing legwear"
     },
     {
       "tag": "platform sandals",
@@ -67096,30 +66993,6 @@
       "zh": "王子風"
     },
     {
-      "tag": "kodona",
-      "section": "clothing",
-      "gate": "any",
-      "heat": [
-        "tease",
-        "flash",
-        "sex"
-      ],
-      "mutex": null,
-      "bind": [],
-      "implies": [],
-      "layer": "garment",
-      "era": [
-        "modern"
-      ],
-      "group": "fabric",
-      "sub": "fab_style",
-      "mutexExtra": [
-        "print_style"
-      ],
-      "zh": "王子風",
-      "altOf": "ouji fashion"
-    },
-    {
       "tag": "biker clothes",
       "section": "clothing",
       "gate": "any",
@@ -67164,30 +67037,6 @@
         "print_style"
       ],
       "zh": "千禧風"
-    },
-    {
-      "tag": "y2k (fashion)",
-      "section": "clothing",
-      "gate": "any",
-      "heat": [
-        "tease",
-        "flash",
-        "sex"
-      ],
-      "mutex": null,
-      "bind": [],
-      "implies": [],
-      "layer": "garment",
-      "era": [
-        "modern"
-      ],
-      "group": "fabric",
-      "sub": "fab_style",
-      "mutexExtra": [
-        "print_style"
-      ],
-      "zh": "千禧風",
-      "altOf": "y2k fashion"
     },
     {
       "tag": "cyber fashion",
@@ -69270,28 +69119,6 @@
         "female"
       ],
       "zh": "自吸乳房"
-    },
-    {
-      "tag": "self breast sucking",
-      "section": "feature",
-      "gate": "female",
-      "heat": [
-        "sex"
-      ],
-      "mutex": null,
-      "bind": [],
-      "implies": [],
-      "layer": "skin",
-      "era": [
-        "any"
-      ],
-      "group": "body_f",
-      "sub": "bf_touch",
-      "needs": [
-        "female"
-      ],
-      "zh": "自吸乳房",
-      "altOf": "sucking own breasts"
     },
     {
       "tag": "spread nipple",
@@ -71766,29 +71593,6 @@
         "pair"
       ],
       "zh": "腳踩乳房"
-    },
-    {
-      "tag": "foot on breast",
-      "section": "pose",
-      "gate": "female",
-      "heat": [
-        "sex"
-      ],
-      "mutex": null,
-      "bind": [],
-      "implies": [],
-      "layer": "normal",
-      "era": [
-        "any"
-      ],
-      "group": "sex",
-      "sub": "sex_bdsm",
-      "needs": [
-        "female",
-        "pair"
-      ],
-      "zh": "腳踩乳房",
-      "altOf": "foot on another's breast"
     },
     {
       "tag": "nipple torture",
@@ -76150,31 +75954,6 @@
       "zh": "靈幻"
     },
     {
-      "tag": "shion (tensura)",
-      "section": "subject",
-      "gate": "female",
-      "heat": [
-        "tease",
-        "flash",
-        "sex"
-      ],
-      "mutex": null,
-      "bind": [],
-      "implies": [],
-      "layer": "normal",
-      "era": [
-        "any"
-      ],
-      "group": "character",
-      "sub": "char_tensei_shitara_slime_datta_ken",
-      "series": "tensei shitara slime datta ken",
-      "cardPositive": "1girl, shion (tensura), tensei shitara slime datta ken, masterpiece, best quality, amazing quality",
-      "needs": [
-        "female"
-      ],
-      "zh": "紫苑"
-    },
-    {
       "tag": "shion (tensei shitara slime datta ken)",
       "section": "subject",
       "gate": "female",
@@ -76198,7 +75977,7 @@
         "female"
       ],
       "zh": "紫苑",
-      "altOf": "shion (tensura)"
+      "replaces": "shion (tensura)"
     },
     {
       "tag": "mirko",
@@ -76276,31 +76055,6 @@
       "zh": "霍克斯"
     },
     {
-      "tag": "aizawa shota",
-      "section": "subject",
-      "gate": "male",
-      "heat": [
-        "tease",
-        "flash",
-        "sex"
-      ],
-      "mutex": null,
-      "bind": [],
-      "implies": [],
-      "layer": "normal",
-      "era": [
-        "any"
-      ],
-      "group": "character",
-      "sub": "char_boku_no_hero_academia",
-      "series": "boku no hero academia",
-      "cardPositive": "1boy, aizawa shota, boku no hero academia, masterpiece, best quality, amazing quality",
-      "needs": [
-        "male"
-      ],
-      "zh": "相澤消太"
-    },
-    {
       "tag": "eraser head (boku no hero academia)",
       "section": "subject",
       "gate": "male",
@@ -76324,7 +76078,7 @@
         "male"
       ],
       "zh": "相澤消太",
-      "altOf": "aizawa shota"
+      "replaces": "aizawa shota"
     },
     {
       "tag": "all might",
@@ -85180,32 +84934,6 @@
       "zh": "法琳"
     },
     {
-      "tag": "falin thorden",
-      "section": "subject",
-      "gate": "female",
-      "heat": [
-        "tease",
-        "flash",
-        "sex"
-      ],
-      "mutex": null,
-      "bind": [],
-      "implies": [],
-      "layer": "normal",
-      "era": [
-        "any"
-      ],
-      "group": "character",
-      "sub": "char_dungeon_meshi",
-      "series": "dungeon meshi",
-      "cardPositive": "1girl, falin thorden, dungeon meshi, masterpiece, best quality, amazing quality",
-      "needs": [
-        "female"
-      ],
-      "zh": "法琳",
-      "altOf": "falin touden"
-    },
-    {
       "tag": "senshi (dungeon meshi)",
       "section": "subject",
       "gate": "male",
@@ -85332,31 +85060,6 @@
       "zh": "卡布魯"
     },
     {
-      "tag": "marcille donato (lord)",
-      "section": "subject",
-      "gate": "female",
-      "heat": [
-        "tease",
-        "flash",
-        "sex"
-      ],
-      "mutex": null,
-      "bind": [],
-      "implies": [],
-      "layer": "normal",
-      "era": [
-        "any"
-      ],
-      "group": "character",
-      "sub": "char_dungeon_meshi",
-      "series": "dungeon meshi",
-      "cardPositive": "1girl, marcille donato (lord), dungeon meshi, masterpiece, best quality, amazing quality",
-      "needs": [
-        "female"
-      ],
-      "zh": "魔王瑪"
-    },
-    {
       "tag": "marcille donato (dungeon lord)",
       "section": "subject",
       "gate": "female",
@@ -85380,7 +85083,7 @@
         "female"
       ],
       "zh": "魔王瑪",
-      "altOf": "marcille donato (lord)"
+      "replaces": "marcille donato (lord)"
     },
     {
       "tag": "kawakami sadayo",
@@ -88283,31 +87986,6 @@
       "zh": "炎天狼"
     },
     {
-      "tag": "taihou (forbidden fruit) (azur lane)",
-      "section": "subject",
-      "gate": "female",
-      "heat": [
-        "tease",
-        "flash",
-        "sex"
-      ],
-      "mutex": null,
-      "bind": [],
-      "implies": [],
-      "layer": "normal",
-      "era": [
-        "any"
-      ],
-      "group": "character",
-      "sub": "char_azur_lane",
-      "series": "azur lane",
-      "cardPositive": "1girl, taihou (forbidden fruit) (azur lane), azur lane, masterpiece, best quality, amazing quality",
-      "needs": [
-        "female"
-      ],
-      "zh": "禁大鳳"
-    },
-    {
       "tag": "taihou (forbidden feast) (azur lane)",
       "section": "subject",
       "gate": "female",
@@ -88331,7 +88009,7 @@
         "female"
       ],
       "zh": "禁大鳳",
-      "altOf": "taihou (forbidden fruit) (azur lane)"
+      "replaces": "taihou (forbidden fruit) (azur lane)"
     },
     {
       "tag": "indomitable (azur lane)",

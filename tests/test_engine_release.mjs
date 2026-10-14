@@ -51,7 +51,22 @@ const lex = indexLexicon(data);
     assert.ok(tags.includes('1girl') && tags.includes('1boy'), 'Banning characters keeps the cast');
     assert.ok(tags.every(t => !characterBans.has(t)), 'Empty eligible character pools never fall back to banned characters or other genders');
   }
-  console.log('Character gender filtering: 168 draws plus empty-pool checks passed');
+  // 釘了 1girl 又釘一張要兩個人的動作（快抓胸）：開機擲的人數可能是 2girls，但畫面最後只有釘的一個女生。
+  // 角色照畫面上真的有的人數抽，不照開機擲的（2026-10-14 專案主回報：一個女生卻抽了兩個角色）。
+  for (const [girl, boy, girls, boys] of [[true, false, 1, 0], [true, true, 1, 1]]) {
+    let pins = new Set();
+    for (const tag of ['1girl', 'mature female', 'imminent breast grab']) pins = applyPin(lex, pins, new Set(), tag).pinned;
+    for (let i = 0; i < 30; i++) {
+      const seed = 712000 + i;
+      const tags = drawOne(lex, { ...base, rating: 'explicit', heats: ['tease'], girl, boy }, pins, new Set(), mulberry32(seed), seed).positive.split(', ');
+      const chars = tags.map(t => lex.byTag.get(t)).filter(it => it?.group === 'character');
+      assert.equal(genderCount(tags, true), girls, 'pinned 1girl stays one woman');
+      assert.ok(chars.filter(it => it.gate === 'female').length <= genderCount(tags, true), `no more female characters than women on screen (girl=${girl} boy=${boy}): ${tags.join(', ')}`);
+      assert.ok(chars.filter(it => it.gate === 'male').length <= genderCount(tags, false), `no more male characters than men on screen (girl=${girl} boy=${boy})`);
+      if (!boy) assert.equal(genderCount(tags, false), 0, 'girls only: no man added for the two-person act');
+    }
+  }
+  console.log('Character gender filtering: 228 draws plus empty-pool checks passed');
 }
 // Selfies describe the view; they do not require a phone to be visible in the picture.
 {

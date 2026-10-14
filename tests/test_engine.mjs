@@ -5686,7 +5686,7 @@ function indoorOutdoorClash(have) {
     // 這張換成瞇眼笑（閉眼，沒有視線）、哥德風、束縛、自由女神。仍是 1girl solo，沒有男生，也沒有人類陰莖。
     // 第四十一次（2026-10-14）：WAI v17 實測後，Danbooru 併掉的舊名、替代字加成同中文名的卡（alt_names.json，29 張），
     // 截肢補動作、上衣補下著在收尾後再補一次。池子變大，這張整張換過。仍是 1girl solo，沒有男生，也沒有人類陰莖。
-    "1girl, solo, very short hair, yellow eyes, aqua hair, sidelocks, large breasts, freckles, single sidelock, inverted nipples, turtleneck, yume kawaii, long coat, coat, striped panties, panties, skirt, masturbation, sitting on object, sitting, facing away, looking at mirror, :q, streetcar, outdoors, sunrise, dappled sunlight, sparks, scissors, nsfw, explicit, masterpiece, best quality, amazing quality");
+    "1girl, solo, very short hair, yellow eyes, aqua hair, sidelocks, large breasts, hair between eyes, bindi, forehead mark, facial mark, long legs, nude, red hat, hat, semi-rimless eyewear, glasses, red bowtie, bowtie, high heels, masturbation, kicking, profile, averting eyes, :q, hip focus, streetcar, outdoors, sunrise, dappled sunlight, sparks, scissors, nsfw, explicit, masterpiece, best quality, amazing quality");
   ok("drawOne exposes shadow diagnostics", Array.isArray(shadowIntegrationDraw.shadowViolations));
 
   const eatProneShadow = validateSupportShadow({

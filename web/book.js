@@ -1,3 +1,5 @@
+// 詞庫換過名的字：存著的舊名先換成新名（一定要第一個 import，見 tag-renames.js）。
+import "./tag-renames.js";
 import { dateLocale, english } from "./i18n.js";
 import { cloneCard } from "./card-images.js";
 /**

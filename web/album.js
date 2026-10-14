@@ -1,3 +1,5 @@
+// 詞庫換過名的字：存著的舊名先換成新名（一定要第一個 import，見 tag-renames.js）。
+import "./tag-renames.js";
 import { dateLocale, english } from "./i18n.js";
 /**
  * 作品冊：收藏的成品（album-save.js 從墨池、疊印台收進來；存在伺服器 recipes.py，圖另存一份）。

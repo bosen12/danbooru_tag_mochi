@@ -8,6 +8,8 @@
  *
  * 這裡不寫任何抽牌規則。釘選、封鎖、互斥換位全部呼叫 engine 的 applyPin / applyBan。
  */
+// 詞庫換過名的字：存著的舊名先換成新名（一定要第一個 import，見 tag-renames.js）。
+import "./tag-renames.js";
 import {
   indexLexicon,
   sanitizeSettings,
