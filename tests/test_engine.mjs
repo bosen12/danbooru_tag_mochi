@@ -5684,7 +5684,9 @@ function indoorOutdoorClash(have) {
     // 第三十九次（2026-10-09）：正常場景不再自己補手的構圖母題（HAND_MOTIF）。只有觸手夾乳換成乳頭牽繩。仍是 1girl solo，沒有男生。
     // 第四十次（2026-10-12）：Grok 的角色追加、一般標籤、焦點共 648 個字進池，Opus 驗收補上時代與場景規則。
     // 這張換成瞇眼笑（閉眼，沒有視線）、哥德風、束縛、自由女神。仍是 1girl solo，沒有男生，也沒有人類陰莖。
-    "1girl, solo, very short hair, yellow eyes, aqua hair, sidelocks, large breasts, tsurime, long legs, ^ ^, camisole, plaid clothes, animal costume, goth fashion, ankle socks, socks, pencil skirt, skirt, shibari, bound wrists, female masturbation, knees to chest, facing away, evil smile, hogtie, bondage, fingering, statue of liberty, outdoors, twilight, dark, european architecture, graffiti, nsfw, explicit, masterpiece, best quality, amazing quality");
+    // 第四十一次（2026-10-14）：WAI v17 實測後，Danbooru 併掉的舊名、替代字加成同中文名的卡（alt_names.json，29 張），
+    // 截肢補動作、上衣補下著在收尾後再補一次。池子變大，這張整張換過。仍是 1girl solo，沒有男生，也沒有人類陰莖。
+    "1girl, solo, very short hair, yellow eyes, aqua hair, sidelocks, large breasts, freckles, single sidelock, inverted nipples, turtleneck, yume kawaii, long coat, coat, striped panties, panties, skirt, masturbation, sitting on object, sitting, facing away, looking at mirror, :q, streetcar, outdoors, sunrise, dappled sunlight, sparks, scissors, nsfw, explicit, masterpiece, best quality, amazing quality");
   ok("drawOne exposes shadow diagnostics", Array.isArray(shadowIntegrationDraw.shadowViolations));
 
   const eatProneShadow = validateSupportShadow({
@@ -7772,7 +7774,9 @@ function indoorOutdoorClash(have) {
   s.eras = ["modern"];
   const kept = tagsOf(drawOne(lex, s, pin, new Set(), mulberry32(7), 7));
   ok("釘了室外和溫泉的那一張沒有再補室內", kept.has("onsen") && kept.has("outdoors") && !kept.has("indoors"));
-  const N = 200;
+  // 200 → 600（2026-10-14）：場地有一百多種，200 張裡每種只有一兩張，「海邊森林山街道多過竹林」
+  // 是在比雜訊（實測一次 6 對 7）。600 張是 25 對 14。
+  const N = 600;
   const OPEN = ["beach", "forest", "mountain", "street", "ocean", "garden"];
   const ROOM = ["living room", "bedroom", "kitchen", "office", "classroom", "bathroom"];
   const DUAL = ["onsen", "dojo", "pool", "shrine", "cafe", "bar (place)", "restaurant", "izakaya", "church", "greenhouse", "ryokan", "bath"];

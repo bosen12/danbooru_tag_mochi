@@ -103,6 +103,8 @@ export function ratingTier(item, ratingBlocked) {
 // 表情符號清掉符號後會變成空檔或互相撞名（:d、;d、d: 都變成 d）。
 // 字母夠的字走原來的規則，v.webp、69.webp 不動。
 const SYMBOL_FILE = {
+  // 括號拿掉之後跟 y2k fashion 撞成同一個檔名（alt_names.json 的舊名，2026-10-14）。
+  "y2k (fashion)": "y2k_fashion_old",
   "^ ^": "sym_eyes_smile",
   "> <": "sym_eyes_shut",
   "@ @": "sym_eyes_dizzy",
@@ -240,6 +242,7 @@ const ART_EXTRA = {
   // 視線本身不 implies penis（penis 只有 sex，走光會整張抽失敗）。牌面仍要看得到。
   "looking at penis": "penis",
   "cum pool": "lying, on back, on bed, excessive cum",
+  "cum puddle": "lying, on back, on bed, excessive cum",
   "female ejaculation": "pussy juice, spread legs, mature female",
   "stomach bulge": "vaginal, nude, lying, on back",
   "cum on pussy": "spread legs",
@@ -368,6 +371,7 @@ const HETERO_PICTURE = new Set([
   "penis on face",
   "looking at penis",
   "cum pool",
+  "cum puddle",
   "stomach bulge",
   "cum on pussy",
   "nursing handjob",

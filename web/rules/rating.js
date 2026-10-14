@@ -69,6 +69,7 @@ const SFW_EXTRA = new Set([
   // 那會誤殺 ~1178 個三池萬用字（含 1girl）。
   "accidental exposure",
   "lifting own clothes",
+  "lifted by self",
   "breastfeeding",
   "voyeurism",
   "netorare",

@@ -202,7 +202,7 @@ const SLEEVE_WORD = new Set([
   "white sleeves", "black sleeves", "blue sleeves", "red sleeves", "purple sleeves",
   "pink sleeves", "green sleeves", "grey sleeves", "ribbon-trimmed sleeves", "sleeve cuffs",
   "fur-trimmed sleeves", "striped sleeves", "torn sleeves", "short over long sleeves",
-  "single sleeve", "sleeves pushed up", "three-quarter sleeves", "sleeves past fingers",
+  "single sleeve", "sleeves pushed up", "three-quarter sleeves", "sleeves past elbows", "sleeves past fingers",
 ]);
 const underwearOnlyClash = (item) =>
   !!item &&
@@ -1126,6 +1126,7 @@ const DRY_NO_WATER = new Set([
   "bathroom",
   "prison",
   "colonnade",
+  "column",
   "train interior",
   "hallway",
   "elevator",
@@ -1181,7 +1182,7 @@ export const ACT_PLACE = {
   floating: new Set(["pool", "ocean", "bathtub", "ofuro", "onsen", "bubble bath", "pond", "river"]),
   "shared bathing": new Set(["onsen", "bathhouse", "ofuro", "bath"]),
   eating: new Set([...MEAL_PLACE, "movie theater", "airplane interior", "convenience store", "izakaya", "festival", "market", "ryokan", "tavern"]),
-  drinking: new Set(["cafe", "maid cafe", "bar (place)", "restaurant", "kitchen", "dining room", "cafeteria", "conveyor belt sushi", "yatai", "living room", "movie theater", "airplane interior", "izakaya", "festival", "market", "ryokan", "tavern", "ballroom", "courtyard", "garden", "balcony", "colonnade", "village"]),
+  drinking: new Set(["cafe", "maid cafe", "bar (place)", "restaurant", "kitchen", "dining room", "cafeteria", "conveyor belt sushi", "yatai", "living room", "movie theater", "airplane interior", "izakaya", "festival", "market", "ryokan", "tavern", "ballroom", "courtyard", "garden", "balcony", "colonnade", "column", "village"]),
   reading: new Set([...DESK_PLACE, "train", "train interior"]),
   cooking: COOK_PLACE,
   // 店和四家子店。子店 implies shop，只加子店時 commit 會因為 shop 不在
@@ -1205,7 +1206,7 @@ export const ACT_PLACE = {
     "flower shop",
     "bookstore",
   ]),
-  singing: new Set(["living room", "bar (place)", "park", "rooftop", "karaoke box", "church", "shrine", "festival", "ballroom", "ryokan", "colonnade", "tavern", "market", "courtyard", "castle"]),
+  singing: new Set(["living room", "bar (place)", "park", "rooftop", "karaoke box", "church", "shrine", "festival", "ballroom", "ryokan", "colonnade", "column", "tavern", "market", "courtyard", "castle"]),
   karaoke: new Set(["bar (place)", "living room", "karaoke box"]),
   "playing guitar": new Set(["bedroom", "living room", "park", "rooftop", "balcony", "garden"]),
   "playing games": new Set([...HOME_PLACE, "internet cafe"]),
@@ -1215,16 +1216,16 @@ export const ACT_PLACE = {
   writing: DESK_PLACE,
   "drawing (action)": new Set(["bedroom", "living room", "classroom", "cafe", "maid cafe", "park", "garden"]),
   "painting (action)": new Set(["bedroom", "living room", "garden", "park", "courtyard", "pavilion", "east asian architecture"]),
-  dancing: new Set(["living room", "park", "rooftop", "school gym", "bar (place)", "fitness gym", "ballroom", "palace", "colonnade", "ryokan", "festival"]),
+  dancing: new Set(["living room", "park", "rooftop", "school gym", "bar (place)", "fitness gym", "ballroom", "palace", "colonnade", "column", "ryokan", "festival"]),
   stretching: new Set(["bedroom", "living room", "fitness gym", "park", "rooftop", "beach"]),
   yoga: new Set(["bedroom", "living room", "fitness gym", "park", "rooftop", "beach"]),
   exercising: SPORT_PLACE,
-  training: new Set([...SPORT_PLACE, "battlefield", "dojo", "castle", "colonnade"]),
+  training: new Set([...SPORT_PLACE, "battlefield", "dojo", "castle", "colonnade", "column"]),
   archery: new Set(["garden", "park", "forest"]),
   fishing: FISH_PLACE,
   camping: new Set(["forest", "park", "bamboo forest", "garden", "ruins", "tent", "river", "field", "cave", "jungle", "rural"]),
   picnic: new Set(["park", "garden", "beach", "forest", "courtyard", "rural", "village"]),
-  hiking: new Set(["forest", "park", "bamboo forest", "garden", "mountain", "river", "bridge", "field", "battlefield", "ruins", "colonnade", "cave", "jungle", "rural"]),
+  hiking: new Set(["forest", "park", "bamboo forest", "garden", "mountain", "river", "bridge", "field", "battlefield", "ruins", "colonnade", "column", "cave", "jungle", "rural"]),
   jogging: new Set(["park", "street", "running track", "stadium", "garden", "city", "cityscape", "alley"]),
   skiing: new Set(["mountain"]),
   diving: new Set(["ocean", "underwater", "pool", "pond", "river"]),
@@ -7313,10 +7314,12 @@ export function drawOne(lex, settings, pinned, userBanned, rand, seed, opts) {
     }
   }
 
-  {
-    // 上衣有了、下著沒有。hasBodyGarment() 看到一件 top 就算通過，所以沒有任何
-    // 一步會去補裙子；victorian 有六件上衣、bottom 池卻只有一條真裙子，畫出來
-    // 就是上半身穿好、下半身什麼都沒交代。
+  // 上衣有了、下著沒有。hasBodyGarment() 看到一件 top 就算通過，所以沒有任何
+  // 一步會去補裙子；victorian 有六件上衣、bottom 池卻只有一條真裙子，畫出來
+  // 就是上半身穿好、下半身什麼都沒交代。
+  // 後面「道具要有場合」（NEEDS_CONTEXT）收尾之後會再叫一次：這裡有體育服蓋著所以沒補，
+  // 體育服後來因為沒有運動場合被拿掉，就只剩一件小可愛（2026-10-14 modern/flash seed 156）。
+  const fillMissingBottom = () => {
     const lowerMut = new Set();
     let lowerSkin = false;
     for (const t of used) {
@@ -7341,7 +7344,8 @@ export function drawOne(lex, settings, pinned, userBanned, rand, seed, opts) {
       );
       takeFromPool(pool, 1, rand, commit, clothingPrefer, allow, mPre);
     }
-  }
+  };
+  fillMissingBottom();
 
   fill("pose", (item) => {
     // 手的構圖母題（影子手、巨手、一堆手、浮空手）會改寫整張圖的設定：正常場景不自己補，
@@ -7369,16 +7373,21 @@ export function drawOne(lex, settings, pinned, userBanned, rand, seed, opts) {
   // 四肢都沒了，自慰和單人拳交都不成立。貞操帶是另一件事：下體鎖著就不要硬補插入。
   // 只在完全沒有動作時，從這份不用手的清單補一個。新的單人體位（灌腸、植卵）
   // 不自動塞進來，避免以後每加一個字就改寫這條補法。
-  if (
-    heat === "sex" &&
-    people === 1 &&
-    used.has("quadruple amputee") &&
-    !used.has("chastity belt") &&
-    !someUsed((it) => soloSex(it.tag) || it.mutex === "sex_act" || it.tag === "sex")
-  ) {
-    const acts = lex.bySection.pose.filter((item) => AMPUTEE_HANDLESS.has(item.tag) && allow(item));
-    takeFromPool(acts, 1, rand, commit, null, allow, mPre);
-  }
+  // 下面衣服收尾（穿著洋裝時，看不見的內衣連貞操帶一起拿掉）之後會再叫一次：
+  // 這裡看到貞操帶所以沒補，貞操帶後來被拿掉，圖就只剩截肢、沒有動作（2026-10-14 實測 400 張有 1～2 張）。
+  const fillAmputeeAct = () => {
+    if (
+      heat === "sex" &&
+      people === 1 &&
+      used.has("quadruple amputee") &&
+      !used.has("chastity belt") &&
+      !someUsed((it) => soloSex(it.tag) || it.mutex === "sex_act" || it.tag === "sex")
+    ) {
+      const acts = lex.bySection.pose.filter((item) => AMPUTEE_HANDLESS.has(item.tag) && allow(item));
+      takeFromPool(acts, 1, rand, commit, null, allow, mPre);
+    }
+  };
+  fillAmputeeAct();
 
   if (
     [...usedActs(used, lex)].some(
@@ -7830,6 +7839,8 @@ export function drawOne(lex, settings, pinned, userBanned, rand, seed, opts) {
       }
     }
   }
+  // 貞操帶可能剛被當成看不見的內衣拿掉：截肢的那張還沒有動作的話，現在補。
+  fillAmputeeAct();
 
   // 配件的場合檢查要放在這裡，不能放在 allow()。
   //
@@ -7860,6 +7871,8 @@ export function drawOne(lex, settings, pinned, userBanned, rand, seed, opts) {
       }
     }
   }
+  // 上面可能剛拿掉一件撐著下半身的衣服（沒有運動場合的體育服這類）：還缺下著就補。
+  fillMissingBottom();
   {
     const acts = usedActs(used, lex);
     const needed = new Set();
