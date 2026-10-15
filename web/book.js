@@ -24,7 +24,7 @@ import { mountGenStatus } from "./gen-status.js";
 import { openDecks } from "./decks.js";
 import { openPaste } from "./paste-prompt.js";
 import { measure, evaluate, announce, openWall } from "./achievements.js";
-import { initMotion, settleMotion, seat, refuse, flight, reducedMotion, swapIn, CURVE, DUR, css } from "./motion.js";
+import { initMotion, settleMotion, seat, refuse, flight, reducedMotion, swapIn, rowChange, CURVE, DUR, css } from "./motion.js";
 import { watchLink, LINK_LABEL, viewSrc } from "./gen.js";
 import { getSfx } from "./sfx.js";
 import { attachPeek } from "./card-peek.js";
@@ -376,12 +376,14 @@ function renderGroups() {
   const sticky = $("book-groups");
   const flow = $("book-groups-flow");
   const now = $("book-group-now");
+  // 籤列出現、收起、變高變矮時，下面的牌滑過去，不是一格跳（rowChange）。
+  const rowMove = rowChange(flow, $("book-grid"));
   for (const b of [sticky, flow, now]) {
     if (!b) continue;
     b.hidden = true;
     b.replaceChildren();
   }
-  if (ui.suit === "all") return;
+  if (ui.suit === "all") return rowMove.done();
   const runs = groupChips(lib.cards.filter((c) => c.suit === ui.suit && visibleCard(c) && genderOk(c)));
   if (ui.group && !runs.some((r) => r.items.some((i) => i.g === ui.group))) ui.group = "";
   const count = runs.reduce((n, r) => n + r.items.length, 0);
@@ -416,6 +418,7 @@ function renderGroups() {
   ];
   box.replaceChildren(...(ui.suit === "chara" ? [genderChips(ui.charGender, pickGender), seriesRun(all)] : all));
   swapIn(box, ui.suit);
+  rowMove.done();
 }
 
 function pickGroup(g, from) {

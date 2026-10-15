@@ -51,7 +51,7 @@ import { openDecks, loadDecks, cachedDecks } from "./decks.js";
 import { openPaste, listenPaste } from "./paste-prompt.js";
 import { paintWeight, wireWeightInput, weightRow, weightPositive } from "./weights.js";
 import { favButton } from "./album-save.js";
-import { initMotion, settleMotion, flip, flipBy, leave, gatherHome, flight, enter, seat, refuse, swapIn, CURVE, DUR, css } from "./motion.js";
+import { initMotion, settleMotion, flip, flipBy, leave, gatherHome, flight, enter, seat, refuse, swapIn, rowChange, CURVE, DUR, css } from "./motion.js";
 import { cloneCard } from "./card-images.js";
 import { createHand } from "./hand.js";
 import { createDrag, inkRing } from "./drag.js";
@@ -1287,6 +1287,8 @@ function renderPreview({ develop = false } = {}) {
       p && p.status === "failed" && p.note ? el("span", { class: "pv-hint" }, p.note) : null,
       p && p._gone ? el("span", { class: "pv-hint" }, "ComfyUI 的輸出資料夾裡找不到這張，可能被刪掉了。按「再印一次」照原樣重印。") : null
     );
+    // 換了一張試印（或狀態變了）：字淡進來，不是一格換掉。
+    swapIn(pv.blank, `${t.letter}|${p ? previewState(p) : ""}`);
   }
   paintHiresVeil(pv.frame, p || {}, { onCancel: () => hiresRun.cancel(p), onDismiss: () => hiresRun.dismiss(p) });
   pv.roller.hidden = !(state === "running" || state === "queued" || state === "drawn");
@@ -1376,6 +1378,8 @@ function peekAt(i) {
 }
 
 function renderTrials() {
+  // 試印按鈕裡的字變多變少、按鈕跟著變高變矮時，底下的付印列滑過去，不是一格跳（rowChange）。
+  const rowMove = rowChange($("trials"), $("print-bar"));
   const reference = new Map(candidateSummary(trials[picked], lex.byTag).map(x => [x.kind, x.tag]));
   trials.forEach((t, i) => {
     const n = trialNodes[i];
@@ -1411,6 +1415,8 @@ function renderTrials() {
     if (n.summary.dataset.key !== summaryKey) {
       n.summary.dataset.key = summaryKey;
       put(n.summary, summary.map(x => el("span", {}, el("span", { class: "trial-diff", "aria-hidden": "true" }, "≠ "), x.label)));
+      // 這張試印的差異換了：淡進來，不是一格換字。
+      swapIn(n.summary, summaryKey);
     }
     summary.forEach((x, j) => {
       const row = n.summary.children[j], different = reference.get(x.kind) !== x.tag;
@@ -1422,6 +1428,7 @@ function renderTrials() {
       `${translate(`試印 ${t.letter}：引擎補 ${t.extra.length} 張，${ERA_ZH[t.era] || ""}${t.missing.length ? `，有 ${t.missing.length} 張你的牌沒進去` : ""}${p ? `，${previewState(p)}` : ""}`)} · ${summary.map(x => `${translate(x.kind)}: ${translate(x.label)}${reference.get(x.kind) !== x.tag ? ` (${translate("與已選試印不同")})` : ""}`).join(", ")}`
     );
   });
+  rowMove.done();
 }
 
 /** 試印左邊那一格：印過就放成品的小圖，沒印過就是字母。 */
@@ -2797,6 +2804,8 @@ function renderPrintBar() {
     return syncPrintFloat();
   }
   const moreOpen = bar.querySelector(".pb-more")?.open;
+  // 付印列換了一個樣子（多了「帶牌去墨池」、少了警告…）：整列重畫時輕輕淡一下，不是一格換掉。第一次畫不演。
+  const redraw = !!bar.dataset.key && !reduced();
   bar.dataset.key = key;
   bar.dataset.shape = shape;
   put(
@@ -2867,6 +2876,7 @@ function renderPrintBar() {
       seedNode || (seedNode = mountSeedControl(null, { compact: true }))
     )
   );
+  if (redraw) bar.animate([{ opacity: 0.35 }, { opacity: 1 }], { duration: DUR.short, easing: css(CURVE.out) });
   if (moreOpen) bar.querySelector(".pb-more").open = true;
   const hint = bar.querySelector('.pb-hint[data-fresh="1"]');
   if (hint) enter(hint);
@@ -3284,6 +3294,8 @@ function affinities() {
 /** 選了某一種花色時，下面多一排小分類（鏡頭、表情、視線…），前面是牌面上那個一字章。 */
 function renderCaseGroups(inSuit) {
   const box = $("case-groups");
+  // 這排出現、收起、變高變矮時，下面的牌滑過去，不是一格跳（rowChange）。
+  const rowMove = rowChange(box, $("case-grid"));
   const suitTab = CARD_SUITS.includes(caseTab);
   const runs = suitTab ? groupChips(inSuit) : [];
   if (caseGroup && !runs.some((r) => r.items.some((i) => i.g === caseGroup))) caseGroup = "";
@@ -3292,7 +3304,8 @@ function renderCaseGroups(inSuit) {
   caseNow ||= groupNow($("case-group-now"), box);
   if (box.hidden) {
     caseNow(null);
-    return box.replaceChildren();
+    box.replaceChildren();
+    return rowMove.done();
   }
   const chip = (g, label, seal, full) =>
     el(
@@ -3330,6 +3343,7 @@ function renderCaseGroups(inSuit) {
   ];
   box.replaceChildren(...(caseTab === "chara" ? [genderChips(caseGender, pickGender), seriesRun(all)] : all));
   swapIn(box, caseTab);
+  rowMove.done();
   // 籤列捲走後的「航海王」清除鈕：按下去跟點「全部」一樣，焦點落到「全部」上。
   caseNow(caseGroup ? runs.flatMap((r) => r.items).find((i) => i.g === caseGroup) : null, () => {
     all[0].click();

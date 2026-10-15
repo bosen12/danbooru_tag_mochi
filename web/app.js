@@ -53,7 +53,7 @@ import { openPaste, listenPaste } from "./paste-prompt.js";
 import { paintWeight, wireWeightInput, weightRow, weightPositive } from "./weights.js";
 import { favButton } from "./album-save.js";
 import { createDrag, inkRing } from "./drag.js";
-import { initMotion, settleMotion, replayDeal, flip, flipBy, leave, enter, confirmButton, gatherHome, flight, seat, refuse, reducedMotion, swapIn, CURVE, DUR, css } from "./motion.js";
+import { initMotion, settleMotion, replayDeal, flip, flipBy, leave, enter, confirmButton, gatherHome, flight, seat, refuse, reducedMotion, swapIn, rowChange, CURVE, DUR, css } from "./motion.js";
 import { cloneCard } from "./card-images.js";
 import { createHand } from "./hand.js";
 import { createTrashPanel } from "./trash-panel.js";
@@ -570,8 +570,9 @@ function countLine(shown) {
 function renderLibrary() {
   const q = ui.query.toLowerCase();
   const inSuit = lib.cards.filter((c) => (ui.suit === "all" || c.suit === ui.suit) && visible(c) && genderOk(c));
-  // 小分類晶片：只在選了某一種花色時出現
+  // 小分類晶片：只在選了某一種花色時出現。出現、收起時下面的牌滑過去，不是一格跳（rowChange）。
   const chips = $("group-chips");
+  const rowMove = rowChange(chips, $("lib-grid"));
   libNow ||= groupNow($("lib-group-now"), chips);
   if (ui.suit === "all") {
     chips.hidden = true;
@@ -612,6 +613,7 @@ function renderLibrary() {
   if (!list.length) {
     // 角色頁選了「男」，規則的「人物」卻沒開男生：男角色全被收起來了，說清楚，不要只寫「沒有字」。
     const offSide = ui.suit === "chara" && ((ui.charGender === "male" && !settings.boy) || (ui.charGender === "female" && !settings.girl));
+    rowMove.done();
     grid.replaceChildren(
       q ? libraryMiss(q)
         : offSide ? el("p", { class: "lib-empty" }, ui.charGender === "male" ? "規則的「人物」沒開男生，男角色都收起來了。" : "規則的「人物」沒開女生，女角色都收起來了。")
@@ -624,6 +626,7 @@ function renderLibrary() {
   libShown = 0;
   grid.replaceChildren();
   moreLibrary(LIB_FIRST);
+  rowMove.done();
   if (dealLibrary && !matchMedia("(prefers-reduced-motion: reduce)").matches) {
     [...grid.querySelectorAll(".card")].slice(0, 20).forEach((c, i) => {
       c.style.setProperty("--i", String(i));

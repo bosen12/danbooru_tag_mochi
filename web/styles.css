@@ -5077,6 +5077,8 @@ body {
     .plate-head, .pool-well, .register, .rules, .trials-head, .preview,
     .go-bar, .trials, .print-bar, .wall-head, .wall-empty, .line-title, .line-empty,
     .book-head, .book-bar, .album-head,
+    /* 疊印台右欄的灰底框、底下的快捷鍵提示：裡面的東西還沒到時先露出一塊空框，接著消失又在別處出現（2026-10-14）。 */
+    .proof-flow, .keys-hint,
     .lib-grid > .card, .case-grid > .card, .book-grid > .book-cell
   ) {
     /* 用 visibility 不用 opacity：空狀態、發牌自己有淡入的 CSS 動畫，動畫會蓋過 opacity，藏不住。 */

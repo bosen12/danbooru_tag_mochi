@@ -388,8 +388,14 @@ export function playPageEntrance() {
         candidates.push({ node, delay, rise, card: false });
       }
     }
-    const cards = document.querySelectorAll(".lib-grid > .card:nth-child(-n+18), .case-grid > .card:nth-child(-n+18), .book-grid > .book-cell:nth-child(-n+18)");
-    [...cards].slice(0, 18).forEach((node, i) => candidates.push({ node, delay: 100 + i * 12, rise: 14, card: true }));
+    // 首屏看得到的牌全部一起進場：以前只帶前 18 張，卡冊一排 12 張，第 19 張以後先直接出現、
+    // 前面的才淡進來，看起來是後面的先到（2026-10-14）。照畫面上的位置由上往下、由左往右錯開。
+    const cards = document.querySelectorAll(".lib-grid > .card:nth-child(-n+60), .case-grid > .card:nth-child(-n+60), .book-grid > .book-cell:nth-child(-n+60)");
+    const onScreen = [...cards]
+      .map((node) => ({ node, r: node.getBoundingClientRect() }))
+      .filter(({ r }) => r.width && r.bottom > 0 && r.top < innerHeight)
+      .sort((a, b) => a.r.top - b.r.top || a.r.left - b.r.left);
+    onScreen.forEach(({ node }, i) => candidates.push({ node, delay: 100 + Math.min(i * 10, 420), rise: 14, card: true }));
     // 首屏之外不量更多牌；所有幾何讀取先一起做完，才開始寫入動畫。
     const visible = candidates.filter(({ node }) => {
       const r = node.getBoundingClientRect();
@@ -806,6 +812,41 @@ export function swapIn(node, key, { firstToo = false } = {}) {
     [{ opacity: 0, transform: "translateY(-4px)" }, { opacity: 1, transform: "none" }],
     { duration: DUR.short, easing: css(CURVE.out) }
   );
+}
+
+/**
+ * 一排會出現、收起、變高變矮的東西（花色底下的細分類籤這類），下面的內容不要一格跳過去。
+ * 先 const t = rowChange(row, below)，改完 DOM（連 below 裡面重畫）再 t.done()：
+ * - 這排剛出現：高度從 0 長出來、淡入，下面的東西被它慢慢推下去；
+ * - 收起來或高度變了：下面的東西從原本的位置滑到新位置（FLIP，只動 transform）。
+ * 量的是 below 的位置；捲動容器裡也行（量畫面座標，前後都在同一個捲動位置）。
+ */
+export function rowChange(row, below) {
+  const shown = (n) => !!n && !n.hidden && n.offsetHeight > 0;
+  const was = shown(row);
+  const top = below && below.isConnected ? below.getBoundingClientRect().top : null;
+  return {
+    done() {
+      if (!row || reducedMotion()) return;
+      if (shown(row) && !was) {
+        const cs = getComputedStyle(row);
+        const h = row.offsetHeight;
+        row.animate(
+          [
+            // flexShrink 0：放在直式 flex 捲動盒裡（疊印台的字盒）時，overflow hidden 讓它可以被壓到 0，整段動畫都是 0 高。
+            { height: "0px", paddingTop: "0px", paddingBottom: "0px", marginTop: "0px", marginBottom: "0px", opacity: 0, overflow: "hidden", flexShrink: 0 },
+            { height: h + "px", paddingTop: cs.paddingTop, paddingBottom: cs.paddingBottom, marginTop: cs.marginTop, marginBottom: cs.marginBottom, opacity: 1, overflow: "hidden", flexShrink: 0 },
+          ],
+          { duration: DUR.medium, easing: css(CURVE.out) }
+        );
+        return;
+      }
+      if (top == null || !below.isConnected) return;
+      const d = top - below.getBoundingClientRect().top;
+      if (Math.abs(d) < 1) return;
+      below.animate([{ transform: `translateY(${d.toFixed(1)}px)` }, { transform: "none" }], { duration: DUR.medium, easing: css(CURVE.out) });
+    },
+  };
 }
 
 /** 一個東西進場：從上面一點浮下來。 */
