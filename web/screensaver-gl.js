@@ -3,10 +3,11 @@
  *
  * 四幕輪流（每幕 22 秒），換幕時每張牌各自沿著一條弧線飛到下一個隊形（錯開出發、邊飛邊翻）：
  *   一、牌河：鏡頭在三條螺旋臂繞成的隧道裡，牌從遠處的墨裡流過來。
- *   二、星河：牌聚成三條旋臂的銀河，鏡頭從上面繞著轉；你最近生成的圖像行星一樣繞著發光的核心。
+ *   二、牌陣：牌排成八圈同心圓（曼陀羅），相鄰兩圈反方向轉、一道波從中心往外推，每隔幾秒一陣翻牌
+ *       從內圈翻到外圈（翻回來換成別張）；中心是你最近生成的圖排成的旋轉木馬。
  *   三、牌浪：牌排成一面弧形的巨牆，一波翻牌從左掃到右，翻回來時已經換成別張。
  *   四、墨雨：牌像花瓣一樣旋轉著落下。
- * 你最近生成的圖每一幕都在（晾在隧道中間、繞著星河、嵌在牆上、跟著落下）；
+ * 你最近生成的圖每一幕都在（晾在隧道中間、牌陣中心的旋轉木馬、嵌在牆上、跟著落下）；
  * 剛印好的那張：整個場景放慢，它飛到正前方由上往下顯影，一道光掃過去，再退回去。
  *
  * 畫面：背景是慢慢流動的水墨（全畫面 shader）；牌轉動時表面有一道反光；亮的地方暈開（自己做的 bloom：
@@ -23,7 +24,11 @@ const ACT = 22; // 每幕幾秒（含開頭換幕）
 const MORPH = 3.6; // 換幕飛多久
 const SPAN = 6400; // 牌河的深度
 const SPEED = 260; // 牌河往鏡頭流的速度
-const ACTS = ["river", "galaxy", "wave", "rain"];
+const ACTS = ["river", "mandala", "wave", "rain"];
+
+// 牌陣：第 i 圈放幾張、半徑多大（由內往外，張數照周長加）。
+const RING_CAP = (i) => 12 + i * 8;
+const RING_R = (i) => 430 + i * 160;
 
 function roundRect(g, x, y, w, h, r) {
   g.beginPath();
@@ -463,10 +468,21 @@ export async function createSaverGL(canvas, cards, prints, { english = false, ca
     return rotTo(qb, qa, qb, e);
   };
   const inst = Array.from({ length: COUNT }, (_, k) => {
-    const it = { r: [R(), R(), R(), R(), R(), R()], arm: k % 3, cyc: { river: null, wave: null, rain: null }, ...turnTrack() };
+    const it = { r: [R(), R(), R(), R(), R(), R()], arm: k % 3, cyc: { river: null, mandala: null, wave: null, rain: null }, ...turnTrack() };
     setSlot(k, k % N);
     return it;
   });
+  // 牌陣的座位：八圈，每圈張數照周長比例分（總數剛好 COUNT），每張記住自己在第幾圈第幾個。
+  {
+    const caps = Array.from({ length: 8 }, (_, i) => RING_CAP(i));
+    const sum = caps.reduce((a, b) => a + b, 0);
+    const counts = caps.map((c) => Math.round((c * COUNT) / sum));
+    counts[counts.length - 1] += COUNT - counts.reduce((a, b) => a + b, 0);
+    let k = 0;
+    counts.forEach((n, ring) => {
+      for (let idx = 0; idx < n; idx++) inst[k++].seat = { ring, idx, cap: n };
+    });
+  }
   let deal = COUNT;
   const reslot = (k) => setSlot(k, deal++ % N);
 
@@ -727,15 +743,26 @@ export async function createSaverGL(canvas, cards, prints, { english = false, ca
       o.q.multiply(spinQ.setFromAxisAngle(Z, Math.sin(t * 0.5 + r[5] * 6) * 0.15));
       o.s = 0.9 + r[4] * 0.5;
       o.a = clamp01((z - (600 - SPAN)) / 1400) * clamp01((560 - z) / 260);
-    } else if (act === "galaxy") {
-      // 三條旋臂的銀河，內圈轉得快、外圈慢。
-      const rad = 140 + Math.pow(r[1], 0.85) * 1650;
-      const th = it.arm * ((Math.PI * 2) / 3) + rad * 0.0026 + (r[2] - 0.5) * 0.5 + (t * 0.18 * 300) / (rad + 300);
-      const y = (r[3] - 0.5) * 220 * (1 - rad / 1900) + Math.sin(t * 0.8 + r[5] * 6) * 12;
-      o.p.set(Math.cos(th) * rad, y, Math.sin(th) * rad);
-      euler.set(-Math.PI / 2 + 0.35 + (r[4] - 0.5) * 0.5, 0, -th + Math.PI / 2, "XZY");
+    } else if (act === "mandala") {
+      // 牌陣：八圈同心圓，牌頭朝外（像時鐘的刻度）。相鄰兩圈反方向轉、內圈快外圈慢；
+      // 一道波從中心往外推（往前浮起再落回）；每 7 秒一陣翻牌從內圈翻到外圈，翻到背面時換一張。
+      const { ring, idx, cap } = it.seat;
+      const dir = ring % 2 ? -1 : 1;
+      const th = (idx / cap) * Math.PI * 2 + dir * t * (0.16 - ring * 0.013);
+      const rad = RING_R(ring) * (1 + Math.sin(t * 0.5) * 0.03);
+      const swell = Math.sin(t * 1.3 - ring * 0.7);
+      const phase = t / 7 - ring * 0.05 - idx / cap / 40;
+      const cyc = Math.floor(phase);
+      const f = clamp01((phase - cyc) / 0.16);
+      if (live && f > 0.5 && it.cyc.mandala !== cyc) {
+        if (it.cyc.mandala !== null) reslot(k);
+        it.cyc.mandala = cyc;
+      }
+      o.p.set(Math.cos(th) * rad, Math.sin(th) * rad, swell * 70 + Math.sin(Math.PI * f) * 160);
+      euler.set(0, easeInOut(f) * Math.PI * 2, th - Math.PI / 2, "ZYX");
       o.q.setFromEuler(euler);
-      o.s = 0.75 + r[4] * 0.6;
+      o.s = (1.15 + ring * 0.06) * (1 + swell * 0.05);
+      o.g = Math.sin(Math.PI * f) * 0.8 + Math.max(0, swell) * 0.12;
     } else if (act === "wave") {
       // 弧形巨牆：一波翻牌從左掃到右，翻到背面時換成別張。
       const C = 26;
@@ -788,11 +815,15 @@ export async function createSaverGL(canvas, cards, prints, { english = false, ca
       if (live) m.userData.cyc = cyc;
       look(o, Math.sin(j * 1.9 + 0.5) * 240, Math.cos(j * 1.3) * 140, z, camera.position.x * 0.3, camera.position.y * 0.3, 900);
       o.a = clamp01((z - (600 - SPAN)) / 1400) * clamp01((200 - z) / 350);
-    } else if (act === "galaxy") {
-      const th = (j / Math.max(1, P)) * Math.PI * 2 + t * 0.16;
-      const rad = 520 + (j % 3) * 170;
-      look(o, Math.cos(th) * rad, 160 + Math.sin(t * 0.7 + j) * 50, Math.sin(th) * rad, camera.position.x, camera.position.y, camera.position.z);
-      o.s = 1.1;
+    } else if (act === "mandala") {
+      // 中心的旋轉木馬：成品排成一圈繞著 Y 軸轉，臉朝外；轉到前面的那張最亮。
+      const th = (j / Math.max(1, P)) * Math.PI * 2 + t * 0.35;
+      const rad = 230;
+      const x = Math.sin(th) * rad;
+      const z = Math.cos(th) * rad;
+      look(o, x, Math.sin(t * 0.8 + j) * 12, z, x * 2, 0, z * 2);
+      o.s = 0.62;
+      o.a = 0.35 + 0.65 * clamp01((z / rad + 1) / 2);
     } else if (act === "wave") {
       const x = ((j + 0.5) / Math.max(1, P) - 0.5) * 2000;
       look(o, x, j % 2 ? 210 : -210, -560 + Math.abs(x) * 0.2, x * 0.4, 0, 1400);
@@ -811,11 +842,11 @@ export async function createSaverGL(canvas, cards, prints, { english = false, ca
     if (act === "river") {
       p.set(Math.sin(t * 0.13) * 90, Math.cos(t * 0.1) * 60, 900);
       l.set(Math.sin(t * 0.09) * 60, Math.cos(t * 0.07) * 40, -1000);
-    } else if (act === "galaxy") {
-      const a = 0.6 + t * 0.07;
-      const d = 2300 - Math.min(t, ACT) * 22;
-      p.set(Math.sin(a) * d, 1150 - t * 14, Math.cos(a) * d);
-      l.set(0, -120, 0);
+    } else if (act === "mandala") {
+      // 從正前方慢慢推近，帶一點傾斜繞動（看得出它是立體的）。
+      const d = 3000 - Math.min(t, ACT) * 22;
+      p.set(Math.sin(t * 0.09) * 620, Math.cos(t * 0.07) * 320, d);
+      l.set(0, 0, 0);
     } else if (act === "wave") {
       p.set(Math.sin(t * 0.08) * 420, Math.cos(t * 0.06) * 160, 1500 - t * 10);
       l.set(Math.sin(t * 0.08) * 120, 0, -700);
@@ -1000,7 +1031,7 @@ export async function createSaverGL(canvas, cards, prints, { english = false, ca
     }
 
     // 星河的核心：星河那一幕亮起來。
-    const inGalaxy = act === "galaxy" ? (morphing ? easeInOut(tl / MORPH) : 1) : prev === "galaxy" && morphing ? 1 - easeInOut(tl / MORPH) : 0;
+    const inGalaxy = act === "mandala" ? (morphing ? easeInOut(tl / MORPH) : 1) : prev === "mandala" && morphing ? 1 - easeInOut(tl / MORPH) : 0;
     core.material.opacity = inGalaxy * (0.75 + 0.15 * Math.sin(clock * 1.7));
     rays.material.opacity = inGalaxy * 0.55;
     rays.material.rotation = clock * 0.04;
@@ -1099,7 +1130,7 @@ export async function createSaverGL(canvas, cards, prints, { english = false, ca
   story = 0;
   lastAct = -1;
   clock = 0;
-  for (const it of inst) Object.assign(it, { cyc: { river: null, wave: null, rain: null } }, turnTrack());
+  for (const it of inst) Object.assign(it, { cyc: { river: null, mandala: null, wave: null, rain: null } }, turnTrack());
   for (const m of hang) Object.assign(m.userData, { cyc: null }, turnTrack());
 
   return {

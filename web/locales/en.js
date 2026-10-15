@@ -1289,6 +1289,8 @@ ComfyUI 沒有回報 checkpoint|ComfyUI returned no checkpoints.
 第四幕|Act IV
 牌河|The River
 星河|The Galaxy
+牌陣|The Mandala
+一圈一圈，轉成一朵花|Ring by ring, turning into a flower
 牌浪|The Wave
 墨雨|Ink Rain
 整副牌，繞著中間那一點光|The whole deck, circling a point of light
@@ -1726,6 +1728,7 @@ LoRA：沒設定偏好路徑，改問 ComfyUI 也失敗了：{0}|LoRA: no prefer
 要先在上面的尺度選「{0}」，選格才抽得到|Turn on {0} in Content level above first, then this kind can be drawn
 {0} 張牌，從墨裡流過來|{0} cards, flowing out of the ink
 你最近印的 {0} 張，繞著中間那一點光|Your {0} latest images, circling a point of light
+一圈一圈轉成一朵花，中間是你最近印的 {0} 張|Ring by ring into a flower, with your {0} latest images at its heart
 `;
 export const templates = parameterized.trim().split("\n").map((line) => {
   const split = line.indexOf("|");

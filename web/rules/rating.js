@@ -222,6 +222,12 @@ const EXPLICIT_ONLY_EXTRA = new Set([
   "uncensored",
   "branded",
   "rape face",
+  // 2026-10-15：只掛性愛尺度、放在體型（feature/body_f/bf_intimate）的兩個器官字，group 不是 sex、
+  // 字面也沒有上面那條 regex 認得的詞，於是在敏感分級照樣抽得到（實測釘巨乳＋敏感會帶出 uterus、cervix）。
+  // 它們只會出現在透視圖、剖面圖裡，是 explicit 的內容。同一批查過：只掛性愛、敏感又沒擋的就這兩個加
+  // dominatrix（女王，穿著衣服的角色）—— 女王留在敏感。
+  "uterus",
+  "cervix",
 ]);
 
 // 只有 explicit 能出現：真正的性、裸露、脫衣走光、內衣當外衣。

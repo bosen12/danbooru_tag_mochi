@@ -2092,7 +2092,7 @@ async function drawBatchNow(gen, intent, epoch) {
   sfx.deal(made.length > 1 ? made.length + 3 : 5);
   if (gen && epoch === drawEpoch) setTimeout(() => sfx.roll(), 160);
   const wall = $("wall");
-  const fresh = made.slice().reverse().map((shot) => [shot, shotNode(shot, true)]);
+  const fresh = made.slice().reverse().map((shot) => [shot, shotNode(shot, true, { printing: gen })]);
   // 舊的成品讓位：從原來的格子滑到新位置（跟同種子重印同一個 flip），不是一格跳過去。
   flip(wall, () => {
     for (const [, node] of fresh) wall.prepend(node);
@@ -2245,7 +2245,7 @@ function renderWall() {
  * 一張成品。有圖看圖、沒圖看字（跟導影台的成片卡同一個道理）：
  * 要送去印的，牌先收在「牌 · N」後面；只抽牌的沒有圖，牌就是成果，直接攤開。
  */
-function shotNode(shot, deal) {
+function shotNode(shot, deal, { printing = false } = {}) {
   const frame = el("div", { class: "shot-frame", style: `aspect-ratio: ${shot.width} / ${shot.height}` });
   // 點圖就放大（跟疊印台點成品一樣）。只點圖本身才算：只抽牌的那張沒有圖，點到牌扇不會誤開。
   frame.addEventListener("click", (e) => {
@@ -2253,7 +2253,8 @@ function shotNode(shot, deal) {
   });
   const status = el("span", { class: "status" });
   // 沒有圖可看的（只抽牌、印壞、被停掉）直接攤開；有圖的牌收著，要看再點。
-  const open = !shot.image && REPRINTABLE.has(shot.status);
+  // 要送去印的（抽並生圖、同種子重印）不攤開：牌在成品詳情視窗裡看，牆不會被撐開又收回去。
+  const open = !shot.image && REPRINTABLE.has(shot.status) && !printing;
   // 收著的那疊牌第一次打開才建：一張成品底下三十張牌、兩百個節點，
   // 牆上四十張就是七千多個看不到的節點，載入時白白排版一次（實測 50＋126ms 的長任務）。
   // 攤開的（只抽牌的）也一樣：剛抽的當場建；重新整理時整面牆一起畫的，捲到快看得到才建。
@@ -2327,7 +2328,8 @@ function shotNode(shot, deal) {
   };
   toggle.addEventListener("click", () => {
     // 有圖的：牌在成品詳情視窗裡看（直接捲到牌那一段），牆上不展開、版面不會跑掉。
-    if (shot.image || shot.preview) return showShot(shot, { focus: "cards" });
+    // 只抽牌、印壞、被停掉（沒有圖、牌就是內容）的才在牆上展開；其他（有圖、排隊中、印製中）都開詳情視窗。
+    if (shot.image || shot.preview || !REPRINTABLE.has(shot.status)) return showShot(shot, { focus: "cards" });
     userToggled = true;
     // 看按鈕說的狀態，不看 hidden：收起的動畫還在跑時 hidden 仍是 false，連按第二下要能把它叫回來。
     setOpen(toggle.getAttribute("aria-expanded") !== "true");
@@ -2816,7 +2818,7 @@ function reprint(shot) {
   const copy = { ...shot, id: "s" + shotSeq++, status: "drawn", image: null, preview: null, note: "", hi: null, hires: null, face: null, baseImage: null, at: new Date().toISOString() };
   shots.unshift(copy);
   noteUses([copy]);
-  const node = shotNode(copy, true);
+  const node = shotNode(copy, true, { printing: true });
   flip($("wall"), () => $("wall").prepend(node));
   enter(node);
   const r = node.getBoundingClientRect();

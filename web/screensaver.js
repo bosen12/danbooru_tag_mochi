@@ -39,7 +39,7 @@ const TIERS = ["general", "sensitive", "explicit"];
 const ORIGIN_ZH = { mochi: "墨池", fuse: "疊印台", case: "排字匣" };
 // 每一幕的片名（左邊浮出來的明體大字）。
 const ACT_NO = ["第一幕", "第二幕", "第三幕", "第四幕"];
-const ACT_TITLE = { river: "牌河", galaxy: "星河", wave: "牌浪", rain: "墨雨" };
+const ACT_TITLE = { river: "牌河", mandala: "牌陣", wave: "牌浪", rain: "墨雨" };
 const SUIT_LETTER = { cast: "C", chara: "R", look: "A", wear: "W", pose: "P", scene: "S", style: "F" };
 const SUIT_FALLBACK = { cast: "#8ea6c9", chara: "#7fb7c2", look: "#d07f8e", wear: "#a58bcf", pose: "#5fb096", scene: "#c9a45e", style: "#a9b76a" };
 const MOON =
@@ -172,7 +172,7 @@ export async function startScreensaver() {
   const total = riverCards.total || cards.length;
   const subOf = {
     river: () => `${total.toLocaleString("en-US")} 張牌，從墨裡流過來`,
-    galaxy: () => (prints.length ? `你最近印的 ${Math.min(prints.length, 16)} 張，繞著中間那一點光` : "整副牌，繞著中間那一點光"),
+    mandala: () => (prints.length ? `一圈一圈轉成一朵花，中間是你最近印的 ${Math.min(prints.length, 6)} 張` : "一圈一圈，轉成一朵花"),
     wave: () => "翻過去，就換成別張",
     rain: () => "一張一張，落下來",
   };
