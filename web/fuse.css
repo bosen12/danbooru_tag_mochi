@@ -2595,6 +2595,8 @@ body.fuse {
   box-shadow: 0 12px 26px var(--color-shade);
   font-size: var(--text-sm);
   transition: border-color var(--dur-micro) var(--ease-out), background-color var(--dur-micro) var(--ease-out), translate var(--dur-medium) var(--ease-out);
+  /* 卡池捲出畫面、角落這顆冒出來：跟「字盒 ↓」一樣從底下浮上來，不是一格出現。 */
+  animation: case-jump-in var(--dur-medium) var(--ease-out);
 }
 
 .pool-pill[hidden] {

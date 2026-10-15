@@ -22,6 +22,36 @@ export function el(tag, props = {}, ...children) {
   return translateTree(node);
 }
 
+/**
+ * 一排選項（分級、花色籤、排序、分頁）重畫：同樣的按鈕都還在，就只換選中的那個屬性，不整排換新的。
+ * 換新的按鈕沒有「之前的樣子」，選中的字色、底色會一格跳；留著舊的，CSS 過渡才淡得過去，
+ * 焦點、滑過的狀態也不會斷。按鈕不一樣了（第一次、選項變了）才整排換。
+ * 會滑的底（.seg-thumb）不算在選項裡，留著讓它滑過去。
+ */
+export function syncChoices(box, attr, ...nodes) {
+  nodes = nodes.flat(Infinity).filter(Boolean);
+  const keyOf = (n) => {
+    const c = n.cloneNode(true);
+    c.removeAttribute(attr);
+    c.removeAttribute("tabindex");
+    return c.outerHTML;
+  };
+  const keys = nodes.map(keyOf);
+  const old = [...box.children].filter((n) => !n.classList.contains("seg-thumb"));
+  if (old.length === nodes.length && old.every((o, i) => o._choiceKey === keys[i])) {
+    old.forEach((o, i) => {
+      for (const a of [attr, "tabindex"]) {
+        const v = nodes[i].getAttribute(a);
+        if (v === null) o.removeAttribute(a);
+        else if (o.getAttribute(a) !== v) o.setAttribute(a, v);
+      }
+    });
+    return;
+  }
+  nodes.forEach((n, i) => (n._choiceKey = keys[i]));
+  box.replaceChildren(...nodes);
+}
+
 export const ICONS = {
   close: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>',
   trash: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16"/><path d="M9 7V4h6v3"/><path d="M6 7l1 13h10l1-13"/><path d="M10 11v6M14 11v6"/></svg>',

@@ -16,7 +16,7 @@ import { cloneCard } from "./card-images.js";
 import { indexLexicon } from "./engine.js";
 import { ratingBlocked, RATING_LABEL } from "./rules/rating.js";
 import { buildLibrary, sizeCards, groupChips, genderChips, chipRun, seriesRun, createAssets, cardNode, cardFacts, setCardFlag, eagerArt, cardMatches, CARD_SUIT_INFO, CARD_SUITS } from "./cards.js";
-import { el, openSheet, toast } from "./ui.js";
+import { el, openSheet, toast, syncChoices } from "./ui.js";
 import { zoomFromThumb } from "./zoom.js";
 import { mountKeysHelp } from "./keys-help.js";
 import { mountTour } from "./tour.js";
@@ -184,7 +184,7 @@ async function boot() {
 
 function renderRating() {
   const box = $("rating");
-  box.replaceChildren(
+  syncChoices(box, "aria-checked",
     ...["general", "sensitive", "explicit"].map((r) =>
       el(
         "button",
@@ -266,15 +266,18 @@ function renderSummary({ count = false } = {}) {
     sumShown = { used: -1, total: -1 };
     return;
   }
+  // 換分級、尺度後牌的總數變了：那一段淡進來（數字自己會數過去）。
+  const poolChanged = box._poolLen !== undefined && box._poolLen !== pool.length;
+  box._poolLen = pool.length;
+  // 一行只建一次，數字數上去時只換數字：那一段的淡入不會被每一格重畫打斷。
+  const nU = el("b", { class: "book-sum-n" });
+  const nT = el("b", { class: "book-sum-n" });
+  const of = el("span", {}, ` ／ ${fmt(pool.length)} 張用過`);
+  box.replaceChildren(nU, of, el("span", { class: "book-sum-dot", "aria-hidden": "true" }, "・"), el("span", {}, "共 "), nT, el("span", {}, " 次"));
+  if (poolChanged && !reducedMotion()) of.animate([{ opacity: 0, transform: "translateY(-3px)" }, { opacity: 1, transform: "none" }], { duration: DUR.short, easing: css(CURVE.out) });
   const paint = (u, t) => {
-    box.replaceChildren(
-      el("b", { class: "book-sum-n" }, fmt(u)),
-      el("span", {}, ` ／ ${fmt(pool.length)} 張用過`),
-      el("span", { class: "book-sum-dot", "aria-hidden": "true" }, "・"),
-      el("span", {}, "共 "),
-      el("b", { class: "book-sum-n" }, fmt(t)),
-      el("span", {}, " 次")
-    );
+    nU.textContent = fmt(u);
+    nT.textContent = fmt(t);
   };
   const from = count ? { used: 0, total: 0 } : sumShown;
   sumShown = { used, total };
@@ -435,7 +438,7 @@ function pickGroup(g, from) {
 
 function renderSort() {
   const box = $("book-sort");
-  box.replaceChildren(
+  syncChoices(box, "aria-checked",
     ...Object.keys(ORDER_ZH).map((o) =>
       el(
         "button",

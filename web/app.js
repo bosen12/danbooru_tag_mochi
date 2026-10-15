@@ -43,7 +43,7 @@ import { initWorkflow, currentWorkflowId, currentSampling, wfHandleKeys } from "
 import { HARD_BANNED } from "./card-art.js";
 import { buildLibrary, sizeCards, groupChips, genderChips, chipRun, seriesRun, groupNow, createAssets, cardNode, setCardFlag, setEnterTarget, eagerArt, cardFacts, cardMatches, CARD_SUIT_INFO, CARD_SUITS, RATING_ZH } from "./cards.js";
 import { bindArt, artFallback } from "./card-images.js";
-import { el, openSheet, anyOverlay, toast, runToastAction, ICONS } from "./ui.js";
+import { el, openSheet, anyOverlay, toast, runToastAction, ICONS, syncChoices } from "./ui.js";
 import { mountKeysHelp } from "./keys-help.js";
 import { mountTour } from "./tour.js";
 import { mountGenStatus } from "./gen-status.js";
@@ -221,7 +221,7 @@ function saveUi() {
 
 function renderRating() {
   const box = $("rating");
-  box.replaceChildren(
+  syncChoices(box, "aria-checked",
     ...["general", "sensitive", "explicit"].map((r) =>
       el(
         "button",
@@ -263,7 +263,7 @@ function pingLoop() {
 
 function renderLibraryChrome() {
   const tabs = $("suit-tabs");
-  tabs.replaceChildren(
+  syncChoices(tabs, "aria-pressed",
     el("button", { class: "suit-tab pressable", type: "button", "aria-pressed": ui.suit === "all" ? "true" : "false", onclick: (e) => pickSuit("all", e.currentTarget) }, "全部"),
     ...CARD_SUITS.map((s) =>
       el(
@@ -1867,6 +1867,13 @@ function renderGoBar() {
   // 元素上，瀏覽器不算一次點擊 —— 要按好幾次才停得下來。
   const key = [busy, generator.pending, infinite, n, settings.samePerson, hand ? hand.count : 0, hand?.open].join("|");
   if (bar.dataset.key === key && bar.childElementCount) return renderGoFloat();
+  // 只有手牌開合：「偏好卡牌」那顆換選中狀態就好（顏色淡過去），不整排換新的。
+  const handBtn = $("hand-btn");
+  if (handBtn && bar.contains(handBtn) && bar.dataset.key?.replace(/\|[^|]*$/, "") === key.replace(/\|[^|]*$/, "")) {
+    bar.dataset.key = key;
+    handBtn.setAttribute("aria-pressed", hand?.open ? "true" : "false");
+    return renderGoFloat();
+  }
   bar.dataset.key = key;
   bar.replaceChildren(
     ...[
@@ -1884,7 +1891,7 @@ function renderGoBar() {
     }, "一次抽好幾張時，第 2 張起沿用第 1 張的長相：同一個角色換姿勢、換衣服"),
     el("span", { class: "go-status", "aria-live": "polite" }, goStatusText(busy)),
     el("span", { class: "spacer" }),
-    busy ? el("button", { class: "btn", type: "button", onclick: stopAll }, "停") : null,
+    busy ? el("button", { class: "btn go-stop", type: "button", onclick: stopAll }, "停") : null,
     el(
       "button",
       {
@@ -1903,6 +1910,16 @@ function renderGoBar() {
     seedNode || (seedNode = mountSeedControl(null, { compact: true })),
     ].filter(Boolean)
   );
+  // 整排重畫時，真的變了的那一小塊才演：張數換了，主按鈕上的 ×N 跟步進器同方向滾進來；
+  // 開始印、「停」冒出來時淡進來。其他按鈕原樣，不閃。
+  if (!reducedMotion() && bar._n !== undefined) {
+    const cnt = bar.querySelector(".btn-primary .count");
+    if (cnt && bar._n !== n) cnt.animate([{ opacity: 0, transform: `translateY(${n > bar._n ? 6 : -6}px)` }], { duration: DUR.short, easing: css(CURVE.out) });
+    const stop = busy && !bar._busy ? bar.querySelector(".go-stop") : null;
+    if (stop) stop.animate([{ opacity: 0, transform: "scale(0.9)" }], { duration: DUR.short, easing: css(CURVE.settle) });
+  }
+  bar._n = n;
+  bar._busy = busy;
   renderGoFloat();
 }
 
@@ -1926,11 +1943,20 @@ function renderGoFloat() {
   float.replaceChildren(
     ...[
       el("span", { class: "go-float-state" }, busy ? (generator.pending ? `印製中・還有 ${generator.pending} 張` : "無限抽・下一輪…") : pool.size ? `池裡 ${pool.size} 張` : "池子是空的，全靠抽"),
-      busy ? el("button", { class: "btn btn-small", type: "button", onclick: stopAll }, "停") : null,
+      busy ? el("button", { class: "btn btn-small go-stop", type: "button", onclick: stopAll }, "停") : null,
       el("button", { class: "btn btn-small btn-ghost", type: "button", onclick: () => drawBatch(false), title: "只抽牌（P）" }, "只抽牌"),
       el("button", { class: "btn btn-small btn-primary", type: "button", onclick: () => drawBatch(true), title: "抽並生圖（G）" }, "抽並生圖", el("span", { class: "count" }, `×${settings.n}`)),
     ].filter(Boolean)
   );
+  // 浮動列看得到時狀態換了（池裡幾張、印製中…）：那行字淡進來，「停」也是。
+  const state = float.querySelector(".go-float-state");
+  if (show && !reducedMotion() && float._state !== undefined) {
+    if (float._state !== state.textContent) state.animate([{ opacity: 0, transform: "translateY(3px)" }], { duration: DUR.short, easing: css(CURVE.out) });
+    const stop = busy && !float._busy ? float.querySelector(".go-stop") : null;
+    if (stop) stop.animate([{ opacity: 0, transform: "scale(0.9)" }], { duration: DUR.short, easing: css(CURVE.settle) });
+  }
+  float._state = state.textContent;
+  float._busy = busy;
 }
 
 function watchGoBar() {
@@ -2258,12 +2284,15 @@ function shotNode(shot, deal) {
         ],
         { duration: DUR.micro, easing: css(CURVE.exit) }
       ).onfinish = () => {
-        if (toggle.getAttribute("aria-expanded") === "false") box.hidden = true;
+        // 收完才藏；底下（手機上是下一張成品）從原位滑上來補位，不是一格跳上來。
+        if (toggle.getAttribute("aria-expanded") === "false") flip(toggle.closest(".wall"), () => (box.hidden = true));
       };
       return;
     }
     const wasHidden = cards.hidden;
-    cards.hidden = !now;
+    // 攤開：這張變高，底下的成品滑下去讓位（牌自己照樣一張張發下來）。
+    if (now && wasHidden) flip(toggle.closest(".wall"), () => (cards.hidden = false));
+    else cards.hidden = !now;
     toggle.setAttribute("aria-expanded", now ? "true" : "false");
     if (now) {
       if (!dealtOnce) {

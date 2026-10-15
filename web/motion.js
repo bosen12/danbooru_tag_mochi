@@ -849,6 +849,40 @@ export function rowChange(row, below) {
   };
 }
 
+/**
+ * 一塊東西自己變高變矮（內容換了：空白的版換成一張紙、晾紙繩從收起變成掛著作品）：
+ * 高度從原本的樣子長到新的，底下的東西跟著被慢慢推過去；在上面長高時，捲動錨點讓畫面跟著慢慢走，不是一格被推走。
+ * 動的是 height（每格重排版），只用在小塊、偶爾才變的地方。用法同 rowChange：先 const g = heightChange(node)，改完再 g.done()。
+ * 上一段還沒長完又變：從那一刻的高度接著長。
+ */
+export function heightChange(node) {
+  const from = node && node.isConnected ? node.getBoundingClientRect().height : 0;
+  return {
+    done() {
+      if (!node || !node.isConnected || reducedMotion() || !from) return;
+      // minHeight 0：放在直式 flex 裡（疊印台寬螢幕的右欄）時，項目的最小高度是內容高，height 往下壓不動。
+      // 同一段裡又叫到一次（印製進度每一下都會重畫）：剛開始的動畫還沒套上去，量到的已經是新高度，
+      // 不能拿它重來 —— 看上一段長到哪裡、要長到多高，自己算。
+      const prev = node._grow;
+      const at = prev ? Math.min(1, (prev.currentTime || 0) / DUR.medium) : 0;
+      prev?.cancel();
+      const to = node.getBoundingClientRect().height;
+      const start = prev ? prev.from + (prev.to - prev.from) * bezier(CURVE.out)(at) : from;
+      if (!to || Math.abs(to - start) < 2) return;
+      const a = node.animate([{ height: start + "px", minHeight: "0px", overflow: "hidden" }, { height: to + "px", minHeight: "0px", overflow: "hidden" }], { duration: DUR.medium, easing: css(CURVE.out) });
+      if (prev && Math.abs(to - prev.to) < 2) {
+        // 目標沒變：接著原本那一段播，不重頭。
+        a.effect.setKeyframes([{ height: prev.from + "px", minHeight: "0px", overflow: "hidden" }, { height: to + "px", minHeight: "0px", overflow: "hidden" }]);
+        a.currentTime = prev.currentTime || 0;
+      }
+      node._grow = Object.assign(a, { from: prev && Math.abs(to - prev.to) < 2 ? prev.from : start, to });
+      a.onfinish = a.oncancel = () => {
+        if (node._grow === a) node._grow = null;
+      };
+    },
+  };
+}
+
 /** 一個東西進場：從上面一點浮下來。 */
 export function enter(node, { delay = 0 } = {}) {
   if (!node || reducedMotion()) return;

@@ -41,7 +41,7 @@ import { initLoraPicker, currentLorasPayload, currentTriggerText, currentCkpt, h
 import { initWorkflow, currentWorkflowId, currentSampling, wfHandleKeys } from "./workflow.js";
 import { HARD_BANNED, applyArtSources } from "./card-art.js";
 import { buildLibrary, sizeCards, groupChips, genderChips, chipRun, seriesRun, groupNow, cardMatches, createAssets, cardNode, cardFacts, setEnterTarget, eagerArt, CARD_SUIT_INFO, CARD_SUITS, RATING_ZH, ERA_ZH } from "./cards.js";
-import { el, openSheet, anyOverlay, toast } from "./ui.js";
+import { el, openSheet, anyOverlay, toast, syncChoices } from "./ui.js";
 import { zoomFromThumb } from "./zoom.js";
 import { mountKeysHelp } from "./keys-help.js";
 import { mountTour } from "./tour.js";
@@ -51,7 +51,7 @@ import { openDecks, loadDecks, cachedDecks } from "./decks.js";
 import { openPaste, listenPaste } from "./paste-prompt.js";
 import { paintWeight, wireWeightInput, weightRow, weightPositive } from "./weights.js";
 import { favButton } from "./album-save.js";
-import { initMotion, settleMotion, flip, flipBy, leave, gatherHome, flight, enter, seat, refuse, swapIn, rowChange, CURVE, DUR, css } from "./motion.js";
+import { initMotion, settleMotion, flip, flipBy, leave, gatherHome, flight, enter, seat, refuse, swapIn, rowChange, heightChange, CURVE, DUR, css } from "./motion.js";
 import { cloneCard } from "./card-images.js";
 import { createHand } from "./hand.js";
 import { createDrag, inkRing } from "./drag.js";
@@ -1212,6 +1212,9 @@ function previewState(p) {
 function renderPreview({ develop = false } = {}) {
   const t = trials[picked];
   if (!pv || !t) return;
+  // 空白的版換成一張紙（付印、換試印）時預覽變高：高度慢慢長，底下的試印、付印列跟著被推過去，
+  // 不是一格被推走（手機上捲動錨點讓它往上長，畫面也是慢慢走）。
+  const grow = heightChange($("preview"));
   const p = printFor(sigOf(t));
   const w = p ? p.width : settings.width;
   const h = p ? p.height : settings.height;
@@ -1300,6 +1303,9 @@ function renderPreview({ develop = false } = {}) {
     el("span", { class: "pv-cap-state", dataset: { state } }, previewState(p)),
     el("span", { class: "pv-cap-seed" }, `${isFixedSeed() ? "固定 seed" : "seed"} ${p ? p.seed : printSeedOf(t)}`)
   );
+  // 狀態換了（印製中 → 印好了、印壞了）：說明那行淡進來。
+  swapIn(pv.cap, `${t.letter}|${state}`);
+  grow.done();
 }
 
 /** 付印：一條滾筒的陰影從成品那張紙上壓過去。 */
@@ -1392,6 +1398,8 @@ function renderTrials() {
       el("span", {}, ERA_ZH[t.era] || ""),
       t.missing.length ? el("span", { class: "trial-miss", title: `沒進這張：${t.missing.map(zh).join("、")}` }, `缺 ${t.missing.length}`) : null
     );
+    // 換分級、換一批：補幾張、時代、缺幾張換了就淡進來（印製進度重畫時不演）。
+    swapIn(n.meta, `${t.extra.length}|${t.era}|${t.missing.length}`);
     // 牌沒變就不重建：換試印、印製進度都會叫到這裡，不要讓小圖一直重載。
     const show = trialHighlights(t);
     const key = show.join("|");
@@ -2930,9 +2938,12 @@ function sendToPool(e) {
 let lineSeen = null;
 
 function syncLineEmpty() {
+  // 手機上空的晾紙繩是收起來的一條：第一張掛上去時慢慢展開，整頁不會一格被推下去。
+  const grow = heightChange($("line"));
   $("line").dataset.empty = prints.length ? "false" : "true";
   $("line-count").textContent = `・${prints.length}`;
   $("line-empty").hidden = prints.length > 0;
+  grow.done();
 }
 
 function renderLine() {
@@ -3199,7 +3210,7 @@ function renderCaseTabs() {
     ["match", "相配", null],
     ...CARD_SUITS.map((s) => [s, CARD_SUIT_INFO[s].zh, s]),
   ];
-  box.replaceChildren(
+  syncChoices(box, "aria-pressed",
     ...tabs.map(([id, label, suit]) =>
       el(
         "button",
@@ -3641,7 +3652,7 @@ const drag = createDrag({
 /* ================= 桅杆、規則 ================= */
 
 function renderRating() {
-  $("rating").replaceChildren(
+  syncChoices($("rating"), "aria-checked",
     ...["general", "sensitive", "explicit"].map((r) =>
       el(
         "button",

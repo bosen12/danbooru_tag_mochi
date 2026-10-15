@@ -10,6 +10,7 @@
  */
 import { el, anyOverlay } from "./ui.js";
 import { STEPS, ROOM_ZH } from "./tour-steps.js";
+import { DUR, CURVE, css, reducedMotion } from "./motion.js";
 
 const SEEN_KEY = (room) => `mochi.tour.${room}.v1`;
 const PAD = 8;
@@ -76,6 +77,14 @@ export function startTour(room, from = 0) {
   let timer = 0;
   let doneAt = 0;
   let target = null;
+  const still = reducedMotion();
+
+  // 暗幕、亮框換來換去（開場整片暗 → 亮出某一塊）：新出現的那層淡進來，不要一格就換。
+  function showLayer(n, on) {
+    if (n.hidden !== on) return;
+    n.hidden = !on;
+    if (on && !still && i >= 0) n.animate([{ opacity: 0 }, { opacity: 1 }], { duration: DUR.short, easing: css(CURVE.out) });
+  }
 
   function place() {
     const step = steps[i];
@@ -88,12 +97,12 @@ export function startTour(room, from = 0) {
       const x = Math.max(4, r.left - PAD);
       const y = Math.max(4, r.top - PAD);
       ring.style.cssText = `left:${x}px;top:${y}px;width:${Math.min(vw - x - 4, r.width + PAD * 2)}px;height:${Math.min(vh - y - 4, r.height + PAD * 2)}px`;
-      ring.hidden = false;
-      dim.hidden = true;
+      showLayer(ring, true);
+      showLayer(dim, false);
     } else {
-      ring.hidden = true;
+      showLayer(ring, false);
       // 沒有要亮的東西（開場、結尾）：整片變暗；步驟說「不要暗」（彈窗開著時）就不蓋。
-      dim.hidden = step?.dim === false;
+      showLayer(dim, step?.dim !== false);
     }
     // 小視窗：手機貼在上或下（避開亮的那塊）；電腦放在目標下面，放不下就上面，再不行就旁邊，都夾在畫面裡。
     const cw = card.offsetWidth;
@@ -155,7 +164,16 @@ export function startTour(room, from = 0) {
       const r = t.getBoundingClientRect();
       if (r.top < 60 || r.bottom > innerHeight - 40) t.scrollIntoView({ block: "center", behavior: "instant" });
     }
+    const was = card.isConnected && card.style.left ? card.getBoundingClientRect() : null;
     place();
+    // 換一步：小視窗從原本的位置滑到新位置，字淡進來（只動 translate／opacity）。
+    if (was && !still) {
+      const now = card.getBoundingClientRect();
+      const dx = was.left - now.left;
+      const dy = was.top - now.top;
+      if (Math.abs(dx) > 1 || Math.abs(dy) > 1) card.animate([{ translate: `${dx}px ${dy}px` }, { translate: "0 0" }], { duration: DUR.medium, easing: css(CURVE.out) });
+      for (const n of [title, text, todo]) n.animate([{ opacity: 0 }, { opacity: 1 }], { duration: DUR.short, easing: css(CURVE.out) });
+    }
     (step.wait ? skip : next).focus({ preventScroll: true });
   }
 
@@ -176,8 +194,15 @@ export function startTour(room, from = 0) {
     removeEventListener("keydown", onKey, true);
     removeEventListener("resize", place);
     removeEventListener("scroll", onScroll, true);
-    layer.remove();
     active = null;
+    // 收掉：整層淡出、小視窗往下沉一點，再拿掉。
+    if (still) layer.remove();
+    else {
+      layer.style.pointerEvents = "none";
+      card.style.pointerEvents = "none";
+      card.animate([{ opacity: 1, transform: "none" }, { opacity: 0, transform: "translateY(6px) scale(0.98)" }], { duration: DUR.short, easing: css(CURVE.exit), fill: "forwards" });
+      layer.animate([{ opacity: 1 }, { opacity: 0 }], { duration: DUR.short, easing: css(CURVE.exit), fill: "forwards" }).finished.then(() => layer.remove(), () => layer.remove());
+    }
     if (done) markSeen(room);
   }
 
@@ -210,6 +235,11 @@ export function startTour(room, from = 0) {
   timer = setInterval(tick, 250);
   active = { end };
   go(from);
+  // 開場：暗幕淡進來，小視窗往上浮出來。
+  if (!still) {
+    layer.animate([{ opacity: 0 }, { opacity: 1 }], { duration: DUR.short, easing: css(CURVE.out) });
+    card.animate([{ opacity: 0, transform: "translateY(10px) scale(0.98)" }, { opacity: 1, transform: "none" }], { duration: DUR.medium, easing: css(CURVE.out) });
+  }
   return active;
 }
 
@@ -232,7 +262,9 @@ export function mountTour(room) {
     if (seen(room) || active || document.getElementById("tour-offer")) return;
     const close = () => {
       markSeen(room);
-      offer.remove();
+      if (reducedMotion()) return offer.remove();
+      offer.style.pointerEvents = "none";
+      offer.animate([{ opacity: 1, transform: "none" }, { opacity: 0, transform: "translateY(8px)" }], { duration: DUR.short, easing: css(CURVE.exit), fill: "forwards" }).finished.then(() => offer.remove(), () => offer.remove());
     };
     const offer = el(
       "div",

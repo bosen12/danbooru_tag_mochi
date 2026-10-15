@@ -13,7 +13,7 @@ import { dateLocale, english } from "./i18n.js";
  */
 import { RATING_LABEL, ratingBlocked } from "./rules/rating.js";
 import { buildLibrary, ERA_ZH } from "./cards.js";
-import { el, openSheet, toast } from "./ui.js";
+import { el, openSheet, toast, syncChoices } from "./ui.js";
 import { zoomFromThumb } from "./zoom.js";
 import { mountKeysHelp } from "./keys-help.js";
 import { mountTour } from "./tour.js";
@@ -162,7 +162,7 @@ async function load() {
 
 function renderRating() {
   const box = $("rating");
-  box.replaceChildren(
+  syncChoices(box, "aria-checked",
     ...["general", "sensitive", "explicit"].map((r) =>
       el(
         "button",
@@ -245,7 +245,7 @@ function wireSearch() {
 
 function renderTabs() {
   const box = $("album-tabs");
-  box.replaceChildren(
+  syncChoices(box, "aria-checked", [
     ...TABS.map(([v, label]) =>
       el(
         "button",
@@ -258,11 +258,11 @@ function renderTabs() {
         },
         label
       )
-    )
-  );
+    ),
+  ]);
   const filters = $("log-filters");
   filters.hidden = tab !== "log";
-  filters.replaceChildren(
+  syncChoices(filters, "aria-pressed", [
     ...LOG_FILTERS.map(([v, label]) =>
       el(
         "button",
@@ -270,6 +270,7 @@ function renderTabs() {
           class: "group-chip pressable",
           type: "button",
           "aria-pressed": logFilter === v ? "true" : "false",
+          dataset: { v },
           onclick: () => {
             if (logFilter === v) return;
             logFilter = v;
@@ -279,11 +280,11 @@ function renderTabs() {
         },
         label
       )
-    )
-  );
+    ),
+  ]);
   const groupBox = $("works-group");
   groupBox.hidden = tab !== "works";
-  groupBox.replaceChildren(
+  syncChoices(groupBox, "aria-pressed", [
     el("span", { class: "works-group-lead" }, "分輯"),
     ...GROUPINGS.map(([v, label]) =>
       el(
@@ -292,6 +293,7 @@ function renderTabs() {
           class: "group-chip pressable",
           type: "button",
           "aria-pressed": grouping === v ? "true" : "false",
+          dataset: { v },
           onclick: () => {
             if (grouping === v) return;
             grouping = v;
@@ -306,8 +308,8 @@ function renderTabs() {
         },
         label
       )
-    )
-  );
+    ),
+  ]);
   $("album-q").placeholder = PLACEHOLDER[tab];
 }
 
