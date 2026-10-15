@@ -2144,7 +2144,7 @@ body #wf-pick-btn.has {
   min-height: calc(var(--space-2xl) * 5);
 }
 
-/* 剛印好：由上往下顯影，亮一下再沉回正常。 */
+/* 剛印好：由上往下顯影（跟疊印台一樣）。以前先亮到 1.5 倍再沉回來，無限抽時每張都閃一下，太刺眼。 */
 .shot-frame.is-developing img:not(.shot-under) {
   animation: shot-develop var(--dur-develop) var(--ease-out) both;
 }
@@ -2175,14 +2175,9 @@ body #wf-pick-btn.has {
 @keyframes shot-develop {
   from {
     clip-path: inset(0 0 100% 0);
-    filter: brightness(1.5) contrast(0.8);
-  }
-  60% {
-    filter: brightness(1.1);
   }
   to {
     clip-path: inset(0 0 0 0);
-    filter: none;
   }
 }
 

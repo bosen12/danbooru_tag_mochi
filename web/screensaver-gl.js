@@ -658,7 +658,7 @@ export async function createSaverGL(canvas, cards, prints, { english = false, ca
           vec3 col = mix(vec3(0.953, 0.933, 0.886), c.rgb, edge);
           // 顯影完，一道光從左上掃到右下。
           float band = 1.0 - smoothstep(0.0, 0.08, abs((vUv.x - vUv.y * 0.6) - uSweep));
-          col += vec3(1.0, 0.92, 0.75) * band * 0.55;
+          col += vec3(1.0, 0.92, 0.75) * band * 0.22;
           gl_FragColor = vec4(col * 0.9 * uAlpha, uAlpha);
         }`,
       ...premult,
@@ -1038,12 +1038,11 @@ export async function createSaverGL(canvas, cards, prints, { english = false, ca
         uni.uAlpha.value = appear;
         uni.uDev.value = clamp01((age - 0.6) / 2);
         uni.uSweep.value = -0.6 + clamp01((age - 2.8) / 1.4) * 2.2;
-        flash = Math.max(0, 1 - Math.abs(age - 2.7) / 0.6) * 0.18;
-        // 顯影完那一下，圖的正中間拉出一道橫向光條。
+        // 顯影完那一下，圖的正中間拉出一道淡淡的橫向光條（不閃整個畫面：無限抽時每張都來一次，太刺眼）。
         const fl = Math.max(0, 1 - Math.abs(age - 2.9) / 0.9);
         if (fl > 0) {
           flare.position.copy(hero.position).addScaledVector(ahead, -40);
-          flare.material.opacity = Math.max(flare.material.opacity, fl * 0.85);
+          flare.material.opacity = Math.max(flare.material.opacity, fl * 0.3);
           flare.scale.set(1800 * (0.6 + 0.4 * fl), 46, 1);
         }
         u.from.copy(hero.position);
