@@ -11,9 +11,21 @@
  * 大圖還沒載好（排版量不到大小）：最多等一下下，等不到就照舊只有彈窗的進場，不硬飛。
  * 減少動態、縮圖不在畫面上：都不飛。
  */
-import { DUR, CURVE, css, reducedMotion } from "./motion.js";
+import { css, reducedMotion, travelTime } from "./motion.js";
 
 const WAIT_MS = 320;
+
+// 速度：比牌飛（motion.js 的 travelTime，320～540ms、travel 曲線）快一點就好。
+// 「飛多遠」算位移加上變大多少（圖常常就在原地長大），時間打九折、落在 400～490ms；
+// 曲線比牌的柔一點起步，不像以前那條一開頭就衝完一半。縮回去再快一成：關掉是要回到牆上，不必再看一次。
+const ZOOM_CURVE = [0.3, 0.6, 0.15, 1];
+function zoomTime(small, big, factor = 1) {
+  const c = (r) => [r.left + r.width / 2, r.top + r.height / 2];
+  const [ax, ay] = c(small.drawn);
+  const [bx, by] = c(big.drawn);
+  const reach = Math.hypot(bx - ax, by - ay) + Math.abs(big.drawn.height - small.drawn.height);
+  return Math.round(Math.max(400, travelTime(reach) * 0.9) * factor);
+}
 
 /** 一張圖「畫出來的那一塊」（drawn）和「看得到的那一塊」（shown）。量不到就回 null。 */
 function picture(img, aspect) {
@@ -136,11 +148,12 @@ export function zoomFromThumb({ from, sheet, to, aspect }) {
     const end = { transform: "none", clipPath: `inset(0px 0px 0px 0px round ${big.radius.toFixed(2)}px)` };
     to.style.visibility = "hidden";
     first.style.visibility = "hidden";
-    anim = ghost.animate([start, end], { duration: DUR.long, easing: css(CURVE.out), fill: "both" });
+    const ms = zoomTime(small, big);
+    anim = ghost.animate([start, end], { duration: ms, easing: css(ZOOM_CURVE), fill: "both" });
     anim.onfinish = () => {
       if (!closed) land();
     };
-    setTimeout(() => !closed && ghost && drop(), DUR.long + 1600);
+    setTimeout(() => !closed && ghost && drop(), ms + 1600);
   };
   // 落地：大圖還在載（影子用的是縮圖那張），影子先留著等它載好再換，不要露出一塊空白。
   const land = () => {
@@ -169,7 +182,7 @@ export function zoomFromThumb({ from, sheet, to, aspect }) {
       if (anim && anim.playState === "running") {
         anim.onfinish = drop;
         anim.reverse();
-        setTimeout(() => ghost && drop(), DUR.long + 400);
+        setTimeout(() => ghost && drop(), 540 + 400);
         return;
       }
       drop();
@@ -182,14 +195,15 @@ export function zoomFromThumb({ from, sheet, to, aspect }) {
       to.style.visibility = "hidden";
       thumb.style.visibility = "hidden";
       const end = pose(small, big);
+      const ms = zoomTime(small, big, 0.9);
       anim = ghost.animate([{ transform: "none", clipPath: `inset(0px 0px 0px 0px round ${big.radius.toFixed(2)}px)` }, end], {
-        duration: DUR.medium,
-        easing: css(CURVE.out),
+        duration: ms,
+        easing: css(ZOOM_CURVE),
         fill: "both",
       });
       anim.onfinish = drop;
       // 保險：分頁在背景時動畫不跑，回來不要留一張影子蓋著。
-      setTimeout(() => ghost && drop(), DUR.medium + 400);
+      setTimeout(() => ghost && drop(), ms + 400);
     },
     { once: true }
   );
