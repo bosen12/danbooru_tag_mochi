@@ -1275,6 +1275,9 @@ ComfyUI 沒有回報 checkpoint|ComfyUI returned no checkpoints.
 排字匣、墨池、疊印台的三分鐘介紹影片：畫面與配樂都是這一頁即時產生的。|A three-minute introduction to Danbooru Case, Ink Pool and Fuse Bed, with live visuals and music.
 墨池與疊印台的使用教學影片：從放第一張牌到付印晾紙，畫面與配樂都是這一頁即時產生的。|Learn Ink Pool and Fuse Bed, from your first card to a finished image.
 螢幕保護|Screensaver
+全部加入合成池|Add all to pool
+這張用到的牌（你選的＋抽到的）全部放進合成池；可以復原|Put every card this image used (yours and drawn) into the pool; you can undo
+這張的牌都已經在合成池裡了|All of these cards are already in the pool
 第一幕|Act I
 第二幕|Act II
 第三幕|Act III
@@ -1287,7 +1290,7 @@ ComfyUI 沒有回報 checkpoint|ComfyUI returned no checkpoints.
 翻過去，就換成別張|Turn it over, and it is another card
 一張一張，落下來|One by one, they fall
 螢幕保護設定|Screensaver settings
-閒置一陣子就飛進一條無盡的牌河，你最近生成的圖晾在中間，剛印好的會飛到眼前顯影。動一下滑鼠或按任何鍵就回來。|After a while idle, you fly into an endless river of cards. Your recent images hang down the middle, and a freshly printed one flies up and develops in front of you. Move the mouse or press any key to come back.
+閒置一陣子就飛進一條無盡的牌河，你最近生成的圖晾在中間，剛印好的會飛到眼前顯影。按 Enter 或空白鍵（或點一下）回來；滑鼠不小心動到不會關掉。|After a while idle, you fly into an endless river of cards. Your recent images hang down the middle, and a freshly printed one flies up and develops in front of you. Press Enter or Space (or click) to return; bumping the mouse will not close it.
 閒置多久出現|Start after idle
 放哪些牌和圖|Cards and images shown
 跟頂端分級|Follow the rating
@@ -1299,7 +1302,8 @@ ComfyUI 沒有回報 checkpoint|ComfyUI returned no checkpoints.
 敏感和色情的|Sensitive and explicit
 生成的圖和牌的插畫都算；模糊的只看得到顏色，牌名照樣看得到。|Applies to generated images and card art. Blurred images show only their colors; card names stay readable.
 現在看看|Preview now
-動一下就回來|Move to come back
+按 Enter 或空白鍵回來|Press Enter or Space to return
+點一下回來|Tap to return
 新的一張|New image
 30 秒|30 sec
 1 分|1 min
@@ -1711,6 +1715,7 @@ LoRA：沒設定偏好路徑，改問 ComfyUI 也失敗了：{0}|LoRA: no prefer
 引擎補 {0} 張|{0} engine additions
 這一版的牌（{0}）|Cards in this image ({0})
 剛印好・{0}|Just printed · {0}
+放進 {0} 張到合成池|Added {0} cards to the pool
 要先在上面的尺度選「{0}」才會補|Turn on {0} in Content level above first
 這幾格現在抽不到：要先在上面的尺度選「{0}」。|These kinds cannot be drawn now: turn on {0} in Content level above first.
 要先在上面的尺度選「{0}」，選格才抽得到|Turn on {0} in Content level above first, then this kind can be drawn

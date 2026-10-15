@@ -1855,6 +1855,21 @@ function goStatusText(busy = generator.busy || looping || drawingRounds > 0) {
 }
 
 /** 只換狀態字，不整列重畫（改張數、開關的時候：重畫會把鍵盤焦點弄丟）。 */
+/** 合成池標題列的「偏好卡牌」：托盤開著就亮、張數跟著換；第一次叫到時掛上點擊。 */
+function syncHandBtn() {
+  const btn = $("hand-btn");
+  if (!btn) return;
+  if (!btn.dataset.wired) {
+    btn.dataset.wired = "1";
+    btn.addEventListener("click", () => hand?.fromButton());
+  }
+  const pressed = hand?.open ? "true" : "false";
+  if (btn.getAttribute("aria-pressed") !== pressed) btn.setAttribute("aria-pressed", pressed);
+  const count = `${hand ? hand.count : 0}/${hand ? hand.max : 10}`;
+  const b = $("hand-count");
+  if (b && b.textContent !== count) b.textContent = count;
+}
+
 function renderGoStatus() {
   const s = $("go-bar")?.querySelector(".go-status");
   if (s) s.textContent = goStatusText();
@@ -1867,15 +1882,10 @@ function renderGoBar() {
   // 狀態沒變就不重畫。生圖時每個進度事件都會叫到這裡，以前整排按鈕一秒換好幾次新的：
   // 滑鼠停在「停」上看起來在閃，按下去的那一瞬間按鈕剛好被換掉，按下跟放開落在兩個不同的
   // 元素上，瀏覽器不算一次點擊 —— 要按好幾次才停得下來。
-  const key = [busy, generator.pending, infinite, n, settings.samePerson, hand ? hand.count : 0, hand?.open].join("|");
+  // 「偏好卡牌」在合成池標題列（跟疊印台一樣放在池子旁邊）：只換選中狀態和張數，不跟著整排重畫。
+  syncHandBtn();
+  const key = [busy, generator.pending, infinite, n, settings.samePerson].join("|");
   if (bar.dataset.key === key && bar.childElementCount) return renderGoFloat();
-  // 只有手牌開合：「偏好卡牌」那顆換選中狀態就好（顏色淡過去），不整排換新的。
-  const handBtn = $("hand-btn");
-  if (handBtn && bar.contains(handBtn) && bar.dataset.key?.replace(/\|[^|]*$/, "") === key.replace(/\|[^|]*$/, "")) {
-    bar.dataset.key = key;
-    handBtn.setAttribute("aria-pressed", hand?.open ? "true" : "false");
-    return renderGoFloat();
-  }
   bar.dataset.key = key;
   bar.replaceChildren(
     ...[
@@ -1896,18 +1906,6 @@ function renderGoBar() {
     el("span", { class: "go-status", "aria-live": "polite" }, goStatusText(busy)),
     el("span", { class: "spacer" }),
     busy ? el("button", { class: "btn go-stop", type: "button", onclick: stopAll }, "停") : null,
-    el(
-      "button",
-      {
-        class: "btn btn-ghost hand-btn",
-        id: "hand-btn",
-        type: "button",
-        "aria-pressed": hand?.open ? "true" : "false",
-        title: "偏好卡牌：挑最多十張常用的牌，攤在視窗底部，點一下就放進合成池",
-        onclick: () => hand?.fromButton(),
-        html: `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="7" width="8" height="12" rx="1.5" transform="rotate(-14 7 13)"/><rect x="8" y="5" width="8" height="12" rx="1.5"/><rect x="13" y="7" width="8" height="12" rx="1.5" transform="rotate(14 17 13)"/></svg><span>偏好卡牌</span><b>${hand ? hand.count : 0}/${hand ? hand.max : 10}</b>`,
-      }
-    ),
     el("button", { class: "btn btn-ghost", type: "button", onclick: () => drawBatch(false), title: "只抽牌，不送 Comfy（P）" }, "只抽牌"),
     el("button", { class: "btn btn-primary", type: "button", onclick: () => drawBatch(true), title: "抽並生圖（G）" }, "抽並生圖", el("span", { class: "count" }, `×${n}`)),
     // 自己一行，放在按鈕底下：不要把「抽並生圖」擠到下一行去。
@@ -2341,12 +2339,13 @@ function shotNode(shot, deal) {
       { class: "shot-meta" },
       status,
       el("code", {}, seedUseButton(shot.seed)),
-      el("span", {}, [ERA_LABELS[shot.era] || "", heatBlockedByRating(shot.heat, shot.rating) ? "" : HEAT_ZH[shot.heat] || ""].filter(Boolean).join("・"))
+      el("span", {}, [ERA_LABELS[shot.era] || "", heatBlockedByRating(shot.heat, shot.rating) ? "" : HEAT_ZH[shot.heat] || ""].filter(Boolean).join("・")),
+      // 「牌・N」放在圖底下這一行（一直看得到）；其他動作在 shot-actions（電腦上疊在圖的下緣，滑過才浮出來）。
+      toggle
     ),
     el(
       "div",
       { class: "shot-actions" },
-      toggle,
       el(
         "button",
         {
@@ -2445,11 +2444,72 @@ function shotCards(shot, deal) {
   return el(
     "div",
     { class: "shot-cards" },
+    el(
+      "div",
+      { class: "shot-cards-bar" },
+      el("button", { class: "btn btn-small btn-ghost shot-pin-all", type: "button", title: "這張用到的牌（你選的＋抽到的）全部放進合成池；可以復原", onclick: (e) => pinAllFromShot(shot, e.currentTarget) }, "全部加入合成池")
+    ),
     el("p", { class: "deal-label", dataset: { kind: "mine" } }, el("b", {}, "你選的"), shot.mine.length ? `${shot.mine.length} 張` : "這張沒有放字，全部是抽的"),
     mineCards.length || missCards.length ? el("div", { class: "deal-row" }, mineCards, missCards) : null,
     el("p", { class: "deal-label" }, el("b", {}, "抽到的"), `${shot.drawn.length} 張・拖進合成池就釘住，丟進廢字簍就封鎖`),
     el("div", { class: "fans" }, fans)
   );
+}
+
+/**
+ * 一張成品的牌全部放進合成池（你選的＋抽到的；沒進圖的、封鎖的不放）。原本池裡的牌留著，
+ * 同一格互斥的照放牌的規則換掉。你選的牌當時調過的份量一起帶回來。新進來的牌一張接一張落進池子；
+ * 提示附「復原」，整批撤回到放之前的樣子。
+ */
+function pinAllFromShot(shot, btn) {
+  const tags = [...shot.mine, ...shot.drawn.map((d) => d.tag)].filter((t) => lib.byTag.has(t) && !HARD_BANNED.includes(t) && !bans.has(t));
+  const before = new Set(pool);
+  const beforeBans = new Set(bans);
+  const beforeWeights = new Map(weights);
+  let next = new Set(pool);
+  let nextBans = bans;
+  for (const t of tags) {
+    const r = applyPin(lex, next, nextBans, t);
+    next = r.pinned;
+    nextBans = r.userBanned;
+  }
+  const added = [...next].filter((t) => !before.has(t));
+  if (!added.length) {
+    refuse(btn);
+    toast("這張的牌都已經在合成池裡了");
+    return;
+  }
+  pool = next;
+  bans = nextBans;
+  for (const [t, w] of Object.entries(shot.weights || {})) if (pool.has(t) && w !== 1) weights.set(t, w);
+  commitPins();
+  if (!reducedMotion()) {
+    added
+      .map(poolNode)
+      .filter(Boolean)
+      .forEach((n, i) =>
+        n.animate([{ opacity: 0, transform: "translateY(-24px) rotate(-3deg) scale(0.9)" }, { opacity: 1, transform: "none" }], {
+          duration: DUR.long,
+          delay: Math.min(i, 12) * 40,
+          easing: css(CURVE.settle),
+          fill: "backwards",
+        })
+      );
+  }
+  sfx.deal?.(Math.min(6, added.length + 1));
+  toast(`放進 ${added.length} 張到合成池`, {
+    action: {
+      label: "復原",
+      key: "Z",
+      run: () => {
+        pool = before;
+        bans = beforeBans;
+        weights.clear();
+        for (const [t, w] of beforeWeights) weights.set(t, w);
+        commitPins();
+      },
+    },
+  });
 }
 
 function resultCard(tag, src, flag) {

@@ -137,10 +137,10 @@
         <section class="pool panel" aria-labelledby="pool-title">
           <div class="panel-head">
             <h2 id="pool-title">合成池</h2>
-            <p><span id="pool-count"></span> <button class="btn btn-small btn-ghost" id="pool-paste" type="button" title="貼上一段提示詞，詞庫有的變成牌（電腦上也可以在空白處直接按 Ctrl+V）">貼上</button> <button class="btn btn-small btn-ghost" id="pool-decks" type="button" title="把合成池存成牌組，或套用存過的牌組">牌組</button> <button class="btn btn-small btn-ghost is-off" id="pool-clear" type="button" inert>清空</button></p>
+            <p class="workspace-purpose"><span>選牌後直接生成。疊印台可先比較四組提示詞；兩邊的選牌與規則各自獨立。</span> <a class="link-btn is-off" id="pool-to-fuse" href="fuse.html" inert>帶牌去疊印台</a></p>
+            <p><span id="pool-count"></span> <button class="btn btn-small btn-ghost hand-btn" id="hand-btn" type="button" aria-pressed="false" title="偏好卡牌：挑最多十張常用的牌，攤在視窗底部，點一下就放進合成池"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="7" width="8" height="12" rx="1.5" transform="rotate(-14 7 13)"/><rect x="8" y="5" width="8" height="12" rx="1.5"/><rect x="13" y="7" width="8" height="12" rx="1.5" transform="rotate(14 17 13)"/></svg><span>偏好卡牌</span><b id="hand-count">0/10</b></button> <button class="btn btn-small btn-ghost" id="pool-paste" type="button" title="貼上一段提示詞，詞庫有的變成牌（電腦上也可以在空白處直接按 Ctrl+V）">貼上</button> <button class="btn btn-small btn-ghost" id="pool-decks" type="button" title="把合成池存成牌組，或套用存過的牌組">牌組</button> <button class="btn btn-small btn-ghost is-off" id="pool-clear" type="button" inert>清空</button></p>
           </div>
           <div class="pool-well" id="pool-well" aria-label="合成池：放進來的字每張圖都一定有"></div>
-          <p class="workspace-purpose"><span>選牌後直接生成。疊印台可先比較四組提示詞；兩邊的選牌與規則各自獨立。</span> <a class="link-btn is-off" id="pool-to-fuse" href="fuse.html" inert>帶牌去疊印台</a></p>
           <div class="rules" id="rules"></div>
           <div class="go-bar" id="go-bar"></div>
         </section>

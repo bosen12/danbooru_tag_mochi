@@ -1,5 +1,6 @@
 /**
- * 螢幕保護：閒置一陣子（預設 30 秒）就出來一條無盡的牌河，動一下就回到原本的畫面。
+ * 螢幕保護：閒置一陣子（預設 30 秒）就出來一條無盡的牌河；按 Enter 或空白鍵（或點一下）回到原本的畫面。
+ * 滑鼠動到、滾輪不會把它關掉（2026-10-15 專案主：滑鼠很容易不小心動到），只讓右下的提示亮一下。
  *   - 牌照頂端的分級挑（或設定成只放全年齡），被封鎖的牌不出現；最近生成的圖晾在中間輪流飛過，
  *     剛印好的那張會飛到正前方顯影。要模糊的分級（預設色情）先糊掉再上場。
  *   - 3D 場景在 screensaver-gl.js（three.js），第一次要出來時才載入；沒有 WebGL 就不出來。
@@ -144,7 +145,7 @@ export async function startScreensaver() {
     canvas,
     title,
     fresh,
-    el("div", { class: "saver-foot" }, el("span", { class: "saver-mark" }, "墨池"), el("span", { class: "saver-hint" }, "動一下就回來"), clock)
+    el("div", { class: "saver-foot" }, el("span", { class: "saver-mark" }, "墨池"), el("span", { class: "saver-hint" }, matchMedia("(pointer: coarse)").matches ? "點一下回來" : "按 Enter 或空白鍵回來"), clock)
   );
   const state = { layer, gl: null, timer: 0, poll: 0, seen: new Set(), at: performance.now() };
   active = state;
@@ -241,13 +242,18 @@ export function stopScreensaver(now = false) {
   lastInput = performance.now();
   clearInterval(state.timer);
   clearInterval(state.poll);
+  let finished = false;
   const done = () => {
+    if (finished) return;
+    finished = true;
     state.gl?.stop();
     state.layer.remove();
   };
   if (now || reducedMotion()) return done();
   state.layer.style.pointerEvents = "none";
   state.layer.animate([{ opacity: 1 }, { opacity: 0 }], { duration: DUR.long, easing: css(CURVE.exit), fill: "forwards" }).finished.then(done, done);
+  // 保險：畫面忙（顯卡慢、分頁在背景）時動畫會被拖住，時間到一定收掉。
+  setTimeout(done, DUR.long + DUR.short);
 }
 
 /** 設定：閒置多久、範圍、模糊。三排選項，換了馬上存。 */
@@ -283,7 +289,7 @@ function openSettings() {
     el(
       "div",
       { class: "saver-settings" },
-      el("p", { class: "saver-lead" }, "閒置一陣子就飛進一條無盡的牌河，你最近生成的圖晾在中間，剛印好的會飛到眼前顯影。動一下滑鼠或按任何鍵就回來。"),
+      el("p", { class: "saver-lead" }, "閒置一陣子就飛進一條無盡的牌河，你最近生成的圖晾在中間，剛印好的會飛到眼前顯影。按 Enter 或空白鍵（或點一下）回來；滑鼠不小心動到不會關掉。"),
       row("閒置多久出現", IDLE, "idle"),
       row("放哪些牌和圖", SCOPE, "scope", "跟頂端分級：頂端選到哪一級，那一級以下的牌和圖都會出現。"),
       row("要模糊的圖", BLUR, "blur", "生成的圖和牌的插畫都算；模糊的只看得到顏色，牌名照樣看得到。")
@@ -314,22 +320,36 @@ export function mountScreensaver() {
   if (sound && !document.getElementById("saver-btn")) {
     sound.before(el("button", { class: "ghost icon-btn", id: "saver-btn", type: "button", title: "螢幕保護", "aria-label": "螢幕保護設定", html: MOON, onclick: openSettings }));
   }
-  let at = { x: -1, y: -1 };
+  // 滑鼠動到、按了別的鍵：右下「按 Enter 或空白鍵回來」亮一下，告訴人怎麼回去。
+  let eatClickUntil = 0;
+  const nudge = () => {
+    const hint = active?.layer.querySelector(".saver-hint");
+    if (!hint || hint.getAnimations().length) return;
+    hint.animate([{ opacity: 1, color: "#f1ead9" }, { opacity: 1, color: "#f1ead9", offset: 0.6 }, {}], { duration: DUR.develop, easing: css(CURVE.out) });
+  };
   const wake = (e) => {
     if (active) {
-      // 剛出來的那一下（滑鼠還在晃、最後一個鍵還沒放開）不算。
+      // 螢幕保護開著時，什麼都不傳給底下的頁面（按鍵、點擊、滾輪都吃掉）。
+      if (e.cancelable && e.type !== "pointermove") e.preventDefault();
+      e.stopPropagation();
+      // 剛出來的那一下（最後一個鍵還沒放開、手還在滑鼠上）不算。
       if (performance.now() - active.at < 600) return;
-      if (e.type === "pointermove") {
-        if (at.x < 0) at = { x: e.clientX, y: e.clientY };
-        if (Math.hypot(e.clientX - at.x, e.clientY - at.y) < 8) return;
+      const back =
+        (e.type === "keydown" && (e.key === "Enter" || e.key === " " || e.key === "Escape")) ||
+        e.type === "pointerdown" ||
+        e.type === "touchstart";
+      if (back) {
+        // 點一下回來：放開那一下的 click 會落在底下的頁面上，一起吃掉。
+        if (e.type !== "keydown") eatClickUntil = performance.now() + 700;
+        return stopScreensaver();
       }
-      // 回來的那一下不要順便按到東西：按鍵、點擊都吃掉。
-      if (e.type === "keydown" || e.type === "pointerdown" || e.type === "click") {
-        e.preventDefault();
-        e.stopPropagation();
-      }
-      at = { x: -1, y: -1 };
-      stopScreensaver();
+      if (e.type === "pointermove" || e.type === "wheel" || e.type === "keydown") nudge();
+      return;
+    }
+    if (e.type === "click" && performance.now() < eatClickUntil) {
+      e.preventDefault();
+      e.stopPropagation();
+      eatClickUntil = 0;
       return;
     }
     lastInput = performance.now();

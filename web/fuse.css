@@ -24,7 +24,8 @@
 
   /* 三欄都跟著視窗寬度走；卡池的牌寬由 fuse.js 照剩下的空間算好寫進 --pool-card，這裡只是算好之前的預設。 */
   --case-w: clamp(19.5rem, 22vw, 28rem);
-  --side-w: clamp(19.5rem, 22vw, 32rem);
+  /* 右欄（預覽、試印、付印）寬一點：試印卡的「≠ 灰髮」這類字不折行、預覽大一點；1440 寬約 374px。 */
+  --side-w: clamp(22rem, 26vw, 34rem);
   --pool-card: clamp(4.4rem, 5vw, 5.5rem);
 }
 

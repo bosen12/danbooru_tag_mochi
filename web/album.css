@@ -88,15 +88,25 @@
 
 /* ---------- 大圖牆 ---------- */
 
-.album-grid {
-  columns: 15rem;
-  column-gap: var(--space-sm);
+/* 格子排法、欄數照寬度自動算：以前是報紙分欄（瀑布流），作品少的時候（分輯後每一輯幾張）
+ * 瀏覽器為了等高會把最後一欄空著 —— 1440 寬十二件只排四欄，右邊空一欄。格子永遠排滿整寬。
+ * 分輯時每一輯自己一整列（.album-group 跨滿），輯裡的作品同樣排格子。 */
+.album-grid,
+.album-grid-in {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+  gap: var(--space-sm);
+  align-items: start;
+}
+
+.album-grid > :not(.album-tile) {
+  grid-column: 1 / -1;
 }
 
 .album-tile {
   display: block;
   width: 100%;
-  margin: 0 0 var(--space-sm);
+  margin: 0;
   padding: 0;
   border: 0;
   border-radius: var(--radius-sm);
@@ -264,12 +274,10 @@
   .album {
     padding-inline: var(--space-sm);
   }
-  .album-grid {
-    columns: 2;
-    column-gap: 6px;
-  }
-  .album-tile {
-    margin-bottom: 6px;
+  .album-grid,
+  .album-grid-in {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
   }
   .album-detail {
     grid-template-columns: minmax(0, 1fr);
@@ -570,10 +578,6 @@
   gap: var(--space-lg);
   columns: auto;
 }
-.album-grid-in {
-  columns: 15rem;
-  column-gap: var(--space-sm);
-}
 .album-group[data-rest="true"] .log-day-head {
   color: var(--color-muted);
 }
@@ -603,8 +607,4 @@
   font-size: var(--text-xs);
 }
 @media (max-width: 40rem) {
-  .album-grid-in {
-    columns: 2;
-    column-gap: 6px;
-  }
 }

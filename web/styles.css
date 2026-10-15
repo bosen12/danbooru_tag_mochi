@@ -1991,9 +1991,39 @@ body #wf-pick-btn.has {
   border-top: 1px solid var(--color-rule-2);
 }
 
-/* 生圖種子（web/seed-control.js）：在按鈕底下自己一行。 */
+/* 生圖種子（web/seed-control.js）：電腦上跟張數、開關排同一行（夾在開關和按鈕中間），
+ * 「生圖種子」四個字收起來（螢幕閱讀器照樣念得到）；擠不下時自己換行。手機上自己一行（下面 40rem 那段）。 */
 .go-bar > .seed-ctl {
-  flex-basis: 100%;
+  order: 1;
+}
+.go-bar > .spacer,
+.go-bar > .btn {
+  order: 2;
+}
+.go-bar > .seed-ctl .seed-ctl-label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* 合成池標題列：標題、一行說明（擠不下就省略）、右邊的按鈕。 */
+.pool > .panel-head {
+  flex-wrap: nowrap;
+  align-items: center;
+}
+.pool > .panel-head .workspace-purpose {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.pool > .panel-head > p:last-child {
+  flex: none;
 }
 
 .go-bar .spacer {
@@ -2025,6 +2055,21 @@ body #wf-pick-btn.has {
   .go-bar > .btn-primary,
   .go-bar > .seed-ctl {
     grid-column: 1 / -1;
+  }
+  .go-bar > .seed-ctl .seed-ctl-label {
+    position: static;
+    width: auto;
+    height: auto;
+    clip: auto;
+  }
+  /* 手機：標題列放不下一行說明，換到下一行完整顯示。 */
+  .pool > .panel-head {
+    flex-wrap: wrap;
+  }
+  .pool > .panel-head .workspace-purpose {
+    order: 3;
+    flex-basis: 100%;
+    white-space: normal;
   }
   .go-bar > .stepper {
     justify-self: start;
@@ -2403,6 +2448,67 @@ body #wf-pick-btn.has {
 .shot {
   container: shot / inline-size;
 }
+
+/* 牌・N 在圖底下那一行的最右邊。 */
+.shot-meta .shot-toggle {
+  margin-left: auto;
+}
+
+/* 電腦（滑鼠可以懸停）：動作按鈕不再在每張圖底下排兩排（十幾張圖就是一整面按鈕），
+ * 改成疊在圖的下緣，滑過那張（或鍵盤走進去、Hires／修臉的面板開著）才從底下浮出來，底下墊一層漸暗。
+ * 同一格（grid-area 1/1）疊在圖上，不另外佔高度。觸控裝置沒有懸停，照舊排在圖底下。 */
+@media (hover: hover) and (pointer: fine) {
+  .shot {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .shot > .shot-frame {
+    grid-area: 1 / 1;
+  }
+  .shot > .shot-actions {
+    grid-area: 1 / 1;
+    align-self: end;
+    z-index: 3;
+    padding: var(--space-xl) var(--space-xs) var(--space-xs);
+    border-radius: 0 0 var(--radius-sm) var(--radius-sm);
+    background: linear-gradient(transparent, rgba(6, 7, 10, 0.55) 35%, rgba(6, 7, 10, 0.85));
+    opacity: 0;
+    translate: 0 6px;
+    /* 漸暗那一層不擋點圖（點圖是放大）；只有按鈕接得到滑鼠。 */
+    pointer-events: none;
+    transition: opacity var(--dur-short) var(--ease-out), translate var(--dur-short) var(--ease-out);
+  }
+  .shot > .shot-actions > * {
+    pointer-events: auto;
+  }
+  .shot:is(:hover, :focus-within) > .shot-actions,
+  .shot:has(> .shot-actions [aria-expanded="true"]) > .shot-actions {
+    opacity: 1;
+    translate: 0 0;
+  }
+  .shot > .shot-meta {
+    grid-area: 2 / 1;
+  }
+  .shot > .shot-cards {
+    grid-area: 3 / 1;
+  }
+  /* 疊在暗底上：淺色字、半透明的底。 */
+  .shot-actions .btn-ghost {
+    --btn-bg: rgba(12, 14, 18, 0.45);
+    --btn-ink: #f1ead9;
+    --btn-edge: rgba(241, 234, 217, 0.28);
+    backdrop-filter: blur(4px);
+  }
+  .shot-actions .shot-remove {
+    color: rgba(241, 234, 217, 0.75);
+  }
+}
+
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: reduce) {
+  .shot > .shot-actions {
+    translate: none;
+    transition: none;
+  }
+}
 @container shot (max-width: 240px) {
   .shot-actions .btn {
     min-height: 28px;
@@ -2428,6 +2534,12 @@ body #wf-pick-btn.has {
 .shot-cards {
   display: grid;
   gap: var(--space-xs);
+}
+
+/* 展開的牌最上面：「全部加入合成池」靠右。 */
+.shot-cards-bar {
+  display: flex;
+  justify-content: flex-end;
 }
 
 .deal-label {
@@ -6487,17 +6599,9 @@ html:not([lang="en"]) :is(.wordmark, .panel-head h2, #wall-title, #pool-title, #
   color: rgba(241, 234, 217, 0.78);
 }
 
+/* 怎麼回去一直寫著（淡淡的）；滑鼠動到時亮一下（screensaver.js 的 nudge）。 */
 .saver-hint {
-  animation: saver-hint calc(var(--dur-breath) * 5) var(--ease-out) forwards;
-}
-
-@keyframes saver-hint {
-  0%, 60% {
-    opacity: 1;
-  }
-  100% {
-    opacity: 0;
-  }
+  opacity: 0.7;
 }
 
 .saver-clock {
