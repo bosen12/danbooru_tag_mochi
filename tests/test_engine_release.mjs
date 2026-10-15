@@ -160,6 +160,35 @@ for (const rating of ['general', 'sensitive', 'explicit']) {
   const pin = applyPin(lex, new Set(), new Set(), 'giant hand').pinned;
   assert.ok(drawOne(lex, settings, pin, new Set(), mulberry32(7), 7).positive.includes('giant hand'), 'A pinned hand motif still appears');
 }
+// Clothing 0 + an exposure pose slot: garment actions (skirt lift, shirt pull…) are drawable without
+// adding the garment (the prompt implies it); once clothes are worn they must still match; nude still blocks them.
+{
+  const keys = ['body', 'face', 'camera', 'gaze', 'activity', 'tease', 'flash', 'sex'];
+  const base = { ...defaultSettings(data), rating: 'sensitive', heats: ['flash'], girl: true, boy: false, counts: { feature: 0, clothing: 0, pose: 1, env: 0 }, offGroups: keys.filter(k => k !== 'flash').map(k => 'pose:' + k) };
+  const lift = (t) => lex.byTag.get(t)?.sub === 'flash_lift';
+  let lifts = 0, garments = 0;
+  for (let i = 0; i < 200; i++) {
+    const tags = drawOne(lex, base, new Set(['1girl']), new Set(), mulberry32(31000 + i), 31000 + i).positive.split(', ');
+    if (tags.some(lift)) lifts++;
+    // A card that itself implies its garment (hand under shirt → shirt) keeps that lexicon dependency.
+    const implied = new Set(tags.flatMap(t => lex.byTag.get(t)?.implies || []));
+    garments += tags.filter(t => { const it = lex.byTag.get(t); return it?.section === 'clothing' && it.layer === 'garment' && !implied.has(t); }).length;
+  }
+  assert.ok(lifts >= 20, `Clothing 0 still reaches lift/pull actions (${lifts}/200)`);
+  assert.equal(garments, 0, 'Clothing 0 adds no garment beyond what a drawn card implies');
+  const pants = applyPin(lex, new Set(['1girl']), new Set(), 'pants').pinned;
+  for (let i = 0; i < 80; i++) {
+    const tags = drawOne(lex, base, pants, new Set(), mulberry32(32000 + i), 32000 + i).positive.split(', ');
+    assert.ok(!tags.includes('skirt lift') && !tags.includes('dress lift'), 'Worn pants still exclude skirt and dress lifts');
+  }
+  const nude = applyPin(lex, new Set(['1girl']), new Set(), 'completely nude').pinned;
+  for (let i = 0; i < 80; i++) {
+    // Explicit rating: nude is only kept there (Sensitive drops the pin).
+    const tags = drawOne(lex, { ...base, rating: 'explicit' }, nude, new Set(), mulberry32(33000 + i), 33000 + i).positive.split(', ');
+    const needsCloth = ['skirt lift', 'shirt lift', 'dress lift', 'clothes lift', 'clothes pull', 'pants pull', 'shirt pull', 'hand under clothes', 'hand under shirt', 'undressing', 'clothing aside'];
+    assert.ok(tags.includes('completely nude') && !tags.some(t => needsCloth.includes(t)), 'Nude excludes clothing actions');
+  }
+}
 // Characters: never drawn unless "Draw characters" is on; banned characters (underage, real people…) are not cards.
 {
   const settings = { ...defaultSettings(data), girl: true, boy: true };

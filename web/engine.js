@@ -65,6 +65,7 @@ import {
   actionFitsClothes,
   evaluateClothingLayer,
   evaluateUnderwearVisibility,
+  wornBodyGarments,
 } from "./rules/clothing.js";
 import { diffKept, rejectRemoved } from "./rules/reconcile.js";
 import {
@@ -4487,6 +4488,10 @@ export function drawOne(lex, settings, pinned, userBanned, rand, seed, opts) {
     for (const tag of used) if (predicate(tag)) return true;
     return false;
   };
+  // 服裝設 0（整段不補）而且身上沒有任何一件衣服、也不是全裸：衣服動作不必先有那件衣服。
+  const clothingZero = Number(settings.counts?.clothing) === 0;
+  const bareOk = (cloth) =>
+    clothingZero && !used.has("nude") && !used.has("completely nude") && !wornBodyGarments(cloth).length;
   // 走光／衣服動作每過一次 allow() 就問一次這個，以前每次都重掃 used、重跑
   // actionFitsClothes 的 token 與正則：走光圖的補抽對五十幾個字各問一次，
   // 實測那一段 0.65 ms、佔整張 20%。used 沒變（_rev 相同）就不必重算。
@@ -4498,14 +4503,22 @@ export function drawOne(lex, settings, pinned, userBanned, rand, seed, opts) {
         const it = lex.byTag.get(t);
         if (it && it.section === "clothing") cloth.push(t);
       }
-      memo = remember(used, "_wornFit", { cloth, fit: new Map() });
+      memo = remember(used, "_wornFit", { cloth, fit: new Map(), bare: bareOk(cloth) });
     }
     let fit = memo.fit.get(item.tag);
     if (fit === undefined) {
       fit = actionFitsClothes(item.tag, memo.cloth);
+      // 服裝設 0、身上一件衣服都沒有：掀裙子、拉襯衫這類不必先有那件衣服（提示詞寫了掀裙子，
+      // 模型自己會畫出裙子；2026-10-15 專案主：都不用補）。身上有衣服就照舊要對得上，全裸照舊不行。
+      if (fit === 0 && memo.bare) fit = 1;
       memo.fit.set(item.tag, fit);
     }
     return fit;
+  };
+  const bareNow = () => {
+    const cloth = [];
+    for (const t of used) if (lex.byTag.get(t)?.section === "clothing") cloth.push(t);
+    return bareOk(cloth);
   };
   const wearsBodyClothes = () => {
     if (
@@ -4720,7 +4733,7 @@ export function drawOne(lex, settings, pinned, userBanned, rand, seed, opts) {
     const selfIsTheGarment = item.section === "clothing";
     if (
       needsBodyClothes(item.tag) &&
-      ((!selfIsTheGarment && actionFitsWorn(item) === 0) || !wearsBodyClothes())
+      ((!selfIsTheGarment && actionFitsWorn(item) === 0) || (!wearsBodyClothes() && !(!selfIsTheGarment && bareNow())))
     ) {
       return false;
     }
@@ -7293,7 +7306,8 @@ export function drawOne(lex, settings, pinned, userBanned, rand, seed, opts) {
         }
         const badAction =
           needsClothingDependency(it) &&
-          actionFitsClothes(t, cloth) === 0;
+          actionFitsClothes(t, cloth) === 0 &&
+          !bareOk(cloth);
         if (!badAction) continue;
         used.delete(t);
         for (const g of extraMutex(it)) {
