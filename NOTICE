@@ -32,6 +32,7 @@ Separate material and third-party notices
 - Chiron Hei HK font: SIL Open Font License 1.1; see web/fonts/OFL.txt.
 - IBM Plex Mono font (unmodified, Reserved Font Name "Plex"): SIL Open Font License 1.1; see web/fonts/OFL-IBMPlexMono.txt.
 - IBM Plex Sans font (unmodified, Reserved Font Name "Plex"; English edition): SIL Open Font License 1.1; see web/fonts/OFL-IBMPlexSans.txt.
+- Chiron Sung HK font (subset for headings; no Reserved Font Names): SIL Open Font License 1.1; see web/fonts/OFL-ChironSungHK.txt.
 - Noto Serif TC font (subset for the films): SIL Open Font License 1.1; see web/fonts/OFL-NotoSerifTC.txt.
 - three.js: MIT; see web/vendor/three/LICENSE.
 Keep the copyright and license notices for those components intact.

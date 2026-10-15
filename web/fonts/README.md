@@ -24,6 +24,16 @@ uses the system fallback chain (PingFang TC, Microsoft JhengHei) until the subse
 rebuilt. An author can add text without rebuilding fonts; the coverage command lists
 characters outside the subset and validates the saved font checksum and generated CSS.
 
+## Chiron Sung HK (headings)
+
+Page names, panel and dialog titles, the empty-state headlines and the Print button use Chiron Sung HK,
+the Ming/Song companion of Chiron Hei HK (same designer, same Hong Kong/Taiwan glyph standard), so the
+letterpress theme shows in the large type while small text stays in the Hei. `chiron-sung-hk-web6.woff2`
+is subset to the same corpus as the Hei and keeps the full `wght` axis; `chiron-sung-subset.json` records
+the pinned google/fonts source, checksums and codepoints. Only elements that name this family load it
+(the English edition does not). `--build --download` rebuilds it together with the Hei.
+License: `OFL-ChironSungHK.txt` (no Reserved Font Names).
+
 ## Noto Serif TC (films)
 
 The intro film and tutorial set their largest titles in Noto Serif TC 900. `noto-serif-tc-film.woff2`

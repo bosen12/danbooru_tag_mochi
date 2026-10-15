@@ -6410,3 +6410,11 @@ html[data-setup] .tour-offer {
     transition: none;
   }
 }
+
+/* ---------- 標題用明體 ----------
+ * 頁名、區塊標題、彈窗標題、空白時的大字、付印鈕：Chiron Sung HK（跟內文的 Chiron Hei HK 同一家族、同一套港台字形），
+ * 排字、付印這種印刷的事，大字看得出鉛字味。說明、按鈕、牌名這些小字照舊黑體：明體的細橫線在深色底的小字會淡掉。
+ * 英文版照舊 IBM Plex Sans（locale.css）。 */
+html:not([lang="en"]) :is(.wordmark, .panel-head h2, #wall-title, #pool-title, #plate-title, #case-title, #book-title, #album-title, .trials-title, .sheet h2[id^="sheet-"], .pool-start-lead, .pool-empty > b, .wall-empty h3, .tour-title, .pb-go) {
+  font-family: var(--font-heading);
+}

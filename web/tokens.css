@@ -51,6 +51,8 @@
   /* 內文也用本機的 Chiron Hei HK（同一個檔、可變粗細 200–900）：以前內文向 Google 要 Noto Sans TC，每頁十幾個請求。 */
   --font-body: "Chiron Hei HK", "PingFang TC", "Microsoft JhengHei", sans-serif;
   --font-mono: "IBM Plex Mono", ui-monospace, "Cascadia Mono", monospace;
+  /* 標題的明體（跟內文的黑體同一家族）：子集裡沒有的字退回黑體，不會跳到系統字型。 */
+  --font-heading: "Chiron Sung HK", "Chiron Hei HK", "PingFang TC", "Microsoft JhengHei", serif;
 
   --space-3xs: 0.125rem;
   --space-2xs: 0.25rem;
