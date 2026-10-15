@@ -17,6 +17,7 @@ import { el, openSheet, toast, syncChoices } from "./ui.js";
 import { zoomFromThumb } from "./zoom.js";
 import { mountKeysHelp } from "./keys-help.js";
 import { mountTour } from "./tour.js";
+import { mountScreensaver } from "./screensaver.js";
 import { mountGenStatus } from "./gen-status.js";
 import { initMotion, settleMotion, seat, refuse, enter, leave, reducedMotion, swapIn, CURVE, DUR, css } from "./motion.js";
 import { watchLink, LINK_LABEL } from "./gen.js";
@@ -80,6 +81,7 @@ async function boot() {
   mountKeysHelp("album");
   // 新手導覽（頂欄「教學」右邊的「導覽」；第一次來會問要不要走一遍）：tour.js。
   mountTour("album");
+  mountScreensaver();
   // 墨池、疊印台正在印的：頂欄看得到，點了回去（gen-status.js）。
   mountGenStatus("album");
   try {

@@ -1904,6 +1904,32 @@ body #wf-pick-btn.has {
   transform: translateY(1px);
 }
 
+/* 尺度沒開的格子（誘惑、走光、性愛）：變灰、虛線框；選著的那格也一樣淡，看得出現在抽不到。 */
+.skel-chip[data-need-heat] {
+  opacity: 0.5;
+  border-style: dashed;
+}
+
+.skel-heat-note {
+  color: var(--color-accent);
+}
+
+/* 選格指過來：尺度那一顆亮兩下。 */
+.chip-toggle.is-pointed {
+  animation: heat-point var(--dur-develop) var(--ease-out);
+}
+
+@keyframes heat-point {
+  0%, 50%, 100% {
+    box-shadow: 0 0 0 0 transparent;
+  }
+  20%, 70% {
+    box-shadow: 0 0 0 3px color-mix(in oklch, var(--color-accent) 70%, transparent);
+    border-color: var(--color-accent);
+    color: var(--color-ink);
+  }
+}
+
 /* 暗掉的格子：一筆墨從左劃過；換回來時從右收掉。 */
 .skel-chip-name {
   position: relative;
@@ -6417,4 +6443,168 @@ html[data-setup] .tour-offer {
  * 英文版照舊 IBM Plex Sans（locale.css）。 */
 html:not([lang="en"]) :is(.wordmark, .panel-head h2, #wall-title, #pool-title, #plate-title, #case-title, #book-title, #album-title, .trials-title, .sheet h2[id^="sheet-"], .pool-start-lead, .pool-empty > b, .wall-empty h3, .tour-title, .pb-go) {
   font-family: var(--font-heading);
+}
+
+/* ---------- 螢幕保護（screensaver.js） ----------
+ * 整面墨色，中間一點暖光是牌河的盡頭；牌河的畫布載好才淡進來。滑鼠游標藏起來。
+ * 左下「墨池」和提示，提示幾秒後淡掉；右下時間。剛印好的那張底下一行字。 */
+.saver {
+  position: fixed;
+  inset: 0;
+  z-index: 900;
+  overflow: hidden;
+  background: radial-gradient(ellipse 60% 50% at 50% 50%, #17130d 0%, #08090c 55%, #040507 100%);
+  cursor: none;
+}
+
+.saver-gl {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  transition: opacity calc(var(--dur-develop) * 1.5) var(--ease-out);
+}
+
+.saver-gl.is-on {
+  opacity: 1;
+}
+
+.saver-foot {
+  position: absolute;
+  left: calc(var(--space-lg) + env(safe-area-inset-left));
+  right: calc(var(--space-lg) + env(safe-area-inset-right));
+  bottom: calc(var(--space-lg) + env(safe-area-inset-bottom));
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-md);
+  z-index: 1;
+  color: rgba(233, 225, 205, 0.5);
+  font-size: var(--text-sm);
+  pointer-events: none;
+}
+
+.saver-mark {
+  font-family: var(--font-heading, var(--font-display));
+  font-size: 1.5rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  color: rgba(241, 234, 217, 0.78);
+}
+
+.saver-hint {
+  animation: saver-hint calc(var(--dur-breath) * 5) var(--ease-out) forwards;
+}
+
+@keyframes saver-hint {
+  0%, 60% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+.saver-clock {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-size: 1rem;
+  letter-spacing: 0.12em;
+  font-variant-numeric: tabular-nums;
+}
+
+.saver-act {
+  position: absolute;
+  left: calc(7vw + env(safe-area-inset-left));
+  bottom: 22vh;
+  z-index: 1;
+  display: grid;
+  gap: 0.35rem;
+  max-width: 80vw;
+  color: #f1ead9;
+  letter-spacing: 0.14em;
+  text-shadow: 0 2px 24px rgba(0, 0, 0, 0.85);
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* 片名底下墊一團暗影：後面是整面牌（牌浪）時字也讀得清楚。 */
+.saver-act::before {
+  content: "";
+  position: absolute;
+  inset: -40% -30% -40% -18%;
+  z-index: -1;
+  background: radial-gradient(closest-side, rgba(4, 5, 7, 0.78), rgba(4, 5, 7, 0.5) 55%, transparent);
+  filter: blur(6px);
+}
+
+.saver-act-no {
+  font-size: 0.8rem;
+  color: rgba(201, 164, 94, 0.9);
+  letter-spacing: 0.5em;
+}
+
+.saver-act-title {
+  font-family: var(--font-heading, var(--font-display));
+  font-size: clamp(2.6rem, 7vw, 5.5rem);
+  font-weight: 900;
+  line-height: 1.05;
+}
+
+.saver-act-sub {
+  font-size: clamp(0.85rem, 1.6vw, 1.05rem);
+  color: rgba(233, 225, 205, 0.72);
+  letter-spacing: 0.2em;
+}
+
+.saver-fresh {
+  position: absolute;
+  left: 50%;
+  top: 83%;
+  z-index: 1;
+  margin: 0;
+  translate: -50% 0;
+  opacity: 0;
+  color: #f1ead9;
+  font-family: var(--font-heading, var(--font-display));
+  font-size: 1.125rem;
+  font-weight: 700;
+  letter-spacing: 0.24em;
+  white-space: nowrap;
+  text-shadow: 0 2px 18px rgba(0, 0, 0, 0.8);
+  pointer-events: none;
+}
+
+.saver-settings {
+  display: grid;
+  gap: var(--space-md);
+}
+
+.saver-lead {
+  margin: 0;
+  color: var(--color-ink-2);
+  line-height: 1.7;
+}
+
+.saver-row {
+  display: grid;
+  gap: var(--space-xs);
+}
+
+.saver-label {
+  font-weight: 700;
+  font-size: var(--text-sm);
+}
+
+.saver-seg {
+  flex-wrap: wrap;
+  width: fit-content;
+  max-width: 100%;
+}
+
+.saver-help {
+  margin: 0;
+  color: var(--color-muted);
+  font-size: var(--text-xs);
+  line-height: 1.6;
 }

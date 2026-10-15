@@ -41,7 +41,7 @@ const forced = new Set();
 // 這些東西被蓋住也還要有效，不能一起關掉：aria-live 播報區、跨層的 toast、
 // 以及掛在 body 上的權重彈窗、新手導覽。
 // "tour"：新手導覽（web6 的 tour.js）的小視窗，導覽到彈窗裡的步驟時要按得到。
-const NEVER_INERT = new Set(["live", "lora-toast", "w-pop", "tour"]);
+const NEVER_INERT = new Set(["live", "lora-toast", "w-pop", "screensaver", "tour"]);
 
 function syncBackgroundInert() {
   const kids = document.body && document.body.children ? [...document.body.children] : [];

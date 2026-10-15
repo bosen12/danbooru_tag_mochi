@@ -1,6 +1,6 @@
 {
-  "sha256": "99503719cdc3a00ecf5641c68365594b5fb4e6e2bdd5d349bf887eaa3a47b2dc",
-  "bytes": 1171480,
+  "sha256": "fbd870fc38e2afd5175dc0a12556c318202881b9c2292dd3ab567679506f64c1",
+  "bytes": 1172044,
   "source": "https://raw.githubusercontent.com/google/fonts/4d9f95cfb10739fffa0a92897b6c2abc6db61dc2/ofl/chironsunghk/ChironSungHK%5Bwght%5D.ttf",
   "source_sha256": "c88d5db947f4aad3399105d2c1c808a64580ab65e8cb26e58bb81cd96843d130",
   "unicodes": [
@@ -739,6 +739,7 @@
     23830,
     23833,
     23849,
+    23884,
     23919,
     23994,
     23997,
@@ -983,6 +984,7 @@
     25490,
     25497,
     25499,
+    25504,
     25506,
     25509,
     25511,

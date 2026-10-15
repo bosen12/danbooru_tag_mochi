@@ -46,6 +46,7 @@ import { bindArt, artFallback } from "./card-images.js";
 import { el, openSheet, anyOverlay, toast, runToastAction, ICONS, syncChoices } from "./ui.js";
 import { mountKeysHelp } from "./keys-help.js";
 import { mountTour } from "./tour.js";
+import { mountScreensaver } from "./screensaver.js";
 import { mountGenStatus } from "./gen-status.js";
 import { currentPose, poseButton } from "./pose.js";
 import { openDecks } from "./decks.js";
@@ -127,6 +128,7 @@ async function boot() {
   mountKeysHelp("mochi");
   // 新手導覽（頂欄「教學」右邊的「導覽」；第一次來會問要不要走一遍）：tour.js。
   mountTour("mochi");
+  mountScreensaver();
   mountGenStatus("mochi");
   try {
     const [lexicon, manifest] = await Promise.all([
@@ -1878,8 +1880,10 @@ function renderGoBar() {
   bar.replaceChildren(
     ...[
     stepper("一次", n, 1, 50, (v) => {
+      const was = settings.n;
       setSettings({ n: v });
       renderGoStatus();
+      syncGoCount(was);
     }),
     switchBox("無限抽", infinite, (v) => {
       infinite = v;
@@ -1910,17 +1914,25 @@ function renderGoBar() {
     seedNode || (seedNode = mountSeedControl(null, { compact: true })),
     ].filter(Boolean)
   );
-  // 整排重畫時，真的變了的那一小塊才演：張數換了，主按鈕上的 ×N 跟步進器同方向滾進來；
-  // 開始印、「停」冒出來時淡進來。其他按鈕原樣，不閃。
-  if (!reducedMotion() && bar._n !== undefined) {
-    const cnt = bar.querySelector(".btn-primary .count");
-    if (cnt && bar._n !== n) cnt.animate([{ opacity: 0, transform: `translateY(${n > bar._n ? 6 : -6}px)` }], { duration: DUR.short, easing: css(CURVE.out) });
+  // 整排重畫時，真的變了的那一小塊才演：開始印、「停」冒出來時淡進來。其他按鈕原樣，不閃。
+  if (!reducedMotion() && bar._busy !== undefined) {
     const stop = busy && !bar._busy ? bar.querySelector(".go-stop") : null;
     if (stop) stop.animate([{ opacity: 0, transform: "scale(0.9)" }], { duration: DUR.short, easing: css(CURVE.settle) });
   }
-  bar._n = n;
   bar._busy = busy;
   renderGoFloat();
+}
+
+/**
+ * 張數換了：主按鈕（和底部浮動列）上的 ×N 當場跟著換，跟步進器同方向滾進來。
+ * 以前只換步進器自己的數字，主按鈕要等下一次整排重畫才更新；整排也不能在這裡重畫（步進器正被按著）。
+ */
+function syncGoCount(was) {
+  const n = settings.n;
+  for (const cnt of document.querySelectorAll("#go-bar .btn-primary .count, #go-float .btn-primary .count")) {
+    cnt.textContent = `×${n}`;
+    if (!reducedMotion() && was !== n) cnt.animate([{ opacity: 0, transform: `translateY(${n > was ? 6 : -6}px)` }], { duration: DUR.short, easing: css(CURVE.out) });
+  }
 }
 
 /* 捲到成品牆看圖時，合成池那排按鈕早就捲出畫面了。這條浮在底部，跟上面那排是同一組動作。 */

@@ -1,6 +1,6 @@
 {
-  "sha256": "a9eecf6fa441fabe864c4a232727de8e12f13d3788b28341899a4acb48e61396",
-  "bytes": 986320,
+  "sha256": "b59ee4e60d6c6907342e1e220f15dffe2086107bd233af160d9885fefc3ad5a5",
+  "bytes": 986756,
   "source_sha256": "0d788ded72dc88f478818182179af4c7cd143df0bf86557d29729ab132333930",
   "unicodes": [
     32,
@@ -740,6 +740,7 @@
     23830,
     23833,
     23849,
+    23884,
     23919,
     23994,
     23997,
@@ -984,6 +985,7 @@
     25490,
     25497,
     25499,
+    25504,
     25506,
     25509,
     25511,
@@ -2616,6 +2618,8 @@
     "web6/paste-prompt.js",
     "web6/pose-editor.js",
     "web6/pose.js",
+    "web6/screensaver-gl.js",
+    "web6/screensaver.js",
     "web6/setup-panel.js",
     "web6/sfx.js",
     "web6/skeleton-picker.js",

@@ -45,6 +45,7 @@ import { el, openSheet, anyOverlay, toast, syncChoices } from "./ui.js";
 import { zoomFromThumb } from "./zoom.js";
 import { mountKeysHelp } from "./keys-help.js";
 import { mountTour } from "./tour.js";
+import { mountScreensaver } from "./screensaver.js";
 import { mountGenStatus } from "./gen-status.js";
 import { currentPose, poseButton, onPoseChange } from "./pose.js";
 import { openDecks, loadDecks, cachedDecks } from "./decks.js";
@@ -200,6 +201,7 @@ async function boot() {
   mountKeysHelp("fuse");
   // 新手導覽（頂欄「教學」右邊的「導覽」；第一次來會問要不要走一遍）：tour.js。
   mountTour("fuse");
+  mountScreensaver();
   mountGenStatus("fuse");
   // 換了姿勢參考：付印鈕的「這張已經在印／印過」要重算（簽名裡有姿勢）。
   onPoseChange(() => {
@@ -3762,6 +3764,7 @@ function openRules() {
         {
           class: "chip-toggle pressable",
           type: "button",
+          dataset: { heat: h },
           "aria-pressed": effectiveHeats(settings).includes(h) && !blocked ? "true" : "false",
           // 不用 disabled：手機點下去要有反應、說得出為什麼（explainBlockedHeat）。
           "aria-disabled": blocked ? "true" : undefined,
@@ -3770,6 +3773,8 @@ function openRules() {
             if (heatBlockedByRating(h, settings.rating)) return explainBlockedHeat(h, e.currentTarget, settings.rating);
             setSettings({ heats: toggleHeat(effectiveHeats(settings), h) });
             e.currentTarget.setAttribute("aria-pressed", effectiveHeats(settings).includes(h) ? "true" : "false");
+            // 姿勢選格裡誘惑／走光／性愛那幾格跟著變灰或亮回來。
+            picker.update("pose");
           },
         },
         HEAT_ZH[h]

@@ -7,9 +7,25 @@
  *
  * 切換只改那一顆的狀態、不重畫：劃線、蓋章、展開的動效才播得出來。
  */
-import { el } from "./ui.js";
+import { el, toast } from "./ui.js";
 import { seat, refuse } from "./motion.js";
 import { SKELETON, skeletonCap, skeletonLit, swapSkeleton } from "./engine.js";
+import { effectiveHeats } from "./draw-with-seed.js";
+import { heatBlockedByRating } from "./scene-policy.js";
+
+// 姿勢的這三格是「尺度」管的：尺度沒開，選了也抽不到（尺度是總開關，選格只在它允許的範圍裡挑）。
+const HEAT_OF = { "pose:tease": "tease", "pose:flash": "flash", "pose:sex": "sex" };
+const HEAT_ZH = { tease: "誘惑", flash: "走光", sex: "性愛" };
+
+/** 尺度那一排的這一顆亮一下，指給人看要去哪裡開。 */
+function pointHeat(h) {
+  const b = document.querySelector(`.chip-toggle[data-heat="${h}"]`);
+  if (!b) return;
+  b.classList.remove("is-pointed");
+  void b.offsetWidth;
+  b.classList.add("is-pointed");
+  b.addEventListener("animationend", () => b.classList.remove("is-pointed"), { once: true });
+}
 
 const SECTION_ZH = { feature: "長相", clothing: "服裝", pose: "姿勢", env: "場景" };
 const ORDER = ["feature", "clothing", "pose", "env"];
@@ -21,6 +37,13 @@ export function skeletonPicker({ settings, save }) {
   const rows = {};
 
   const litOf = (section) => skeletonLit(settings(), section);
+  // 這一格要的尺度沒開（或分級擋掉）：回傳那個尺度；沒有限制回傳 null。
+  const heatOff = (key) => {
+    const h = HEAT_OF[key];
+    if (!h) return null;
+    const s = settings();
+    return effectiveHeats(s).includes(h) && !heatBlockedByRating(h, s.rating) ? null : h;
+  };
   const count = (section) => Number(settings().counts?.[section]) || 0;
   const open = (section) => count(section) > 0 && count(section) < skeletonCap(section);
 
@@ -56,12 +79,23 @@ export function skeletonPicker({ settings, save }) {
       for (const k of lit) if (!keep.includes(k)) keep.push(k);
       recent[section] = keep;
     }
+    const blockedLit = [];
     for (const btn of row.querySelectorAll(".skel-chip")) {
       const on = lit.includes(btn.dataset.key);
       const before = btn.getAttribute("aria-pressed") === "true";
+      const need = heatOff(btn.dataset.key);
       btn.setAttribute("aria-pressed", on ? "true" : "false");
-      btn.title = on ? `會補「${btn.dataset.zh}」` : `換成「${btn.dataset.zh}」`;
+      // 尺度沒開的：照樣列出來但變灰、寫清楚要去哪裡開（不藏起來，藏了會找不到它在哪）。
+      if (need) btn.dataset.needHeat = need;
+      else delete btn.dataset.needHeat;
+      btn.title = need ? `要先在上面的尺度選「${HEAT_ZH[need]}」才會補` : on ? `會補「${btn.dataset.zh}」` : `換成「${btn.dataset.zh}」`;
+      if (need && on) blockedLit.push(HEAT_ZH[need]);
       if (stamp && on && !before) seat(btn);
+    }
+    const heatNote = row.querySelector(".skel-heat-note");
+    if (heatNote) {
+      heatNote.textContent = blockedLit.length ? `這幾格現在抽不到：要先在上面的尺度選「${blockedLit.join("、")}」。` : "";
+      heatNote.hidden = !blockedLit.length;
     }
   };
 
@@ -78,6 +112,14 @@ export function skeletonPicker({ settings, save }) {
           onclick: (e) => {
             const btn = e.currentTarget;
             const key = btn.dataset.key;
+            const need = heatOff(key);
+            if (need) {
+              // 尺度沒開：格子搖一下，尺度那顆亮一下指給你看，說為什麼。
+              refuse(btn);
+              pointHeat(need);
+              toast(`要先在上面的尺度選「${HEAT_ZH[need]}」，選格才抽得到`);
+              return;
+            }
             if (litOf(section).includes(key)) {
               // 已經亮著：數字才是「幾格」，這裡只負責「哪幾格」。
               refuse(btn);
@@ -110,6 +152,7 @@ export function skeletonPicker({ settings, save }) {
           el("div", { class: "skel-chips" }, chips.slice(0, COMMON[section])),
           el("details", { class: "skel-more" }, el("summary", { class: "pressable" }, "更多種類"), el("div", { class: "skel-chips" }, chips.slice(COMMON[section]))),
           el("span", { class: "skel-note", "aria-live": "polite" }),
+          section === "pose" ? el("span", { class: "skel-note skel-heat-note", "aria-live": "polite", hidden: true }) : null,
           section === "pose" ? el("span", { class: "skel-note" }, "性愛與走光也受選格限制；仍須符合尺度與情境，無可用牌時會留空。") : null,
           section === "feature" ? el("span", { class: "skel-note" }, "選格時職業依這裡的選擇；自由補抽時依「抽職業」開關。體型依人物性別補。", " ", "種族需使用「多元／奇葩」場景。") : null
         )

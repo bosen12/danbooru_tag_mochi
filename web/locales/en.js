@@ -1274,6 +1274,40 @@ ComfyUI 沒有回報 checkpoint|ComfyUI returned no checkpoints.
 建議開聲音、全螢幕 · 空白鍵 暫停 · ← → 快轉 · F 全螢幕 · M 靜音  /  Sound on · Space pause · ← → seek · F fullscreen · M mute|Sound on · Space to pause · ← → to seek · F for fullscreen · M to mute
 排字匣、墨池、疊印台的三分鐘介紹影片：畫面與配樂都是這一頁即時產生的。|A three-minute introduction to Danbooru Case, Ink Pool and Fuse Bed, with live visuals and music.
 墨池與疊印台的使用教學影片：從放第一張牌到付印晾紙，畫面與配樂都是這一頁即時產生的。|Learn Ink Pool and Fuse Bed, from your first card to a finished image.
+螢幕保護|Screensaver
+第一幕|Act I
+第二幕|Act II
+第三幕|Act III
+第四幕|Act IV
+牌河|The River
+星河|The Galaxy
+牌浪|The Wave
+墨雨|Ink Rain
+整副牌，繞著中間那一點光|The whole deck, circling a point of light
+翻過去，就換成別張|Turn it over, and it is another card
+一張一張，落下來|One by one, they fall
+螢幕保護設定|Screensaver settings
+閒置一陣子就飛進一條無盡的牌河，你最近生成的圖晾在中間，剛印好的會飛到眼前顯影。動一下滑鼠或按任何鍵就回來。|After a while idle, you fly into an endless river of cards. Your recent images hang down the middle, and a freshly printed one flies up and develops in front of you. Move the mouse or press any key to come back.
+閒置多久出現|Start after idle
+放哪些牌和圖|Cards and images shown
+跟頂端分級|Follow the rating
+只放全年齡|General only
+跟頂端分級：頂端選到哪一級，那一級以下的牌和圖都會出現。|Follow the rating: cards and images up to the rating chosen at the top appear.
+要模糊的圖|Blur images
+不模糊|No blur
+色情的|Explicit
+敏感和色情的|Sensitive and explicit
+生成的圖和牌的插畫都算；模糊的只看得到顏色，牌名照樣看得到。|Applies to generated images and card art. Blurred images show only their colors; card names stay readable.
+現在看看|Preview now
+動一下就回來|Move to come back
+新的一張|New image
+30 秒|30 sec
+1 分|1 min
+3 分|3 min
+5 分|5 min
+10 分|10 min
+關|Off
+好|OK
 `;
 
 export const messages = Object.freeze(Object.fromEntries(copy.trim().split("\n").map((line) => {
@@ -1676,6 +1710,12 @@ LoRA：沒設定偏好路徑，改問 ComfyUI 也失敗了：{0}|LoRA: no prefer
 你的 {0} 張|{0} pinned
 引擎補 {0} 張|{0} engine additions
 這一版的牌（{0}）|Cards in this image ({0})
+剛印好・{0}|Just printed · {0}
+要先在上面的尺度選「{0}」才會補|Turn on {0} in Content level above first
+這幾格現在抽不到：要先在上面的尺度選「{0}」。|These kinds cannot be drawn now: turn on {0} in Content level above first.
+要先在上面的尺度選「{0}」，選格才抽得到|Turn on {0} in Content level above first, then this kind can be drawn
+{0} 張牌，從墨裡流過來|{0} cards, flowing out of the ink
+你最近印的 {0} 張，繞著中間那一點光|Your {0} latest images, circling a point of light
 `;
 export const templates = parameterized.trim().split("\n").map((line) => {
   const split = line.indexOf("|");

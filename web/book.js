@@ -20,6 +20,7 @@ import { el, openSheet, toast, syncChoices } from "./ui.js";
 import { zoomFromThumb } from "./zoom.js";
 import { mountKeysHelp } from "./keys-help.js";
 import { mountTour } from "./tour.js";
+import { mountScreensaver } from "./screensaver.js";
 import { mountGenStatus } from "./gen-status.js";
 import { openDecks } from "./decks.js";
 import { openPaste } from "./paste-prompt.js";
@@ -115,6 +116,7 @@ async function boot() {
   mountKeysHelp("book");
   // 新手導覽（頂欄「教學」右邊的「導覽」；第一次來會問要不要走一遍）：tour.js。
   mountTour("book");
+  mountScreensaver();
   // 墨池、疊印台正在印的：頂欄看得到，點了回去（gen-status.js）。
   mountGenStatus("book");
   try {
