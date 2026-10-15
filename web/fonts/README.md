@@ -6,9 +6,9 @@ the standalone Mochi repository does not include the font build toolchain.
 Maintainers copy rebuilt assets with `python scripts/sync_mochi.py`.
 
 The Traditional Chinese display family, glyphs and font weights are preserved.
-The English edition uses system fonts and horizontal card labels.
+The English edition sets headings and body text in IBM Plex Sans (below) and uses horizontal card labels.
 `../fonts.css` serves one local variable WOFF2 for current WEB6 source text and the
-lexicon. It covers 2,532 codepoints and is 986,384 bytes. The full source `wght`
+lexicon. It covers 2,533 codepoints and is 986,320 bytes. The full source `wght`
 axis (200–900), hinting, names, and layout features are retained, and CSS exposes
 the whole axis: headings and body text share this one file. WEB6 makes no Google
 Fonts requests (privacy, offline use, and about a second off every page load).
@@ -30,6 +30,14 @@ The intro film and tutorial set their largest titles in Noto Serif TC 900. `noto
 is that weight, instanced from the variable source pinned in `scripts/build_web6_fonts.py` and
 subset to the characters in the film/tutorial sources. Only elements using that family load it.
 Rebuild with `python scripts/build_web6_fonts.py --build-serif --download`. License: `OFL-NotoSerifTC.txt`.
+
+## IBM Plex Sans (English edition)
+
+The English edition's headings and body text use IBM Plex Sans 1.1.0 Regular, Medium, SemiBold
+and Bold: the unmodified complete WOFF2 files from IBM's `@ibm/plex-sans` package (OFL; the
+name "Plex" is reserved, so they ship as released, not subset). Only the English font stack names
+this family, so the Chinese edition never downloads it, and browsers fetch only the weights in use.
+License: `OFL-IBMPlexSans.txt`.
 
 ## IBM Plex Mono
 

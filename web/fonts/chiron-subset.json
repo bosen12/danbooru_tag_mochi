@@ -1,6 +1,6 @@
 {
-  "sha256": "2892dd45e712d9394d53090bea7728a8b2dddbf92532d81aa9f5c34697d9c13a",
-  "bytes": 986384,
+  "sha256": "a9eecf6fa441fabe864c4a232727de8e12f13d3788b28341899a4acb48e61396",
+  "bytes": 986320,
   "source_sha256": "0d788ded72dc88f478818182179af4c7cd143df0bf86557d29729ab132333930",
   "unicodes": [
     32,
@@ -851,6 +851,7 @@
     24537,
     24555,
     24565,
+    24573,
     24590,
     24594,
     24597,
@@ -2622,6 +2623,7 @@
     "web6/store.js",
     "web6/styles.css",
     "web6/synth-engine.js",
+    "web6/tag-renames.js",
     "web6/tokens.css",
     "web6/tour-steps.js",
     "web6/tour.js",

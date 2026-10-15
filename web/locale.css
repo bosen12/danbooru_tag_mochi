@@ -41,8 +41,9 @@ html[lang="en"] .language-picker::after { content: "EN"; }
 .mast-primary { flex-wrap: wrap; }
 
 html[lang="en"] {
-  --font-display: "Trebuchet MS", "Segoe UI", sans-serif;
-  --font-body: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  /* 英文版：IBM Plex Sans，跟種子、張數的 IBM Plex Mono 同一家族；字型檔在 fonts/（fonts.css），每台電腦長得一樣。 */
+  --font-display: "IBM Plex Sans", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  --font-body: "IBM Plex Sans", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
   --locale-register: #d9b17b;
 }
 html[lang="en"] .wordmark {
