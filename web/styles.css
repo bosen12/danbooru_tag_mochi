@@ -131,6 +131,7 @@ p {
     transform var(--dur-short) var(--ease-settle),
     background-color var(--dur-micro) var(--ease-out),
     border-color var(--dur-micro) var(--ease-out),
+    color var(--dur-micro) var(--ease-out),
     box-shadow var(--dur-short) var(--ease-out);
 }
 
@@ -573,6 +574,11 @@ body #wf-pick-btn.has {
   color: var(--color-ink-2);
   font-size: var(--text-sm);
   white-space: nowrap;
+  /* 滑過、選中時字色和底色淡過去，不要一格就換；按下去沉一下再彈回。 */
+  transition:
+    color var(--dur-micro) var(--ease-out),
+    background-color var(--dur-micro) var(--ease-out),
+    transform var(--dur-short) var(--ease-settle);
 }
 
 .segmented button[aria-checked="true"] {
@@ -594,6 +600,7 @@ body #wf-pick-btn.has {
 
 .segmented button:active {
   transform: translateY(1px);
+  transition-duration: var(--dur-micro);
 }
 
 /* 聲音關著：圖示變淡（墨池、疊印台同一顆）。 */
@@ -1365,6 +1372,7 @@ body #wf-pick-btn.has {
   text-decoration-color: var(--color-rule);
   text-underline-offset: 3px;
   cursor: pointer;
+  transition: text-decoration-color var(--dur-micro) var(--ease-out), color var(--dur-micro) var(--ease-out);
 }
 
 .link-btn:hover {
@@ -1574,6 +1582,18 @@ body #wf-pick-btn.has {
   border-color: var(--color-ink-2);
 }
 
+/* 選單、種子框滑過時框色加深，跟找字框同一種回饋，都淡過去不跳。 */
+.select,
+.seed-ctl .seed-ctl-input {
+  transition: border-color var(--dur-micro) var(--ease-out), color var(--dur-micro) var(--ease-out);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .seed-ctl .seed-ctl-input:hover:not([aria-invalid="true"]):not(:focus-visible) {
+    border-color: var(--color-ink-2);
+  }
+}
+
 .stepper {
   display: inline-flex;
   align-items: center;
@@ -1702,6 +1722,7 @@ body #wf-pick-btn.has {
   color: var(--color-muted);
   width: max-content;
   list-style: none;
+  transition: color var(--dur-micro) var(--ease-out), transform var(--dur-short) var(--ease-settle), box-shadow var(--dur-short) var(--ease-out);
 }
 
 :is(.more-rules, .skel-more) > summary::-webkit-details-marker {
@@ -2818,8 +2839,13 @@ body[data-dragging="true"] .library[data-over="true"] {
   }
 }
 
+.sheet-close {
+  transition: border-color var(--dur-micro) var(--ease-out), transform var(--dur-short) var(--ease-settle);
+}
+
 .sheet-close:active {
   transform: translateY(1px);
+  transition-duration: var(--dur-micro);
 }
 
 .sheet-foot {
@@ -3356,7 +3382,10 @@ body[data-dragging="true"] .library[data-over="true"] {
 /* 墨池的回饋：字先壓下，狀態像墨印落在紙上。 */
 .lib-search input {
   transform-origin: left center;
-  transition: transform var(--dur-short) var(--ease-out), opacity var(--dur-short) var(--ease-out);
+  transition:
+    transform var(--dur-short) var(--ease-out),
+    opacity var(--dur-short) var(--ease-out),
+    border-color var(--dur-micro) var(--ease-out);
 }
 
 .lib-search:focus-within input {
@@ -3401,13 +3430,24 @@ body[data-dragging="true"] .library[data-over="true"] {
   transition: transform var(--dur-short) var(--ease-settle), opacity var(--dur-short) var(--ease-out);
 }
 
-/* 籤和「動漫 ▸」滑過、選中時的顏色不要瞬間跳：短短一下就好（transform 那條照上面）。 */
+/* 牌的開關被上面那條蓋掉了自己的底色、框色過渡：補回來，滑過時才不會一格就變色。 */
+.shot-toggle {
+  transition:
+    transform var(--dur-short) var(--ease-settle),
+    opacity var(--dur-short) var(--ease-out),
+    background-color var(--dur-micro) var(--ease-out),
+    border-color var(--dur-micro) var(--ease-out);
+}
+
+/* 籤、開關籤和「動漫 ▸」滑過、選中時的顏色不要瞬間跳：短短一下就好（transform 那條照上面）。 */
 .group-chip,
+.chip-toggle,
 .chip-fold {
   transition:
     transform var(--dur-short) var(--ease-settle),
     opacity var(--dur-short) var(--ease-out),
     color var(--dur-micro) var(--ease-out),
+    background-color var(--dur-micro) var(--ease-out),
     border-color var(--dur-micro) var(--ease-out);
 }
 
@@ -3438,10 +3478,16 @@ body[data-dragging="true"] .library[data-over="true"] {
   filter: saturate(0.75);
 }
 
+/* 這條會蓋掉 lora.css 各顆按鈕自己的顏色過渡：一併帶上，滑過時才不會一格就換色。 */
 body .lora-modal .pressable,
 body .lora-tarot .pressable,
 body .shortcuts-overlay .pressable {
-  transition: transform var(--dur-short) var(--ease-settle), opacity var(--dur-short) var(--ease-out);
+  transition:
+    transform var(--dur-short) var(--ease-settle),
+    opacity var(--dur-short) var(--ease-out),
+    color var(--dur-micro) var(--ease-out),
+    background-color var(--dur-micro) var(--ease-out),
+    border-color var(--dur-micro) var(--ease-out);
 }
 
 body .lora-modal .pressable:active:not(:disabled),

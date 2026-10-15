@@ -122,7 +122,7 @@ background:transparent;color:inherit;font-family:var(--font-mono,var(--font-outl
 .seed-ctl[data-mode="random"] .seed-ctl-input{color:var(--color-muted,inherit)}
 .seed-ctl-input[aria-invalid="true"]{border-color:var(--color-danger,var(--color-accent,currentColor))}
 .seed-ctl-dice{flex:none;appearance:none;display:inline-grid;place-items:center;width:32px;height:32px;padding:0;border:1px solid var(--color-rule,color-mix(in srgb,currentColor 30%,transparent));
-border-radius:6px;background:transparent;color:inherit;cursor:pointer;transition:transform 180ms cubic-bezier(.16,1,.3,1)}
+border-radius:6px;background:transparent;color:inherit;cursor:pointer;transition:transform 180ms cubic-bezier(.16,1,.3,1),background-color 120ms ease-out}
 .seed-ctl-dice svg{width:16px;height:16px}
 .seed-ctl-dice:hover{background:color-mix(in srgb,currentColor 10%,transparent)}
 .seed-ctl-dice:active{transform:rotate(-20deg) scale(.94)}

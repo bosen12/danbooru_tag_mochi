@@ -53,6 +53,13 @@
   background: var(--color-paper-2);
   color: var(--color-ink);
   font: inherit;
+  transition: border-color var(--dur-micro) var(--ease-out), background-color var(--dur-micro) var(--ease-out);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .album-q:hover:not(:focus-visible) {
+    border-color: var(--color-ink-2);
+  }
 }
 
 .album-q:focus-visible {

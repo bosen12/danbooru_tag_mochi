@@ -134,6 +134,15 @@
   border-radius: var(--radius-sm);
   background: var(--color-paper);
   color: var(--color-ink);
+  transition: border-color var(--dur-micro) var(--ease-out);
+}
+
+/* 輸入框、開關滑過時框色加深，跟墨池其他地方同一種回饋。 */
+@media (hover: hover) and (pointer: fine) {
+  .tg-field input:hover:not(:focus-visible),
+  .same-switch.tg-switch:not(.is-on):hover {
+    border-color: var(--color-ink-2);
+  }
 }
 
 .tg-field input::placeholder {

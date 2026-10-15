@@ -64,6 +64,12 @@
   transition: border-color var(--dur-micro) var(--ease-out), background-color var(--dur-micro) var(--ease-out);
 }
 
+@media (hover: hover) and (pointer: fine) {
+  .book-q:hover:not(:focus-visible) {
+    border-color: var(--color-ink-2);
+  }
+}
+
 /* 跟疊印台的找牌框同一種焦點：以前只換一點底色，鍵盤走到這裡幾乎看不出來。 */
 .book-q:focus-visible {
   outline: 2px solid var(--color-focus);

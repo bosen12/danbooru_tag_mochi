@@ -441,6 +441,13 @@ body.fuse {
   color: var(--color-muted);
 }
 
+/* 滑過框色加深，跟墨池的找字框一樣；看得出這格可以打字。 */
+@media (hover: hover) and (pointer: fine) {
+  .case-q:hover:not(:focus-visible):not(.is-miss) {
+    border-color: var(--color-ink-2);
+  }
+}
+
 .case-q:focus-visible {
   outline: 2px solid var(--color-focus);
   outline-offset: 1px;
@@ -2243,6 +2250,7 @@ body.fuse {
   align-items: center;
   cursor: pointer;
   color: var(--color-ink-2);
+  transition: color var(--dur-micro) var(--ease-out), transform var(--dur-short) var(--ease-settle), box-shadow var(--dur-short) var(--ease-out);
 }
 
 .pb-more summary::before {
