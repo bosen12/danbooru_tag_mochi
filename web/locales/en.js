@@ -1275,6 +1275,11 @@ ComfyUI 沒有回報 checkpoint|ComfyUI returned no checkpoints.
 排字匣、墨池、疊印台的三分鐘介紹影片：畫面與配樂都是這一頁即時產生的。|A three-minute introduction to Danbooru Case, Ink Pool and Fuse Bed, with live visuals and music.
 墨池與疊印台的使用教學影片：從放第一張牌到付印晾紙，畫面與配樂都是這一頁即時產生的。|Learn Ink Pool and Fuse Bed, from your first card to a finished image.
 螢幕保護|Screensaver
+用了哪些牌|Cards used
+上一張（←）|Previous (←)
+下一張（→）|Next (→)
+同樣的提示詞、同一顆種子再送一次|Send the same prompt with the same seed again
+固定：第一張用這顆種子；一次多張、無限抽時之後每張往後加一。抽牌照樣每張隨機|Fixed: the first image uses this seed; with several images or Continuous, each next one adds 1. Card draws stay random.
 全部加入合成池|Add all to pool
 這張用到的牌（你選的＋抽到的）全部放進合成池；可以復原|Put every card this image used (yours and drawn) into the pool; you can undo
 這張的牌都已經在合成池裡了|All of these cards are already in the pool

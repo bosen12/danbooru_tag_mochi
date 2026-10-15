@@ -104,6 +104,9 @@ let infinite = false;
 let stopAsked = false;
 // 無限抽印完一輪、還沒排下一輪的那一小段空檔：照樣算「在忙」，「停」不能在這時候閃掉。
 let looping = false;
+// 固定的生圖種子：一次多張、無限抽時第一張用這顆，之後每張往後加一（不然每張同一顆種子、
+// 牌又多半是釘的，圖會幾乎一模一樣）。自己再按一次「抽並生圖」從這顆重新開始；無限抽接下一輪時接著往下加。
+let fixedRun = null;
 const ui = { suit: "all", group: "", query: "", eraOnly: true, charGender: "", collapsed: matchMedia("(max-width: 63.99rem)").matches, wallCols: "auto", ...S.loadUi() };
 // 成品牆每排幾張：自動（照寬度，每張至少約 19rem）或固定 3～6 張（視窗太窄時自己少幾欄，每張不小於 140px）。
 const WALL_COLS = ["auto", "3", "4", "5", "6"];
@@ -1765,7 +1768,7 @@ const generator = createGenerator({
     if (!looping) return;
     setTimeout(() => {
       looping = false;
-      if (infinite && !stopAsked) drawBatch(true);
+      if (infinite && !stopAsked) drawBatch(true, { auto: true });
       else renderGoBar();
     }, 60);
   },
@@ -1909,7 +1912,7 @@ function renderGoBar() {
     el("button", { class: "btn btn-ghost", type: "button", onclick: () => drawBatch(false), title: "只抽牌，不送 Comfy（P）" }, "只抽牌"),
     el("button", { class: "btn btn-primary", type: "button", onclick: () => drawBatch(true), title: "抽並生圖（G）" }, "抽並生圖", el("span", { class: "count" }, `×${n}`)),
     // 自己一行，放在按鈕底下：不要把「抽並生圖」擠到下一行去。
-    seedNode || (seedNode = mountSeedControl(null, { compact: true })),
+    seedNode || (seedNode = mountSeedControl(null, { compact: true, fixedNote: "固定：第一張用這顆種子；一次多張、無限抽時之後每張往後加一。抽牌照樣每張隨機" })),
     ].filter(Boolean)
   );
   // 整排重畫時，真的變了的那一小塊才演：開始印、「停」冒出來時淡進來。其他按鈕原樣，不閃。
@@ -2000,13 +2003,16 @@ let drawEpoch = 0;
 let drawingRounds = 0;
 
 /** 抽一輪。合成池的字一定進；同一個人時，第二張起鎖住第一張的長相。 */
-function drawBatch(gen) {
+function drawBatch(gen, { auto = false } = {}) {
+  const fixed = genSeed(null);
+  if (fixed == null) fixedRun = null;
+  else if (!auto || !fixedRun || fixedRun.base !== fixed) fixedRun = { base: fixed, next: 0 };
   // 原本整輪同步完成，途中設定不會被改。讓出畫面後仍用點下去那刻的同一份意圖。
   const intent = {
     settings: structuredClone(settings),
     pool: new Set(pool),
     bans: new Set([...bans, ...HARD_BANNED]),
-    imageSeed: genSeed(null),
+    fixedRun,
     shot: {
       width: settings.width, height: settings.height, rating: settings.rating,
       loras: structuredClone(currentLorasPayload()), ckpt: currentCkpt(), workflowId: currentWorkflowId(),
@@ -2052,7 +2058,8 @@ async function drawBatchNow(gen, intent, epoch) {
     if (drawn.positive && String(drawn.positive).trim()) {
       if (!first) first = drawn.positive;
       // 抽牌種子每張隨機；固定的生圖種子跟這輪其他設定一起保存。
-      made.push(makeShot(drawn, intent.imageSeed ?? seed, intent.pool, intent.shot));
+      const imageSeed = intent.fixedRun ? (intent.fixedRun.base + intent.fixedRun.next++) >>> 0 : null;
+      made.push(makeShot(drawn, imageSeed ?? seed, intent.pool, intent.shot));
     }
     if (i + 1 < n && performance.now() - workStart >= 8) {
       // 前景等一格，背景用 task；等的途中切到背景也有保底，不掛在 rAF 上。
@@ -2168,10 +2175,6 @@ function trimWall() {
 
 /* ================= 成品牆 ================= */
 
-function setAllOpen(open) {
-  for (const node of $("wall").children) node._setOpen && node._setOpen(open);
-}
-
 /** 每排幾張套到牆上。換的時候讓每張從舊位置滑到新位置（flip），不是一格跳過去。 */
 function applyWallCols(animate) {
   const wall = $("wall");
@@ -2230,11 +2233,8 @@ function renderWall() {
     saveUi();
     applyWallCols(true);
   });
-  tools.replaceChildren(
-    colsSel,
-    el("button", { class: "btn btn-small btn-ghost", type: "button", onclick: () => setAllOpen(true) }, "全部展開"),
-    el("button", { class: "btn btn-small btn-ghost", type: "button", onclick: () => setAllOpen(false) }, "全部收起")
-  );
+  // 「全部展開／收起」拿掉了：有圖的成品，牌改在成品詳情視窗裡看（牆不會被撐開）；只抽牌的那張本來就攤著。
+  tools.replaceChildren(colsSel);
   applyWallCols(false);
   const wall = $("wall");
   wall.replaceChildren(...shots.map((s) => shotNode(s, false)));
@@ -2326,6 +2326,8 @@ function shotNode(shot, deal) {
     }
   };
   toggle.addEventListener("click", () => {
+    // 有圖的：牌在成品詳情視窗裡看（直接捲到牌那一段），牆上不展開、版面不會跑掉。
+    if (shot.image || shot.preview) return showShot(shot, { focus: "cards" });
     userToggled = true;
     // 看按鈕說的狀態，不看 hidden：收起的動畫還在跑時 hidden 仍是 false，連按第二下要能把它叫回來。
     setOpen(toggle.getAttribute("aria-expanded") !== "true");
@@ -2862,38 +2864,138 @@ function restoreShot(shot, at) {
   renderGoFloat();
 }
 
-function showShot(shot) {
-  sfx.open();
+/**
+ * 成品詳情（點圖、點「牌·N」都開這個）：左邊大圖（‹ › 或鍵盤 ← → 看上一張、下一張，不必關掉再開），
+ * 右邊這張的主題、一排資訊、用了哪些牌（一張張發下來、可以全部加入合成池）、提示詞（每個詞一顆，
+ * 照花色上色，你釘的亮一點、品質詞淡一點）。focus: "cards" 時直接捲到牌那一段。
+ */
+const QUALITY_TAGS = new Set(["masterpiece", "best quality", "amazing quality", "high quality", "very aesthetic", "absurdres", "general", "sensitive", "nsfw", "explicit", "questionable"]);
+
+function shotTitle(shot) {
+  // 人數牌（1個女性…）不當標題：看不出這張在畫什麼。
+  const names = shot.mine.filter((t) => lib.byTag.has(t) && !QUALITY_TAGS.has(t) && lib.byTag.get(t).suit !== "cast").slice(0, 3).map(zh);
+  return names.length ? names.join("・") : `seed ${shot.seed}`;
+}
+
+function shotWhen(shot) {
+  const d = new Date(shot.at || Date.now());
+  if (Number.isNaN(d.getTime())) return "";
+  const p2 = (n) => String(n).padStart(2, "0");
+  return `${d.getMonth() + 1}/${d.getDate()} ${p2(d.getHours())}:${p2(d.getMinutes())}`;
+}
+
+function promptChips(shot) {
+  const mine = new Set(shot.mine);
+  const drawn = new Set(shot.drawn.map((d) => d.tag));
+  return el(
+    "p",
+    { class: "sd-prompt" },
+    String(shot.positive || "")
+      .split(/,\s*/)
+      .filter(Boolean)
+      .map((t) => {
+        const card = lib.byTag.get(t);
+        const kind = QUALITY_TAGS.has(t) ? "quality" : mine.has(t) ? "mine" : drawn.has(t) ? "drawn" : "other";
+        return el("span", { class: "sd-tag", dataset: { kind }, style: card ? `--suit: var(--suit-${card.suit})` : undefined, title: card ? card.zh : undefined }, t);
+      })
+  );
+}
+
+function shotDetailBody(shot, { deal = true } = {}) {
   const src = viewSrc(shot.image) || shot.preview;
-  const sheet = openSheet(
-    `seed ${shot.seed}`,
+  const size = shot.hires ? `${shot.hires.width}×${shot.hires.height}（原圖 ${shot.width}×${shot.height}）` : `${shot.width}×${shot.height}`;
+  const chips = [size, RATING_ZH[shot.rating], ERA_LABELS[shot.era], shot.face ? "修過臉" : "", shotWhen(shot)].filter(Boolean);
+  return el(
+    "div",
+    { class: "shot-detail" },
+    el("div", { class: "sd-image" }, shot._goneSrc ? goneNote() : src ? detailImg(shot, src) : el("p", { class: "pool-empty" }, "這張還沒有圖。")),
     el(
       "div",
-      { class: "lightbox" },
-      shot._goneSrc ? goneNote() : src ? detailImg(shot, src) : el("p", { class: "pool-empty" }, "這張還沒有圖。"),
+      { class: "sd-side" },
+      el("p", { class: "sd-meta" }, chips.map((c) => el("span", {}, c)), el("span", { class: "sd-seed" }, seedUseButton(shot.seed))),
       el(
-        "div",
-        {},
-        el("p", { class: "tag-en" }, [shot.hires ? `Hires ${shot.hires.width}×${shot.hires.height}（原圖 ${shot.width}×${shot.height}）` : shot.width + "×" + shot.height, shot.face ? "修過臉" : "", RATING_ZH[shot.rating], ERA_LABELS[shot.era]].filter(Boolean).join("・")),
-        el("pre", { class: "pos-text" }, shot.positive),
-        // 做過 Hires：提示詞底下一張示意圖，點開左右拉動比較（compare.js）。
-        compareThumb(shot)
-      )
-    ),
-    {
-      wide: true,
-      foot: [
-        favButton(shot, { zh, persist: () => (S.saveShots(shots), $("wall").querySelector(`.shot[data-id="${shot.id}"] .fav-btn`)?._paint?.()), className: "btn btn-small" }),
-        el("button", { class: "btn btn-small", type: "button", onclick: (e) => copyPos(shot, e.currentTarget) }, "複製 POS"),
-        shot.image ? el("a", { class: "btn btn-small", href: shot.image, target: "_blank", rel: "noopener" }, "開原圖") : null,
-      ],
-    }
+        "section",
+        { class: "sd-cards" },
+        el(
+          "div",
+          { class: "sd-head" },
+          el("h3", {}, "用了哪些牌", el("small", {}, `${shot.mine.length + shot.drawn.length} 張`)),
+          el("button", { class: "btn btn-small btn-ghost shot-pin-all", type: "button", title: "這張用到的牌（你選的＋抽到的）全部放進合成池；可以復原", onclick: (e) => pinAllFromShot(shot, e.currentTarget) }, "全部加入合成池")
+        ),
+        shotCards(shot, deal)
+      ),
+      el(
+        "section",
+        { class: "sd-pos" },
+        el("div", { class: "sd-head" }, el("h3", {}, "提示詞"), el("button", { class: "btn btn-small btn-ghost", type: "button", onclick: (e) => copyPos(shot, e.currentTarget) }, "複製")),
+        promptChips(shot)
+      ),
+      // 做過 Hires：一張示意圖，點開左右拉動比較（compare.js）。
+      compareThumb(shot)
+    )
   );
+}
+
+function showShot(shot, { focus } = {}) {
+  sfx.open();
+  let current = shot;
+  const viewable = () => shots.filter((s) => (s.image || s.preview) && !s._goneSrc);
+  const nav = (dir) => {
+    const list = viewable();
+    const i = list.findIndex((s) => s.id === current.id);
+    return i < 0 ? null : list[i + dir] || null;
+  };
+  const prevBtn = el("button", { class: "sd-nav", type: "button", dataset: { dir: "prev" }, "aria-label": "上一張（←）", title: "上一張（←）", onclick: () => go(-1) }, "‹");
+  const nextBtn = el("button", { class: "sd-nav", type: "button", dataset: { dir: "next" }, "aria-label": "下一張（→）", title: "下一張（→）", onclick: () => go(1) }, "›");
+  const syncNav = () => {
+    prevBtn.disabled = !nav(-1);
+    nextBtn.disabled = !nav(1);
+  };
+  const footFor = (s) => [
+    favButton(s, { zh, persist: () => (S.saveShots(shots), $("wall").querySelector(`.shot[data-id="${s.id}"] .fav-btn`)?._paint?.()), className: "btn btn-small" }),
+    el("button", { class: "btn btn-small", type: "button", onclick: () => reprint(s), title: "同樣的提示詞、同一顆種子再送一次" }, "同種子重印"),
+    el("button", { class: "btn btn-small", type: "button", onclick: (e) => copyPos(s, e.currentTarget) }, "複製提示詞"),
+    s.image ? el("a", { class: "btn btn-small", href: s.image, target: "_blank", rel: "noopener" }, "開原圖") : null,
+  ];
+  const sheet = openSheet(shotTitle(shot), shotDetailBody(shot), { wide: true, foot: footFor(shot), onClose: () => document.removeEventListener("keydown", onKey, true) });
+  sheet.sheet.classList.add("sheet-shot");
+  // 箭頭貼在大圖框的左右兩邊（不蓋到右欄的按鈕）；換張時跟著搬進新的圖框。
+  sheet.sheet.querySelector(".sd-image")?.append(prevBtn, nextBtn);
+  syncNav();
+  // 換一張：內容原地換掉（不關掉再開），圖從旁邊滑進來。
+  function go(dir) {
+    const next = nav(dir);
+    if (!next) return refuse(dir < 0 ? prevBtn : nextBtn);
+    current = next;
+    const body = sheet.sheet.querySelector(".shot-detail");
+    const fresh = shotDetailBody(next, { deal: false });
+    body.replaceWith(fresh);
+    fresh.querySelector(".sd-image")?.append(prevBtn, nextBtn);
+    sheet.sheet.querySelector("h2").textContent = shotTitle(next);
+    sheet.sheet.querySelector(".sheet-foot")?.replaceChildren(...footFor(next).filter(Boolean));
+    syncNav();
+    if (!reducedMotion()) {
+      fresh.querySelector(".sd-image")?.animate([{ opacity: 0, transform: `translateX(${dir * 28}px)` }, { opacity: 1, transform: "none" }], { duration: DUR.medium, easing: css(CURVE.out) });
+      fresh.querySelector(".sd-side")?.animate([{ opacity: 0 }, { opacity: 1 }], { duration: DUR.short, easing: css(CURVE.out) });
+    }
+  }
+  function onKey(e) {
+    if (e.target?.closest?.("input, textarea, select, [contenteditable]")) return;
+    // 只有這個彈窗在最上面時才換（上面又疊了牌的詳情就讓給它）。
+    if (!sheet.sheet.isConnected || [...document.querySelectorAll(".overlay")].pop() !== sheet.sheet.closest(".overlay")) return;
+    if (e.key === "ArrowLeft") (e.preventDefault(), go(-1));
+    else if (e.key === "ArrowRight") (e.preventDefault(), go(1));
+  }
+  document.addEventListener("keydown", onKey, true);
+  if (focus === "cards") {
+    const cards = sheet.sheet.querySelector(".sd-cards");
+    requestAnimationFrame(() => cards?.scrollIntoView({ block: "start", behavior: reducedMotion() ? "auto" : "smooth" }));
+  }
   // 圖從牆上那一格長大到彈窗中間，關掉時縮回去（zoom.js）。牆可能在看的時候重畫，關的時候重新找那一格。
   zoomFromThumb({
-    from: () => document.querySelector(`#wall .shot[data-id="${CSS.escape(String(shot.id))}"] .shot-frame img:not(.shot-under)`),
+    from: () => document.querySelector(`#wall .shot[data-id="${CSS.escape(String(current.id))}"] .shot-frame img:not(.shot-under)`),
     sheet: sheet.sheet,
-    to: sheet.sheet.querySelector(".lightbox > img"),
+    to: sheet.sheet.querySelector(".sd-image > img"),
     aspect: shot.width / shot.height,
   });
 }
