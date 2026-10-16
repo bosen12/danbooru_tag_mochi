@@ -599,7 +599,7 @@
 }
 
 .book-cell:hover .box-add,
-.book-cell:focus-within .box-add,
+.book-cell:has(:focus-visible) .box-add,
 .box-add[aria-pressed="true"] {
   opacity: 1;
   transform: none;
@@ -1203,7 +1203,7 @@
   cursor: pointer;
 }
 .book-cell:hover .fav-add,
-.book-cell:focus-within .fav-add,
+.book-cell:has(:focus-visible) .fav-add,
 .fav-add[aria-pressed="true"] {
   opacity: 1;
   transform: none;

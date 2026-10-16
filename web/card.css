@@ -752,7 +752,7 @@ body[data-dragging="true"] .fav-hand[data-open="false"][data-over="true"] {
     background-color var(--dur-micro) var(--ease-out);
 }
 
-.fav-slot:is(.is-hot, :focus-within) .fav-x,
+.fav-slot:is(.is-hot, :has(:focus-visible)) .fav-x,
 .fav-hand[data-editing="true"] .fav-x {
   opacity: 1;
   scale: 1;

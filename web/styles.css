@@ -2502,10 +2502,17 @@ html[lang="en"] .pool > .panel-head .workspace-purpose {
   .shot > .shot-actions > * {
     pointer-events: auto;
   }
-  .shot:is(:hover, :focus-within) > .shot-actions,
+  /* 焦點只算鍵盤走進來的（:focus-visible）：以前是 :focus-within，滑鼠按過一顆鈕（複製、修臉、牌·N、
+   * 開詳情再關掉）焦點留在那張裡，滑鼠移開按鈕列還亮著，要點別處才消失 —— 移到別張就同時亮兩張。 */
+  .shot:is(:hover, :has(:focus-visible)) > .shot-actions,
   .shot:has(> .shot-actions [aria-expanded="true"]) > .shot-actions {
     opacity: 1;
     translate: 0 0;
+  }
+  /* 一次只亮一張：滑鼠在牆上時，只有滑鼠底下那張（Hires／修臉的面板開著的那張照樣亮，面板跟著它）。 */
+  .wall:hover > .shot:not(:hover):not(:has(> .shot-actions [aria-expanded="true"])) > .shot-actions {
+    opacity: 0;
+    translate: 0 6px;
   }
   .shot > .shot-meta {
     grid-area: 2 / 1;

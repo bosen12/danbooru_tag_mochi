@@ -14,7 +14,8 @@ const COMMON = [
 const MODELS = [
   ["L", "選 LoRA"],
   ["M", "選底模"],
-  ["← → ↑ ↓", "在 LoRA、底模面板：在卡之間移動；搜尋框按 ↓ 走進去，Enter 選中"],
+  // 只有畫廊版的面板（墨池 web6：大圖網格）才有：web7 是清單版，不列。
+  ["← → ↑ ↓", "在 LoRA、底模面板：在卡之間移動；搜尋框按 ↓ 走進去，Enter 選中", () => !!document.querySelector("#lora-modal.lg-modal")],
   ["1 2", "LoRA 面板：換到 LoRA 1／LoRA 2 那一槽"],
 ];
 const WEIGHT = [
@@ -75,7 +76,7 @@ function group(title, rows) {
     "section",
     { class: "keys-help-group" },
     el("h3", {}, title),
-    el("dl", {}, rows.flatMap(([k, d]) => [el("dt", {}, keys(k)), el("dd", {}, d)]))
+    el("dl", {}, rows.filter(([, , when]) => !when || when()).flatMap(([k, d]) => [el("dt", {}, keys(k)), el("dd", {}, d)]))
   );
 }
 
