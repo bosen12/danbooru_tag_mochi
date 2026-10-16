@@ -4357,12 +4357,14 @@ html[data-vt="back"] .vt-sweep {
   .link-btn {
     position: relative;
   }
-  .mast-extra::after,
-  .seed-use::after,
-  .link-btn::after {
+  /* 看得見的字不變，可以點的範圍往外擴：19px 高的字 + 上下各 12px ≈ 43px（手機建議 44）。以前 8px 只到 35px。
+   * 用 ::before：可按壓的（換一組、全部）::after 是按下去的墨暈、設了點不到，擴在 ::after 上等於沒擴。 */
+  .mast-extra::before,
+  .seed-use::before,
+  .link-btn::before {
     content: "";
     position: absolute;
-    inset: -8px -6px;
+    inset: -12px -8px;
   }
 }
 

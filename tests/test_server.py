@@ -87,6 +87,8 @@ class _Req:
 
 
 ok("static allows styles.css", Handler._static_dest(_Req("/styles.css")) is not None)
+import mimetypes as _mt  # noqa: E402
+ok("fonts are served as font/woff2 (Windows often lacks the type)", _mt.guess_type("x.woff2")[0] == "font/woff2" and _mt.guess_type("x.webp")[0] == "image/webp")
 ok("static allows rules/rating.js", Handler._static_dest(_Req("/rules/rating.js")) is not None)
 ok("static allows trace.js", Handler._static_dest(_Req("/trace.js")) is not None)
 ok("static blocks ../web2", Handler._static_dest(_Req("/../web2/styles.css")) is None)

@@ -13,6 +13,9 @@ import mimetypes
 # 不補的話會送 application/octet-stream，靠瀏覽器自己猜才顯示得出來。
 mimetypes.add_type("image/webp", ".webp")
 mimetypes.add_type("image/svg+xml", ".svg")
+# Windows 的登錄檔常常沒有字型的類型：不寫的話 .woff2 會被當成 application/octet-stream 送出去。
+mimetypes.add_type("font/woff2", ".woff2")
+mimetypes.add_type("font/woff", ".woff")
 import os
 import queue
 import random
