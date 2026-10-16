@@ -29,6 +29,11 @@ cards.mkdir()
 fc.CARDS = cards
 fc.JOBS = tmp / "card_jobs.json"
 fc.MARKER = cards / ".card-art-test"
+# 這一段也會解包：升級清單、縮圖標記、下載暫存都要在暫存資料夾（以前漏了 UPGRADE，寫進真的 web/cards，
+# 剛 clone 下來沒有 web/cards 的 CI 直接炸）。
+fc.UPGRADE = cards / ".card-art-upgrade.json"
+fc.THUMB_MARKER = cards / ".card-art-test-thumbs"
+fc.PARTS = cards / ".card-art-download"
 fc.PACK_LIST = tmp / "no-pack-list.json"  # 前幾條測「沒有包內清單」的舊行為，不讀 repo 裡那份
 
 OLD = "1girl, solo, adult, ponytail, upper body"

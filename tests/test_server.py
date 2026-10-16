@@ -597,7 +597,7 @@ _bip = server.banned_in_prompt
 _ban = server.character_ban()
 ok("詞庫的 characterBan 讀得到", "anya (spy x family)" in _ban, str(len(_ban)))
 ok("跳脫括號、底線、權重括號都認得出被 ban 的角色",
-   _bip("1girl, anya \(spy x family\), smile") == ["anya (spy x family)"]
+   _bip(r"1girl, anya \(spy x family\), smile") == ["anya (spy x family)"]
    and _bip("(anya_(spy_x_family):1.2)") == ["anya (spy x family)"], str(_bip("(anya_(spy_x_family):1.2)")))
 ok("loli、shota 照擋", _bip("1girl, loli, shota") == ["loli", "shota"])
 ok("能用的角色不擋（自己的括號留著）", _bip("((makima (chainsaw man))), yor briar") == [])
@@ -1361,7 +1361,9 @@ ok("static_path refuses banned card art even if the file exists", _srv_h.static_
 _slim = json.loads(_srv_h.slim_card_manifest(json.dumps({"loli": {"v": "a"}, "shota": {"v": "b"}, "lolita fashion": {"v": "c"}, "smile": {"v": "d", "prompt": "x"}}).encode()))
 ok("served card manifest drops banned entries, keeps the rest", sorted(_slim) == ["lolita fashion", "smile"], str(_slim))
 import tempfile as _tf_si  # noqa: E402
-_si_web = Path(_tf_si.mkdtemp())
+# resolve()：macOS 的 /var 其實是 /private/var、Windows CI 的暫存路徑是短檔名（RUNNER~1）；
+# 伺服器的 WEB 本來就是 resolve 過的，測試造的也要一樣，不然「在不在 WEB 裡」永遠對不上。
+_si_web = Path(_tf_si.mkdtemp()).resolve()
 (_si_web / "cards" / "thumb").mkdir(parents=True)
 (_si_web / "cards" / "thumb" / "bob.webp").write_bytes(b"thumb")
 (_si_web / "cards" / "thumb" / "both.webp").write_bytes(b"thumb")
@@ -1440,13 +1442,16 @@ ok("output: log entries point at danbooru_case files only", _srv_h._output_name(
    and _srv_h._output_name("/api/image?filename=a.png&subfolder=other&type=output") == "")
 _saved_api_od, _saved_root_od, _saved_local_od = _srv_h.api, _srv_h.comfy_root_dir, _srv_h.comfy_is_local
 _srv_h.comfy_is_local = lambda: True
-_srv_h.comfy_root_dir = lambda: Path("C:/Comfy")
+# 絕對路徑照這台的作業系統寫（Windows 是 D:/…，macOS／Linux 是 /…）：CI 三種系統都跑。
+_od_root = Path(Path.cwd().anchor) / "Comfy"
+_od_abs = Path(Path.cwd().anchor) / "renders"
+_srv_h.comfy_root_dir = lambda: _od_root
 try:
-    _srv_h.api = lambda m, p, timeout=None, **k: {"system": {"argv": ["main.py", "--output-directory", "D:/renders"]}}
+    _srv_h.api = lambda m, p, timeout=None, **k: {"system": {"argv": ["main.py", "--output-directory", str(_od_abs)]}}
     _abs = _srv_h.comfy_output_dir()
     _srv_h.api = lambda m, p, timeout=None, **k: {"system": {"argv": ["main.py", "--output-directory", "out2"]}}
     _rel = _srv_h.comfy_output_dir()
-    ok("output dir: --output-directory absolute is used as is, relative resolves against ComfyUI's root (not our cwd)", _abs == Path("D:/renders") and _rel == Path("C:/Comfy/out2"), str((_abs, _rel)))
+    ok("output dir: --output-directory absolute is used as is, relative resolves against ComfyUI's root (not our cwd)", _abs == _od_abs and _rel == _od_root / "out2", str((_abs, _rel)))
 finally:
     _srv_h.api, _srv_h.comfy_root_dir, _srv_h.comfy_is_local = _saved_api_od, _saved_root_od, _saved_local_od
 _saved_op = (_srv_h.comfy_output_dir, _srv_h.move_to_trash, _srv_h.OUTPUT_KEEP)
