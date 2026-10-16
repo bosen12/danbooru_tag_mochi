@@ -21,6 +21,8 @@ const GARMENT_KEYS = [
   "jeans",
   "hoodie",
   "blouse",
+  // 細肩帶背心：拉吊帶背心（camisole pull）要穿著它；穿著它也算有上衣（不能再配比基尼的動作）。
+  "camisole",
   "towel",
 ];
 

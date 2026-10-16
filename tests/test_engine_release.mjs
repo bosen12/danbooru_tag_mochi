@@ -188,6 +188,15 @@ for (const rating of ['general', 'sensitive', 'explicit']) {
     const needsCloth = ['skirt lift', 'shirt lift', 'dress lift', 'clothes lift', 'clothes pull', 'pants pull', 'shirt pull', 'hand under clothes', 'hand under shirt', 'undressing', 'clothing aside'];
     assert.ok(tags.includes('completely nude') && !tags.some(t => needsCloth.includes(t)), 'Nude excludes clothing actions');
   }
+  // A camisole is a top (Sensitive drops the pull itself and keeps the camisole): pulling a camisole needs one worn, and wearing one rules out bikini actions
+  // (camisole was missing from the garment keys — about 1.4% of pinned draws came out "camisole | hand in bikini").
+  const cami = applyPin(lex, new Set(['1girl']), new Set(), 'camisole pull').pinned;
+  for (const [rating, clothing] of [['explicit', 0], ['explicit', 2], ['sensitive', 0], ['sensitive', 2]]) {
+    for (let i = 0; i < 300; i++) {
+      const tags = drawOne(lex, { ...base, rating, heats: ['flash', 'sex'], counts: { ...base.counts, clothing, pose: 2 } }, cami, new Set(), mulberry32(5000 + i), 5000 + i).positive.split(', ');
+      assert.ok((rating !== 'explicit' || tags.includes('camisole pull')) && !tags.some(t => /bikini/.test(t)), `Camisole pull never comes with a bikini (${rating}, clothing ${clothing}): ${tags.join(', ')}`);
+    }
+  }
 }
 // Characters: never drawn unless "Draw characters" is on; banned characters (underage, real people…) are not cards.
 {

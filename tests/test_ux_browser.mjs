@@ -103,7 +103,8 @@ try {
   await page.reload();
   await page.locator('.shot-actions').waitFor();
   const copy = page.getByRole('button', { name: '複製提示詞', exact: true });
-  assert.ok(await copy.evaluate(n => !!(n.closest('.shot-actions').compareDocumentPosition(n.closest('.shot').querySelector('.shot-cards')) & Node.DOCUMENT_POSITION_FOLLOWING)), 'copy action precedes the card fan');
+  // 2026-10-16：牌不再攤在牆上（只抽牌的也是），點「牌·N」開成品詳情視窗看；牆上只有動作列和那顆鈕。
+  assert.ok(await copy.evaluate(n => !!n.closest('.shot-actions') && !n.closest('.shot').querySelector('.shot-cards') && !!n.closest('.shot').querySelector('.shot-toggle[aria-haspopup="dialog"]')), 'copy action sits in the shot actions; the cards open in the detail window, not on the wall');
   await copy.click();
   assert.equal(await page.evaluate(() => navigator.clipboard.readText()), 'red hair, kimono, standing');
   // Handoff must classify the original lexicon entry, not the display-card wrapper.

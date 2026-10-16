@@ -1332,6 +1332,9 @@ ComfyUI 連線|ComfyUI connection
 連不到|Not reachable
 ComfyUI 在別台電腦、或改過埠號才要填。按「自動找」回到自動偵測（8188、ComfyUI Desktop 的 8000）。|Only needed when ComfyUI runs on another computer or a custom port. Auto-detect goes back to checking 8188 and 8000 (ComfyUI Desktop).
 自動找|Auto-detect
+在 LoRA、底模面板：在卡之間移動；搜尋框按 ↓ 走進去，Enter 選中|In the LoRA and checkpoint panels: move between cards; ↓ from the search box steps in, Enter selects
+LoRA 面板：換到 LoRA 1／LoRA 2 那一槽|LoRA panel: switch to slot LoRA 1 / LoRA 2
+看這張用到的牌（成品詳情）|See the cards this image used (details)
 改回自動找：找到哪個就連哪個。|Back to auto-detect: connects to whichever ComfyUI answers.
 `;
 

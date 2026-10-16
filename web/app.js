@@ -2252,88 +2252,20 @@ function shotNode(shot, deal, { printing = false } = {}) {
     if (e.target.closest && e.target.closest("img")) showShot(shot);
   });
   const status = el("span", { class: "status" });
-  // 沒有圖可看的（只抽牌、印壞、被停掉）直接攤開；有圖的牌收著，要看再點。
-  // 要送去印的（抽並生圖、同種子重印）不攤開：牌在成品詳情視窗裡看，牆不會被撐開又收回去。
-  const open = !shot.image && REPRINTABLE.has(shot.status) && !printing;
-  // 收著的那疊牌第一次打開才建：一張成品底下三十張牌、兩百個節點，
-  // 牆上四十張就是七千多個看不到的節點，載入時白白排版一次（實測 50＋126ms 的長任務）。
-  // 攤開的（只抽牌的）也一樣：剛抽的當場建；重新整理時整面牆一起畫的，捲到快看得到才建。
-  let cards = open && deal ? shotCards(shot, false) : el("div", { class: "shot-cards" });
-  let built = open && deal;
-  cards.id = "cards-" + shot.id;
-  let userToggled = false;
-  cards.hidden = !open;
-  const ensureCards = () => {
-    if (built) return;
-    built = true;
-    const full = shotCards(shot, false);
-    full.id = cards.id;
-    full.hidden = cards.hidden;
-    cards.replaceWith(full);
-    cards = full;
-  };
-  let dealtOnce = !deal && open;
+  // 每一張的牌都在成品詳情視窗裡看（只抽牌、印壞的也是）：牆上不攤開，一張張發下來的三十張牌
+  // 會把那一欄撐高一大截、旁邊和底下的成品全被推開（實測只抽牌一按，牆的版面位移 0.6～0.95）。
+  // 沒有圖的那張，視窗左邊是牌扇和「送去印這張／再印一次」（draftFace）。
   const total = shot.mine.length + shot.drawn.length;
   const suits = CARD_SUITS.filter((s) => shot.drawn.some((d) => lib.byTag.get(d.tag)?.suit === s) || shot.mine.some((t) => lib.byTag.get(t)?.suit === s));
   const toggle = el(
     "button",
-    { class: "shot-toggle pressable", type: "button", "aria-expanded": open ? "true" : "false", "aria-controls": cards.id, title: "展開／收起這張用到的牌" },
+    { class: "shot-toggle pressable", type: "button", "aria-haspopup": "dialog", title: "看這張用到的牌（成品詳情）" },
     el("span", { class: "mini", "aria-hidden": "true" }, suits.map((s) => el("i", { style: `--suit: var(--suit-${s})` }))),
     `牌 · ${total}`,
     el("span", { class: "chev", "aria-hidden": "true" })
   );
-  const setOpen = (now) => {
-    if (now) ensureCards();
-    if (!now && !cards.hidden && !matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      // 收起：牌往上收、淡掉，收完才藏 —— 以前是一瞬間消失，跟攤開時一張張發下來不對稱。
-      toggle.setAttribute("aria-expanded", "false");
-      const box = cards;
-      box.animate(
-        [
-          { opacity: 1, transform: "none" },
-          { opacity: 0, transform: "translateY(-8px)" },
-        ],
-        { duration: DUR.micro, easing: css(CURVE.exit) }
-      ).onfinish = () => {
-        // 收完才藏；底下（手機上是下一張成品）從原位滑上來補位，不是一格跳上來。
-        if (toggle.getAttribute("aria-expanded") === "false") flip(toggle.closest(".wall"), () => (box.hidden = true));
-      };
-      return;
-    }
-    const wasHidden = cards.hidden;
-    // 攤開：這張變高，底下的成品滑下去讓位（牌自己照樣一張張發下來）。
-    if (now && wasHidden) flip(toggle.closest(".wall"), () => (cards.hidden = false));
-    else cards.hidden = !now;
-    toggle.setAttribute("aria-expanded", now ? "true" : "false");
-    if (now) {
-      if (!dealtOnce) {
-        dealtOnce = true;
-        replayDeal(cards);
-      } else if (!matchMedia("(prefers-reduced-motion: reduce)").matches) {
-        // 再攤開一次：跟收起對稱，從上面一點落下來、淡進來（第一次攤開才一張張發牌）。
-        // 收起還沒演完就又按：把收起倒著播回去，從那一刻的樣子回來，不是先閃回全開。
-        const running = cards.getAnimations();
-        if (running.length) running.forEach((a) => a.reverse());
-        else if (wasHidden) {
-          cards.animate(
-            [
-              { opacity: 0, transform: "translateY(-8px)" },
-              { opacity: 1, transform: "none" },
-            ],
-            { duration: DUR.short, easing: css(CURVE.out) }
-          );
-        }
-      }
-    }
-  };
-  toggle.addEventListener("click", () => {
-    // 有圖的：牌在成品詳情視窗裡看（直接捲到牌那一段），牆上不展開、版面不會跑掉。
-    // 只抽牌、印壞、被停掉（沒有圖、牌就是內容）的才在牆上展開；其他（有圖、排隊中、印製中）都開詳情視窗。
-    if (shot.image || shot.preview || !REPRINTABLE.has(shot.status)) return showShot(shot, { focus: "cards" });
-    userToggled = true;
-    // 看按鈕說的狀態，不看 hidden：收起的動畫還在跑時 hidden 仍是 false，連按第二下要能把它叫回來。
-    setOpen(toggle.getAttribute("aria-expanded") !== "true");
-  });
+  // 有圖的直接捲到牌；沒圖的（只抽牌、印壞）先看到牌扇和「送去印這張」，牌就在旁邊（手機在下面）。
+  toggle.addEventListener("click", () => showShot(shot, { focus: shot.image || shot.preview ? "cards" : undefined }));
   const node = el(
     "article",
     { class: "shot", dataset: { id: shot.id, status: shot.status } },
@@ -2380,39 +2312,10 @@ function shotNode(shot, deal, { printing = false } = {}) {
       el("button", { class: "btn btn-small btn-ghost", type: "button", onclick: (e) => copyPos(shot, e.currentTarget) }, "複製提示詞"),
       el("button", { class: "btn btn-small btn-ghost", type: "button", onclick: () => reprint(shot), title: "同樣的 POS、同一顆種子再送一次" }, "同種子重印"),
       el("button", { class: "btn btn-small btn-ghost shot-remove", type: "button", onclick: () => removeShot(shot) }, "撤下")
-    ),
-    cards
+    )
   );
-  node._setOpen = setOpen;
-  // 就地送去印的那張，圖一出來就把自動攤開的牌收起來（使用者自己點開的不動）。
-  node._imageArrived = () => {
-    if (!userToggled && !cards.hidden) setOpen(false);
-  };
-  if (open && deal) setOpen(true);
-  else if (open) whenNear(node, () => !cards.hidden && ensureCards());
   paintShot(node, shot);
   return node;
-}
-
-// 快捲到才做的事（一個 IntersectionObserver 顧整面牆）：提早一個半畫面開始。
-const nearJobs = new WeakMap();
-let nearObserver = null;
-function whenNear(node, job) {
-  if (typeof IntersectionObserver !== "function") return job();
-  nearObserver ||= new IntersectionObserver(
-    (entries) => {
-      for (const e of entries) {
-        if (!e.isIntersecting) continue;
-        nearObserver.unobserve(e.target);
-        const run = nearJobs.get(e.target);
-        nearJobs.delete(e.target);
-        run?.();
-      }
-    },
-    { rootMargin: "150% 0px" }
-  );
-  nearJobs.set(node, job);
-  nearObserver.observe(node);
 }
 
 function shotCards(shot, deal) {
@@ -2584,14 +2487,7 @@ function paintShot(node, shot) {
   } else if (img) img.remove();
   node.dataset.shown = shot.status;
   let empty = frame.querySelector(".shot-empty");
-  const words = {
-    drawn: "只抽了牌，還沒送去印",
-    queued: shot.note || "排隊等印",
-    running: shot.note || "印製中",
-    failed: shot.note || "印壞了",
-    cancelled: shot.note || "取消了",
-    stopped: shot.note || "上次中斷了",
-  };
+  const words = shotWords(shot);
   if (!src) {
     if (!empty) {
       empty = el("div", { class: "shot-empty" });
@@ -2633,7 +2529,19 @@ function paintShot(node, shot) {
 
 const REPRINTABLE = new Set(["drawn", "failed", "cancelled", "stopped"]);
 
-/** 沒有圖的畫框：只抽牌的攤一手牌，印壞的給一顆再印。 */
+/** 沒有圖的那張，畫框裡寫什麼（牆上、成品詳情視窗都用）。 */
+function shotWords(shot) {
+  return {
+    drawn: "只抽了牌，還沒送去印",
+    queued: shot.note || "排隊等印",
+    running: shot.note || "印製中",
+    failed: shot.note || "印壞了",
+    cancelled: shot.note || "取消了",
+    stopped: shot.note || "上次中斷了",
+  };
+}
+
+/** 沒有圖的畫框：只抽牌的攤一手牌，印壞的給一顆再印。在成品詳情視窗裡按了，視窗收起來、回牆上看它印。 */
 function draftFace(shot, text) {
   const out = [];
   if (shot.status === "drawn") out.push(draftHand(shot));
@@ -2642,7 +2550,15 @@ function draftFace(shot, text) {
     out.push(
       el(
         "button",
-        { class: "btn btn-small " + (shot.status === "drawn" ? "btn-primary" : "btn-pool"), type: "button", onclick: () => printInPlace(shot) },
+        {
+          class: "btn btn-small " + (shot.status === "drawn" ? "btn-primary" : "btn-pool"),
+          type: "button",
+          onclick: (e) => {
+            const sheet = e.currentTarget.closest(".sheet-shot");
+            printInPlace(shot);
+            sheet?.querySelector(".sheet-close")?.click();
+          },
+        },
         shot.status === "drawn" ? "送去印這張" : "再印一次"
       )
     );
@@ -2798,7 +2714,6 @@ function printInPlace(shot) {
 function updateShot(shot) {
   const node = document.querySelector(`.shot[data-id="${shot.id}"]`);
   if (node) paintShot(node, shot);
-  if (node && shot.status === "done" && shot.image) node._imageArrived && node._imageArrived();
 }
 
 async function copyPos(shot, btn) {
@@ -2910,7 +2825,7 @@ function shotDetailBody(shot, { deal = true } = {}) {
   return el(
     "div",
     { class: "shot-detail" },
-    el("div", { class: "sd-image" }, shot._goneSrc ? goneNote() : src ? detailImg(shot, src) : el("p", { class: "pool-empty" }, "這張還沒有圖。")),
+    el("div", { class: "sd-image" + (!shot._goneSrc && !src ? " is-draft" : "") }, shot._goneSrc ? goneNote() : src ? detailImg(shot, src) : el("div", { class: "shot-empty sd-draft" }, ...draftFace(shot, shotWords(shot)[shot.status] || "這張還沒有圖。"))),
     el(
       "div",
       { class: "sd-side" },

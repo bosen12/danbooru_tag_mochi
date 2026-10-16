@@ -673,6 +673,52 @@ function addLoraMore(box) {
 }
 
 /**
+ * 畫廊的方向鍵（跟字盒一樣）：← → 上一張、下一張，↑ ↓ 上一排、下一排（照畫面上的位置找最近的那張）；
+ * 最上面一排再按 ↑ 回到搜尋框。搜尋框按 ↓ 走進網格。Enter／空白鍵就是按那張卡（選中）。
+ */
+function gridKeys(list, search) {
+  const cards = () => [...list.querySelectorAll(".lg-card")];
+  const focusCard = (card) => {
+    if (!card) return;
+    card.focus({ preventScroll: true });
+    card.scrollIntoView({ block: "nearest", behavior: REDUCE_MOTION ? "auto" : "smooth" });
+  };
+  search?.addEventListener("keydown", (e) => {
+    if (e.key !== "ArrowDown" || e.isComposing) return;
+    const first = list.querySelector(".lg-card.on") || list.querySelector(".lg-card");
+    if (!first) return;
+    e.preventDefault();
+    focusCard(first);
+  });
+  list.addEventListener("keydown", (e) => {
+    const card = e.target.closest?.(".lg-card");
+    if (!card || !["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(e.key)) return;
+    e.preventDefault();
+    const all = cards();
+    const i = all.indexOf(card);
+    if (e.key === "ArrowLeft") return focusCard(all[i - 1]);
+    if (e.key === "ArrowRight") return focusCard(all[i + 1]);
+    const r = card.getBoundingClientRect();
+    const cx = r.left + r.width / 2;
+    const down = e.key === "ArrowDown";
+    // 同一欄最近的那張：往下找第一個「頂端比這張底下還低」的那排，往上反過來。
+    let best = null;
+    let bestScore = Infinity;
+    for (const c of all) {
+      const b = c.getBoundingClientRect();
+      if (down ? b.top < r.bottom - 1 : b.bottom > r.top + 1) continue;
+      const score = Math.abs(down ? b.top - r.bottom : r.top - b.bottom) * 4 + Math.abs(b.left + b.width / 2 - cx);
+      if (score < bestScore) {
+        bestScore = score;
+        best = c;
+      }
+    }
+    if (!best && !down) return search?.focus();
+    focusCard(best);
+  });
+}
+
+/**
  * 選中的那張從網格飛進右邊的大圖（畫廊版）。from：點的那張卡的圖；to：右邊剛畫好的大圖。
  * 飛的是一張影子：起點是卡上裁成直幅的樣子，終點是大圖完整的比例；落地前大圖先藏著。
  */
@@ -1821,6 +1867,8 @@ export function handleLoraKeys(e) {
       return true;
     }
     if (e.key === "Enter") {
+      // 焦點在按鈕上（畫廊的卡、槽、分類）：Enter 是按那顆鈕，不是關面板。
+      if (e.target?.closest?.("button, a")) return true;
       e.preventDefault();
       closeLoraModal();
       return true;
@@ -2089,6 +2137,10 @@ export function initLoraPicker({ gallery = false, motion = null } = {}) {
   GALLERY = !!gallery;
   MOTION = motion;
   ensureDom();
+  if (GALLERY) {
+    gridKeys($("lm-list"), $("lm-search"));
+    gridKeys($("ckpt-list"), $("ckpt-search"));
+  }
   syncManagerLinks();
   renderGenCurrent();
   renderCkptBtn();
