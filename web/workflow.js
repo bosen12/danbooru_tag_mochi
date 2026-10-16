@@ -12,6 +12,9 @@ const ICON_CLOSE =
   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg>';
 
 let WORKFLOW_ID = "";
+// 畫廊版（墨池 web6）：跟 LoRA／底模同一種左右兩欄；ComfyUI 網址不放在這裡，改成點頂欄燈號跳出的小窗。
+let GALLERY = false;
+let MOTION = null;
 try {
   WORKFLOW_ID = localStorage.getItem(STORE) || "";
 } catch {
@@ -212,6 +215,28 @@ function ensureDom() {
   modal.setAttribute("role", "dialog");
   modal.setAttribute("aria-modal", "true");
   modal.setAttribute("aria-labelledby", "wf-head-title");
+  if (GALLERY) {
+    modal.classList.add("lg-modal");
+    modal.innerHTML = `
+    <div class="lora-modal-inner lg lg-wf">
+      <button class="lora-modal-close" id="wf-close" aria-label="關閉 (Esc)" title="關閉 (Esc)">${ICON_CLOSE}</button>
+      <aside class="lg-rail">
+        <h2 class="lg-title" id="wf-head-title">工作流</h2>
+        <p class="lg-hint">沒選就是內建。要用自己的工作流：把 ComfyUI 用它畫的任何一張 PNG 拖進來，或匯入「匯出工作流 (API)」的 JSON。</p>
+        <div id="wf-list" class="lm-list wf-list"></div>
+        <button type="button" class="wf-drop" id="wf-drop">匯入工作流…<br>ComfyUI 畫的 PNG 或 API JSON，拖進來或點這裡選檔</button>
+        <input id="wf-file" type="file" accept="application/json,.json,image/png,.png" hidden />
+      </aside>
+      <section class="lg-main wf-main" aria-labelledby="wf-head-title">
+        <div id="wf-current" class="lm-current"></div>
+        <div id="wf-sampling" class="wf-sampling" hidden></div>
+        <p class="wf-msg" id="wf-msg" role="status"></p>
+      </section>
+    </div>`;
+    document.body.appendChild(modal);
+    ensureComfyPop();
+    return;
+  }
   modal.innerHTML = `
     <div class="lora-modal-inner">
       <button class="lora-modal-close" id="wf-close" aria-label="關閉 (Esc)" title="關閉 (Esc)">${ICON_CLOSE}</button>
@@ -238,6 +263,120 @@ function ensureDom() {
   document.body.appendChild(modal);
 }
 
+/* ---------- ComfyUI 網址的小窗（畫廊版）：點頂欄的 Comfy 燈號打開 ---------- */
+
+function ensureComfyPop() {
+  if ($("comfy-pop")) return;
+  const pop = document.createElement("div");
+  pop.id = "comfy-pop";
+  pop.className = "comfy-pop";
+  pop.hidden = true;
+  pop.setAttribute("role", "dialog");
+  pop.setAttribute("aria-labelledby", "comfy-pop-title");
+  pop.innerHTML = `
+    <h2 class="comfy-pop-title" id="comfy-pop-title">ComfyUI 連線</h2>
+    <p class="comfy-pop-state" id="comfy-pop-state"></p>
+    <div class="wf-url-row">
+      <input id="wf-url" type="url" autocomplete="off" spellcheck="false" aria-label="ComfyUI 網址" placeholder="http://127.0.0.1:8188" />
+      <button type="button" class="ghost" id="wf-url-save">存位址</button>
+    </div>
+    <p class="comfy-pop-hint">ComfyUI 在別台電腦、或改過埠號才要填。按「自動找」回到自動偵測（8188、ComfyUI Desktop 的 8000）。</p>
+    <div class="comfy-pop-acts"><button type="button" class="ghost" id="comfy-pop-auto">自動找</button></div>
+    <p class="wf-msg" id="comfy-msg" role="status"></p>`;
+  document.body.appendChild(pop);
+  $("comfy-pop-auto").addEventListener("click", () => saveComfy({ auto: true }));
+}
+
+function comfyPopOpen() {
+  const pop = $("comfy-pop");
+  return !!pop && !pop.hidden && !pop.classList.contains("is-closing");
+}
+
+function placeComfyPop() {
+  const pop = $("comfy-pop");
+  const ping = $("ping");
+  if (!pop || !ping) return;
+  const r = ping.getBoundingClientRect();
+  const w = pop.offsetWidth || 368;
+  // 右邊對齊燈號；手機上燈號在中間偏右，小窗會超出左邊，夾回畫面裡。
+  const left = Math.min(Math.max(12, r.right - w), innerWidth - w - 12);
+  pop.style.top = Math.round(r.bottom + 10) + "px";
+  pop.style.left = Math.round(Math.max(12, left)) + "px";
+}
+
+let comfyApi = "";
+let comfyWatch = null;
+
+function syncComfyState(api = comfyApi) {
+  comfyApi = api || comfyApi;
+  api = comfyApi;
+  const box = $("comfy-pop-state");
+  const ping = $("ping");
+  if (!box) return;
+  const ok = ping?.dataset.ok === "1";
+  box.dataset.ok = ok ? "1" : "0";
+  box.textContent = api ? (ok ? `已連上 ${api}` : `連不到 ${api}`) : ok ? "已連上" : "連不到";
+}
+
+function onComfyOutside(e) {
+  if (e.target.closest?.("#comfy-pop, #ping")) return;
+  closeComfyPop(false);
+}
+
+function openComfyPop() {
+  const pop = $("comfy-pop");
+  if (!pop) return;
+  pop.classList.remove("is-closing");
+  pop.hidden = false;
+  placeComfyPop();
+  syncComfyState();
+  $("ping")?.setAttribute("aria-expanded", "true");
+  sayComfy("");
+  refreshComfy();
+  window.setTimeout(() => $("wf-url")?.focus(), 0);
+  document.addEventListener("pointerdown", onComfyOutside, true);
+  addEventListener("resize", placeComfyPop);
+  addEventListener("scroll", onComfyScroll, { passive: true });
+  comfyWatch?.disconnect();
+  comfyWatch = new MutationObserver(() => syncComfyState());
+  if ($("ping")) comfyWatch.observe($("ping"), { attributes: true, attributeFilter: ["data-ok"] });
+}
+
+// 捲動：跟著燈號移（手機上頂欄不固定）；燈號捲出畫面才收起來。不直接收：手機鍵盤跳出來也會捲一下。
+function onComfyScroll() {
+  const r = $("ping")?.getBoundingClientRect();
+  if (!r || r.bottom < 0) closeComfyPop(false);
+  else placeComfyPop();
+}
+
+function closeComfyPop(returnFocus = true) {
+  const pop = $("comfy-pop");
+  if (!comfyPopOpen()) return;
+  pop.classList.add("is-closing");
+  $("ping")?.setAttribute("aria-expanded", "false");
+  document.removeEventListener("pointerdown", onComfyOutside, true);
+  removeEventListener("resize", placeComfyPop);
+  removeEventListener("scroll", onComfyScroll);
+  comfyWatch?.disconnect();
+  comfyWatch = null;
+  window.setTimeout(
+    () => {
+      if (!pop.classList.contains("is-closing")) return;
+      pop.classList.remove("is-closing");
+      pop.hidden = true;
+    },
+    REDUCE_MOTION ? 0 : 160
+  );
+  if (returnFocus && pop.contains(document.activeElement)) $("ping")?.focus();
+}
+
+function sayComfy(text, kind) {
+  const el = $("comfy-msg");
+  if (!el) return say(text, kind);
+  el.textContent = text || "";
+  el.dataset.kind = kind || "";
+}
+
 function renderPickBtn() {
   const btn = $("wf-pick-btn");
   if (!btn) return;
@@ -255,6 +394,20 @@ function renderPickBtn() {
 function renderList() {
   const box = $("wf-list");
   if (!box) return;
+  if (GALLERY && (!WORKFLOW_ID || profiles.some((p) => p.id === WORKFLOW_ID))) {
+    const want = [["", "內建"], ...profiles.map((p) => [p.id, p.name || p.id])];
+    const rows = [...box.querySelectorAll(":scope > .lora-row")];
+    if (rows.length === want.length && rows.every((r, k) => r.dataset.id === want[k][0] && r.dataset.title === want[k][1])) {
+      for (const r of rows) {
+        const on = r.dataset.id === (WORKFLOW_ID || "");
+        r.classList.toggle("on", on);
+        if (on) r.setAttribute("aria-current", "true");
+        else r.removeAttribute("aria-current");
+      }
+      renderPickBtn();
+      return;
+    }
+  }
   box.replaceChildren();
   const add = (id, title, sub) => {
     const row = document.createElement("button");
@@ -263,6 +416,12 @@ function renderList() {
     if ((id || "") === (WORKFLOW_ID || "")) row.setAttribute("aria-current", "true");
     const ph = document.createElement("span");
     ph.className = "ph";
+    if (GALLERY) {
+      // 畫廊版：一顆字當標記（內建是「內」，匯入的取名字的第一個字），不是空白的圖片框。
+      ph.className = "lg-glyph";
+      ph.textContent = id ? Array.from(String(title).trim())[0] || "?" : document.documentElement.lang === "en" ? "B" : "內";
+      ph.setAttribute("aria-hidden", "true");
+    }
     const rn = document.createElement("span");
     rn.className = "rn";
     const rt = document.createElement("span");
@@ -273,10 +432,12 @@ function renderList() {
     rf.textContent = sub;
     rn.append(rt, rf);
     row.append(ph, rn);
+    row.dataset.id = id || "";
+    row.dataset.title = title;
     row.addEventListener("click", () => selectWorkflow(id));
     box.append(row);
   };
-  add("", "內建", "排字匣那套 Illustrious 流程");
+  add("", "內建", "內建的 Illustrious 流程");
   for (const p of profiles) add(p.id, p.name || p.id, "匯入的 API workflow");
   if (WORKFLOW_ID && !profiles.some((p) => p.id === WORKFLOW_ID)) {
     WORKFLOW_ID = "";
@@ -286,10 +447,52 @@ function renderList() {
 }
 
 async function selectWorkflow(id) {
+  if ((id || "") === (WORKFLOW_ID || "")) return;
   WORKFLOW_ID = id || "";
   saveId();
   renderList();
-  await loadCurrent();
+  // 畫廊版：右邊先淡掉，讀好之後新的內容從下面浮上來（不是一格就整片換掉、取樣那塊突然消失）。
+  const nodes = [$("wf-current"), $("wf-sampling")].filter(Boolean);
+  const live = GALLERY && MOTION && !REDUCE_MOTION;
+  const outs = live ? nodes.map((n) => n.animate([{ opacity: 1 }, { opacity: 0 }], { duration: MOTION.DUR.micro, easing: MOTION.css(MOTION.CURVE.exit), fill: "forwards" })) : [];
+  await Promise.all([loadCurrent(), ...outs.map((a) => a.finished.catch(() => {}))]);
+  outs.forEach((a) => a.cancel());
+  if (!live) return;
+  nodes
+    .filter((n) => !n.hidden)
+    .forEach((n, k) =>
+      n.animate([{ opacity: 0, transform: "translateY(10px)" }, { opacity: 1, transform: "none" }], { duration: MOTION.DUR.medium, delay: k * 50, easing: MOTION.css(MOTION.CURVE.out), fill: "backwards" })
+    );
+}
+
+/** 畫廊版的 <details>：打開時往下長、收起時縮回去再關（瀏覽器預設是一格就跳）。 */
+function toggleDetails(d) {
+  const { DUR, CURVE, css } = MOTION;
+  const from = d.getBoundingClientRect().height;
+  d._grow?.cancel();
+  const opening = !d.open || d.dataset.closing === "1";
+  delete d.dataset.closing;
+  d.open = false;
+  const shut = d.getBoundingClientRect().height;
+  d.open = true;
+  const full = d.getBoundingClientRect().height;
+  const to = opening ? full : shut;
+  // 收起來那段要停在最後一格（fill），等 open 拿掉之後才放掉：不然動畫結束到關掉之間會閃回全開一格。
+  const a = d.animate([{ height: from + "px", overflow: "hidden" }, { height: to + "px", overflow: "hidden" }], {
+    duration: opening ? DUR.medium : DUR.short,
+    easing: css(opening ? CURVE.out : CURVE.exit),
+    fill: opening ? "none" : "forwards",
+  });
+  d._grow = a;
+  if (!opening) {
+    d.dataset.closing = "1";
+    a.onfinish = () => {
+      if (d._grow !== a) return;
+      delete d.dataset.closing;
+      d.open = false;
+      a.cancel();
+    };
+  }
 }
 
 function pickedNode(field) {
@@ -441,6 +644,12 @@ function faceDetailBlock(reset) {
   wrap.addEventListener("toggle", () => (faceDetailOpen = wrap.open));
   const sum = document.createElement("summary");
   sum.textContent = "修臉細節（偵測框、臉形遮罩）";
+  if (GALLERY && MOTION && !REDUCE_MOTION) {
+    sum.addEventListener("click", (e) => {
+      e.preventDefault();
+      toggleDetails(wrap);
+    });
+  }
   wrap.append(sum);
   const lead = document.createElement("p");
   lead.className = "wf-face-lead";
@@ -542,7 +751,7 @@ function renderCurrent() {
     t.textContent = "內建";
     const h = document.createElement("p");
     h.className = "ckpt-cur-hint";
-    h.textContent = "正向、負向、LoRA 都由排字匣組裝。";
+    h.textContent = "正向、負向、LoRA 都照這裡選的組裝。";
     box.append(t, h);
     return;
   }
@@ -558,7 +767,7 @@ function renderCurrent() {
   t.textContent = current.name || WORKFLOW_ID;
   const h = document.createElement("p");
   h.className = "ckpt-cur-hint";
-  h.textContent = current.ready ? "下面決定排字匣要改這套工作流的哪些地方，沒選的保留它的原值。" : "至少選一個正向節點才能生圖。";
+  h.textContent = current.ready ? "下面決定要改這套工作流的哪些地方，沒選的保留它的原值。" : "至少選一個正向節點才能生圖。";
   box.append(t, h);
 
   const prompts = current.prompts || [];
@@ -593,7 +802,7 @@ function renderCurrent() {
           const next = new Set(loraOn);
           if (next.has(item.id)) next.delete(item.id);
           else if (next.size >= 2) {
-            say("最多對兩個 LoRA 節點，跟排字匣槽數一樣。", "err");
+            say("最多對兩個 LoRA 節點（LoRA 面板只有兩格）。", "err");
             return;
           } else next.add(item.id);
           saveLoras([...next], loras);
@@ -741,22 +950,25 @@ async function refreshComfy() {
   const input = $("wf-url");
   // 有焦點時不蓋掉正在打的字；但空的就填（從頂欄燈號點進來時游標已經先放進來了）。
   if (input && (document.activeElement !== input || !input.value)) input.value = j.saved || j.api || "";
-  if (j.note) say(j.note, "err");
+  syncComfyState(j.api);
+  if (j.note) sayComfy(j.note, "err");
 }
 
-async function saveComfy() {
+async function saveComfy({ auto = false } = {}) {
+  if (GALLERY && !String($("wf-url")?.value || "").trim()) auto = true;
   const j = await getJson("/api/comfy", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ api: $("wf-url")?.value || "" }),
+    body: JSON.stringify(auto ? { api: "", auto: true } : { api: $("wf-url")?.value || "" }),
   });
   if (!j.ok) {
-    say(j.error || "ComfyUI 網址存不起來", "err");
+    sayComfy(j.error || "ComfyUI 網址存不起來", "err");
     return;
   }
   invalidateModelLists();
   if ($("wf-url")) $("wf-url").value = j.saved || j.api || "";
-  say(j.note || "ComfyUI 網址已儲存。", j.note ? "err" : "");
+  syncComfyState(j.api);
+  sayComfy(j.note || (auto ? "改回自動找：找到哪個就連哪個。" : "ComfyUI 網址已儲存。"), j.note ? "err" : "");
 }
 
 async function importWorkflow(data, name) {
@@ -930,7 +1142,9 @@ function linkPing() {
   ping.tabIndex = 0;
   ping.setAttribute("role", "button");
   ping.title = "ComfyUI 網址（點一下修改）";
+  if (GALLERY) ping.setAttribute("aria-haspopup", "dialog");
   const go = () => {
+    if (GALLERY) return comfyPopOpen() ? closeComfyPop() : openComfyPop();
     openModal();
     window.setTimeout(() => $("wf-url")?.focus(), 0);
   };
@@ -942,9 +1156,11 @@ function linkPing() {
   });
 }
 
-export function initWorkflow({ sampling: withSampling = false, faceFix = false } = {}) {
+export function initWorkflow({ sampling: withSampling = false, faceFix = false, gallery = false, motion = null } = {}) {
   samplingOn = withSampling;
   faceFixOn = faceFix;
+  GALLERY = !!gallery;
+  MOTION = motion;
   ensureDom();
   renderPickBtn();
   // 開頁就知道目前的自訂工作流會不會用頂欄的底模（不必先打開工作流面板）。
@@ -987,6 +1203,15 @@ export function initWorkflow({ sampling: withSampling = false, faceFix = false }
 }
 
 export function wfHandleKeys(e) {
+  if (comfyPopOpen()) {
+    if (e.key === "Escape") {
+      e.preventDefault();
+      closeComfyPop();
+      return true;
+    }
+    // 在小窗裡打字（網址）時，墨池的快捷鍵（G、P…）不要跟著動。
+    return !!e.target?.closest?.("#comfy-pop");
+  }
   if (!workflowUiOpen()) return false;
   if (e.key === "Escape") {
     e.preventDefault();

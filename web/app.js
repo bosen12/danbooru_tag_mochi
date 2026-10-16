@@ -173,8 +173,8 @@ async function boot() {
   buildHand();
   buildTrashPanel();
   buildPicker();
-  initLoraPicker();
-  initWorkflow({ sampling: true, faceFix: true });
+  initLoraPicker({ gallery: true, motion: { DUR, CURVE, css } });
+  initWorkflow({ sampling: true, faceFix: true, gallery: true, motion: { DUR, CURVE, css } });
   discord = mountDiscord(zh, "墨池");
   pingLoop();
 

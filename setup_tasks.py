@@ -9,6 +9,7 @@
 
 順序：
   cards       卡面插畫（全年齡包，GitHub Release）—— 不用 ComfyUI，一開機就抓
+  pillow      Pillow（LoRA／底模預覽縮成小檔用）：沒裝就用跑伺服器的這個 Python 裝 —— 也是一開機就做
   ── 等 ComfyUI 開起來 ──
   lora        ComfyUI 的 LoRA Manager：安裝或修補前先問                    （只動這台機器上的 ComfyUI）
   upscale     Hires 放大模型（RealESRGAN_x4plus_anime_6B）                  （同上）
@@ -41,6 +42,7 @@ LOG = ROOT / "data" / "setup.log"
 # 畫面上的名字（web6/locales/en.js 有英文）。
 TITLES = {
     "cards": "卡面插畫",
+    "pillow": "預覽縮圖（Pillow）",
     "lora": "LoRA Manager",
     "upscale": "Hires 放大模型",
     "pose": "姿勢參考",
@@ -354,6 +356,59 @@ def _cards() -> None:
         _events["cards_done"].set()
 
 
+def pillow_ready() -> bool:
+    """跑伺服器的這個 Python 載得到 Pillow 嗎（剛裝好的也算：重新整理匯入快取、補上使用者的套件資料夾）。"""
+    import importlib  # noqa: PLC0415
+    import site  # noqa: PLC0415
+
+    importlib.invalidate_caches()
+    try:
+        user_site = site.getusersitepackages()
+        if user_site and Path(user_site).is_dir() and user_site not in sys.path:
+            site.addsitedir(user_site)
+    except Exception:
+        pass
+    try:
+        import PIL.Image  # noqa: F401, PLC0415
+
+        return True
+    except Exception:
+        return False
+
+
+def _pip(args: list[str]) -> int:
+    """用跑伺服器的這個 Python 的 pip。輸出寫進 data/setup.log。"""
+    cmd = [sys.executable, "-m", "pip", *args]
+    _log("run " + " ".join(cmd[1:]))
+    try:
+        proc = subprocess.run(cmd, cwd=str(ROOT), stdout=subprocess.PIPE, stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL,
+                              text=True, encoding="utf-8", errors="replace", timeout=600)
+    except (OSError, subprocess.SubprocessError) as err:
+        _log(f"pillow: pip failed to start: {err}")
+        return 1
+    for line in (proc.stdout or "").splitlines()[-15:]:
+        _log("pillow> " + line)
+    return proc.returncode
+
+
+def _pillow() -> None:
+    """LoRA、底模的預覽圖縮成小檔要 Pillow。沒有也能用（給原圖，底模面板一開將近 20 MB），所以不問、直接裝；
+    裝不起來（沒有 pip、系統 Python 不讓裝）就算了，畫面上說一聲。NO_PILLOW_INSTALL=1 不裝。"""
+    if pillow_ready():
+        _set("pillow", "done", "")
+        return
+    if os.environ.get("NO_PILLOW_INSTALL"):
+        _set("pillow", "skip", "NO_PILLOW_INSTALL：預覽圖照舊給原圖")
+        return
+    _set("pillow", "run", "安裝 Pillow（約 7 MB）：LoRA、底模的預覽圖會縮成小檔，開面板快很多")
+    # 先裝進這個 Python；沒有寫入權限（裝在 Program Files 之類）再裝到使用者自己的資料夾。
+    for extra in ([], ["--user"]):
+        if _pip(["install", "--disable-pip-version-check", "--no-input", *extra, "pillow"]) == 0 and pillow_ready():
+            _set("pillow", "done", "裝好了：預覽圖從現在起縮成小檔")
+            return
+    _set("pillow", "skip", _failed("裝不起來（照樣能用，預覽圖給原圖）"))
+
+
 def _wait_comfy(keys: list[str]) -> None:
     """ComfyUI 沒開就一直等：開起來的那一刻接著做，不用再跑一次啟動檔。"""
     shown = False
@@ -616,6 +671,7 @@ def _thread(fn, *a) -> None:
 
 def _main() -> None:
     _thread(_cards)
+    _thread(_pillow)
     comfy_keys = ["lora", "upscale", "pose", "face", "bake", "bake_adult", "bake_chars"]
     _wait_comfy(comfy_keys)
     if comfy_local():

@@ -817,7 +817,7 @@ LoRA（不是牌，請到「選 LoRA」選）|LoRA · Choose these in the LoRA p
 ComfyUI 網址|ComfyUI URL
 存位址|Save URL
 內建|Built-in
-排字匣那套 Illustrious 流程|Built-in Illustrious workflow
+內建的 Illustrious 流程|Built-in Illustrious workflow
 匯入的 API workflow|Imported API workflow
 取樣參數|Sampling parameters
 全部恢復預設|Reset all defaults
@@ -838,13 +838,13 @@ ComfyUI 網址|ComfyUI URL
 比這個還小（像素）的臉不修，多半是背景人物或圖案。|Faces smaller than this (in pixels) are skipped; they are usually background figures or patterns.
 SAM 切出臉的形狀之後再往外擴幾個像素。太小眼角、臉的邊緣可能漏修；太大會連瀏海、髮飾一起重畫。ComfyUI 沒有 SAM 模型時用不到。|How many pixels to grow the face shape cut out by SAM. Too small can miss the corners of the eyes and the edge of the face; too large redraws bangs and hair accessories too. Unused when ComfyUI has no SAM model.
 SAM 判斷「這塊算臉」的信心門檻。調低遮罩比較大、比較寬鬆；調高只留最確定的部分。ComfyUI 沒有 SAM 模型時用不到。|How confident SAM must be that a region is the face. Lower it for a larger, looser mask; raise it to keep only the surest part. Unused when ComfyUI has no SAM model.
-正向、負向、LoRA 都由排字匣組裝。|Danbooru Case builds the positive prompt, negative prompt and LoRA inputs.
+正向、負向、LoRA 都照這裡選的組裝。|The positive prompt, negative prompt and LoRAs are built from your choices here.
 至少選一個正向節點才能生圖。|Select a positive prompt node to generate images.
 建議|Suggested
 不改，保留 workflow 原值|Keep workflow value
 這張圖沒有 LoRA 節點。|This workflow has no LoRA nodes.
 不改，保留 workflow 裡的 LoRA|Keep workflow LoRA
-最多對兩個 LoRA 節點，跟排字匣槽數一樣。|Map up to two LoRA nodes to the two slots.
+最多對兩個 LoRA 節點（LoRA 面板只有兩格）。|Map up to two LoRA nodes (the LoRA panel has two slots).
 刪掉這套|Delete workflow
 存不起來|Could not save
 已存。|Saved.
@@ -947,6 +947,11 @@ LoRA 資料夾路徑|LoRA folder path
 疊印台　疊層 · 影子 · 試印 · 付印|Fuse Bed · Layers · Shadows · Proofs · Generate
 從字盒挑牌，或用下面的起手式；留白的層由引擎補上。|Choose cards from the library or try a starter below. The engine fills empty layers.
 卡面插畫|Card art
+預覽縮圖（Pillow）|Preview thumbnails (Pillow)
+安裝 Pillow（約 7 MB）：LoRA、底模的預覽圖會縮成小檔，開面板快很多|Installing Pillow (about 7 MB) so LoRA and checkpoint previews load as small files
+裝好了：預覽圖從現在起縮成小檔|Installed. Previews now load as small files
+裝不起來（照樣能用，預覽圖給原圖），詳情在 data/setup.log|Could not install it (everything still works; previews load at full size). Details are in data/setup.log
+NO_PILLOW_INSTALL：預覽圖照舊給原圖|NO_PILLOW_INSTALL: previews load at full size
 烘焙卡面|Bake card art
 敏感、色情卡面|Sensitive and explicit card art
 角色卡面|Character card art
@@ -1319,6 +1324,15 @@ ComfyUI 沒有回報 checkpoint|ComfyUI returned no checkpoints.
 10 分|10 min
 關|Off
 好|OK
+隨機抽幾個 LoRA 攤開來看（點一張直接選中）|Spread out a few random LoRAs · Click one to select it
+清單來自 ComfyUI。點一張換過去，之後生圖都用它。|Models come from ComfyUI. Click one to switch; new images use it.
+還沒選底模——從中間挑一張|Pick a checkpoint from the grid.
+ComfyUI 連線|ComfyUI connection
+已連上|Connected
+連不到|Not reachable
+ComfyUI 在別台電腦、或改過埠號才要填。按「自動找」回到自動偵測（8188、ComfyUI Desktop 的 8000）。|Only needed when ComfyUI runs on another computer or a custom port. Auto-detect goes back to checking 8188 and 8000 (ComfyUI Desktop).
+自動找|Auto-detect
+改回自動找：找到哪個就連哪個。|Back to auto-detect: connects to whichever ComfyUI answers.
 `;
 
 export const messages = Object.freeze(Object.fromEntries(copy.trim().split("\n").map((line) => {
@@ -1641,7 +1655,7 @@ ComfyUI 沒有裝「{0}」這個節點：用 ComfyUI-Manager 的「Install Missi
 停了：已經烘好的留著；下次啟動接著烘|Stopped. Cards already baked are kept; baking resumes next launch.
 停了：已經烘好的留著，重新整理就看得到；下次啟動會再問|Stopped. Cards already baked are kept; reload to see them. You will be asked again next launch.
 ComfyUI 裡還沒有任何底模：下載一個 SDXL 底模（建議 Illustrious 系，例如 WAI-Illustrious）放進 ComfyUI 的 models/checkpoints，重開 ComfyUI 再試|ComfyUI has no checkpoints yet. Download an SDXL checkpoint (an Illustrious model such as WAI-Illustrious is recommended) into ComfyUI's models/checkpoints, restart ComfyUI and try again.
-下面決定排字匣要改這套工作流的哪些地方，沒選的保留它的原值。|Choose what Danbooru Case changes in this workflow. Anything not picked keeps the workflow's value.
+下面決定要改這套工作流的哪些地方，沒選的保留它的原值。|Choose what to change in this workflow. Anything not picked keeps the workflow's value.
 沒選就是內建。要用自己的工作流：把 ComfyUI 用它畫的任何一張 PNG 拖進來，或匯入「匯出工作流 (API)」的 JSON。|Built in unless you pick one. To use your own workflow, drop any PNG ComfyUI made with it, or import the JSON from Export (API).
 匯入工作流…|Import workflow…
 ComfyUI 畫的 PNG 或 API JSON，拖進來或點這裡選檔|Drop a ComfyUI PNG or API JSON here, or click to choose
@@ -1729,6 +1743,11 @@ LoRA：沒設定偏好路徑，改問 ComfyUI 也失敗了：{0}|LoRA: no prefer
 {0} 張牌，從墨裡流過來|{0} cards, flowing out of the ink
 你最近印的 {0} 張，繞著中間那一點光|Your {0} latest images, circling a point of light
 一圈一圈轉成一朵花，中間是你最近印的 {0} 張|Ring by ring into a flower, with your {0} latest images at its heart
+共 {0} 個|{0} items
+再顯示 {0} 個|Show {0} more
+LoRA {0} 空著——從中間挑一張|LoRA {0} is empty. Pick one from the grid.
+已連上 {0}|Connected to {0!}
+連不到 {0}|Cannot reach {0!}
 `;
 export const templates = parameterized.trim().split("\n").map((line) => {
   const split = line.indexOf("|");

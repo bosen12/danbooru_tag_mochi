@@ -1,5 +1,8 @@
 /**
- * 偏好角色：墨池、疊印台共用一份名單（localStorage mochi.fav.chars.v1），張數不限、新加的在前。
+ * 偏好角色：墨池、疊印台、卡冊共用一份名單，張數不限、新加的在前。
+ * 名單存在伺服器（data/fav_chars.json，/api/fav-chars），所有裝置共用；localStorage mochi.fav.chars.v1
+ * 是這台的快取：開頁先用它畫（不用等網路），伺服器那份回來再換上。以前只存在瀏覽器，清掉資料、換台電腦就沒了；
+ * 第一次連上伺服器時，這台的名單會併進伺服器那份（兩台電腦各自有的都留著）。
  * 規則的「只抽偏好角色」打開時，抽角色只從名單裡抽（engine.js 的 characterFavOnly／characterFavorites；
  * 名單不存在規則裡，抽牌那一刻由 withFavChars() 帶進去）。
  *
@@ -60,6 +63,88 @@ addEventListener("storage", (e) => {
   }
 });
 
+/* ---------- 伺服器那份（所有裝置共用） ---------- */
+
+// 這台有沒有跟伺服器對過一次：還沒的話，這台的名單要先併進伺服器那份，不能被蓋掉。
+const SYNCED_KEY = "mochi.fav.chars.synced";
+let server = false; // 伺服器有這個功能（舊伺服器、測試的假伺服器沒有：只用這台的）
+let dirty = false; // 伺服器那份還沒回來之前，這頁就改過了：以這頁的為準
+let pushT = 0;
+let pulling = null;
+
+function synced() {
+  try {
+    return localStorage.getItem(SYNCED_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+function markSynced() {
+  try {
+    localStorage.setItem(SYNCED_KEY, "1");
+  } catch {
+    /* 存不了：下次開還會再併一次，結果一樣 */
+  }
+}
+
+function push() {
+  if (!server) return;
+  clearTimeout(pushT);
+  pushT = setTimeout(() => {
+    pushT = 0;
+    fetch("/api/fav-chars", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ tags }) })
+      .then((r) => r.ok && markSynced())
+      .catch(() => {});
+  }, 250);
+}
+
+function adopt(list) {
+  const next = [...new Set(list.filter((x) => typeof x === "string" && x))];
+  if (next.length === tags.length && next.every((t, i) => t === tags[i])) return;
+  tags = next;
+  write(tags);
+  emit();
+}
+
+/** 跟伺服器對一次：開頁、切回這個分頁時（別台裝置可能改過）。 */
+function pull() {
+  if (pulling || pushT) return pulling;
+  pulling = fetch("/api/fav-chars", { cache: "no-store" })
+    .then((r) => (r.ok ? r.json() : null))
+    .then((j) => {
+      if (!j || !Array.isArray(j.tags)) return;
+      server = true;
+      if (dirty) return push();
+      if (!j.saved) return tags.length ? push() : markSynced();
+      if (!synced()) {
+        // 第一次：伺服器的在前，這台多出來的接在後面（兩邊都不丟）。
+        const merged = [...new Set([...j.tags, ...tags])];
+        adopt(merged);
+        return merged.length !== j.tags.length ? push() : markSynced();
+      }
+      adopt(j.tags);
+    })
+    .catch(() => {})
+    .finally(() => {
+      pulling = null;
+    });
+  return pulling;
+}
+// 在瀏覽器裡才連伺服器（引擎測試在 Node 裡載這個檔，那邊只用名單本身）。
+if (typeof document !== "undefined") {
+  pull();
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden) pull();
+  });
+}
+
+function changed() {
+  write(tags);
+  if (!server) dirty = true;
+  push();
+  emit();
+}
+
 export const favChars = {
   list: () => [...tags],
   has: (t) => tags.includes(t),
@@ -69,15 +154,13 @@ export const favChars = {
   add(t) {
     if (!t || tags.includes(t)) return false;
     tags = [t, ...tags];
-    write(tags);
-    emit();
+    changed();
     return true;
   },
   remove(t) {
     if (!tags.includes(t)) return false;
     tags = tags.filter((x) => x !== t);
-    write(tags);
-    emit();
+    changed();
     return true;
   },
   /** 回傳換完之後是不是偏好。 */

@@ -548,6 +548,11 @@ def set_comfy_api(url: str | None) -> str:
     return normalized
 
 
+def clear_comfy_api() -> None:
+    """不再記網址：回到自動偵測（8188、ComfyUI Desktop 的 8000）。"""
+    save_settings({"comfyApi": ""})
+
+
 def _profile_dir(pid: str) -> Path:
     return DATA_DIR / pid
 

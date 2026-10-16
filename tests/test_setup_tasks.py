@@ -339,6 +339,38 @@ st.comfy_up = comes_up
 st._wait_comfy(["lora", "pose"])
 ok("ComfyUI 沒開：顯示在等，開了就往下", state("lora") == "wait" and calls["n"] == 3, str(calls))
 
+# 5b. Pillow（預覽縮圖）：有了就好；沒有就用這個 Python 的 pip 裝，裝不進去改裝到使用者資料夾；都不行就跳過（照舊能用）。
+_pip_calls = []
+_have = {"pil": True}
+st.pillow_ready = lambda: _have["pil"]
+st._pip = lambda args: (_pip_calls.append(args), 0)[1]
+st._pillow()
+ok("Pillow 已經有：直接好、不裝", state("pillow") == "done" and not _pip_calls)
+_have["pil"] = False
+_codes = iter([1, 0])
+
+
+def _fake_pip(args):
+    _pip_calls.append(args)
+    code = next(_codes)
+    if code == 0:
+        _have["pil"] = True
+    return code
+
+
+st._pip = _fake_pip
+st._pillow()
+ok("Pillow 沒有：先裝、失敗再用 --user，裝好就好", state("pillow") == "done" and len(_pip_calls) == 2 and "--user" in _pip_calls[1] and "pillow" in _pip_calls[0], str(_pip_calls))
+_have["pil"] = False
+st._pip = lambda args: 1
+st._pillow()
+ok("Pillow 裝不起來：跳過、說照樣能用（不是錯誤）", state("pillow") == "skip" and "照樣能用" in st._state["pillow"]["text"], str(st._state["pillow"]))
+os.environ["NO_PILLOW_INSTALL"] = "1"
+st._pip = lambda args: (_ for _ in ()).throw(AssertionError("不該裝"))
+st._pillow()
+ok("NO_PILLOW_INSTALL=1：不裝", state("pillow") == "skip")
+del os.environ["NO_PILLOW_INSTALL"]
+
 # 6. 不用做的事都不出現在畫面上：active=False。
 ran = reset({}, lm=True)
 for k in st.ORDER:

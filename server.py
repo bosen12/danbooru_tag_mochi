@@ -2596,6 +2596,85 @@ def comfy_webp(q: str, digest: str) -> bytes | None:
     return blob
 
 
+# ---------- LoRA／底模預覽的縮圖 ----------
+# 預覽圖原檔常常是 832×1216 的 PNG（一張 1～6 MB），畫面上的卡片只有 170 px 寬：底模面板一打開就要抓
+# 將近 20 MB，手機走 Tailscale 要等十幾秒。網址帶 w=（只收 480、960）就縮成那個寬度的 webp（約 30～120 KB）。
+# 要 Pillow：第一次啟動的準備（setup_tasks 的 pillow）會幫忙裝；沒有的話照舊給原圖，不會壞。
+# 縮好的存在 data/thumb-cache（鑰匙是原圖的 sha1＋寬度），伺服器重開也不必重縮。
+THUMB_WIDTHS = (480, 960)
+THUMB_DIR = Path(os.environ.get("THUMB_CACHE_DIR") or ROOT / "data" / "thumb-cache")
+_THUMB_DISK_MAX = 3000
+_THUMB_WRITES = {"n": 0}
+# 一次只縮兩張：底模面板一開十幾張同時進來，全部一起解 5 MB 的 PNG 會吃滿 CPU、拖慢正在生圖的 ComfyUI。
+_THUMB_GATE = threading.Semaphore(2)
+
+
+def thumb_width(qs: dict) -> int:
+    try:
+        w = int((qs.get("w") or ["0"])[0] or 0)
+    except ValueError:
+        return 0
+    return w if w in THUMB_WIDTHS else 0
+
+
+def _pil_image():
+    """Pillow 裝了沒（每次都重新試：準備步驟裝好之後不必重開伺服器）。"""
+    try:
+        from PIL import Image  # noqa: PLC0415
+
+        return Image
+    except Exception:
+        return None
+
+
+def preview_thumb(raw: bytes, width: int) -> bytes | None:
+    """原圖縮成 width 寬的 webp。不必縮（本來就小）、縮不了（沒 Pillow、壞圖）、縮了反而比較大：回 None。"""
+    if not raw or width not in THUMB_WIDTHS:
+        return None
+    key = hashlib.sha1(raw).hexdigest()
+    path = THUMB_DIR / f"{key}-{width}.webp"
+    try:
+        blob = path.read_bytes()
+        if blob[:4] == b"RIFF":
+            return blob
+    except OSError:
+        pass
+    Image = _pil_image()
+    if Image is None:
+        return None
+    import io  # noqa: PLC0415
+
+    with _THUMB_GATE:
+        try:
+            with Image.open(io.BytesIO(raw)) as im:
+                if getattr(im, "is_animated", False) or im.width <= width:
+                    return None
+                im.draft("RGB", (width, width * 4))  # JPEG 直接用縮小的解碼，快很多
+                alpha = im.mode in ("RGBA", "LA", "PA") or (im.mode == "P" and "transparency" in im.info)
+                pic = im.convert("RGBA" if alpha else "RGB")
+                pic.thumbnail((width, width * 4), Image.LANCZOS)
+                out = io.BytesIO()
+                pic.save(out, "WEBP", quality=82, method=4)
+        except Exception:
+            return None
+    blob = out.getvalue()
+    if len(blob) >= len(raw):
+        return None
+    try:
+        THUMB_DIR.mkdir(parents=True, exist_ok=True)
+        tmp = THUMB_DIR / f"{key}-{width}.{os.getpid()}.{threading.get_ident()}.tmp"
+        tmp.write_bytes(blob)
+        os.replace(tmp, path)
+        _THUMB_WRITES["n"] += 1
+        if _THUMB_WRITES["n"] % 100 == 0:
+            files = sorted(THUMB_DIR.glob("*.webp"), key=lambda f: f.stat().st_mtime)
+            for f in files[: max(0, len(files) - _THUMB_DISK_MAX)]:
+                f.unlink(missing_ok=True)
+    except OSError:
+        pass
+    return blob
+
+
 def first_image_src(history: dict, preferred_nodes=None) -> str | None:
     outputs = history.get("outputs") or {}
     node_ids = list(outputs)
@@ -4145,7 +4224,12 @@ class Handler(BaseHTTPRequestHandler):
 
     def _apply_comfy_config(self, payload: dict) -> None:
         try:
-            saved = workflows.set_comfy_api((payload or {}).get("api"))
+            if (payload or {}).get("auto") is True:
+                # 畫面上的「自動找」：清掉記住的網址，回到 8188／8000 自動偵測。
+                workflows.clear_comfy_api()
+                saved = ""
+            else:
+                saved = workflows.set_comfy_api((payload or {}).get("api"))
         except workflows.WorkflowError as exc:
             self._json(400, {"ok": False, "error": str(exc), "code": exc.code})
             return
@@ -4386,7 +4470,16 @@ class Handler(BaseHTTPRequestHandler):
         except OSError as exc:
             self._json(502, {"ok": False, "error": str(exc)})
             return
-        self._bytes(200, raw, mime, {"Cache-Control": "private, max-age=86400"})
+        self._preview_bytes(raw, mime, thumb_width(qs))
+
+    def _preview_bytes(self, raw: bytes, mime: str, width: int, extra=None) -> None:
+        """預覽圖：網址帶 w= 而且縮得了就給縮圖（webp），不然給原圖。"""
+        headers = {"Cache-Control": "private, max-age=86400", **(extra or {})}
+        small = preview_thumb(raw, width) if width and mime.startswith("image/") else None
+        if small:
+            self._bytes(200, small, "image/webp", headers)
+        else:
+            self._bytes(200, raw, mime, headers)
 
     def _serve_lora_preview(self) -> None:
         qs = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
@@ -4396,7 +4489,7 @@ class Handler(BaseHTTPRequestHandler):
             return vals[0] if vals else default
 
         if one("lm"):
-            self._serve_lm_preview(one("lm"))
+            self._serve_lm_preview(one("lm"), thumb_width(qs))
             return
         p = lora_scan.preview_path(one("folder"), one("file"))
         if p is None:
@@ -4420,12 +4513,10 @@ class Handler(BaseHTTPRequestHandler):
         except OSError as exc:
             self._json(502, {"ok": False, "error": str(exc)})
             return
-        extra = {"Cache-Control": "private, max-age=86400"}
-        if lora_scan.is_video_preview(p.name):
-            extra["Accept-Ranges"] = "bytes"
-        self._bytes(200, raw, mime, extra)
+        extra = {"Accept-Ranges": "bytes"} if lora_scan.is_video_preview(p.name) else {}
+        self._preview_bytes(raw, mime, thumb_width(qs), extra)
 
-    def _serve_lm_preview(self, src: str) -> None:
+    def _serve_lm_preview(self, src: str, width: int = 0) -> None:
         """轉送 ComfyUI LoRA Manager 的預覽圖（LoRA、checkpoint 都是）。
 
         瀏覽器不一定連得到 ComfyUI（手機走 Tailscale、ComfyUI 只聽 127.0.0.1），所以由這裡去拿。
@@ -4447,10 +4538,8 @@ class Handler(BaseHTTPRequestHandler):
         if not mime.startswith(("image/", "video/")):
             self._json(502, {"ok": False, "error": "not a preview"})
             return
-        extra = {"Cache-Control": "private, max-age=86400"}
-        if mime.startswith("video/"):
-            extra["Accept-Ranges"] = "bytes"
-        self._bytes(200, raw, mime, extra)
+        extra = {"Accept-Ranges": "bytes"} if mime.startswith("video/") else {}
+        self._preview_bytes(raw, mime, width, extra)
 
     def _serve_lora_push_get(self) -> None:
         qs = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
@@ -4842,6 +4931,10 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/api/decks":
             self._json(200, {"ok": True, "decks": card_decks.load()})
             return
+        # 偏好角色：所有裝置共用一份（card_decks.py）。
+        if path == "/api/fav-chars":
+            self._json(200, {"ok": True, **card_decks.load_fav_chars()}, cache_control="no-store")
+            return
         # 出圖日誌（作品冊的「日誌」）：新的在前，before＝從這個時間（毫秒）之前接著翻。
         # 牌的戰績（卡冊）、模型成績單（作品冊）：從日誌和作品冊算。
         # 卡冊「用它做過的圖」：日誌裡用到這張牌的每一張。
@@ -4991,6 +5084,12 @@ class Handler(BaseHTTPRequestHandler):
                 self._json(400, {"ok": False, "error": str(exc), "code": "invalid"})
                 return
             self._json(200, {"ok": True})
+            return
+        if path == "/api/fav-chars":
+            try:
+                self._json(200, {"ok": True, **card_decks.save_fav_chars(payload)})
+            except card_decks.DeckError as exc:
+                self._json(400, {"ok": False, "error": str(exc), "code": "invalid"})
             return
         if path == "/api/decks":
             try:

@@ -42,6 +42,11 @@ const GEN_LORA_SLOTS = [
 ];
 let GEN_ACTIVE_SLOT = 0;
 let GEN_LORA_PAGE = 0;
+// 畫廊版（墨池 web6 打開）：清單改成大圖網格、捲到底自動多載一批（不分頁）；選中的那張飛進右邊的槽。
+// 其他版面不傳 gallery，照舊是左邊一條清單、右邊目前選擇。
+let GALLERY = false;
+let MOTION = null;
+let GEN_LORA_SHOWN = GEN_LORA_PAGE_SIZE;
 const GEN_LORA_SLOT_SCOPE = [
   { cat: "all", subfolder: "" },
   { cat: "all", subfolder: "" },
@@ -163,6 +168,22 @@ function loraPreviewUrl(l) {
   if (l.previewUrl) return l.previewUrl;
   return `/api/lora-preview?folder=${encodeURIComponent(l.folder)}&file=${encodeURIComponent(l.preview)}`;
 }
+/**
+ * 預覽圖的縮圖網址：伺服器把原圖（常是 832×1216 的 PNG，1～6 MB）縮成 w 寬的 webp。
+ * 卡片、小圖用 480，大圖用 960；伺服器沒有 Pillow 就照舊回原圖。影片不縮。
+ */
+function sizedUrl(url, w) {
+  return w ? url + (url.includes("?") ? "&" : "?") + "w=" + w : url;
+}
+/** 先顯示小的（通常剛在卡上載過、快取裡就有），大的在背景載好再換上去：不會先空一下。 */
+function upgradeSrc(img, src) {
+  const big = new Image();
+  big.decoding = "async";
+  big.onload = () => {
+    if (img.isConnected) img.src = src;
+  };
+  big.src = src;
+}
 function isLoraPreviewVideo(l) {
   const n = (l.preview || "").toLowerCase();
   return n.endsWith(".mp4") || n.endsWith(".webm");
@@ -187,6 +208,10 @@ function _previewEnqueue(job) {
 }
 const _PREVIEW_RETRY_DELAYS_MS = [600, 1800, 4500];
 function _previewStart(el, done) {
+  if (!el.isConnected) {
+    done();
+    return;
+  }
   const src = el.dataset.src;
   delete el.dataset.src;
   if (!src) {
@@ -235,9 +260,10 @@ const _loraPreviewIO = new IntersectionObserver(
   { rootMargin: "300px" }
 );
 
-function makeLoraPreviewEl(l) {
+function makeLoraPreviewEl(l, w = 480) {
   let el;
-  if (isLoraPreviewVideo(l)) {
+  const video = isLoraPreviewVideo(l);
+  if (video) {
     el = document.createElement("video");
     el.muted = true;
     el.loop = true;
@@ -248,7 +274,7 @@ function makeLoraPreviewEl(l) {
     el.alt = "";
     el.decoding = "async";
   }
-  el.dataset.src = loraPreviewUrl(l);
+  el.dataset.src = video ? loraPreviewUrl(l) : sizedUrl(loraPreviewUrl(l), w);
   _loraPreviewIO.observe(el);
   return el;
 }
@@ -256,6 +282,7 @@ function makeLoraPreviewEl(l) {
 function renderLmCats() {
   const box = $("lm-cats");
   if (!box) return;
+  const was = GALLERY ? catInkAt(box) : null;
   const items = GEN_LORAS || [];
   const counts = {};
   for (const l of items) counts[l.category] = (counts[l.category] || 0) + 1;
@@ -286,6 +313,30 @@ function renderLmCats() {
   mk("all", "全部", items.length);
   folders.forEach((f) => mk(f, f, counts[f]));
   markPress(box);
+  if (GALLERY) {
+    // 第一次有資料時一格格浮上來；之後重畫（換分類、換槽）不再播。
+    box.classList.toggle("is-first", !box.dataset.filled && items.length > 0);
+    if (items.length) box.dataset.filled = "1";
+    placeCatInk(box, was);
+  }
+}
+
+/** 畫廊版的分類：選中那一格底下墊一塊墨（.lm-cat-ink），換分類時從舊的那格滑到新的那格。 */
+function catInkAt(box) {
+  const on = box.querySelector(".lm-cat.on");
+  return on && on.offsetWidth ? { x: on.offsetLeft, y: on.offsetTop, w: on.offsetWidth, h: on.offsetHeight } : null;
+}
+function placeCatInk(box, was) {
+  const to = catInkAt(box);
+  if (!to) return;
+  const ink = box._ink || (box._ink = document.createElement("span"));
+  ink.className = "lm-cat-ink";
+  ink.setAttribute("aria-hidden", "true");
+  box.prepend(ink);
+  const at = (r) => ({ transform: `translate(${r.x}px, ${r.y}px)`, width: r.w + "px", height: r.h + "px" });
+  Object.assign(ink.style, at(to));
+  if (!was || !MOTION || REDUCE_MOTION || (was.x === to.x && was.y === to.y && was.w === to.w)) return;
+  ink.animate([at(was), at(to)], { duration: MOTION.DUR.medium, easing: MOTION.css(MOTION.CURVE.out) });
 }
 
 function renderLmSubcats() {
@@ -340,11 +391,16 @@ function loraCatLabel() {
   return curScope().cat === "all" ? null : curScope().cat;
 }
 
-function renderLmList(filter, resetPage) {
+function renderLmList(filter, resetPage, deal = resetPage) {
   const box = $("lm-list");
   if (!box) return;
-  if (resetPage) GEN_LORA_PAGE = 0;
+  if (resetPage) {
+    GEN_LORA_PAGE = 0;
+    GEN_LORA_SHOWN = GEN_LORA_PAGE_SIZE;
+  }
   const q = (filter || "").toLowerCase().trim();
+  // 畫廊版：清單沒換（只是選了、清了、調了槽）就原地改記號，不整片重畫（重畫會讓每張圖重載一次、閃一下）。
+  if (GALLERY && !resetPage && box._gallery?.key === loraGalleryKey(q) && box.dataset.result === "found") return refreshGalleryMarks(box);
   let items = loraCatPool();
   if (q) {
     items = items
@@ -357,6 +413,8 @@ function renderLmList(filter, resetPage) {
       .sort((a, b) => a.tier - b.tier)
       .map((x) => x.l);
   }
+  syncCount("lm-count", items.length);
+  for (const n of box.querySelectorAll("[data-src]")) _loraPreviewIO.unobserve(n);
   box.replaceChildren();
   if (!items.length) {
     const empty = document.createElement("div");
@@ -367,6 +425,7 @@ function renderLmList(filter, resetPage) {
     return;
   }
   box.dataset.result = "found";
+  if (GALLERY) return renderLoraGallery(box, items, q, deal);
   const pages = Math.ceil(items.length / GEN_LORA_PAGE_SIZE);
   if (GEN_LORA_PAGE >= pages) GEN_LORA_PAGE = pages - 1;
   if (GEN_LORA_PAGE < 0) GEN_LORA_PAGE = 0;
@@ -452,7 +511,202 @@ function renderLmList(filter, resetPage) {
   markPress(box);
 }
 
-function selectGenLora(l) {
+/* ---------- 畫廊版的清單：一張張大圖，捲到底自動多載一批 ---------- */
+
+function syncCount(id, n) {
+  const el = $(id);
+  if (el) el.textContent = `共 ${n} 個`;
+}
+
+function sameLora(a, b) {
+  return !!(a && b && a.folder === b.folder && a.file === b.file);
+}
+
+/** 一張畫廊卡：圖在上、名字在下；在槽裡的蓋一顆 ①／②。deal：剛換清單時一張張發出來。 */
+function galleryCard({ preview, title, sub, seat, on, deal, i }) {
+  const card = document.createElement("button");
+  card.type = "button";
+  card.className = "lora-row lg-card" + (on ? " on" : "") + (seat && !on ? " in-other" : "");
+  if (on) card.setAttribute("aria-current", "true");
+  // deal：換清單時一張張發出來；"quick"：打字搜尋時只輕輕換過去（每打一個字都整片發牌太吵）。
+  if (deal && i < 30) {
+    card.classList.add(deal === "quick" ? "is-swapped" : "is-dealt");
+    card.style.setProperty("--i", i);
+  }
+  card.title = title;
+  const art = document.createElement("span");
+  art.className = "lg-art";
+  if (preview) {
+    // 圖還沒到：框裡一道光來回掃；到了淡進來（不是一格就跳出來）。
+    art.classList.add("is-wait");
+    const ready = () => art.classList.remove("is-wait");
+    preview.addEventListener("load", ready, { once: true });
+    preview.addEventListener("loadeddata", ready, { once: true });
+    art.appendChild(preview);
+  }
+  else {
+    const ph = document.createElement("span");
+    ph.className = "ph";
+    art.appendChild(ph);
+  }
+  if (seat) {
+    const badge = document.createElement("span");
+    badge.className = "lora-slot-badge";
+    badge.textContent = seat;
+    art.appendChild(badge);
+  }
+  const rn = document.createElement("span");
+  rn.className = "rn";
+  const rt = document.createElement("span");
+  rt.className = "rt";
+  rt.textContent = title;
+  const rf = document.createElement("span");
+  rf.className = "rf";
+  rf.textContent = sub;
+  rn.append(rt, rf);
+  card.append(art, rn);
+  return card;
+}
+
+function loraCard(l, i, deal) {
+  const card = galleryCard({
+    preview: l.preview ? makeLoraPreviewEl(l) : null,
+    title: l.title || l.name,
+    sub: l.folder || "(根目錄)",
+    ...loraSeat(l),
+    deal,
+    i,
+  });
+  card._mark = () => loraSeat(l);
+  card.addEventListener("click", () => selectGenLora(l, card));
+  return card;
+}
+
+function appendLoraCards(box, from, to, deal) {
+  const { items, q } = box._gallery;
+  const frag = document.createDocumentFragment();
+  for (let i = from; i < to; i++) {
+    const l = items[i];
+    if (!q && l.folder !== box._gallery.folder) {
+      box._gallery.folder = l.folder;
+      const h = document.createElement("div");
+      h.className = "lora-cat-head";
+      h.textContent = l.folder || "(根目錄)";
+      frag.appendChild(h);
+    }
+    frag.appendChild(loraCard(l, i - from, deal));
+  }
+  box.appendChild(frag);
+  markPress(box);
+}
+
+function loraGalleryKey(q) {
+  return [q, curScope().cat, curScope().subfolder].join("\n");
+}
+
+function loraSeat(l) {
+  const idx = GEN_LORA_SLOTS.findIndex((s) => sameLora(s.lora, l));
+  return { seat: idx === -1 ? "" : String(idx + 1), on: idx !== -1 && idx === GEN_ACTIVE_SLOT };
+}
+
+/** 卡上的記號跟著現在的槽走：在用的描邊、①② 章（新蓋上去的章會重新壓一次）。 */
+function refreshGalleryMarks(box) {
+  for (const card of box.querySelectorAll(".lg-card")) {
+    if (!card._mark) continue;
+    const { seat, on } = card._mark();
+    card.classList.toggle("on", on);
+    card.classList.toggle("in-other", !!seat && !on);
+    if (on) card.setAttribute("aria-current", "true");
+    else card.removeAttribute("aria-current");
+    let badge = card.querySelector(".lora-slot-badge:not(.is-leaving)");
+    if (!seat) liftBadge(badge);
+    else if (!badge || badge.textContent !== seat) {
+      liftBadge(badge);
+      badge = document.createElement("span");
+      badge.className = "lora-slot-badge";
+      badge.textContent = seat;
+      card.querySelector(".lg-art")?.appendChild(badge);
+    }
+  }
+}
+
+function liftBadge(badge) {
+  if (!badge) return;
+  badge.classList.add("is-leaving");
+  if (!MOTION || REDUCE_MOTION) return badge.remove();
+  const gone = () => badge.remove();
+  badge.animate([{ opacity: 1, scale: "1" }, { opacity: 0, scale: "0.6" }], { duration: MOTION.DUR.short, easing: MOTION.css(MOTION.CURVE.exit), fill: "forwards" }).finished.then(gone, gone);
+}
+
+function renderLoraGallery(box, items, q, deal) {
+  box._io?.disconnect();
+  box._gallery = { items, q, folder: "", key: loraGalleryKey(q) };
+  if (deal) box.scrollTop = 0;
+  const shown = Math.min(GEN_LORA_SHOWN, items.length);
+  appendLoraCards(box, 0, shown, deal);
+  if (shown < items.length) addLoraMore(box);
+}
+
+/** 清單尾巴：捲到附近自動再載一批（也可以直接按）。 */
+function addLoraMore(box) {
+  const { items } = box._gallery;
+  const more = document.createElement("div");
+  more.className = "lora-more";
+  const btn = document.createElement("button");
+  btn.type = "button";
+  btn.className = "ghost lora-more-btn";
+  btn.textContent = `再顯示 ${Math.min(GEN_LORA_PAGE_SIZE, items.length - GEN_LORA_SHOWN)} 個`;
+  more.appendChild(btn);
+  box.appendChild(more);
+  const load = () => {
+    box._io?.disconnect();
+    if (!more.isConnected) return;
+    const from = GEN_LORA_SHOWN;
+    GEN_LORA_SHOWN = Math.min(items.length, GEN_LORA_SHOWN + GEN_LORA_PAGE_SIZE);
+    more.remove();
+    appendLoraCards(box, from, GEN_LORA_SHOWN, true);
+    if (GEN_LORA_SHOWN < items.length) addLoraMore(box);
+  };
+  btn.addEventListener("click", load);
+  box._io = new IntersectionObserver((entries) => entries.some((e) => e.isIntersecting) && load(), { root: box, rootMargin: "600px 0px" });
+  box._io.observe(more);
+}
+
+/**
+ * 選中的那張從網格飛進右邊的大圖（畫廊版）。from：點的那張卡的圖；to：右邊剛畫好的大圖。
+ * 飛的是一張影子：起點是卡上裁成直幅的樣子，終點是大圖完整的比例；落地前大圖先藏著。
+ */
+function flyToSeat(from, to) {
+  if (!GALLERY || !MOTION || REDUCE_MOTION || !from || !to) return;
+  const a = from.getBoundingClientRect();
+  const b = to.getBoundingClientRect();
+  if (!a.width || !b.width || !from.currentSrc) return;
+  const ghost = document.createElement("img");
+  ghost.className = "lg-fly";
+  ghost.src = from.currentSrc;
+  ghost.alt = "";
+  Object.assign(ghost.style, { left: a.left + "px", top: a.top + "px", width: a.width + "px", height: a.height + "px" });
+  document.body.appendChild(ghost);
+  to.style.visibility = "hidden";
+  const { DUR, CURVE, css } = MOTION;
+  const lift = Math.min(60, Math.abs(b.left - a.left) * 0.12);
+  const run = ghost.animate(
+    [
+      { left: a.left + "px", top: a.top + "px", width: a.width + "px", height: a.height + "px", borderRadius: "10px", boxShadow: "0 0 0 transparent" },
+      { offset: 0.45, top: Math.min(a.top, b.top) - lift + "px", boxShadow: "0 30px 60px oklch(0% 0 0 / 0.55)" },
+      { left: b.left + "px", top: b.top + "px", width: b.width + "px", height: b.height + "px", borderRadius: "14px", boxShadow: "0 0 0 transparent" },
+    ],
+    { duration: DUR.xl, easing: css(CURVE.travel), fill: "forwards" }
+  );
+  const land = () => {
+    to.style.visibility = "";
+    ghost.remove();
+  };
+  run.finished.then(land, land);
+}
+
+function selectGenLora(l, fromCard) {
+  if (sameLora(curSlot().lora, l)) return;
   const focused = document.activeElement?.closest?.(".lora-row");
   const otherIdx = otherSlotIndex();
   const other = GEN_LORA_SLOTS[otherIdx];
@@ -466,12 +720,14 @@ function selectGenLora(l) {
     if (tw.length) twPicks.add(0);
     GEN_LORA_SLOTS[GEN_ACTIVE_SLOT] = { lora: l, strength: curSlot().strength, twPicks };
   }
+  const fromArt = fromCard?.querySelector?.(".lg-art img");
   renderGenCurrent();
   renderLmCurrent();
   renderLmList($("lm-search").value);
   const selected = $("lm-list")?.querySelector?.(".lora-row.on");
   selected?.classList.add("is-seated");
   if (focused) selected?.focus({ preventScroll: true });
+  flyToSeat(fromArt, $("lm-current")?.querySelector?.(".lm-preview img"));
 }
 
 function renderGenCurrent() {
@@ -489,13 +745,19 @@ function renderGenCurrent() {
   btn.classList.toggle("has", !!(s0.lora || s1.lora));
 }
 
+// 每個槽上次畫的是哪一個 LoRA：換了的那一格才播「放進去」（null＝還沒畫過，第一次不播）。
+const SEAT_SEEN = [null, null];
+
 function renderLmSlotTabs() {
   const wrap = document.createElement("div");
   wrap.className = "lm-slot-tabs";
   GEN_LORA_SLOTS.forEach((slot, i) => {
+    const seatKey = slot.lora ? `${slot.lora.folder}/${slot.lora.file}` : "";
+    const changed = SEAT_SEEN[i] !== null && SEAT_SEEN[i] !== seatKey;
+    SEAT_SEEN[i] = seatKey;
     const tab = document.createElement("button");
     tab.type = "button";
-    tab.className = "lm-slot-tab" + (GEN_ACTIVE_SLOT === i ? " on" : "");
+    tab.className = "lm-slot-tab" + (GEN_ACTIVE_SLOT === i ? " on" : "") + (GALLERY && changed ? " is-new" : "");
     tab.setAttribute("aria-pressed", GEN_ACTIVE_SLOT === i ? "true" : "false");
     if (slot.lora && slot.lora.preview) tab.appendChild(makeLoraPreviewEl(slot.lora));
     else {
@@ -512,6 +774,12 @@ function renderLmSlotTabs() {
     ti.className = "lm-slot-tab-title" + (slot.lora ? "" : " empty");
     ti.textContent = slot.lora ? slot.lora.title || slot.lora.name : "未選擇";
     meta.append(lb, ti);
+    if (GALLERY && slot.lora) {
+      const w = document.createElement("span");
+      w.className = "lm-slot-tab-w";
+      w.textContent = "×" + slot.strength.toFixed(2);
+      meta.appendChild(w);
+    }
     tab.appendChild(meta);
     tab.addEventListener("click", () => {
       const focused = document.activeElement === tab;
@@ -521,9 +789,11 @@ function renderLmSlotTabs() {
       renderLmList($("lm-search").value);
       if (focused) $("lm-current")?.querySelector?.('.lm-slot-tab[aria-pressed="true"]')?.focus({ preventScroll: true });
     });
-    if (slot.lora) {
+    if (slot.lora && !GALLERY) {
       tab.addEventListener("mouseenter", () => showSingleLoraPreviewTip(tab, slot.lora));
       tab.addEventListener("mouseleave", hideLoraPreviewTip);
+    }
+    if (slot.lora) {
       const clear = document.createElement("button");
       clear.type = "button";
       clear.className = "lm-slot-clear";
@@ -533,11 +803,20 @@ function renderLmSlotTabs() {
       clear.addEventListener("click", (e) => {
         e.stopPropagation();
         hideLoraPreviewTip();
-        GEN_LORA_SLOTS[i] = { lora: null, strength: slot.strength, twPicks: new Set() };
-        setActiveSlot(i);
-        renderGenCurrent();
-        renderLmCurrent();
-        renderLmList($("lm-search").value);
+        const empty = () => {
+          GEN_LORA_SLOTS[i] = { lora: null, strength: slot.strength, twPicks: new Set() };
+          setActiveSlot(i);
+          renderGenCurrent();
+          renderLmCurrent();
+          renderLmList($("lm-search").value);
+        };
+        // 畫廊版清的是正在看的那一槽：大圖、觸發詞、強度先往下沉著淡掉，再換成空的框。
+        const parts = GALLERY && MOTION && !REDUCE_MOTION && GEN_ACTIVE_SLOT === i ? [...$("lm-current").children].slice(1) : [];
+        if (!parts.length) return empty();
+        clear.disabled = true;
+        const { DUR, CURVE, css } = MOTION;
+        const outs = parts.map((p, k) => p.animate([{ opacity: 1, transform: "none" }, { opacity: 0, transform: "translateY(10px) scale(0.98)" }], { duration: DUR.short, delay: k * 25, easing: css(CURVE.exit), fill: "forwards" }));
+        Promise.all(outs.map((a) => a.finished)).then(empty, empty);
       });
       tab.appendChild(clear);
     }
@@ -556,14 +835,16 @@ function renderLmCurrent() {
   const lora = slot.lora;
   if (!lora) {
     const none = document.createElement("div");
-    none.className = "lm-none";
-    none.textContent = `LoRA ${GEN_ACTIVE_SLOT + 1} 尚未選擇——從左邊清單點一個`;
+    none.className = GALLERY ? "lm-none lg-slot-empty" : "lm-none";
+    none.textContent = GALLERY ? `LoRA ${GEN_ACTIVE_SLOT + 1} 空著——從中間挑一張` : `LoRA ${GEN_ACTIVE_SLOT + 1} 尚未選擇——從左邊清單點一個`;
     box.appendChild(none);
     return;
   }
+  if (GALLERY && lora.preview) box.appendChild(seatPreview(lora));
   const head = document.createElement("div");
   head.className = "lm-cur-head";
-  if (lora.preview) head.appendChild(makeLoraPreviewEl(lora));
+  if (GALLERY) head.classList.add("is-plain");
+  else if (lora.preview) head.appendChild(makeLoraPreviewEl(lora));
   else {
     const ph = document.createElement("span");
     ph.className = "ph";
@@ -655,15 +936,31 @@ function renderLmCurrent() {
   strengthRow.append(sLabel, sInput, sOut);
   box.appendChild(strengthRow);
 
-  if (lora.preview) {
+  if (lora.preview && !GALLERY) {
     const pv = document.createElement("div");
     pv.className = "lm-preview";
     pv.style.animationDelay = tailDelay + 60 + "ms";
-    const pvEl = makeLoraPreviewEl(lora);
+    const pvEl = makeLoraPreviewEl(lora, 960);
     if (isLoraPreviewVideo(lora)) pvEl.controls = true;
     pv.appendChild(pvEl);
     box.appendChild(pv);
   }
+}
+
+/** 畫廊版右邊最上面的大圖：直接載（不等捲到），卡上剛載過，快取裡就有，飛過來落地時已經畫好。 */
+function seatPreview(lora) {
+  const pv = document.createElement("div");
+  pv.className = "lm-preview lg-seat";
+  const el = makeLoraPreviewEl(lora);
+  _loraPreviewIO.unobserve(el);
+  el.src = el.dataset.src;
+  delete el.dataset.src;
+  if (el.tagName === "VIDEO") {
+    el.controls = true;
+    el.play().catch(() => {});
+  } else upgradeSrc(el, sizedUrl(loraPreviewUrl(lora), 960));
+  pv.appendChild(el);
+  return pv;
 }
 
 export function joinTriggerParts(parts) {
@@ -873,6 +1170,7 @@ function hideLoraPreviewTip() {
 }
 function showSingleLoraPreviewTip(anchor, lora) {
   if (!lora || !lora.preview) return;
+  if (GALLERY && anchor.closest?.(".lora-modal")) return;
   const tip = ensureLoraPreviewTip();
   tip.replaceChildren();
   const item = document.createElement("div");
@@ -924,9 +1222,21 @@ function renderPathBar(kind) {
   btn.innerHTML = `${ICON_FOLDER}<span class="lm-path-label">偏好路徑</span><span class="lm-path-cur"></span>`;
   btn.querySelector(".lm-path-cur").textContent = info.path ? shortPath(info.path) : "全部";
   btn.addEventListener("click", () => {
+    const panel = host.querySelector(".lm-path-panel");
+    const live = GALLERY && MOTION && !REDUCE_MOTION;
+    if (open && panel && live) {
+      const a = panel.animate([{ height: panel.offsetHeight + "px", opacity: 1 }, { height: "0px", opacity: 0 }], { duration: MOTION.DUR.short, easing: MOTION.css(MOTION.CURVE.exit), fill: "forwards" });
+      a.finished.then(() => {
+        host.dataset.open = "false";
+        renderPathBar(kind);
+      }, () => {});
+      return;
+    }
     host.dataset.open = open ? "false" : "true";
     renderPathBar(kind);
     if (!open) host.querySelector(".lm-path-input")?.focus();
+    const grown = !open && live && host.querySelector(".lm-path-panel");
+    if (grown) grown.animate([{ height: "0px", opacity: 0 }, { height: grown.offsetHeight + "px", opacity: 1 }], { duration: MOTION.DUR.medium, easing: MOTION.css(MOTION.CURVE.out) });
   });
   host.append(btn);
   if (!open) return;
@@ -1010,7 +1320,7 @@ async function applyPath(kind, path, status) {
   } else {
     GEN_CKPTS = null;
     await fetchCkpts();
-    renderCkptList($("ckpt-search")?.value);
+    renderCkptList($("ckpt-search")?.value, true);
     renderCkptCurrent();
     renderCkptBtn();
   }
@@ -1040,7 +1350,8 @@ async function pickFolder(kind, input, status) {
 
 async function openLoraModal() {
   overlayOpen($("lora-modal"));
-  if (!GEN_LORAS) $("lm-list").innerHTML = '<div class="lora-empty">載入中…</div>';
+  // 畫廊版先排一排空的卡框（光掃過去），清單到了直接換上，版面不會跳。
+  if (!GEN_LORAS) $("lm-list").innerHTML = '<div class="lora-empty">載入中…</div>' + (GALLERY ? '<span class="lg-skel" aria-hidden="true"></span>'.repeat(12) : "");
   renderLmCurrent();
   await fetchGenLoras();
   renderLmCats();
@@ -1052,6 +1363,7 @@ async function openLoraModal() {
 function closeLoraModal() {
   const modal = $("lora-modal");
   hideLoraPreviewTip();
+  for (const g of document.querySelectorAll(".lg-fly")) for (const a of g.getAnimations()) a.finish();
   fadeCloseOverlay(modal);
 }
 
@@ -1226,6 +1538,48 @@ function ensureDom() {
     if (ping && ping.parentNode === tools) tools.insertBefore(k, ping);
     else tools.appendChild(k);
   }
+  if (!$("lora-modal") && GALLERY) {
+    // 畫廊版：左邊找（搜尋、分類、隨機、偏好路徑）、中間挑（大圖網格）、右邊用（兩個槽、觸發詞、強度）。
+    const modal = document.createElement("div");
+    modal.id = "lora-modal";
+    modal.className = "lora-modal lg-modal";
+    modal.inert = true;
+    modal.setAttribute("role", "dialog");
+    modal.setAttribute("aria-modal", "true");
+    modal.setAttribute("aria-labelledby", "lm-title");
+    modal.innerHTML = `
+      <div class="lora-modal-inner lg">
+        <button class="lora-modal-close" id="lora-modal-close" aria-label="關閉 (Esc)" title="關閉 (Esc)">${ICON_CLOSE}</button>
+        <aside class="lg-rail">
+          <h2 class="lg-title" id="lm-title">LoRA</h2>
+          <div class="lm-search-wrap">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+            <input type="search" id="lm-search" placeholder="搜尋 LoRA…" autocomplete="off" spellcheck="false">
+          </div>
+          <div id="lm-cats" class="lm-cats"></div>
+          <div id="lm-subcats" class="lm-subcats"></div>
+          <button class="ghost lm-random-btn" id="lm-random-btn" title="隨機抽幾個 LoRA 攤開來看（點一張直接選中）">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="4"/><circle cx="8.3" cy="8.3" r="1.2" fill="currentColor" stroke="none"/><circle cx="15.7" cy="8.3" r="1.2" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.2" fill="currentColor" stroke="none"/><circle cx="8.3" cy="15.7" r="1.2" fill="currentColor" stroke="none"/><circle cx="15.7" cy="15.7" r="1.2" fill="currentColor" stroke="none"/></svg>
+            隨機瀏覽
+          </button>
+          <div class="lg-rail-foot">
+            <div class="lm-path" id="lm-path"></div>
+            <a class="lm-manager-link" id="lm-manager-link" href="#" target="_blank" rel="noopener">
+              <img src="data:image/png;base64,${LORA_MGR_LOGO_B64}" alt="" width="16" height="16">用 LoRA Manager 管理（新分頁）
+            </a>
+          </div>
+        </aside>
+        <section class="lg-main" aria-labelledby="lm-title">
+          <p class="lg-count" id="lm-count" aria-live="polite"></p>
+          <div id="lm-list" class="lm-list lg-grid"></div>
+        </section>
+        <aside class="lm-right lg-side">
+          <div class="lm-right-head">目前選擇</div>
+          <div id="lm-current" class="lm-current"></div>
+        </aside>
+      </div>`;
+    document.body.appendChild(modal);
+  }
   if (!$("lora-modal")) {
     const modal = document.createElement("div");
     modal.id = "lora-modal";
@@ -1255,6 +1609,42 @@ function ensureDom() {
           <div class="lm-right-head">目前選擇</div>
           <div id="lm-current" class="lm-current"></div>
         </div>
+      </div>`;
+    document.body.appendChild(modal);
+  }
+  if (!$("ckpt-modal") && GALLERY) {
+    const modal = document.createElement("div");
+    modal.id = "ckpt-modal";
+    modal.className = "lora-modal ckpt-modal lg-modal";
+    modal.inert = true;
+    modal.setAttribute("role", "dialog");
+    modal.setAttribute("aria-modal", "true");
+    modal.setAttribute("aria-labelledby", "ckpt-head-title");
+    modal.innerHTML = `
+      <div class="lora-modal-inner lg">
+        <button class="lora-modal-close" id="ckpt-modal-close" aria-label="關閉 (Esc)" title="關閉 (Esc)">${ICON_CLOSE}</button>
+        <aside class="lg-rail">
+          <h2 class="lg-title" id="ckpt-head-title">底模</h2>
+          <p class="lg-hint">清單來自 ComfyUI。點一張換過去，之後生圖都用它。</p>
+          <div class="lm-search-wrap">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+            <input type="search" id="ckpt-search" placeholder="搜尋底模…" autocomplete="off" spellcheck="false">
+          </div>
+          <div class="lg-rail-foot">
+            <div class="lm-path" id="ckpt-path"></div>
+            <a class="lm-manager-link" id="ckpt-manager-link" href="#" target="_blank" rel="noopener">
+              <img src="data:image/png;base64,${LORA_MGR_LOGO_B64}" alt="" width="16" height="16">用 LoRA Manager 管理（新分頁）
+            </a>
+          </div>
+        </aside>
+        <section class="lg-main" aria-labelledby="ckpt-head-title">
+          <p class="lg-count" id="ckpt-count" aria-live="polite"></p>
+          <div id="ckpt-list" class="lm-list lg-grid"></div>
+        </section>
+        <aside class="lm-right lg-side">
+          <div class="lm-right-head">目前選擇</div>
+          <div id="ckpt-current" class="lm-current"></div>
+        </aside>
       </div>`;
     document.body.appendChild(modal);
   }
@@ -1455,9 +1845,8 @@ export function handleLoraKeys(e) {
   return false;
 }
 
-function ckptPreviewUrl(c) {
-  if (c.previewUrl) return c.previewUrl;
-  return `/api/ckpt-preview?file=${encodeURIComponent(c.preview)}`;
+function ckptPreviewUrl(c, w = 480) {
+  return sizedUrl(c.previewUrl || `/api/ckpt-preview?file=${encodeURIComponent(c.preview)}`, w);
 }
 
 function renderCkptBtn() {
@@ -1486,14 +1875,26 @@ function renderCkptCurrent() {
   const cur = (GEN_CKPTS || []).find((c) => c.ckpt_name === GEN_CKPT);
   if (!cur) {
     const none = document.createElement("div");
-    none.className = "lm-none";
-    none.textContent = (GEN_CKPTS || []).length ? "還沒選底模——從左邊清單點一個" : "這個資料夾沒有 checkpoint";
+    none.className = GALLERY ? "lm-none lg-slot-empty" : "lm-none";
+    none.textContent = !(GEN_CKPTS || []).length ? "這個資料夾沒有 checkpoint" : GALLERY ? "還沒選底模——從中間挑一張" : "還沒選底模——從左邊清單點一個";
     box.appendChild(none);
     return;
   }
+  if (GALLERY && cur.preview) {
+    const pv = document.createElement("div");
+    pv.className = "lm-preview lg-seat";
+    const img = document.createElement("img");
+    img.alt = "";
+    img.decoding = "async";
+    img.src = ckptPreviewUrl(cur);
+    upgradeSrc(img, ckptPreviewUrl(cur, 960));
+    pv.appendChild(img);
+    box.appendChild(pv);
+  }
   const head = document.createElement("div");
   head.className = "lm-cur-head";
-  if (cur.preview) {
+  if (GALLERY) head.classList.add("is-plain");
+  else if (cur.preview) {
     const img = document.createElement("img");
     img.alt = "";
     img.decoding = "async";
@@ -1518,13 +1919,14 @@ function renderCkptCurrent() {
   hint.className = "ckpt-cur-hint";
   hint.textContent = "生圖會用這顆底模。";
   box.appendChild(hint);
+  if (GALLERY) return;
   if (cur.preview) {
     const pv = document.createElement("div");
     pv.className = "lm-preview";
     const img = document.createElement("img");
     img.alt = "";
     img.decoding = "async";
-    img.src = ckptPreviewUrl(cur);
+    img.src = ckptPreviewUrl(cur, 960);
     pv.appendChild(img);
     box.appendChild(pv);
   }
@@ -1569,8 +1971,10 @@ async function fetchCkpts() {
   return GEN_CKPTS;
 }
 
-function selectCkpt(c) {
+function selectCkpt(c, fromCard) {
   const focused = document.activeElement?.closest?.("#ckpt-list .lora-row");
+  const fromArt = fromCard?.querySelector?.(".lg-art img");
+  const prevCkpt = GEN_CKPT;
   GEN_CKPT = c.ckpt_name;
   try {
     localStorage.setItem(CKPT_STORE, GEN_CKPT);
@@ -1583,15 +1987,18 @@ function selectCkpt(c) {
   const selected = $("ckpt-list")?.querySelector?.(".lora-row.on");
   selected?.classList.add("is-seated");
   if (focused) selected?.focus({ preventScroll: true });
+  if (GALLERY && GEN_CKPT !== prevCkpt) flyToSeat(fromArt, $("ckpt-current")?.querySelector?.(".lm-preview img"));
   toast(`底模已換成「${c.title || c.file}」`);
 }
 
-function renderCkptList(filter) {
+function renderCkptList(filter, deal = false) {
   const box = $("ckpt-list");
   if (!box || !ckptModalShown()) return;
   const q = (filter || "").toLowerCase().trim();
+  if (GALLERY && !deal && box._gallery?.key === q && box.dataset.result === "found") return refreshGalleryMarks(box);
   let items = GEN_CKPTS || [];
   if (q) items = items.filter((c) => (c.title || "").toLowerCase().includes(q) || c.file.toLowerCase().includes(q));
+  syncCount("ckpt-count", items.length);
   box.replaceChildren();
   if (!items.length) {
     const empty = document.createElement("div");
@@ -1607,6 +2014,25 @@ function renderCkptList(filter) {
     return;
   }
   box.dataset.result = "found";
+  if (GALLERY) {
+    items.forEach((c, i) => {
+      let preview = null;
+      if (c.preview) {
+        preview = document.createElement("img");
+        preview.alt = "";
+        preview.decoding = "async";
+        preview.loading = "lazy";
+        preview.src = ckptPreviewUrl(c);
+      }
+      const card = galleryCard({ preview, title: c.title || c.file, sub: c.file, seat: "", on: c.ckpt_name === GEN_CKPT, deal, i });
+      card._mark = () => ({ seat: "", on: c.ckpt_name === GEN_CKPT });
+      card.addEventListener("click", () => selectCkpt(c, card));
+      box.appendChild(card);
+    });
+    box._gallery = { key: q };
+    markPress(box);
+    return;
+  }
   for (const c of items) {
     const row = document.createElement("button");
     row.type = "button";
@@ -1646,16 +2072,22 @@ async function openCkptModal() {
   const list = $("ckpt-list");
   if (list && GEN_CKPTS === null) list.innerHTML = '<div class="lora-empty">載入中…</div>';
   await fetchCkpts();
-  renderCkptList($("ckpt-search")?.value);
+  renderCkptList($("ckpt-search")?.value, true);
   renderCkptCurrent();
   focusEntry($("ckpt-search"), $("ckpt-modal-close"));
   fetchPaths().then(() => renderPathBar("ckpt"));
 }
 function closeCkptModal() {
+  for (const g of document.querySelectorAll(".lg-fly")) for (const a of g.getAnimations()) a.finish();
   fadeCloseOverlay($("ckpt-modal"), null, () => renderCkptBtn());
 }
 
-export function initLoraPicker() {
+/**
+ * gallery：畫廊版（墨池 web6）。motion：{ DUR, CURVE, css }（web6/motion.js），選中時飛進槽用。
+ */
+export function initLoraPicker({ gallery = false, motion = null } = {}) {
+  GALLERY = !!gallery;
+  MOTION = motion;
   ensureDom();
   syncManagerLinks();
   renderGenCurrent();
@@ -1671,14 +2103,24 @@ export function initLoraPicker() {
   $("ckpt-modal")?.addEventListener("click", (e) => {
     if (e.target.id === "ckpt-modal") closeCkptModal();
   });
-  $("ckpt-search")?.addEventListener("input", () => renderCkptList($("ckpt-search").value));
+  let ckptSearchT = 0;
+  $("ckpt-search")?.addEventListener("input", () => {
+    if (!GALLERY) return renderCkptList($("ckpt-search").value);
+    clearTimeout(ckptSearchT);
+    ckptSearchT = setTimeout(() => renderCkptList($("ckpt-search").value, "quick"), 120);
+  });
   $("lora-pick-btn").addEventListener("mouseenter", () => showLoraPreviewTip($("lora-pick-btn")));
   $("lora-pick-btn").addEventListener("mouseleave", hideLoraPreviewTip);
   $("lora-modal-close").addEventListener("click", closeLoraModal);
   $("lora-modal").addEventListener("click", (e) => {
     if (e.target.id === "lora-modal") closeLoraModal();
   });
-  $("lm-search").addEventListener("input", () => renderLmList($("lm-search").value, true));
+  let loraSearchT = 0;
+  $("lm-search").addEventListener("input", () => {
+    if (!GALLERY) return renderLmList($("lm-search").value, true);
+    clearTimeout(loraSearchT);
+    loraSearchT = setTimeout(() => renderLmList($("lm-search").value, true, "quick"), 120);
+  });
   $("lm-random-btn").addEventListener("click", () => {
     fetchGenLoras().then(() => drawLoraTarot(loraCatPool(), loraCatLabel()));
   });
@@ -1692,6 +2134,8 @@ export function initLoraPicker() {
     slot.strength = parseFloat(e.target.value);
     const out = $("lm-strength-out");
     if (out) out.textContent = slot.strength.toFixed(2);
+    const w = $("lm-current").querySelector(".lm-slot-tab.on .lm-slot-tab-w");
+    if (w) w.textContent = "×" + slot.strength.toFixed(2);
   });
   $("lm-current").addEventListener("change", (e) => {
     if (!e.target.matches("input[type=checkbox]")) return;

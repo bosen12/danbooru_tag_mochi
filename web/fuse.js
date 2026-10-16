@@ -252,8 +252,8 @@ async function boot() {
   caseTab = readJ(FK.tab, "all") || "all";
   prints = loadPrints();
 
-  initLoraPicker();
-  initWorkflow({ sampling: true, faceFix: true });
+  initLoraPicker({ gallery: true, motion: { DUR, CURVE, css } });
+  initWorkflow({ sampling: true, faceFix: true, gallery: true, motion: { DUR, CURVE, css } });
   discord = mountDiscord(zh, "疊印台");
   pingLoop();
   wireChrome();

@@ -2,6 +2,9 @@
 
 只存牌（詞庫裡的字）跟名字，不存規則：套用時尺度、時代、人物照當下的設定。
 所有裝置（手機、電腦）共用這一份；一份 JSON，幾十組也只有幾 KB。
+
+偏好角色（web6/fav-chars.js 的名單）也存在這裡（data/fav_chars.json）：以前只存在瀏覽器，
+清掉瀏覽器資料、換台電腦就沒了。
 """
 
 from __future__ import annotations
@@ -20,7 +23,10 @@ import file_lock
 ROOT = Path(__file__).resolve().parent
 DECKS_PATH = Path(os.environ.get("CARD_DECKS_PATH") or ROOT / "data" / "card_decks.json")
 
+FAV_CHARS_PATH = Path(os.environ.get("CARD_FAV_CHARS_PATH") or ROOT / "data" / "fav_chars.json")
+
 MAX_DECKS = 200
+MAX_FAV_CHARS = 3000
 MAX_TAGS = 60
 MAX_NAME = 40
 _ID_RE = re.compile(r"^[a-z0-9-]{4,40}$")
@@ -126,6 +132,45 @@ def save(payload: dict) -> dict:
             decks.append(deck)
         _write(decks)
         return {"deck": deck, "decks": _sorted(decks)}
+
+
+# ---------- 偏好角色 ----------
+
+
+def _clean_fav(raw) -> list[str]:
+    out, seen = [], set()
+    for t in raw if isinstance(raw, list) else []:
+        if not isinstance(t, str):
+            continue
+        t = card_usage.rename(t.strip())
+        if t and len(t) <= 200 and t not in seen:
+            seen.add(t)
+            out.append(t)
+    return out[:MAX_FAV_CHARS]
+
+
+def load_fav_chars() -> dict:
+    """{"tags": [...新加的在前], "saved": 伺服器上有沒有存過, "at": 最後存的時間（毫秒）}。
+    沒存過（或檔案壞了）saved 是 False：瀏覽器會把它自己那份搬上來。"""
+    with _LOCK, file_lock.locked(FAV_CHARS_PATH):
+        try:
+            data = json.loads(FAV_CHARS_PATH.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            return {"tags": [], "saved": False, "at": 0}
+        if not isinstance(data, dict):
+            return {"tags": [], "saved": False, "at": 0}
+        return {"tags": _clean_fav(data.get("tags")), "saved": True, "at": int(data.get("at") or 0)}
+
+
+def save_fav_chars(payload: dict) -> dict:
+    """整份名單換掉：{"tags": [...]}（空陣列＝清空，也算存過）。"""
+    if not isinstance(payload, dict) or not isinstance(payload.get("tags"), list):
+        raise DeckError("tags 要是陣列")
+    tags = _clean_fav(payload["tags"])
+    now = int(time.time() * 1000)
+    with _LOCK, file_lock.locked(FAV_CHARS_PATH):
+        file_lock.write_text(FAV_CHARS_PATH, json.dumps({"v": 1, "at": now, "tags": tags}, ensure_ascii=False, separators=(",", ":")))
+    return {"tags": tags, "saved": True, "at": now}
 
 
 def delete(rid: str) -> dict:

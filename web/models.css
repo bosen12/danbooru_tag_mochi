@@ -1,0 +1,1088 @@
+/* LoRA／底模／工作流三個面板的墨池版（畫廊版，web/lora.js、web/workflow.js 的 gallery 模式）。
+ *
+ * 共用的 web/lora.css 是暗房那一套（琥珀色、檔名清單），排字匣和其他版面照舊用它；這裡只蓋墨池：
+ *   1. 把它的顏色變數接到墨池的 token（琥珀 → 池水藍，暗房灰 → 墨色紙），一次換掉整套。
+ *   2. 版面換成三欄：左邊找（搜尋、分類）、中間挑（大圖網格）、右邊用（槽、觸發詞、強度）。
+ *      工作流是兩欄：左邊選哪一套、右邊調它。ComfyUI 網址改成點頂欄燈號跳出的小窗（.comfy-pop）。
+ *   3. 動態全部用 tokens.css 的 --dur-*／--ease-*。 */
+
+body :is(.lora-modal, .lora-preview-tip, .tw-tip, .lora-toast, .lora-tarot, .comfy-pop) {
+  --bg: var(--color-paper);
+  --panel: var(--color-paper-2);
+  --rail: var(--color-paper);
+  --sunk: var(--color-paper-3);
+  --line: var(--color-rule-2);
+  --line-2: var(--color-rule);
+  --ink: var(--color-ink);
+  --dim: var(--color-ink-2);
+  --faint: var(--color-muted);
+  --amber: var(--color-pool);
+  --amber-d: var(--color-pool-2);
+  --amber-soft: var(--color-pool-soft);
+  --err: oklch(72% 0.15 28);
+  --mono: var(--font-mono);
+  --radius: var(--radius-lg);
+  --shadow: 0 30px 80px oklch(4% 0.01 250 / 0.7), 0 2px 10px oklch(4% 0.01 250 / 0.5);
+  color: var(--ink);
+  font-family: var(--font-body);
+}
+
+/* ---------- 外框：墨色紙、背後一圈池水的光 ---------- */
+
+body .lora-modal.lg-modal {
+  background:
+    radial-gradient(ellipse 70% 60% at 50% 45%, oklch(62% 0.09 225 / 0.12), transparent 70%),
+    var(--color-scrim);
+  backdrop-filter: blur(10px) saturate(0.8);
+}
+
+body .lora-modal-inner.lg {
+  width: min(1380px, calc(100vw - 48px));
+  height: min(900px, calc(100dvh - 48px));
+  grid-template-columns: 15.5rem minmax(0, 1fr) 21rem;
+  border: 1px solid var(--color-rule);
+  border-radius: var(--radius-lg);
+  background: linear-gradient(180deg, oklch(21% 0.014 250), var(--color-paper-2) 18%);
+  box-shadow: var(--shadow), 0 1px 0 var(--color-shine) inset;
+  transform: translateY(18px) scale(0.975);
+  opacity: 0.6;
+  transition:
+    transform var(--dur-short) var(--ease-exit),
+    opacity var(--dur-short) var(--ease-exit);
+}
+body .lora-modal.lg-modal.open:not(.is-closing) .lora-modal-inner.lg {
+  transform: none;
+  opacity: 1;
+  transition:
+    transform var(--dur-xl) var(--ease-out),
+    opacity var(--dur-medium) var(--ease-out);
+}
+body .ckpt-modal .lora-modal-inner.lg {
+  width: min(1240px, calc(100vw - 48px));
+}
+body .lora-modal-inner.lg.lg-wf {
+  width: min(1080px, calc(100vw - 48px));
+  grid-template-columns: 17.5rem minmax(0, 1fr);
+}
+
+body .lg-modal .lora-modal-close {
+  top: var(--space-sm);
+  right: var(--space-sm);
+  width: 2.25rem;
+  height: 2.25rem;
+  border: 1px solid var(--color-rule-2);
+  border-radius: var(--radius-md);
+  background: var(--color-paper-2);
+  transition:
+    color var(--dur-micro) var(--ease-out),
+    background-color var(--dur-micro) var(--ease-out),
+    border-color var(--dur-micro) var(--ease-out),
+    rotate var(--dur-medium) var(--ease-settle);
+}
+@media (hover: hover) and (pointer: fine) {
+  body .lg-modal .lora-modal-close:hover {
+    rotate: 90deg;
+    border-color: var(--color-rule);
+  }
+}
+
+/* ---------- 左欄：找 ---------- */
+
+.lg-rail {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  min-width: 0;
+  min-height: 0;
+  padding: var(--space-lg) var(--space-md) var(--space-md);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  background: oklch(13.5% 0.011 250 / 0.55);
+  border-right: 1px solid var(--color-rule-2);
+}
+.lg-title {
+  margin: 0 0 var(--space-2xs);
+  font-family: var(--font-heading);
+  font-size: var(--text-xl);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--color-ink);
+}
+.lg-hint {
+  margin: calc(var(--space-xs) * -1) 0 var(--space-2xs);
+  font-size: var(--text-xs);
+  line-height: 1.6;
+  color: var(--color-muted);
+}
+body .lg-rail .lm-search-wrap {
+  padding: 0;
+}
+body .lg-rail .lm-search-wrap svg {
+  left: 11px;
+}
+body .lg-modal .lm-search-wrap input {
+  height: 2.4rem;
+  border-radius: var(--radius-md);
+  background: var(--color-paper-3);
+  border-color: var(--color-rule-2);
+  font-size: var(--text-sm);
+}
+body .lg-modal .lm-search-wrap input:focus {
+  border-color: var(--color-pool);
+  box-shadow: 0 0 0 3px var(--color-pool-soft);
+}
+
+/* 分類：直的一列，像目錄；選中的那一格左邊一道池水色。 */
+body .lg-rail .lm-cats {
+  position: relative;
+  flex-direction: column;
+  flex-wrap: nowrap;
+  gap: 1px;
+  padding: 0;
+}
+/* 選中那一格底下的墨塊：lora.js 換分類時把它從舊的那格滑到新的那格。 */
+.lm-cat-ink {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 0;
+  border-radius: var(--radius-sm);
+  background: var(--color-pool-soft);
+  box-shadow: inset 2px 0 0 var(--color-pool);
+  pointer-events: none;
+}
+body .lg-rail .lm-cat {
+  position: relative;
+  z-index: 1;
+}
+/* 第一次載到清單：分類一格格浮上來。 */
+body .lg-rail .lm-cats.is-first .lm-cat-ink,
+body .lg-rail .lm-cats.is-first .lm-cat {
+  animation: lg-rise var(--dur-medium) var(--ease-out) both;
+  animation-delay: calc(var(--i, 0) * var(--dur-micro) / 4);
+}
+body .lg-rail .lm-cats.is-first .lm-cat:nth-child(2) { --i: 0; }
+body .lg-rail .lm-cats.is-first .lm-cat:nth-child(3) { --i: 1; }
+body .lg-rail .lm-cats.is-first .lm-cat:nth-child(4) { --i: 2; }
+body .lg-rail .lm-cats.is-first .lm-cat:nth-child(5) { --i: 3; }
+body .lg-rail .lm-cats.is-first .lm-cat:nth-child(n + 6) { --i: 4; }
+@keyframes lg-rise {
+  from {
+    opacity: 0;
+    translate: 0 6px;
+  }
+}
+/* 後到的東西（偏好路徑、LoRA Manager 連結、路徑面板）淡進來，不是一格就冒出來。 */
+body .lg-rail .lm-path-btn,
+body .lg-rail .lm-manager-link:not([hidden]),
+body .lg-rail .lm-path-panel {
+  animation: lg-rise var(--dur-medium) var(--ease-out) both;
+}
+body .lg-rail .lm-cat {
+  justify-content: space-between;
+  width: 100%;
+  min-height: 2.1rem;
+  padding: 0 var(--space-sm);
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-ink-2);
+  font-size: var(--text-sm);
+  text-align: left;
+  box-shadow: inset 0 0 0 transparent;
+  transition:
+    color var(--dur-micro) var(--ease-out),
+    background-color var(--dur-micro) var(--ease-out),
+    box-shadow var(--dur-short) var(--ease-out);
+}
+body .lg-rail .lm-cat > span:first-child {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+body .lg-rail .lm-cat:hover {
+  background: oklch(100% 0 0 / 0.04);
+  color: var(--color-ink);
+}
+body .lg-rail .lm-cat.on {
+  background: transparent;
+  color: var(--color-ink);
+}
+body .lg-rail .lm-subcats {
+  flex-direction: column;
+  flex-wrap: nowrap;
+  gap: 1px;
+  margin: calc(var(--space-xs) * -1) 0 0 var(--space-sm);
+  padding: 0 0 0 var(--space-xs);
+  border-left: 1px solid var(--color-rule-2);
+}
+body .lg-rail .lm-subcats:empty {
+  display: none;
+}
+body .lg-rail .lm-subcat {
+  justify-content: space-between;
+  width: 100%;
+  border-radius: var(--radius-sm);
+  font-size: var(--text-xs);
+  text-align: left;
+}
+body .lg-rail .lm-subcat.on {
+  background: var(--color-pool-soft);
+  border-color: transparent;
+}
+body .lg-rail .lm-random-btn {
+  width: 100%;
+  margin: var(--space-2xs) 0 0;
+  border-style: dashed;
+  border-color: var(--color-rule);
+  border-radius: var(--radius-md);
+}
+body .lg-rail .lm-random-btn:hover {
+  border-color: var(--color-pool);
+  background: var(--color-pool-soft);
+}
+.lg-rail-foot {
+  display: grid;
+  gap: var(--space-xs);
+  margin-top: auto;
+  padding-top: var(--space-sm);
+}
+body .lg-rail .lm-path {
+  margin: 0;
+}
+body .lg-rail .lm-manager-link {
+  margin: 0;
+  border-radius: var(--radius-md);
+  font-size: var(--text-xs);
+  white-space: nowrap;
+}
+
+/* ---------- 中欄：大圖網格 ---------- */
+
+.lg-main {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  padding: var(--space-lg) var(--space-lg) 0;
+}
+.lg-count {
+  min-height: 1.5em;
+  margin: 0 0 var(--space-sm);
+  padding-right: 3rem;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--color-muted);
+  font-variant-numeric: tabular-nums;
+}
+body .lg-modal .lm-list.lg-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(9.75rem, 1fr));
+  align-content: start;
+  gap: var(--space-lg) var(--space-md);
+  padding: var(--space-2xs) var(--space-2xs) var(--space-2xl);
+  scrollbar-width: thin;
+}
+body .lg-grid .lora-cat-head {
+  grid-column: 1 / -1;
+  position: sticky;
+  top: calc(var(--space-2xs) * -1);
+  z-index: 3;
+  margin: 0 calc(var(--space-2xs) * -1) calc(var(--space-xs) * -1);
+  padding: var(--space-xs) var(--space-2xs);
+  background: linear-gradient(var(--color-paper-2) 70%, transparent);
+  font-size: var(--text-2xs);
+  letter-spacing: 0.08em;
+  color: var(--color-muted);
+}
+body .lg-grid .lora-empty,
+body .lg-grid .lora-more {
+  grid-column: 1 / -1;
+}
+body .lg-grid .lora-cat-head {
+  animation: lg-rise var(--dur-medium) var(--ease-out) both;
+}
+body .lg-rail .lm-path-panel {
+  overflow: hidden;
+}
+.lora-more {
+  display: flex;
+  justify-content: center;
+  padding: var(--space-sm) 0;
+}
+.lora-more-btn {
+  min-height: 2.25rem;
+  padding: 0 var(--space-lg);
+  border: 1px solid var(--color-rule);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--color-ink-2);
+  font: inherit;
+  font-size: var(--text-xs);
+  cursor: pointer;
+}
+
+/* 一張卡：直幅的圖（像一張牌）＋名字。滑過浮起、圖稍微推近，一道光掃過去。 */
+body .lg-grid .lora-row.lg-card {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--space-xs);
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-md);
+  background: none;
+  box-shadow: none;
+  color: var(--color-ink);
+  text-align: left;
+  animation: none;
+}
+body .lg-grid .lora-row.lg-card:hover {
+  background: none;
+}
+.lg-art {
+  position: relative;
+  display: block;
+  aspect-ratio: 3 / 4;
+  overflow: hidden;
+  border-radius: var(--radius-md);
+  background: var(--color-paper-3);
+  box-shadow: var(--shadow-card);
+  transition:
+    translate var(--dur-medium) var(--ease-out),
+    box-shadow var(--dur-medium) var(--ease-out);
+}
+/* 細細一圈卡紙色的邊，跟字盒的牌同一種「印出來的」感覺。 */
+.lg-art::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  border-radius: inherit;
+  box-shadow: inset 0 0 0 1px oklch(93.5% 0.024 86 / 0.1);
+  pointer-events: none;
+  transition: box-shadow var(--dur-short) var(--ease-out);
+}
+/* 掃過的光：平常在左邊外面，滑過時斜斜掃到右邊。 */
+.lg-art::after {
+  content: "";
+  position: absolute;
+  inset: -20% -60%;
+  z-index: 1;
+  background: linear-gradient(105deg, transparent 40%, oklch(99% 0.012 85 / 0.16) 50%, transparent 60%);
+  translate: -70% 0;
+  pointer-events: none;
+}
+body .lg-art img,
+body .lg-art video,
+body .lg-art .ph {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 0;
+  object-fit: cover;
+  background: var(--color-paper-3);
+  transition:
+    scale var(--dur-xl) var(--ease-out),
+    opacity var(--dur-long) var(--ease-out);
+}
+body .lg-art .ph {
+  background: radial-gradient(ellipse at 50% 35%, var(--color-paper-4), var(--color-paper-3) 70%);
+  color: var(--color-muted);
+}
+/* 圖還在路上：先藏著，框裡一道光慢慢來回掃（掃幾次就停，不會一直動下去）。 */
+body .lg-art.is-wait img,
+body .lg-art.is-wait video {
+  opacity: 0;
+}
+body .lg-art.is-wait::after {
+  animation: lg-wait var(--dur-breath) var(--ease-in-out) 6 both;
+}
+@keyframes lg-wait {
+  from {
+    translate: -70% 0;
+  }
+  to {
+    translate: 70% 0;
+  }
+}
+@media (hover: hover) and (pointer: fine) {
+  body .lg-card:hover .lg-art {
+    translate: 0 -4px;
+    box-shadow: var(--shadow-lift);
+  }
+  body .lg-card:hover .lg-art img,
+  body .lg-card:hover .lg-art video {
+    scale: 1.05;
+  }
+  body .lg-card:hover .lg-art::after {
+    translate: 70% 0;
+    transition: translate var(--dur-story) var(--ease-out);
+  }
+}
+body .lg-card:focus-visible {
+  outline: none;
+}
+body .lg-card:focus-visible .lg-art {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 3px;
+}
+/* 在用的：池水色一圈＋往外暈開；另一個槽的淡一點。 */
+body .lg-card.on .lg-art::before {
+  box-shadow:
+    inset 0 0 0 2px var(--color-pool),
+    inset 0 0 24px oklch(62% 0.09 225 / 0.35);
+}
+body .lg-card.on .lg-art {
+  box-shadow: var(--shadow-lift), 0 0 0 4px var(--color-pool-soft);
+}
+body .lg-card.in-other .lg-art::before {
+  box-shadow: inset 0 0 0 1px oklch(62% 0.09 225 / 0.6);
+}
+body .lg-card .rn {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  padding: 0 var(--space-3xs);
+}
+body .lg-card .rt {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  font-size: var(--text-sm);
+  font-weight: 500;
+  line-height: 1.35;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  transition: color var(--dur-micro) var(--ease-out);
+}
+body .lg-card.on .rt {
+  color: var(--color-pool);
+}
+body .lg-card .rf {
+  overflow: hidden;
+  font-size: var(--text-2xs);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--color-muted);
+}
+
+/* ①② 是朱紅的章：剛蓋上去像橡皮章壓下來。 */
+body .lg-card .lora-slot-badge {
+  position: absolute;
+  top: var(--space-xs);
+  left: var(--space-xs);
+  z-index: 3;
+  display: grid;
+  place-items: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  margin: 0;
+  border-radius: var(--radius-xs);
+  background: var(--color-accent);
+  color: var(--color-accent-ink);
+  font-size: var(--text-md);
+  font-weight: 700;
+  line-height: 1;
+  rotate: -6deg;
+  box-shadow: 0 4px 10px oklch(10% 0.02 30 / 0.5), 0 0 0 1px oklch(97% 0.012 80 / 0.25) inset;
+  animation: lg-seal var(--dur-long) var(--ease-settle) both;
+}
+body .lg-card.in-other .lora-slot-badge {
+  background: var(--color-accent-3);
+}
+@keyframes lg-seal {
+  from {
+    opacity: 0;
+    scale: 1.9;
+    rotate: -18deg;
+  }
+}
+
+/* 換清單時一張張發出來：從下面浮上來、墨一樣由糊到清。 */
+body .lg-grid .lora-row.lg-card.is-dealt {
+  animation: lg-deal var(--dur-xl) var(--ease-out) both;
+  animation-delay: calc(var(--i, 0) * var(--dur-micro) / 6);
+}
+body .lg-grid .lora-row.lg-card.is-swapped {
+  animation: lg-swap var(--dur-short) var(--ease-out) both;
+  animation-delay: calc(min(var(--i, 0), 12) * var(--dur-micro) / 12);
+}
+@keyframes lg-swap {
+  from {
+    opacity: 0;
+    translate: 0 4px;
+  }
+}
+@keyframes lg-deal {
+  from {
+    opacity: 0;
+    translate: 0 16px;
+    filter: blur(6px);
+  }
+}
+
+/* 清單還沒到：空的卡框，光慢慢掃過去。 */
+.lg-skel {
+  position: relative;
+  overflow: hidden;
+  aspect-ratio: 3 / 4;
+  border-radius: var(--radius-md);
+  background: var(--color-paper-3);
+}
+.lg-skel::after {
+  content: "";
+  position: absolute;
+  inset: -20% -60%;
+  background: linear-gradient(105deg, transparent 40%, oklch(99% 0.012 85 / 0.07) 50%, transparent 60%);
+  animation: lg-wait var(--dur-breath) var(--ease-in-out) infinite;
+}
+
+/* 選中時飛進右邊的那張影子 */
+.lg-fly {
+  position: fixed;
+  z-index: 300;
+  object-fit: cover;
+  pointer-events: none;
+  border-radius: var(--radius-md);
+}
+
+/* ---------- 右欄：用 ---------- */
+
+body .lg-side.lm-right {
+  min-height: 0;
+  padding: var(--space-lg) var(--space-md);
+  overflow-y: auto;
+  scrollbar-width: thin;
+  background: oklch(13.5% 0.011 250 / 0.55);
+  border-left: 1px solid var(--color-rule-2);
+}
+body .lg-modal .lm-right-head {
+  margin-bottom: var(--space-sm);
+  padding-right: 3rem;
+  font-size: var(--text-2xs);
+  letter-spacing: 0.12em;
+  color: var(--color-muted);
+}
+body .lg-side .lm-slot-tabs {
+  gap: var(--space-xs);
+  margin-bottom: var(--space-md);
+}
+body .lg-side .lm-slot-tab {
+  position: relative;
+  padding: var(--space-xs);
+  border-color: var(--color-rule-2);
+  border-radius: var(--radius-md);
+  background: var(--color-paper-2);
+}
+body .lg-side .lm-slot-tab.on {
+  border-color: var(--color-pool);
+  background: var(--color-pool-soft);
+  box-shadow: 0 0 0 3px oklch(62% 0.09 225 / 0.08);
+}
+body .lg-side .lm-slot-tab img,
+body .lg-side .lm-slot-tab video,
+body .lg-side .lm-slot-tab .ph {
+  width: 2.25rem;
+  height: 3rem;
+  border-radius: var(--radius-sm);
+}
+body .lg-side .lm-slot-tab.is-new img,
+body .lg-side .lm-slot-tab.is-new video,
+body .lg-side .lm-slot-tab.is-new .ph {
+  animation: lg-seat-thumb var(--dur-long) var(--ease-settle) both;
+}
+body .lg-side .lm-slot-tab.is-new .lm-slot-tab-meta {
+  animation: lg-rise var(--dur-medium) var(--ease-out) both;
+}
+@keyframes lg-seat-thumb {
+  from {
+    opacity: 0;
+    scale: 1.35;
+  }
+}
+.lm-slot-tab-w {
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  color: var(--color-pool);
+  font-variant-numeric: tabular-nums;
+}
+body .lg-side .lm-slot-clear {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+}
+body .lg-side .lm-preview.lg-seat {
+  margin-bottom: var(--space-md);
+  border: 0;
+  border-radius: var(--radius-md);
+  background: var(--color-paper-3);
+  box-shadow: var(--shadow-lift);
+  animation: lg-seat-in var(--dur-medium) var(--ease-out) both;
+}
+@keyframes lg-seat-in {
+  from {
+    opacity: 0;
+    scale: 0.97;
+  }
+}
+body .lg-side .lm-preview.lg-seat img,
+body .lg-side .lm-preview.lg-seat video {
+  width: 100%;
+  height: auto;
+  max-height: min(52dvh, 36rem);
+  object-fit: cover;
+}
+/* 空的槽：一個等著放牌的框（跟合成池的空格同一種虛線）。 */
+body .lg-side .lg-slot-empty {
+  display: grid;
+  place-items: center;
+  aspect-ratio: 3 / 4;
+  max-height: 46dvh;
+  margin: 0 auto;
+  padding: var(--space-lg);
+  border: 1px dashed var(--color-rule);
+  border-radius: var(--radius-md);
+  background: radial-gradient(ellipse at 50% 40%, var(--color-pool-soft), transparent 70%);
+  color: var(--color-muted);
+  font-size: var(--text-sm);
+  line-height: 1.6;
+  text-align: center;
+  text-wrap: balance;
+  animation: lg-rise var(--dur-medium) var(--ease-out) both;
+}
+body .lg-side .lm-cur-head.is-plain {
+  margin-bottom: var(--space-md);
+}
+body .lg-modal .lm-cur-title {
+  font-family: var(--font-heading);
+  font-size: var(--text-lg);
+  letter-spacing: 0.02em;
+}
+body .lg-side .lm-cur-folder {
+  overflow-wrap: anywhere;
+}
+body .lg-side .lm-tw-item {
+  padding: var(--space-xs) var(--space-sm);
+  border-color: var(--color-rule-2);
+  background: var(--color-paper-2);
+}
+body .lg-side .lm-tw-item.on {
+  border-color: var(--color-pool);
+  background: var(--color-pool-soft);
+}
+body .lg-side .lm-tw-text {
+  font-size: var(--text-xs);
+}
+body .lg-side .lm-strength {
+  padding: var(--space-sm);
+  border: 1px solid var(--color-rule-2);
+  border-radius: var(--radius-md);
+  background: var(--color-paper-2);
+}
+body .lg-side .lm-strength output {
+  color: var(--color-pool);
+}
+
+/* ---------- 工作流：左邊選哪一套、右邊調它 ---------- */
+
+body .lg-wf .wf-list {
+  flex: 1 1 auto;
+  padding: 0;
+  gap: var(--space-2xs);
+}
+body .lg-wf .wf-list .lora-row {
+  gap: var(--space-sm);
+  padding: var(--space-xs);
+  border-radius: var(--radius-md);
+  animation: none;
+  transition:
+    background-color var(--dur-short) var(--ease-out),
+    box-shadow var(--dur-short) var(--ease-out);
+}
+body .lg-wf .wf-list .lora-row:hover {
+  background: oklch(100% 0 0 / 0.04);
+}
+body .lg-wf .wf-list .lora-row.on {
+  background: var(--color-pool-soft);
+  box-shadow: inset 2px 0 0 var(--color-pool);
+}
+.lg-glyph {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: var(--radius-sm);
+  background: var(--color-paper-3);
+  box-shadow: inset 0 0 0 1px var(--color-rule-2);
+  color: var(--color-ink-2);
+  font-family: var(--font-heading);
+  font-size: var(--text-lg);
+  font-weight: 700;
+  transition:
+    background-color var(--dur-short) var(--ease-out),
+    color var(--dur-short) var(--ease-out);
+}
+body .lg-wf .lora-row.on .lg-glyph {
+  background: var(--color-pool);
+  color: var(--color-paper);
+}
+body .lg-wf .lora-row .rt {
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+body .lg-wf .wf-drop {
+  width: 100%;
+  margin: 0;
+  padding: var(--space-sm);
+  border-color: var(--color-rule);
+  border-radius: var(--radius-md);
+  background: transparent;
+  line-height: 1.6;
+}
+body .lg-wf .wf-drop:hover,
+body .lg-wf .wf-drop[data-over="1"] {
+  border-color: var(--color-pool);
+  background: var(--color-pool-soft);
+}
+body .lg-wf .wf-main {
+  padding: var(--space-xl) var(--space-xl) var(--space-lg);
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+body .lg-wf .wf-main > .lm-current {
+  padding-right: 2.5rem;
+}
+body .lg-wf .wf-main .lm-cur-title {
+  font-size: var(--text-xl);
+}
+body .lg-wf .wf-sampling {
+  margin-top: var(--space-lg);
+  padding: var(--space-md) var(--space-lg) var(--space-sm);
+  border: 1px solid var(--color-rule-2);
+  border-radius: var(--radius-md);
+  background: oklch(13.5% 0.011 250 / 0.45);
+}
+body .lg-wf .wf-samp-row + .wf-samp-row {
+  border-top: 1px solid oklch(27% 0.014 250 / 0.6);
+}
+body .lg-wf .wf-samp-label {
+  font-family: var(--font-heading);
+  font-size: var(--text-md);
+}
+body .lg-wf .wf-samp-field input {
+  height: 2.25rem;
+  border-color: var(--color-rule-2);
+  border-radius: var(--radius-sm);
+  background: var(--color-paper-2);
+  transition:
+    box-shadow var(--dur-micro) var(--ease-out),
+    border-color var(--dur-micro) var(--ease-out);
+}
+body .lg-wf .wf-samp-field[data-changed="true"] input {
+  box-shadow: inset 0 -2px 0 var(--color-pool);
+}
+body .lg-wf .wf-prompt {
+  border-color: var(--color-rule-2);
+  background: var(--color-paper-2);
+}
+body .lg-wf .wf-prompt.on {
+  border-color: var(--color-pool);
+  background: var(--color-pool-soft);
+}
+
+/* ---------- ComfyUI 連線小窗（點頂欄的 Comfy 燈號） ---------- */
+
+.comfy-pop {
+  position: fixed;
+  z-index: 150;
+  width: min(23rem, calc(100vw - 24px));
+  padding: var(--space-md) var(--space-lg) var(--space-sm);
+  border: 1px solid var(--color-rule);
+  border-radius: var(--radius-lg);
+  background: var(--color-paper-2);
+  box-shadow: var(--shadow-lift), 0 0 0 1px oklch(4% 0.01 250 / 0.4);
+  transform-origin: calc(100% - 2rem) 0;
+  animation: comfy-pop-in var(--dur-medium) var(--ease-out) both;
+}
+.comfy-pop[hidden] {
+  display: none;
+}
+.comfy-pop.is-closing {
+  opacity: 0;
+  scale: 0.97;
+  transition:
+    opacity var(--dur-micro) var(--ease-exit),
+    scale var(--dur-micro) var(--ease-exit);
+}
+@keyframes comfy-pop-in {
+  from {
+    opacity: 0;
+    scale: 0.94;
+    translate: 0 -6px;
+  }
+}
+.comfy-pop-title {
+  margin: 0;
+  font-family: var(--font-heading);
+  font-size: var(--text-lg);
+}
+.comfy-pop-state {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  margin: var(--space-xs) 0 0;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--color-ink-2);
+  overflow-wrap: anywhere;
+}
+.comfy-pop-state::before {
+  content: "";
+  flex: none;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: var(--color-muted);
+}
+.comfy-pop-state[data-ok="1"]::before {
+  background: var(--color-good);
+  box-shadow: 0 0 0 4px oklch(74% 0.13 150 / 0.18);
+}
+.comfy-pop-state[data-ok="0"]::before {
+  background: var(--color-warn);
+}
+.comfy-pop .wf-url-row input {
+  border-color: var(--color-rule-2);
+  border-radius: var(--radius-sm);
+}
+.comfy-pop .wf-url-row input:focus-visible {
+  outline: none;
+  border-color: var(--color-pool);
+  box-shadow: 0 0 0 3px var(--color-pool-soft);
+}
+.comfy-pop-hint {
+  margin: var(--space-xs) 0 0;
+  font-size: var(--text-xs);
+  line-height: 1.6;
+  color: var(--color-muted);
+}
+.comfy-pop-acts {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: var(--space-xs);
+}
+.comfy-pop-acts .ghost {
+  min-height: 2rem;
+  padding: 0 var(--space-sm);
+  border: 1px solid var(--color-rule);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-ink-2);
+  font: inherit;
+  font-size: var(--text-xs);
+  cursor: pointer;
+  transition:
+    border-color var(--dur-micro) var(--ease-out),
+    color var(--dur-micro) var(--ease-out);
+}
+.comfy-pop-acts .ghost:hover {
+  border-color: var(--color-pool);
+  color: var(--color-ink);
+}
+.comfy-pop .wf-msg:empty {
+  display: none;
+}
+#ping[aria-expanded="true"] {
+  border-color: var(--color-pool);
+}
+
+/* ---------- 隨機瀏覽：攤開來的牌也換成墨池的紙 ---------- */
+
+body .lora-tarot {
+  background:
+    radial-gradient(ellipse 60% 50% at 50% 50%, oklch(62% 0.09 225 / 0.14), transparent 70%),
+    oklch(9% 0.01 250 / 0.92);
+}
+body .lora-tarot-title {
+  font-family: var(--font-heading);
+  font-size: var(--text-xl);
+}
+body .lora-tarot-face {
+  border-color: var(--color-rule);
+  border-radius: var(--radius-md);
+}
+body .lora-tarot-face img,
+body .lora-tarot-face video,
+body .lora-tarot-face .ph {
+  height: auto;
+  aspect-ratio: 3 / 4;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body .lg-grid .lora-row.lg-card.is-dealt,
+  body .lg-art.is-wait::after,
+  .lg-skel::after,
+  body .lg-grid .lora-row.lg-card.is-swapped,
+  body .lg-grid .lora-cat-head,
+  body .lg-rail .lm-cats.is-first .lm-cat,
+  body .lg-rail .lm-path-btn,
+  body .lg-rail .lm-manager-link:not([hidden]),
+  body .lg-rail .lm-path-panel,
+  body .lg-side .lm-slot-tab.is-new img,
+  body .lg-side .lm-slot-tab.is-new video,
+  body .lg-side .lm-slot-tab.is-new .ph,
+  body .lg-side .lm-slot-tab.is-new .lm-slot-tab-meta,
+  body .lg-side .lm-preview.lg-seat,
+  body .lg-side .lg-slot-empty,
+  body .lg-card .lora-slot-badge,
+  .comfy-pop {
+    animation: none;
+  }
+  body .lora-modal-inner.lg {
+    transform: none;
+    opacity: 1;
+  }
+}
+
+/* ---------- 窄螢幕：三欄改成上中下 ---------- */
+
+@media (max-width: 1100px) and (min-width: 761px) {
+  body .lora-modal-inner.lg {
+    grid-template-columns: 13.5rem minmax(0, 1fr) 17.5rem;
+  }
+}
+
+@media (max-width: 760px) {
+  body .lora-modal.lg-modal {
+    padding: 0;
+    align-items: flex-end;
+  }
+  body .lora-modal-inner.lg,
+  body .ckpt-modal .lora-modal-inner.lg,
+  body .lora-modal-inner.lg.lg-wf {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: calc(100dvh - max(12px, env(safe-area-inset-top)));
+    max-height: none;
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  }
+  /* 上：標題、搜尋、分類（一排左右滑）。 */
+  .lg-rail {
+    flex: none;
+    gap: var(--space-xs);
+    padding: var(--space-md) var(--space-md) var(--space-xs);
+    overflow: visible;
+    border-right: 0;
+    background: none;
+  }
+  .lg-title {
+    font-size: var(--text-lg);
+  }
+  .lg-hint,
+  .lg-rail-foot {
+    display: none;
+  }
+  body .lg-rail .lm-cats {
+    min-height: 2rem;
+  }
+  .lm-cat-ink {
+    border-radius: 999px;
+    box-shadow: inset 0 0 0 1px var(--color-pool);
+  }
+  body .lg-rail .lm-cats,
+  body .lg-rail .lm-subcats {
+    flex-direction: row;
+    gap: var(--space-2xs);
+    margin: 0;
+    padding: 0;
+    border: 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+    overscroll-behavior-x: contain;
+  }
+  body .lg-rail .lm-cat,
+  body .lg-rail .lm-subcat {
+    flex: none;
+    width: auto;
+    gap: var(--space-xs);
+    min-height: 2rem;
+    border: 1px solid var(--color-rule-2);
+    border-radius: 999px;
+  }
+  body .lg-rail .lm-cat.on {
+    box-shadow: none;
+    border-color: transparent;
+  }
+  /* 隨機瀏覽縮成標題旁邊一顆小鈕（關閉鈕左邊），不另佔一排。 */
+  body .lg-rail .lm-random-btn {
+    position: absolute;
+    top: var(--space-sm);
+    right: 3.25rem;
+    width: auto;
+    min-height: 2.25rem;
+    margin: 0;
+    padding: 0 var(--space-sm);
+    font-size: var(--text-xs);
+  }
+  /* 中：兩個槽和強度（大圖、觸發詞很長的話自己捲）。 */
+  body .lg-side.lm-right {
+    order: 1;
+    flex: none;
+    height: 30dvh;
+    padding: var(--space-xs) var(--space-md);
+    border-left: 0;
+    border-top: 1px solid var(--color-rule-2);
+    border-bottom: 1px solid var(--color-rule-2);
+  }
+  body .lg-side .lm-preview.lg-seat,
+  body .lg-side .lm-right-head {
+    display: none;
+  }
+  body .lg-side .lm-slot-tabs {
+    margin-bottom: var(--space-xs);
+  }
+  body .lg-side .lg-slot-empty {
+    aspect-ratio: auto;
+    padding: var(--space-sm);
+  }
+  /* 下：網格吃掉剩下的高度。 */
+  .lg-main {
+    order: 2;
+    flex: 1 1 auto;
+    padding: var(--space-xs) var(--space-md) 0;
+  }
+  body .lg-modal .lm-list.lg-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--space-md) var(--space-xs);
+  }
+  body .lg-card .rt {
+    font-size: var(--text-xs);
+  }
+  /* 工作流：整片一起捲。 */
+  body .lora-modal-inner.lg.lg-wf {
+    overflow-y: auto;
+  }
+  body .lg-wf .lg-rail .lg-hint {
+    display: block;
+  }
+  body .lg-wf .wf-main {
+    order: 0;
+    flex: none;
+    padding: var(--space-md);
+    overflow: visible;
+  }
+  body .lg-wf .wf-sampling {
+    padding: var(--space-sm);
+  }
+  body .lg-modal .lm-search-wrap input,
+  .comfy-pop .wf-url-row input {
+    font-size: 16px;
+  }
+}

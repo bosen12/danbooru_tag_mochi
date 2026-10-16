@@ -2022,8 +2022,24 @@ body #wf-pick-btn.has {
   overflow: hidden;
   text-overflow: ellipsis;
 }
+/* 按鈕那一排：寬的時候一行；手機（尤其英文字比較長）擺不下就換行，不能凸出畫面。 */
 .pool > .panel-head > p:last-child {
-  flex: none;
+  display: flex;
+  flex: 0 1 auto;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-2xs);
+  min-width: 0;
+}
+/* 英文的說明比較長（英文的標題列允許換行，locale.css）：標題和按鈕留在第一行，說明換到下一行完整顯示。 */
+.pool > .panel-head > p:last-child {
+  margin-inline-start: auto;
+}
+html[lang="en"] .pool > .panel-head .workspace-purpose {
+  order: 3;
+  flex-basis: 100%;
+  white-space: normal;
 }
 
 .go-bar .spacer {
@@ -2070,6 +2086,12 @@ body #wf-pick-btn.has {
     order: 3;
     flex-basis: 100%;
     white-space: normal;
+  }
+  /* 手機：按鈕自己一行、靠左（標題、按鈕、說明三行由上而下）。 */
+  .pool > .panel-head > p:last-child {
+    flex-basis: 100%;
+    justify-content: flex-start;
+    margin-inline-start: 0;
   }
   .go-bar > .stepper {
     justify-self: start;
@@ -5368,35 +5390,6 @@ body {
 @media (max-width: 40rem) {
   body[data-picker="open"] .library {
     top: max(44px, 6dvh, calc(env(safe-area-inset-top) + 8px));
-  }
-}
-
-/* ---------- 手機：LoRA／底模彈窗的清單多給一點高度 ----------
- * web/lora.css 的單欄版：清單那半最高 55vh、「目前選擇」32vh。LoRA 那半上面還釘著分類、隨機、搜尋，
- * iPhone 上清單只剩 231px（兩列半）。這裡（web6、web7 自己）改成 62／26（工作流不改：它的主角是右半的參數），
- * 分類籤改成一排左右滑（原本斷兩行、尾巴還被右上角的關閉鈕蓋住）。共用的 lora.css 不動。 */
-@media (max-width: 760px) {
-  .lora-modal:not(.wf-modal) .lm-left {
-    max-height: 62dvh;
-  }
-  .lora-modal:not(.wf-modal) .lm-right {
-    max-height: 26dvh;
-  }
-  .lora-modal .lm-cats {
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    padding-right: 52px;
-    scrollbar-width: none;
-    overscroll-behavior-x: contain;
-    /* 右上角是關閉鈕：籤滑到那裡之前先淡掉，不會從按鈕底下穿過去。 */
-    -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 72px), transparent calc(100% - 44px));
-    mask-image: linear-gradient(to right, #000 calc(100% - 72px), transparent calc(100% - 44px));
-  }
-  .lora-modal .lm-cats::-webkit-scrollbar {
-    display: none;
-  }
-  .lora-modal .lm-cat {
-    flex: none;
   }
 }
 

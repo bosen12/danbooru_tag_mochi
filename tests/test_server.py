@@ -20,6 +20,8 @@ _env_os.environ["NO_OUTPUT_PRUNE"] = "1"
 _env_os.environ["GEN_LOG_PATH"] = str(Path(_env_tmp.mkdtemp()) / "gen_log.jsonl")
 # 使用者在網頁上選的偏好路徑、底模（data/settings.json）不能影響測試，也不能被測試改到。
 _env_os.environ["APP_SETTINGS"] = str(Path(_env_tmp.mkdtemp()) / "settings.json")
+# 預覽縮圖的快取（data/thumb-cache）不能被測試寫進去。
+_env_os.environ["THUMB_CACHE_DIR"] = str(Path(_env_tmp.mkdtemp()) / "thumb-cache")
 from server import (  # noqa: E402
     CKPT,
     Handler,
@@ -2117,6 +2119,31 @@ with _glp.open("a", encoding="utf-8") as _f:
     _f.write('{"t":"gen","id":"torn-half","at":1,"pos')
 _gl._append({"t": "gen", "id": "after-torn", "at": 2})
 ok("gen log: entry after a torn line survives", any(r.get("id") == "after-torn" for r in _gl._load()))
+
+# LoRA／底模預覽的縮圖：網址 w= 只收 480、960；有 Pillow 就縮成 webp、存快取，沒 Pillow 或不必縮就回 None（給原圖）。
+ok("thumb width: only 480 / 960", server.thumb_width({"w": ["480"]}) == 480 and server.thumb_width({"w": ["960"]}) == 960 and server.thumb_width({"w": ["123"]}) == 0 and server.thumb_width({"w": ["x"]}) == 0 and server.thumb_width({}) == 0)
+ok("thumb: not an image → None (serve the original)", server.preview_thumb(b"not an image", 480) is None)
+if server._pil_image() is not None:
+    import io as _io
+    from PIL import Image as _Img
+
+    _buf = _io.BytesIO()
+    _Img.effect_noise((832, 1216), 60).convert("RGB").save(_buf, "PNG")
+    _big = _buf.getvalue()
+    _t = server.preview_thumb(_big, 480)
+    ok("thumb: big PNG becomes a 480-wide webp, much smaller", bool(_t) and _t[:4] == b"RIFF" and _Img.open(_io.BytesIO(_t)).size[0] == 480 and len(_t) < len(_big) / 3, f"{len(_big)} -> {len(_t or b'')}")
+    ok("thumb: cached on disk (second call reads the file)", any(server.THUMB_DIR.glob("*-480.webp")) and server.preview_thumb(_big, 480) == _t)
+    _buf2 = _io.BytesIO()
+    _Img.new("RGB", (300, 400), "red").save(_buf2, "PNG")
+    ok("thumb: already smaller than the width → None", server.preview_thumb(_buf2.getvalue(), 480) is None)
+    _old_pil = server._pil_image
+    server._pil_image = lambda: None
+    _b3 = _io.BytesIO()
+    _Img.effect_noise((900, 900), 40).convert("RGB").save(_b3, "PNG")
+    ok("thumb: no Pillow → None (original is served)", server.preview_thumb(_b3.getvalue(), 480) is None)
+    server._pil_image = _old_pil
+else:
+    print("skip thumb tests: Pillow not installed")
 
 if failed:
     print(f"\n{failed} failed")
