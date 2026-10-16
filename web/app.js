@@ -1750,7 +1750,10 @@ const generator = createGenerator({
   update: (shot) => {
     tabNote.shot(shot, generator.pending);
     if (shot._heard !== shot.status) {
-      if (shot.status === "done" && shot._heard) sfx.done();
+      if (shot.status === "done" && shot._heard) {
+        sfx.done();
+        noteDone(shot);
+      }
       else if (shot.status === "failed") sfx.fail();
       shot._heard = shot.status;
     }
@@ -2113,7 +2116,10 @@ async function drawBatchNow(gen, intent, epoch) {
     S.saveShots(shots);
   }
   renderGoBar();
-  document.getElementById("wall-head").scrollIntoView({ block: "nearest", behavior: reducedMotion() ? "instant" : "smooth" });
+  // 電腦：成品牆本來就在畫面上，只是確保標題看得到。手機：牆在第三屏，「最近」只會把標題帶到畫面最底下、
+  // 新的那張幾乎整張在畫面外（實測只露 86px）—— 改成把「成品」捲到最上面，新的那張整張落在眼前。
+  const narrow = matchMedia("(max-width: 40rem)").matches;
+  document.getElementById("wall-head").scrollIntoView({ block: narrow ? "start" : "nearest", behavior: reducedMotion() ? "instant" : "smooth" });
 }
 
 /** 卡冊（book.html）的使用次數：一張新成品＝它用到的每張牌各一次。 */
@@ -2714,6 +2720,83 @@ function printInPlace(shot) {
 function updateShot(shot) {
   const node = document.querySelector(`.shot[data-id="${shot.id}"]`);
   if (node) paintShot(node, shot);
+}
+
+/* ---------- 印好了，可是那張不在畫面上（手機捲回去挑牌、電腦捲去看字盒）：底部浮出一顆膠囊 ----------
+ * 那張的縮圖＋「印好了・看看」（連著印好幾張就是「印好 N 張」，縮圖換成最新那張）。點了捲過去，那張亮一圈。
+ * 自己捲到看得到它、或八秒沒理它，就收起來。 */
+let donePill = null;
+let doneQueue = [];
+let donePillTimer = 0;
+let donePillWatch = 0;
+
+function shotNodeOf(shot) {
+  return document.querySelector(`#wall .shot[data-id="${CSS.escape(String(shot.id))}"]`);
+}
+function shotInView(node) {
+  const r = node.getBoundingClientRect();
+  return r.bottom > 96 && r.top < innerHeight - 96;
+}
+
+function noteDone(shot) {
+  const node = shotNodeOf(shot);
+  if (!node || document.hidden || shotInView(node)) return;
+  doneQueue = [shot, ...doneQueue.filter((s) => s !== shot && shots.includes(s))].slice(0, 20);
+  showDonePill();
+}
+
+function showDonePill() {
+  const latest = doneQueue[0];
+  if (!latest) return hideDonePill();
+  if (!donePill) {
+    donePill = el(
+      "button",
+      { class: "done-pill pressable", type: "button", "aria-live": "polite", onclick: goToDone },
+      el("span", { class: "done-pill-art" }, el("img", { alt: "", decoding: "async" })),
+      el("span", { class: "done-pill-text" }, el("b"), el("small", {}, "看看"))
+    );
+    document.body.append(donePill);
+  }
+  donePill.querySelector("img").src = viewSrc(latest.image) || "";
+  donePill.querySelector("b").textContent = doneQueue.length > 1 ? `印好 ${doneQueue.length} 張了` : "印好了";
+  const fresh = donePill.dataset.show !== "true";
+  donePill.dataset.show = "true";
+  // 又印好一張：膠囊彈一下、縮圖換上去（第一次出現的進場在 CSS）。
+  if (!fresh && !reducedMotion()) donePill.animate([{ scale: "1" }, { scale: "1.06" }, { scale: "1" }], { duration: DUR.medium, easing: css(CURVE.settle) });
+  clearTimeout(donePillTimer);
+  donePillTimer = setTimeout(hideDonePill, 8000);
+  if (!donePillWatch) {
+    donePillWatch = 1;
+    addEventListener("scroll", watchDonePill, { passive: true });
+  }
+}
+
+function watchDonePill() {
+  const node = doneQueue[0] && shotNodeOf(doneQueue[0]);
+  if (!node || shotInView(node)) hideDonePill();
+}
+
+function hideDonePill() {
+  clearTimeout(donePillTimer);
+  doneQueue = [];
+  if (donePillWatch) {
+    donePillWatch = 0;
+    removeEventListener("scroll", watchDonePill);
+  }
+  if (donePill) donePill.dataset.show = "false";
+}
+
+function goToDone() {
+  const shot = doneQueue[0];
+  hideDonePill();
+  const node = shot && shotNodeOf(shot);
+  if (!node) return;
+  node.scrollIntoView({ block: "center", behavior: reducedMotion() ? "instant" : "smooth" });
+  // 捲到了才亮：一圈池水色的光從那張的邊上暈開再收掉。
+  node.classList.remove("is-called");
+  void node.offsetWidth;
+  node.classList.add("is-called");
+  node.addEventListener("animationend", () => node.classList.remove("is-called"), { once: true });
 }
 
 async function copyPos(shot, btn) {

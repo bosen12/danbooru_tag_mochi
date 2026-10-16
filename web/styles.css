@@ -3622,6 +3622,128 @@ body[data-dragging="true"] .library[data-over="true"] {
     min-height: 0;
     padding-block: var(--space-md);
   }
+  /* 「放進來的字，每一張圖都一定有」這句說明在手機上收掉（標題、長按看詳情、起手留著）；
+   * 合成池標題列那段「選牌後直接生成…」也收掉，「帶牌去疊印台」留著。首屏多留給牌和按鈕。 */
+  .pool-empty > b + span {
+    display: none;
+  }
+  .pool > .panel-head .workspace-purpose > span:first-child {
+    display: none;
+  }
+}
+
+/* ---------- 印好了（那張不在畫面上）：底部浮出的膠囊，點了捲過去 ---------- */
+.done-pill {
+  position: fixed;
+  left: 50%;
+  bottom: calc(var(--space-lg) + env(safe-area-inset-bottom));
+  z-index: 96;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: 6px var(--space-md) 6px 6px;
+  border: 1px solid oklch(62% 0.09 225 / 0.55);
+  border-radius: 999px;
+  background: color-mix(in oklch, var(--color-paper-3) 88%, transparent);
+  backdrop-filter: blur(10px);
+  color: var(--color-ink);
+  font: inherit;
+  box-shadow: var(--shadow-lift), 0 0 0 4px var(--color-pool-soft);
+  cursor: pointer;
+  translate: -50% 0;
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    opacity var(--dur-short) var(--ease-exit),
+    translate var(--dur-short) var(--ease-exit);
+}
+.done-pill[data-show="true"] {
+  opacity: 1;
+  pointer-events: auto;
+  animation: done-pill-in var(--dur-long) var(--ease-settle) both;
+}
+.done-pill[data-show="false"] {
+  translate: -50% 12px;
+}
+@keyframes done-pill-in {
+  from {
+    opacity: 0;
+    translate: -50% 18px;
+    scale: 0.9;
+  }
+}
+/* 底部的浮動抽牌列出來時（手機），膠囊浮在它上面；提示條也在時再往上讓一格。 */
+.go-float[data-show="true"] ~ .done-pill {
+  bottom: calc(var(--fav-h, 0px) + var(--space-md) + 3.25rem + var(--space-sm) + env(safe-area-inset-bottom));
+}
+.toast[data-show="true"] ~ .done-pill {
+  translate: -50% -3.25rem;
+}
+.done-pill-art {
+  position: relative;
+  display: block;
+  width: 34px;
+  height: 46px;
+  overflow: hidden;
+  border-radius: 6px;
+  background: var(--color-paper-4);
+}
+.done-pill-art img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+/* 顯影的那道光：膠囊出現時從上往下掃過縮圖一次。 */
+.done-pill-art::after {
+  content: "";
+  position: absolute;
+  inset: -40% 0;
+  background: linear-gradient(180deg, transparent 35%, oklch(99% 0.012 85 / 0.5) 50%, transparent 65%);
+  translate: 0 -60%;
+  pointer-events: none;
+}
+.done-pill[data-show="true"] .done-pill-art::after {
+  animation: done-pill-sweep var(--dur-develop) var(--ease-out) var(--dur-short) both;
+}
+@keyframes done-pill-sweep {
+  to {
+    translate: 0 60%;
+  }
+}
+.done-pill-text {
+  display: grid;
+  line-height: 1.25;
+  text-align: left;
+}
+.done-pill-text b {
+  font-size: var(--text-sm);
+}
+.done-pill-text small {
+  font-size: var(--text-xs);
+  color: var(--color-pool);
+}
+/* 點了捲到那張：一圈池水色的光從邊上暈開再收掉。 */
+.shot.is-called .shot-frame {
+  animation: shot-called var(--dur-develop) var(--ease-out);
+}
+@keyframes shot-called {
+  0% {
+    box-shadow: 0 0 0 0 oklch(62% 0.09 225 / 0.9);
+  }
+  35% {
+    box-shadow: 0 0 0 6px oklch(62% 0.09 225 / 0.55), 0 0 40px oklch(62% 0.09 225 / 0.45);
+  }
+  100% {
+    box-shadow: 0 0 0 14px oklch(62% 0.09 225 / 0), 0 0 40px oklch(62% 0.09 225 / 0);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .done-pill[data-show="true"],
+  .done-pill[data-show="true"] .done-pill-art::after,
+  .shot.is-called .shot-frame {
+    animation: none;
+  }
 }
 
 /* 還沒有成品：一行版位說明壓在一條待印的細線上，靠左。主要的「抽並生圖」在合成池那一排，這裡是次要入口。 */
