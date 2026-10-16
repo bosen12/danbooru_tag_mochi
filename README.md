@@ -154,6 +154,7 @@ tests/               node tests/test_i18n.mjs
 - **The LoRA panel has no previews or trigger words.** Allow the ComfyUI LoRA Manager install in the setup panel, then restart ComfyUI once.
 - **"Could not load the card library".** Open Mochi through `start.bat`, `start.sh` or `server.py`, not by opening the HTML file.
 - **Generation stops half-way.** Raise `client.streamIdleMs` for slow GPUs.
+- **No live preview while an image is drawing (ComfyUI Desktop).** Mochi asks ComfyUI for a latent2rgb preview on each image when ComfyUI was not started with its own `--preview-method`. That needs a recent ComfyUI; on an older one, update ComfyUI Desktop or set its preview method in ComfyUI's own server settings. Set `comfy.previewMethod` in `config.json` (`auto`, `latent2rgb`, `taesd`, `none`) to choose yourself.
 
 ## Tests
 
@@ -271,6 +272,7 @@ LoRA 面板的「詳情」在 ComfyUI 的 LoRA Manager 直接打開那一個 LoR
 - **LoRA 面板沒有預覽圖和觸發詞**：在準備面板允許安裝 ComfyUI LoRA Manager，裝好重開 ComfyUI 一次。
 - **「讀不到詞庫」**：用 `start.bat`／`start.sh`／`server.py` 開，不要直接點 HTML。
 - **生圖到一半停掉**：把 `client.streamIdleMs` 調大。
+- **生圖中看不到預覽（ComfyUI Desktop）**：ComfyUI 啟動時沒自己設 `--preview-method` 的話，墨池每一張會請它用 latent2rgb 預覽。這要較新的 ComfyUI；舊版請更新 ComfyUI Desktop，或在 ComfyUI 自己的伺服器設定裡開預覽。想自己決定就設 `config.json` 的 `comfy.previewMethod`（`auto`、`latent2rgb`、`taesd`、`none`）。
 
 ## 參與開發
 

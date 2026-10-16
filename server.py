@@ -2888,6 +2888,43 @@ class WsUnavailable(Exception):
     pass
 
 
+# ---------- 生成中的預覽 ----------
+# 預覽圖是 ComfyUI 自己透過 websocket 推過來的，要它啟動時開了預覽（--preview-method）才有。
+# 可攜版、自己裝的通常在啟動檔寫了；ComfyUI Desktop 是它的程式代為啟動，預設沒開 —— 墨池上就一直沒有預覽。
+# 新版 ComfyUI 可以每一張自己指定（送 /prompt 時 extra_data.preview_method，印完就回到原本的設定）：
+# 啟動參數沒寫預覽方式時，就替這一張要 latent2rgb（最省、不吃顯存）；使用者自己設過（latent2rgb、taesd、auto），照他的。
+# config.json 的 comfy.previewMethod 可以指定（none 就是不要預覽）。舊版 ComfyUI 不認得這個欄位，會直接略過，不會壞。
+PREVIEW_METHODS = ("auto", "latent2rgb", "taesd", "none")
+PREVIEW_METHOD = str(cfg("comfy.previewMethod", "COMFY_PREVIEW_METHOD", "") or "").strip().lower()
+_PREVIEW_ARGV = {"base": None, "t": 0.0, "set": False}
+
+
+def comfy_sets_preview(argv) -> bool:
+    """ComfyUI 的啟動參數裡有沒有自己設預覽方式（--preview-method X，X 不是 none）。"""
+    argv = [str(a) for a in (argv or [])]
+    for i, a in enumerate(argv):
+        if a == "--preview-method" and i + 1 < len(argv):
+            return argv[i + 1].strip().lower() != "none"
+        if a.startswith("--preview-method="):
+            return a.split("=", 1)[1].strip().lower() != "none"
+    return False
+
+
+def preview_extra() -> dict:
+    """送 /prompt 時要不要替這一張指定預覽方式（見上面）。ComfyUI 的啟動參數一分鐘問一次。"""
+    if PREVIEW_METHOD in PREVIEW_METHODS:
+        return {"preview_method": PREVIEW_METHOD}
+    base = comfy_base()
+    now = time.time()
+    if _PREVIEW_ARGV["base"] != base or now - _PREVIEW_ARGV["t"] > 60:
+        try:
+            argv = (api("GET", "/system_stats", timeout=5) or {}).get("system", {}).get("argv") or []
+            _PREVIEW_ARGV.update(base=base, t=now, set=comfy_sets_preview(argv))
+        except Exception:
+            _PREVIEW_ARGV.update(base=base, t=now, set=False)
+    return {} if _PREVIEW_ARGV["set"] else {"preview_method": "latent2rgb"}
+
+
 def gen_via_ws(width: int, height: int, seed: int, positive: str, wf: dict, hires: dict | None = None):
     cid = uuid.uuid4().hex
     ckpt = workflows.ckpt_name_of(wf) or CKPT
@@ -2900,7 +2937,8 @@ def gen_via_ws(width: int, height: int, seed: int, positive: str, wf: dict, hire
     # 剛開好的 websocket 就沒人關，跑一整晚會把 socket 和 Comfy 的 client 一起積爆。
     try:
         yield ("ping", {"stage": "connected"})
-        posted = api("POST", "/prompt", {"prompt": wf, "client_id": cid}, timeout=60)
+        extra = preview_extra()
+        posted = api("POST", "/prompt", {"prompt": wf, "client_id": cid, **({"extra_data": extra} if extra else {})}, timeout=60)
         prompt_id = (posted or {}).get("prompt_id")
         if not prompt_id:
             raise RuntimeError(f"Comfy 沒有回 prompt_id：{posted!r}"[:200])

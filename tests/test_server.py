@@ -2152,6 +2152,31 @@ if server._pil_image() is not None:
 else:
     print("skip thumb tests: Pillow not installed")
 
+# 生成中的預覽：ComfyUI 啟動參數沒開預覽（ComfyUI Desktop 預設）就替這一張要 latent2rgb；自己設過的照他的。
+ok("preview: no --preview-method -> not set", not server.comfy_sets_preview(["main.py", "--listen"]))
+ok("preview: --preview-method latent2rgb / taesd / auto -> set", all(server.comfy_sets_preview(["main.py", "--preview-method", m]) for m in ("latent2rgb", "taesd", "auto")) and server.comfy_sets_preview(["main.py", "--preview-method=taesd"]))
+ok("preview: --preview-method none -> not set", not server.comfy_sets_preview(["main.py", "--preview-method", "none"]))
+_saved_pv = (server.api, server.comfy_base, server.PREVIEW_METHOD, dict(server._PREVIEW_ARGV))
+try:
+    server.comfy_base = lambda: "http://127.0.0.1:8000"
+    server.PREVIEW_METHOD = ""
+    server._PREVIEW_ARGV.update(base=None, t=0.0, set=False)
+    server.api = lambda m, p, timeout=None, **k: {"system": {"argv": ["main.py", "--port", "8000"]}}
+    ok("preview: Desktop-style launch (no preview arg) asks for latent2rgb per prompt", server.preview_extra() == {"preview_method": "latent2rgb"})
+    server._PREVIEW_ARGV.update(base=None)
+    server.api = lambda m, p, timeout=None, **k: {"system": {"argv": ["main.py", "--preview-method", "taesd"]}}
+    ok("preview: user's own --preview-method is respected (nothing sent)", server.preview_extra() == {})
+    server.PREVIEW_METHOD = "none"
+    ok("preview: comfy.previewMethod in config wins", server.preview_extra() == {"preview_method": "none"})
+    server.PREVIEW_METHOD = ""
+    server._PREVIEW_ARGV.update(base=None)
+    server.api = lambda *a, **k: (_ for _ in ()).throw(OSError("down"))
+    ok("preview: ComfyUI unreachable -> still asks for latent2rgb (harmless on old ComfyUI)", server.preview_extra() == {"preview_method": "latent2rgb"})
+finally:
+    server.api, server.comfy_base, server.PREVIEW_METHOD = _saved_pv[0], _saved_pv[1], _saved_pv[2]
+    server._PREVIEW_ARGV.clear()
+    server._PREVIEW_ARGV.update(_saved_pv[3])
+
 if failed:
     print(f"\n{failed} failed")
     sys.exit(1)
