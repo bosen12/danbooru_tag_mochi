@@ -60,7 +60,7 @@ import { createHand } from "./hand.js";
 import { createTrashPanel } from "./trash-panel.js";
 import { createGenerator, comfyOnline, viewSrc, tabTitle, watchLink, LINK_LABEL, markGenLog } from "./gen.js";
 import { genSeed, mountSeedControl, seedUseButton } from "./seed-control.js";
-import { attachPeek } from "./card-peek.js";
+import { attachPeek, hidePeek } from "./card-peek.js";
 import { createHires, openHiresPicker, openFacePicker, paintHiresVeil, hiresBusy, faceBusy, faceDepth, HIRES_MODES } from "./hires.js";
 import * as S from "./store.js";
 import { recordUses } from "./usage.js";
@@ -2874,8 +2874,17 @@ function showShot(shot, { focus } = {}) {
     el("button", { class: "btn btn-small", type: "button", onclick: (e) => copyPos(s, e.currentTarget) }, "複製提示詞"),
     s.image ? el("a", { class: "btn btn-small", href: s.image, target: "_blank", rel: "noopener" }, "開原圖") : null,
   ];
-  const sheet = openSheet(shotTitle(shot), shotDetailBody(shot), { wide: true, foot: footFor(shot), onClose: () => document.removeEventListener("keydown", onKey, true) });
+  const sheet = openSheet(shotTitle(shot), shotDetailBody(shot), {
+    wide: true,
+    foot: footFor(shot),
+    onClose: () => {
+      document.removeEventListener("keydown", onKey, true);
+      hidePeek();
+    },
+  });
   sheet.sheet.classList.add("sheet-shot");
+  // 視窗裡的牌滑鼠停上去也有放大卡（跟字盒、合成池同一個）。掛在整個視窗上：← → 換張時牌重畫也接得到。
+  attachPeek(sheet.sheet, ".card[data-tag]", peekInfo);
   // 箭頭貼在大圖框的左右兩邊（不蓋到右欄的按鈕）；換張時跟著搬進新的圖框。
   sheet.sheet.querySelector(".sd-image")?.append(prevBtn, nextBtn);
   syncNav();

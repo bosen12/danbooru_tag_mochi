@@ -3198,8 +3198,10 @@ function openPrint(p, from) {
         compareThumb(p)
       )
     ),
-    { wide: true, foot }
+    { wide: true, foot, onClose: () => hidePeek() }
   );
+  // 「這一版的牌」滑鼠停上去也有放大卡（跟卡盒、卡池同一個）。
+  attachPeek(sheet.sheet, ".card[data-tag]", peekInfo);
   if (from) zoomFromThumb({ from, sheet: sheet.sheet, to: sheet.sheet.querySelector(".print-view-img"), aspect: p.width / p.height });
 }
 
