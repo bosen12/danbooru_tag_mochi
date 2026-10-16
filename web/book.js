@@ -29,6 +29,7 @@ import { initMotion, settleMotion, seat, refuse, flight, reducedMotion, swapIn, 
 import { watchLink, LINK_LABEL, viewSrc } from "./gen.js";
 import { getSfx } from "./sfx.js";
 import { attachPeek } from "./card-peek.js";
+import { attachTilt } from "./card-tilt.js";
 import { createDrag } from "./drag.js";
 import { favChars, paintFavChar, favZone, dropToFav, flyToFav, heartIcon } from "./fav-chars.js";
 import * as S from "./store.js";
@@ -178,6 +179,7 @@ async function boot() {
   renderAch();
   // 滑鼠停在牌上：跟墨池、疊印台同一張浮空放大卡，多一行用過幾次。
   attachPeek($("book-grid"), ".card[data-tag]", peekInfo);
+  attachTilt($("book-grid"));
   sizeCards($("book-grid"));
   settleMotion();
 }

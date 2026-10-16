@@ -3723,6 +3723,52 @@ body[data-dragging="true"] .library[data-over="true"] {
   font-size: var(--text-xs);
   color: var(--color-pool);
 }
+/* 抽牌的主秀（app.js 的 dealInto）：飛過去的牌從原尺寸開始、帶著自己的圖；最後一張沉進去時，
+ * 成品格由內往外暈開一圈墨光、輕輕一沉（像牌被收進那一格）。 */
+.deal-ghost {
+  border-radius: calc(var(--card-w, 88px) * 0.07);
+}
+.shot-frame.is-dealt {
+  animation: frame-dealt var(--dur-xl) var(--ease-settle);
+}
+.shot-frame.is-dealt::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  border-radius: inherit;
+  pointer-events: none;
+  background: radial-gradient(circle at 50% 50%, oklch(62% 0.09 225 / 0.45), oklch(62% 0.09 225 / 0.12) 40%, transparent 70%);
+  animation: frame-ink var(--dur-story) var(--ease-out) both;
+}
+@keyframes frame-dealt {
+  0% {
+    scale: 1;
+  }
+  35% {
+    scale: 0.985;
+  }
+  100% {
+    scale: 1;
+  }
+}
+@keyframes frame-ink {
+  from {
+    opacity: 1;
+    scale: 0.3;
+  }
+  to {
+    opacity: 0;
+    scale: 1.25;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .shot-frame.is-dealt,
+  .shot-frame.is-dealt::after {
+    animation: none;
+  }
+}
+
 /* 點了捲到那張：一圈池水色的光從邊上暈開再收掉。 */
 .shot.is-called .shot-frame {
   animation: shot-called var(--dur-develop) var(--ease-out);

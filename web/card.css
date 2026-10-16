@@ -311,6 +311,36 @@ button.card:active {
   }
 }
 
+/* 牌拿在手上（card-tilt.js）：滑鼠底下那張跟著游標微微傾斜、插畫上一道亮膜反光跟著走。
+ * 只有滑鼠底下那一張有 3D（data-tilt），其他牌照舊是平的，不會整面牆都變成 3D 圖層。
+ * 跟著游標時過渡很短（看起來是跟手，不是拖泥帶水）；離開時拿掉 data-tilt，照 .card 原本的過渡慢慢放平。 */
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  .card[data-tilt="on"] {
+    transform: translateY(var(--lift, 0)) perspective(560px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg));
+    transition:
+      transform var(--dur-micro) var(--ease-out),
+      scale var(--dur-short) var(--ease-settle),
+      box-shadow var(--dur-short) var(--ease-out),
+      opacity var(--dur-short) var(--ease-out);
+  }
+  .card-art::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    pointer-events: none;
+    opacity: 0;
+    background:
+      radial-gradient(circle at var(--gx, 50%) var(--gy, 50%), oklch(100% 0 0 / 0.55), oklch(100% 0 0 / 0.12) 32%, transparent 62%),
+      linear-gradient(115deg, transparent 30%, oklch(100% 0 0 / 0.1) calc(var(--gx, 50%) - 6%), transparent calc(var(--gx, 50%) + 14%));
+    mix-blend-mode: soft-light;
+    transition: opacity var(--dur-short) var(--ease-out);
+  }
+  .card[data-tilt="on"] .card-art::after {
+    opacity: 1;
+  }
+}
+
 /* 拖著走的那張（見 drag.js）：外層跟著手指平移，裡面那張牌負責浮起、傾斜、放大。 */
 
 .drag-ghost {

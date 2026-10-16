@@ -58,6 +58,7 @@ import { createHand } from "./hand.js";
 import { createDrag, inkRing } from "./drag.js";
 import { createGenerator, comfyOnline, viewSrc, tabTitle, watchLink, LINK_LABEL, markGenLog } from "./gen.js";
 import { attachPeek, hidePeek, showPeek } from "./card-peek.js";
+import { attachTilt } from "./card-tilt.js";
 import { createHires, openHiresPicker, openFacePicker, paintHiresVeil, hiresBusy, faceBusy, faceDepth } from "./hires.js";
 import * as S from "./store.js";
 import { recordUses, tagsOfPositive } from "./usage.js";
@@ -289,6 +290,7 @@ async function boot() {
   if (waiting.length) toast(`接著印剛才排著的 ${waiting.length} 張`);
   for (const p of prints) if (p.status === "done" && p.hiresJob) hiresRun.resume(p, p.hiresJob);
   attachPeek($("case-grid"), ".card[data-tag]", peekInfo);
+  attachTilt($("case-grid"));
   // 偏好角色的名單一變（墨池那邊加的、另一個分頁改的）：卡盒的愛心跟著換。
   favChars.onChange(() => paintFavChars($("case-grid")));
   sizeCards($("case-grid"));
@@ -299,6 +301,7 @@ async function boot() {
     renderPrintBar();
   });
   attachPeek($("registers"), ".card[data-tag]", peekInfo);
+  attachTilt($("registers"));
   if (hand) attachPeek(hand.fan, ".card[data-tag]", peekInfo);
   // 觸控裝置沒有實體鍵盤：搜尋框不提「按 /」（手機上只會把提示擠到看不完）。
   if (matchMedia("(hover: none)").matches) $("case-q").placeholder = $("case-q").placeholder.replace(/（按[^）]*）/, "");
@@ -3202,6 +3205,7 @@ function openPrint(p, from) {
   );
   // 「這一版的牌」滑鼠停上去也有放大卡（跟卡盒、卡池同一個）。
   attachPeek(sheet.sheet, ".card[data-tag]", peekInfo);
+  attachTilt(sheet.sheet);
   if (from) zoomFromThumb({ from, sheet: sheet.sheet, to: sheet.sheet.querySelector(".print-view-img"), aspect: p.width / p.height });
 }
 

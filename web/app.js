@@ -61,6 +61,7 @@ import { createTrashPanel } from "./trash-panel.js";
 import { createGenerator, comfyOnline, viewSrc, tabTitle, watchLink, LINK_LABEL, markGenLog } from "./gen.js";
 import { genSeed, mountSeedControl, seedUseButton } from "./seed-control.js";
 import { attachPeek, hidePeek } from "./card-peek.js";
+import { attachTilt } from "./card-tilt.js";
 import { createHires, openHiresPicker, openFacePicker, paintHiresVeil, hiresBusy, faceBusy, faceDepth, HIRES_MODES } from "./hires.js";
 import * as S from "./store.js";
 import { recordUses } from "./usage.js";
@@ -194,7 +195,11 @@ async function boot() {
   if (waiting.length) toast(`接著印剛才排著的 ${waiting.length} 張`);
   // Hires 做到一半就重新整理的：接回去。
   for (const s of shots) if (s.status === "done" && s.hiresJob) hiresRun.resume(s, s.hiresJob);
-  for (const root of [$("lib-grid"), $("pool-well"), $("wall"), hand?.fan]) attachPeek(root, ".card[data-tag]", peekInfo);
+  for (const root of [$("lib-grid"), $("pool-well"), $("wall"), hand?.fan]) {
+    attachPeek(root, ".card[data-tag]", peekInfo);
+    // 牌拿在手上：滑過跟著游標微微傾斜、插畫上一道反光（card-tilt.js）。
+    attachTilt(root);
+  }
   sizeCards($("lib-grid"));
   // 觸控裝置沒有實體鍵盤：搜尋框不提「按 /」（手機上只會把提示擠到看不完）。
   if (matchMedia("(hover: none)").matches) $("lib-q").placeholder = $("lib-q").placeholder.replace(/（按[^）]*）/, "");
@@ -2012,6 +2017,7 @@ function drawBatch(gen, { auto = false } = {}) {
   else if (!auto || !fixedRun || fixedRun.base !== fixed) fixedRun = { base: fixed, next: 0 };
   // 原本整輪同步完成，途中設定不會被改。讓出畫面後仍用點下去那刻的同一份意圖。
   const intent = {
+    auto,
     settings: structuredClone(settings),
     pool: new Set(pool),
     bans: new Set([...bans, ...HARD_BANNED]),
@@ -2120,6 +2126,80 @@ async function drawBatchNow(gen, intent, epoch) {
   // 新的那張幾乎整張在畫面外（實測只露 86px）—— 改成把「成品」捲到最上面，新的那張整張落在眼前。
   const narrow = matchMedia("(max-width: 40rem)").matches;
   document.getElementById("wall-head").scrollIntoView({ block: narrow ? "start" : "nearest", behavior: reducedMotion() ? "instant" : "smooth" });
+  // 抽牌的主秀：手動按的那一下，合成池的牌和引擎補的牌一張張飛進最上面那一格。
+  if (!narrow && !intent.auto && epoch === drawEpoch) {
+    const top = fresh.find(([s]) => s === made[0]);
+    if (top) dealInto(top[0], top[1]);
+  }
+}
+
+/**
+ * 發牌進成品格（電腦、手動按的時候）：你放的牌從合成池起飛，引擎補的牌從字盒那一張起飛
+ * （字盒裡看不到的，從合成池中間浮出來），一張接一張畫弧線飛進那一格、縮小沉進去；
+ * 最後一張落地時，那一格由內往外暈開一圈墨光、輕輕一沉。無限抽自動接的那幾輪不演（看膩），
+ * 手機不演（牆在第三屏，起飛的地方看不到），減少動態不演。
+ */
+function dealInto(shot, node) {
+  if (reducedMotion() || document.hidden) return;
+  const frame = node.querySelector(".shot-frame");
+  const well = $("pool-well");
+  if (!frame || !well) return;
+  const onScreen = (r) => r.width > 0 && r.bottom > 0 && r.top < innerHeight && r.right > 0 && r.left < innerWidth;
+  const fr = frame.getBoundingClientRect();
+  if (!onScreen(fr)) return;
+  const wr = well.getBoundingClientRect();
+  const sources = [];
+  // 你放的：合成池裡看得到的那幾張（最多六張）。
+  for (const n of well.querySelectorAll(".card[data-tag]")) {
+    if (sources.length >= 6) break;
+    const r = n.getBoundingClientRect();
+    if (onScreen(r)) sources.push({ ghost: cloneCard(n), from: { left: r.left, top: r.top, width: r.width, height: r.height } });
+  }
+  // 引擎補的：每種花色挑一張（最多六張）；字盒裡看得到就從那張起飛，不然從合成池中間浮出來。
+  const seenSuit = new Set();
+  for (const d of shot.drawn) {
+    if (sources.length >= 12) break;
+    const card = lib.byTag.get(d.tag);
+    if (!card || seenSuit.has(card.suit)) continue;
+    seenSuit.add(card.suit);
+    const lib0 = libCardNode(d.tag);
+    const lr = lib0 && lib0.getBoundingClientRect();
+    if (lr && onScreen(lr)) {
+      sources.push({ ghost: cloneCard(lib0), from: { left: lr.left, top: lr.top, width: lr.width, height: lr.height } });
+    } else if (onScreen(wr)) {
+      const w = 72;
+      sources.push({ ghost: cardNode(card, assets, { tagName: "div" }), from: { left: wr.left + wr.width / 2 - w / 2 + (Math.random() - 0.5) * 120, top: wr.top + wr.height / 2 - w * 0.73, width: w }, born: true });
+    }
+  }
+  if (!sources.length) return;
+  const gap = DUR.micro / 2.5;
+  let landed = 0;
+  sources.forEach((s, i) => {
+    s.ghost.classList.add("deal-ghost");
+    flight(s.ghost, s.from, () => frame, {
+      delay: i * gap,
+      arc: 70 + (i % 3) * 18,
+      tilt: (i % 2 ? 1 : -1) * (6 + (i % 4)),
+      startScale: s.born ? 0.55 : 1,
+      endScale: 0.22,
+      endOpacity: 0,
+      scaleLate: 0.35,
+      zIndex: 92,
+      onLand: () => {
+        landed++;
+        if (landed === sources.length) settleFrame(frame);
+      },
+    });
+  });
+}
+
+/** 最後一張牌沉進去：成品格由內往外暈開一圈墨光、輕輕一沉。 */
+function settleFrame(frame) {
+  if (!frame.isConnected) return;
+  frame.classList.remove("is-dealt");
+  void frame.offsetWidth;
+  frame.classList.add("is-dealt");
+  frame.addEventListener("animationend", () => frame.classList.remove("is-dealt"), { once: true });
 }
 
 /** 卡冊（book.html）的使用次數：一張新成品＝它用到的每張牌各一次。 */
@@ -2968,6 +3048,7 @@ function showShot(shot, { focus } = {}) {
   sheet.sheet.classList.add("sheet-shot");
   // 視窗裡的牌滑鼠停上去也有放大卡（跟字盒、合成池同一個）。掛在整個視窗上：← → 換張時牌重畫也接得到。
   attachPeek(sheet.sheet, ".card[data-tag]", peekInfo);
+  attachTilt(sheet.sheet);
   // 箭頭貼在大圖框的左右兩邊（不蓋到右欄的按鈕）；換張時跟著搬進新的圖框。
   sheet.sheet.querySelector(".sd-image")?.append(prevBtn, nextBtn);
   syncNav();
