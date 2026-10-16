@@ -1,0 +1,3139 @@
+[
+  {
+    "tag": "sauna",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "place",
+    "bind": [],
+    "implies": [
+      "indoors"
+    ],
+    "layer": "normal",
+    "era": [
+      "modern"
+    ],
+    "zh": "三溫暖"
+  },
+  {
+    "tag": "bridge",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "place",
+    "bind": [],
+    "implies": [
+      "outdoors"
+    ],
+    "layer": "normal",
+    "era": [
+      "ancient_china",
+      "edo",
+      "medieval",
+      "victorian"
+    ],
+    "zh": "橋"
+  },
+  {
+    "tag": "river",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "place",
+    "bind": [],
+    "implies": [
+      "outdoors"
+    ],
+    "layer": "normal",
+    "era": [
+      "ancient_china",
+      "edo",
+      "medieval"
+    ],
+    "zh": "河"
+  },
+  {
+    "tag": "field",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "place",
+    "bind": [],
+    "implies": [
+      "outdoors"
+    ],
+    "layer": "normal",
+    "era": [
+      "ancient_china",
+      "edo",
+      "medieval"
+    ],
+    "zh": "田野"
+  },
+  {
+    "tag": "market",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "place",
+    "bind": [],
+    "implies": [
+      "outdoors"
+    ],
+    "layer": "normal",
+    "era": [
+      "ancient_china",
+      "edo",
+      "medieval",
+      "victorian"
+    ],
+    "zh": "市集"
+  },
+  {
+    "tag": "festival",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "place",
+    "bind": [],
+    "implies": [
+      "outdoors"
+    ],
+    "layer": "normal",
+    "era": [
+      "ancient_china",
+      "edo"
+    ],
+    "zh": "祭典"
+  },
+  {
+    "tag": "veranda",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "edo"
+    ],
+    "zh": "緣側"
+  },
+  {
+    "tag": "wooden floor",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "ancient_china",
+      "edo"
+    ],
+    "zh": "木地板"
+  },
+  {
+    "tag": "stone lantern",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [
+      "outdoors"
+    ],
+    "layer": "normal",
+    "era": [
+      "edo"
+    ],
+    "zh": "石燈籠"
+  },
+  {
+    "tag": "koi",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "ancient_china",
+      "edo"
+    ],
+    "zh": "錦鯉"
+  },
+  {
+    "tag": "noren",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "edo"
+    ],
+    "zh": "暖簾"
+  },
+  {
+    "tag": "fusuma",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "edo"
+    ],
+    "zh": "襖"
+  },
+  {
+    "tag": "rock garden",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [
+      "outdoors"
+    ],
+    "layer": "normal",
+    "era": [
+      "edo"
+    ],
+    "zh": "枯山水"
+  },
+  {
+    "tag": "park bench",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "place",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "modern",
+      "victorian"
+    ],
+    "zh": "公園長椅"
+  },
+  {
+    "tag": "tavern",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "place",
+    "bind": [],
+    "implies": [
+      "indoors"
+    ],
+    "layer": "normal",
+    "era": [
+      "medieval",
+      "victorian"
+    ],
+    "zh": "酒館"
+  },
+  {
+    "tag": "bamboo forest",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "place",
+    "bind": [],
+    "implies": [
+      "outdoors"
+    ],
+    "layer": "normal",
+    "era": [
+      "ancient_china",
+      "edo",
+      "modern"
+    ],
+    "zh": "竹林"
+  },
+  {
+    "tag": "rice paddy",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "place",
+    "bind": [],
+    "implies": [
+      "outdoors"
+    ],
+    "layer": "normal",
+    "era": [
+      "ancient_china",
+      "edo",
+      "modern"
+    ],
+    "zh": "稻田"
+  },
+  {
+    "tag": "dojo",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "place",
+    "bind": [],
+    "implies": [
+      "indoors"
+    ],
+    "layer": "normal",
+    "era": [
+      "edo",
+      "modern"
+    ],
+    "zh": "道場"
+  },
+  {
+    "tag": "arch",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "ancient_greece",
+      "medieval",
+      "victorian"
+    ],
+    "zh": "拱門"
+  },
+  {
+    "tag": "stone wall",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "ancient_greece",
+      "medieval"
+    ],
+    "zh": "石牆"
+  },
+  {
+    "tag": "greco-roman architecture",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "ancient_greece"
+    ],
+    "zh": "希臘羅馬建築"
+  },
+  {
+    "tag": "tower",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [
+      "outdoors"
+    ],
+    "layer": "normal",
+    "era": [
+      "medieval"
+    ],
+    "zh": "塔樓"
+  },
+  {
+    "tag": "windmill",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [
+      "outdoors"
+    ],
+    "layer": "normal",
+    "era": [
+      "medieval"
+    ],
+    "zh": "風車"
+  },
+  {
+    "tag": "paper lantern",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "ancient_china",
+      "edo"
+    ],
+    "zh": "紙燈籠"
+  },
+  {
+    "tag": "bamboo",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "ancient_china",
+      "edo"
+    ],
+    "zh": "竹子"
+  },
+  {
+    "tag": "ballroom",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "place",
+    "bind": [],
+    "implies": [
+      "indoors"
+    ],
+    "layer": "normal",
+    "era": [
+      "victorian"
+    ],
+    "zh": "舞廳"
+  },
+  {
+    "tag": "carriage",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "place",
+    "bind": [],
+    "implies": [
+      "indoors"
+    ],
+    "layer": "normal",
+    "era": [
+      "victorian"
+    ],
+    "zh": "馬車"
+  },
+  {
+    "tag": "greenhouse",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "place",
+    "bind": [],
+    "implies": [
+      "indoors"
+    ],
+    "layer": "normal",
+    "era": [
+      "victorian",
+      "modern"
+    ],
+    "zh": "溫室"
+  },
+  {
+    "tag": "cityscape",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "place",
+    "bind": [],
+    "implies": [
+      "outdoors"
+    ],
+    "layer": "normal",
+    "era": [
+      "modern"
+    ]
+  },
+  {
+    "tag": "skyscraper",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "place",
+    "bind": [],
+    "implies": [
+      "outdoors"
+    ],
+    "layer": "normal",
+    "era": [
+      "modern"
+    ]
+  },
+  {
+    "tag": "neon lights",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [
+      "night"
+    ],
+    "layer": "normal",
+    "era": [
+      "modern"
+    ]
+  },
+  {
+    "tag": "jeans",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash"
+    ],
+    "mutex": "bottom",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "modern"
+    ]
+  },
+  {
+    "tag": "t-shirt",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash"
+    ],
+    "mutex": "top",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "modern"
+    ]
+  },
+  {
+    "tag": "hoodie",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease"
+    ],
+    "mutex": "top",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "modern"
+    ]
+  },
+  {
+    "tag": "sneakers",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease"
+    ],
+    "mutex": "feet",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "modern"
+    ]
+  },
+  {
+    "tag": "business suit",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease"
+    ],
+    "mutex": "onepiece",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "modern",
+      "victorian"
+    ]
+  },
+  {
+    "tag": "chinese clothes",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "onepiece",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "ancient_china"
+    ]
+  },
+  {
+    "tag": "hanfu",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash"
+    ],
+    "mutex": "onepiece",
+    "bind": [
+      "chinese clothes"
+    ],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "ancient_china"
+    ]
+  },
+  {
+    "tag": "ruqun",
+    "section": "clothing",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash"
+    ],
+    "mutex": "onepiece",
+    "bind": [
+      "chinese clothes"
+    ],
+    "implies": [
+      "hanfu"
+    ],
+    "layer": "garment",
+    "era": [
+      "ancient_china"
+    ]
+  },
+  {
+    "tag": "tangzhuang",
+    "section": "clothing",
+    "gate": "male",
+    "heat": [
+      "tease"
+    ],
+    "mutex": "onepiece",
+    "bind": [
+      "chinese clothes"
+    ],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "ancient_china"
+    ]
+  },
+  {
+    "tag": "qipao",
+    "section": "clothing",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash"
+    ],
+    "mutex": "onepiece",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "ancient_china"
+    ]
+  },
+  {
+    "tag": "wide sleeves",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "ancient_china",
+      "edo"
+    ]
+  },
+  {
+    "tag": "east asian architecture",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "place",
+    "bind": [],
+    "implies": [
+      "outdoors"
+    ],
+    "layer": "normal",
+    "era": [
+      "ancient_china",
+      "edo"
+    ]
+  },
+  {
+    "tag": "palace",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "place",
+    "bind": [],
+    "implies": [
+      "indoors"
+    ],
+    "layer": "normal",
+    "era": [
+      "ancient_china",
+      "medieval"
+    ]
+  },
+  {
+    "tag": "pagoda",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash"
+    ],
+    "mutex": "place",
+    "bind": [],
+    "implies": [
+      "outdoors"
+    ],
+    "layer": "normal",
+    "era": [
+      "ancient_china",
+      "edo"
+    ]
+  },
+  {
+    "tag": "ancient greek clothes",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "onepiece",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "ancient_greece"
+    ]
+  },
+  {
+    "tag": "toga",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "onepiece",
+    "bind": [
+      "ancient greek clothes"
+    ],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "ancient_greece"
+    ]
+  },
+  {
+    "tag": "laurel crown",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "accessory",
+    "era": [
+      "ancient_greece"
+    ]
+  },
+  {
+    "tag": "pillar",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "ancient_greece"
+    ]
+  },
+  {
+    "tag": "temple",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "place",
+    "bind": [],
+    "implies": [
+      "outdoors"
+    ],
+    "layer": "normal",
+    "era": [
+      "ancient_china",
+      "edo",
+      "ancient_greece"
+    ]
+  },
+  {
+    "tag": "stone floor",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "ancient_greece"
+    ],
+    "zh": "石地板"
+  },
+  {
+    "tag": "ruins",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "place",
+    "bind": [],
+    "implies": [
+      "outdoors"
+    ],
+    "layer": "normal",
+    "era": [
+      "ancient_greece",
+      "medieval"
+    ]
+  },
+  {
+    "tag": "armor",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "onepiece",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "medieval"
+    ]
+  },
+  {
+    "tag": "plate armor",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease"
+    ],
+    "mutex": "onepiece",
+    "bind": [
+      "armor"
+    ],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "medieval"
+    ]
+  },
+  {
+    "tag": "chainmail",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash"
+    ],
+    "mutex": "onepiece",
+    "bind": [
+      "armor"
+    ],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "medieval"
+    ]
+  },
+  {
+    "tag": "knight",
+    "section": "feature",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "job",
+    "bind": [],
+    "implies": [
+      "armor"
+    ],
+    "layer": "normal",
+    "era": [
+      "medieval"
+    ],
+    "group": "job"
+  },
+  {
+    "tag": "castle",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "place",
+    "bind": [],
+    "implies": [
+      "outdoors"
+    ],
+    "layer": "normal",
+    "era": [
+      "edo",
+      "medieval"
+    ]
+  },
+  {
+    "tag": "throne",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "place",
+    "bind": [],
+    "implies": [
+      "indoors"
+    ],
+    "layer": "normal",
+    "era": [
+      "victorian",
+      "medieval",
+      "ancient_china"
+    ]
+  },
+  {
+    "tag": "gothic architecture",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash"
+    ],
+    "mutex": "place",
+    "bind": [],
+    "implies": [
+      "outdoors"
+    ],
+    "layer": "normal",
+    "era": [
+      "medieval"
+    ]
+  },
+  {
+    "tag": "kimono",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "onepiece",
+    "bind": [
+      "japanese clothes"
+    ],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "edo"
+    ]
+  },
+  {
+    "tag": "japanese clothes",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "onepiece",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "edo"
+    ]
+  },
+  {
+    "tag": "yukata",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash"
+    ],
+    "mutex": "onepiece",
+    "bind": [
+      "japanese clothes"
+    ],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "edo"
+    ]
+  },
+  {
+    "tag": "hakama",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease"
+    ],
+    "mutex": "bottom",
+    "bind": [
+      "japanese clothes"
+    ],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "edo"
+    ]
+  },
+  {
+    "tag": "obi",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "accessory",
+    "era": [
+      "edo"
+    ]
+  },
+  {
+    "tag": "geta",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease"
+    ],
+    "mutex": "feet",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "edo"
+    ]
+  },
+  {
+    "tag": "japanese armor",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease"
+    ],
+    "mutex": "onepiece",
+    "bind": [
+      "armor"
+    ],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "edo"
+    ]
+  },
+  {
+    "tag": "torii",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash"
+    ],
+    "mutex": "place",
+    "bind": [],
+    "implies": [
+      "outdoors"
+    ],
+    "layer": "normal",
+    "era": [
+      "edo"
+    ]
+  },
+  {
+    "tag": "shouji",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [
+      "indoors"
+    ],
+    "layer": "normal",
+    "era": [
+      "edo"
+    ],
+    "zh": "紙拉門"
+  },
+  {
+    "tag": "tatami",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [
+      "indoors"
+    ],
+    "layer": "normal",
+    "era": [
+      "edo"
+    ]
+  },
+  {
+    "tag": "victorian",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "victorian"
+    ]
+  },
+  {
+    "tag": "corset",
+    "section": "clothing",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "top",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "victorian"
+    ]
+  },
+  {
+    "tag": "gown",
+    "section": "clothing",
+    "gate": "female",
+    "heat": [
+      "tease"
+    ],
+    "mutex": "onepiece",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "victorian",
+      "medieval"
+    ]
+  },
+  {
+    "tag": "top hat",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "accessory",
+    "era": [
+      "victorian"
+    ]
+  },
+  {
+    "tag": "waistcoat",
+    "section": "clothing",
+    "gate": "male",
+    "heat": [
+      "tease"
+    ],
+    "mutex": "top",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "victorian"
+    ]
+  },
+  {
+    "tag": "frills",
+    "section": "clothing",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "victorian"
+    ]
+  },
+  {
+    "tag": "mansion",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "place",
+    "bind": [],
+    "implies": [
+      "indoors"
+    ],
+    "layer": "normal",
+    "era": [
+      "victorian"
+    ]
+  },
+  {
+    "tag": "petticoat",
+    "section": "clothing",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "bottom",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "victorian"
+    ],
+    "group": "bottom",
+    "needs": [
+      "female"
+    ],
+    "zh": "襯裙"
+  },
+  {
+    "tag": "hoop skirt",
+    "section": "clothing",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "bottom",
+    "bind": [],
+    "implies": [
+      "skirt"
+    ],
+    "layer": "garment",
+    "era": [
+      "victorian"
+    ],
+    "group": "bottom",
+    "needs": [
+      "female"
+    ],
+    "zh": "裙撐"
+  },
+  {
+    "tag": "chemise",
+    "section": "clothing",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "onepiece",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "medieval",
+      "victorian"
+    ],
+    "group": "era",
+    "needs": [
+      "female"
+    ],
+    "zh": "亞麻襯衣"
+  },
+  {
+    "tag": "suit pants",
+    "section": "clothing",
+    "gate": "male",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "bottom",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "modern",
+      "victorian"
+    ],
+    "group": "bottom",
+    "needs": [
+      "male"
+    ],
+    "zh": "西裝褲"
+  },
+  {
+    "tag": "loincloth",
+    "section": "clothing",
+    "gate": "male",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "underwear_bottom",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "medieval"
+    ],
+    "group": "underwear",
+    "needs": [
+      "male"
+    ],
+    "zh": "腰布"
+  },
+  {
+    "tag": "cape",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "outer",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "medieval",
+      "victorian",
+      "ancient_greece"
+    ],
+    "group": "outer",
+    "zh": "斗篷"
+  },
+  {
+    "tag": "capelet",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "outer",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "medieval",
+      "victorian"
+    ],
+    "group": "outer",
+    "zh": "短披肩"
+  },
+  {
+    "tag": "hooded cloak",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "outer",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "medieval"
+    ],
+    "group": "outer",
+    "zh": "連帽斗篷"
+  },
+  {
+    "tag": "tabard",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "outer",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "medieval"
+    ],
+    "group": "outer",
+    "zh": "罩袍"
+  },
+  {
+    "tag": "shawl",
+    "section": "clothing",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "outer",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "victorian",
+      "ancient_greece"
+    ],
+    "group": "outer",
+    "zh": "披巾"
+  },
+  {
+    "tag": "tailcoat",
+    "section": "clothing",
+    "gate": "male",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "outer",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "victorian"
+    ],
+    "group": "outer",
+    "zh": "燕尾服"
+  },
+  {
+    "tag": "uchikake",
+    "section": "clothing",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "outer",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "edo"
+    ],
+    "group": "outer",
+    "zh": "打掛"
+  },
+  {
+    "tag": "mandarin collar",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "ancient_china"
+    ],
+    "group": "fabric",
+    "zh": "立領"
+  },
+  {
+    "tag": "side slit",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "ancient_china"
+    ],
+    "group": "fabric",
+    "zh": "開衩"
+  },
+  {
+    "tag": "layered clothes",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "ancient_china",
+      "edo"
+    ],
+    "group": "fabric",
+    "zh": "多層衣著"
+  },
+  {
+    "tag": "fountain",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "place",
+    "bind": [],
+    "implies": [
+      "outdoors"
+    ],
+    "layer": "normal",
+    "era": [
+      "ancient_greece",
+      "victorian",
+      "ancient_china"
+    ],
+    "zh": "噴泉"
+  },
+  {
+    "tag": "lantern",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "lighting",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "ancient_china",
+      "edo",
+      "medieval",
+      "victorian"
+    ],
+    "group": "light",
+    "zh": "燈籠"
+  },
+  {
+    "tag": "oil lamp",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "lighting",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "ancient_china",
+      "ancient_greece",
+      "medieval",
+      "edo"
+    ],
+    "group": "light",
+    "zh": "油燈"
+  },
+  {
+    "tag": "torch",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "lighting",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "medieval",
+      "ancient_china",
+      "ancient_greece"
+    ],
+    "group": "light",
+    "zh": "火把"
+  },
+  {
+    "tag": "bonfire",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "lighting",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "medieval",
+      "ancient_china",
+      "ancient_greece",
+      "edo"
+    ],
+    "group": "light",
+    "zh": "篝火"
+  },
+  {
+    "tag": "incense burner",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "ancient_china"
+    ],
+    "group": "other",
+    "zh": "香爐"
+  },
+  {
+    "tag": "incense",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "ancient_china",
+      "edo"
+    ],
+    "group": "other",
+    "zh": "香"
+  },
+  {
+    "tag": "folding fan",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "ancient_china",
+      "edo"
+    ],
+    "group": "other",
+    "zh": "摺扇"
+  },
+  {
+    "tag": "hand fan",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "ancient_china",
+      "edo"
+    ],
+    "group": "other",
+    "zh": "扇子"
+  },
+  {
+    "tag": "scroll",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "ancient_china",
+      "edo",
+      "medieval"
+    ],
+    "group": "other",
+    "zh": "捲軸"
+  },
+  {
+    "tag": "calligraphy",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "ancient_china",
+      "edo"
+    ],
+    "group": "other",
+    "zh": "書法"
+  },
+  {
+    "tag": "guqin",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "ancient_china"
+    ],
+    "group": "other",
+    "zh": "古琴"
+  },
+  {
+    "tag": "erhu",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "ancient_china"
+    ],
+    "group": "other",
+    "zh": "二胡"
+  },
+  {
+    "tag": "teapot",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "ancient_china",
+      "edo",
+      "victorian"
+    ],
+    "group": "other",
+    "zh": "茶壺"
+  },
+  {
+    "tag": "teacup",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "ancient_china",
+      "edo",
+      "victorian"
+    ],
+    "group": "other",
+    "zh": "茶杯"
+  },
+  {
+    "tag": "folding screen",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "ancient_china",
+      "edo"
+    ],
+    "group": "other",
+    "zh": "屏風"
+  },
+  {
+    "tag": "lotus",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "ancient_china",
+      "edo"
+    ],
+    "group": "other",
+    "zh": "蓮"
+  },
+  {
+    "tag": "chrysanthemum",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "ancient_china",
+      "edo"
+    ],
+    "group": "other",
+    "zh": "菊"
+  },
+  {
+    "tag": "willow",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "ancient_china",
+      "edo"
+    ],
+    "group": "other",
+    "zh": "柳"
+  },
+  {
+    "tag": "pine tree",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "ancient_china",
+      "edo",
+      "medieval"
+    ],
+    "group": "other",
+    "zh": "松"
+  },
+  {
+    "tag": "silk",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "ancient_china",
+      "edo",
+      "victorian"
+    ],
+    "group": "other",
+    "zh": "絲綢"
+  },
+  {
+    "tag": "beads",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "ancient_china",
+      "edo",
+      "medieval",
+      "victorian"
+    ],
+    "group": "other",
+    "zh": "珠簾／串珠"
+  },
+  {
+    "tag": "banner",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "ancient_china",
+      "medieval",
+      "edo"
+    ],
+    "group": "other",
+    "zh": "旗幟"
+  },
+  {
+    "tag": "spear",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "ancient_china",
+      "medieval",
+      "ancient_greece",
+      "edo"
+    ],
+    "group": "other",
+    "zh": "長矛"
+  },
+  {
+    "tag": "polearm",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "ancient_china",
+      "medieval",
+      "edo"
+    ],
+    "group": "other",
+    "zh": "長柄武器"
+  },
+  {
+    "tag": "shield",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "medieval",
+      "ancient_greece",
+      "ancient_china"
+    ],
+    "group": "other",
+    "zh": "盾"
+  },
+  {
+    "tag": "drum",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "ancient_china",
+      "medieval",
+      "edo"
+    ],
+    "group": "other",
+    "zh": "鼓"
+  },
+  {
+    "tag": "horse",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "ancient_china",
+      "medieval",
+      "ancient_greece",
+      "edo",
+      "victorian"
+    ],
+    "group": "other",
+    "zh": "馬"
+  },
+  {
+    "tag": "table",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "ancient_china",
+      "medieval",
+      "edo",
+      "victorian",
+      "ancient_greece"
+    ],
+    "group": "other",
+    "zh": "桌"
+  },
+  {
+    "tag": "fireplace",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "lighting",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "victorian",
+      "medieval",
+      "ancient_china"
+    ],
+    "group": "light",
+    "zh": "壁爐／爐火"
+  },
+  {
+    "tag": "chandelier",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "lighting",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "victorian",
+      "medieval"
+    ],
+    "group": "light",
+    "zh": "吊燈"
+  },
+  {
+    "tag": "candelabra",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "lighting",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "victorian",
+      "medieval",
+      "ancient_china"
+    ],
+    "group": "light",
+    "zh": "燭台"
+  },
+  {
+    "tag": "lamppost",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "lighting",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "victorian",
+      "modern"
+    ],
+    "group": "light",
+    "zh": "路燈"
+  },
+  {
+    "tag": "battlefield",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "place",
+    "bind": [],
+    "implies": [
+      "outdoors"
+    ],
+    "layer": "normal",
+    "era": [
+      "ancient_china",
+      "medieval",
+      "ancient_greece",
+      "edo"
+    ],
+    "group": "place",
+    "zh": "戰場"
+  },
+  {
+    "tag": "pond",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "place",
+    "bind": [],
+    "implies": [
+      "outdoors"
+    ],
+    "layer": "normal",
+    "era": [
+      "ancient_china",
+      "edo",
+      "medieval",
+      "victorian"
+    ],
+    "group": "place",
+    "zh": "池塘"
+  },
+  {
+    "tag": "altar",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "place",
+    "bind": [],
+    "implies": [
+      "indoors"
+    ],
+    "layer": "normal",
+    "era": [
+      "ancient_china",
+      "ancient_greece",
+      "medieval",
+      "edo"
+    ],
+    "group": "place",
+    "zh": "祭壇"
+  },
+  {
+    "tag": "chinese armor",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "onepiece",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "ancient_china"
+    ],
+    "group": "era",
+    "zh": "中式甲冑"
+  },
+  {
+    "tag": "samurai",
+    "section": "feature",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "job",
+    "bind": [],
+    "implies": [
+      "japanese armor"
+    ],
+    "layer": "normal",
+    "era": [
+      "edo"
+    ],
+    "group": "job",
+    "zh": "武士"
+  },
+  {
+    "tag": "ninja",
+    "section": "feature",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "job",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "edo"
+    ],
+    "group": "job",
+    "zh": "忍者"
+  },
+  {
+    "tag": "oiran",
+    "section": "feature",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "job",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "edo"
+    ],
+    "group": "job",
+    "zh": "花魁",
+    "needs": [
+      "female"
+    ]
+  },
+  {
+    "tag": "onmyouji",
+    "section": "feature",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "job",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "edo"
+    ],
+    "group": "job",
+    "zh": "陰陽師"
+  },
+  {
+    "tag": "viking",
+    "section": "feature",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "job",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "medieval"
+    ],
+    "group": "job",
+    "zh": "維京人"
+  },
+  {
+    "tag": "witch",
+    "section": "feature",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "job",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "medieval",
+      "victorian"
+    ],
+    "group": "job",
+    "zh": "女巫",
+    "needs": [
+      "female"
+    ]
+  },
+  {
+    "tag": "gladiator",
+    "section": "feature",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "job",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "ancient_greece"
+    ],
+    "group": "job",
+    "zh": "角鬥士"
+  },
+  {
+    "tag": "monk",
+    "section": "feature",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "job",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "medieval",
+      "ancient_china",
+      "edo"
+    ],
+    "group": "job",
+    "zh": "僧侶"
+  },
+  {
+    "tag": "priest",
+    "section": "feature",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "job",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "medieval",
+      "ancient_greece"
+    ],
+    "group": "job",
+    "zh": "祭司"
+  },
+  {
+    "tag": "priestess",
+    "section": "feature",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "job",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "ancient_greece",
+      "ancient_china",
+      "medieval"
+    ],
+    "group": "job",
+    "zh": "女祭司",
+    "needs": [
+      "female"
+    ]
+  },
+  {
+    "tag": "blacksmith",
+    "section": "feature",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "job",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "medieval",
+      "ancient_china",
+      "edo"
+    ],
+    "group": "job",
+    "zh": "鐵匠"
+  },
+  {
+    "tag": "princess",
+    "section": "feature",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "job",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "ancient_china",
+      "ancient_greece",
+      "medieval",
+      "edo",
+      "victorian"
+    ],
+    "group": "job",
+    "zh": "公主",
+    "needs": [
+      "female"
+    ]
+  },
+  {
+    "tag": "dancer",
+    "section": "feature",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "job",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "ancient_china",
+      "ancient_greece",
+      "medieval",
+      "edo",
+      "victorian"
+    ],
+    "group": "job",
+    "zh": "舞者"
+  },
+  {
+    "tag": "butler",
+    "section": "feature",
+    "gate": "male",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "job",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "victorian",
+      "modern"
+    ],
+    "group": "job",
+    "zh": "管家",
+    "needs": [
+      "male"
+    ]
+  },
+  {
+    "tag": "detective",
+    "section": "feature",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "job",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "victorian",
+      "modern"
+    ],
+    "group": "job",
+    "zh": "偵探"
+  },
+  {
+    "tag": "barmaid",
+    "section": "feature",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "job",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "victorian",
+      "medieval"
+    ],
+    "group": "job",
+    "zh": "酒館女侍",
+    "needs": [
+      "female"
+    ]
+  },
+  {
+    "tag": "amphora",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "ancient_greece"
+    ],
+    "group": "other",
+    "zh": "雙耳瓶"
+  },
+  {
+    "tag": "grapes",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "ancient_greece",
+      "medieval",
+      "ancient_china"
+    ],
+    "group": "other",
+    "zh": "葡萄"
+  },
+  {
+    "tag": "wine glass",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "ancient_greece",
+      "medieval",
+      "victorian"
+    ],
+    "group": "other",
+    "zh": "酒杯"
+  },
+  {
+    "tag": "lyre",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "ancient_greece"
+    ],
+    "group": "other",
+    "zh": "里拉琴"
+  },
+  {
+    "tag": "statue",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "ancient_greece",
+      "medieval",
+      "ancient_china"
+    ],
+    "group": "other",
+    "zh": "雕像"
+  },
+  {
+    "tag": "olive",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "ancient_greece"
+    ],
+    "group": "other",
+    "zh": "橄欖"
+  },
+  {
+    "tag": "trident",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "ancient_greece"
+    ],
+    "group": "other",
+    "zh": "三叉戟"
+  },
+  {
+    "tag": "pocket watch",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "victorian"
+    ],
+    "group": "other",
+    "zh": "懷錶"
+  },
+  {
+    "tag": "cane",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "victorian"
+    ],
+    "group": "other",
+    "zh": "手杖"
+  },
+  {
+    "tag": "birdcage",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "victorian",
+      "ancient_china"
+    ],
+    "group": "other",
+    "zh": "鳥籠"
+  },
+  {
+    "tag": "piano",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "victorian"
+    ],
+    "group": "other",
+    "zh": "鋼琴"
+  },
+  {
+    "tag": "violin",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "victorian",
+      "medieval"
+    ],
+    "group": "other",
+    "zh": "小提琴"
+  },
+  {
+    "tag": "lace",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "victorian"
+    ],
+    "group": "other",
+    "zh": "蕾絲"
+  },
+  {
+    "tag": "rose",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "victorian",
+      "medieval"
+    ],
+    "group": "other",
+    "zh": "玫瑰"
+  },
+  {
+    "tag": "clock",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "victorian"
+    ],
+    "group": "other",
+    "zh": "時鐘"
+  }
+]

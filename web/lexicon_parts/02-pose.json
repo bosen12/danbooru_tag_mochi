@@ -1,0 +1,3043 @@
+[
+  {
+    "tag": "standing",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "body_pose",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "sitting",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "body_pose",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "kneeling",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "body_pose",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "lying",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "body_pose",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "on back",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "body_pose",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "on side",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "body_pose",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "on stomach",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "body_pose",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "squatting",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "body_pose",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "all fours",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "flash",
+      "sex"
+    ],
+    "mutex": "body_pose",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "wariza",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "body_pose",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "seiza",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "body_pose",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "reclining",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "body_pose",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "indian style",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash"
+    ],
+    "mutex": "body_pose",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "on one knee",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash"
+    ],
+    "mutex": "body_pose",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "crawling",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "flash",
+      "sex"
+    ],
+    "mutex": "body_pose",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "top-down bottom-up",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "flash",
+      "sex"
+    ],
+    "mutex": "body_pose",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "dancing",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash"
+    ],
+    "mutex": "body_pose",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "sleeping",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "sex"
+    ],
+    "mutex": "body_pose",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "leaning forward",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "bent over",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "m legs",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [
+      "spread legs"
+    ],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "spread legs",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "crossed legs",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "against wall",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "against glass",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "arched back",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "head tilt",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "leaning back",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "contrapposto",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "standing on one leg",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "ojou-sama pose",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "tease"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "jack-o' challenge",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "legs up",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "presenting",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "straddling",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "hug from behind",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "sitting on lap",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "cuddling",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "hug",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "arms behind back",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "arms behind head",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "crossed arms",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "tease"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "hand on own hip",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "hands on own hips",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "hand on own chest",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "covering own mouth",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "finger to mouth",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "reaching towards viewer",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "beckoning",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "come hither",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "paizuri gesture",
+    "section": "pose",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "hands on own breasts",
+    "section": "pose",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "hand on own ass",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "adjusting clothes",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "adjusting hair",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "tease"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "hand in pocket",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "tease"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "pointing at viewer",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "v",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "heart hands",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "tease"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "index fingers together",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "tease"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "looking at viewer",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "gaze",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "looking back",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "gaze",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "looking down",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "gaze",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "looking up",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "gaze",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "looking to the side",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "gaze",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "averting eyes",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash"
+    ],
+    "mutex": "gaze",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "eye contact",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "sex"
+    ],
+    "mutex": "gaze",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "looking at another",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "sex"
+    ],
+    "mutex": "gaze",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "cowboy shot",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "camera",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "full body",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "camera",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "upper body",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "camera",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "portrait",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "camera",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "close-up",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "camera",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "from behind",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "camera",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "from below",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "camera",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "from above",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "camera",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "from side",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "camera",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "pov",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "camera",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "profile",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "camera",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "facing away",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "camera",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "ass focus",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "flash",
+      "sex"
+    ],
+    "mutex": "part_focus",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "breast focus",
+    "section": "pose",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "part_focus",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "pussy focus",
+    "section": "pose",
+    "gate": "female",
+    "heat": [
+      "flash",
+      "sex"
+    ],
+    "mutex": "part_focus",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "between breasts",
+    "section": "pose",
+    "gate": "female",
+    "heat": [
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "between thighs",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "smile",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "seductive smile",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "parted lips",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "open mouth",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "tongue out",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "biting own lip",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "naughty face",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "half-closed eyes",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "heavy breathing",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "embarrassed",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "shy",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "aroused",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "ahegao",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "licking lips",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "fucked silly",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "rolling eyes",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "orgasm",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "one eye closed",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "skirt lift",
+    "section": "pose",
+    "gate": "female",
+    "heat": [
+      "flash"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "clothes lift",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "flash"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "shirt lift",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "flash"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "dress lift",
+    "section": "pose",
+    "gate": "female",
+    "heat": [
+      "flash"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "upskirt",
+    "section": "pose",
+    "gate": "female",
+    "heat": [
+      "flash"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "downblouse",
+    "section": "pose",
+    "gate": "female",
+    "heat": [
+      "flash"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "one breast out",
+    "section": "pose",
+    "gate": "female",
+    "heat": [
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "breast hold",
+    "section": "pose",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "covering breasts",
+    "section": "pose",
+    "gate": "female",
+    "heat": [
+      "flash"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "covering crotch",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "flash"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "undressing",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "flash"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "flashing",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "flash"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "exhibitionism",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "pants pull",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "flash"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "clothes pull",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "flash"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "strap slip",
+    "section": "pose",
+    "gate": "female",
+    "heat": [
+      "flash"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "nipple slip",
+    "section": "pose",
+    "gate": "female",
+    "heat": [
+      "flash"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "panty pull",
+    "section": "pose",
+    "gate": "female",
+    "heat": [
+      "flash"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "bra pull",
+    "section": "pose",
+    "gate": "female",
+    "heat": [
+      "flash"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "clothing aside",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "cameltoe",
+    "section": "pose",
+    "gate": "female",
+    "heat": [
+      "flash"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "ass visible through thighs",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "flash"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "spread cleavage",
+    "section": "pose",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "hand on own crotch",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "erection under clothes",
+    "section": "pose",
+    "gate": "male",
+    "heat": [
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "bulge",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "flash"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "hand in panties",
+    "section": "pose",
+    "gate": "female",
+    "heat": [
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "masturbation through clothes",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "caught",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "flash"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "wedgie",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "flash"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "areola slip",
+    "section": "pose",
+    "gate": "female",
+    "heat": [
+      "flash"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "clothes tug",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "paizuri",
+    "section": "pose",
+    "gate": "female",
+    "heat": [
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "paizuri under clothes",
+    "section": "pose",
+    "gate": "female",
+    "heat": [
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "fellatio",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "deepthroat",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "cunnilingus",
+    "section": "pose",
+    "gate": "female",
+    "heat": [
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "handjob",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "footjob",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "french kiss",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "sex",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "vaginal",
+    "section": "pose",
+    "gate": "female",
+    "heat": [
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "anal",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "cowgirl position",
+    "section": "pose",
+    "gate": "female",
+    "heat": [
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "reverse cowgirl position",
+    "section": "pose",
+    "gate": "female",
+    "heat": [
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "doggystyle",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "standing doggystyle",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "missionary",
+    "section": "pose",
+    "gate": "female",
+    "heat": [
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "mating press",
+    "section": "pose",
+    "gate": "female",
+    "heat": [
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "standing sex",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "amazon position",
+    "section": "pose",
+    "gate": "female",
+    "heat": [
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "spooning",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "prone bone",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "sex from behind",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "sitting on face",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "cum",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "cum on body",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "cum on breasts",
+    "section": "pose",
+    "gate": "female",
+    "heat": [
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "facial",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "ejaculation",
+    "section": "pose",
+    "gate": "male",
+    "heat": [
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "after sex",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "after vaginal",
+    "section": "pose",
+    "gate": "female",
+    "heat": [
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "69",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "spitroast",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "double penetration",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "grinding",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "fingering",
+    "section": "pose",
+    "gate": "female",
+    "heat": [
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "pussy juice",
+    "section": "pose",
+    "gate": "female",
+    "heat": [
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "clothed sex",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "public indecency",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "cum in pussy",
+    "section": "pose",
+    "gate": "female",
+    "heat": [
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "cum in mouth",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "cumdrip",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "guided penetration",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "tribadism",
+    "section": "pose",
+    "gate": "female",
+    "heat": [
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "masturbation",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "female masturbation",
+    "section": "pose",
+    "gate": "female",
+    "heat": [
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "male masturbation",
+    "section": "pose",
+    "gate": "male",
+    "heat": [
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "happy sex",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "imminent penetration",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "ass grab",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "breast sucking",
+    "section": "pose",
+    "gate": "female",
+    "heat": [
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "nipple tweak",
+    "section": "pose",
+    "gate": "female",
+    "heat": [
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "spread pussy",
+    "section": "pose",
+    "gate": "female",
+    "heat": [
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "female ejaculation",
+    "section": "pose",
+    "gate": "female",
+    "heat": [
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "irrumatio",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "anilingus",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "full nelson",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "suspended congress",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  }
+]

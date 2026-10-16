@@ -14,6 +14,10 @@
 對應：上游 `web6/X` 與 web6 會載入的 `web/X` → 這邊的 `web/X`（伺服器本來就先找 web6 再找 web，合成一個資料夾後路徑不變）。
 這邊不一樣的字樣（`start.bat`、預設埠 8796、卡面 Release 網址、影片裡的 clone 網址）寫在上游腳本的 `REWRITES`。
 
+## 詞庫
+
+`web/lexicon.json` 不手改：原料 `web/lexicon_parts/`、`scripts/merge_lexicon.py` 一夥、`scripts/characters.json` 都從上游同步（上游 `sync_mochi.py` 的 `LEXICON_FILES`）。要改詞庫一樣到上游改、重產再同步；`tests/test_lexicon_rebuild.py` 守著兩邊對得上。
+
 ## 授權
 
 Mochi 目前以 GPLv3（GPL-3.0-only）發布，見 LICENSE 與 NOTICE。新 GPL 貢獻搬回上游時必須保留授權聲明，並確保上游相應發布符合 GPLv3；不可因上游的舊 MIT 聲明，把 GPL 貢獻重新授權為 MIT。先前已公開的 MIT 程式碼保留原有使用權。卡圖、字型與第三方程式庫維持各自授權。

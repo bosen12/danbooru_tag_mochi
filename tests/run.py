@@ -24,6 +24,7 @@ checks = [
     ("test_fetch_pose.py", "test_fetch_pose.py"), ("test_fetch_face.py", "test_fetch_face.py"),
     ("test_server.py", "test_server.py"),
     ("test_launchers.py", "test_mochi_launchers.py"), ("test_smoke.py", "test_mochi_smoke.py"),
+    ("test_lexicon_rebuild.py", "test_lexicon_rebuild.py"),
 ]
 if "--full" in sys.argv:
     checks.append(("test_engine.mjs", "test_engine.mjs"))

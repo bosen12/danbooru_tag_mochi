@@ -1,0 +1,4894 @@
+[
+  {
+    "tag": "breasts",
+    "section": "feature",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ],
+    "zh": "胸部",
+    "needs": [
+      "female"
+    ],
+    "group": "body_f"
+  },
+  {
+    "tag": "hetero",
+    "section": "subject",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ],
+    "zh": "異性",
+    "needs": [
+      "pair"
+    ],
+    "group": "extra"
+  },
+  {
+    "tag": "male pubic hair",
+    "section": "feature",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ],
+    "zh": "男性陰毛",
+    "group": "hair_style"
+  },
+  {
+    "tag": "thighs",
+    "section": "feature",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ],
+    "zh": "大腿",
+    "needs": [
+      "female"
+    ],
+    "group": "body_f"
+  },
+  {
+    "tag": "girl on top",
+    "section": "pose",
+    "gate": "female",
+    "heat": [
+      "sex"
+    ],
+    "mutex": "sex_act",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ],
+    "zh": "女上",
+    "needs": [
+      "pair",
+      "female"
+    ],
+    "group": "sex"
+  },
+  {
+    "tag": "tongue",
+    "section": "feature",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ],
+    "zh": "舌頭",
+    "group": "other"
+  },
+  {
+    "tag": "bare shoulders",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "accessory",
+    "era": [
+      "any"
+    ],
+    "zh": "裸肩",
+    "group": "acc"
+  },
+  {
+    "tag": "breasts out",
+    "section": "feature",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ],
+    "needs": [
+      "female"
+    ],
+    "group": "body_f"
+  },
+  {
+    "tag": "on bed",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "body_pose",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ],
+    "zh": "在床上",
+    "group": "body"
+  },
+  {
+    "tag": "ass",
+    "section": "feature",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ],
+    "needs": [
+      "female"
+    ],
+    "group": "other"
+  },
+  {
+    "tag": "sky",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ],
+    "group": "other"
+  },
+  {
+    "tag": "teeth",
+    "section": "feature",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ],
+    "group": "other"
+  },
+  {
+    "tag": "female pubic hair",
+    "section": "feature",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ],
+    "group": "hair_style"
+  },
+  {
+    "tag": "closed mouth",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ],
+    "group": "tease"
+  },
+  {
+    "tag": "pillow",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ],
+    "zh": "枕頭",
+    "group": "other"
+  },
+  {
+    "tag": "closed eyes",
+    "section": "feature",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ],
+    "zh": "閉眼",
+    "group": "eyes"
+  },
+  {
+    "tag": "white shirt",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "top",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "modern"
+    ],
+    "group": "top"
+  },
+  {
+    "tag": "single hair bun",
+    "section": "feature",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ],
+    "group": "hair_style"
+  },
+  {
+    "tag": "water",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ],
+    "group": "other"
+  },
+  {
+    "tag": "long sleeves",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "any"
+    ],
+    "group": "acc"
+  },
+  {
+    "tag": "oral",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "sex"
+    ],
+    "mutex": "sex_act",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ],
+    "needs": [
+      "pair"
+    ],
+    "group": "sex"
+  },
+  {
+    "tag": "parted bangs",
+    "section": "feature",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ],
+    "zh": "分瀏海",
+    "group": "other"
+  },
+  {
+    "tag": "saliva",
+    "section": "feature",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ],
+    "zh": "唾液",
+    "group": "other"
+  },
+  {
+    "tag": "curtains",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ],
+    "group": "other"
+  },
+  {
+    "tag": "clothed male nude female",
+    "section": "pose",
+    "gate": "female",
+    "heat": [
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ],
+    "needs": [
+      "female"
+    ],
+    "group": "flash"
+  },
+  {
+    "tag": "pregnant",
+    "section": "feature",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ],
+    "needs": [
+      "female"
+    ],
+    "group": "other"
+  },
+  {
+    "tag": "group sex",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "sex"
+    ],
+    "mutex": "sex_act",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ],
+    "needs": [
+      "pair"
+    ],
+    "group": "sex"
+  },
+  {
+    "tag": "ring",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "jewelry",
+    "bind": [],
+    "implies": [],
+    "layer": "accessory",
+    "era": [
+      "any"
+    ],
+    "zh": "戒指",
+    "group": "acc"
+  },
+  {
+    "tag": "tree",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ],
+    "group": "other"
+  },
+  {
+    "tag": "tears",
+    "section": "feature",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ],
+    "group": "other"
+  },
+  {
+    "tag": "squatting cowgirl position",
+    "section": "pose",
+    "gate": "female",
+    "heat": [
+      "sex"
+    ],
+    "mutex": "sex_act",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ],
+    "needs": [
+      "pair",
+      "male",
+      "female"
+    ],
+    "group": "sex"
+  },
+  {
+    "tag": "grabbing another's breast",
+    "section": "feature",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ],
+    "needs": [
+      "female"
+    ],
+    "group": "body_f"
+  },
+  {
+    "tag": "breasts squeezed together",
+    "section": "feature",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ],
+    "needs": [
+      "female"
+    ],
+    "group": "body_f"
+  },
+  {
+    "tag": "pov crotch",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "camera",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ],
+    "group": "camera"
+  },
+  {
+    "tag": "threesome",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "sex"
+    ],
+    "mutex": "sex_act",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ],
+    "needs": [
+      "pair"
+    ],
+    "group": "sex"
+  },
+  {
+    "tag": "mixed-sex bathing",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "sex"
+    ],
+    "mutex": "sex_act",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ],
+    "needs": [
+      "pair"
+    ],
+    "group": "sex"
+  },
+  {
+    "tag": "pink nails",
+    "section": "feature",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ],
+    "group": "other"
+  },
+  {
+    "tag": "sex toy",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "accessory",
+    "era": [
+      "any"
+    ],
+    "group": "acc"
+  },
+  {
+    "tag": "clothed female nude male",
+    "section": "pose",
+    "gate": "female",
+    "heat": [
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ],
+    "needs": [
+      "female"
+    ],
+    "group": "flash"
+  },
+  {
+    "tag": "mmf threesome",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "sex"
+    ],
+    "mutex": "sex_act",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ],
+    "needs": [
+      "pair"
+    ],
+    "group": "sex"
+  },
+  {
+    "tag": "candle",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "lighting",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ],
+    "zh": "蠟燭",
+    "group": "light"
+  },
+  {
+    "tag": "clitoris",
+    "section": "feature",
+    "gate": "female",
+    "heat": [
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "skin",
+    "era": [
+      "any"
+    ],
+    "needs": [
+      "female"
+    ],
+    "group": "other"
+  },
+  {
+    "tag": "wedding ring",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "jewelry",
+    "bind": [],
+    "implies": [],
+    "layer": "accessory",
+    "era": [
+      "any"
+    ],
+    "zh": "婚戒",
+    "group": "acc"
+  },
+  {
+    "tag": "bed sheet",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ],
+    "zh": "床單",
+    "group": "other"
+  },
+  {
+    "tag": "collared shirt",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "top",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "modern"
+    ],
+    "group": "top"
+  },
+  {
+    "tag": "blue shirt",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "top",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "modern"
+    ],
+    "group": "top"
+  },
+  {
+    "tag": "breast rest",
+    "section": "feature",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ],
+    "needs": [
+      "female"
+    ],
+    "group": "body_f"
+  },
+  {
+    "tag": "mole on breast",
+    "section": "feature",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ],
+    "needs": [
+      "female"
+    ],
+    "group": "body_f"
+  },
+  {
+    "tag": "grabbing own breast",
+    "section": "feature",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ],
+    "needs": [
+      "female"
+    ],
+    "group": "body_f"
+  },
+  {
+    "tag": "short sleeves",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "any"
+    ],
+    "group": "acc"
+  },
+  {
+    "tag": "blue pants",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "bottom",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "modern"
+    ],
+    "group": "bottom"
+  },
+  {
+    "tag": "belt",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "accessory",
+    "era": [
+      "any"
+    ],
+    "group": "acc"
+  },
+  {
+    "tag": "office lady",
+    "section": "feature",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "modern"
+    ],
+    "needs": [
+      "female"
+    ],
+    "group": "other"
+  },
+  {
+    "tag": "chair",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ],
+    "group": "other"
+  },
+  {
+    "tag": "leg lift",
+    "section": "pose",
+    "gate": "female",
+    "heat": [
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ],
+    "needs": [
+      "female"
+    ],
+    "group": "flash"
+  },
+  {
+    "tag": "shirt tucked in",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "top",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "modern"
+    ],
+    "group": "top"
+  },
+  {
+    "tag": "car",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "place",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "modern"
+    ],
+    "group": "place"
+  },
+  {
+    "tag": "black pants",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "bottom",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "modern"
+    ],
+    "group": "bottom"
+  },
+  {
+    "tag": "blue sky",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ],
+    "group": "other"
+  },
+  {
+    "tag": "black shirt",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "top",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "modern"
+    ],
+    "group": "top"
+  },
+  {
+    "tag": "vibrator",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "accessory",
+    "era": [
+      "any"
+    ],
+    "group": "acc"
+  },
+  {
+    "tag": "covered navel",
+    "section": "feature",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ],
+    "needs": [
+      "female"
+    ],
+    "group": "other"
+  },
+  {
+    "tag": "sports bra",
+    "section": "clothing",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash"
+    ],
+    "mutex": "underwear_top",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "modern"
+    ],
+    "needs": [
+      "female"
+    ],
+    "group": "underwear"
+  },
+  {
+    "tag": "stud earrings",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "jewelry",
+    "bind": [],
+    "implies": [],
+    "layer": "accessory",
+    "era": [
+      "any"
+    ],
+    "group": "acc"
+  },
+  {
+    "tag": "black skirt",
+    "section": "clothing",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "bottom",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "modern"
+    ],
+    "needs": [
+      "female"
+    ],
+    "group": "bottom"
+  },
+  {
+    "tag": "multicolored hair",
+    "section": "feature",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "hair_color",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ],
+    "group": "hair_color"
+  },
+  {
+    "tag": "bouncing breasts",
+    "section": "feature",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ],
+    "needs": [
+      "female"
+    ],
+    "group": "body_f"
+  },
+  {
+    "tag": "hoop earrings",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "jewelry",
+    "bind": [],
+    "implies": [],
+    "layer": "accessory",
+    "era": [
+      "any"
+    ],
+    "group": "acc"
+  },
+  {
+    "tag": "white dress",
+    "section": "clothing",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "onepiece",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "modern"
+    ],
+    "needs": [
+      "female"
+    ],
+    "group": "onepiece"
+  },
+  {
+    "tag": "vaginal object insertion",
+    "section": "pose",
+    "gate": "female",
+    "heat": [
+      "sex"
+    ],
+    "mutex": "sex_act",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ],
+    "needs": [
+      "pair",
+      "male",
+      "female"
+    ],
+    "group": "sex"
+  },
+  {
+    "tag": "looking at mirror",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "gaze",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ],
+    "group": "gaze"
+  },
+  {
+    "tag": "breast lift",
+    "section": "feature",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ],
+    "needs": [
+      "female"
+    ],
+    "group": "body_f"
+  },
+  {
+    "tag": "blue one-piece swimsuit",
+    "section": "clothing",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "onepiece",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "modern"
+    ],
+    "needs": [
+      "female"
+    ],
+    "group": "onepiece"
+  },
+  {
+    "tag": "breast press",
+    "section": "feature",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ],
+    "needs": [
+      "female"
+    ],
+    "group": "body_f"
+  },
+  {
+    "tag": "coat",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "outer",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "modern"
+    ],
+    "group": "outer"
+  },
+  {
+    "tag": "wet shirt",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash"
+    ],
+    "mutex": "top",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "modern"
+    ],
+    "group": "top"
+  },
+  {
+    "tag": "swivel chair",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ],
+    "group": "other"
+  },
+  {
+    "tag": "blue skirt",
+    "section": "clothing",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "bottom",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "modern"
+    ],
+    "needs": [
+      "female"
+    ],
+    "group": "bottom"
+  },
+  {
+    "tag": "blue dress",
+    "section": "clothing",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "onepiece",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "modern"
+    ],
+    "needs": [
+      "female"
+    ],
+    "group": "onepiece"
+  },
+  {
+    "tag": "competition swimsuit",
+    "section": "clothing",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "onepiece",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "modern"
+    ],
+    "needs": [
+      "female"
+    ],
+    "group": "onepiece"
+  },
+  {
+    "tag": "green shirt",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "top",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "modern"
+    ],
+    "group": "top"
+  },
+  {
+    "tag": "sweater lift",
+    "section": "pose",
+    "gate": "female",
+    "heat": [
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ],
+    "needs": [
+      "female"
+    ],
+    "group": "flash"
+  },
+  {
+    "tag": "office chair",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "modern"
+    ],
+    "group": "other"
+  },
+  {
+    "tag": "dress pull",
+    "section": "clothing",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "onepiece",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "modern"
+    ],
+    "needs": [
+      "female"
+    ],
+    "group": "onepiece"
+  },
+  {
+    "tag": "bag",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "accessory",
+    "era": [
+      "any"
+    ],
+    "group": "acc"
+  },
+  {
+    "tag": "red dress",
+    "section": "clothing",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "onepiece",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "modern"
+    ],
+    "needs": [
+      "female"
+    ],
+    "group": "onepiece"
+  },
+  {
+    "tag": "licking penis",
+    "section": "feature",
+    "gate": "male",
+    "heat": [
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "skin",
+    "era": [
+      "any"
+    ],
+    "needs": [
+      "male"
+    ],
+    "group": "body_m"
+  },
+  {
+    "tag": "penis out",
+    "section": "feature",
+    "gate": "male",
+    "heat": [
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "skin",
+    "era": [
+      "any"
+    ],
+    "needs": [
+      "male"
+    ],
+    "group": "body_m"
+  },
+  {
+    "tag": "breasts on table",
+    "section": "feature",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ],
+    "needs": [
+      "female"
+    ],
+    "group": "body_f"
+  },
+  {
+    "tag": "shoes",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "feet",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "any"
+    ],
+    "group": "feet"
+  },
+  {
+    "tag": "looking at penis",
+    "section": "feature",
+    "gate": "male",
+    "heat": [
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "skin",
+    "era": [
+      "any"
+    ],
+    "needs": [
+      "male"
+    ],
+    "group": "body_m"
+  },
+  {
+    "tag": "police uniform",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "onepiece",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "modern"
+    ],
+    "group": "onepiece"
+  },
+  {
+    "tag": "hair scrunchie",
+    "section": "feature",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ],
+    "group": "hair_style"
+  },
+  {
+    "tag": "blue jacket",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "outer",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "modern"
+    ],
+    "group": "outer"
+  },
+  {
+    "tag": "carpet",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ],
+    "group": "other"
+  },
+  {
+    "tag": "egg vibrator",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "accessory",
+    "era": [
+      "any"
+    ],
+    "group": "acc"
+  },
+  {
+    "tag": "black collar",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "neckwear",
+    "bind": [],
+    "implies": [],
+    "layer": "accessory",
+    "era": [
+      "any"
+    ],
+    "group": "acc"
+  },
+  {
+    "tag": "covered nipples",
+    "section": "feature",
+    "gate": "female",
+    "heat": [
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "skin",
+    "era": [
+      "any"
+    ],
+    "needs": [
+      "female"
+    ],
+    "group": "body_f"
+  },
+  {
+    "tag": "ass ripple",
+    "section": "feature",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ],
+    "needs": [
+      "female"
+    ],
+    "group": "other"
+  },
+  {
+    "tag": "after paizuri",
+    "section": "pose",
+    "gate": "female",
+    "heat": [
+      "sex"
+    ],
+    "mutex": "sex_act",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ],
+    "needs": [
+      "pair",
+      "male",
+      "female"
+    ],
+    "group": "sex"
+  },
+  {
+    "tag": "open coat",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "outer",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "modern"
+    ],
+    "group": "outer"
+  },
+  {
+    "tag": "one-piece swimsuit pull",
+    "section": "clothing",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "onepiece",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "modern"
+    ],
+    "needs": [
+      "female"
+    ],
+    "group": "onepiece"
+  },
+  {
+    "tag": "green dress",
+    "section": "clothing",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "onepiece",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "modern"
+    ],
+    "needs": [
+      "female"
+    ],
+    "group": "onepiece"
+  },
+  {
+    "tag": "nipple stimulation",
+    "section": "feature",
+    "gate": "female",
+    "heat": [
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "skin",
+    "era": [
+      "any"
+    ],
+    "needs": [
+      "female"
+    ],
+    "group": "body_f"
+  },
+  {
+    "tag": "black jacket",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "outer",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "modern"
+    ],
+    "group": "outer"
+  },
+  {
+    "tag": "tooth necklace",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "accessory",
+    "era": [
+      "any"
+    ],
+    "group": "acc"
+  },
+  {
+    "tag": "ceiling light",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "lighting",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ],
+    "group": "light"
+  },
+  {
+    "tag": "high-waist skirt",
+    "section": "clothing",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "bottom",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "modern"
+    ],
+    "needs": [
+      "female"
+    ],
+    "group": "bottom"
+  },
+  {
+    "tag": "blue sports bra",
+    "section": "clothing",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash"
+    ],
+    "mutex": "underwear_top",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "modern"
+    ],
+    "needs": [
+      "female"
+    ],
+    "group": "underwear"
+  },
+  {
+    "tag": "bra visible through clothes",
+    "section": "clothing",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash"
+    ],
+    "mutex": "underwear_top",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "modern"
+    ],
+    "needs": [
+      "female"
+    ],
+    "group": "underwear"
+  },
+  {
+    "tag": "swimsuit aside",
+    "section": "clothing",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "onepiece",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "modern"
+    ],
+    "needs": [
+      "female"
+    ],
+    "group": "onepiece"
+  },
+  {
+    "tag": "sleeves rolled up",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "any"
+    ],
+    "group": "acc"
+  },
+  {
+    "tag": "black bra",
+    "section": "clothing",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash"
+    ],
+    "mutex": "underwear_top",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "modern"
+    ],
+    "needs": [
+      "female"
+    ],
+    "group": "underwear"
+  },
+  {
+    "tag": "side-tie bikini bottom",
+    "section": "clothing",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash"
+    ],
+    "mutex": "onepiece",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "modern"
+    ],
+    "needs": [
+      "female"
+    ],
+    "group": "onepiece"
+  },
+  {
+    "tag": "blue necktie",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "accessory",
+    "era": [
+      "any"
+    ],
+    "group": "acc"
+  },
+  {
+    "tag": "shirt pull",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "top",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "modern"
+    ],
+    "group": "top"
+  },
+  {
+    "tag": "black dress",
+    "section": "clothing",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "onepiece",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "modern"
+    ],
+    "needs": [
+      "female"
+    ],
+    "group": "onepiece"
+  },
+  {
+    "tag": "white sweater",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "top",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "modern"
+    ],
+    "group": "top"
+  },
+  {
+    "tag": "white kimono",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "onepiece",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "edo"
+    ],
+    "group": "onepiece"
+  },
+  {
+    "tag": "cum pool",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "flash",
+      "sex"
+    ],
+    "mutex": "place",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ],
+    "group": "place"
+  },
+  {
+    "tag": "white tank top",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "top",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "modern"
+    ],
+    "group": "top"
+  },
+  {
+    "tag": "sweater pull",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "top",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "modern"
+    ],
+    "group": "top"
+  },
+  {
+    "tag": "umbrella",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "accessory",
+    "era": [
+      "any"
+    ],
+    "group": "acc"
+  },
+  {
+    "tag": "green sweater",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "top",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "modern"
+    ],
+    "group": "top"
+  },
+  {
+    "tag": "blue bodysuit",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "onepiece",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "any"
+    ],
+    "group": "onepiece"
+  },
+  {
+    "tag": "black belt",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "accessory",
+    "era": [
+      "any"
+    ],
+    "group": "acc"
+  },
+  {
+    "tag": "green jacket",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "outer",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "modern"
+    ],
+    "group": "outer"
+  },
+  {
+    "tag": "white coat",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "outer",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "modern"
+    ],
+    "group": "outer"
+  },
+  {
+    "tag": "detached collar",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "neckwear",
+    "bind": [],
+    "implies": [],
+    "layer": "accessory",
+    "era": [
+      "any"
+    ],
+    "group": "acc"
+  },
+  {
+    "tag": "hair flower",
+    "section": "feature",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ],
+    "group": "hair_style"
+  },
+  {
+    "tag": "black panties",
+    "section": "clothing",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash"
+    ],
+    "mutex": "underwear_bottom",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "modern"
+    ],
+    "needs": [
+      "female"
+    ],
+    "group": "underwear"
+  },
+  {
+    "tag": "inverted nipples",
+    "section": "feature",
+    "gate": "female",
+    "heat": [
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "skin",
+    "era": [
+      "any"
+    ],
+    "needs": [
+      "female"
+    ],
+    "group": "body_f"
+  },
+  {
+    "tag": "ffm threesome",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "sex"
+    ],
+    "mutex": "sex_act",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ],
+    "needs": [
+      "pair"
+    ],
+    "group": "sex"
+  },
+  {
+    "tag": "kiss",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ],
+    "needs": [
+      "pair"
+    ],
+    "group": "tease"
+  },
+  {
+    "tag": "hard hat",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "headwear",
+    "bind": [],
+    "implies": [],
+    "layer": "accessory",
+    "era": [
+      "any"
+    ],
+    "group": "acc"
+  },
+  {
+    "tag": "huge nipples",
+    "section": "feature",
+    "gate": "female",
+    "heat": [
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "skin",
+    "era": [
+      "any"
+    ],
+    "needs": [
+      "female"
+    ],
+    "group": "body_f"
+  },
+  {
+    "tag": "black bodysuit",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "onepiece",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "any"
+    ],
+    "group": "onepiece"
+  },
+  {
+    "tag": "nun",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "onepiece",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "any"
+    ],
+    "group": "onepiece"
+  },
+  {
+    "tag": "wet hair",
+    "section": "feature",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ],
+    "group": "hair_style"
+  },
+  {
+    "tag": "sleeveless shirt",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "top",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "modern"
+    ],
+    "group": "top"
+  },
+  {
+    "tag": "black shorts",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "bottom",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "modern"
+    ],
+    "group": "bottom"
+  },
+  {
+    "tag": "thigh gap",
+    "section": "feature",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ],
+    "needs": [
+      "female"
+    ],
+    "group": "body_f"
+  },
+  {
+    "tag": "black thighhighs",
+    "section": "clothing",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "legs",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "any"
+    ],
+    "needs": [
+      "female"
+    ],
+    "group": "legs"
+  },
+  {
+    "tag": "detached sleeves",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "any"
+    ],
+    "group": "acc"
+  },
+  {
+    "tag": "brown belt",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "accessory",
+    "era": [
+      "any"
+    ],
+    "group": "acc"
+  },
+  {
+    "tag": "breasts on glass",
+    "section": "feature",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ],
+    "needs": [
+      "female"
+    ],
+    "group": "body_f"
+  },
+  {
+    "tag": "pink shirt",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "top",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "modern"
+    ],
+    "group": "top"
+  },
+  {
+    "tag": "blue sweater",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "top",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "modern"
+    ],
+    "group": "top"
+  },
+  {
+    "tag": "lifting person",
+    "section": "pose",
+    "gate": "female",
+    "heat": [
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ],
+    "needs": [
+      "female"
+    ],
+    "group": "flash"
+  },
+  {
+    "tag": "animal collar",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "neckwear",
+    "bind": [],
+    "implies": [],
+    "layer": "accessory",
+    "era": [
+      "any"
+    ],
+    "group": "acc"
+  },
+  {
+    "tag": "bead necklace",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "accessory",
+    "era": [
+      "any"
+    ],
+    "group": "acc"
+  },
+  {
+    "tag": "park bench",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "place",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ],
+    "group": "place"
+  },
+  {
+    "tag": "breasts apart",
+    "section": "feature",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ],
+    "needs": [
+      "female"
+    ],
+    "group": "body_f"
+  },
+  {
+    "tag": "watch",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "accessory",
+    "era": [
+      "any"
+    ],
+    "group": "acc"
+  },
+  {
+    "tag": "blue bikini",
+    "section": "clothing",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash"
+    ],
+    "mutex": "onepiece",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "modern"
+    ],
+    "needs": [
+      "female"
+    ],
+    "group": "onepiece"
+  },
+  {
+    "tag": "purple dress",
+    "section": "clothing",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "onepiece",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "modern"
+    ],
+    "needs": [
+      "female"
+    ],
+    "group": "onepiece"
+  },
+  {
+    "tag": "shoulder armor",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "onepiece",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "medieval"
+    ],
+    "group": "onepiece"
+  },
+  {
+    "tag": "cardigan",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "outer",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "modern"
+    ],
+    "group": "outer"
+  },
+  {
+    "tag": "white bra",
+    "section": "clothing",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash"
+    ],
+    "mutex": "underwear_top",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "modern"
+    ],
+    "needs": [
+      "female"
+    ],
+    "group": "underwear"
+  },
+  {
+    "tag": "blue bra",
+    "section": "clothing",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash"
+    ],
+    "mutex": "underwear_top",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "modern"
+    ],
+    "needs": [
+      "female"
+    ],
+    "group": "underwear"
+  },
+  {
+    "tag": "yuri",
+    "section": "subject",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ],
+    "needs": [
+      "pair",
+      "female"
+    ],
+    "group": "extra"
+  },
+  {
+    "tag": "on chair",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "body_pose",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ],
+    "group": "body"
+  },
+  {
+    "tag": "brown pants",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "bottom",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "modern"
+    ],
+    "group": "bottom"
+  },
+  {
+    "tag": "after fellatio",
+    "section": "pose",
+    "gate": "female",
+    "heat": [
+      "sex"
+    ],
+    "mutex": "sex_act",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ],
+    "needs": [
+      "pair",
+      "male",
+      "female"
+    ],
+    "group": "sex"
+  },
+  {
+    "tag": "off-shoulder sweater",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "top",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "modern"
+    ],
+    "group": "top"
+  },
+  {
+    "tag": "pool ladder",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "place",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ],
+    "group": "place"
+  },
+  {
+    "tag": "open bodysuit",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "onepiece",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "any"
+    ],
+    "group": "onepiece"
+  },
+  {
+    "tag": "holding hands",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ],
+    "needs": [
+      "pair"
+    ],
+    "group": "tease"
+  },
+  {
+    "tag": "black gloves",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "accessory",
+    "era": [
+      "any"
+    ],
+    "group": "acc"
+  },
+  {
+    "tag": "blue kimono",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "onepiece",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "edo"
+    ],
+    "group": "onepiece"
+  },
+  {
+    "tag": "pink bikini",
+    "section": "clothing",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash"
+    ],
+    "mutex": "onepiece",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "modern"
+    ],
+    "needs": [
+      "female"
+    ],
+    "group": "onepiece"
+  },
+  {
+    "tag": "military uniform",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "onepiece",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "modern"
+    ],
+    "group": "onepiece"
+  },
+  {
+    "tag": "condom on penis",
+    "section": "feature",
+    "gate": "male",
+    "heat": [
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "skin",
+    "era": [
+      "any"
+    ],
+    "needs": [
+      "male"
+    ],
+    "group": "body_m",
+    "zh": "套著保險套"
+  },
+  {
+    "tag": "red bodysuit",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "onepiece",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "any"
+    ],
+    "group": "onepiece"
+  },
+  {
+    "tag": "sports bra lift",
+    "section": "pose",
+    "gate": "female",
+    "heat": [
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ],
+    "needs": [
+      "female"
+    ],
+    "group": "flash"
+  },
+  {
+    "tag": "imminent fellatio",
+    "section": "pose",
+    "gate": "female",
+    "heat": [
+      "sex"
+    ],
+    "mutex": "sex_act",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ],
+    "needs": [
+      "pair",
+      "male",
+      "female"
+    ],
+    "group": "sex"
+  },
+  {
+    "tag": "high-waist pants",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "bottom",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "modern"
+    ],
+    "group": "bottom"
+  },
+  {
+    "tag": "turtleneck sweater",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "top",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "modern"
+    ],
+    "group": "top"
+  },
+  {
+    "tag": "arm hair",
+    "section": "feature",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ],
+    "group": "hair_style"
+  },
+  {
+    "tag": "leg hair",
+    "section": "feature",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ],
+    "group": "hair_style"
+  },
+  {
+    "tag": "tweaking own nipple",
+    "section": "feature",
+    "gate": "female",
+    "heat": [
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "skin",
+    "era": [
+      "any"
+    ],
+    "needs": [
+      "female"
+    ],
+    "group": "body_f"
+  },
+  {
+    "tag": "brown skirt",
+    "section": "clothing",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "bottom",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "modern"
+    ],
+    "needs": [
+      "female"
+    ],
+    "group": "bottom"
+  },
+  {
+    "tag": "police hat",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "headwear",
+    "bind": [],
+    "implies": [],
+    "layer": "accessory",
+    "era": [
+      "any"
+    ],
+    "group": "acc"
+  },
+  {
+    "tag": "sleeveless dress",
+    "section": "clothing",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "onepiece",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "modern"
+    ],
+    "needs": [
+      "female"
+    ],
+    "group": "onepiece"
+  },
+  {
+    "tag": "bath yukata",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "onepiece",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "edo"
+    ],
+    "group": "onepiece"
+  },
+  {
+    "tag": "red shirt",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "top",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "modern"
+    ],
+    "group": "top"
+  },
+  {
+    "tag": "perpendicular paizuri",
+    "section": "pose",
+    "gate": "female",
+    "heat": [
+      "sex"
+    ],
+    "mutex": "sex_act",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ],
+    "needs": [
+      "pair",
+      "male",
+      "female"
+    ],
+    "group": "sex"
+  },
+  {
+    "tag": "brown coat",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "outer",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "modern"
+    ],
+    "group": "outer"
+  },
+  {
+    "tag": "cross necklace",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "accessory",
+    "era": [
+      "any"
+    ],
+    "group": "acc"
+  },
+  {
+    "tag": "dress shirt",
+    "section": "clothing",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "onepiece",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "modern"
+    ],
+    "needs": [
+      "female"
+    ],
+    "group": "onepiece"
+  },
+  {
+    "tag": "beach towel",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "place",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ],
+    "group": "place"
+  },
+  {
+    "tag": "arm under breasts",
+    "section": "feature",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ],
+    "needs": [
+      "female"
+    ],
+    "group": "body_f"
+  },
+  {
+    "tag": "cum on ass",
+    "section": "feature",
+    "gate": "female",
+    "heat": [
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ],
+    "needs": [
+      "female"
+    ],
+    "group": "other"
+  },
+  {
+    "tag": "ribbed sweater",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "top",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "modern"
+    ],
+    "group": "top"
+  },
+  {
+    "tag": "grabbing another's hair",
+    "section": "feature",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ],
+    "group": "hair_style"
+  },
+  {
+    "tag": "track uniform",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "onepiece",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "modern"
+    ],
+    "group": "onepiece"
+  },
+  {
+    "tag": "see-through shirt",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "top",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "modern"
+    ],
+    "group": "top"
+  },
+  {
+    "tag": "white panties",
+    "section": "clothing",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash"
+    ],
+    "mutex": "underwear_bottom",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "modern"
+    ],
+    "needs": [
+      "female"
+    ],
+    "group": "underwear"
+  },
+  {
+    "tag": "nipple piercing",
+    "section": "feature",
+    "gate": "female",
+    "heat": [
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "skin",
+    "era": [
+      "any"
+    ],
+    "needs": [
+      "female"
+    ],
+    "group": "body_f"
+  },
+  {
+    "tag": "arms under breasts",
+    "section": "feature",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ],
+    "needs": [
+      "female"
+    ],
+    "group": "body_f"
+  },
+  {
+    "tag": "red one-piece swimsuit",
+    "section": "clothing",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "onepiece",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "modern"
+    ],
+    "needs": [
+      "female"
+    ],
+    "group": "onepiece"
+  },
+  {
+    "tag": "implied sex",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "sex"
+    ],
+    "mutex": "sex_act",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ],
+    "needs": [
+      "pair"
+    ],
+    "group": "sex"
+  },
+  {
+    "tag": "bamboo forest",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "place",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ],
+    "group": "place"
+  },
+  {
+    "tag": "glowing eyes",
+    "section": "feature",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "eye_color",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ],
+    "group": "eyes"
+  },
+  {
+    "tag": "open cardigan",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "outer",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "modern"
+    ],
+    "group": "outer"
+  },
+  {
+    "tag": "red panties",
+    "section": "clothing",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash"
+    ],
+    "mutex": "underwear_bottom",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "modern"
+    ],
+    "needs": [
+      "female"
+    ],
+    "group": "underwear"
+  },
+  {
+    "tag": "bikini bottom aside",
+    "section": "clothing",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash"
+    ],
+    "mutex": "onepiece",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "modern"
+    ],
+    "needs": [
+      "female"
+    ],
+    "group": "onepiece"
+  },
+  {
+    "tag": "naked coat",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "outer",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "modern"
+    ],
+    "group": "outer"
+  },
+  {
+    "tag": "track jacket",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "outer",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "modern"
+    ],
+    "group": "outer"
+  },
+  {
+    "tag": "naked jacket",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "outer",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "modern"
+    ],
+    "group": "outer"
+  },
+  {
+    "tag": "red collar",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "neckwear",
+    "bind": [],
+    "implies": [],
+    "layer": "accessory",
+    "era": [
+      "any"
+    ],
+    "group": "acc"
+  },
+  {
+    "tag": "black sports bra",
+    "section": "clothing",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash"
+    ],
+    "mutex": "underwear_top",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "modern"
+    ],
+    "needs": [
+      "female"
+    ],
+    "group": "underwear"
+  },
+  {
+    "tag": "aqua shirt",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "top",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "modern"
+    ],
+    "group": "top"
+  },
+  {
+    "tag": "bush",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ],
+    "group": "other"
+  },
+  {
+    "tag": "puffy sleeves",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "any"
+    ],
+    "group": "acc"
+  },
+  {
+    "tag": "leotard aside",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "onepiece",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "any"
+    ],
+    "group": "onepiece"
+  },
+  {
+    "tag": "blue shorts",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "bottom",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "modern"
+    ],
+    "group": "bottom"
+  },
+  {
+    "tag": "pink dress",
+    "section": "clothing",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "onepiece",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "modern"
+    ],
+    "needs": [
+      "female"
+    ],
+    "group": "onepiece"
+  },
+  {
+    "tag": "tassel earrings",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "jewelry",
+    "bind": [],
+    "implies": [],
+    "layer": "accessory",
+    "era": [
+      "any"
+    ],
+    "group": "acc"
+  },
+  {
+    "tag": "basketball uniform",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "onepiece",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "modern"
+    ],
+    "group": "onepiece"
+  },
+  {
+    "tag": "white socks",
+    "section": "clothing",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "legs",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "any"
+    ],
+    "needs": [
+      "female"
+    ],
+    "group": "legs"
+  },
+  {
+    "tag": "guided breast grab",
+    "section": "feature",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ],
+    "needs": [
+      "female"
+    ],
+    "group": "body_f"
+  },
+  {
+    "tag": "purple kimono",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "onepiece",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "edo"
+    ],
+    "group": "onepiece"
+  },
+  {
+    "tag": "red sweater",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "top",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "modern"
+    ],
+    "group": "top"
+  },
+  {
+    "tag": "orange sky",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ],
+    "group": "other"
+  },
+  {
+    "tag": "gaming chair",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ],
+    "group": "other"
+  },
+  {
+    "tag": "breast bondage",
+    "section": "feature",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ],
+    "needs": [
+      "female"
+    ],
+    "group": "body_f"
+  },
+  {
+    "tag": "vest",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "top",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "modern"
+    ],
+    "group": "top"
+  },
+  {
+    "tag": "pink sports bra",
+    "section": "clothing",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash"
+    ],
+    "mutex": "underwear_top",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "modern"
+    ],
+    "needs": [
+      "female"
+    ],
+    "group": "underwear"
+  },
+  {
+    "tag": "pink bra",
+    "section": "clothing",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash"
+    ],
+    "mutex": "underwear_top",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "modern"
+    ],
+    "needs": [
+      "female"
+    ],
+    "group": "underwear"
+  },
+  {
+    "tag": "grabbing another's ass",
+    "section": "feature",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ],
+    "needs": [
+      "female"
+    ],
+    "group": "other"
+  },
+  {
+    "tag": "unaligned breasts",
+    "section": "feature",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ],
+    "needs": [
+      "female"
+    ],
+    "group": "body_f"
+  },
+  {
+    "tag": "black bowtie",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "accessory",
+    "era": [
+      "any"
+    ],
+    "group": "acc"
+  },
+  {
+    "tag": "power armor",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "onepiece",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "medieval"
+    ],
+    "group": "onepiece"
+  },
+  {
+    "tag": "beach umbrella",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "accessory",
+    "era": [
+      "any"
+    ],
+    "group": "acc"
+  },
+  {
+    "tag": "white skirt",
+    "section": "clothing",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "bottom",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "modern"
+    ],
+    "needs": [
+      "female"
+    ],
+    "group": "bottom"
+  },
+  {
+    "tag": "black tank top",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "top",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "modern"
+    ],
+    "group": "top"
+  },
+  {
+    "tag": "parted hair",
+    "section": "feature",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ],
+    "group": "hair_style"
+  },
+  {
+    "tag": "thigh strap",
+    "section": "feature",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ],
+    "needs": [
+      "female"
+    ],
+    "group": "body_f"
+  },
+  {
+    "tag": "torn bodysuit",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "onepiece",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "any"
+    ],
+    "group": "onepiece"
+  },
+  {
+    "tag": "casual one-piece swimsuit",
+    "section": "clothing",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "onepiece",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "modern"
+    ],
+    "needs": [
+      "female"
+    ],
+    "group": "onepiece"
+  },
+  {
+    "tag": "black necktie",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "accessory",
+    "era": [
+      "any"
+    ],
+    "group": "acc"
+  },
+  {
+    "tag": "blue panties",
+    "section": "clothing",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash"
+    ],
+    "mutex": "underwear_bottom",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "modern"
+    ],
+    "needs": [
+      "female"
+    ],
+    "group": "underwear"
+  },
+  {
+    "tag": "stealth sex",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "sex"
+    ],
+    "mutex": "sex_act",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ],
+    "needs": [
+      "pair"
+    ],
+    "group": "sex"
+  },
+  {
+    "tag": "black leotard",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "onepiece",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "any"
+    ],
+    "group": "onepiece"
+  },
+  {
+    "tag": "white one-piece swimsuit",
+    "section": "clothing",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "onepiece",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "modern"
+    ],
+    "needs": [
+      "female"
+    ],
+    "group": "onepiece"
+  },
+  {
+    "tag": "penis on ass",
+    "section": "feature",
+    "gate": "female",
+    "heat": [
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ],
+    "needs": [
+      "female"
+    ],
+    "group": "other"
+  },
+  {
+    "tag": "restaurant",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "place",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ],
+    "group": "place"
+  },
+  {
+    "tag": "handbag",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "accessory",
+    "era": [
+      "any"
+    ],
+    "group": "acc"
+  },
+  {
+    "tag": "long skirt",
+    "section": "clothing",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "bottom",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "modern"
+    ],
+    "needs": [
+      "female"
+    ],
+    "group": "bottom"
+  },
+  {
+    "tag": "breast suppress",
+    "section": "feature",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ],
+    "needs": [
+      "female"
+    ],
+    "group": "body_f"
+  },
+  {
+    "tag": "holding sex toy",
+    "section": "pose",
+    "gate": "any",
+    "heat": [
+      "sex"
+    ],
+    "mutex": "sex_act",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ],
+    "needs": [
+      "pair"
+    ],
+    "group": "sex"
+  },
+  {
+    "tag": "o-ring",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "accessory",
+    "era": [
+      "any"
+    ],
+    "group": "acc"
+  },
+  {
+    "tag": "off-shoulder dress",
+    "section": "clothing",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "onepiece",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "modern"
+    ],
+    "needs": [
+      "female"
+    ],
+    "group": "onepiece"
+  },
+  {
+    "tag": "city lights",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "lighting",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ],
+    "group": "light"
+  },
+  {
+    "tag": "red tank top",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "top",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "modern"
+    ],
+    "group": "top"
+  }
+]

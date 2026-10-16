@@ -1,0 +1,144 @@
+{
+  "_note": "同一個概念的另一個名字：跟原卡同中文名、擺在原卡旁邊，兩張都留、都抽得到（merge_lexicon.py 照原卡複製一份，只換字）。2026-10-14 專案主決定：v17 實測後不刪字，改成把舊名、替代字一起加進來。舊名＝比現在的字早存在、後來被 Danbooru 併進現在這個字（所以現在 0 張），模型（WAI v17）訓練時看到的多半是舊名。替代字＝Grok 實測模型畫得出來的同概念字。實測分數見 scripts/model_vocab_audit_v17.json。 2026-10-14 Grok 實測 29 組（討論區「29 組同名卡測完」）之後專案主決定：只認新名的刪原名（keep: alt，原卡不出現、舊存檔自動換成新名）；只認原名、兩個都不認得的不加新名。",
+  "pairs": [
+    {
+      "tag": "kyoto (city)",
+      "alt": "kyoto",
+      "why": "舊名，2026-08 併進 kyoto (city)；舊名實測 5/5",
+      "test": "原名 D 5/5、新名 F 5/5"
+    },
+    {
+      "tag": "cooperative breast sucking",
+      "alt": "double breast sucking",
+      "why": "舊名，2026-06 併入",
+      "test": "原名 D 5/5、新名 F 5/5"
+    },
+    {
+      "tag": "missing legwear",
+      "alt": "no legwear",
+      "why": "舊名，2026-02 併入；舊名實測 5/5、新名 0/5（畫成有穿襪）",
+      "test": "只認新名：原名 D 0/5（畫成穿襪）、新名 F 5/5",
+      "keep": "alt"
+    },
+    {
+      "tag": "biting nipple",
+      "alt": "nipple biting",
+      "why": "舊名，2024-09 併入；舊名實測 0/5",
+      "test": "原名 D 3/5、新名 F 3/5"
+    },
+    {
+      "tag": "goth fashion",
+      "alt": "gothic",
+      "why": "舊名，2024-02 併入；舊名實測 5/5",
+      "test": "原名 D 5/5、新名 F 5/5"
+    },
+    {
+      "tag": "goth fashion",
+      "alt": "goth girl",
+      "why": "舊名，2024-02 併入",
+      "test": "原名 D 5/5、新名 F 5/5"
+    },
+    {
+      "tag": "looking through own legs",
+      "alt": "looking through legs",
+      "why": "舊名，2024-03 併入；舊名實測 5/5",
+      "test": "原名 D 5/5、新名 F 5/5"
+    },
+    {
+      "tag": "lifting own clothes",
+      "alt": "lifted by self",
+      "why": "舊名，2024-05 併入；舊名實測 4/5",
+      "test": "原名 D 3/5、新名 F 4/5"
+    },
+    {
+      "tag": "clothes focus",
+      "alt": "clothes only",
+      "why": "舊名，2025-08 併入；舊名實測 5/5",
+      "test": "原名 D 5/5、新名 F 5/5"
+    },
+    {
+      "tag": "three-quarter sleeves",
+      "alt": "sleeves past elbows",
+      "why": "舊名，2025-01 併入；舊名實測 5/5、新名 0/5",
+      "test": "只認新名：原名 D 0/5、新名 F 5/5",
+      "keep": "alt"
+    },
+    {
+      "tag": "presenting own breasts",
+      "alt": "presenting breasts",
+      "why": "舊字，2020 建、現在 0 張",
+      "test": "原名 D 5/5、新名 F 4/5"
+    },
+    {
+      "tag": "plugsuit (evangelion)",
+      "alt": "plugsuit",
+      "why": "舊字，現在 0 張",
+      "test": "原名 D 5/5、新名 F 5/5"
+    },
+    {
+      "tag": "cum pool",
+      "alt": "cum puddle",
+      "why": "替代字：cum pool 2026-10 併進 cum puddle；兩個名字實測都 5/5",
+      "test": "原名 D 5/5、新名 F 5/5"
+    },
+    {
+      "tag": "colonnade",
+      "alt": "column",
+      "why": "替代字：colonnade 實測 0/5；column 實測 5/5（畫出一長排柱子）",
+      "test": "只認新名：原名 D 0/5、新名 F 5/5",
+      "keep": "alt"
+    },
+    {
+      "tag": "aizawa shota",
+      "alt": "eraser head (boku no hero academia)",
+      "why": "舊名，2024-11 併入；舊名實測 5/5、新名 0/5（畫成別的雄英角色）",
+      "test": "只認新名：原名 D 0/5、新名 F 5/5",
+      "keep": "alt"
+    },
+    {
+      "tag": "marcille donato",
+      "alt": "marcille",
+      "why": "舊名，2024-01 併入",
+      "test": "原名 D 5/5、新名 F 5/5"
+    },
+    {
+      "tag": "falin touden (tallman)",
+      "alt": "falin thorden (tallman)",
+      "why": "舊名（拼法），2024-04 併入",
+      "test": "原名 D 5/5、新名 F 5/5"
+    },
+    {
+      "tag": "laios touden",
+      "alt": "laios thorden",
+      "why": "舊名（拼法），2024-04 併入",
+      "test": "原名 D 5/5、新名 F 5/5"
+    },
+    {
+      "tag": "marcille donato (lord)",
+      "alt": "marcille donato (dungeon lord)",
+      "why": "舊名，2024-04 併入",
+      "test": "只認新名：原名 D 0/5（畫成藍斗篷）、新名 F 5/5",
+      "keep": "alt"
+    },
+    {
+      "tag": "t-head trainer (umamusume)",
+      "alt": "t-head trainer",
+      "why": "舊名，2024-08 併入",
+      "test": "原名 D 5/5、新名 F 5/5"
+    },
+    {
+      "tag": "taihou (forbidden fruit) (azur lane)",
+      "alt": "taihou (forbidden feast) (azur lane)",
+      "why": "舊名，2024-11 併入",
+      "test": "只認新名：原名 D 1/5（畫成紅比基尼）、新名 F 4/5",
+      "keep": "alt"
+    },
+    {
+      "tag": "shion (tensura)",
+      "alt": "shion (tensei shitara slime datta ken)",
+      "why": "舊名，2025-01 併入",
+      "test": "只認新名：原名 D 0/5、新名 F 5/5",
+      "keep": "alt"
+    }
+  ]
+}

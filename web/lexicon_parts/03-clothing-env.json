@@ -1,0 +1,3042 @@
+[
+  {
+    "tag": "nude",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "nudity",
+    "bind": [],
+    "implies": [],
+    "layer": "skin",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "completely nude",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "nudity",
+    "bind": [],
+    "implies": [],
+    "layer": "skin",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "topless female",
+    "section": "clothing",
+    "gate": "female",
+    "heat": [
+      "flash",
+      "sex"
+    ],
+    "mutex": "top",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "topless male",
+    "section": "clothing",
+    "gate": "male",
+    "heat": [
+      "flash",
+      "sex"
+    ],
+    "mutex": "top",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "bottomless",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "flash",
+      "sex"
+    ],
+    "mutex": "bottom",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "dress",
+    "section": "clothing",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash"
+    ],
+    "mutex": "onepiece",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "sundress",
+    "section": "clothing",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash"
+    ],
+    "mutex": "onepiece",
+    "bind": [],
+    "implies": [
+      "dress"
+    ],
+    "layer": "garment",
+    "era": [
+      "modern"
+    ]
+  },
+  {
+    "tag": "evening gown",
+    "section": "clothing",
+    "gate": "female",
+    "heat": [
+      "tease"
+    ],
+    "mutex": "onepiece",
+    "bind": [],
+    "implies": [
+      "dress"
+    ],
+    "layer": "garment",
+    "era": [
+      "victorian",
+      "modern"
+    ]
+  },
+  {
+    "tag": "wedding dress",
+    "section": "clothing",
+    "gate": "female",
+    "heat": [
+      "tease"
+    ],
+    "mutex": "onepiece",
+    "bind": [],
+    "implies": [
+      "dress"
+    ],
+    "layer": "garment",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "short dress",
+    "section": "clothing",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash"
+    ],
+    "mutex": "onepiece",
+    "bind": [],
+    "implies": [
+      "dress"
+    ],
+    "layer": "garment",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "sweater dress",
+    "section": "clothing",
+    "gate": "female",
+    "heat": [
+      "tease"
+    ],
+    "mutex": "onepiece",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "modern"
+    ]
+  },
+  {
+    "tag": "sailor dress",
+    "section": "clothing",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash"
+    ],
+    "mutex": "onepiece",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "modern"
+    ]
+  },
+  {
+    "tag": "open kimono",
+    "section": "clothing",
+    "gate": "female",
+    "heat": [
+      "flash",
+      "sex"
+    ],
+    "mutex": "onepiece",
+    "bind": [],
+    "implies": [
+      "kimono",
+      "japanese clothes"
+    ],
+    "layer": "garment",
+    "era": [
+      "edo"
+    ]
+  },
+  {
+    "tag": "suit",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease"
+    ],
+    "mutex": "onepiece",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "modern",
+      "victorian"
+    ]
+  },
+  {
+    "tag": "tuxedo",
+    "section": "clothing",
+    "gate": "male",
+    "heat": [
+      "tease"
+    ],
+    "mutex": "onepiece",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "modern",
+      "victorian"
+    ]
+  },
+  {
+    "tag": "school uniform",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash"
+    ],
+    "mutex": "onepiece",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "modern"
+    ]
+  },
+  {
+    "tag": "serafuku",
+    "section": "clothing",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash"
+    ],
+    "mutex": "onepiece",
+    "bind": [],
+    "implies": [
+      "school uniform"
+    ],
+    "layer": "garment",
+    "era": [
+      "modern"
+    ]
+  },
+  {
+    "tag": "gakuran",
+    "section": "clothing",
+    "gate": "male",
+    "heat": [
+      "tease"
+    ],
+    "mutex": "onepiece",
+    "bind": [],
+    "implies": [
+      "school uniform"
+    ],
+    "layer": "garment",
+    "era": [
+      "modern"
+    ]
+  },
+  {
+    "tag": "maid",
+    "section": "clothing",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash"
+    ],
+    "mutex": "onepiece",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "victorian",
+      "modern"
+    ]
+  },
+  {
+    "tag": "miko",
+    "section": "clothing",
+    "gate": "female",
+    "heat": [
+      "tease"
+    ],
+    "mutex": "onepiece",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "edo",
+      "modern"
+    ]
+  },
+  {
+    "tag": "cheerleader",
+    "section": "clothing",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash"
+    ],
+    "mutex": "onepiece",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "modern"
+    ]
+  },
+  {
+    "tag": "playboy bunny",
+    "section": "clothing",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash"
+    ],
+    "mutex": "onepiece",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "modern"
+    ]
+  },
+  {
+    "tag": "leotard",
+    "section": "clothing",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash"
+    ],
+    "mutex": "onepiece",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "modern"
+    ]
+  },
+  {
+    "tag": "bodysuit",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash"
+    ],
+    "mutex": "onepiece",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "modern"
+    ]
+  },
+  {
+    "tag": "gym uniform",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash"
+    ],
+    "mutex": "onepiece",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "modern"
+    ]
+  },
+  {
+    "tag": "pajamas",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash"
+    ],
+    "mutex": "onepiece",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "modern"
+    ]
+  },
+  {
+    "tag": "shirt",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash"
+    ],
+    "mutex": "top",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "blouse",
+    "section": "clothing",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash"
+    ],
+    "mutex": "top",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "tank top",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash"
+    ],
+    "mutex": "top",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "modern"
+    ]
+  },
+  {
+    "tag": "crop top",
+    "section": "clothing",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash"
+    ],
+    "mutex": "top",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "modern"
+    ]
+  },
+  {
+    "tag": "camisole",
+    "section": "clothing",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash"
+    ],
+    "mutex": "top",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "modern"
+    ]
+  },
+  {
+    "tag": "sweater",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease"
+    ],
+    "mutex": "top",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "modern"
+    ]
+  },
+  {
+    "tag": "open shirt",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "flash",
+      "sex"
+    ],
+    "mutex": "top",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "unbuttoned shirt",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "flash"
+    ],
+    "mutex": "top",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "off shoulder",
+    "section": "clothing",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash"
+    ],
+    "mutex": "top",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "jacket",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease"
+    ],
+    "mutex": "outer",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "open jacket",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash"
+    ],
+    "mutex": "outer",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "lab coat",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash"
+    ],
+    "mutex": "outer",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "modern"
+    ]
+  },
+  {
+    "tag": "skirt",
+    "section": "clothing",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash"
+    ],
+    "mutex": "bottom",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "miniskirt",
+    "section": "clothing",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash"
+    ],
+    "mutex": "bottom",
+    "bind": [],
+    "implies": [
+      "skirt"
+    ],
+    "layer": "garment",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "pencil skirt",
+    "section": "clothing",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash"
+    ],
+    "mutex": "bottom",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "pleated skirt",
+    "section": "clothing",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash"
+    ],
+    "mutex": "bottom",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "microskirt",
+    "section": "clothing",
+    "gate": "female",
+    "heat": [
+      "flash"
+    ],
+    "mutex": "bottom",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "shorts",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash"
+    ],
+    "mutex": "bottom",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "short shorts",
+    "section": "clothing",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash"
+    ],
+    "mutex": "bottom",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "pants",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash"
+    ],
+    "mutex": "bottom",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "yoga pants",
+    "section": "clothing",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash"
+    ],
+    "mutex": "bottom",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "modern"
+    ]
+  },
+  {
+    "tag": "swimsuit",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash"
+    ],
+    "mutex": "onepiece",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "modern"
+    ]
+  },
+  {
+    "tag": "bikini",
+    "section": "clothing",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash"
+    ],
+    "mutex": "onepiece",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "modern"
+    ]
+  },
+  {
+    "tag": "micro bikini",
+    "section": "clothing",
+    "gate": "female",
+    "heat": [
+      "flash"
+    ],
+    "mutex": "onepiece",
+    "bind": [],
+    "implies": [
+      "bikini"
+    ],
+    "layer": "garment",
+    "era": [
+      "modern"
+    ]
+  },
+  {
+    "tag": "string bikini",
+    "section": "clothing",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash"
+    ],
+    "mutex": "onepiece",
+    "bind": [],
+    "implies": [
+      "bikini"
+    ],
+    "layer": "garment",
+    "era": [
+      "modern"
+    ]
+  },
+  {
+    "tag": "slingshot swimsuit",
+    "section": "clothing",
+    "gate": "female",
+    "heat": [
+      "flash"
+    ],
+    "mutex": "onepiece",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "modern"
+    ]
+  },
+  {
+    "tag": "school swimsuit",
+    "section": "clothing",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash"
+    ],
+    "mutex": "onepiece",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "modern"
+    ]
+  },
+  {
+    "tag": "one-piece swimsuit",
+    "section": "clothing",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash"
+    ],
+    "mutex": "onepiece",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "modern"
+    ]
+  },
+  {
+    "tag": "swim briefs",
+    "section": "clothing",
+    "gate": "male",
+    "heat": [
+      "tease",
+      "flash"
+    ],
+    "mutex": "onepiece",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "modern"
+    ]
+  },
+  {
+    "tag": "lingerie",
+    "section": "clothing",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "onepiece",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "victorian",
+      "modern"
+    ]
+  },
+  {
+    "tag": "babydoll",
+    "section": "clothing",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash"
+    ],
+    "mutex": "onepiece",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "modern"
+    ]
+  },
+  {
+    "tag": "nightgown",
+    "section": "clothing",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash"
+    ],
+    "mutex": "onepiece",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "victorian",
+      "modern"
+    ]
+  },
+  {
+    "tag": "bra",
+    "section": "clothing",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash"
+    ],
+    "mutex": "underwear_top",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "panties",
+    "section": "clothing",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash"
+    ],
+    "mutex": "underwear_bottom",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "thong",
+    "section": "clothing",
+    "gate": "female",
+    "heat": [
+      "flash"
+    ],
+    "mutex": "underwear_bottom",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "no bra",
+    "section": "clothing",
+    "gate": "female",
+    "heat": [
+      "flash",
+      "sex"
+    ],
+    "mutex": "underwear_top",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "no panties",
+    "section": "clothing",
+    "gate": "female",
+    "heat": [
+      "flash",
+      "sex"
+    ],
+    "mutex": "underwear_bottom",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "panties aside",
+    "section": "clothing",
+    "gate": "female",
+    "heat": [
+      "sex"
+    ],
+    "mutex": "underwear_bottom",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "underwear only",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "flash",
+      "sex"
+    ],
+    "mutex": "onepiece",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "boxers",
+    "section": "clothing",
+    "gate": "male",
+    "heat": [
+      "tease",
+      "flash"
+    ],
+    "mutex": "underwear_bottom",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "briefs",
+    "section": "clothing",
+    "gate": "male",
+    "heat": [
+      "flash"
+    ],
+    "mutex": "underwear_bottom",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "fundoshi",
+    "section": "clothing",
+    "gate": "male",
+    "heat": [
+      "tease",
+      "flash"
+    ],
+    "mutex": "underwear_bottom",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "edo"
+    ]
+  },
+  {
+    "tag": "male underwear",
+    "section": "clothing",
+    "gate": "male",
+    "heat": [
+      "tease",
+      "flash"
+    ],
+    "mutex": "underwear_bottom",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "see-through clothes",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "flash",
+      "sex"
+    ],
+    "mutex": "fabric",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "wet clothes",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "flash"
+    ],
+    "mutex": "fabric",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "tight clothes",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash"
+    ],
+    "mutex": "fabric",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "open clothes",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "flash",
+      "sex"
+    ],
+    "mutex": "fabric",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "revealing clothes",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash"
+    ],
+    "mutex": "fabric",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "clothes between breasts",
+    "section": "clothing",
+    "gate": "female",
+    "heat": [
+      "flash",
+      "sex"
+    ],
+    "mutex": "fabric",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "fishnets",
+    "section": "clothing",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash"
+    ],
+    "mutex": "fabric",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "modern"
+    ]
+  },
+  {
+    "tag": "latex",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash"
+    ],
+    "mutex": "fabric",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "modern"
+    ]
+  },
+  {
+    "tag": "thighhighs",
+    "section": "clothing",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash"
+    ],
+    "mutex": "legs",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "pantyhose",
+    "section": "clothing",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash"
+    ],
+    "mutex": "legs",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "modern"
+    ]
+  },
+  {
+    "tag": "garter belt",
+    "section": "clothing",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash"
+    ],
+    "mutex": "legs",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "victorian",
+      "modern"
+    ]
+  },
+  {
+    "tag": "kneehighs",
+    "section": "clothing",
+    "gate": "female",
+    "heat": [
+      "tease"
+    ],
+    "mutex": "legs",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "fishnet thighhighs",
+    "section": "clothing",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash"
+    ],
+    "mutex": "legs",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "modern"
+    ]
+  },
+  {
+    "tag": "barefoot",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "feet",
+    "bind": [],
+    "implies": [],
+    "layer": "accessory",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "high heels",
+    "section": "clothing",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "feet",
+    "bind": [],
+    "implies": [],
+    "layer": "accessory",
+    "era": [
+      "victorian",
+      "modern"
+    ]
+  },
+  {
+    "tag": "sandals",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease"
+    ],
+    "mutex": "feet",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "boots",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease"
+    ],
+    "mutex": "feet",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "socks",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease"
+    ],
+    "mutex": "feet",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "necktie",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "neckwear",
+    "bind": [],
+    "implies": [],
+    "layer": "accessory",
+    "era": [
+      "victorian",
+      "modern"
+    ]
+  },
+  {
+    "tag": "bowtie",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "neckwear",
+    "bind": [],
+    "implies": [],
+    "layer": "accessory",
+    "era": [
+      "victorian",
+      "modern"
+    ]
+  },
+  {
+    "tag": "choker",
+    "section": "clothing",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "neckwear",
+    "bind": [],
+    "implies": [],
+    "layer": "accessory",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "collar",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "neckwear",
+    "bind": [],
+    "implies": [],
+    "layer": "accessory",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "earrings",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "jewelry",
+    "bind": [],
+    "implies": [],
+    "layer": "accessory",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "necklace",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "jewelry",
+    "bind": [],
+    "implies": [],
+    "layer": "accessory",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "jewelry",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "jewelry",
+    "bind": [],
+    "implies": [],
+    "layer": "accessory",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "bracelet",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "jewelry",
+    "bind": [],
+    "implies": [],
+    "layer": "accessory",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "navel piercing",
+    "section": "clothing",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "jewelry",
+    "bind": [],
+    "implies": [],
+    "layer": "accessory",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "glasses",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "eyewear",
+    "bind": [],
+    "implies": [],
+    "layer": "accessory",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "hair ornament",
+    "section": "clothing",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "headwear",
+    "bind": [],
+    "implies": [],
+    "layer": "accessory",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "hat",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "headwear",
+    "bind": [],
+    "implies": [],
+    "layer": "accessory",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "gloves",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "hands",
+    "bind": [],
+    "implies": [],
+    "layer": "accessory",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "elbow gloves",
+    "section": "clothing",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "hands",
+    "bind": [],
+    "implies": [],
+    "layer": "accessory",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "naked sweater",
+    "section": "clothing",
+    "gate": "female",
+    "heat": [
+      "flash",
+      "sex"
+    ],
+    "mutex": "onepiece",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "naked shirt",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "flash",
+      "sex"
+    ],
+    "mutex": "top",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "naked apron",
+    "section": "clothing",
+    "gate": "female",
+    "heat": [
+      "flash",
+      "sex"
+    ],
+    "mutex": "onepiece",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "naked towel",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "flash",
+      "sex"
+    ],
+    "mutex": "onepiece",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "bathrobe",
+    "section": "clothing",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash"
+    ],
+    "mutex": "onepiece",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "apron",
+    "section": "clothing",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash"
+    ],
+    "mutex": "onepiece",
+    "bind": [],
+    "implies": [],
+    "layer": "garment",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "bedroom",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "place",
+    "bind": [],
+    "implies": [
+      "indoors"
+    ],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "bed",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "flash",
+      "sex"
+    ],
+    "mutex": "place",
+    "bind": [],
+    "implies": [
+      "indoors"
+    ],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "hotel room",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "place",
+    "bind": [],
+    "implies": [
+      "indoors"
+    ],
+    "layer": "normal",
+    "era": [
+      "modern"
+    ]
+  },
+  {
+    "tag": "love hotel",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "flash",
+      "sex"
+    ],
+    "mutex": "place",
+    "bind": [],
+    "implies": [
+      "indoors"
+    ],
+    "layer": "normal",
+    "era": [
+      "modern"
+    ]
+  },
+  {
+    "tag": "onsen",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "flash",
+      "sex"
+    ],
+    "mutex": "place",
+    "bind": [],
+    "implies": [
+      "indoors"
+    ],
+    "layer": "normal",
+    "era": [
+      "edo",
+      "modern"
+    ]
+  },
+  {
+    "tag": "bath",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "flash",
+      "sex"
+    ],
+    "mutex": "place",
+    "bind": [],
+    "implies": [
+      "indoors"
+    ],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "bathroom",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "place",
+    "bind": [],
+    "implies": [
+      "indoors"
+    ],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "bathtub",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "flash",
+      "sex"
+    ],
+    "mutex": "place",
+    "bind": [],
+    "implies": [
+      "indoors"
+    ],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "shower (place)",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "flash",
+      "sex"
+    ],
+    "mutex": "place",
+    "bind": [],
+    "implies": [
+      "indoors"
+    ],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "kitchen",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "place",
+    "bind": [],
+    "implies": [
+      "indoors"
+    ],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "living room",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "place",
+    "bind": [],
+    "implies": [
+      "indoors"
+    ],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "office",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "place",
+    "bind": [],
+    "implies": [
+      "indoors"
+    ],
+    "layer": "normal",
+    "era": [
+      "modern"
+    ]
+  },
+  {
+    "tag": "classroom",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "place",
+    "bind": [],
+    "implies": [
+      "indoors"
+    ],
+    "layer": "normal",
+    "era": [
+      "modern"
+    ]
+  },
+  {
+    "tag": "library",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "place",
+    "bind": [],
+    "implies": [
+      "indoors"
+    ],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "changing room",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "place",
+    "bind": [],
+    "implies": [
+      "indoors"
+    ],
+    "layer": "normal",
+    "era": [
+      "modern"
+    ]
+  },
+  {
+    "tag": "locker room",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "place",
+    "bind": [],
+    "implies": [
+      "indoors"
+    ],
+    "layer": "normal",
+    "era": [
+      "modern"
+    ]
+  },
+  {
+    "tag": "train",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "place",
+    "bind": [],
+    "implies": [
+      "indoors"
+    ],
+    "layer": "normal",
+    "era": [
+      "modern"
+    ]
+  },
+  {
+    "tag": "train interior",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "place",
+    "bind": [],
+    "implies": [
+      "indoors"
+    ],
+    "layer": "normal",
+    "era": [
+      "modern"
+    ]
+  },
+  {
+    "tag": "car interior",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "place",
+    "bind": [],
+    "implies": [
+      "indoors"
+    ],
+    "layer": "normal",
+    "era": [
+      "modern"
+    ]
+  },
+  {
+    "tag": "elevator",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "place",
+    "bind": [],
+    "implies": [
+      "indoors"
+    ],
+    "layer": "normal",
+    "era": [
+      "modern"
+    ]
+  },
+  {
+    "tag": "hallway",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "place",
+    "bind": [],
+    "implies": [
+      "indoors"
+    ],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "cafe",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "place",
+    "bind": [],
+    "implies": [
+      "indoors"
+    ],
+    "layer": "normal",
+    "era": [
+      "modern"
+    ]
+  },
+  {
+    "tag": "bar (place)",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "place",
+    "bind": [],
+    "implies": [
+      "indoors"
+    ],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "fitting room",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "place",
+    "bind": [],
+    "implies": [
+      "indoors"
+    ],
+    "layer": "normal",
+    "era": [
+      "modern"
+    ]
+  },
+  {
+    "tag": "sauna",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "flash",
+      "sex"
+    ],
+    "mutex": "place",
+    "bind": [],
+    "implies": [
+      "indoors"
+    ],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "window",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "place",
+    "bind": [],
+    "implies": [
+      "indoors"
+    ],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "couch",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "place",
+    "bind": [],
+    "implies": [
+      "indoors"
+    ],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "futon",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "place",
+    "bind": [],
+    "implies": [
+      "indoors"
+    ],
+    "layer": "normal",
+    "era": [
+      "edo",
+      "modern"
+    ]
+  },
+  {
+    "tag": "balcony",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "place",
+    "bind": [],
+    "implies": [
+      "outdoors"
+    ],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "rooftop",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "place",
+    "bind": [],
+    "implies": [
+      "outdoors"
+    ],
+    "layer": "normal",
+    "era": [
+      "modern"
+    ]
+  },
+  {
+    "tag": "beach",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "place",
+    "bind": [],
+    "implies": [
+      "outdoors"
+    ],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "ocean",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "place",
+    "bind": [],
+    "implies": [
+      "outdoors"
+    ],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "poolside",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "place",
+    "bind": [],
+    "implies": [
+      "outdoors"
+    ],
+    "layer": "normal",
+    "era": [
+      "modern"
+    ]
+  },
+  {
+    "tag": "street",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "place",
+    "bind": [],
+    "implies": [
+      "outdoors"
+    ],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "alley",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "place",
+    "bind": [],
+    "implies": [
+      "outdoors"
+    ],
+    "layer": "normal",
+    "era": [
+      "modern",
+      "victorian"
+    ]
+  },
+  {
+    "tag": "park",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "place",
+    "bind": [],
+    "implies": [
+      "outdoors"
+    ],
+    "layer": "normal",
+    "era": [
+      "modern",
+      "victorian"
+    ]
+  },
+  {
+    "tag": "forest",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "place",
+    "bind": [],
+    "implies": [
+      "outdoors"
+    ],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "city",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "place",
+    "bind": [],
+    "implies": [
+      "outdoors"
+    ],
+    "layer": "normal",
+    "era": [
+      "modern"
+    ]
+  },
+  {
+    "tag": "shrine",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "place",
+    "bind": [],
+    "implies": [
+      "outdoors"
+    ],
+    "layer": "normal",
+    "era": [
+      "edo",
+      "modern"
+    ]
+  },
+  {
+    "tag": "garden",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "place",
+    "bind": [],
+    "implies": [
+      "outdoors"
+    ],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "pool",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "place",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "modern"
+    ]
+  },
+  {
+    "tag": "underwater",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "place",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "cherry blossoms",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [
+      "outdoors"
+    ],
+    "layer": "normal",
+    "era": [
+      "edo",
+      "modern"
+    ]
+  },
+  {
+    "tag": "starry sky",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [
+      "outdoors",
+      "night"
+    ],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "indoors",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "in_out",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "outdoors",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "in_out",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "day",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "day_night",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "night",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "day_night",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "evening",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "day_night",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "sunset",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "day_night",
+    "bind": [],
+    "implies": [
+      "outdoors"
+    ],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "sunrise",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "day_night",
+    "bind": [],
+    "implies": [
+      "outdoors"
+    ],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "dusk",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "day_night",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "overcast",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "weather",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "rain",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "weather",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "snow",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "weather",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "fog",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "weather",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "steam",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "flash",
+      "sex"
+    ],
+    "mutex": "weather",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "dim lighting",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "lighting",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "moonlight",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "lighting",
+    "bind": [],
+    "implies": [
+      "night"
+    ],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "sunlight",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "lighting",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "backlighting",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "lighting",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "sidelighting",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "lighting",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "window light",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "lighting",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "candlelight",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "lighting",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "spotlight",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "lighting",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "lamp",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "lighting",
+    "bind": [],
+    "implies": [
+      "indoors"
+    ],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "shadow",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "lighting",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "depth of field",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "bokeh",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "chromatic aberration",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "film grain",
+    "section": "env",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  }
+]

@@ -34,6 +34,10 @@ python tests/run.py --browser
 
 `PLAYWRIGHT_MODULE` may point to an already installed Playwright module. Screenshots/results go to an OS temporary directory; `BROWSER_RESULTS_DIR` sets a specific output directory for the workbench test.
 
+## Lexicon
+
+`web/lexicon.json` is generated from `web/lexicon_parts/`, `scripts/merge_lexicon.py` and `scripts/characters.json`; change those and rebuild (README, *Editing the lexicon*). `tests/test_lexicon_rebuild.py` fails when the committed lexicon no longer matches its sources.
+
 ## Shared source and translations
 
 Most runtime code and tests are synchronized from [danbooru_tag_random](https://github.com/bosen12/danbooru_tag_random). Contributors may change this standalone repository normally. The maintainer carries merged changes back to upstream before synchronizing again, so contributions are preserved. When carrying new GPL-only contributions upstream, preserve their GPL notices and make the corresponding upstream distribution comply with GPLv3; synchronization does not grant permission to relicense those contributions as MIT. Add English UI translations to `web/locales/en.js`; keep user-entered names and machine prompts unchanged. Bat files use CRLF.
@@ -47,5 +51,7 @@ Maintainers work on shared code in upstream, run its tests, run `python scripts/
 歡迎開 issue 或送 PR。錯誤回報請附重現步驟、作業系統、Python／ComfyUI 版本、GPU／VRAM 與相關錯誤訊息，先移除憑證及私人資料。
 
 開發測試需要 Python 3.9+、Node.js 20+；跑 `python tests/run.py`；完整歷史引擎回歸用 `python tests/run.py --full`，需要較長時間。安裝上方 Playwright 開發依賴後，可用 `python tests/run.py --browser` 驗證真實頁面與中英文安裝選擇。測試使用假 API，不會安裝套件或送到你的 ComfyUI 生圖。
+
+詞庫 `web/lexicon.json` 由 `web/lexicon_parts/`、`scripts/merge_lexicon.py`、`scripts/characters.json` 產生，改原料再重做（見 README〈改詞庫〉），`tests/test_lexicon_rebuild.py` 會檢查對不對得上。
 
 可以直接在本 repo 提 PR；維護者會先把合併內容搬回 Random，再同步，避免貢獻被覆蓋。 新 GPL 貢獻搬回上游時，必須保留 GPL 聲明並確保上游相應發布符合 GPLv3；同步不代表可以把貢獻改授權為 MIT。新增介面文字時補英文翻譯；bat 保留 CRLF。

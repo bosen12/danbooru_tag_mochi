@@ -1,0 +1,2498 @@
+[
+  {
+    "tag": "1girl",
+    "section": "subject",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "female_count",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "2girls",
+    "section": "subject",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "female_count",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "3girls",
+    "section": "subject",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "female_count",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "4girls",
+    "section": "subject",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "female_count",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "5girls",
+    "section": "subject",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "female_count",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "1boy",
+    "section": "subject",
+    "gate": "male",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "male_count",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "2boys",
+    "section": "subject",
+    "gate": "male",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "male_count",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "3boys",
+    "section": "subject",
+    "gate": "male",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "male_count",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "solo",
+    "section": "subject",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "multiple girls",
+    "section": "subject",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [
+      "2girls"
+    ],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "multiple boys",
+    "section": "subject",
+    "gate": "male",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [
+      "2boys"
+    ],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "very short hair",
+    "section": "feature",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "hair_length",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "short hair",
+    "section": "feature",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "hair_length",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "medium hair",
+    "section": "feature",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "hair_length",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "long hair",
+    "section": "feature",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "hair_length",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "very long hair",
+    "section": "feature",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "hair_length",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "absurdly long hair",
+    "section": "feature",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "hair_length",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "bob cut",
+    "section": "feature",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "hair_length",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "pixie cut",
+    "section": "feature",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "hair_length",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "ponytail",
+    "section": "feature",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "high ponytail",
+    "section": "feature",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "side ponytail",
+    "section": "feature",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "twintails",
+    "section": "feature",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "braid",
+    "section": "feature",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "twin braids",
+    "section": "feature",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "messy hair",
+    "section": "feature",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "hair over one eye",
+    "section": "feature",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "hair between eyes",
+    "section": "feature",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "sidelocks",
+    "section": "feature",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "blunt bangs",
+    "section": "feature",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "swept bangs",
+    "section": "feature",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "ahoge",
+    "section": "feature",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "wavy hair",
+    "section": "feature",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "straight hair",
+    "section": "feature",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "curly hair",
+    "section": "feature",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "hair bun",
+    "section": "feature",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "double bun",
+    "section": "feature",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "drill hair",
+    "section": "feature",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "floating hair",
+    "section": "feature",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "hair over shoulder",
+    "section": "feature",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "hime cut",
+    "section": "feature",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "black hair",
+    "section": "feature",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "hair_color",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "brown hair",
+    "section": "feature",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "hair_color",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "blonde hair",
+    "section": "feature",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "hair_color",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "red hair",
+    "section": "feature",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "hair_color",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "white hair",
+    "section": "feature",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "hair_color",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "blue hair",
+    "section": "feature",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "hair_color",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "pink hair",
+    "section": "feature",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "hair_color",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "purple hair",
+    "section": "feature",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "hair_color",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "green hair",
+    "section": "feature",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "hair_color",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "orange hair",
+    "section": "feature",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "hair_color",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "grey hair",
+    "section": "feature",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "hair_color",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "aqua hair",
+    "section": "feature",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "hair_color",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "two-tone hair",
+    "section": "feature",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "gradient hair",
+    "section": "feature",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "streaked hair",
+    "section": "feature",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "colored inner hair",
+    "section": "feature",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "brown eyes",
+    "section": "feature",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "eye_color",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "blue eyes",
+    "section": "feature",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "eye_color",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "green eyes",
+    "section": "feature",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "eye_color",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "red eyes",
+    "section": "feature",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "eye_color",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "grey eyes",
+    "section": "feature",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "eye_color",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "yellow eyes",
+    "section": "feature",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "eye_color",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "pink eyes",
+    "section": "feature",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "eye_color",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "purple eyes",
+    "section": "feature",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "eye_color",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "orange eyes",
+    "section": "feature",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "eye_color",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "aqua eyes",
+    "section": "feature",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "eye_color",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "heterochromia",
+    "section": "feature",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "eye_color",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "eyelashes",
+    "section": "feature",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "long eyelashes",
+    "section": "feature",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "thick eyebrows",
+    "section": "feature",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "bags under eyes",
+    "section": "feature",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "tsurime",
+    "section": "feature",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "tareme",
+    "section": "feature",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "mole",
+    "section": "feature",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "mole under eye",
+    "section": "feature",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "freckles",
+    "section": "feature",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "blush",
+    "section": "feature",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "makeup",
+    "section": "feature",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "lipstick",
+    "section": "feature",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "eyeshadow",
+    "section": "feature",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "sweat",
+    "section": "feature",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "shiny skin",
+    "section": "feature",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "wet",
+    "section": "feature",
+    "gate": "any",
+    "heat": [
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "tan",
+    "section": "feature",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "dark skin",
+    "section": "feature",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "pale skin",
+    "section": "feature",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "very dark skin",
+    "section": "feature",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [
+      "dark skin"
+    ],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "tanlines",
+    "section": "feature",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "collarbone",
+    "section": "feature",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "navel",
+    "section": "feature",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "armpits",
+    "section": "feature",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "midriff",
+    "section": "feature",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "toned",
+    "section": "feature",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "muscular",
+    "section": "feature",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "plump",
+    "section": "feature",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "skinny",
+    "section": "feature",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "long legs",
+    "section": "feature",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "tattoo",
+    "section": "feature",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "scar",
+    "section": "feature",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "body blush",
+    "section": "feature",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "steaming body",
+    "section": "feature",
+    "gate": "any",
+    "heat": [
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "body freckles",
+    "section": "feature",
+    "gate": "any",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "huge breasts",
+    "section": "feature",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "breast_size",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "large breasts",
+    "section": "feature",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "breast_size",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "medium breasts",
+    "section": "feature",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "breast_size",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "small breasts",
+    "section": "feature",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "breast_size",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "gigantic breasts",
+    "section": "feature",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": "breast_size",
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "hanging breasts",
+    "section": "feature",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "cleavage",
+    "section": "feature",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "sagging breasts",
+    "section": "feature",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "wide hips",
+    "section": "feature",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "thick thighs",
+    "section": "feature",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "narrow waist",
+    "section": "feature",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "curvy",
+    "section": "feature",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "huge ass",
+    "section": "feature",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "mature female",
+    "section": "feature",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "muscular female",
+    "section": "feature",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [
+      "muscular"
+    ],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "dark-skinned female",
+    "section": "feature",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [
+      "dark skin"
+    ],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "tall female",
+    "section": "feature",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "nail polish",
+    "section": "feature",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "red nails",
+    "section": "feature",
+    "gate": "female",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "nipples",
+    "section": "feature",
+    "gate": "female",
+    "heat": [
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "skin",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "puffy nipples",
+    "section": "feature",
+    "gate": "female",
+    "heat": [
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "skin",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "pubic hair",
+    "section": "feature",
+    "gate": "female",
+    "heat": [
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "skin",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "pussy",
+    "section": "feature",
+    "gate": "female",
+    "heat": [
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "skin",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "muscular male",
+    "section": "feature",
+    "gate": "male",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [
+      "muscular"
+    ],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "abs",
+    "section": "feature",
+    "gate": "male",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "pectorals",
+    "section": "feature",
+    "gate": "male",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "broad shoulders",
+    "section": "feature",
+    "gate": "male",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "facial hair",
+    "section": "feature",
+    "gate": "male",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "stubble",
+    "section": "feature",
+    "gate": "male",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "beard",
+    "section": "feature",
+    "gate": "male",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "goatee",
+    "section": "feature",
+    "gate": "male",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "mustache",
+    "section": "feature",
+    "gate": "male",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "bara",
+    "section": "feature",
+    "gate": "male",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "chest hair",
+    "section": "feature",
+    "gate": "male",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "adam's apple",
+    "section": "feature",
+    "gate": "male",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "mature male",
+    "section": "feature",
+    "gate": "male",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "toned male",
+    "section": "feature",
+    "gate": "male",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [
+      "toned"
+    ],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "dark-skinned male",
+    "section": "feature",
+    "gate": "male",
+    "heat": [
+      "tease",
+      "flash",
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [
+      "dark skin"
+    ],
+    "layer": "normal",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "erection",
+    "section": "feature",
+    "gate": "male",
+    "heat": [
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "skin",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "large penis",
+    "section": "feature",
+    "gate": "male",
+    "heat": [
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "skin",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "huge penis",
+    "section": "feature",
+    "gate": "male",
+    "heat": [
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "skin",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "testicles",
+    "section": "feature",
+    "gate": "male",
+    "heat": [
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "skin",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "veiny penis",
+    "section": "feature",
+    "gate": "male",
+    "heat": [
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "skin",
+    "era": [
+      "any"
+    ]
+  },
+  {
+    "tag": "penis",
+    "section": "feature",
+    "gate": "male",
+    "heat": [
+      "sex"
+    ],
+    "mutex": null,
+    "bind": [],
+    "implies": [],
+    "layer": "skin",
+    "era": [
+      "any"
+    ]
+  }
+]

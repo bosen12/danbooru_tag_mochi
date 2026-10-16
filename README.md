@@ -136,13 +136,28 @@ server.py            API, generation queue, ComfyUI proxy, static files
 card_usage.py …      server side of the card book, decks, gallery, history, LoRAs, workflows
 web/                 front end (no build step; the browser loads ES modules directly)
   engine.js          draw engine: rules, mutual exclusion, implications, ratings
-  lexicon.json       tags, Chinese names, categories, exclusion groups
+  lexicon.json       tags, Chinese names, categories, exclusion groups (generated, see below)
+  lexicon_parts/     lexicon sources: the tag lists lexicon.json is built from
   index.html …       the four rooms
   i18n.js, locales/  the English edition
   cards/             card art (downloaded or baked; not in git)
-scripts/             card art download and baking, upscale model, pose reference, face fix nodes
+scripts/             card art download and baking, upscale model, pose reference, face fix nodes,
+                     and the lexicon build (merge_lexicon.py, characters.json …)
 tests/               node tests/test_i18n.mjs
 ```
+
+## Editing the lexicon
+
+`web/lexicon.json` is generated; do not edit it by hand. Its sources are `web/lexicon_parts/*.json`, the rules in `scripts/merge_lexicon.py` (with `groups.py`, `subgroups.py` and the tag modules it imports), and `scripts/characters.json`: every character with its series, gender, post count and whether it is banned, and why. Rebuild in this order:
+
+```bash
+python scripts/merge_lexicon.py
+python scripts/add_zh.py          # always right after merge: attaches the Chinese names
+node scripts/card_art.mjs --write # card art prompts (scripts/card_jobs.json)
+python scripts/bake_card_art.py   # bake only the cards that are missing
+```
+
+Check new tags against Danbooru first with `node scripts/verify_danbooru_tags.mjs <tags…>`. `tests/test_lexicon_rebuild.py` rebuilds the lexicon from these sources in a temporary folder and fails if it no longer matches `web/lexicon.json`. `python scripts/export_lexicon_xlsx.py` (needs `pip install openpyxl`) writes a lookup sheet, `danbooru_lexicon.xlsx`.
 
 ## Troubleshooting
 
@@ -273,6 +288,19 @@ LoRA 面板的「詳情」在 ComfyUI 的 LoRA Manager 直接打開那一個 LoR
 - **「讀不到詞庫」**：用 `start.bat`／`start.sh`／`server.py` 開，不要直接點 HTML。
 - **生圖到一半停掉**：把 `client.streamIdleMs` 調大。
 - **生圖中看不到預覽（ComfyUI Desktop）**：ComfyUI 啟動時沒自己設 `--preview-method` 的話，墨池每一張會請它用 latent2rgb 預覽。這要較新的 ComfyUI；舊版請更新 ComfyUI Desktop，或在 ComfyUI 自己的伺服器設定裡開預覽。想自己決定就設 `config.json` 的 `comfy.previewMethod`（`auto`、`latent2rgb`、`taesd`、`none`）。
+
+## 改詞庫
+
+`web/lexicon.json` 是產生出來的，不要手改。原料是 `web/lexicon_parts/*.json`、`scripts/merge_lexicon.py` 裡的規則（加上它 import 的 `groups.py`、`subgroups.py` 和幾支加字模組），以及 `scripts/characters.json`：每個角色的作品、性別、貼文數、有沒有被禁和原因。改完照這個順序重做：
+
+```bash
+python scripts/merge_lexicon.py
+python scripts/add_zh.py          # merge 完一定要跑：補上中文名
+node scripts/card_art.mjs --write # 卡面提示詞（scripts/card_jobs.json）
+python scripts/bake_card_art.py   # 只烘缺的卡面
+```
+
+新字先用 `node scripts/verify_danbooru_tags.mjs <tag…>` 到 Danbooru 驗過。`tests/test_lexicon_rebuild.py` 會在暫存資料夾從這些原料重做一次，跟 `web/lexicon.json` 對不上就失敗。`python scripts/export_lexicon_xlsx.py`（要先 `pip install openpyxl`）會產出一張查找用的 `danbooru_lexicon.xlsx`。
 
 ## 參與開發
 
