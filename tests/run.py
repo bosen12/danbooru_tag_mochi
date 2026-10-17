@@ -27,7 +27,8 @@ checks = [
     ("test_lexicon_rebuild.py", "test_lexicon_rebuild.py"),
 ]
 if "--full" in sys.argv:
-    checks.append(("test_engine.mjs", "test_engine.mjs"))
+    # test_engine.mjs split into parallel shards (about 7 minutes instead of 28).
+    checks.append(("test_engine_shards.mjs", "test_engine_shards.mjs"))
 if "--browser" in sys.argv:
     checks.append(("test_i18n_browser.mjs", "test_web6_i18n_browser.mjs"))
     checks.append(("test_setup_browser.mjs", "test_mochi_setup_browser.mjs"))
@@ -46,7 +47,7 @@ for target, source in checks:
     file = ROOT / ("tests" if standalone else "scripts") / (target if standalone else source)
     command = [node if file.suffix == ".mjs" else sys.executable, str(file)]
     try:
-        result = subprocess.run(command, cwd=ROOT, env=env, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=1800 if target == "test_engine.mjs" else 600)
+        result = subprocess.run(command, cwd=ROOT, env=env, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=1800 if target == "test_engine_shards.mjs" else 600)
         print(("PASS " if result.returncode == 0 else "FAIL ") + target, flush=True)
         if result.returncode:
             failed.append(target)

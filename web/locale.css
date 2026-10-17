@@ -206,6 +206,11 @@ html[lang="en"] .tseg span { font-size: 12px; letter-spacing: -0.02em; }
   .language-picker { order: 2; margin-left: 0; }
   .page-switch { order: 3; width: 100%; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); }
   .page-switch a { padding-inline: 4px; justify-content: center; min-height: 34px; }
+  /* The connection light is an 8px dot here, but as the last tool it wrapped onto
+   * a row of its own on the Fuse Bed (one more tool), 16px taller. The rating row
+   * always has room on its right, so the dot sits there on every page. */
+  .mast-controls { position: relative; }
+  .mast-tools .ping { position: absolute; top: 14px; right: 4px; }
 }
 /* styles.css lets the tools scroll sideways below 24rem. On a 320px Fuse Bed
  * (one more tool) the whole page scrolled sideways instead. Wrap only when the
