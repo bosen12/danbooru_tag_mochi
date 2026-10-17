@@ -216,10 +216,13 @@ const mod = (a, n) => ((a % n) + n) % n;
 /* ---------- 後製：水墨背景、bloom、暗角、顆粒 ---------- */
 
 const QUAD_VS = `varying vec2 vUv; void main() { vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }`;
+// 直接從全尺寸縮到四分之一：四個線性取樣各平均 2×2，等於整塊 4×4 取平均。只取一點的話，
+// 小的亮點會時有時無，光暈跟著一閃一閃。
 const BRIGHT_FS = `
-  uniform sampler2D tex; uniform float threshold; varying vec2 vUv;
+  uniform sampler2D tex; uniform float threshold; uniform vec2 texel; varying vec2 vUv;
   void main() {
-    vec4 c = texture2D(tex, vUv);
+    vec4 c = (texture2D(tex, vUv + texel * vec2(-1.0, -1.0)) + texture2D(tex, vUv + texel * vec2(1.0, -1.0))
+            + texture2D(tex, vUv + texel * vec2(-1.0, 1.0)) + texture2D(tex, vUv + texel * vec2(1.0, 1.0))) * 0.25;
     float l = dot(c.rgb, vec3(0.2126, 0.7152, 0.0722));
     gl_FragColor = vec4(c.rgb * smoothstep(threshold, threshold + 0.18, l), 1.0);
   }`;
@@ -234,7 +237,7 @@ const BLUR_FS = `
     gl_FragColor = vec4(c, 1.0);
   }`;
 const FINAL_FS = `
-  uniform sampler2D scene; uniform sampler2D bloomA; uniform sampler2D bloomB;
+  uniform sampler2D scene; uniform sampler2D bloom;
   uniform float time; uniform float aspect; uniform float strength; uniform float flash;
   varying vec2 vUv;
   float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
@@ -263,7 +266,7 @@ const FINAL_FS = `
     vec4 s = texture2D(scene, vUv);
     vec3 sc = vec3(texture2D(scene, vUv + ca).r, s.g, texture2D(scene, vUv - ca).b);
     vec3 col = bg * (1.0 - s.a) + sc;
-    col += (texture2D(bloomA, vUv).rgb * 0.6 + texture2D(bloomB, vUv).rgb) * strength;
+    col += texture2D(bloom, vUv).rgb * strength;
     col += vec3(1.0, 0.86, 0.6) * flash * smoothstep(0.9, 0.0, length(p));
     // 調色：暗部偏青、亮部偏暖；再用一條柔的曲線收高光（bloom 疊上去也不會死白）。
     float lum = dot(col, vec3(0.2126, 0.7152, 0.0722));
@@ -277,7 +280,7 @@ const FINAL_FS = `
 
 /**
  * canvas：要畫的 <canvas>（滿版）。cards：[{ name, glyph, color, src, blur }]。
- * prints：[{ src, blur }]（新到舊）。回傳 { start(), pause(on), seek(sec), stop(), addFresh(print) }，或 null。
+ * prints：[{ src, blur }]（新到舊）。回傳 { start(), pause(on), setMaxFps(n), seek(sec), stop(), addFresh(print) }，或 null。
  */
 export async function createSaverGL(canvas, cards, prints, { english = false, calm = false, onFresh, onAct } = {}) {
   let renderer;
@@ -858,24 +861,23 @@ export async function createSaverGL(canvas, cards, prints, { english = false, ca
   }
 
   /* ---------- 後製用的畫布 ---------- */
+  // 螢幕保護多半在無限抽、人離開的時候出來，跟 ComfyUI 搶同一張顯示卡：場景不開 MSAA，
+  // bloom 只留四分之一尺寸的一層（以前是半尺寸亮部＋四分之一、八分之一兩層模糊）。
   const W = () => Math.max(8, Math.round(innerWidth * dpr));
   const Hh = () => Math.max(8, Math.round(innerHeight * dpr));
-  const rtScene = new THREE.WebGLRenderTarget(W(), Hh(), { samples: 4 });
-  const rtHalf = new THREE.WebGLRenderTarget(W() >> 1, Hh() >> 1);
+  const rtScene = new THREE.WebGLRenderTarget(W(), Hh());
   const rtQ1 = new THREE.WebGLRenderTarget(W() >> 2, Hh() >> 2);
   const rtQ2 = new THREE.WebGLRenderTarget(W() >> 2, Hh() >> 2);
-  const rtE1 = new THREE.WebGLRenderTarget(W() >> 3, Hh() >> 3);
-  const rtE2 = new THREE.WebGLRenderTarget(W() >> 3, Hh() >> 3);
   const quadCam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
   const quadGeo = new THREE.PlaneGeometry(2, 2);
   const quad = new THREE.Mesh(quadGeo);
   quad.frustumCulled = false;
   const quadScene = new THREE.Scene();
   quadScene.add(quad);
-  const brightMat = new THREE.ShaderMaterial({ uniforms: { tex: { value: null }, threshold: { value: 0.8 } }, vertexShader: QUAD_VS, fragmentShader: BRIGHT_FS, depthTest: false, depthWrite: false });
+  const brightMat = new THREE.ShaderMaterial({ uniforms: { tex: { value: null }, threshold: { value: 0.8 }, texel: { value: new THREE.Vector2(1 / W(), 1 / Hh()) } }, vertexShader: QUAD_VS, fragmentShader: BRIGHT_FS, depthTest: false, depthWrite: false });
   const blurMat = new THREE.ShaderMaterial({ uniforms: { tex: { value: null }, dir: { value: new THREE.Vector2() } }, vertexShader: QUAD_VS, fragmentShader: BLUR_FS, depthTest: false, depthWrite: false });
   const finalMat = new THREE.ShaderMaterial({
-    uniforms: { scene: { value: rtScene.texture }, bloomA: { value: rtQ2.texture }, bloomB: { value: rtE2.texture }, time: { value: 0 }, aspect: { value: innerWidth / innerHeight }, strength: { value: 0.55 }, flash: { value: 0 } },
+    uniforms: { scene: { value: rtScene.texture }, bloom: { value: rtQ1.texture }, time: { value: 0 }, aspect: { value: innerWidth / innerHeight }, strength: { value: 0.55 }, flash: { value: 0 } },
     vertexShader: QUAD_VS,
     fragmentShader: FINAL_FS,
     depthTest: false,
@@ -931,9 +933,18 @@ export async function createSaverGL(canvas, cards, prints, { english = false, ca
   let slow = 1;
   let raf = 0;
   let last = 0;
+  // 正在印圖時限制每秒幾格（setMaxFps）：高更新率的螢幕上一秒畫 165 格，跟 ComfyUI 搶顯示卡。
+  // 0 = 不限。用累加的方式排下一格，165Hz 上也平均剛好 60 格，不會掉成每三格畫一格的 55。
+  let maxFps = 0;
+  let due = 0;
 
   function frame(now) {
     raf = requestAnimationFrame(frame);
+    if (maxFps) {
+      const gap = 1000 / maxFps;
+      if (due && now < due - 1) return;
+      due = Math.max((due || now) + gap, now);
+    }
     const dt = last ? Math.min(0.05, (now - last) / 1000) : 0;
     last = now;
     step(dt);
@@ -1091,15 +1102,14 @@ export async function createSaverGL(canvas, cards, prints, { english = false, ca
       }
     }
 
-    // 畫：場景 → 亮部 → 模糊兩層 → 合成（水墨背景、bloom、暗角、顆粒）
+    // 畫：場景 → 亮部（四分之一）→ 模糊一層 → 合成（水墨背景、bloom、暗角、顆粒）
     renderer.setClearColor(0x000000, 0);
     renderer.setRenderTarget(rtScene);
     renderer.clear();
     renderer.render(scene, camera);
     brightMat.uniforms.tex.value = rtScene.texture;
-    pass(brightMat, rtHalf);
-    blur(rtHalf, rtQ1, rtQ2);
-    blur(rtQ2, rtE1, rtE2);
+    pass(brightMat, rtQ1);
+    blur(rtQ1, rtQ2, rtQ1);
     finalMat.uniforms.time.value = clock;
     finalMat.uniforms.flash.value = flash;
     pass(finalMat, null);
@@ -1110,11 +1120,9 @@ export async function createSaverGL(canvas, cards, prints, { english = false, ca
     camera.aspect = innerWidth / innerHeight;
     camera.updateProjectionMatrix();
     rtScene.setSize(W(), Hh());
-    rtHalf.setSize(W() >> 1, Hh() >> 1);
     rtQ1.setSize(W() >> 2, Hh() >> 2);
     rtQ2.setSize(W() >> 2, Hh() >> 2);
-    rtE1.setSize(W() >> 3, Hh() >> 3);
-    rtE2.setSize(W() >> 3, Hh() >> 3);
+    brightMat.uniforms.texel.value.set(1 / W(), 1 / Hh());
     finalMat.uniforms.aspect.value = innerWidth / innerHeight;
     dmat.uniforms.scale.value = innerHeight * dpr * 0.5;
   };
@@ -1137,6 +1145,7 @@ export async function createSaverGL(canvas, cards, prints, { english = false, ca
     start() {
       addEventListener("resize", onResize);
       last = 0;
+      due = 0;
       raf = requestAnimationFrame(frame);
     },
     /** 分頁藏起來時停下（不吃 GPU），回來接著演。 */
@@ -1144,8 +1153,15 @@ export async function createSaverGL(canvas, cards, prints, { english = false, ca
       cancelAnimationFrame(raf);
       if (!on && !disposed) {
         last = 0;
+        due = 0;
         raf = requestAnimationFrame(frame);
       }
+    },
+    /** 每秒最多畫幾格；0 = 跟螢幕更新率一樣。 */
+    setMaxFps(n) {
+      const next = Math.max(0, Number(n) || 0);
+      if (next !== maxFps) due = 0;
+      maxFps = next;
     },
     /** 直接跳到第幾秒（測試用：看每一幕的樣子）。 */
     seek(sec) {
@@ -1157,7 +1173,7 @@ export async function createSaverGL(canvas, cards, prints, { english = false, ca
       cancelAnimationFrame(raf);
       removeEventListener("resize", onResize);
       for (const x of [sgeo, smat, raysTex, flareTex, rays.material, flare.material]) x.dispose();
-      for (const x of [geo, printGeo, dgeo, quadGeo, cardMat, dmat, brightMat, blurMat, finalMat, atlasTex, glowTex, core.material, rtScene, rtHalf, rtQ1, rtQ2, rtE1, rtE2]) x.dispose();
+      for (const x of [geo, printGeo, dgeo, quadGeo, cardMat, dmat, brightMat, blurMat, finalMat, atlasTex, glowTex, core.material, rtScene, rtQ1, rtQ2]) x.dispose();
       for (const m of hang) m.material.dispose();
       if (hero) hero.material.dispose();
       for (const t of printTex) t.dispose();

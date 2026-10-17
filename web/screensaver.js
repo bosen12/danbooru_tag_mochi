@@ -220,15 +220,36 @@ export async function startScreensaver() {
   state.gl = gl;
   gl.start();
   canvas.classList.add("is-on");
+  // 正在印（墨池、疊印台、別的分頁都算，問伺服器）：螢幕保護降到每秒 60 格，把顯示卡留給 ComfyUI。
+  const throttle = async () => {
+    const busy = await printing();
+    if (active === state) gl.setMaxFps(busy ? PRINTING_FPS : 0);
+  };
+  throttle();
   // 新印好的：每 8 秒看一次出圖日誌。
   state.poll = setInterval(async () => {
     if (document.hidden) return;
+    throttle();
     for (const p of (await recentPrints(loadSaver(), 8)).reverse()) {
       if (state.seen.has(p.id) || active !== state) continue;
       state.seen.add(p.id);
       gl.addFresh(p);
     }
   }, 8000);
+}
+
+const PRINTING_FPS = 60;
+
+/** 伺服器那邊有沒有還在排隊、正在畫的（不分哪一頁送的）。問不到就當沒有。 */
+async function printing() {
+  try {
+    const r = await fetch("/api/gen/active", { cache: "no-store" });
+    if (!r.ok) return false;
+    const { jobs } = await r.json();
+    return Array.isArray(jobs) && jobs.some((j) => j.state === "queued" || j.state === "running");
+  } catch {
+    return false;
+  }
 }
 
 /** 測試用：現在畫面上那一部（可以 seek 到某一幕）。 */
