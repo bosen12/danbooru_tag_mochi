@@ -56,7 +56,8 @@ import { initMotion, settleMotion, flip, flipBy, leave, gatherHome, flight, ente
 import { cloneCard } from "./card-images.js";
 import { createHand } from "./hand.js";
 import { createDrag, inkRing } from "./drag.js";
-import { createGenerator, comfyOnline, viewSrc, tabTitle, watchLink, LINK_LABEL, markGenLog } from "./gen.js";
+import { createGenerator, comfyOnline, viewSrc, tabTitle, markGenLog } from "./gen.js";
+import { pingLoop } from "./ping.js";
 import { attachPeek, hidePeek, showPeek } from "./card-peek.js";
 import { attachTilt } from "./card-tilt.js";
 import { createHires, openHiresPicker, openFacePicker, paintHiresVeil, hiresBusy, faceBusy, faceDepth } from "./hires.js";
@@ -256,7 +257,11 @@ async function boot() {
   initLoraPicker({ gallery: true, motion: { DUR, CURVE, css } });
   initWorkflow({ sampling: true, faceFix: true, gallery: true, motion: { DUR, CURVE, css } });
   discord = mountDiscord(zh, "疊印台");
-  pingLoop();
+  pingLoop((st, ok) => {
+    comfyOk = ok;
+    linkNow = st;
+    if (trials.length) renderPrintBar();
+  });
   wireChrome();
 
   buildHand();
@@ -3682,23 +3687,6 @@ function renderRating() {
   );
 }
 
-function pingLoop() {
-  watchLink((st) => {
-    const ok = st === "ok";
-    const prev = comfyOk;
-    const changed = ok !== prev;
-    comfyOk = ok;
-    linkNow = st;
-    const p = $("ping");
-    p.dataset.ok = ok ? "1" : "0";
-    p.querySelector("span").textContent = LINK_LABEL[st];
-    if (prev !== null && changed) {
-      if (ok) seat(p);
-      else refuse(p);
-    }
-    if (changed && trials.length) renderPrintBar();
-  });
-}
 
 function segmented(label, options, current, onPick) {
   return el(

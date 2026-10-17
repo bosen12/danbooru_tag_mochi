@@ -26,7 +26,8 @@ import { openDecks } from "./decks.js";
 import { openPaste } from "./paste-prompt.js";
 import { measure, evaluate, announce, openWall } from "./achievements.js";
 import { initMotion, settleMotion, seat, refuse, flight, reducedMotion, swapIn, rowChange, CURVE, DUR, css } from "./motion.js";
-import { watchLink, LINK_LABEL, viewSrc } from "./gen.js";
+import { viewSrc } from "./gen.js";
+import { pingLoop } from "./ping.js";
 import { getSfx } from "./sfx.js";
 import { attachPeek } from "./card-peek.js";
 import { attachTilt } from "./card-tilt.js";
@@ -218,16 +219,6 @@ function renderRating() {
   );
 }
 
-function pingLoop() {
-  watchLink((st) => {
-    const p = $("ping");
-    const changed = p.dataset.ok !== (st === "ok" ? "1" : "0") || p.dataset.link !== st;
-    p.dataset.ok = st === "ok" ? "1" : "0";
-    p.dataset.link = st;
-    if (changed) p.querySelector("span").textContent = LINK_LABEL[st];
-    if (changed) seat(p);
-  });
-}
 
 function wireSound() {
   const snd = $("sound-btn");

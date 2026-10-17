@@ -26,6 +26,8 @@
       addEventListener("pagereveal", (e) => {
         const vt = e.viewTransition;
         if (!vt) return;
+        // 跳過轉場時 ready 會 reject；沒人接的話主控台每次換頁都多一行 AbortError。
+        vt.ready.catch(() => {});
         // 四個房間由左到右：墨池 0、疊印台 1、卡冊 2、作品冊 3。往右走的換版從右邊進來，往左反過來。
         const room = (u) => (/fuse\.html$/.test(u) ? 1 : /book\.html$/.test(u) ? 2 : /album\.html$/.test(u) ? 3 : /\/(index\.html)?$/.test(u) ? 0 : -1);
         let from = "";

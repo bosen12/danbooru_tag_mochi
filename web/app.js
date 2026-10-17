@@ -58,7 +58,8 @@ import { initMotion, settleMotion, replayDeal, flip, flipBy, leave, enter, confi
 import { cloneCard } from "./card-images.js";
 import { createHand } from "./hand.js";
 import { createTrashPanel } from "./trash-panel.js";
-import { createGenerator, comfyOnline, viewSrc, tabTitle, watchLink, LINK_LABEL, markGenLog } from "./gen.js";
+import { createGenerator, comfyOnline, viewSrc, tabTitle, markGenLog } from "./gen.js";
+import { pingLoop } from "./ping.js";
 import { genSeed, mountSeedControl, seedUseButton } from "./seed-control.js";
 import { attachPeek, hidePeek } from "./card-peek.js";
 import { attachTilt } from "./card-tilt.js";
@@ -258,16 +259,6 @@ function renderRating() {
   );
 }
 
-function pingLoop() {
-  watchLink((st) => {
-    const p = $("ping");
-    const changed = p.dataset.ok !== (st === "ok" ? "1" : "0") || p.dataset.link !== st;
-    p.dataset.ok = st === "ok" ? "1" : "0";
-    p.dataset.link = st;
-    if (changed) p.querySelector("span").textContent = LINK_LABEL[st];
-    if (changed) seat(p);
-  });
-}
 
 /* ================= 字盒 ================= */
 
@@ -370,6 +361,8 @@ function buildPicker() {
   pickerMQ.addEventListener?.("change", () => {
     if (!pickerMode() && pickerOpen) closePicker();
     syncCollapse();
+    // 空合成池的提示照版面寫（手機「按上面的挑牌」、電腦「點字盒的牌」）：平板轉向、拉窄視窗跨過去要換字。
+    if (!pool.size) renderPool();
   });
   updatePickerFoot();
 }

@@ -2014,8 +2014,14 @@ body #wf-pick-btn.has {
   flex-wrap: nowrap;
   align-items: center;
 }
+/* 標題和按鈕不讓：要讓的是說明（省略號）。以前三個一起縮，中文標題可以逐字斷，
+ * 寬 641～1250px 時「合成池」被擠成「合成／池」兩行、按鈕也擠成兩排。 */
+.pool > .panel-head h2 {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
 .pool > .panel-head .workspace-purpose {
-  flex: 1 1 auto;
+  flex: 1 1 0;
   min-width: 0;
   padding: 0;
   white-space: nowrap;
@@ -2025,7 +2031,7 @@ body #wf-pick-btn.has {
 /* 按鈕那一排：寬的時候一行；手機（尤其英文字比較長）擺不下就換行，不能凸出畫面。 */
 .pool > .panel-head > p:last-child {
   display: flex;
-  flex: 0 1 auto;
+  flex: 0 0 auto;
   flex-wrap: wrap;
   align-items: center;
   justify-content: flex-end;

@@ -20,7 +20,7 @@ import { mountTour } from "./tour.js";
 import { mountScreensaver } from "./screensaver.js";
 import { mountGenStatus } from "./gen-status.js";
 import { initMotion, settleMotion, seat, refuse, enter, leave, reducedMotion, swapIn, CURVE, DUR, css } from "./motion.js";
-import { watchLink, LINK_LABEL } from "./gen.js";
+import { pingLoop } from "./ping.js";
 import { getSfx } from "./sfx.js";
 import * as S from "./store.js";
 import { tagsOfPositive } from "./usage.js";
@@ -189,15 +189,6 @@ function renderRating() {
   );
 }
 
-function pingLoop() {
-  watchLink((st) => {
-    const p = $("ping");
-    const changed = p.dataset.ok !== (st === "ok" ? "1" : "0") || p.dataset.link !== st;
-    p.dataset.ok = st === "ok" ? "1" : "0";
-    p.dataset.link = st;
-    if (changed) p.querySelector("span").textContent = LINK_LABEL[st];
-  });
-}
 
 function wireSound() {
   const snd = $("sound-btn");
