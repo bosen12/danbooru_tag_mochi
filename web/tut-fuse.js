@@ -157,7 +157,7 @@ export function buildFuseScene(ctx) {
   const printBtn = box(O, "tbtn pri", RX + 18, 220, 307, 46, "付 印");
   printBtn.style.fontSize = "18px";
   label(O, "tl", RX + 18, 291, `<span style="font:600 14px/1 var(--font-body);color:var(--color-ink-2)">＋ 更多設定與操作</span>`);
-  label(O, "tl", RX + 18, 328, `<span style="font:500 12px/1 var(--font-mono);color:var(--color-muted)">/ 找牌　Z 撤回　1–4 試印　R 換一批　P 付印</span>`);
+  label(O, "tl", RX + 18, 328, `<span style="font:500 12px/1 var(--font-mono);color:var(--color-muted)">/ 找牌　Z 撤回　1–4 試印　R 換一批　G 付印</span>`);
   const note = box(O, "tnote", -330, -258, 500, 26, "");
   note.style.opacity = "0";
 
@@ -616,13 +616,13 @@ export function buildFuseScene(ctx) {
     function printJob(letterIdx, tKey, tDone, ropeIdx) {
       const tHang = tDone + 1.0;
       printJobs.push({ idx: letterIdx, t0: tKey, t1: tDone, tHang, rope: ropeIdx });
-      keycaps([{ label: "P", t: tKey, tag: "付印" }]);
+      keycaps([{ label: "G", t: tKey, tag: "付印" }]);
       clickAt(tKey, PRINT_BTN, { dur: 0.9 });
       S.cue({ t: tKey, kind: "key", gain: 0.2 }, { t: tKey + 0.1, kind: "swell", gain: 0.06, dur: 2.6 }, { t: tDone, kind: "sparkle", gain: 0.08 }, { t: tHang, kind: "stamp", gain: 0.18 });
       hangs.push({ idx: letterIdx, t: tHang, rope: ropeIdx });
     }
     printJob(0, b(97, 2), b(99, 2.6), 0);
-    step(1, "*P* 付印：紙從滾筒下過，圖慢慢顯出來", "P prints — the image develops on paper", b(97, 1), b(100, 0));
+    step(1, "*G* 付印：紙從滾筒下過，圖慢慢顯出來", "G prints — the image develops on paper", b(97, 1), b(100, 0));
     text.say("印好的，*夾到晾紙繩上*", "Finished prints hang on the rope", b(100, 0), b(101, 3));
     // 再印 B
     selEv.push([b(101, 0), 1]);

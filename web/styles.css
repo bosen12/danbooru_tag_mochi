@@ -2951,8 +2951,10 @@ body[data-dragging="true"] .library[data-over="true"] {
   animation: fade-in var(--dur-short) var(--ease-out);
 }
 
+/* 關掉：短的離場用 exit（tokens.css 的規則）。以前是 ease-in，165ms 裡前 120ms 只走了 15%，
+ * 看起來是按了 Esc 先卡住、再一下子不見。時長不動：ui.js 170ms 後拿掉節點。 */
 .overlay[data-closing="true"] {
-  animation: fade-out calc(var(--dur-short) * 0.75) var(--ease-in) forwards;
+  animation: fade-out calc(var(--dur-short) * 0.75) var(--ease-exit) forwards;
 }
 
 .sheet {
@@ -5120,7 +5122,7 @@ html {
     padding: var(--space-sm) var(--space-md) calc(var(--space-md) + env(safe-area-inset-bottom));
   }
   .overlay[data-closing="true"] .sheet {
-    animation: sheet-down calc(var(--dur-short) * 0.75) var(--ease-in) forwards;
+    animation: sheet-down calc(var(--dur-short) * 0.75) var(--ease-exit) forwards;
   }
 }
 
@@ -5565,6 +5567,15 @@ html {
     color: var(--color-ink-2);
     font-size: var(--text-sm);
     font-variant-numeric: tabular-nums;
+  }
+  /* 點牌不是放進合成池（廢字簍開著、偏好卡牌在挑牌）：底下那行換成朱色，上緣描一道，跟電腦版字盒那圈虛線同一個意思。 */
+  body[data-picker="open"] .picker-foot:is([data-mode="trash"], [data-mode="hand"]) {
+    border-top: 2px dashed color-mix(in oklch, var(--color-accent) 70%, transparent);
+    background: color-mix(in oklch, var(--color-accent) 10%, var(--color-paper-2));
+  }
+  .picker-foot:is([data-mode="trash"], [data-mode="hand"]) .picker-count {
+    color: var(--color-accent);
+    font-weight: 700;
   }
   .picker-done {
     min-width: 7rem;

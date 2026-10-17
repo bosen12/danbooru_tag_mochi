@@ -105,8 +105,13 @@ export function openSheet(title, body, { wide = false, onClose, foot, translateT
   };
   closeBtn.addEventListener("click", close);
   swipeToClose(sheet, close);
+  // 點遮罩關閉：按下也要按在遮罩上才算。手機長按一張牌放開會開詳情，瀏覽器接著補發的 click
+  // 落在剛出現的遮罩上（按下是在牌上）——以前那一下就把詳情關掉，看起來像閃一下就壞了。
+  let downOnOverlay = false;
+  overlay.addEventListener("pointerdown", (e) => (downOnOverlay = e.target === overlay));
   overlay.addEventListener("click", (e) => {
-    if (e.target === overlay) close();
+    if (e.target === overlay && downOnOverlay) close();
+    downOnOverlay = false;
   });
   const onKey = (e) => {
     if (openOverlays.at(-1) !== overlay) return;
@@ -277,6 +282,11 @@ export function toast(text, { action = null, ms = action ? 5200 : 2600 } = {}) {
   clearTimeout(toastTimer);
   toastDeadline = Date.now() + ms;
   toastTimer = setTimeout(hideToast, ms);
+}
+
+/** 那則提示的按鈕已經不對了（它講的那一步之後又動過）：提示還掛著就收掉。換成別則了就不動。 */
+export function dropToastAction(action) {
+  if (action && toastNow === action) hideToast();
 }
 
 /** 提示上那顆按鈕的快捷鍵（墨池的 Z＝復原）：提示還在、快捷鍵對得上就按它，回傳有沒有按到。 */

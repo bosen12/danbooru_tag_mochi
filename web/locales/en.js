@@ -157,7 +157,7 @@ ComfyUI 的輸出資料夾裡找不到這張，可能被刪掉了。按「再印
 引擎|Engine
 收下這張|Pin this card
 Hires 排隊中…|Upscale queued…
-付印（P）|Generate (P)
+付印（G）|Generate (G)
 連不到主機（網路斷了？）。可以繼續疊版、挑試印，接上了再付印。|Server disconnected. You can keep arranging cards and proofs. Reconnect to generate.
 印刷機（ComfyUI）沒開。可以繼續疊版、挑試印，開了再付印。|ComfyUI is offline. You can keep arranging cards and proofs. Start ComfyUI to generate.
 複製好了|Copied
@@ -256,14 +256,15 @@ Python 3 · 標準函式庫，不用裝任何套件|Python 3 · Standard library
 撤下了一張成品|Image discarded
 再來，換疊印台|Next: Fuse Bed
 取消／停|Cancel / Stop
-只抽牌／付印|Draw / Generate
+抽並生圖／付印|Draw & generate / Generate
+付印的快捷鍵改成 G 了（跟墨池一樣：G 會生圖，P 不會）|Generate is now G, as in Mochi: G generates, P does not
 撤回／復原|Undo / Restore
 選試印|Choose proof
 鍵盤，比滑鼠快|Keyboard shortcuts
 現在，換你了|Your turn
 墨池 · 疊印台　放一張牌試試|Ink Pool · Fuse Bed · Try your first card
 ＋ 更多設定與操作|＋ More options
-/ 找牌　Z 撤回　1–4 試印　R 換一批　P 付印|/ Search · Z Undo · 1–4 Proofs · R Reroll · P Generate
+/ 找牌　Z 撤回　1–4 試印　R 換一批　G 付印|/ Search · Z Undo · 1–4 Proofs · R Reroll · G Generate
 墨池|Ink Pool
 疊印台|Fuse Bed
 卡冊|Card Book
@@ -1468,6 +1469,8 @@ Discord 設定（自動傳送{0}）|Discord settings (auto sharing {0})
 {0} 張|{0} cards
 {0} 張會一定進圖|{0} pinned cards
 合成池 {0} 張|{0} pinned cards
+點牌＝加進偏好卡牌 {0}/{1}|Tap a card = add to Favorite cards {0}/{1}
+點牌＝丟進廢字簍（{0}）|Tap a card = block it ({0} blocked)
 池裡 {0} 張|{0} pinned cards
 卡池 {0} 張|{0} pinned cards
 偏好卡牌 {0}|Favorites {0}

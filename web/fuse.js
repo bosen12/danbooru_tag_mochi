@@ -41,7 +41,7 @@ import { initLoraPicker, currentLorasPayload, currentTriggerText, currentCkpt, h
 import { initWorkflow, currentWorkflowId, currentSampling, wfHandleKeys } from "./workflow.js";
 import { HARD_BANNED, applyArtSources } from "./card-art.js";
 import { buildLibrary, sizeCards, groupChips, genderChips, chipRun, seriesRun, groupNow, cardMatches, createAssets, cardNode, cardFacts, setEnterTarget, eagerArt, CARD_SUIT_INFO, CARD_SUITS, RATING_ZH, ERA_ZH } from "./cards.js";
-import { el, openSheet, anyOverlay, toast, syncChoices } from "./ui.js";
+import { el, openSheet, anyOverlay, toast, dropToastAction, syncChoices } from "./ui.js";
 import { zoomFromThumb } from "./zoom.js";
 import { mountKeysHelp } from "./keys-help.js";
 import { mountTour } from "./tour.js";
@@ -469,9 +469,26 @@ function printFor(sig) {
 
 const deps = () => ({ lex, applyPin });
 
+// 提示上的「撤回」只撤它講的那一步：之後又動了卡池、或已經按 Z／工具列撤過，就把提示收掉。
+// 以前提示還掛著，按下去會再多撤一步（撤掉的是別的動作）。
+let undoToast = null;
+function toastUndo(text) {
+  const step = history.at(-1);
+  const action = { label: "撤回", run: () => history.at(-1) === step && undo() };
+  toast(text, { action });
+  undoToast = { action, step };
+}
+function dropStaleUndo() {
+  if (undoToast && history.at(-1) !== undoToast.step) {
+    dropToastAction(undoToast.action);
+    undoToast = null;
+  }
+}
+
 function commit(next, label, events = []) {
   history.push({ bed, label });
   if (history.length > HISTORY_MAX) history.shift();
+  dropStaleUndo();
   bed = next;
   rowNotes = {};
   plateNotice = null;
@@ -579,7 +596,7 @@ function replacedNote(tag, events) {
   if (of("people")) parts.push(tag === "no humans" ? `畫面沒有人物：${of("people")}拿下來了` : "放了人物的牌：「沒有人物」拿下來了");
   if (of("slot")) parts.push(`同一格只留一張：${of("slot")}換成「${zh(tag)}」`);
   if (of("era")) parts.push(`${of("era")}跟「${zh(tag)}」不是同一個時代，先拿下來了`);
-  toast(parts.join("；"), { action: { label: "撤回", run: undo } });
+  toastUndo(parts.join("；"));
 }
 
 /** 分級擋掉的情境被點了：牌搖一下、說為什麼，頂欄的分級亮一下（跟墨池同一套）。 */
@@ -645,6 +662,7 @@ function startWith(starter, btn = null, { fresh = false, kind = "起手" } = {})
 function undo() {
   const h = history.pop();
   if (!h) return refuse($("undo"));
+  dropStaleUndo();
   // 撤掉的牌先記下位置（重畫之後原地掀起飄走），回來的牌重畫之後一張一張落回去。
   const back = new Set(h.bed.pins);
   const was = new Set(bed.pins);
@@ -1049,6 +1067,7 @@ function restorePrint(p) {
     label: "回到舊版之前",
     restore: { seeds: [...seeds], picked, width: settings.width, height: settings.height, rating: settings.rating, seed: seedState() },
   });
+  dropStaleUndo();
   bed = sanitizeBed(p.bed, (t) => lib.byTag.has(t));
   if (Array.isArray(p.seeds) && p.seeds.length === TRIALS) seeds = [...p.seeds];
   // 當時是用固定種子印的：把那顆也帶回來，否則同一版會對不上那張成品。
@@ -1889,7 +1908,7 @@ function applyDeck(deck, btn = null, { fresh = true, kind = "牌組", label = `�
     if (Object.keys(merged).length) bed = { ...bed, weights: merged };
     for (const t of Object.keys(merged)) paintWeight(plateNode(t), merged[t]);
   }
-  toast(`${fresh ? "換成" : "疊上"}${label}${skipped ? `（${skipped} 張這一級出不了或在廢字簍，先跳過）` : ""}`, { action: { label: "撤回", run: undo } });
+  toastUndo(`${fresh ? "換成" : "疊上"}${label}${skipped ? `（${skipped} 張這一級出不了或在廢字簍，先跳過）` : ""}`);
 }
 
 // 貼上提示詞變成牌（paste-prompt.js）：牌組面板裡、電腦上在空白處按 Ctrl+V。
@@ -2860,7 +2879,7 @@ function renderPrintBar() {
           style: busy ? `--p: ${p.status === "running" ? p.progress || 0 : 0}` : hiBusy ? `--p: ${p.hi.status === "running" ? p.hi.progress || 0 : 0}` : undefined,
           "aria-haspopup": p && p.status === "done" && !p._gone ? "dialog" : undefined,
           onclick: (e) => printAction(e.currentTarget),
-          title: p && p.status === "done" && !p._gone ? "放大並重畫細節（快速／深度）" : "付印（P）",
+          title: p && p.status === "done" && !p._gone ? "放大並重畫細節（快速／深度）" : "付印（G）",
         },
         label
       ),
@@ -4020,9 +4039,15 @@ function onKey(e) {
   } else if (e.key === "r" || e.key === "R") {
     e.preventDefault();
     reroll();
-  } else if (e.key === "p" || e.key === "P") {
+  } else if (e.key === "g" || e.key === "G") {
+    // 付印用 G：跟墨池一樣，G 會送 ComfyUI 生圖。以前疊印台是 P，而墨池的 P 是「只抽牌」（不花顯示卡），
+    // 在墨池養成的手感按到這裡就真的開始印了。
     e.preventDefault();
     printNow();
+  } else if (e.key === "p" || e.key === "P") {
+    // 按 P 的人多半以為是「只抽牌」或是舊的付印：都不動作，說一聲改到哪了。
+    e.preventDefault();
+    toast("付印的快捷鍵改成 G 了（跟墨池一樣：G 會生圖，P 不會）");
   }
 }
 

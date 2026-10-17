@@ -43,7 +43,7 @@ import { initWorkflow, currentWorkflowId, currentSampling, wfHandleKeys } from "
 import { HARD_BANNED } from "./card-art.js";
 import { buildLibrary, sizeCards, groupChips, genderChips, chipRun, seriesRun, groupNow, createAssets, cardNode, setCardFlag, setEnterTarget, eagerArt, cardFacts, cardMatches, CARD_SUIT_INFO, CARD_SUITS, RATING_ZH } from "./cards.js";
 import { bindArt, artFallback } from "./card-images.js";
-import { el, openSheet, anyOverlay, toast, runToastAction, ICONS, syncChoices } from "./ui.js";
+import { el, openSheet, anyOverlay, toast, runToastAction, dropToastAction, ICONS, syncChoices } from "./ui.js";
 import { mountKeysHelp } from "./keys-help.js";
 import { mountTour } from "./tour.js";
 import { mountScreensaver } from "./screensaver.js";
@@ -492,7 +492,15 @@ function updatePickerFoot() {
   const n = $("picker-count");
   if (!n) return;
   const count = [...pool].filter((t) => lib.byTag.has(t)).length;
-  const text = count ? `合成池 ${count} 張` : "合成池還是空的";
+  // 偏好卡牌在挑牌、廢字簍開著時，點字盒的牌不是放進合成池：底下這行直接講點了會怎樣。
+  // 電腦版有字盒那圈虛線；手機的抽屜把那兩個開關蓋在後面，以前這裡照樣寫「合成池還是空的」，
+  // 人以為在挑牌，其實一路在封鎖。
+  const mode = hand?.editing ? "hand" : trashPanel?.isOpen ? "trash" : "";
+  const text =
+    mode === "hand" ? `點牌＝加進偏好卡牌 ${hand.count}/${hand.max}`
+    : mode === "trash" ? `點牌＝丟進廢字簍（${bans.size}）`
+    : count ? `合成池 ${count} 張` : "合成池還是空的";
+  n.parentElement.dataset.mode = mode;
   if (n.textContent !== t(text)) {
     n.textContent = text;
     if (pickerOpen && !reducedMotion()) n.animate([{ transform: "translateY(5px)", opacity: 0.4 }, { transform: "none", opacity: 1 }], { duration: DUR.short, easing: css(CURVE.out) });
@@ -839,6 +847,7 @@ function buildHand() {
       if (hand.editing && trashPanel?.isOpen) trashPanel.close();
       renderGoBar();
       hand.mark($("lib-grid"));
+      updatePickerFoot();
     },
     onFull: () => toast(`偏好卡牌最多 ${hand.max} 張，先拿掉一張再加`),
     onRemoved: (t, undo) => toast(`「${lib.byTag.get(t)?.zh || t}」拿出偏好卡牌`, { action: { label: "復原", key: "Z", run: undo } }),
@@ -1275,7 +1284,20 @@ function unban(tag) {
   announce(`「${zh(tag)}」撿回來了，之後又可能抽到`);
 }
 
+// 合成池的「復原」（清空、全部加入、套牌組／貼上）是回到那一步之前的整個池子，只對「剛剛那一步」有效。
+// 之後池子又動過，再按復原會把新放的牌一起蓋掉（以前會，而且不吭聲）：池子一變就把那則提示收掉。
+let poolUndo = null;
+const poolKey = () => [...pool].sort().join("|");
+function poolUndoToast(text, action) {
+  toast(text, { action });
+  poolUndo = { action, pool: poolKey() };
+}
+
 function commitPins(fresh) {
+  if (poolUndo && poolKey() !== poolUndo.pool) {
+    dropToastAction(poolUndo.action);
+    poolUndo = null;
+  }
   // 不在合成池裡的牌不留份量（拿出去、被擠掉的；擠掉的另外記在 parkedWeights）。
   for (const t of [...weights.keys()]) if (!pool.has(t)) weights.delete(t);
   S.saveBans(bans);
@@ -2483,17 +2505,15 @@ function pinAllFromShot(shot, btn) {
       );
   }
   sfx.deal?.(Math.min(6, added.length + 1));
-  toast(`放進 ${added.length} 張到合成池`, {
-    action: {
-      label: "復原",
-      key: "Z",
-      run: () => {
-        pool = before;
-        bans = beforeBans;
-        weights.clear();
-        for (const [t, w] of beforeWeights) weights.set(t, w);
-        commitPins();
-      },
+  poolUndoToast(`放進 ${added.length} 張到合成池`, {
+    label: "復原",
+    key: "Z",
+    run: () => {
+      pool = before;
+      bans = beforeBans;
+      weights.clear();
+      for (const [t, w] of beforeWeights) weights.set(t, w);
+      commitPins();
     },
   });
 }
@@ -3240,6 +3260,7 @@ function buildTrashPanel() {
     onToggle: (open) => {
       if (open && hand?.editing) hand.toggleEdit(false);
       if (open) sfx.lift();
+      updatePickerFoot();
     },
     decorate: (node, t) => drag.attach(node, { tag: t, from: "trash" }),
   });
@@ -3428,15 +3449,13 @@ function applyCards(tags, { replace = true, label = "", weights: w = {} } = {}) 
   const pw = $("pool-well");
   const r = pw.getBoundingClientRect();
   if (r.bottom < 0 || r.top > innerHeight) pw.scrollIntoView({ behavior: reducedMotion() ? "instant" : "smooth", block: "center" });
-  toast(`${label}：${replace ? "換成" : "加進"} ${fresh.size} 張，合成池共 ${pool.size} 張`, {
-    action: {
-      label: "復原",
-      run: () => {
-        pool = new Set(before.pool.filter((t) => lib.byTag.has(t)));
-        bans = new Set(before.bans);
-        weights = before.weights;
-        commitPins();
-      },
+  poolUndoToast(`${label}：${replace ? "換成" : "加進"} ${fresh.size} 張，合成池共 ${pool.size} 張`, {
+    label: "復原",
+    run: () => {
+      pool = new Set(before.pool.filter((t) => lib.byTag.has(t)));
+      bans = new Set(before.bans);
+      weights = before.weights;
+      commitPins();
     },
   });
 }
@@ -3460,32 +3479,30 @@ $("pool-clear").addEventListener("click", () => {
   // 偏好卡牌先動身回到手上，其他的晚一拍才收成一疊（兩件事分得開）。
   hand?.receive(toHand);
   gatherHome(toLib, { x: well.left + well.width / 2, y: well.top + well.height / 2 }, home, { start: toHand.length ? 110 : 0 });
-  toast(`清空了合成池（${before.length} 張）`, {
-    action: {
-      label: "復原",
-      key: "Z",
-      run: () => {
-        // 清空的反過來：偏好卡牌從手上打出去（托盤那一格／標籤），其他的從字盒那張飛回來；
-        // 出發點在重畫之前量，回來的那幾格重畫出來時就藏著，影子都在這一刻做好、用 delay 錯開。
-        const restore = before.filter((t) => lib.byTag.has(t) && !bans.has(t));
-        const cardW = $("lib-grid").querySelector(".card")?.offsetWidth || 84;
-        const launch = restore.map((t) => {
-          const h = hand?.has(t) ? hand.launchFrom(t, cardW) : null;
-          if (h) return { t, ...h, fromHand: true };
-          const c = libCardNode(t);
-          const r = c && c.getBoundingClientRect();
-          return { t, rect: r && r.width && r.bottom > 0 && r.top < innerHeight ? r : null, node: null, rotate: 0 };
-        });
-        if (!matchMedia("(prefers-reduced-motion: reduce)").matches) for (const l of launch) claimPoolInbound(l.t);
-        pool = new Set(restore);
-        weights = new Map([...beforeWeights].filter(([t]) => pool.has(t)));
-        commitPins();
-        // 從手上打出去的先走（托盤正在收攏，等久了會蓋住留下來的牌），字盒的跟著一張一張來。
-        const first = launch.filter((l) => l.fromHand);
-        const rest = launch.filter((l) => !l.fromHand);
-        first.forEach((l, i) => flyInto(l.t, l.rect, { delay: i * 45, src: l.node, startRotate: l.rotate, startScale: l.scale || 1 }));
-        rest.forEach((l, i) => flyInto(l.t, l.rect, { delay: 60 + first.length * 45 + i * 60 }));
-      },
+  poolUndoToast(`清空了合成池（${before.length} 張）`, {
+    label: "復原",
+    key: "Z",
+    run: () => {
+      // 清空的反過來：偏好卡牌從手上打出去（托盤那一格／標籤），其他的從字盒那張飛回來；
+      // 出發點在重畫之前量，回來的那幾格重畫出來時就藏著，影子都在這一刻做好、用 delay 錯開。
+      const restore = before.filter((t) => lib.byTag.has(t) && !bans.has(t));
+      const cardW = $("lib-grid").querySelector(".card")?.offsetWidth || 84;
+      const launch = restore.map((t) => {
+        const h = hand?.has(t) ? hand.launchFrom(t, cardW) : null;
+        if (h) return { t, ...h, fromHand: true };
+        const c = libCardNode(t);
+        const r = c && c.getBoundingClientRect();
+        return { t, rect: r && r.width && r.bottom > 0 && r.top < innerHeight ? r : null, node: null, rotate: 0 };
+      });
+      if (!matchMedia("(prefers-reduced-motion: reduce)").matches) for (const l of launch) claimPoolInbound(l.t);
+      pool = new Set(restore);
+      weights = new Map([...beforeWeights].filter(([t]) => pool.has(t)));
+      commitPins();
+      // 從手上打出去的先走（托盤正在收攏，等久了會蓋住留下來的牌），字盒的跟著一張一張來。
+      const first = launch.filter((l) => l.fromHand);
+      const rest = launch.filter((l) => !l.fromHand);
+      first.forEach((l, i) => flyInto(l.t, l.rect, { delay: i * 45, src: l.node, startRotate: l.rotate, startScale: l.scale || 1 }));
+      rest.forEach((l, i) => flyInto(l.t, l.rect, { delay: 60 + first.length * 45 + i * 60 }));
     },
   });
 });

@@ -460,6 +460,10 @@ export function inkPress(el, x, y) {
 /** 狀態換過去了（開／關、選中）：蓋一下章。 */
 export function seat(el) {
   if (!el || reducedMotion()) return;
+  // 同一下被叫兩次（頁面自己蓋一次、上面的觀察器又蓋一次）：第二次不重播，不然要多量一次版面、章跳兩下。
+  const now = performance.now();
+  if (el._seatAt && now - el._seatAt < 32) return;
+  el._seatAt = now;
   // 章本來沒蓋過：直接掛上就會從第一格開始播。為了重播去讀 offsetWidth 會逼整頁排版，
   // 載入時每顆選中的按鈕都這樣一次，長任務就從這裡來。只有章還在、要重頭播，才讀一次。
   const replay = el.classList.contains("is-seated");
@@ -531,6 +535,8 @@ function wirePress() {
   new MutationObserver((records) => {
     for (const r of records) {
       if (r.oldValue === null || r.oldValue === r.target.getAttribute("aria-pressed")) continue;
+      // 只有變成「按下」的那一顆蓋章；被取消的那顆也縮一下的話，看起來像兩顆都被按了。
+      if (r.target.getAttribute("aria-pressed") !== "true") continue;
       if (r.target.matches?.(PRESS)) seat(r.target);
     }
   }).observe(document.body, { subtree: true, attributes: true, attributeOldValue: true, attributeFilter: ["aria-pressed"] });
