@@ -184,6 +184,8 @@ try {
     await page.locator(grid + ' .card').first().waitFor();
     if (route === '/') await page.locator('#suit-tabs button').filter({ hasText: '角色' }).click();
     else await page.locator('#case-tabs [data-tab="chara"]').click();
+    // 墨池換花色時分頁先亮、字盒下一格才重畫（app.js 的 afterPaint）：等牌換成角色牌再挑。
+    await page.waitForFunction((grid) => document.querySelector(grid + ' .card')?.dataset.suit === 'chara', grid);
     const card = page.locator(grid + ' .card').first(), tag = await card.getAttribute('data-tag');
     await card.click();
     await page.waitForFunction(({ grid, tag }) => [...document.querySelectorAll(grid + ' .card')].some(n => n.dataset.tag === tag && n.dataset.state === 'pinned'), { grid, tag });
@@ -208,6 +210,21 @@ try {
       assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth + 1), false, 'deferred card sizing survives newer pins and viewport changes');
     }
   }
+  // 合成池跟著分頁走（store.js 的 TAB_POOL）：剛才在墨池放的牌，去疊印台再回來還在。
+  await page.goto(origin + '/');
+  await page.locator('#pool-well .card').first().waitFor();
+  // 後面要看空池的起手組合：清空合成池（離開這頁時存下的就是空的）。
+  await page.locator('#pool-clear').click();
+  await page.waitForFunction(() => !document.querySelector('#pool-well .card'));
+  // 疊印台的卡池也跟著分頁走（TAB_FUSE）：前面放過牌，清版之後空版的起手組合才會出來。
+  await page.goto(origin + '/fuse.html');
+  await page.locator('#registers .starters:not(.starters-decks) .starter-name, #clear:not([disabled])').first().waitFor();
+  if (await page.locator('#clear:not([disabled])').count()) {
+    await page.locator('#clear').click();
+    await page.locator('#registers .starters:not(.starters-decks) .starter-name').first().waitFor();
+  }
+  await page.goto(origin + '/');
+  await page.locator('.quick-starters [data-starter]').first().waitFor();
   await page.evaluate(async () => {
     const S = await import('./store.js'), E = await import('./engine.js');
     const data = await (await fetch('./lexicon.json')).json();
