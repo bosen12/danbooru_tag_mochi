@@ -94,6 +94,8 @@ let lib = null;
 let assets = null;
 let settings = null;
 let pool = new Set();
+// 從卡冊帶來的牌加進了剛才那一池（不是換掉）：歡迎詞照這個說。
+let handoffMerged = false;
 // 空池抽一次，普通重畫保留；放牌後重設，清空時再抽。
 let starterPick = null;
 // 合成池裡每張牌的份量（weights.js）：只記調過的（不是 1.0 的）。
@@ -151,9 +153,27 @@ async function boot() {
 
   const stored = S.loadSettings();
   settings = sanitizeSettings(stored || { rating: "general" }, data);
-  // 池子不存：重新整理就是空的；只收疊印台剛交過來的那一版。
-  pool = new Set(S.takePool().filter((t) => lib.byTag.has(t)));
-  weights = new Map(Object.entries(S.handoffWeights).filter(([t, w]) => pool.has(t) && w !== 1));
+  // 池子不存：重新整理就是空的。從別的房間回來（同一個分頁）拿回剛才那一池（store.js 的 loadTab）。
+  // 交接過來的：疊印台、作品冊帶的是一整組，換成那一組；卡冊帶的是幾張單牌，加進剛才那一池。
+  const handoff = S.takePool().filter((t) => lib.byTag.has(t));
+  const before = S.loadTab(S.TAB_POOL);
+  const kept = before && Array.isArray(before.tags) ? before.tags.filter((t) => lib.byTag.has(t)) : [];
+  if (handoff.length && S.handoffFrom === "book" && kept.length) {
+    let pinned = new Set(kept);
+    let banned = new Set(S.loadBans().filter((t) => lib.byTag.has(t)));
+    for (const t of handoff) ({ pinned, userBanned: banned } = applyPin(lex, pinned, banned, t));
+    pool = pinned;
+    handoffMerged = true;
+    S.saveBans(banned);
+    weights = new Map(Object.entries(before.weights || {}).filter(([t, w]) => pool.has(t) && w !== 1));
+  } else if (handoff.length) {
+    pool = new Set(handoff);
+    weights = new Map(Object.entries(S.handoffWeights).filter(([t, w]) => pool.has(t) && w !== 1));
+  } else {
+    pool = new Set(kept);
+    weights = new Map(Object.entries(before?.weights || {}).filter(([t, w]) => pool.has(t) && w !== 1));
+  }
+  addEventListener("pagehide", () => S.saveTab(S.TAB_POOL, { tags: [...pool], weights: Object.fromEntries(weights) }));
   const languageState = takeLanguageState();
   if (languageState) {
     pool = new Set((languageState.pool || []).filter((tag) => lib.byTag.has(tag)));
@@ -387,7 +407,9 @@ function openPicker() {
     /* 不能動歷史紀錄就算了：照樣用按鈕收 */
   }
   updatePickerFoot();
-  renderLibrary();
+  // 字盒平常就跟著花色、搜尋、池子重畫，打開時已經是最新的：不再整盒重建（慢手機上抽屜要等 240ms 才開始滑）。
+  // 還沒畫過（開機到一半就點）才畫。
+  if (!$("lib-grid").querySelector(".card")) renderLibrary();
   if (!reducedMotion()) {
     lib.animate([{ transform: "translateY(100%)" }, { transform: "none" }], { duration: DUR.long, easing: css(CURVE.out) });
     $("picker-scrim").animate([{ opacity: 0 }, { opacity: 1 }], { duration: DUR.medium, easing: css(CURVE.out) });
@@ -525,6 +547,24 @@ function tuckIntoPicker(tag, from) {
 }
 
 
+/**
+ * 等這一格畫出來再做：按下去的回饋（分頁亮起來、墨暈、按鈕壓下去）先上畫面，重的事放到下一格。
+ * 慢手機上換花色、只抽牌以前是 170～380ms 一整塊，按了要等一下才看到有反應。
+ * 下一格做的時候版面已經算好，rowChange、FLIP 量位置也不會再逼一次整頁排版。
+ * 背景分頁不跑 rAF：用 setTimeout 保底。
+ */
+function afterPaint(fn) {
+  if (document.hidden) return setTimeout(fn, 0);
+  let done = false;
+  const run = () => {
+    if (done) return;
+    done = true;
+    fn();
+  };
+  requestAnimationFrame(() => setTimeout(run, 0));
+  setTimeout(run, 120);
+}
+
 function pickSuit(s, from) {
   const focused = document.activeElement === from;
   ui.suit = s;
@@ -537,7 +577,8 @@ function pickSuit(s, from) {
   if (focused) selected?.focus({ preventScroll: true });
   seat(selected);
   dealLibrary = true;
-  renderLibrary();
+  // 連點兩個花色：只畫最後點的那一個。
+  afterPaint(() => ui.suit === s && renderLibrary());
 }
 
 // 下一次畫字盒時，第一批牌要不要依序發進來（換花色、換小分類才要）。
@@ -1023,6 +1064,8 @@ function paintState(node, tag) {
 function repaintLibrary() {
   for (const node of $("lib-grid").querySelectorAll(".card")) paintState(node, node.dataset.tag);
   hand?.mark($("lib-grid"));
+  // 成品詳情、牆上攤開的牌：放進合成池、丟進廢字簍之後馬上換章。
+  for (const node of document.querySelectorAll(".result-card")) paintState(node, node.dataset.tag);
 }
 
 
@@ -1210,7 +1253,30 @@ function announce(text) {
 }
 
 /** 拿出合成池。viaDrag：拖回字盒的那張由 drag.js 飛回去，這裡只讓它連帶的牌飛。 */
+// 墨池沒有疊印台那樣完整的撤回紀錄；封鎖、拿出最容易手滑（Delete、拖歪了、×點偏），留最後一步讓 Z／Ctrl+Z 撿回來。
+// 只認幾秒內、而且之後池子和廢字簍都沒再動過的那一步：不然撿回來的是舊的狀態、會蓋掉後來做的事。
+let lastStep = null;
+const stepKey = () => [...pool].sort().join("|") + "#" + [...bans].sort().join("|");
+const stepBefore = () => ({ pool: new Set(pool), bans: new Set(bans), weights: new Map(weights) });
+function rememberStep(text, before) {
+  lastStep = { text, before, at: Date.now(), after: stepKey() };
+}
+function undoLastStep() {
+  const s = lastStep;
+  lastStep = null;
+  if (!s || Date.now() - s.at > 10000 || stepKey() !== s.after) return false;
+  pool = s.before.pool;
+  bans = s.before.bans;
+  weights = s.before.weights;
+  commitPins();
+  renderTrash();
+  sfx.lift();
+  toast(s.text);
+  return true;
+}
+
 function unpin(tag, { viaDrag = false } = {}) {
+  const undoTo = stepBefore();
   const before = new Set(pool);
   pool.delete(tag);
   for (const b of lex.byTag.get(tag)?.bind || []) pool.delete(b);
@@ -1223,6 +1289,7 @@ function unpin(tag, { viaDrag = false } = {}) {
   if (before.size !== pool.size) sfx.lift();
   commitPins();
   leaving.forEach((l, i) => liftOut(l, i * 60));
+  if (before.size !== pool.size) rememberStep(`「${zh(tag)}」放回合成池了`, undoTo);
 }
 
 /** 丟進廢字簍。viaDrag：拖進去的那張 drag.js 已經演過被吸進去，這裡不重演。 */
@@ -1235,6 +1302,7 @@ function ban(tag, { viaDrag = false, from = null } = {}) {
   if (src && !intoPanel) flyToTrash(src);
   // 影子在蓋章之前複製（彩色的那張），路上才慢慢褪成灰。
   const ghost = intoPanel ? cloneCard(src.node) : null;
+  const undoTo = stepBefore();
   if (hand?.has(tag)) hand.remove(tag, { quiet: true });
   // 揉紙聲在牌被吸進簍子的那一刻（拖的在放開後落進去，按的要先飛過去）。
   setTimeout(() => sfx.trash(), viaDrag ? DUR.short : DUR.long);
@@ -1243,6 +1311,7 @@ function ban(tag, { viaDrag = false, from = null } = {}) {
   bans = next.userBanned;
   commitPins();
   renderTrash(true, { arriving: intoPanel ? tag : null });
+  rememberStep(`「${zh(tag)}」從廢字簍撿回來了`, undoTo);
   if (intoPanel) {
     ghost.classList.remove("dropped", "is-related", "is-clashing", "fav-card");
     ghost.style.visibility = "";
@@ -1335,6 +1404,7 @@ function zh(tag) {
 function greetHandoff() {
   const from = { book: "卡冊", fuse: "疊印台", album: "作品冊" }[S.handoffFrom];
   if (!from || !pool.size) return;
+  if (handoffMerged) return void setTimeout(() => toast(`從${from}帶來的牌加進合成池了，共 ${pool.size} 張`), DUR.long);
   const cards = [...$("pool-well").querySelectorAll(".card")];
   if (!reducedMotion()) {
     cards.forEach((c, i) =>
@@ -2065,6 +2135,10 @@ function drawBatch(gen, { auto = false } = {}) {
 async function drawBatchNow(gen, intent, epoch) {
   stopAsked = false;
   haptic(gen ? 18 : 12);
+  // 先讓按下去的樣子（墨暈、按鈕壓下、「抽牌中」）畫出來再抽：抽一張在慢手機上要 300ms 以上，
+  // 以前整段跟點擊在同一個任務裡，畫面要等抽完才動，像沒按到。無限抽自己接的那幾輪不用等。
+  if (!intent.auto) await new Promise((resolve) => afterPaint(resolve));
+  if (epoch !== drawEpoch) return;
   const n = intent.settings.n;
   let first = null;
   const made = [];
@@ -2459,7 +2533,7 @@ function shotCards(shot, deal) {
     ),
     el("p", { class: "deal-label", dataset: { kind: "mine" } }, el("b", {}, "你選的"), shot.mine.length ? `${shot.mine.length} 張` : "這張沒有放字，全部是抽的"),
     mineCards.length || missCards.length ? el("div", { class: "deal-row" }, mineCards, missCards) : null,
-    el("p", { class: "deal-label" }, el("b", {}, "抽到的"), `${shot.drawn.length} 張・拖進合成池就釘住，丟進廢字簍就封鎖`),
+    el("p", { class: "deal-label" }, el("b", {}, "抽到的"), `${shot.drawn.length} 張・${matchMedia("(hover: none)").matches ? "點牌：放進合成池或丟進廢字簍" : "拖進合成池就釘住，丟進廢字簍就封鎖"}`),
     el("div", { class: "fans" }, fans)
   );
 }
@@ -2521,6 +2595,12 @@ function pinAllFromShot(shot, btn) {
 function resultCard(tag, src, flag) {
   const card = lib.byTag.get(tag);
   const node = cardNode(card, assets, { src, flag });
+  // 成品的牌也標「池中／封鎖」（跟字盒同一套）：在詳情裡一張張挑，挑到第五張還分得出哪幾張處理過了。
+  // 「沒進圖」那幾張有自己的章，不蓋。
+  if (!flag) {
+    node.classList.add("result-card");
+    paintState(node, tag);
+  }
   node.addEventListener("click", () => showCard(tag, "shot"));
   drag.attach(node, { tag, from: "shot" });
   return node;
@@ -3335,9 +3415,15 @@ const drag = createDrag({
 
 function onKey(e) {
   if (handleLoraKeys(e) || wfHandleKeys(e) || discord?.keys(e)) return;
-  if (anyOverlay() || e.ctrlKey || e.metaKey || e.altKey) return;
   const t = e.target;
-  if (t && (t.tagName === "INPUT" || t.tagName === "SELECT" || t.tagName === "TEXTAREA")) return;
+  const typing = t && (t.tagName === "INPUT" || t.tagName === "SELECT" || t.tagName === "TEXTAREA");
+  // Ctrl+Z（Mac 的 ⌘Z）跟 Z 一樣：疊印台兩個都能撤回，從那邊過來的人會本能按 Ctrl+Z。
+  if ((e.ctrlKey || e.metaKey) && !e.altKey && !e.shiftKey && (e.key === "z" || e.key === "Z") && !typing && !anyOverlay()) {
+    if (runToastAction("Z") || undoLastStep()) e.preventDefault();
+    return;
+  }
+  if (anyOverlay() || e.ctrlKey || e.metaKey || e.altKey) return;
+  if (typing) return;
   if (e.key === "g" || e.key === "G") {
     e.preventDefault();
     drawBatch(true);
@@ -3349,8 +3435,9 @@ function onKey(e) {
     $("trash").focus({ preventScroll: true });
   } else if (e.key === "Escape" && (generator.busy || looping || drawingRounds > 0)) {
     stopAll();
-  } else if ((e.key === "z" || e.key === "Z") && runToastAction("Z")) {
+  } else if ((e.key === "z" || e.key === "Z") && (runToastAction("Z") || undoLastStep())) {
     // 提示上有「復原」（清空合成池、撤下成品、拿出偏好卡牌）：Z 就是按它。
+    // 沒有的話撿回剛才封鎖、拿出的那一張（undoLastStep）。
     e.preventDefault();
   } else if (e.key === "/") {
     e.preventDefault();

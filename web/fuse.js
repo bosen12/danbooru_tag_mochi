@@ -227,7 +227,11 @@ async function boot() {
   settings = sanitizeSettings(readJ(FK.settings, null) || S.loadSettings() || { rating: "general" }, data);
   bans = new Set(S.loadBans().filter((t) => lib.byTag.has(t)));
   bed = emptyBed();
+  // 從別的房間回來（同一個分頁、不是重新整理）：卡池、四張試印、選中的那張照剛才的樣子（store.js 的 loadTab）。
+  // 墨池帶牌過來的話照舊換成那一版。
+  const back = S.loadTab(S.TAB_FUSE);
   const handoff = S.takeFuse();
+  if (back && !handoff) bed = sanitizeBed(back.bed, (tag) => lib.byTag.has(tag) && !bans.has(tag));
   if (handoff) {
     for (const tag of handoff.tags) {
       const item = lib.byTag.get(tag);
@@ -235,8 +239,9 @@ async function boot() {
     }
     bed = sanitizeBed({ ...bed, weights: handoff.weights }, tag => lib.byTag.has(tag));
   }
-  seeds = freshSeeds();
-  picked = 0;
+  seeds = back && !handoff && Array.isArray(back.seeds) && back.seeds.length === TRIALS ? back.seeds : freshSeeds();
+  picked = back && !handoff && Number.isInteger(back.picked) ? back.picked : 0;
+  addEventListener("pagehide", () => S.saveTab(S.TAB_FUSE, { bed, seeds, picked }));
   const languageState = takeLanguageState();
   if (languageState) {
     bed = sanitizeBed(languageState.bed, (tag) => lib.byTag.has(tag));

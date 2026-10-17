@@ -1155,6 +1155,8 @@ ComfyUI 沒有回報 checkpoint|ComfyUI returned no checkpoints.
 抽牌|Draw
 抽牌、生圖進行中：停下來|Stop drawing or generating
 提示上有「復原」時：復原（清空合成池、撤下成品…）|Undo the action shown in the toast
+復原（Ctrl Z 也可以）：提示上的「復原」；沒有的話撿回剛才封鎖、拿出的那一張|Undo (Ctrl Z works too): the action in the toast, or else the card you just blocked or removed
+字盒的牌：丟進廢字簍（按 Z 撿回來）|Library card: block it (Z takes it back)
 在頁面空白處：把剪貼簿的提示詞貼成牌|Paste a prompt as cards on the workbench
 在找牌的框：把第一張放進合成池|In search: pin the first matching card
 在找牌的框：走進字盒|In search: move focus into the library
@@ -1384,6 +1386,7 @@ Hires 好了：{0}×{1}|Upscale ready · {0}×{1}
 印製中，還有 {0} 張|Generating · {0} remaining
 牌 · {0}|Cards · {0}
 拖進合成池就釘住，丟進廢字簍就封鎖|Drag to pin or block
+點牌：放進合成池或丟進廢字簍|Tap a card to pin or block it
 Hires {0}×{1}（原圖 {2}×{3}）|Upscale {0}×{1} (original {2}×{3})
 {0}：{1} {2} 張，合成池共 {3} 張|{0} · {1} {2} cards · {3} pinned in total
 整體收藏 {0}%|Overall save rate {0}%
@@ -1488,6 +1491,8 @@ Discord 設定（自動傳送{0}）|Discord settings (auto sharing {0})
 「{0}」拿出偏好卡牌|Removed “{0}” from favorites
 「{0}」撿回來了，之後又可能抽到|Unblocked “{0}”
 「{0}」丟進廢字簍了，之後不會抽到|Blocked “{0}”
+「{0}」放回合成池了|Put “{0}” back in the pool
+「{0}」從廢字簍撿回來了|Took “{0}” back out of Blocked cards
 把「{0}」拿出合成池|Unpin “{0}”
 把「{0}」放進卡盒|Add “{0}” to card box
 把「{0}」拿出卡盒|Remove “{0}” from card box
@@ -1512,6 +1517,7 @@ Discord 設定（自動傳送{0}）|Discord settings (auto sharing {0})
 廢字簍：封鎖了 {0} 個字，點開可以一直點字盒的牌丟進來|{0} blocked cards · Click to edit
 {0} 個字都撿回來了|Unblocked {0} cards
 從{0}帶來 {1} 張牌，已經放進合成池|Pinned {1} cards from {0}
+從{0}帶來的牌加進合成池了，共 {1} 張|Added the cards from {0} · {1} pinned in total
 牌組「{0}」|Deck “{0!}”
 {0}帶去墨池…|Sending {0} to Ink Pool…
 你選的牌・{0}|Pinned cards · {0}

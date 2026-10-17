@@ -62,6 +62,36 @@ export let handoffFrom = "";
 /** 上一次 takePool() 拿到的便條裡各張牌的份量（作品冊、疊印台交過來的）。 */
 export let handoffWeights = {};
 
+/**
+ * 合成池、卡池跟著這個分頁走（sessionStorage）：去卡冊查一張牌再回來，組到一半的牌還在。
+ * 重新整理照舊是空的（2026-09-25 的決定：重新整理＝重來），所以重新整理開的頁不拿。
+ * 開新分頁也是空的（sessionStorage 每個分頁一份）。
+ */
+export function reloaded() {
+  try {
+    return performance.getEntriesByType("navigation")[0]?.type === "reload";
+  } catch {
+    return false;
+  }
+}
+export const TAB_POOL = "mochi.tab.pool.v1";
+export const TAB_FUSE = "mochi.tab.fuse.v1";
+export function saveTab(key, value) {
+  try {
+    sessionStorage.setItem(key, JSON.stringify(value));
+  } catch {
+    /* 存不了：回來就是空的，跟以前一樣 */
+  }
+}
+export function loadTab(key) {
+  if (reloaded()) return null;
+  try {
+    return JSON.parse(sessionStorage.getItem(key) || "null");
+  } catch {
+    return null;
+  }
+}
+
 /** 墨池開機時呼叫：拿走交接的牌（沒有就是空的池子），順手清掉舊版一直存著的合成池。 */
 export function takePool() {
   const note = read(KEY.handoff, null);
