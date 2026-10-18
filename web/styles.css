@@ -1333,7 +1333,7 @@ body #wf-pick-btn.has {
 }
 
 .pool-clash b {
-  color: var(--color-accent);
+  color: var(--color-accent-text);
   font-weight: 700;
 }
 
@@ -1937,7 +1937,7 @@ body #wf-pick-btn.has {
 }
 
 .skel-heat-note {
-  color: var(--color-accent);
+  color: var(--color-accent-text);
 }
 
 /* 選格指過來：尺度那一顆亮兩下。 */
@@ -2023,8 +2023,18 @@ body #wf-pick-btn.has {
   order: 1;
 }
 .go-bar > .spacer,
-.go-bar > .btn {
+.go-bar > .btn,
+.go-bar > .go-actions {
   order: 2;
+}
+/* 「停／只抽牌／抽並生圖」一組：擠不下時整組一起換到下一行、靠右，不會只剩「抽並生圖」掉到左下角
+ * （1366 寬中文、1600 寬英文以前都會，主按鈕離開了右下角的視線終點）。 */
+.go-actions {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: var(--space-sm);
+  margin-inline-start: auto;
 }
 .go-bar > .seed-ctl .seed-ctl-label {
   position: absolute;
@@ -2093,6 +2103,10 @@ html[lang="en"] .pool > .panel-head .workspace-purpose {
 /* 手機：兩欄排好 —— 張數一行、兩個開關並排、兩個次要動作並排、「抽並生圖」撐滿自己一行。
    flex 換行時「同一個人」會跟「偏好卡牌」擠一行、「只抽牌」又落單，主次看不出來。 */
 @media (max-width: 40rem) {
+  /* 桌機把「停／只抽牌／抽並生圖」包成一組（.go-actions），手機拆開照原本的兩欄排。 */
+  .go-actions {
+    display: contents;
+  }
   .go-bar {
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
@@ -2100,7 +2114,7 @@ html[lang="en"] .pool > .panel-head .workspace-purpose {
   }
   .go-bar > .stepper,
   .go-bar > .go-status,
-  .go-bar > .btn-primary,
+  :is(.go-bar, .go-actions) > .btn-primary,
   .go-bar > .seed-ctl {
     grid-column: 1 / -1;
   }
@@ -2132,28 +2146,28 @@ html[lang="en"] .pool > .panel-head .workspace-purpose {
   .go-bar .go-status:empty {
     display: none;
   }
-  .go-bar > .btn {
+  :is(.go-bar, .go-actions) > .btn {
     justify-content: center;
   }
   /* 生圖中多一顆「停」：跟「抽並生圖」一樣撐滿，放在它上面，一眼找得到。 */
-  .go-bar > .btn:not(.btn-ghost):not(.btn-primary) {
+  :is(.go-bar, .go-actions) > .btn:not(.btn-ghost):not(.btn-primary) {
     grid-column: 1 / -1;
   }
   /* 主按鈕緊接在張數下面，開關和種子往後：第一屏就看得到整顆「抽並生圖」，
      底部浮動列才會收起（以前主按鈕被切一半，第一屏同時有兩組「只抽牌」）。 */
-  .go-bar > * {
+  :is(.go-bar, .go-actions) > * {
     order: 4;
   }
   .go-bar > .stepper {
     order: 0;
   }
-  .go-bar > .btn:not(.btn-ghost):not(.btn-primary) {
+  :is(.go-bar, .go-actions) > .btn:not(.btn-ghost):not(.btn-primary) {
     order: 1;
   }
-  .go-bar > .btn-primary {
+  :is(.go-bar, .go-actions) > .btn-primary {
     order: 2;
   }
-  .go-bar > .btn-ghost {
+  :is(.go-bar, .go-actions) > .btn-ghost {
     order: 3;
   }
   .go-bar > .seed-ctl {
@@ -2168,6 +2182,8 @@ html[lang="en"] .pool > .panel-head .workspace-purpose {
   flex-wrap: wrap;
   align-items: baseline;
   gap: var(--space-xs) var(--space-md);
+  /* 「成品」跟上面「合成池」同一條線：合成池的標題在面板裡縮進 space-md，以前成品貼著欄邊，差 16px。 */
+  padding-inline: var(--space-md);
 }
 
 /* 說明緊跟標題，工具靠右 —— 以前 space-between 讓說明浮在整列正中間，對不到任何東西。 */
@@ -2484,7 +2500,7 @@ html[lang="en"] .pool > .panel-head .workspace-purpose {
 }
 
 .shot-meta .status[data-kind="err"] {
-  color: var(--color-accent);
+  color: var(--color-accent-text);
 }
 
 .shot-meta code {
@@ -2587,7 +2603,7 @@ html[lang="en"] .pool > .panel-head .workspace-purpose {
 
 @media (hover: hover) and (pointer: fine) {
   .shot-actions .shot-remove:hover {
-    color: var(--color-accent);
+    color: var(--color-accent-text);
     border-color: color-mix(in oklch, var(--color-accent) 50%, transparent);
   }
 }
@@ -3425,7 +3441,7 @@ body[data-dragging="true"] .library[data-over="true"] {
   border: 1px solid var(--color-accent);
   border-radius: var(--radius-xs);
   background: transparent;
-  color: var(--color-accent);
+  color: var(--color-accent-text);
   font-weight: 700;
   cursor: pointer;
 }
@@ -5010,7 +5026,7 @@ html[data-vt="back"] .vt-sweep {
 
 .cmp-zoom[data-native="true"] {
   border-color: var(--color-accent);
-  color: var(--color-accent);
+  color: var(--color-accent-text);
 }
 
 @media (hover: hover) and (pointer: fine) {
@@ -5657,7 +5673,7 @@ html {
     background: color-mix(in oklch, var(--color-accent) 10%, var(--color-paper-2));
   }
   .picker-foot:is([data-mode="trash"], [data-mode="hand"]) .picker-count {
-    color: var(--color-accent);
+    color: var(--color-accent-text);
     font-weight: 700;
   }
   .picker-done {
@@ -5720,7 +5736,7 @@ body {
     height: auto;
     overflow: visible;
     clip-path: none;
-    color: var(--color-accent);
+    color: var(--color-accent-text);
   }
 }
 
@@ -5982,7 +5998,7 @@ html[data-booting] :is(#lib-grid, #case-grid, #book-grid):empty::before {
 }
 .paste-group.is-blocked .paste-chip {
   border-color: var(--color-accent);
-  color: var(--color-accent);
+  color: var(--color-accent-text);
   text-decoration: line-through;
 }
 .decks-paste {
@@ -6026,7 +6042,7 @@ html[data-booting] :is(#lib-grid, #case-grid, #book-grid):empty::before {
   font-variant-numeric: tabular-nums;
 }
 .weight-seg button[data-dir="up"][aria-checked="true"] {
-  color: var(--color-accent);
+  color: var(--color-accent-text);
 }
 
 /* ---------- 手機：廢字簍跟著浮動抽牌列出現（app.js 的 renderGoFloat） ----------
@@ -6259,7 +6275,7 @@ html[data-booting] :is(#lib-grid, #case-grid, #book-grid):empty::before {
   object-fit: cover;
 }
 .pose-btn-warn {
-  color: var(--color-accent);
+  color: var(--color-accent-text);
   font-size: var(--text-xs);
   font-weight: 400;
 }
@@ -6508,7 +6524,7 @@ html[data-booting] :is(#lib-grid, #case-grid, #book-grid):empty::before {
 }
 .tour-todo {
   margin: 0;
-  color: var(--color-accent);
+  color: var(--color-accent-text);
   font-size: var(--text-sm);
   font-weight: 700;
 }
@@ -6611,6 +6627,22 @@ html[data-booting] :is(#lib-grid, #case-grid, #book-grid):empty::before {
   }
   .mast-extra + .mast-extra {
     margin-left: 6px;
+  }
+  /* 筆電（1280、1366）頂欄以前擠成兩排（101px，卡冊只有 57px，換頁時頂欄跳高）：
+   * 連線燈號只留燈（「Comfy 已連」給螢幕閱讀器、滑鼠停上去照樣有說明；英文版本來就這樣），
+   * 語言選單只留地球圖示（選單本身照舊點得開）。兩樣省下約 95px，墨池、疊印台回到一排。 */
+  .ping span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  /* locale.css 在後面載入，.language-picker::after（中文）、html[lang="en"] .language-picker::after（EN）
+   * 會蓋回去：這裡的強度要比兩條都高。 */
+  html:root .mast .language-picker::after {
+    content: none;
   }
 }
 
@@ -6790,7 +6822,7 @@ html[data-setup] .tour-offer {
   gap: 0.35em;
 }
 .favc-open-heart {
-  color: var(--color-accent);
+  color: var(--color-accent-text);
 }
 .favc-count {
   display: inline-block;
@@ -6905,7 +6937,7 @@ html[data-setup] .tour-offer {
 }
 @media (hover: hover) and (pointer: fine) {
   .favc-cell:hover .favc-heart {
-    color: var(--color-accent);
+    color: var(--color-accent-text);
   }
   .favc-cell[data-on="true"]:hover .favc-heart {
     color: var(--color-accent-ink, #fff);

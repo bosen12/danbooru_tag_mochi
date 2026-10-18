@@ -5,7 +5,8 @@
 .book {
   display: grid;
   gap: var(--space-sm);
-  padding: var(--space-md) var(--space-lg) var(--space-2xl);
+  /* 左右 16px：標題、牌跟頂欄的「墨池」字標同一條線（以前 24px，換頁時標題左右跳 8px）。 */
+  padding: var(--space-md) var(--space-md) var(--space-2xl);
   max-width: 1600px;
   margin: 0 auto;
 }
@@ -117,7 +118,7 @@
 }
 
 [aria-checked="true"] > .sort-arrow:only-of-type {
-  color: var(--color-accent);
+  color: var(--color-accent-text);
 }
 
 @keyframes sort-nudge {
@@ -231,7 +232,8 @@
   border: 2px solid currentColor;
   border-radius: 6px;
   background: color-mix(in oklch, var(--color-stock) 88%, transparent);
-  color: var(--color-accent);
+  /* 米白底上用深一階的朱（5.0:1）。亮的 accent-text 是給深色紙面的，放在這裡只剩 2.6:1。 */
+  color: var(--color-accent-2);
   font-family: var(--font-display);
   font-size: 17px;
   font-weight: 800;
@@ -863,7 +865,7 @@
 }
 
 .box-x:hover {
-  color: var(--color-accent);
+  color: var(--color-accent-text);
 }
 
 @media (hover: none) {
@@ -919,6 +921,11 @@
   .book {
     padding-inline: 4px;
   }
+  /* 標題、搜尋、工具列縮進 10px（跟其他頁的標題同一條線）；牌格照舊貼邊，牌才夠大。 */
+  .book-head,
+  .book-tools-in {
+    padding-inline: 10px;
+  }
 }
 
 /* ---------- 電腦：工具列（花色、排序、只看用過的、小分類）捲下去時黏在頂欄底下 ----------
@@ -935,11 +942,11 @@
     position: sticky;
     top: var(--mast-h, 0px);
     z-index: 20;
-    margin-inline: calc(var(--space-lg) * -1);
+    margin-inline: calc(var(--space-md) * -1);
     container-type: scroll-state;
   }
   .book-tools-in {
-    padding: var(--space-xs) var(--space-lg);
+    padding: var(--space-xs) var(--space-md);
     /* 跟頂欄同一個底色：背後的牌捲過去時字不會透上來。 */
     background: color-mix(in oklch, var(--color-paper) 96%, transparent);
     border-bottom: 1px solid transparent;
@@ -961,7 +968,7 @@
   color: var(--color-good);
 }
 .book-cell[data-war="bad"] .book-n {
-  color: var(--color-accent);
+  color: var(--color-accent-text);
 }
 .book-cell[data-war-zero="true"] .book-n {
   color: var(--color-muted);
@@ -1215,7 +1222,7 @@
 }
 @media (hover: hover) and (pointer: fine) {
   .fav-add:hover {
-    color: var(--color-accent);
+    color: var(--color-accent-text);
   }
   .fav-add[aria-pressed="true"]:hover {
     color: var(--color-accent-ink, #fff);

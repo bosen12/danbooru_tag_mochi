@@ -634,7 +634,8 @@ body.fuse {
   .line[data-empty="true"] {
     min-height: calc(var(--space-2xl) - var(--space-xs));
     align-items: center;
-    padding: var(--space-xs) var(--space-md);
+    /* 「晾紙」跟下面「卡池」的標題同一條線（14px）。 */
+    padding: var(--space-xs) 14px;
   }
   .line[data-empty="true"]::before,
   .line[data-empty="true"] .line-empty {
@@ -1136,7 +1137,7 @@ body.fuse {
 
 /* 預覽別張試印：卡池標題換成「預覽試印 B」，影子描一圈虛線，那張試印按鈕也描起來 —— 看得出這只是看看。 */
 .plate-sub.is-peek {
-  color: var(--color-accent);
+  color: var(--color-accent-text);
 }
 
 .registers[data-peek] .ghost-card {
@@ -1839,7 +1840,7 @@ body.fuse {
 }
 
 .pv-cap-state[data-state="failed"] {
-  color: var(--color-accent);
+  color: var(--color-accent-text);
 }
 
 .pv-cap-seed {
@@ -2001,7 +2002,9 @@ body.fuse {
   line-height: 1.45;
   overflow-wrap: anywhere;
 }
-.trial-summary .is-different { color: var(--color-accent); }
+/* 不一樣的那幾行：字照舊是墨色，只有前面的 ≠ 是朱色。以前整行朱紅，B、C、D 常常四行全紅，紅色變成雜訊。 */
+.trial-summary .is-different { color: var(--color-ink); }
+.is-different > .trial-diff { color: var(--color-accent-text); }
 .trial-summary > span { transition: color var(--dur-short) var(--ease-out); }
 .trial-diff {
   display: inline-block;
@@ -2080,7 +2083,7 @@ body.fuse {
 }
 
 .trial[aria-checked="true"] .trial-letter {
-  color: var(--color-accent);
+  color: var(--color-accent-text);
 }
 
 @media (hover: hover) and (pointer: fine) {
@@ -2145,7 +2148,7 @@ body.fuse {
   height: 2.4rem;
   border: 2px solid var(--color-accent);
   border-radius: 4px;
-  color: var(--color-accent);
+  color: var(--color-accent-text);
   font-family: var(--font-display);
   font-weight: 800;
   font-size: 1.4rem;
@@ -2178,7 +2181,7 @@ body.fuse {
 }
 
 .pb-hint[data-kind="err"] {
-  color: var(--color-accent);
+  color: var(--color-accent-text);
 }
 
 .pb-acts {
@@ -2612,7 +2615,7 @@ body.fuse {
 
 .case-jump-arrow {
   display: inline-block;
-  color: var(--color-accent);
+  color: var(--color-accent-text);
   font-weight: 700;
   animation: case-jump-nudge var(--dur-breath) var(--ease-in-out) var(--dur-long) 2;
 }
@@ -2865,9 +2868,10 @@ body.fuse {
   gap: var(--space-xs);
   min-height: 48px;
   padding: 6px 18px 6px 6px;
-  border: 1px solid var(--color-accent);
+  /* 跟其他主按鈕同一種紅（accent-2，白字 5.5:1）。以前用 accent，白字只有 3.9:1，兩個主按鈕兩種紅。 */
+  border: 1px solid var(--color-accent-2);
   border-radius: 999px;
-  background: var(--color-accent);
+  background: var(--color-accent-2);
   color: var(--color-accent-ink);
   box-shadow: 0 12px 26px var(--color-shade);
   font-family: var(--font-display);
@@ -2952,7 +2956,7 @@ body.fuse {
 }
 
 .print[data-gone="true"] .print-state {
-  color: var(--color-accent);
+  color: var(--color-accent-text);
 }
 
 /* 窄螢幕：字盒排在卡池、試印底下，一路往下好幾百張。捲出畫面的牌不排版、不繪製 ——
@@ -2975,15 +2979,39 @@ body.fuse {
 
 /* ---------- 手機：左右留白收窄（見 styles.css 同一段；iPhone 17 左右各多約 2mm） ---------- */
 @media (max-width: 30rem) {
-  .case,
   .line,
   .trials,
   .print-bar {
     padding-inline: 6px;
   }
-  .registers,
-  .plate-head {
+  /* 字盒跟墨池的字盒同一條線：標題、找牌、花色、牌都離螢幕邊 14px（以前 6px，換頁時左右跳 8px）。 */
+  .case,
+  .trials-head {
+    padding-inline: 14px;
+  }
+  .registers {
     padding-inline: 4px;
+  }
+  /* 標題列跟下面的說明、試印同一條線（14px）。以前「卡池」標題貼在螢幕邊、說明縮進 12px，一欄兩條邊線。
+   * 牌格照舊貼邊（4px），牌才夠大。右邊四顆按鈕佔掉約 285px：右邊留白收回 6px、欄距收一點，
+   * 「卡池」兩個字才不會被擠成直排。 */
+  .plate-head {
+    padding-inline: 14px 6px;
+    column-gap: var(--space-xs);
+  }
+  .plate-head h2 {
+    white-space: nowrap;
+  }
+}
+/* 再窄（384 以下）還是放不下：「偏好卡牌」只留圖示和張數（按鈕的 title 照舊說明）。 */
+@media (max-width: 24rem) {
+  .plate-acts .hand-btn > span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
   }
 }
 
@@ -3077,5 +3105,13 @@ body.fuse {
 @media (max-width: 34rem) {
   body.fuse .mast-tools {
     flex-basis: 100%;
+  }
+  /* 自己一排還差 13px（390 寬）：「聲音」那一顆被擠到下一行、自己一行。底模名稱收到 3.5em、
+   * 圖示和字之間 6 → 4px（全名在滑鼠提示）。 */
+  body.fuse .mast-tools #ckpt-pick-btn {
+    gap: 4px;
+  }
+  body.fuse .mast-tools #ckpt-pick-btn .gen-pick-label {
+    max-width: 3.5em;
   }
 }

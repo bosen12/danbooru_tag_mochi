@@ -30,6 +30,10 @@
   --color-accent-2: oklch(52% 0.17 32);
   --color-accent-3: oklch(46% 0.16 31);
   --color-accent-ink: oklch(97% 0.012 80);
+  /* 朱色的「字」：小字用 --color-accent 在紙色上只有 3.4～4.3:1（不到 4.5）。亮一階，6.3:1；
+   * 只用在深色紙面上；米白的牌面（--color-stock）上反而只剩 2.6:1，那裡用 --color-accent-2（5.0:1）。
+   * 底色、印章、主按鈕照舊用 --color-accent／-2。 */
+  --color-accent-text: oklch(68% 0.17 35);
   --color-pool: oklch(62% 0.09 225);
   --color-pool-2: oklch(45% 0.08 228);
   --color-pool-soft: oklch(62% 0.09 225 / 0.14);

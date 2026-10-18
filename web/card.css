@@ -603,7 +603,7 @@ button.card:active {
 }
 
 .fav-hand[data-full="true"] .fav-hint {
-  color: var(--color-accent);
+  color: var(--color-accent-text);
 }
 
 /* 托盤收著或還沒有牌：拖牌的時候變成一顆「放這裡」的標籤，拖過去就加進來。 */
@@ -617,7 +617,7 @@ body[data-dragging="true"] .fav-hand[data-open="false"][data-droppable="true"] .
   padding-right: 10px;
   font-size: 12px;
   font-weight: 600;
-  color: var(--color-accent);
+  color: var(--color-accent-text);
 }
 
 body[data-dragging="true"] .fav-hand[data-open="false"][data-over="true"] {
@@ -871,7 +871,8 @@ body[data-hand-edit="true"] :is(#case-grid, #lib-grid) .card[data-in-hand="true"
   width: 1.6em;
   height: 1.6em;
   border-radius: 50%;
-  background: var(--color-accent);
+  /* 9px 的白字：accent 上只有 3.9:1，跟主按鈕一樣用 accent-2（5.5:1）。 */
+  background: var(--color-accent-2);
   color: var(--color-accent-ink, #fff);
   font-weight: 800;
   font-size: 9px;
@@ -954,7 +955,7 @@ body[data-hand-edit="true"] :is(#case-grid, #lib-grid) .card[data-in-hand="true"
 }
 
 .hand-btn[aria-pressed="true"] {
-  color: var(--color-accent);
+  color: var(--color-accent-text);
   box-shadow: inset 0 0 0 1.5px var(--color-accent);
 }
 
@@ -969,7 +970,8 @@ body[data-hand-edit="true"] :is(#case-grid, #lib-grid) .card[data-in-hand="true"
   padding: 0.1em 0.35em;
   border-radius: 999px;
   background: color-mix(in oklch, var(--color-stock) 92%, transparent);
-  color: var(--color-accent);
+  /* 米白底上用深一階的朱（5.0:1）；accent-text 是給深色紙面的。 */
+  color: var(--color-accent-2);
   font-family: var(--font-mono);
   /* 手機合成池的牌只有 70px 寬：數字最少 10px，一眼讀得到。 */
   font-size: max(10px, 1.05em);

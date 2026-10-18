@@ -7,7 +7,8 @@
   /* 一欄、最小 0：牆上的作品名是不換行的，不限住的話手機上整欄被撐得比螢幕寬。 */
   grid-template-columns: minmax(0, 1fr);
   gap: var(--space-md);
-  padding: var(--space-md) var(--space-lg) var(--space-2xl);
+  /* 左右 16px：標題跟頂欄的「墨池」字標同一條線（跟卡冊一樣）。 */
+  padding: var(--space-md) var(--space-md) var(--space-2xl);
   max-width: 1600px;
   margin: 0 auto;
 }
@@ -267,12 +268,16 @@
 
 .album-del[data-armed="true"] {
   border-color: var(--color-accent);
-  color: var(--color-accent);
+  color: var(--color-accent-text);
 }
 
 @media (max-width: 40rem) {
   .album {
     padding-inline: var(--space-sm);
+  }
+  /* 標題跟其他頁的標題同一條線（離螢幕邊 14px）；作品照舊 12px。 */
+  .album-head {
+    padding-inline: 2px;
   }
   .album-grid,
   .album-grid-in {
@@ -385,7 +390,7 @@
   object-fit: cover;
 }
 .log-thumb.is-empty {
-  color: var(--color-accent);
+  color: var(--color-accent-text);
   font-size: var(--text-sm);
 }
 .log-main {
@@ -408,7 +413,7 @@
   white-space: nowrap;
 }
 .log-main .log-error {
-  color: var(--color-accent);
+  color: var(--color-accent-text);
 }
 .log-row[data-ok="false"] .log-main b {
   color: var(--color-ink-2);
@@ -427,7 +432,7 @@
 }
 .log-state.is-failed {
   border-color: color-mix(in oklab, var(--color-accent) 55%, var(--color-rule-2));
-  color: var(--color-accent);
+  color: var(--color-accent-text);
 }
 .log-more {
   justify-self: center;
@@ -546,7 +551,7 @@
   color: var(--color-good);
 }
 .model-fact[data-tone="bad"] b {
-  color: var(--color-accent);
+  color: var(--color-accent-text);
 }
 .model-cards {
   display: grid;

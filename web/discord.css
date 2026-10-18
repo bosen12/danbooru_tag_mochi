@@ -163,7 +163,7 @@
 
 /* 選了另一種接法但還沒存：這行要跳出來，不然混在灰字裡沒人看到。 */
 .tg-field em[data-pending="1"] {
-  color: var(--color-accent);
+  color: var(--color-accent-text);
 }
 
 .tg-field code {
@@ -349,7 +349,7 @@
 }
 
 .tg-msg[data-kind="err"] {
-  color: var(--color-accent);
+  color: var(--color-accent-text);
 }
 
 .tg-stats {
@@ -376,7 +376,7 @@
 }
 
 .tg-stats .tg-err {
-  color: var(--color-accent);
+  color: var(--color-accent-text);
 }
 
 @media (max-width: 640px) {

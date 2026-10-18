@@ -2012,9 +2012,13 @@ function renderGoBar() {
     }, "一次抽好幾張時，第 2 張起沿用第 1 張的長相：同一個角色換姿勢、換衣服"),
     el("span", { class: "go-status", "aria-live": "polite" }, goStatusText(busy)),
     el("span", { class: "spacer" }),
-    busy ? el("button", { class: "btn go-stop", type: "button", onclick: stopAll }, "停") : null,
-    el("button", { class: "btn btn-ghost", type: "button", onclick: () => drawBatch(false), title: "只抽牌，不送 Comfy（P）" }, "只抽牌"),
-    el("button", { class: "btn btn-primary", type: "button", onclick: () => drawBatch(true), title: "抽並生圖（G）" }, "抽並生圖", el("span", { class: "count" }, `×${n}`)),
+    el(
+      "span",
+      { class: "go-actions" },
+      busy ? el("button", { class: "btn go-stop", type: "button", onclick: stopAll }, "停") : null,
+      el("button", { class: "btn btn-ghost", type: "button", onclick: () => drawBatch(false), title: "只抽牌，不送 Comfy（P）" }, "只抽牌"),
+      el("button", { class: "btn btn-primary", type: "button", onclick: () => drawBatch(true), title: "抽並生圖（G）" }, "抽並生圖", el("span", { class: "count" }, `×${n}`))
+    ),
     // 自己一行，放在按鈕底下：不要把「抽並生圖」擠到下一行去。
     seedNode || (seedNode = mountSeedControl(null, { compact: true, fixedNote: "固定：第一張用這顆種子；一次多張、無限抽時之後每張往後加一。抽牌照樣每張隨機" })),
     ].filter(Boolean)

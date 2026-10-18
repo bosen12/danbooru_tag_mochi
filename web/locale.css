@@ -239,6 +239,19 @@ html[lang="en"] .tseg span { font-size: 12px; letter-spacing: -0.02em; }
   html[lang="en"] .mast-tools .ghost .gen-pick-label { max-width: 6.5em; }
   html[lang="en"] .ping span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 }
+/* 放在 1760px 那段後面（同樣強度，後寫的贏）。1366 寬（最常見的筆電）英文頂欄差幾 px 就擠成兩排：分頁左右內距 11 → 8px，跟中文一樣一排。 */
+@media (max-width: 1500px) {
+  html[lang="en"] .page-switch a { padding-inline: 8px; }
+  /* 疊印台多一顆工具：分級三顆的內距、底模名稱再收一點（全名在滑鼠提示）。 */
+  html[lang="en"] .mast .segmented button { padding-inline: 8px; }
+  html[lang="en"] .mast-tools .ghost .gen-pick-label { max-width: 4.5em; }
+}
+/* 1280 寬英文還差一點（疊印台差約 55px）：底模那顆只留疊層圖示，名稱給螢幕閱讀器、滑鼠提示照樣有全名（手機也是這樣）。
+   LoRA 那顆不收：沒裝 LoRA Manager 時它只有字，收掉就是一顆空鈕。 */
+@media (max-width: 1300px) {
+  html[lang="en"] .mast-tools #ckpt-pick-btn .gen-pick-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  html[lang="en"] .mast-tools #ckpt-pick-btn { min-width: 36px; padding-inline: var(--space-xs); }
+}
 @media (prefers-reduced-motion: reduce) {
   .language-picker, .language-picker * { scroll-behavior: auto; }
 }
