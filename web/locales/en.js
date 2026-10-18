@@ -490,6 +490,9 @@ Enter 放上第一張，↓ 走進字盒|Enter adds the first result; ↓ moves 
 池子是空的，全靠抽|No pinned cards · All cards are random
 這一輪抽牌失敗，請再試一次|This draw failed. Try again.
 這一輪抽不出東西：合成池的字可能互相卡住，換一兩張試試|No combination found. Try replacing one or two pinned cards.
+固定種子下抽不出新的組合，無限抽先停下：換幾張牌，或把種子改回隨機|Continuous stopped: with a fixed seed, no new combination came up. Swap a few cards or switch the seed back to random.
+這幾張跟印過的一模一樣（固定種子），沒有再送：換幾張牌，或把種子改回隨機|Not sent: identical to images already printed with this fixed seed. Swap a few cards or switch the seed back to random.
+略過 {0} 張：跟印過的一模一樣（固定種子）|Skipped {0}: identical to images already printed with this fixed seed
 全部展開|Expand all
 全部收起|Collapse all
 每排自動|Auto per row
@@ -1303,7 +1306,7 @@ ComfyUI 沒有回報 checkpoint|ComfyUI returned no checkpoints.
 上一張（←）|Previous (←)
 下一張（→）|Next (→)
 同樣的提示詞、同一顆種子再送一次|Send the same prompt with the same seed again
-固定：第一張用這顆種子；一次多張、無限抽時之後每張往後加一。抽牌照樣每張隨機|Fixed: the first image uses this seed; with several images or Continuous, each next one adds 1. Card draws stay random.
+固定：每張都用這顆種子（一次多張、無限抽也一樣）。抽牌照樣每張隨機|Fixed: every image uses this seed, including several at once and Continuous. Card draws stay random.
 全部加入合成池|Add all to pool
 這張用到的牌（你選的＋抽到的）全部放進合成池；可以復原|Put every card this image used (yours and drawn) into the pool; you can undo
 這張的牌都已經在合成池裡了|All of these cards are already in the pool

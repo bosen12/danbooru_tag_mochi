@@ -112,9 +112,6 @@ let infinite = false;
 let stopAsked = false;
 // 無限抽印完一輪、還沒排下一輪的那一小段空檔：照樣算「在忙」，「停」不能在這時候閃掉。
 let looping = false;
-// 固定的生圖種子：一次多張、無限抽時第一張用這顆，之後每張往後加一（不然每張同一顆種子、
-// 牌又多半是釘的，圖會幾乎一模一樣）。自己再按一次「抽並生圖」從這顆重新開始；無限抽接下一輪時接著往下加。
-let fixedRun = null;
 const ui = S.typedLike({ suit: "all", group: "", query: "", eraOnly: true, charGender: "", collapsed: matchMedia("(max-width: 63.99rem)").matches, wallCols: "auto" }, S.loadUi());
 // 存檔裡的花色不是現在有的（改版、壞掉）：回到「全部」，不然字盒整盒是空的。
 if (ui.suit !== "all" && !CARD_SUITS.includes(ui.suit)) ui.suit = "all";
@@ -2020,7 +2017,7 @@ function renderGoBar() {
       el("button", { class: "btn btn-primary", type: "button", onclick: () => drawBatch(true), title: "抽並生圖（G）" }, "抽並生圖", el("span", { class: "count" }, `×${n}`))
     ),
     // 自己一行，放在按鈕底下：不要把「抽並生圖」擠到下一行去。
-    seedNode || (seedNode = mountSeedControl(null, { compact: true, fixedNote: "固定：第一張用這顆種子；一次多張、無限抽時之後每張往後加一。抽牌照樣每張隨機" })),
+    seedNode || (seedNode = mountSeedControl(null, { compact: true, fixedNote: "固定：每張都用這顆種子（一次多張、無限抽也一樣）。抽牌照樣每張隨機" })),
     ].filter(Boolean)
   );
   // 整排重畫時，真的變了的那一小塊才演：開始印、「停」冒出來時淡進來。其他按鈕原樣，不閃。
@@ -2112,16 +2109,16 @@ let drawingRounds = 0;
 
 /** 抽一輪。合成池的字一定進；同一個人時，第二張起鎖住第一張的長相。 */
 function drawBatch(gen, { auto = false } = {}) {
-  const fixed = genSeed(null);
-  if (fixed == null) fixedRun = null;
-  else if (!auto || !fixedRun || fixedRun.base !== fixed) fixedRun = { base: fixed, next: 0 };
+  // 固定的生圖種子：一次多張、無限抽時每張都用這一顆（跟疊印台一樣）。以前之後每張往後加一，
+  // 「固定」卻不固定，想用同一顆種子比較不同提示詞的人用不了。
+  const fixedSeed = genSeed(null);
   // 原本整輪同步完成，途中設定不會被改。讓出畫面後仍用點下去那刻的同一份意圖。
   const intent = {
     auto,
     settings: structuredClone(settings),
     pool: new Set(pool),
     bans: new Set([...bans, ...HARD_BANNED]),
-    fixedRun,
+    fixedSeed,
     shot: {
       width: settings.width, height: settings.height, rating: settings.rating,
       loras: structuredClone(currentLorasPayload()), ckpt: currentCkpt(), workflowId: currentWorkflowId(),
@@ -2171,8 +2168,7 @@ async function drawBatchNow(gen, intent, epoch) {
     if (drawn.positive && String(drawn.positive).trim()) {
       if (!first) first = drawn.positive;
       // 抽牌種子每張隨機；固定的生圖種子跟這輪其他設定一起保存。
-      const imageSeed = intent.fixedRun ? (intent.fixedRun.base + intent.fixedRun.next++) >>> 0 : null;
-      made.push(makeShot(drawn, imageSeed ?? seed, intent.pool, intent.shot));
+      made.push(makeShot(drawn, intent.fixedSeed ?? seed, intent.pool, intent.shot));
     }
     if (i + 1 < n && performance.now() - workStart >= 8) {
       // 前景等一格，背景用 task；等的途中切到背景也有保底，不掛在 rAF 上。
@@ -2191,6 +2187,33 @@ async function drawBatchNow(gen, intent, epoch) {
       });
       workStart = performance.now();
     }
+  }
+  // 固定種子：提示詞、種子、模型都一樣的組合，ComfyUI 會印出一模一樣的圖。印過（排著、在印、印好）的不再送，
+  // 這一輪裡自己重複的也只留一張。無限抽一整輪都是重複就停下 —— 合成池的牌把位子佔滿、引擎沒得抽時，
+  // 不然會一直重印同一張。隨機種子不會撞；「同種子重印」是自己按的，照送。
+  if (gen && intent.fixedSeed != null && made.length) {
+    const printed = new Set(shots.filter((s) => PRINTED.has(s.status)).map(printKey));
+    const kept = made.filter((s) => {
+      const k = printKey(s);
+      if (printed.has(k)) return false;
+      printed.add(k);
+      return true;
+    });
+    const repeats = made.length - kept.length;
+    made.splice(0, made.length, ...kept);
+    if (!made.length) {
+      if (epoch !== drawEpoch) return;
+      // 什麼都沒送，佇列不會再叫下一輪：無限抽的開關也關掉，不要看起來還開著。
+      const looped = infinite;
+      infinite = false;
+      if (!intent.auto) refuse(document.activeElement?.closest?.("button") || $("go-bar"));
+      toast(looped
+        ? "固定種子下抽不出新的組合，無限抽先停下：換幾張牌，或把種子改回隨機"
+        : "這幾張跟印過的一模一樣（固定種子），沒有再送：換幾張牌，或把種子改回隨機");
+      renderGoBar();
+      return;
+    }
+    if (repeats && !intent.auto) toast(`略過 ${repeats} 張：跟印過的一模一樣（固定種子）`);
   }
   shots.unshift(...made.slice().reverse());
   // 卡冊的使用次數：每張新成品用了哪些牌。要在存成品之前記 —— 第一次會從存檔補算舊的，
@@ -2313,6 +2336,13 @@ function noteUses(list) {
     list.map((s) => ({ tags: [...s.mine, ...s.drawn.map((d) => d.tag)], mine: s.mine })),
     (t) => lib.byTag.has(t)
   );
+}
+
+// 已經送去印的（排著、在印、印好）：固定種子時拿來比對，同樣的組合不再送。
+const PRINTED = new Set(["queued", "running", "done"]);
+/** 決定一張圖長什麼樣的全部東西：這些都一樣，印出來就一模一樣。 */
+function printKey(s) {
+  return JSON.stringify([s.positive, s.seed, s.rating, s.width, s.height, s.ckpt, s.loras, s.workflowId, s.sampling, s.pose]);
 }
 
 function makeShot(drawn, seed, poolAtDraw, snapshot = null) {
