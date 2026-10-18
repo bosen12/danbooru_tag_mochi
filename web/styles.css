@@ -408,6 +408,21 @@ body #wf-pick-btn.has {
   background: var(--color-paper-4);
 }
 
+/* 按下去、新的一頁還在開（index.html 的 data-going）：那一格先墊一層淺墨，原本那格的墨淡下去。
+ * 換版停住等內容時，畫面上看得出按到了；新的一頁到了，墨底再從原本那格滑過來。 */
+.page-switch a[data-going] {
+  color: var(--color-ink);
+  background: var(--color-paper-3);
+}
+
+.page-switch:has(a[data-going]) a[aria-current="page"] {
+  color: var(--color-ink-2);
+}
+
+.page-switch:has(a[data-going]) .page-switch-ink {
+  opacity: 0.45;
+}
+
 .page-switch a:hover,
 .mast-extra:hover {
   color: var(--color-ink);
@@ -5381,6 +5396,26 @@ html {
   ::view-transition-new(root) {
     animation: vt-root-in var(--dur-short) var(--ease-out) both;
   }
+  /* 方向：分頁由左到右是墨池、疊印台、卡冊、作品冊。往右走，新的一版從右邊一小段滑進來、舊的往左退一點；
+   * 往左反過來。只動轉場快照的位置，不吃顯示卡；頂欄是另一層，不跟著動。 */
+  html[data-vt="fwd"]::view-transition-old(root) { animation-name: vt-root-out-fwd; }
+  html[data-vt="back"]::view-transition-old(root) { animation-name: vt-root-out-back; }
+  html[data-vt="fwd"]::view-transition-new(root) { animation: vt-root-in-fwd var(--dur-long) var(--ease-out) both; }
+  html[data-vt="back"]::view-transition-new(root) { animation: vt-root-in-back var(--dur-long) var(--ease-out) both; }
+
+  /* 新的一版還沒畫好（<head> 的 pagereveal 掛 data-vt-hold，settleMotion 拿掉，最多 900ms）：
+   * 整段轉場停在第一格 —— 舊的一版、舊的頂欄留在畫面上，新的先藏著。畫好了才一起演，
+   * 不再演到一半是空的一版、牌在後面冒出來。 */
+  /* !important：(*) 的權重是 0，上面各自的 animation 簡寫會把 play-state 重設回 running。 */
+  html[data-vt-hold]::view-transition-group(*),
+  html[data-vt-hold]::view-transition-image-pair(*),
+  html[data-vt-hold]::view-transition-old(*),
+  html[data-vt-hold]::view-transition-new(*) {
+    animation-play-state: paused !important;
+  }
+  html[data-vt-hold]::view-transition-old(mast) { opacity: 1 !important; }
+  html[data-vt-hold]::view-transition-new(mast) { opacity: 0 !important; }
+  html[data-vt-hold] .page-switch-ink.is-arriving { animation-play-state: paused; }
 
   html[data-vt-in] {
     --vt-dx: var(--space-md);
@@ -5428,6 +5463,30 @@ html {
 @keyframes vt-root-out {
   to {
     opacity: 0;
+  }
+}
+@keyframes vt-root-out-fwd {
+  to {
+    opacity: 0;
+    translate: -12px 0;
+  }
+}
+@keyframes vt-root-out-back {
+  to {
+    opacity: 0;
+    translate: 12px 0;
+  }
+}
+@keyframes vt-root-in-fwd {
+  from {
+    opacity: 0;
+    translate: 24px 0;
+  }
+}
+@keyframes vt-root-in-back {
+  from {
+    opacity: 0;
+    translate: -24px 0;
   }
 }
 

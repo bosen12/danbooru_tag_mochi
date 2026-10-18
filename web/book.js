@@ -1,5 +1,6 @@
 // 詞庫換過名的字：存著的舊名先換成新名（一定要第一個 import，見 tag-renames.js）。
 import "./tag-renames.js";
+import { guardPrerender } from "./prerender.js";
 import { dateLocale, english } from "./i18n.js";
 import { cloneCard } from "./card-images.js";
 /**
@@ -36,6 +37,9 @@ import { favChars, paintFavChar, favZone, dropToFav, flyToFav, heartIcon } from 
 import * as S from "./store.js";
 import { USAGE_KEY, loadUsage, seedUsage, fetchUsage, tagsOfPositive } from "./usage.js";
 import { weightsOfPositive } from "./weights.js";
+
+// 背後預先開好的這一頁（prerender.js）：點進去之前這些存檔被別頁改過，就重新整理。
+guardPrerender({ local: ["mochi.settings.v1", "mochi.bans.v1", "mochi.book.v1", "mochi.book.box.v1", "mochi.fav.chars.v1"] });
 
 const sfx = getSfx();
 const $ = (id) => document.getElementById(id);

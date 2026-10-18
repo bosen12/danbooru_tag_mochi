@@ -23,6 +23,16 @@
           document.documentElement.dataset.enterLate = "";
         }, 600);
       }
+      // 按下頂欄的另一個分頁：那一格先亮起來（styles.css 的 [data-going]）。新的一頁還沒畫好時，
+      // 換版先停在這一格的畫面上（data-vt-hold），按了要看得出有反應。從上一頁退回來時拿掉。
+      addEventListener("click", (e) => {
+        const a = e.target.closest?.(".page-switch a:not([aria-current])");
+        if (!a || e.defaultPrevented || e.button || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+        a.dataset.going = "";
+      });
+      addEventListener("pageshow", () => {
+        for (const a of document.querySelectorAll(".page-switch a[data-going]")) delete a.dataset.going;
+      });
       addEventListener("pagereveal", (e) => {
         const vt = e.viewTransition;
         if (!vt) return;
@@ -43,7 +53,21 @@
         document.documentElement.dataset.vtIn = document.documentElement.dataset.vt;
         // Remember the transition even when vocabulary arrives after its temporary CSS marker expires.
         document.documentElement.dataset.vtPlayed = "true";
-        setTimeout(() => delete document.documentElement.dataset.vtIn, 1100);
+        // 新的一版還沒畫好（詞庫、牌還在讀）：整段轉場先停在第一格，舊的一版留在畫面上（styles.css 的
+        // html[data-vt-hold]），畫好了才演（motion.js 的 settleMotion 呼叫 __vtRelease）。以前轉場照時間演完，
+        // 演的是空的一版，牌在後面一塊塊冒出來。背後預先開好的頁（prerender.js）早就畫好了，不用等。最多等 900ms。
+        const html = document.documentElement;
+        window.__vtRelease = () => {
+          if (!("vtHold" in html.dataset)) return;
+          delete html.dataset.vtHold;
+          setTimeout(() => delete html.dataset.vtIn, 1100);
+        };
+        if ("booting" in html.dataset) {
+          html.dataset.vtHold = "";
+          setTimeout(() => window.__vtRelease(), 900);
+        } else {
+          setTimeout(() => delete html.dataset.vtIn, 1100);
+        }
         vt.finished.finally(() => delete document.documentElement.dataset.vt);
         // 導覽的墨底從剛才那個標籤滑過來（三個分頁：找的是剛才那一頁的標籤，不是「另一個」）。
         const ink = document.querySelector(".page-switch-ink");
@@ -60,6 +84,12 @@
           }
         }
       });
+    </script>
+    <!-- 預先開好另外三個房間（Edge／Chrome）：滑鼠停在頂欄的分頁上約 0.2 秒（或按下去那一下），
+         瀏覽器就在背後把那一頁整個開好，點下去直接換上、換版演的是畫好的一頁。Safari 不認得，照舊一般開頁。
+         背後開的時候不接著印、點進去之前存檔被改過就重新整理（prerender.js）。 -->
+    <script type="speculationrules">
+      { "prerender": [{ "where": { "selector_matches": ".page-switch a:not([aria-current])" }, "eagerness": "moderate" }] }
     </script>
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#0f1217" />
@@ -166,7 +196,9 @@
       </main>
 
       <aside class="side" id="side" aria-label="試印與付印">
-        <section class="preview" id="preview" aria-label="成品"></section>
+        <!-- data-empty 一開始就寫上：預覽那張紙在開機中途就建好了，等試印算完才標「空的」，中間那幾格
+             照有紙的樣子畫出一大塊米白，接著塌下去（換版時最明顯）。 -->
+        <section class="preview" id="preview" data-empty="true" aria-label="成品"></section>
         <div class="proof-flow">
           <div class="trials-head">
             <h2 class="trials-title" id="trials-title">試印</h2>

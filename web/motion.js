@@ -308,6 +308,8 @@ function schedule() {
 /** 開機的 DOM 都放好了：下一格排完版、畫上去之後再量滑塊。 */
 export function settleMotion() {
   delete document.documentElement.dataset.booting;
+  // 換版的轉場停著在等這一版（<head> 的 pagereveal 掛了 data-vt-hold）：內容剛放上去，下一格畫出來就放行。
+  if ("vtHold" in document.documentElement.dataset) requestAnimationFrame(() => window.__vtRelease?.());
   playPageEntrance();
   if (document.hidden) {
     ready = true;

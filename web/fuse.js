@@ -15,6 +15,7 @@
  */
 // 詞庫換過名的字：存著的舊名先換成新名（一定要第一個 import，見 tag-renames.js）。
 import "./tag-renames.js";
+import { guardPrerender, whenActive } from "./prerender.js";
 import {
   indexLexicon,
   sanitizeSettings,
@@ -70,6 +71,9 @@ import { mountDiscord } from "./discord-link.js";
 import { t as translate, takeLanguageState } from "./i18n.js";
 import { candidateSummary } from "./composition.js";
 import { pickStarters as chooseStarters, refreshStarters } from "./starters.js";
+
+// 背後預先開好的這一頁（prerender.js）：點進去之前這些存檔被別頁改過，就重新整理。
+guardPrerender({ local: ["mochi.fuse.handoff.v1", "mochi.bans.v1", "mochi.fuse.settings.v1", "mochi.settings.v1", "mochi.fuse.tab.v1", "mochi.fuse.hand.v1", "mochi.fav.chars.v1"], session: ["mochi.tab.fuse.v1"] });
 
 const $ = (id) => document.getElementById(id);
 const LETTERS = ["A", "B", "C", "D"];
@@ -292,15 +296,18 @@ async function boot() {
   if (handoff) toast(`從墨池帶來 ${bed.pins.length} 張牌；規則沿用疊印台的設定。`);
   if (caseTab === "match") renderCase();
   renderLine();
-  for (const p of prints) if (p.status === "queued" && p.live && p.job) generator.resume(p);
-  // 還排著沒送出去的（去別頁晃一下回來）：照原本的順序接著印（繩上新的在左邊，所以倒過來）。
-  const waiting = prints.filter((p) => p._waiting).reverse();
-  for (const p of waiting) {
-    delete p._waiting;
-    generator.enqueue(p);
-  }
-  if (waiting.length) toast(`接著印剛才排著的 ${waiting.length} 張`);
-  for (const p of prints) if (p.status === "done" && p.hiresJob) hiresRun.resume(p, p.hiresJob);
+  // 接著印、接回 Hires：背後預先開好的頁（prerender.js）等點進去才做，沒點進去的頁會被丟掉，那時送出去就白印了。
+  whenActive(() => {
+    for (const p of prints) if (p.status === "queued" && p.live && p.job) generator.resume(p);
+    // 還排著沒送出去的（去別頁晃一下回來）：照原本的順序接著印（繩上新的在左邊，所以倒過來）。
+    const waiting = prints.filter((p) => p._waiting).reverse();
+    for (const p of waiting) {
+      delete p._waiting;
+      generator.enqueue(p);
+    }
+    if (waiting.length) toast(`接著印剛才排著的 ${waiting.length} 張`);
+    for (const p of prints) if (p.status === "done" && p.hiresJob) hiresRun.resume(p, p.hiresJob);
+  });
   attachPeek($("case-grid"), ".card[data-tag]", peekInfo);
   attachTilt($("case-grid"));
   // 偏好角色的名單一變（墨池那邊加的、另一個分頁改的）：卡盒的愛心跟著換。

@@ -3,6 +3,7 @@
  * 合成池與疊印台的版不存：重新整理就是空的。明確按「帶牌」時才留下交接便條，
  * 目的頁下一次打開時拿走就刪掉，放太久（30 分鐘）也不算數。
  */
+import { whenActive } from "./prerender.js";
 
 const KEY = {
   pool: "mochi.pool.v1", // 舊版一直存著的合成池：讀到就刪
@@ -72,7 +73,14 @@ const HANDOFF_MS = 30 * 60 * 1000;
 export const handOffFuse = (tags, weights = {}) => write(KEY.fuseHandoff, { tags: [...tags], weights, at: Date.now() });
 export function takeFuse() {
   const note = read(KEY.fuseHandoff, null);
-  try { localStorage.removeItem(KEY.fuseHandoff); } catch { return null; }
+  // 背後預先開的頁（prerender.js）只讀不拿：沒點進去的話便條要留給真的打開的那一次。點進去才拿走。
+  if (globalThis.document?.prerendering) {
+    whenActive(() => {
+      try { localStorage.removeItem(KEY.fuseHandoff); } catch { /* 下次再試 */ }
+    });
+  } else {
+    try { localStorage.removeItem(KEY.fuseHandoff); } catch { return null; }
+  }
   const age = Date.now() - Number(note?.at);
   if (!note || !Array.isArray(note.tags) || !(age >= 0 && age < HANDOFF_MS)) return null;
   return { tags: note.tags.filter(t => typeof t === "string"), weights: note.weights && typeof note.weights === "object" ? note.weights : {} };
@@ -119,12 +127,17 @@ export function loadTab(key) {
 /** 墨池開機時呼叫：拿走交接的牌（沒有就是空的池子），順手清掉舊版一直存著的合成池。 */
 export function takePool() {
   const note = read(KEY.handoff, null);
-  try {
-    localStorage.removeItem(KEY.handoff);
-    localStorage.removeItem(KEY.pool);
-  } catch {
-    /* 刪不了就算了：下一次還會再試 */
-  }
+  // 背後預先開的頁（prerender.js）只讀不拿：沒點進去的話便條要留給真的打開的那一次。點進去才拿走。
+  const drop = () => {
+    try {
+      localStorage.removeItem(KEY.handoff);
+      localStorage.removeItem(KEY.pool);
+    } catch {
+      /* 刪不了就算了：下一次還會再試 */
+    }
+  };
+  if (globalThis.document?.prerendering) whenActive(drop);
+  else drop();
   if (!note || !Array.isArray(note.tags) || !(Date.now() - note.at < HANDOFF_MS)) return [];
   handoffFrom = typeof note.from === "string" ? note.from : "";
   handoffWeights = note.weights && typeof note.weights === "object" ? note.weights : {};

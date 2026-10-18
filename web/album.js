@@ -1,5 +1,6 @@
 // 詞庫換過名的字：存著的舊名先換成新名（一定要第一個 import，見 tag-renames.js）。
 import "./tag-renames.js";
+import { guardPrerender } from "./prerender.js";
 import { dateLocale, english } from "./i18n.js";
 /**
  * 作品冊：收藏的成品（album-save.js 從墨池、疊印台收進來；存在伺服器 recipes.py，圖另存一份）。
@@ -29,6 +30,9 @@ import { weightsOfPositive } from "./weights.js";
 import { createLog, LOG_FILTERS } from "./album-log.js";
 import { createModels } from "./album-models.js";
 import { GROUPINGS, groupWorks, similarWorks } from "./album-groups.js";
+
+// 背後預先開好的這一頁（prerender.js）：點進去之前這些存檔被別頁改過，就重新整理。
+guardPrerender({ local: ["mochi.settings.v1", "mochi.album.group.v1"] });
 
 const sfx = getSfx();
 const $ = (id) => document.getElementById(id);

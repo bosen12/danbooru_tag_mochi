@@ -10,6 +10,7 @@
  */
 // 詞庫換過名的字：存著的舊名先換成新名（一定要第一個 import，見 tag-renames.js）。
 import "./tag-renames.js";
+import { guardPrerender, whenActive } from "./prerender.js";
 import {
   indexLexicon,
   sanitizeSettings,
@@ -70,6 +71,9 @@ import { getSfx } from "./sfx.js";
 import { mountDiscord } from "./discord-link.js";
 import { english, t, takeLanguageState } from "./i18n.js";
 import { pickStarters, refreshStarters } from "./starters.js";
+
+// 背後預先開好的這一頁（prerender.js）：點進去之前這些存檔被別頁改過，就重新整理。
+guardPrerender({ local: ["mochi.pool.handoff.v1", "mochi.bans.v1", "mochi.settings.v1", "mochi.ui.v1", "mochi.hand.v1", "mochi.fav.chars.v1"], session: ["mochi.tab.pool.v1"] });
 
 const sfx = getSfx();
 // 聲音引擎第一次建立要幾十毫秒：第一個手勢時先在下一輪建好，等真的要出聲時已經在了。
@@ -215,11 +219,14 @@ async function boot() {
   setTimeout(sweepShots, 1500);
   $("wall-start").addEventListener("click", () => $("go-bar").querySelector(".btn-primary")?.click());
   renderTrash();
-  for (const s of resumable) generator.resume(s);
-  for (const s of waiting) generator.enqueue(s);
-  if (waiting.length) toast(`接著印剛才排著的 ${waiting.length} 張`);
-  // Hires 做到一半就重新整理的：接回去。
-  for (const s of shots) if (s.status === "done" && s.hiresJob) hiresRun.resume(s, s.hiresJob);
+  // 接著印、接回 Hires：背後預先開好的頁（prerender.js）等點進去才做，沒點進去的頁會被丟掉，那時送出去就白印了。
+  whenActive(() => {
+    for (const s of resumable) generator.resume(s);
+    for (const s of waiting) generator.enqueue(s);
+    if (waiting.length) toast(`接著印剛才排著的 ${waiting.length} 張`);
+    // Hires 做到一半就重新整理的：接回去。
+    for (const s of shots) if (s.status === "done" && s.hiresJob) hiresRun.resume(s, s.hiresJob);
+  });
   for (const root of [$("lib-grid"), $("pool-well"), $("wall"), hand?.fan]) {
     attachPeek(root, ".card[data-tag]", peekInfo);
     // 牌拿在手上：滑過跟著游標微微傾斜、插畫上一道反光（card-tilt.js）。
