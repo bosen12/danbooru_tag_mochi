@@ -527,8 +527,9 @@ body #wf-pick-btn.has {
   background: var(--color-accent);
 }
 
+/* 關著的圖示鈕淡一點（--color-ink-3 從來沒定義過，以前其實退回 ink-2，看不出開關）。 */
 .icon-btn[aria-pressed="false"] {
-  color: var(--color-ink-3, var(--color-ink-2));
+  color: var(--color-muted);
 }
 
 .rule-steppers {
@@ -3456,7 +3457,8 @@ body[data-dragging="true"] .library[data-over="true"] {
 
 /* 按鈕自己說「已複製」。 */
 .btn.is-confirmed {
-  color: var(--color-ok, var(--color-accent));
+  /* --color-ok 從來沒定義過（舊版 web/boot.css 的名字），以前退回朱紅：成功跟失敗同一個顏色。 */
+  color: var(--color-good);
   border-color: currentColor;
 }
 
@@ -4015,7 +4017,7 @@ body[data-dragging="true"] .library[data-over="true"] {
 }
 
 .shot[data-status="done"] .status {
-  color: var(--color-ok, var(--color-accent));
+  color: var(--color-good);
 }
 
 .shot[data-status="failed"] .shot-frame {
