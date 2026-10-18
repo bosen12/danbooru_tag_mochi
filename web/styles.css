@@ -7100,3 +7100,37 @@ html:not([lang="en"]) :is(.wordmark, .panel-head h2, #wall-title, #pool-title, #
   font-size: var(--text-xs);
   line-height: 1.6;
 }
+
+/* ---------- 開機到一半出錯（ui.js 的 bootFailed）：畫面中間一張卡，說原因、給重試或重設 ---------- */
+.boot-failed {
+  position: fixed;
+  inset: 50% auto auto 50%;
+  translate: -50% -50%;
+  z-index: 400;
+  display: grid;
+  gap: var(--space-sm);
+  width: min(30rem, calc(100vw - 2 * var(--space-md)));
+  padding: var(--space-lg);
+  border: 1px solid var(--color-rule-2);
+  border-radius: var(--radius-md);
+  background: var(--color-paper-2);
+  box-shadow: var(--shadow-lift);
+}
+.boot-failed h2 {
+  font-size: var(--text-lg);
+}
+.boot-failed p {
+  color: var(--color-ink-2);
+}
+.boot-failed-acts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+}
+.boot-failed pre {
+  max-height: 10rem;
+  overflow: auto;
+  font-size: var(--text-xs);
+  white-space: pre-wrap;
+  color: var(--color-muted);
+}

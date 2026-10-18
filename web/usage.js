@@ -16,6 +16,8 @@
  * 把這個瀏覽器自己記的累計併進去一次（merge），之後就只送新的成品。
  */
 
+import { sameShape } from "./store.js";
+
 export const USAGE_KEY = "mochi.usage.v1";
 const PENDING_KEY = "mochi.usage.pending.v1";
 const SHOTS_KEY = "mochi.shots.v1";
@@ -25,7 +27,7 @@ const PENDING_MAX = 300;
 function read(key, fallback) {
   try {
     const raw = localStorage.getItem(key);
-    return raw ? JSON.parse(raw) : fallback;
+    return raw ? sameShape(JSON.parse(raw), fallback) : fallback;
   } catch {
     return fallback;
   }
@@ -110,12 +112,14 @@ export function seedUsage(isCard) {
     return Number.isFinite(t) ? t : 0;
   };
   const shots = read(SHOTS_KEY, []);
-  for (const s of Array.isArray(shots) ? shots : []) {
+  for (const s of shots) {
+    if (!s || typeof s !== "object") continue;
     const tags = tagsOfPositive(s.positive).filter(ok);
     if (tags.length) bump(u, tags, new Set(s.mine || []), when(s));
   }
   const prints = read(PRINTS_KEY, []);
-  for (const p of Array.isArray(prints) ? prints : []) {
+  for (const p of prints) {
+    if (!p || typeof p !== "object") continue;
     const tags = tagsOfPositive(p.positive).filter(ok);
     if (tags.length) bump(u, tags, new Set(p.mine || (p.bed && p.bed.pins) || []), when(p));
   }
@@ -148,7 +152,7 @@ function adopt(server) {
     updated: server.updated || Date.now(),
   };
   // 送出之後才記的（還在待送裡的）：快取上照樣要看得到。
-  for (const e of read(PENDING_KEY, []) || []) bump(next, e.tags || [], new Set(e.mine || []), e.at || 0);
+  for (const e of read(PENDING_KEY, [])) if (e && typeof e === "object") bump(next, e.tags || [], new Set(e.mine || []), e.at || 0);
   void u;
   save(next);
   return next;
@@ -162,7 +166,8 @@ export function flushUsage() {
   if (flushing) return flushing;
   flushing = (async () => {
     const u = loadUsage();
-    let pending = read(PENDING_KEY, []) || [];
+    // 夾著 null、數字的（壞掉的存檔）：丟掉，不然下面讀 e.tags 整個卡冊開不起來。
+    let pending = read(PENDING_KEY, []).filter((e) => e && typeof e === "object" && Array.isArray(e.tags));
     // 舊版排著、沒有編號的：先補上編號存回去，之後重送才認得出是同一筆。
     if (pending.some((e) => e && !e.id)) {
       pending = pending.map((e) => (e && !e.id ? { ...e, id: newId() } : e));
@@ -189,7 +194,7 @@ export function flushUsage() {
     if (!body.entries.length && !body.merge) return fetchUsage();
     try {
       const r = await fetch("/api/usage", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
-      if (!r.ok) return u;
+      if (!r.ok) return reportCorrupt(r), unreachable(u);
       const server = await r.json();
       // 拿掉的是「這次送出去的那幾筆」（照編號），不是前面幾筆：另一個分頁可能已經拿掉一些、
       // 送的途中又記了新的 —— 以前照筆數切掉，會把新記的那筆一起丟了（Codex 2026-10-13 重現）。
@@ -198,10 +203,24 @@ export function flushUsage() {
       write(PENDING_KEY, now.filter((e) => !e || !sent.has(e.id)));
       return adopt(server);
     } catch {
-      return u;
+      return unreachable(u);
     }
   })().finally(() => (flushing = null));
   return flushing;
+}
+
+/** 這次沒連上伺服器：照舊回這台的快取，但標一下（卡冊才分得出「讀不到」跟「真的沒用過」）。不存。 */
+const unreachable = (u) => ({ ...u, unreachable: true });
+
+/**
+ * 伺服器的存檔壞了、也沒備份（server.py 回 503、code store_corrupt）：這裡是背景存檔，沒有畫面可以報錯，
+ * 丟一個事件給 ui.js 說一次。本機這份照舊留著、待送的也留著，不會被空的那份蓋掉。
+ */
+function reportCorrupt(r) {
+  if (r.status !== 503) return;
+  r.json().then((j) => {
+    if (j && j.code === "store_corrupt") globalThis.dispatchEvent?.(new CustomEvent("mochi-store-corrupt", { detail: j.error }));
+  }).catch(() => {});
 }
 
 /** 問伺服器目前的正本（卡冊開頁、定時更新用）。伺服器沒開就回快取。 */
@@ -210,9 +229,9 @@ export async function fetchUsage() {
   if (!u.synced || (read(PENDING_KEY, []) || []).length) return flushUsage();
   try {
     const r = await fetch("/api/usage", { cache: "no-store" });
-    if (!r.ok) return u;
+    if (!r.ok) return reportCorrupt(r), unreachable(u);
     return adopt(await r.json());
   } catch {
-    return u;
+    return unreachable(u);
   }
 }

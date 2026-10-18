@@ -19,6 +19,9 @@ const IDLE_MIN = 30000;
 const IDLE_MAX = 30 * 60000;
 // 斷線之後重接的間隔。加起來約 23 秒，比伺服器留著等的 30 秒短。
 const REATTACH_WAITS = [800, 1500, 2500, 4000, 6000, 8000];
+// 主機探得到、送出去卻一直連不上（沒等到網路斷的那種）：隔一下再試，連續這麼多次就停。
+const NET_RETRY_GAP = 1500;
+const NET_RETRY_MAX = 6;
 
 // 正在離開這一頁（換頁、重新整理）：連線是瀏覽器自己砍的，不是這張壞了。別把它記成「連不到主機」
 // 存起來——回來還要接著印（送出去的用 job 接回去，還沒拿到 job 的照排著的算，見 store.js 的 waiting）。
@@ -79,9 +82,13 @@ export function createGenerator(hooks) {
   const queue = [];
   let current = null;
   let running = false;
+  // 按了停：等網路回來的那張也不等了（pump 的 waitOnline）。
+  let halted = false;
 
   async function runOne(shot) {
-    const ctrl = new AbortController();
+    // 每接一次一個新的 AbortController：看門狗、斷線砍掉的是那一條連線，接回去要用新的。
+    // 按停（cancelOne／stop）砍的是 current.ctrl，也就是當下那一條。
+    let ctrl = new AbortController();
     current = { shot, ctrl, promptId: null, job: shot.job || null };
     shot.status = "running";
     shot.progress = shot.progress || 0;
@@ -91,9 +98,10 @@ export function createGenerator(hooks) {
     let stalled = false;
     const kick = () => {
       clearTimeout(watchdog);
+      const mine = ctrl;
       watchdog = setTimeout(() => {
         stalled = true;
-        ctrl.abort();
+        mine.abort();
       }, IDLE_MS);
     };
     const wait = (ms) =>
@@ -115,6 +123,11 @@ export function createGenerator(hooks) {
           });
     try {
       for (let attempt = 0; ; attempt++) {
+        if (ctrl.signal.aborted) {
+          ctrl = new AbortController();
+          current.ctrl = ctrl;
+        }
+        stalled = false;
         kick();
         try {
           const res = await open();
@@ -157,9 +170,10 @@ export function createGenerator(hooks) {
           }
           throw new Error("連線中途斷了");
         } catch (err) {
-          // 連線斷了（不是伺服器說壞了、不是按停、也不是靜默太久）：伺服器那邊還留著這張，接回去。
-          if (err instanceof GenError || shot.status === "cancelled" || stalled || !current.job || attempt >= REATTACH_WAITS.length) throw err;
-          shot.note = "連線斷了，重新接上…";
+          // 連線斷了，或連線沒有回應（伺服器每 5 秒有心跳，收不到東西是這條連線卡住了，不是 Comfy 沒在畫）：
+          // 伺服器那邊還留著這張，換一條連線接回去。畫好了的話，接回去就拿到成品。
+          if (err instanceof GenError || shot.status === "cancelled" || !current.job || attempt >= REATTACH_WAITS.length) throw err;
+          shot.note = stalled ? "連線沒有回應，重新接上…" : "連線斷了，重新接上…";
           hooks.update(shot);
           await wait(REATTACH_WAITS[attempt]);
           if (shot.status === "cancelled") throw err;
@@ -172,16 +186,23 @@ export function createGenerator(hooks) {
         return false;
       }
       if (leaving && !(err instanceof GenError)) return false;
-      // 不是伺服器報錯、不是看門狗：是連線本身斷了，重接也接不回。
-      shot.netFail = !(err instanceof GenError) && !stalled;
+      // 不是伺服器報錯：是連線的問題（斷了、卡住、連不到主機），重接也接不回。
+      // 不送取消：伺服器那邊的那張可能好好的、甚至已經畫好；沒人接的工作伺服器過一陣子自己會收。
+      shot.netFail = !(err instanceof GenError);
+      if (shot.netFail && !current.job) {
+        // 還沒送到伺服器（連不到主機）：這張不算壞，排回去等網路回來（pump 的 "net"）。
+        shot.status = "queued";
+        shot.note = "連不到主機，網路回來就接著印";
+        hooks.update(shot);
+        return "net";
+      }
       shot.status = "failed";
-      shot.note = stalled
-        ? `Comfy 靜默超過 ${IDLE_MS / 1000} 秒，這張放棄`
-        : !(err instanceof GenError) && current.job
-          ? "連線斷了，重試幾次都接不回去"
-          : netFailText(err);
+      shot.note = err instanceof GenError
+        ? netFailText(err)
+        : stalled
+          ? `連線超過 ${IDLE_MS / 1000} 秒沒有回應，接不回這張`
+          : "連線斷了，重試幾次都接不回去";
       hooks.update(shot);
-      if (stalled) cancelJob(current.job, current.promptId);
       return false;
     } finally {
       clearTimeout(watchdog);
@@ -192,17 +213,33 @@ export function createGenerator(hooks) {
   async function pump() {
     if (running) return;
     running = true;
+    halted = false;
     let fails = 0;
+    let quickNet = 0;
     while (queue.length) {
       const shot = queue.shift();
       if (shot.status === "cancelled") continue;
       const ok = await runOne(shot);
-      if (!ok && shot.netFail) {
-        // 網路斷了：這張不算連續失敗，等網路回來再送下一張（從 Mac 走 Tailscale 斷一下，
-        // 不該把一整串排好的付印都判失敗）。
-        await waitOnline(() => queue.length > 0, hooks.waiting);
+      if (ok === "net") {
+        // 連不到主機：這張排回最前面，等網路回來再送（從 Mac 走 Tailscale 斷一下、伺服器重開）。
+        // 以前只有「後面還排著」才等：一次 1 張、無限抽時佇列是空的，直接進下一輪，
+        // 斷網幾秒就刷出幾十張「連不到主機」，把印好的成品擠出牆外。
+        queue.unshift(shot);
+        const waited = await waitOnline(() => !halted && queue[0] === shot, hooks.waiting);
+        if (waited) quickNet = 0;
+        else if (++quickNet >= NET_RETRY_MAX) {
+          // 主機看起來是通的，送出去卻一直失敗：不要空轉，停下來說清楚。
+          for (const s of queue.splice(0)) {
+            s.status = s === shot ? "failed" : "cancelled";
+            s.note = s === shot ? netFailText(new TypeError("Failed to fetch")) : "連不到主機，停下來了";
+            hooks.update(s);
+          }
+          hooks.stopped && hooks.stopped("一直送不出去，停下來了：" + netFailText(new TypeError("Failed to fetch")));
+          break;
+        } else await new Promise((r) => setTimeout(r, NET_RETRY_GAP));
         continue;
       }
+      quickNet = 0;
       fails = ok ? 0 : shot.status === "failed" ? fails + 1 : fails;
       if (fails >= 3) {
         for (const s of queue.splice(0)) {
@@ -279,6 +316,7 @@ export function createGenerator(hooks) {
     },
     /** 停：正在畫的那張也一起砍（帶 prompt_id），排隊的全部取消。 */
     stop() {
+      halted = true;
       for (const s of queue.splice(0)) {
         s.status = "cancelled";
         s.note = "取消了";
@@ -372,7 +410,7 @@ function netFailText(err) {
 
 export const LINK_LABEL = { ok: "Comfy 已連", comfy: "Comfy 未連", net: "連不到主機" };
 
-/** 連不到主機時等網路回來（每 4 秒或 online 事件再探）；still() 回 false 就不等了。 */
+/** 連不到主機時等網路回來（每 4 秒或 online 事件再探）；still() 回 false 就不等了。回傳有沒有真的等過。 */
 async function waitOnline(still, onWait) {
   let said = false;
   while (still()) {
@@ -391,6 +429,7 @@ async function waitOnline(still, onWait) {
     });
   }
   if (said && onWait) onWait(false);
+  return said;
 }
 
 export async function comfyOnline() {

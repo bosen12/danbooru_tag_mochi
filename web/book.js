@@ -16,7 +16,7 @@ import { cloneCard } from "./card-images.js";
 import { indexLexicon } from "./engine.js";
 import { ratingBlocked, RATING_LABEL } from "./rules/rating.js";
 import { buildLibrary, sizeCards, groupChips, genderChips, chipRun, seriesRun, createAssets, cardNode, cardFacts, setCardFlag, eagerArt, cardMatches, CARD_SUIT_INFO, CARD_SUITS } from "./cards.js";
-import { el, openSheet, toast, syncChoices } from "./ui.js";
+import { el, openSheet, toast, syncChoices, bootFailed, friendlyError, isNetError } from "./ui.js";
 import { zoomFromThumb } from "./zoom.js";
 import { mountKeysHelp } from "./keys-help.js";
 import { mountTour } from "./tour.js";
@@ -88,7 +88,9 @@ let list = [];
 let shown = 0;
 // 牌的節點留著重用：換排序時同一張牌是同一個節點，才滑得過去，圖也不必重載。
 const cells = new Map();
-const ui = { suit: "all", group: "", query: "", order: "desc", usedOnly: false, charGender: "", ...readUi() };
+const ui = S.typedLike({ suit: "all", group: "", query: "", order: "desc", usedOnly: false, charGender: "" }, readUi());
+// 存檔裡的花色不是現在有的（改版、壞掉）：回到「全部」，不然卡冊整片是空的。
+if (ui.suit !== "all" && !CARD_SUITS.includes(ui.suit)) ui.suit = "all";
 
 function readUi() {
   try {
@@ -131,6 +133,8 @@ async function boot() {
     lib = buildLibrary(data, { ratingBlocked });
     assets = createAssets(manifest);
   } catch (err) {
+    // 連線問題（手機網路斷一下、伺服器沒開）：說「連不到主機」、給重試；不是叫人用 start.bat 開。
+    if (isNetError(err)) return bootFailed(err);
     $("book").replaceChildren(el("p", { class: "book-empty" }, "讀不到詞庫。請用 start.bat 開，而不是直接點 HTML。", el("br"), String(err)));
     return;
   }
@@ -265,6 +269,13 @@ function renderSummary({ count = false } = {}) {
   const poolChanged = box._poolLen !== undefined && box._poolLen !== pool.length;
   box._poolLen = pool.length;
   // 一行只建一次，數字數上去時只換數字：那一段的淡入不會被每一格重畫打斷。
+  // 沒連上伺服器、這台又沒有快取：寫「讀不到」，不要寫「0 次」（看起來像紀錄被清掉了）。
+  if (usage?.unreachable && !total) {
+    clearInterval(box._tick);
+    box.replaceChildren(el("span", {}, "讀不到伺服器上的使用次數：伺服器沒開，或連不到主機"));
+    sumShown = { used: -1, total: -1 };
+    return;
+  }
   const nU = el("b", { class: "book-sum-n" });
   const nT = el("b", { class: "book-sum-n" });
   const of = el("span", {}, ` ／ ${fmt(pool.length)} 張用過`);
@@ -723,12 +734,14 @@ function emptyNote() {
   return el(
     "div",
     { class: "book-empty" },
-    el("b", {}, ui.usedOnly && !any ? "還沒有使用紀錄" : "沒有符合的牌"),
+    el("b", {}, ui.usedOnly && !any ? (usage.unreachable ? "讀不到使用紀錄" : "還沒有使用紀錄") : "沒有符合的牌"),
     el(
       "span",
       {},
       ui.usedOnly && !any
-        ? "去墨池抽幾張、或在疊印台付印一張，用到的牌就會記在這裡。"
+        ? usage.unreachable
+          ? "伺服器沒開，或連不到主機。紀錄都還在伺服器上，連上之後就會出來。"
+          : "去墨池抽幾張、或在疊印台付印一張，用到的牌就會記在這裡。"
         : "換個花色、清掉搜尋，或關掉「只看用過的」。"
     ),
     ui.usedOnly && !any ? el("a", { class: "btn btn-small", href: "./" }, "去墨池") : null
@@ -1655,7 +1668,10 @@ function sameUsage(a, b) {
  */
 function applyUsage(next, { quiet = false } = {}) {
   if (!next || sameUsage(usage, next)) {
+    // 數字一樣、但連線狀態變了（讀不到 ⇄ 讀到）：摘要那行要換。
+    const flip = next && !!next.unreachable !== !!usage?.unreachable;
     if (next) usage = next;
+    if (flip) renderSummary();
     return;
   }
   if (quiet) {
@@ -1707,4 +1723,5 @@ function bumpTo(next) {
   }
 }
 
-boot();
+// 開機到一半出錯（本機存檔讀不懂、連不到主機）：不要停在「正在讀詞庫…」，說清楚、給重試或重設（ui.js 的 bootFailed）。
+boot().catch(bootFailed);

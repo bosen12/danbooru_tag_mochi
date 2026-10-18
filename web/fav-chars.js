@@ -87,13 +87,57 @@ function markSynced() {
   }
 }
 
+// 還沒送到伺服器的改動（加了誰、拿掉誰）：存在這台，送成功才清掉。
+// 以前斷網時加的、送失敗就算了，網路回來切回分頁時被伺服器那份蓋回去，那一筆沒有任何提示就不見了。
+// 送的是改動、不是整份名單：手機和電腦同時改，伺服器把兩邊的都套上（以前後送的整份蓋掉先送的）。
+const OPS_KEY = "mochi.fav.chars.ops";
+function readOps() {
+  try {
+    const v = JSON.parse(localStorage.getItem(OPS_KEY) || "null");
+    const list = (x) => (Array.isArray(x) ? x.filter((t) => typeof t === "string" && t) : []);
+    return { add: list(v?.add), remove: list(v?.remove) };
+  } catch {
+    return { add: [], remove: [] };
+  }
+}
+function writeOps(ops) {
+  try {
+    if (ops.add.length || ops.remove.length) localStorage.setItem(OPS_KEY, JSON.stringify(ops));
+    else localStorage.removeItem(OPS_KEY);
+  } catch {
+    /* 存不了：這一頁照樣送，送不出去下次開就沒有 */
+  }
+}
+function noteOp(kind, t) {
+  const ops = readOps();
+  ops.add = ops.add.filter((x) => x !== t);
+  ops.remove = ops.remove.filter((x) => x !== t);
+  ops[kind].push(t);
+  writeOps(ops);
+}
+
 function push() {
   if (!server) return;
   clearTimeout(pushT);
   pushT = setTimeout(() => {
     pushT = 0;
-    fetch("/api/fav-chars", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ tags }) })
-      .then((r) => r.ok && markSynced())
+    const sent = readOps();
+    // 第一次跟伺服器對（或這台在伺服器那份回來之前就改過）：整份搬上去；之後只送改動。
+    const body = dirty || !synced() ? { tags } : sent;
+    if (!dirty && synced() && !sent.add.length && !sent.remove.length) return;
+    fetch("/api/fav-chars", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((j) => {
+        if (!j || !Array.isArray(j.tags)) return;
+        dirty = false;
+        markSynced();
+        // 送出去的這批清掉；送的途中又改的留著，下一次再送。
+        const now = readOps();
+        writeOps({ add: now.add.filter((t) => !sent.add.includes(t)), remove: now.remove.filter((t) => !sent.remove.includes(t)) });
+        const left = readOps();
+        adopt([...left.add, ...j.tags.filter((t) => !left.remove.includes(t) && !left.add.includes(t))]);
+        if (left.add.length || left.remove.length) push();
+      })
       .catch(() => {});
   }, 250);
 }
@@ -106,7 +150,7 @@ function adopt(list) {
   emit();
 }
 
-/** 跟伺服器對一次：開頁、切回這個分頁時（別台裝置可能改過）。 */
+/** 跟伺服器對一次：開頁、切回這個分頁、網路回來時（別台裝置可能改過）。 */
 function pull() {
   if (pulling || pushT) return pulling;
   pulling = fetch("/api/fav-chars", { cache: "no-store" })
@@ -122,6 +166,9 @@ function pull() {
         adopt(merged);
         return merged.length !== j.tags.length ? push() : markSynced();
       }
+      // 這台還有沒送出去的：先送（伺服器套上去之後回完整名單），不要被伺服器那份蓋掉。
+      const ops = readOps();
+      if (ops.add.length || ops.remove.length) return push();
       adopt(j.tags);
     })
     .catch(() => {})
@@ -136,6 +183,7 @@ if (typeof document !== "undefined") {
   document.addEventListener("visibilitychange", () => {
     if (!document.hidden) pull();
   });
+  addEventListener("online", () => pull());
 }
 
 function changed() {
@@ -154,12 +202,14 @@ export const favChars = {
   add(t) {
     if (!t || tags.includes(t)) return false;
     tags = [t, ...tags];
+    noteOp("add", t);
     changed();
     return true;
   },
   remove(t) {
     if (!tags.includes(t)) return false;
     tags = tags.filter((x) => x !== t);
+    noteOp("remove", t);
     changed();
     return true;
   },

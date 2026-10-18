@@ -379,6 +379,22 @@ Comfy 未連|Comfy offline
 清版|Clear layers
 貼上|Paste
 牌組|Decks
+讀不到作品冊：伺服器沒開，或連不到主機。作品都還在伺服器上。|Can’t load the gallery: the server isn’t running or can’t be reached. Your works are still on the server.
+重試|Retry
+讀不到伺服器上的使用次數：伺服器沒開，或連不到主機|Can’t load usage counts from the server: it isn’t running or can’t be reached
+讀不到使用紀錄|Can’t load usage history
+伺服器沒開，或連不到主機。紀錄都還在伺服器上，連上之後就會出來。|The server isn’t running or can’t be reached. The history is still on the server and will show once connected.
+連不到主機，網路回來就接著印|Can’t reach the host; printing resumes when the network is back
+連線沒有回應，重新接上…|The connection stopped responding; reconnecting…
+連不到主機，停下來了|Can’t reach the host; stopped
+伺服器的存檔壞了|A save file on the server is corrupted
+這一頁開不起來|This page could not open
+網路斷了，或伺服器沒開。網路回來（或開好伺服器）之後按重試。|The network dropped or the server is not running. Retry once it is back.
+多半是這台瀏覽器裡墨池的本機存檔讀不懂（舊版留下的、或被別的程式改過）。先按重試；還是不行就重設本機存檔。|Mochi’s saved data in this browser is probably unreadable (left by an old version or changed by another program). Retry first; if it still fails, reset the saved data.
+重設本機存檔|Reset saved data
+清掉這台瀏覽器裡墨池的本機存檔（成品牆、規則、篩選、偏好卡牌）？伺服器上的牌組、作品冊、使用次數不會動。|Clear Mochi’s saved data in this browser (results, rules, filters, favorite cards)? Decks, gallery and usage on the server stay.
+詳細|Details
+牌的使用次數|card usage counts
 牌|Cards
 牌友|Card collector
 偏好卡牌|Favorite cards
@@ -1370,6 +1386,9 @@ Hires 深度 {0}×|Detailed upscale {0}×
 「{0}」跟「{1}」同時成立不了，引擎會摘掉其中一個{2}|“{0}” conflicts with “{1}”. The engine will remove one{2}.
 Hires 好了：{0}×{1}|Upscale ready · {0}×{1}
 找不到「{0}」。|No match for “{0!}”.
+連線超過 {0} 秒沒有回應，接不回這張|No response for {0} seconds; couldn’t get this image back
+一直送不出去，停下來了：{0}|Kept failing to send, stopped: {0}
+伺服器上的{0}存檔（{1}）壞了，也沒有能用的備份。壞掉的那份改名成 {2} 留著；之後存的會從空的開始。|The server’s {0} file ({1!}) is corrupted and has no usable backup. It was renamed to {2!}; new saves start from empty.
 {0} 位|{0} characters
 「{0}」加進偏好角色|Added “{0!}” to favorite characters
 「{0}」拿出偏好角色|Removed “{0!}” from favorite characters

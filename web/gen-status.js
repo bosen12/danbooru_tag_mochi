@@ -23,7 +23,9 @@ const SEEN_MAX = 120;
 function readJSON(key, fallback) {
   try {
     const v = JSON.parse(localStorage.getItem(key) || "null");
-    return v ?? fallback;
+    // 形狀要對：預設是清單就要是清單（存成數字的話後面 new Set(…) 會讓四頁都報錯）。
+    if (v == null || (Array.isArray(fallback) && !Array.isArray(v))) return fallback;
+    return v;
   } catch {
     return fallback;
   }

@@ -13,7 +13,7 @@ import { dateLocale, english } from "./i18n.js";
  */
 import { RATING_LABEL, ratingBlocked } from "./rules/rating.js";
 import { buildLibrary, ERA_ZH } from "./cards.js";
-import { el, openSheet, toast, syncChoices } from "./ui.js";
+import { el, openSheet, toast, syncChoices, bootFailed, friendlyError, isNetError } from "./ui.js";
 import { zoomFromThumb } from "./zoom.js";
 import { mountKeysHelp } from "./keys-help.js";
 import { mountTour } from "./tour.js";
@@ -88,6 +88,8 @@ async function boot() {
     const data = await fetch(document.querySelector('link[rel="preload"][href^="lexicon.json"]')?.href || "lexicon.json").then((r) => r.json());
     lib = buildLibrary(data, { ratingBlocked });
   } catch (err) {
+    // 連線問題（手機網路斷一下、伺服器沒開）：說「連不到主機」、給重試；不是叫人用 start.bat 開。
+    if (isNetError(err)) return bootFailed(err);
     $("album").replaceChildren(el("p", { class: "album-hint" }, "讀不到詞庫。請用 start.bat 開，而不是直接點 HTML。", el("br"), String(err)));
     return;
   }
@@ -144,6 +146,9 @@ async function boot() {
   });
 }
 
+// 上一次讀作品冊失敗了：畫面要說「讀不到」，不能說「還沒有收藏的作品」（看起來像資料被刪了）。
+let loadFailed = false;
+
 async function load() {
   try {
     const r = await fetch("/api/recipes", { cache: "no-store" });
@@ -154,8 +159,10 @@ async function load() {
       const cards = cardsOf(w);
       w._text = [w.name, w.positive, ...cards.map(zh)].join(" ").toLowerCase();
     }
+    loadFailed = false;
   } catch {
-    works = [];
+    // 讀過的照舊留著（切回分頁時網路一閃，不要整面清空）。
+    loadFailed = true;
     toast("讀不到作品冊：伺服器沒開，或連不到主機");
   }
 }
@@ -362,7 +369,7 @@ function render({ deal = false } = {}) {
   }
   const shown = works.filter((w) => visible(w) && (!query || w._text.includes(query)));
   const hidden = works.filter((w) => !visible(w)).length;
-  $("album-hint").hidden = works.length > 0;
+  $("album-hint").hidden = works.length > 0 || loadFailed;
   $("album-sum").textContent = works.length
     ? `${shown.length} 件作品${hidden ? `・${hidden} 件在${RATING_LABEL[rating]}看不到` : ""}`
     : "";
@@ -386,6 +393,18 @@ function render({ deal = false } = {}) {
         tiles.push(t);
         return t;
       });
+  if (loadFailed && !works.length) {
+    grid.replaceChildren(
+      el(
+        "p",
+        { class: "album-empty" },
+        "讀不到作品冊：伺服器沒開，或連不到主機。作品都還在伺服器上。",
+        " ",
+        el("button", { class: "btn btn-small", type: "button", onclick: async () => (await load(), render({ deal: true })) }, "重試")
+      )
+    );
+    return;
+  }
   grid.replaceChildren(...(tiles.length || !works.length ? parts : [el("p", { class: "album-empty" }, query ? `找不到「${query}」` : `這一級分級看不到任何作品`)]));
   if (deal && !reducedMotion()) {
     // 分段的標題（江戶 3 件…）跟著發牌一起淡進來，不是先整排印好、作品才落下。
@@ -579,7 +598,7 @@ function openWork(w) {
     } catch (err) {
       del.disabled = false;
       refuse(del);
-      return toast(`拿不掉：${err.message}`);
+      return toast(`拿不掉：${friendlyError(err)}`);
     }
     sheet.close();
     works = works.filter((x) => x !== w);
@@ -647,4 +666,5 @@ function openWork(w) {
   if (location.hash) history.replaceState(null, "", location.pathname + location.search);
 }
 
-boot();
+// 開機到一半出錯（本機存檔讀不懂、連不到主機）：不要停在「正在讀詞庫…」，說清楚、給重試或重設（ui.js 的 bootFailed）。
+boot().catch(bootFailed);

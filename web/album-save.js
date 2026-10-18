@@ -3,7 +3,7 @@
  * 圖從 ComfyUI 的輸出複製一份到 data/recipes/files —— 之後 ComfyUI 那邊把原圖刪了，作品冊裡那張還在。
  * 成品上記著 albumId，按鈕就顯示「已收藏」。
  */
-import { el, toast } from "./ui.js";
+import { el, toast, friendlyError } from "./ui.js";
 import { refuse, reducedMotion, DUR, CURVE, css } from "./motion.js";
 import { english } from "./i18n.js";
 
@@ -58,7 +58,7 @@ export async function saveToAlbum(item, name) {
     return j.recipe;
   } catch (err) {
     await call(`/api/recipes/${encodeURIComponent(recipe.id)}`, "DELETE").catch(() => {});
-    throw new Error(`圖存不下來：${err.message}`);
+    throw new Error(`圖存不下來：${friendlyError(err)}`);
   }
 }
 
@@ -106,7 +106,7 @@ export function favButton(item, { zh, persist, className = "btn btn-small btn-gh
     } catch (err) {
       paint();
       refuse(b);
-      toast(`收不進去：${err.message}`);
+      toast(`收不進去：${friendlyError(err)}`);
     } finally {
       b.disabled = false;
     }

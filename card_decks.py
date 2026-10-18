@@ -39,9 +39,12 @@ class DeckError(ValueError):
 
 
 def _read() -> list[dict]:
+    # 讀不懂的檔不能當成空的：下一次存牌組會用空的那份把整份蓋掉。先試 .bak，再不行丟 StoreCorrupt（伺服器回 503）。
     try:
-        data = json.loads(DECKS_PATH.read_text(encoding="utf-8"))
-    except (OSError, ValueError):
+        data = file_lock.read_json(DECKS_PATH, label="牌組")
+    except OSError:
+        return []
+    if data is None:
         return []
     out = []
     for d in (data.get("decks") if isinstance(data, dict) else None) or []:
@@ -153,9 +156,10 @@ def load_fav_chars() -> dict:
     """{"tags": [...新加的在前], "saved": 伺服器上有沒有存過, "at": 最後存的時間（毫秒）}。
     沒存過（或檔案壞了）saved 是 False：瀏覽器會把它自己那份搬上來。"""
     with _LOCK, file_lock.locked(FAV_CHARS_PATH):
+        # 讀不懂：先試 .bak。也不行就當成沒存過（壞的那份 read_json 已經改名留著），瀏覽器那份會補上來。
         try:
-            data = json.loads(FAV_CHARS_PATH.read_text(encoding="utf-8"))
-        except (OSError, ValueError):
+            data = file_lock.read_json(FAV_CHARS_PATH, label="偏好角色")
+        except (OSError, file_lock.StoreCorrupt):
             return {"tags": [], "saved": False, "at": 0}
         if not isinstance(data, dict):
             return {"tags": [], "saved": False, "at": 0}
@@ -163,12 +167,29 @@ def load_fav_chars() -> dict:
 
 
 def save_fav_chars(payload: dict) -> dict:
-    """整份名單換掉：{"tags": [...]}（空陣列＝清空，也算存過）。"""
-    if not isinstance(payload, dict) or not isinstance(payload.get("tags"), list):
+    """兩種：
+    - {"add": [...], "remove": [...]}：套在伺服器現在那份上（新加的放最前面）。手機、電腦同時改，兩邊的都留著；
+      以前只有整份換掉，後送的那台把先送的那台加的蓋掉。
+    - {"tags": [...]}：整份名單換掉（空陣列＝清空，也算存過）。舊版網頁、第一次把這台的搬上來用。
+    """
+    if not isinstance(payload, dict):
+        raise DeckError("要是物件")
+    ops = isinstance(payload.get("add"), list) or isinstance(payload.get("remove"), list)
+    if not ops and not isinstance(payload.get("tags"), list):
         raise DeckError("tags 要是陣列")
-    tags = _clean_fav(payload["tags"])
     now = int(time.time() * 1000)
     with _LOCK, file_lock.locked(FAV_CHARS_PATH):
+        if ops:
+            try:
+                current = file_lock.read_json(FAV_CHARS_PATH, label="偏好角色")
+            except (OSError, file_lock.StoreCorrupt):
+                current = None
+            have = _clean_fav(current.get("tags")) if isinstance(current, dict) else []
+            gone = set(_clean_fav(payload.get("remove")))
+            added = [t for t in _clean_fav(payload.get("add")) if t not in gone]
+            tags = _clean_fav(added + [t for t in have if t not in gone])
+        else:
+            tags = _clean_fav(payload["tags"])
         file_lock.write_text(FAV_CHARS_PATH, json.dumps({"v": 1, "at": now, "tags": tags}, ensure_ascii=False, separators=(",", ":")))
     return {"tags": tags, "saved": True, "at": now}
 

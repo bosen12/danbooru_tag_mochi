@@ -5,7 +5,7 @@
  * 墨池（合成池）、疊印台（卡池）、卡冊（卡盒）共用同一張「牌組」面板（openDecks）：
  * 上面一列把「目前的牌」取名存起來，底下是存過的牌組，一組一列：套用、刪除（可復原）。
  */
-import { el, openSheet, toast } from "./ui.js";
+import { el, openSheet, toast, friendlyError } from "./ui.js";
 import { enter, leave, refuse, reducedMotion, DUR, CURVE, css } from "./motion.js";
 
 let cache = null;
@@ -184,7 +184,7 @@ export function openDecks({ where, current, has, zh, apply, paste, weightsNow = 
       btn.disabled = false;
       btn.removeAttribute("aria-busy");
       refuse(btn);
-      return toast(`刪不掉：${err.message}`);
+      return toast(`刪不掉：${friendlyError(err)}`);
     }
     btn.removeAttribute("aria-busy");
     decks = cache || decks.filter((x) => x.id !== d.id);
@@ -205,7 +205,7 @@ export function openDecks({ where, current, has, zh, apply, paste, weightsNow = 
               label();
             }
           } catch (err) {
-            toast(`復原不了：${err.message}`);
+            toast(`復原不了：${friendlyError(err)}`);
           }
         },
       },
@@ -254,7 +254,7 @@ export function openDecks({ where, current, has, zh, apply, paste, weightsNow = 
       setTimeout(label, 1400);
     } catch (err) {
       refuse(saveBtn);
-      toast(`存不了：${err.message}`);
+      toast(`存不了：${friendlyError(err)}`);
     } finally {
       saving = false;
       saveBtn.disabled = false;

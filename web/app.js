@@ -43,7 +43,7 @@ import { initWorkflow, currentWorkflowId, currentSampling, wfHandleKeys } from "
 import { HARD_BANNED } from "./card-art.js";
 import { buildLibrary, sizeCards, groupChips, genderChips, chipRun, seriesRun, groupNow, createAssets, cardNode, setCardFlag, setEnterTarget, eagerArt, cardFacts, cardMatches, CARD_SUIT_INFO, CARD_SUITS, RATING_ZH } from "./cards.js";
 import { bindArt, artFallback } from "./card-images.js";
-import { el, openSheet, anyOverlay, toast, runToastAction, dropToastAction, ICONS, syncChoices } from "./ui.js";
+import { el, openSheet, anyOverlay, toast, runToastAction, dropToastAction, ICONS, syncChoices, bootFailed, friendlyError, isNetError } from "./ui.js";
 import { mountKeysHelp } from "./keys-help.js";
 import { mountTour } from "./tour.js";
 import { mountScreensaver } from "./screensaver.js";
@@ -111,7 +111,9 @@ let looping = false;
 // 固定的生圖種子：一次多張、無限抽時第一張用這顆，之後每張往後加一（不然每張同一顆種子、
 // 牌又多半是釘的，圖會幾乎一模一樣）。自己再按一次「抽並生圖」從這顆重新開始；無限抽接下一輪時接著往下加。
 let fixedRun = null;
-const ui = { suit: "all", group: "", query: "", eraOnly: true, charGender: "", collapsed: matchMedia("(max-width: 63.99rem)").matches, wallCols: "auto", ...S.loadUi() };
+const ui = S.typedLike({ suit: "all", group: "", query: "", eraOnly: true, charGender: "", collapsed: matchMedia("(max-width: 63.99rem)").matches, wallCols: "auto" }, S.loadUi());
+// 存檔裡的花色不是現在有的（改版、壞掉）：回到「全部」，不然字盒整盒是空的。
+if (ui.suit !== "all" && !CARD_SUITS.includes(ui.suit)) ui.suit = "all";
 // 成品牆每排幾張：自動（照寬度，每張至少約 19rem）或固定 3～6 張（視窗太窄時自己少幾欄，每張不小於 140px）。
 const WALL_COLS = ["auto", "3", "4", "5", "6"];
 const $ = (id) => document.getElementById(id);
@@ -147,6 +149,8 @@ async function boot() {
     lib = buildLibrary(data, { ratingBlocked });
     assets = createAssets(manifest);
   } catch (err) {
+    // 連線問題（手機網路斷一下、伺服器沒開）：說「連不到主機」、給重試；不是叫人用 start.bat 開。
+    if (isNetError(err)) return bootFailed(err);
     $("work").replaceChildren(el("p", { class: "pool-empty" }, "讀不到詞庫。請用 start.bat 開，而不是直接點 HTML。", el("br"), String(err)));
     return;
   }
@@ -2342,7 +2346,13 @@ function makeShot(drawn, seed, poolAtDraw, snapshot = null) {
 
 function trimWall() {
   if (shots.length <= S.SHOT_MAX) return;
-  const drop = shots.splice(S.SHOT_MAX);
+  // 先裁沒印出來的（失敗、取消、停掉的），從最舊的開始；還超過才裁印好的。
+  // 以前一律裁最舊的：斷網時一陣「印壞了」就把前面印好的整面擠掉。
+  const over = shots.length - S.SHOT_MAX;
+  const waste = new Set(shots.filter((s) => s.status === "failed" || s.status === "cancelled" || s.status === "stopped").slice(-over));
+  const drop = [...waste];
+  for (let i = shots.length - 1; i >= 0; i--) if (waste.has(shots[i])) shots.splice(i, 1);
+  if (shots.length > S.SHOT_MAX) drop.push(...shots.splice(S.SHOT_MAX));
   for (const s of drop) hiresRun.cancel(s);
   for (const s of drop) document.querySelector(`.shot[data-id="${s.id}"]`)?.remove();
   generator.drop(new Set(drop.map((s) => s.id)));
@@ -3599,4 +3609,5 @@ if (new URLSearchParams(location.search).has("debug")) {
   window.mochi = { get pool() { return pool; }, get bans() { return bans; }, get shots() { return shots; }, get settings() { return settings; }, pin, ban, drawBatch, lib: () => lib };
 }
 
-boot();
+// 開機到一半出錯（本機存檔讀不懂、連不到主機）：不要停在「正在讀詞庫…」，說清楚、給重試或重設（ui.js 的 bootFailed）。
+boot().catch(bootFailed);

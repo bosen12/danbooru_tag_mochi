@@ -70,9 +70,13 @@ def _blank() -> dict:
 
 
 def _read() -> dict:
+    # 讀不懂的檔不能當成空的：整晚無限抽每一輪都在寫，空的那份會把幾千次的紀錄一次蓋掉。
+    # 先試 .bak；再不行丟 StoreCorrupt（伺服器回 503，壞的那份改名留著）。
     try:
-        data = json.loads(USAGE_PATH.read_text(encoding="utf-8"))
-    except (OSError, ValueError):
+        data = file_lock.read_json(USAGE_PATH, label="牌的使用次數")
+    except OSError:
+        return _blank()
+    if data is None:
         return _blank()
     if not isinstance(data, dict):
         return _blank()

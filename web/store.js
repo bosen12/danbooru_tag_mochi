@@ -23,10 +23,34 @@ export const isWaiting = (s) => !s.job && (s.status === "queued" || s.status ===
 /** 讀檔用：存的時候還排著、而且是剛剛的事。 */
 export const stillWaiting = (s, now = Date.now()) => !!s && s.waiting === true && !s.job && now - (Number(s.waitedAt) || 0) < WAIT_KEEP_MS;
 
+/**
+ * 讀回來的東西跟預設值是不是同一種形狀：預設是清單就要是清單、是物件就要是物件（null 的話物件也收）。
+ * 合法的 JSON 不代表格式對：舊版存檔、改版沒換鑰匙、外掛亂寫，以前會一路傳到 .filter、new Set，
+ * 整頁停在「正在讀詞庫…」。形狀不對就當成沒存過。
+ */
+export function sameShape(v, fallback) {
+  if (Array.isArray(fallback)) return Array.isArray(v) ? v : fallback;
+  if (fallback === null || typeof fallback === "object") return v && typeof v === "object" && !Array.isArray(v) ? v : fallback;
+  return typeof v === typeof fallback ? v : fallback;
+}
+
+/**
+ * 設定物件逐欄看：存回來的值跟預設值同一種型別才用（花色存成數字、每排張數存成物件，以前字盒整個篩不出牌）。
+ * 預設裡沒有的欄位不收。
+ */
+export function typedLike(defaults, saved) {
+  const out = { ...defaults };
+  if (!saved || typeof saved !== "object" || Array.isArray(saved)) return out;
+  for (const k of Object.keys(defaults)) {
+    if (k in saved && typeof saved[k] === typeof defaults[k] && saved[k] !== null) out[k] = saved[k];
+  }
+  return out;
+}
+
 function read(key, fallback) {
   try {
     const raw = localStorage.getItem(key);
-    return raw ? JSON.parse(raw) : fallback;
+    return raw ? sameShape(JSON.parse(raw), fallback) : fallback;
   } catch {
     return fallback;
   }
@@ -122,10 +146,15 @@ export function hiresJobOf(t) {
     : null;
 }
 
+// 這個分頁讀過、印過的成品編號。存檔時存檔裡多出來、這裡沒見過的，是另一個分頁新印的：一起留著。
+// 以前整份覆寫：開兩個墨池分頁，後存的那邊把另一邊印的整面蓋掉（連收藏、Hires、修臉的紀錄）。
+// 這個分頁自己撤下、裁掉的見過，不會被撿回來。
+const shotIdsHere = new Set();
+
 export function saveShots(shots) {
-  write(
-    KEY.shots,
-    shots.slice(0, SHOT_MAX).map((s) => ({
+  for (const s of shots) shotIdsHere.add(s.id);
+  const others = read(KEY.shots, []).filter((s) => s && typeof s === "object" && typeof s.id === "string" && !shotIdsHere.has(s.id));
+  const mine = shots.slice(0, SHOT_MAX).map((s) => ({
       id: s.id,
       seed: s.seed,
       positive: s.positive,
@@ -162,11 +191,16 @@ export function saveShots(shots) {
       status: s.status === "done" ? "done" : s.status === "drawn" ? "drawn" : s.status === "failed" ? "failed" : "stopped",
       note: s.status === "done" || s.status === "drawn" ? "" : s.note || "",
       at: s.at,
-    }))
-  );
+    }));
+  // 照時間新到舊排回去（兩邊交錯印的），超過上限的裁掉。
+  const when = (s) => Number(s.at) || Date.parse(s.at) || 0;
+  const all = others.length ? [...mine, ...others].sort((a, b) => when(b) - when(a)) : mine;
+  write(KEY.shots, all.slice(0, SHOT_MAX));
 }
 
 export function loadShots() {
-  const list = read(KEY.shots, []);
-  return Array.isArray(list) ? list : [];
+  // 一筆一筆看：清單裡夾著 null、數字的話，後面 s.status 會整頁炸掉。
+  const list = read(KEY.shots, []).filter((s) => s && typeof s === "object" && typeof s.id === "string");
+  for (const s of list) shotIdsHere.add(s.id);
+  return list;
 }

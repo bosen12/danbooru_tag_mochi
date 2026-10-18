@@ -41,7 +41,7 @@ import { initLoraPicker, currentLorasPayload, currentTriggerText, currentCkpt, h
 import { initWorkflow, currentWorkflowId, currentSampling, wfHandleKeys } from "./workflow.js";
 import { HARD_BANNED, applyArtSources } from "./card-art.js";
 import { buildLibrary, sizeCards, groupChips, genderChips, chipRun, seriesRun, groupNow, cardMatches, createAssets, cardNode, cardFacts, setEnterTarget, eagerArt, CARD_SUIT_INFO, CARD_SUITS, RATING_ZH, ERA_ZH } from "./cards.js";
-import { el, openSheet, anyOverlay, toast, dropToastAction, syncChoices } from "./ui.js";
+import { el, openSheet, anyOverlay, toast, dropToastAction, syncChoices, bootFailed, friendlyError, isNetError } from "./ui.js";
 import { zoomFromThumb } from "./zoom.js";
 import { mountKeysHelp } from "./keys-help.js";
 import { mountTour } from "./tour.js";
@@ -157,7 +157,7 @@ function tickIfChanged(node, key) {
 function readJ(key, fallback) {
   try {
     const raw = localStorage.getItem(key);
-    return raw ? JSON.parse(raw) : fallback;
+    return raw ? S.sameShape(JSON.parse(raw), fallback) : fallback;
   } catch {
     return fallback;
   }
@@ -220,6 +220,8 @@ async function boot() {
     lib = buildLibrary(data, { ratingBlocked });
     assets = createAssets(man || {});
   } catch (err) {
+    // 連線問題（手機網路斷一下、伺服器沒開）：說「連不到主機」、給重試；不是叫人用 start.bat 開。
+    if (isNetError(err)) return bootFailed(err);
     $("registers").replaceChildren(el("p", { class: "boot-fail" }, "讀不到詞庫。請用 start.bat 開，而不是直接點 HTML。", el("br"), String(err)));
     return;
   }
@@ -4303,4 +4305,5 @@ function greetPlaced() {
 }
 
 
-boot();
+// 開機到一半出錯（本機存檔讀不懂、連不到主機）：不要停在「正在讀詞庫…」，說清楚、給重試或重設（ui.js 的 bootFailed）。
+boot().catch(bootFailed);

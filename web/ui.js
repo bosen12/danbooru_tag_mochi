@@ -1,7 +1,7 @@
 /** 墨池的畫面零件：建元素、遮罩、提示、滑鼠停留說明。只產生 DOM，不管流程。 */
 import { lockScroll, unlockScroll } from "./scroll-lock.js";
 import { DUR, CURVE, css, reducedMotion } from "./motion.js";
-import { translateTree } from "./i18n.js";
+import { translateTree, t } from "./i18n.js";
 
 export function el(tag, props = {}, ...children) {
   const node = document.createElement(tag);
@@ -211,7 +211,10 @@ function hideToast() {
   const t = document.getElementById("toast");
   clearTimeout(toastTimer);
   toastNow = null;
-  if (t) t.dataset.show = "false";
+  if (!t) return;
+  t.dataset.show = "false";
+  // 收起來只是變透明，「復原」鈕還在：以前 Tab 走得到、按 Enter 照樣復原，會把後來做的事蓋掉。
+  t.inert = true;
 }
 
 function wireToast(t) {
@@ -273,6 +276,7 @@ export function toast(text, { action = null, ms = action ? 5200 : 2600 } = {}) {
     t.append(clock);
   }
   t.style.setProperty("--toast-ms", ms + "ms");
+  t.inert = false;
   t.dataset.action = action ? "true" : "false";
   t.dataset.paused = "false";
   t.dataset.show = "true";
@@ -283,6 +287,15 @@ export function toast(text, { action = null, ms = action ? 5200 : 2600 } = {}) {
   toastDeadline = Date.now() + ms;
   toastTimer = setTimeout(hideToast, ms);
 }
+
+// 伺服器的存檔壞了（server.py 回 503 store_corrupt，usage.js 這類背景存檔丟 mochi-store-corrupt）：
+// 說一次就好，留久一點，讓人看得到壞掉的檔改名成什麼。
+let storeCorruptSaid = false;
+globalThis.addEventListener?.("mochi-store-corrupt", (e) => {
+  if (storeCorruptSaid) return;
+  storeCorruptSaid = true;
+  toast(String(e.detail || "伺服器的存檔壞了"), { ms: 15000 });
+});
 
 /** 那則提示的按鈕已經不對了（它講的那一步之後又動過）：提示還掛著就收掉。換成別則了就不動。 */
 export function dropToastAction(action) {
@@ -340,4 +353,57 @@ function showTip(node, content) {
 export function hideTip() {
   clearTimeout(tipTimer);
   if (tip) tip.dataset.show = "false";
+}
+
+/**
+ * 連線錯誤講人話：瀏覽器的「Failed to fetch」這類換成「連不到主機…」，其他的照原樣。
+ * 收藏、存牌組、讀詞庫這些地方共用（以前直接把 err.message 貼在提示上）。
+ */
+export function friendlyError(err) {
+  const msg = String(err && err.message ? err.message : err || "");
+  if (/failed to fetch|load failed|networkerror|network request failed/i.test(msg)) return "連不到主機：網路斷了，或伺服器沒開";
+  return msg;
+}
+export const isNetError = (err) => friendlyError(err) !== String(err && err.message ? err.message : err || "");
+
+/**
+ * 開機到一半出錯（各頁的 boot().catch）：以前整頁停在「正在讀詞庫…」，看不出發生什麼事、也沒辦法自己救。
+ * 連不到主機：說清楚、給「重試」。其他（多半是這台瀏覽器的本機存檔讀不懂）：給「重設本機存檔」，
+ * 只清 mochi. 開頭的本機資料（成品牆、規則、篩選、偏好卡牌），語言保留；伺服器上的牌組、作品冊、次數不受影響。
+ */
+export function bootFailed(err) {
+  console.error(err);
+  delete document.documentElement.dataset.booting;
+  delete document.documentElement.dataset.entering;
+  if (document.getElementById("boot-failed")) return;
+  const net = isNetError(err);
+  const retry = el("button", { class: "btn btn-primary", type: "button", onclick: () => location.reload() }, "重試");
+  const reset = el(
+    "button",
+    {
+      class: "btn btn-ghost",
+      type: "button",
+      onclick: () => {
+        if (!confirm(t("清掉這台瀏覽器裡墨池的本機存檔（成品牆、規則、篩選、偏好卡牌）？伺服器上的牌組、作品冊、使用次數不會動。"))) return;
+        try {
+          for (const k of Object.keys(localStorage)) if (k.startsWith("mochi.") && k !== "mochi.language.v1") localStorage.removeItem(k);
+          for (const k of Object.keys(sessionStorage)) if (k.startsWith("mochi.")) sessionStorage.removeItem(k);
+        } catch {
+          /* 清不了：重新整理照樣試一次 */
+        }
+        location.reload();
+      },
+    },
+    "重設本機存檔"
+  );
+  const box = el(
+    "div",
+    { class: "boot-failed", id: "boot-failed", role: "alert" },
+    el("h2", {}, net ? "連不到主機" : "這一頁開不起來"),
+    el("p", {}, net ? "網路斷了，或伺服器沒開。網路回來（或開好伺服器）之後按重試。" : "多半是這台瀏覽器裡墨池的本機存檔讀不懂（舊版留下的、或被別的程式改過）。先按重試；還是不行就重設本機存檔。"),
+    el("p", { class: "boot-failed-acts" }, retry, net ? null : reset),
+    el("details", {}, el("summary", {}, "詳細"), el("pre", { dataset: { noI18n: "" } }, String(err && err.stack ? err.stack : err)))
+  );
+  document.body.append(box);
+  retry.focus({ preventScroll: true });
 }

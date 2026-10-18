@@ -43,6 +43,7 @@ if str(ROOT) not in sys.path:
 
 import card_usage
 import card_decks
+import file_lock
 import gen_log
 import lora_scan
 import recipes
@@ -4957,7 +4958,24 @@ class Handler(BaseHTTPRequestHandler):
             return
         self._serve_static(False)
 
+    def _store_corrupt(self, exc: Exception) -> None:
+        """存檔讀不懂、也沒備份（file_lock.StoreCorrupt）：回 503 和一句白話，不要讓連線直接斷掉、網頁看成「連不到主機」。"""
+        print(f"[存檔] {exc}", flush=True)
+        self._json(503, {"ok": False, "error": str(exc), "code": "store_corrupt"})
+
     def do_GET(self) -> None:
+        try:
+            self._do_get()
+        except file_lock.StoreCorrupt as exc:
+            self._store_corrupt(exc)
+
+    def do_POST(self) -> None:
+        try:
+            self._do_post()
+        except file_lock.StoreCorrupt as exc:
+            self._store_corrupt(exc)
+
+    def _do_get(self) -> None:
         if not self._allowed():
             return
         path = urllib.parse.urlparse(self.path).path
@@ -5069,7 +5087,7 @@ class Handler(BaseHTTPRequestHandler):
             return
         self._serve_static(True)
 
-    def do_POST(self) -> None:
+    def _do_post(self) -> None:
         if not self._allowed():
             return
         path = urllib.parse.urlparse(self.path).path

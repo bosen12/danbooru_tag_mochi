@@ -10,7 +10,9 @@
 from __future__ import annotations
 
 import contextlib
+import json
 import os
+import shutil
 import threading
 import time
 from pathlib import Path
@@ -50,13 +52,64 @@ def locked(path: Path, timeout: float = 15.0):
                 fcntl.flock(fh.fileno(), fcntl.LOCK_UN)
 
 
+class StoreCorrupt(Exception):
+    """存檔讀不懂、也沒有能用的備份。不能當成空的：下一次寫入會用空的那份把整份蓋掉（使用次數、牌組歸零）。"""
+
+
+def backup_path(path: Path) -> Path:
+    return path.with_name(path.name + ".bak")
+
+
 def write_text(path: Path, text: str) -> None:
-    """整份換掉：先寫到這個程序、這個執行緒自己的暫存檔，再一次換上去。"""
+    """整份換掉：先寫到這個程序、這個執行緒自己的暫存檔，寫進磁碟（fsync）再一次換上去。
+
+    寫完再同樣寫一份 .bak（也是先寫暫存檔再換上去）：正本被弄壞時（磁碟、手改、別的程式），
+    read_json 用 .bak 換回來，拿到的是最新那份。沒有 fsync 的話，停電或藍屏可能留下 0 位元組的檔。
+    """
     path.parent.mkdir(parents=True, exist_ok=True)
-    tmp = path.with_name(f"{path.name}.{os.getpid()}-{threading.get_ident()}.tmp")
+    for dest in (path, backup_path(path)):
+        tmp = dest.with_name(f"{dest.name}.{os.getpid()}-{threading.get_ident()}.tmp")
+        try:
+            with open(tmp, "w", encoding="utf-8", newline="\n") as fh:
+                fh.write(text)
+                fh.flush()
+                os.fsync(fh.fileno())
+            os.replace(tmp, dest)
+        except OSError:
+            if dest is path:
+                raise
+            # 備份寫不了不影響正本：下一次再寫。
+        finally:
+            with contextlib.suppress(OSError):
+                tmp.unlink()
+
+
+def read_json(path: Path, *, label: str = ""):
+    """讀 JSON 存檔。沒有檔：回 None。讀不懂：試 .bak，讀得懂就換回去用；也不行就把壞檔改名留著、丟 StoreCorrupt。
+
+    壞檔改名成 <檔名>.corrupt-<時間>，不刪：裡面可能還救得回東西。
+    """
+    if not path.exists():
+        return None
     try:
-        tmp.write_text(text, encoding="utf-8")
-        os.replace(tmp, path)
-    finally:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except (ValueError, UnicodeDecodeError):
+        pass
+    stamp = time.strftime("%Y%m%d-%H%M%S")
+    aside = path.with_name(f"{path.name}.corrupt-{stamp}")
+    with contextlib.suppress(OSError):
+        shutil.copyfile(path, aside)
+    bak = backup_path(path)
+    try:
+        data = json.loads(bak.read_text(encoding="utf-8"))
+    except (OSError, ValueError, UnicodeDecodeError):
         with contextlib.suppress(OSError):
-            tmp.unlink()
+            path.unlink()
+        name = label or path.name
+        raise StoreCorrupt(
+            f"伺服器上的{name}存檔（{path.name}）壞了，也沒有能用的備份。"
+            f"壞掉的那份改名成 {aside.name} 留著；之後存的會從空的開始。"
+        ) from None
+    shutil.copyfile(bak, path)
+    print(f"[存檔] {path.name} 壞了，已用 {bak.name} 換回（壞的留在 {aside.name}）", flush=True)
+    return data
