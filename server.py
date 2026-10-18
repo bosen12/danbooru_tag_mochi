@@ -4785,7 +4785,12 @@ class Handler(BaseHTTPRequestHandler):
             return
         # fmt=webp：晾紙繩、試印、成品預覽用的小檔（約原圖的 1/12）。「開原圖」不帶，拿原本的 PNG。
         webp = comfy_webp(q, digest) if one("fmt") == "webp" else None
-        etag = '"' + digest + ("-webp" if webp else "") + '"'
+        # 再帶 w=480：成品牆的小圖（畫出來只有約 360px 寬，整張 webp 是它的 5 倍像素）。縮好的存在 thumb-cache；
+        # 縮不了（沒 Pillow、本來就小）照舊給整張 webp。
+        small = preview_thumb(webp, thumb_width(qs)) if webp and thumb_width(qs) else None
+        if small:
+            webp = small
+        etag = '"' + digest + ("-webp" if webp else "") + (f"-w{thumb_width(qs)}" if small else "") + '"'
         if self.headers.get("If-None-Match") == etag:
             self.send_response(304)
             self.send_header("ETag", etag)
@@ -5437,6 +5442,8 @@ def check_ckpt() -> None:
 
 
 class AppServer(ThreadingHTTPServer):
+    # 連線排隊上限：預設 5。手機、電腦幾個分頁同時輪詢加上牌圖一起來時，排滿的新連線會被晾到下一輪（實測偶爾卡 0.5 秒）。
+    request_queue_size = 64
     # Windows 的 SO_REUSEADDR 讓第二份伺服器也綁得上同一個埠，而且不報錯：啟動檔點兩次，
     # 兩份就搶同一個埠的請求，生圖佇列各記各的（進度、接回都會莫名其妙不見）。改成獨佔。
     allow_reuse_address = os.name != "nt"

@@ -146,8 +146,14 @@ function listenViewport() {
  * 第一次排版後照實際大小改挑（lazy 的圖這時還沒開始抓，不會多抓一次）。
  * 沒有 mini：照舊 applyArtSources(legacy)。kind：「card」一般的牌、「hand」手牌。
  */
+/**
+ * 不用 sizes="auto"：Chromium 上 lazy＋srcset＋sizes=auto 的 <img> 拿掉之後會被留住，連它所在的整個彈窗、
+ * 整張成品一起（開關成品詳情 200 次，節點 2.3k → 104k、記憶體 118 → 415 MB）。給一個固定寬度，瀏覽器照它挑縮圖。
+ */
+export const fixedSizes = (sources, px) => (sources && sources.sizes ? { ...sources, sizes: `${px}px` } : sources);
+
 export function bindArt(img, set, legacy, kind = "card") {
-  if (!set) return applyArtSources(img, legacy);
+  if (!set) return applyArtSources(img, fixedSizes(legacy, 160));
   img.loading = "lazy";
   bound.set(img, { set, kind });
   img.dataset.artPick = kind;

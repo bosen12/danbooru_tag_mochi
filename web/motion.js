@@ -582,6 +582,8 @@ function watchMastPeek() {
     }
   };
   addEventListener("scroll", () => {
+    // 電腦上頂欄不收：連捲動位置都不讀（讀 scrollY 會在捲動的那一格多逼一次排版，卡冊實測每格 18ms）。
+    if (!phone.matches) return;
     if (ticking) return;
     ticking = true;
     requestAnimationFrame(update);
@@ -692,7 +694,10 @@ export function flip(container, mutate, { duration = DUR.medium } = {}) {
   for (const n of nodes) cancelFlip(n);
   mutate();
   const after = [...container.children].filter((n) => before.has(n)).map((n) => [n, n.getBoundingClientRect()]);
-  for (const [n, b] of after) animateFlip(n, before.get(n), b, duration);
+  // 前後都在畫面外的不演：滑過去也沒人看得到。成品牆滿 80 張時，抽一張以前 80 張都開一段動畫。
+  const vh = globalThis.innerHeight || 0;
+  const off = (r) => vh > 0 && (r.bottom < -vh * 0.5 || r.top > vh * 1.5);
+  for (const [n, b] of after) if (!(off(before.get(n)) && off(b))) animateFlip(n, before.get(n), b, duration);
 }
 
 /**

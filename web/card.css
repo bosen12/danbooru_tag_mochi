@@ -323,21 +323,24 @@ button.card:active {
       box-shadow var(--dur-short) var(--ease-out),
       opacity var(--dur-short) var(--ease-out);
   }
-  .card-art::after {
+  /* 反光那一層只長在滑鼠底下那一張上。以前每張牌都有一層透明的 soft-light 混合：看不到，
+   * 瀏覽器還是替每張開一個合成圖層，卡冊一頁 1191 層，電腦上捲動只剩每秒 15～25 格。 */
+  .card[data-tilt="on"] .card-art::after {
     content: "";
     position: absolute;
     inset: 0;
     z-index: 2;
     pointer-events: none;
-    opacity: 0;
+    animation: tilt-sheen-in var(--dur-short) var(--ease-out);
     background:
       radial-gradient(circle at var(--gx, 50%) var(--gy, 50%), oklch(100% 0 0 / 0.55), oklch(100% 0 0 / 0.12) 32%, transparent 62%),
       linear-gradient(115deg, transparent 30%, oklch(100% 0 0 / 0.1) calc(var(--gx, 50%) - 6%), transparent calc(var(--gx, 50%) + 14%));
     mix-blend-mode: soft-light;
-    transition: opacity var(--dur-short) var(--ease-out);
   }
-  .card[data-tilt="on"] .card-art::after {
-    opacity: 1;
+  @keyframes tilt-sheen-in {
+    from {
+      opacity: 0;
+    }
   }
 }
 

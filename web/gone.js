@@ -46,16 +46,39 @@ export function watchGone(img, onGone) {
   });
 }
 
+// 這個分頁剛問過、還在的圖：幾分鐘內不再問（每次回到墨池都對 80 張發條件請求，伺服器每張再去問 ComfyUI 一次）。
+const SWEPT_KEY = "mochi.tab.swept.v1";
+const SWEPT_MS = 10 * 60 * 1000;
+function sweptRecently() {
+  try {
+    const v = JSON.parse(sessionStorage.getItem(SWEPT_KEY) || "null");
+    return v && Date.now() - v.at < SWEPT_MS && Array.isArray(v.ok) ? new Set(v.ok) : new Set();
+  } catch {
+    return new Set();
+  }
+}
+function noteSwept(ok) {
+  try {
+    const prev = sweptRecently();
+    sessionStorage.setItem(SWEPT_KEY, JSON.stringify({ at: Date.now(), ok: [...new Set([...prev, ...ok])].slice(-400) }));
+  } catch {
+    /* 存不了：下次照樣問 */
+  }
+}
+
 /** 一張一張、在閒下來的時候問（不跟畫面搶）。每問完一張回報一次。 */
 export function sweepGone(srcs, onGone) {
-  const list = [...new Set(srcs.filter(own))];
+  const recent = sweptRecently();
+  const list = [...new Set(srcs.filter(own))].filter((s) => !recent.has(s));
+  const ok = [];
   const idle = window.requestIdleCallback || ((f) => setTimeout(f, 200));
   const next = () => {
     const src = list.shift();
-    if (!src) return;
+    if (!src) return noteSwept(ok);
     idle(() =>
       checkGone(src).then((gone) => {
         if (gone) onGone(src);
+        else ok.push(src);
         next();
       })
     );

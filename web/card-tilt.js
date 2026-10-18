@@ -10,13 +10,16 @@ const FINE = matchMedia("(hover: hover) and (pointer: fine)");
 const REDUCED = matchMedia("(prefers-reduced-motion: reduce)");
 // 最大傾角：小牌（字盒 88px）7° 看得出立體、又不會晃到看不清字。
 const MAX_DEG = 7;
+// 按住中：同時只會有一個指標按著，所有區塊共用一個，window 上的 pointerup 也只掛一次。
+// 以前每一塊各掛一個、抓著那一塊不放：每開一次成品詳情就多一個，整個彈窗一直留在記憶體裡。
+let pressed = false;
+if (typeof addEventListener === "function") addEventListener("pointerup", () => (pressed = false), { passive: true });
 
 export function attachTilt(root, selector = ".card[data-tag]") {
   if (!root || !FINE.matches || root.dataset.tilt === "on") return;
   root.dataset.tilt = "on";
   let cur = null;
   let frame = 0;
-  let pressed = false;
   let px = 0;
   let py = 0;
 
@@ -69,12 +72,5 @@ export function attachTilt(root, selector = ".card[data-tag]") {
       flatten(cur);
     },
     { capture: true, passive: true }
-  );
-  addEventListener(
-    "pointerup",
-    () => {
-      pressed = false;
-    },
-    { passive: true }
   );
 }

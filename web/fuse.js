@@ -53,7 +53,7 @@ import { openPaste, listenPaste } from "./paste-prompt.js";
 import { paintWeight, wireWeightInput, weightRow, weightPositive } from "./weights.js";
 import { favButton } from "./album-save.js";
 import { initMotion, settleMotion, flip, flipBy, leave, gatherHome, flight, enter, seat, refuse, swapIn, rowChange, heightChange, CURVE, DUR, css } from "./motion.js";
-import { cloneCard } from "./card-images.js";
+import { cloneCard, fixedSizes } from "./card-images.js";
 import { createHand } from "./hand.js";
 import { createDrag, inkRing } from "./drag.js";
 import { createGenerator, comfyOnline, viewSrc, tabTitle, markGenLog } from "./gen.js";
@@ -1447,7 +1447,7 @@ function renderTrials() {
           el(
             "span",
             { class: "trial-pick", title: zh(tag), style: `--suit: var(--suit-${suitOf(tag)})` },
-            assets.art(tag) ? applyArtSources(el("img", { alt: "", decoding: "async" }), assets.sources(tag)) : el("b", {}, [...zh(tag)][0])
+            assets.art(tag) ? applyArtSources(el("img", { alt: "", decoding: "async" }), fixedSizes(assets.sources(tag), 80)) : el("b", {}, [...zh(tag)][0])
           )
         )
       );
@@ -1956,7 +1956,7 @@ function deckStarters() {
         el(
           "span",
           { class: "starter-arts", "aria-hidden": "true" },
-          d.tags.filter((tg) => assets.art(tg)).slice(0, 3).map((tg) => applyArtSources(el("img", { alt: "" }), assets.sources(tg)))
+          d.tags.filter((tg) => assets.art(tg)).slice(0, 3).map((tg) => applyArtSources(el("img", { alt: "" }), fixedSizes(assets.sources(tg), 80)))
         ),
         el("span", { class: "starter-name", dataset: { noI18n: "" } }, d.name),
         el("span", { class: "starter-tags" }, d.tags.map(zh).join("・"))
@@ -1998,7 +1998,7 @@ function startBlock() {
               el(
                 "span",
                 { class: "starter-arts", "aria-hidden": "true" },
-                s.tags.slice(0, 3).map((tg) => (assets.art(tg) ? applyArtSources(el("img", { alt: "" }), assets.sources(tg)) : null))
+                s.tags.slice(0, 3).map((tg) => (assets.art(tg) ? applyArtSources(el("img", { alt: "" }), fixedSizes(assets.sources(tg), 80)) : null))
               ),
               el("span", { class: "starter-name" }, s.name),
               el("span", { class: "starter-tags" }, s.tags.map(zh).join("・"))
@@ -4069,7 +4069,7 @@ function renderPill() {
       { class: "pill-arts", "aria-hidden": "true" },
       bed.pins.slice(-3).map((tg) =>
         assets.art(tg)
-          ? applyArtSources(el("img", { alt: "", decoding: "async" }), assets.sources(tg))
+          ? applyArtSources(el("img", { alt: "", decoding: "async" }), fixedSizes(assets.sources(tg), 80))
           : el("b", { style: `--suit: var(--suit-${suitOf(tg)})` }, [...zh(tg)][0])
       )
     ),

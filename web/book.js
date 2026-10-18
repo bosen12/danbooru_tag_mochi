@@ -804,20 +804,29 @@ function watchMore() {
  * 畫面下方 PREFETCH_SCREENS 屏內的牌先改成立刻載入，往下捲時這條線跟著往前推。
  * 圖的網址在格子排好時就照實際大小挑好了（card-images.js），這裡只是提早開始抓同一張。 */
 const PREFETCH_SCREENS = 3;
-let prefetchFrame = 0;
+// 以前每捲一格就從頭量每一格的位置（getBoundingClientRect），1700 格時每格逼一次整頁排版 25～28ms，
+// 電腦上捲卡冊掉格。改用 IntersectionObserver：瀏覽器自己算，進到上方一屏、下方三屏內才通知。
+let prefetchIO = null;
 function queuePrefetch() {
-  if (!prefetchFrame) prefetchFrame = requestAnimationFrame(prefetchAhead);
-}
-function prefetchAhead() {
-  prefetchFrame = 0;
-  const limit = innerHeight * (1 + PREFETCH_SCREENS);
+  prefetchIO ||= new IntersectionObserver(
+    (entries) => {
+      for (const e of entries) {
+        if (!e.isIntersecting) continue;
+        const img = e.target.querySelector('img[loading="lazy"]');
+        if (img) img.loading = "eager";
+        prefetchIO.unobserve(e.target);
+      }
+    },
+    { rootMargin: `100% 0px ${PREFETCH_SCREENS * 100}% 0px` }
+  );
   for (const img of $("book-grid").querySelectorAll('.book-cell img[loading="lazy"]')) {
-    const top = img.closest(".book-cell").getBoundingClientRect().top;
-    if (top > limit) break;
-    if (top > -innerHeight) img.loading = "eager";
+    const cell = img.closest(".book-cell");
+    if (cell && !cell._prefetch) {
+      cell._prefetch = true;
+      prefetchIO.observe(cell);
+    }
   }
 }
-addEventListener("scroll", queuePrefetch, { passive: true });
 
 function moreCells() {
   if (shown >= list.length) return;
@@ -1687,9 +1696,22 @@ function applyUsage(next, { quiet = false } = {}) {
 }
 
 function watchOtherTabs() {
+  // 別的分頁每抽一張就寫一次次數：卡冊在背景時只記「有變」，回到這一頁再一次更新；在前景也併到下一格才更新。
+  // 以前每一次都整格重算（每格 indexOf），墨池抽 30 張，開著的卡冊分頁耗掉 5.7 秒。
+  let stale = false;
+  let frame = 0;
+  const refresh = () => {
+    frame = 0;
+    stale = false;
+    applyUsage(loadUsage());
+  };
   addEventListener("storage", (e) => {
     if (e.key !== USAGE_KEY) return;
-    applyUsage(loadUsage());
+    stale = true;
+    if (!document.hidden && !frame) frame = requestAnimationFrame(refresh);
+  });
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden && stale && !frame) frame = requestAnimationFrame(refresh);
   });
 }
 

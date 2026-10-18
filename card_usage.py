@@ -112,9 +112,22 @@ def _write(state: dict) -> None:
     file_lock.write_text(USAGE_PATH, json.dumps(state, ensure_ascii=False, separators=(",", ":")))
 
 
+# 檔案沒變就不重讀：卡冊每次開、定時問一次，以前每次都在鎖底下重讀、重解析整個檔（單次 31ms，同時好幾個就排隊）。
+_LOAD_CACHE: dict = {"key": None, "value": None}
+
+
 def load() -> dict:
     with _LOCK, file_lock.locked(USAGE_PATH):
-        return _public(_read())
+        try:
+            st = USAGE_PATH.stat()
+            key = (str(USAGE_PATH), st.st_mtime_ns, st.st_size)
+        except OSError:
+            key = None
+        if key and _LOAD_CACHE["key"] == key:
+            return _LOAD_CACHE["value"]
+        value = _public(_read())
+        _LOAD_CACHE.update(key=key, value=value)
+        return value
 
 
 def add(payload: dict) -> dict:

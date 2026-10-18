@@ -2616,21 +2616,30 @@ function resultCard(tag, src, flag) {
   return node;
 }
 
+// 成品牆的小圖：一般螢幕拿 480 寬的縮圖（/api/image 的 w=480；畫出來只有約 360px，整張是它的 5 倍像素，
+// 手機第一次開要多下載好幾 MB）。高解析度螢幕照舊拿整張 webp，不然會糊。詳情、開原圖照舊。
+const WALL_THUMB = (globalThis.devicePixelRatio || 1) <= 1.25;
+const wallSrc = (image) => {
+  const v = viewSrc(image);
+  return v && WALL_THUMB && v.startsWith("/api/image?") ? v + "&w=480" : v;
+};
+
 function paintShot(node, shot) {
   const previousStatus = node.dataset.status;
   node.dataset.status = shot.status;
   if (previousStatus && previousStatus !== shot.status && (shot.status === "done" || shot.status === "failed")) seat(node);
   const frame = node.querySelector(".shot-frame");
-  const src = viewSrc(shot.image) || shot.preview;
+  const src = wallSrc(shot.image) || shot.preview;
   if (shot._goneSrc && shot._goneSrc !== viewSrc(shot.image)) clearShotGone(shot, node);
   let img = frame.querySelector("img");
   if (src) {
     if (!img) {
-      img = el("img", { alt: "成品", decoding: "async" });
+      // lazy：牆上 80 張不必一開頁就全部下載，捲到附近才抓。
+      img = el("img", { alt: "成品", decoding: "async", loading: "lazy" });
       frame.prepend(img);
     }
     watchGone(img, (s) => {
-      if (s === viewSrc(shot.image)) markShotGone(shot, node);
+      if (s === viewSrc(shot.image) || s === wallSrc(shot.image)) markShotGone(shot, node);
     });
     // 開頁面的檢查比這張畫框早問完（牆上的畫框捲到附近才建）：建出來時補上。
     if (shot._goneSrc && !node.dataset.gone) markShotGone(shot, node);
