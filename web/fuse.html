@@ -33,6 +33,91 @@
       addEventListener("pageshow", () => {
         for (const a of document.querySelectorAll(".page-switch a[data-going]")) delete a.dataset.going;
       });
+      // 頂欄右邊的工具（LoRA、模型、工作流程、Discord…）要等伺服器回話，才一顆顆插到最前面：
+      // 分級鈕被往左推好幾次（電腦上開頁時移了 500px），手機上多擠出一行、整頁往下掉。
+      // 頂欄一畫出來（</header> 後面那行呼叫這裡），就在工具前面墊一塊空白，寬度＝上次在這一頁、
+      // 同樣的視窗寬度和語言時工具放齊的寬度，減掉現在已經有的；按鈕插進來一顆，空白就縮一點，
+      // 分級鈕不動。工具這一排的高度也照上次留好。兩秒沒變化就拿掉，記下這次放齊的大小。
+      window.__mastSpace = () => {
+        const tools = document.getElementById("mast-tools");
+        if (!tools || typeof ResizeObserver !== "function") return;
+        const KEY = "mochi.mast.v1";
+        let lang = "";
+        let saved = {};
+        try {
+          lang = localStorage.getItem("mochi.language.v1") || "";
+          saved = JSON.parse(localStorage.getItem(KEY) || "{}") || {};
+        } catch {}
+        const id = (location.pathname.split("/").pop() || "index.html") + "|" + innerWidth + "|" + lang;
+        const want = Array.isArray(saved[id]) ? saved[id] : null;
+        const spacer = document.createElement("span");
+        spacer.className = "mast-spacer";
+        spacer.setAttribute("aria-hidden", "true");
+        const items = () => [...tools.children].filter((x) => x !== spacer && x.getBoundingClientRect().width);
+        const gap = () => parseFloat(getComputedStyle(tools).columnGap) || 0;
+        // 工具本身佔的寬（不算墊的那塊）：每一顆的寬加上中間的間距。
+        const used = () => {
+          const list = items();
+          return list.reduce((sum, x) => sum + x.getBoundingClientRect().width, 0) + gap() * Math.max(0, list.length - 1);
+        };
+        const fit = () => {
+          if (!want) return;
+          const room = want[0] - used() - gap();
+          const width = room > 0.5 ? Math.round(room * 10) / 10 + "px" : "";
+          if (spacer.style.width !== width) spacer.style.width = width;
+          if (spacer.hidden !== !width) spacer.hidden = !width;
+        };
+        if (want) {
+          tools.style.minHeight = want[1] + "px";
+          tools.prepend(spacer);
+          fit();
+        }
+        let quiet = 0;
+        let frame = 0;
+        let over = false;
+        // 按鈕插進來、字換了：當下（畫出來之前）就補。其他大小變化（字型換上之類）下一格再補 ——
+        // 在 ResizeObserver 裡直接改版面，主控台會報 ResizeObserver loop。
+        const sizes = new ResizeObserver(() => {
+          cancelAnimationFrame(frame);
+          frame = requestAnimationFrame(fit);
+          wait();
+        });
+        const kids = new MutationObserver((records) => {
+          if (records.every((r) => r.target === spacer)) return;
+          for (const x of tools.children) if (x !== spacer) sizes.observe(x);
+          fit();
+          wait();
+        });
+        const done = () => {
+          if (over) return;
+          over = true;
+          clearTimeout(quiet);
+          cancelAnimationFrame(frame);
+          sizes.disconnect();
+          kids.disconnect();
+          spacer.remove();
+          tools.style.minHeight = "";
+          const box = [Math.round(used()), Math.round(tools.getBoundingClientRect().height)];
+          if (!box[0]) return;
+          try {
+            const all = JSON.parse(localStorage.getItem(KEY) || "{}") || {};
+            delete all[id];
+            all[id] = box;
+            const keys = Object.keys(all);
+            for (const k of keys.slice(0, Math.max(0, keys.length - 24))) delete all[k];
+            localStorage.setItem(KEY, JSON.stringify(all));
+          } catch {}
+        };
+        const wait = () => {
+          clearTimeout(quiet);
+          quiet = setTimeout(done, 2000);
+        };
+        for (const x of tools.children) if (x !== spacer) sizes.observe(x);
+        kids.observe(tools, { childList: true, subtree: true, characterData: true, attributes: true });
+        // 最久等 6 秒：伺服器一直沒回，就照現在的樣子。
+        setTimeout(done, 6000);
+        wait();
+      };
       addEventListener("pagereveal", (e) => {
         const vt = e.viewTransition;
         if (!vt) return;
@@ -149,6 +234,7 @@
         </div>
       </div>
     </header>
+    <script>window.__mastSpace?.();</script>
 
     <section class="line" id="line" aria-labelledby="line-title">
       <h2 class="line-title" id="line-title">晾紙<span class="line-count" id="line-count"></span></h2>

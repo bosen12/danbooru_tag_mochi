@@ -308,8 +308,18 @@ function schedule() {
 /** 開機的 DOM 都放好了：下一格排完版、畫上去之後再量滑塊。 */
 export function settleMotion() {
   delete document.documentElement.dataset.booting;
-  // 換版的轉場停著在等這一版（<head> 的 pagereveal 掛了 data-vt-hold）：內容剛放上去，下一格畫出來就放行。
-  if ("vtHold" in document.documentElement.dataset) requestAnimationFrame(() => window.__vtRelease?.());
+  // 換版的轉場停著在等這一版（<head> 的 pagereveal 掛了 data-vt-hold）：內容剛放上去，
+  // 畫面上看得到的圖也解碼好、下一格畫出來才放行。以前牌面在轉場演完後才一張張從灰變成圖（卡冊最明顯）。
+  // 最多等到 <head> 的 900ms 保底。
+  if ("vtHold" in document.documentElement.dataset) {
+    const seen = [...document.images].filter((img) => {
+      const r = img.getBoundingClientRect();
+      return r.width > 0 && r.bottom > 0 && r.top < innerHeight && r.right > 0 && r.left < innerWidth;
+    });
+    Promise.all(seen.slice(0, 80).map((img) => img.decode().catch(() => {}))).then(() =>
+      requestAnimationFrame(() => window.__vtRelease?.())
+    );
+  }
   playPageEntrance();
   if (document.hidden) {
     ready = true;

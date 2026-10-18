@@ -631,6 +631,16 @@ body #wf-pick-btn.has {
   margin-left: 0;
 }
 
+/* 工具還沒放齊時墊在前面的空白（index.html 的 __mastSpace 量好寬度）：按鈕插進來一顆就縮一點。 */
+.mast-spacer {
+  flex: none;
+  align-self: stretch;
+}
+
+.mast-spacer[hidden] {
+  display: none;
+}
+
 .ping {
   display: inline-flex;
   align-items: center;
@@ -4165,6 +4175,16 @@ body[data-fav-hand="true"] .tray-bridge { display: none; }
   }
   ::view-transition-old(mast) { opacity: 0; }
 
+  /* 分級鈕各頁一樣，但右邊的工具不一樣多（疊印台多一顆「規則」）：換版時它不跟著頂欄瞬間換位，
+   * 自己滑到新的位置。 */
+  .mast #rating { view-transition-name: mast-rating; }
+  ::view-transition-group(mast-rating) {
+    animation-duration: var(--dur-medium);
+    animation-timing-function: var(--ease-settle);
+  }
+  ::view-transition-old(mast-rating) { animation: none; opacity: 0; }
+  ::view-transition-new(mast-rating) { animation: none; }
+
   ::view-transition-old(favorite-tray),
   ::view-transition-new(favorite-tray) {
     animation-duration: var(--dur-long);
@@ -5413,8 +5433,10 @@ html {
   html[data-vt-hold]::view-transition-new(*) {
     animation-play-state: paused !important;
   }
-  html[data-vt-hold]::view-transition-old(mast) { opacity: 1 !important; }
-  html[data-vt-hold]::view-transition-new(mast) { opacity: 0 !important; }
+  html[data-vt-hold]::view-transition-old(mast),
+  html[data-vt-hold]::view-transition-old(mast-rating) { opacity: 1 !important; }
+  html[data-vt-hold]::view-transition-new(mast),
+  html[data-vt-hold]::view-transition-new(mast-rating) { opacity: 0 !important; }
   html[data-vt-hold] .page-switch-ink.is-arriving { animation-play-state: paused; }
 
   html[data-vt-in] {
