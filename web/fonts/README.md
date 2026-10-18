@@ -8,7 +8,7 @@ Maintainers copy rebuilt assets with `python scripts/sync_mochi.py`.
 The Traditional Chinese display family, glyphs and font weights are preserved.
 The English edition sets headings and body text in IBM Plex Sans (below) and uses horizontal card labels.
 `../fonts.css` serves one local variable WOFF2 for current WEB6 source text and the
-lexicon. It covers 2,533 codepoints and is 986,320 bytes. The full source `wght`
+lexicon. It covers 2,545 codepoints and is 990,072 bytes. The full source `wght`
 axis (200–900), hinting, names, and layout features are retained, and CSS exposes
 the whole axis: headings and body text share this one file. WEB6 makes no Google
 Fonts requests (privacy, offline use, and about a second off every page load).
