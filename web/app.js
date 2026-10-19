@@ -68,7 +68,7 @@ import { createHires, openHiresPicker, openFacePicker, paintHiresVeil, hiresBusy
 import * as S from "./store.js";
 import { recordUses } from "./usage.js";
 import { getSfx } from "./sfx.js";
-import { mountDiscord } from "./discord-link.js";
+import { mountDiscord, openRouteFromShot } from "./discord-link.js";
 import { english, t, takeLanguageState } from "./i18n.js";
 import { pickStarters, refreshStarters } from "./starters.js";
 
@@ -202,7 +202,7 @@ async function boot() {
   buildPicker();
   initLoraPicker({ gallery: true, motion: { DUR, CURVE, css } });
   initWorkflow({ sampling: true, faceFix: true, gallery: true, motion: { DUR, CURVE, css } });
-  discord = mountDiscord(zh, "墨池");
+  discord = mountDiscord(zh, "墨池", { lib: () => lib });
   pingLoop();
 
   renderRating();
@@ -3191,6 +3191,8 @@ function showShot(shot, { focus } = {}) {
     el("button", { class: "btn btn-small", type: "button", onclick: () => reprint(s), title: "同樣的提示詞、同一顆種子再送一次" }, "同種子重印"),
     el("button", { class: "btn btn-small", type: "button", onclick: (e) => copyPos(s, e.currentTarget) }, "複製提示詞"),
     s.image ? el("a", { class: "btn btn-small", href: s.image, target: "_blank", rel: "noopener" }, "開原圖") : null,
+    // 分頻道（discord-routes.js）：帶入這張的角色、分級，貼上 webhook 就好。詳情先關，兩層彈窗不要一起搶鍵盤。
+    el("button", { class: "btn btn-small", type: "button", onclick: () => (sheet.close(), openRouteFromShot(s)) }, "用這張開 Discord 頻道"),
   ];
   const sheet = openSheet(shotTitle(shot), shotDetailBody(shot), {
     wide: true,

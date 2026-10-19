@@ -56,6 +56,45 @@ Webhook 網址|Webhook URL
 只送圖和底下一行小字（seed、尺寸、模型、LoRA），不送分類標籤和英文提示詞。無限抽時頻道比較不會被洗版|Post the image with seed, dimensions, model and LoRA. Omit tags and prompts to keep continuous generation posts compact.
 存設定|Save settings
 送一則測試|Send test post
+分頻道|Channels
+＋ 新增頻道|+ Add channel
+照分級、角色、tag 把圖分到不同頻道，一張圖符合幾個就送幾個。一個都沒對到的，送下面「其他」那條（可以不設）。|Route images to different channels by rating, character and tag. An image goes to every channel it matches; images that match none go to “Other” below (optional).
+還沒有頻道。|No channels yet.
+其他：沒對到任何頻道的圖|Other: images that match no channel
+確定刪除？|Delete?
+開著：照條件送|On: sends matching images
+關著：這個頻道先不送|Off: this channel is paused
+開|On
+暫停：連續送不出去|Paused: kept failing
+恢復|Resume
+編輯|Edit
+不限分級|Any rating
+完整|Full
+名稱|Name
+例如：芙莉蓮、全年齡收藏|e.g. Frieren, General archive
+Discord 頻道設定 → 整合 → 建立 Webhook → 複製網址。存在伺服器、不進 git、不會回傳瀏覽器。|Discord channel settings → Integrations → Create Webhook → Copy URL. Stored on the server, never in git, never sent back to the browser.
+留空＝沿用已存的。| Leave blank to keep the saved one.
+送到了。去那個頻道看一下。|Sent. Check that channel.
+分級（不勾＝不限）|Rating (none = any)
+只送圖和一行小字；關掉會多送中文標籤分欄和英文提示詞（方便重現）|Only the image and one line of details. Turn off to also post tag groups and the English prompt (handy for reproducing).
+存頻道|Save channel
+新增頻道|Add channel
+編輯頻道|Edit channel
+要取個名字|Give it a name
+要貼上 webhook 網址|Paste the webhook URL
+至少設一種條件（分級、角色或 tag）|Set at least one condition (rating, character or tag)
+tag|Tags
+找角色：芙莉蓮、frieren、作品名…|Find a character: Frieren, series…
+找 tag：泳裝、swimsuit…|Find a tag: swimsuit…
+任一個|Any
+全部都要|All
+拿掉|Remove
+找不到|No match
+角色（最多 3 個）|Characters (up to 3)
+tag（最多 5 個）|Tags (up to 5)
+用這張開 Discord 頻道|New Discord channel from this
+（全部）| (all)
+（任一）| (any)
 送出|Sent
 失敗|Failed
 還沒有牌|No cards yet
@@ -1389,6 +1428,13 @@ Hires 深度 {0}×|Detailed upscale {0}×
 「{0}」跟「{1}」同時成立不了，引擎會摘掉其中一個{2}|“{0}” conflicts with “{1}”. The engine will remove one{2}.
 Hires 好了：{0}×{1}|Upscale ready · {0}×{1}
 找不到「{0}」。|No match for “{0!}”.
+頻道最多 {0} 個|Up to {0} channels
+已送 {0}・失敗 {1}|Sent {0} · failed {1}
+已送 {0}|Sent {0}
+{0}搜尋結果|{0} results
+{0}的比對方式|How {0} match
+拿掉 {0}|Remove {0!}
+最多 {0} 個|Up to {0}
 連線超過 {0} 秒沒有回應，接不回這張|No response for {0} seconds; couldn’t get this image back
 一直送不出去，停下來了：{0}|Kept failing to send, stopped: {0}
 伺服器上的{0}存檔（{1}）壞了，也沒有能用的備份。壞掉的那份改名成 {2} 留著；之後存的會從空的開始。|The server’s {0} file ({1!}) is corrupted and has no usable backup. It was renamed to {2!}; new saves start from empty.

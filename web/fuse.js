@@ -67,7 +67,7 @@ import { recordUses, tagsOfPositive } from "./usage.js";
 import { REGISTERS, REGISTER_ROLE, emptyBed, sanitizeBed, placeCard, removeCard, relationsOf } from "./fuse-bed.js";
 import { createSfx } from "./fuse-sfx.js";
 import { genSeed, isFixedSeed, mountSeedControl, onSeedChange, restoreSeed, seedState, seedUseButton, useSeed } from "./seed-control.js";
-import { mountDiscord } from "./discord-link.js";
+import { mountDiscord, openRouteFromShot } from "./discord-link.js";
 import { t as translate, takeLanguageState } from "./i18n.js";
 import { candidateSummary } from "./composition.js";
 import { pickStarters as chooseStarters, refreshStarters } from "./starters.js";
@@ -267,7 +267,7 @@ async function boot() {
 
   initLoraPicker({ gallery: true, motion: { DUR, CURVE, css } });
   initWorkflow({ sampling: true, faceFix: true, gallery: true, motion: { DUR, CURVE, css } });
-  discord = mountDiscord(zh, "疊印台");
+  discord = mountDiscord(zh, "疊印台", { lib: () => lib });
   pingLoop((st, ok) => {
     comfyOk = ok;
     linkNow = st;
@@ -3205,6 +3205,8 @@ function openPrint(p, from) {
       ? el("button", { class: "btn btn-small", type: "button", onclick: () => (sheet.close(), reprint(p)) }, "再印一次")
       : null,
     p._gone ? null : favButton(p, { zh, persist: savePrints, className: "btn btn-small" }),
+    // 分頻道（discord-routes.js）：帶入這張的角色、分級。詳情先關，兩層彈窗不要一起搶鍵盤。
+    p._gone ? null : el("button", { class: "btn btn-small", type: "button", onclick: () => (sheet.close(), openRouteFromShot(p)) }, "用這張開 Discord 頻道"),
     p.image && !p._gone ? el("a", { class: "btn btn-small", href: p.image, target: "_blank", rel: "noopener" }, "開原圖") : null,
     el(
       "button",

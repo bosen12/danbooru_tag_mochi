@@ -121,7 +121,7 @@ Environment variables override the file: `COMFY_API`, `COMFY_CKPT`, `PORT`, `HOS
 
 ComfyUI LoRA Manager is a separate project (GPLv3). It is installed into your own ComfyUI, not shipped with Mochi. So that **Details** in the LoRA panel opens that LoRA directly (`/loras?open=<folder>/<file>`), with your permission in the setup panel, Mochi adds a few lines to LoRA Manager's `static/js/loras.js` (`scripts/fetch_lora_manager.py --patch`, no ComfyUI restart). An update of LoRA Manager replaces the file; Mochi asks again before re-applying it on the next start, and leaves the file alone if it no longer looks as expected. On a phone (Tailscale) these links point at this computer's ComfyUI, so they only open if ComfyUI was started with `--listen`; Mochi checks first and hides them otherwise (Details then opens Civitai; previews still show, because this server relays them).
 
-**Discord.** The Discord button in the top bar takes a channel webhook URL, and generated images are posted there. The URL is stored in `.secrets/`, never committed and never sent back to the browser.
+**Discord.** The Discord button in the top bar takes a channel webhook URL, and generated images are posted there. The URL is stored in `.secrets/`, never committed and never sent back to the browser. You can also add channels (up to 20), each with its own webhook and conditions — rating, 1–3 characters and/or 1–5 tags, "any" or "all" — and compact or full posts. An image goes to every channel it matches; images that match none go to the main webhook. A result's details also have "New Discord channel from this", which fills in its characters and rating.
 
 **Phones.** `start.bat` binds `0.0.0.0` but accepts only loopback and Tailscale (`100.64.0.0/10`). On a phone, use the `Tailscale http://100.x.x.x:8796/` address printed in the server window.
 
@@ -273,7 +273,7 @@ Windows 會保留啟動前設定的 `PORT`／`HOST`；例如先 `set PORT=18812`
 
 LoRA 面板的「詳情」在 ComfyUI 的 LoRA Manager 直接打開那一個 LoRA：準備面板取得同意後，墨池才在它的 `static/js/loras.js` 補一小段（`scripts/fetch_lora_manager.py --patch`，不用重開 ComfyUI），LoRA Manager 更新蓋掉後下次啟動會先問再補。手機（Tailscale）上這些連結指向這台的 ComfyUI，ComfyUI 要用 `--listen` 開才點得開；連不到時連結會藏起來，「詳情」改開 Civitai（預覽圖照樣看得到）。
 
-自己的 ComfyUI workflow：把 ComfyUI 用它畫的任何一張 PNG 拖進「工作流」面板（或用「匯出工作流 (API)」的 JSON）；種子每個取樣器都會換，LoRA 面板選的會接在底模後面，底模可以選跟著頂欄或保留工作流的。送到 Discord：頂欄的 Discord 按鈕貼上頻道 webhook。手機走 Tailscale，用黑窗印出的 `Tailscale http://100.x.x.x:8796/`。
+自己的 ComfyUI workflow：把 ComfyUI 用它畫的任何一張 PNG 拖進「工作流」面板（或用「匯出工作流 (API)」的 JSON）；種子每個取樣器都會換，LoRA 面板選的會接在底模後面，底模可以選跟著頂欄或保留工作流的。送到 Discord：頂欄的 Discord 按鈕貼上頻道 webhook；也可以另外開分頻道（最多 20 個），每個頻道有自己的 webhook 和條件（分級、角色 1～3 個、tag 1～5 個，「任一個／全部都要」），一張圖符合幾個就送幾個，都沒對到的送原本那條。成品詳情的「用這張開 Discord 頻道」會帶入那張的角色和分級。手機走 Tailscale，用黑窗印出的 `Tailscale http://100.x.x.x:8796/`。
 
 你的資料（使用次數、牌組、作品冊、出圖日誌、匯入的 workflow）都在 `data/`，搬家時連同 `config.json` 一起帶走。
 

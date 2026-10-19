@@ -22,6 +22,9 @@ let uiMode = "bot";
 // 是頂欄自己的一顆 Discord 鈕 —— 關掉要回到那顆鈕，不然焦點會掉到 body。
 let opener = null;
 const listeners = new Set();
+// 面板每次重畫都叫（墨池的分頻道區塊 web6/discord-routes.js 掛在這裡）：fn(放區塊的那一格, 伺服器狀態)。
+// 沒人掛（排字匣其他版面）那一格就一直藏著。
+const panelFns = new Set();
 
 function reduceMotion() {
   return matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -49,6 +52,7 @@ function ensureDom() {
         <button type="button" class="ghost tg-close" id="dc-close" aria-label="關閉">✕</button>
       </header>
       <div class="tg-body">
+        <div id="dc-routes" hidden></div>
         <div class="tg-field">
           <span>連接方式</span>
           <div class="row" id="dc-modes" role="radiogroup" aria-label="連接方式">
@@ -108,8 +112,10 @@ function paint() {
   const st = $("dc-state");
   if (st) {
     // 這一行永遠描述伺服器上存著的狀態，不跟著面板上的選擇跑。
-    st.dataset.ok = status.configured ? "1" : "0";
-    if (status.configured) {
+    // 「其他」那條（這裡的 Webhook／Bot）自己設好了沒；分頻道的頻道另外算（otherConfigured 是新版伺服器才有）。
+    const other = status.otherConfigured ?? status.configured;
+    st.dataset.ok = other ? "1" : "0";
+    if (other) {
       st.textContent = savedHook
         ? `目前走 webhook · ${status.webhookTail}`
         : `目前走 bot · token ${status.tokenTail} · ${status.channelId || "沒填頻道 ID"}`;
@@ -155,6 +161,8 @@ function paint() {
     cp.classList.toggle("is-on", !!status.compact);
     cp.setAttribute("aria-checked", status.compact ? "true" : "false");
   }
+  const slot = $("dc-routes");
+  if (slot) for (const fn of panelFns) fn(slot, status);
   const stats = $("dc-stats");
   if (stats) {
     const bits = [
@@ -221,10 +229,12 @@ function open() {
   const chan = $("dc-channel");
   refresh().then(() => {
     if (chan) chan.value = status.channelId || "";
+    // 「其他」那條自己設好了沒（只設分頻道的時候 configured 也是真的）。
+    const other = status.otherConfigured ?? status.configured;
     const token = $("dc-token");
     if (token) {
       token.value = "";
-      token.placeholder = status.configured ? `已存 · ${status.tokenTail}` : "MTA1…";
+      token.placeholder = other && status.tokenTail ? `已存 · ${status.tokenTail}` : "MTA1…";
     }
     const hookInput = $("dc-webhook");
     if (hookInput) {
@@ -234,7 +244,7 @@ function open() {
         : "https://discord.com/api/webhooks/…";
     }
     if (uiMode === "webhook") $("dc-webhook")?.focus();
-    else (status.configured ? chan : $("dc-token"))?.focus();
+    else (other ? chan : $("dc-token"))?.focus();
   });
   window.clearInterval(poll);
   poll = window.setInterval(() => {
@@ -285,7 +295,7 @@ async function save() {
       const token = $("dc-token");
       if (token) {
         token.value = "";
-        token.placeholder = status.configured ? `已存 · ${status.tokenTail}` : "MTA1…";
+        token.placeholder = status.tokenTail ? `已存 · ${status.tokenTail}` : "MTA1…";
       }
       const hookInput = $("dc-webhook");
       if (hookInput) {
@@ -322,6 +332,17 @@ async function test() {
   }
   await refresh();
   if (btn) btn.disabled = false;
+}
+
+/** 掛一個面板區塊（見 panelFns）。 */
+export function onDcPanel(fn) {
+  panelFns.add(fn);
+  return () => panelFns.delete(fn);
+}
+
+/** 重新問一次伺服器、重畫面板（分頻道區塊存檔後用）。 */
+export function dcRefresh() {
+  return refresh();
 }
 
 export function dcReady() {

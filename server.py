@@ -43,6 +43,7 @@ if str(ROOT) not in sys.path:
 
 import card_usage
 import card_decks
+import discord_routes
 import file_lock
 import gen_log
 import lora_scan
@@ -3652,7 +3653,8 @@ def tg_apply_config(payload: dict) -> dict:
 # worker 絕不能死。差別只有三處：認證放 header 不放 URL、頻道 ID 在路徑上、
 # 訊息上限 2000 字（Telegram 的 caption 是 1024）。
 DC_API = str(cfg("discord.api", "DISCORD_API", "https://discord.com/api/v10"))
-DC_SECRETS = ROOT / ".secrets" / "discord.json"
+# 測試用 DISCORD_SECRETS_PATH 導去別的檔：存頻道會寫檔，不能蓋到使用者真正的設定。
+DC_SECRETS = Path(os.environ.get("DISCORD_SECRETS_PATH") or ROOT / ".secrets" / "discord.json")
 DC_CONTENT_MAX = 2000
 # Discord embed 的上限（官方文件）：標題 256、說明 4096、單一欄位值 1024。
 DC_TITLE_MAX = 256
@@ -3701,7 +3703,11 @@ _dc = {
     "sent": 0,
     "failed": 0,
     "lastError": "",
+    # 分頻道（discord_routes.py）：每個頻道自己的 webhook 和條件。沒對到任何頻道的圖送上面那條（「其他」）。
+    "routes": [],
 }
+# 每個頻道這次開伺服器以來的計數：sent、failed、lastError、fails（連續失敗）。不存檔。
+_dc_rstat: "dict[str, dict]" = {}
 
 
 def dc_load() -> None:
@@ -3720,6 +3726,7 @@ def dc_load() -> None:
         _dc["mode"] = mode if mode in ("bot", "webhook") else "bot"
         _dc["enabled"] = bool(raw.get("enabled"))
         _dc["compact"] = bool(raw.get("compact"))
+        _dc["routes"] = discord_routes.load_routes(raw.get("routes"))
 
 
 def dc_save() -> None:
@@ -3731,6 +3738,7 @@ def dc_save() -> None:
             "webhook": _dc["webhook"],
             "enabled": _dc["enabled"],
             "compact": _dc["compact"],
+            "routes": [dict(r) for r in _dc["routes"]],
         }
     DC_SECRETS.parent.mkdir(parents=True, exist_ok=True)
     DC_SECRETS.write_text(json.dumps(body, ensure_ascii=False, indent=2), encoding="utf-8")
@@ -3749,10 +3757,13 @@ def dc_scrub(text: str) -> str:
     out = str(text)
     with _dc_lock:
         token = _dc["token"]
-        hook = _dc["webhook"]
+        hooks = [_dc["webhook"], *(r["webhook"] for r in _dc["routes"])]
     if token:
         out = out.replace(token, "***")
-    if hook:
+    # 每個頻道的 webhook 也是憑證：哪一條出錯，訊息都不能把任何一條帶回網頁。
+    for hook in hooks:
+        if not hook:
+            continue
         out = out.replace(hook, "***")
         tail = hook.rstrip("/").rsplit("/", 1)[-1]
         if len(tail) >= 8:
@@ -3772,14 +3783,35 @@ def _dc_configured_locked() -> bool:
     return bool(_dc["token"] and _dc["channelId"])
 
 
+def _dc_can_send_locked() -> bool:
+    """有沒有地方可以送：「其他」設好了，或至少有一個啟用、沒暫停的頻道。呼叫者持有 _dc_lock。"""
+    return _dc_configured_locked() or any(r["enabled"] and not r["paused"] for r in _dc["routes"])
+
+
+def _dc_route_public(r: dict) -> dict:
+    """給網頁看的頻道：網址只給末四碼，加上這次開伺服器以來的計數。"""
+    st = _dc_rstat.get(r["id"], {})
+    out = {k: v for k, v in r.items() if k != "webhook"}
+    out.update({
+        "webhookTail": tg_tail(r["webhook"]),
+        "sent": st.get("sent", 0),
+        "failed": st.get("failed", 0),
+        "lastError": st.get("lastError", ""),
+    })
+    return out
+
+
 def dc_status() -> dict:
     with _dc_lock:
         mode = _dc["mode"]
-        configured = _dc_configured_locked()
+        configured = _dc_can_send_locked()
         return {
             "ok": True,
             "mode": mode,
+            # configured：有地方可以送（網頁的 dcReady 看這個）；otherConfigured：「其他」那條設好了沒。
             "configured": configured,
+            "otherConfigured": _dc_configured_locked(),
+            "routes": [_dc_route_public(r) for r in _dc["routes"]],
             "tokenTail": tg_tail(_dc["token"]),
             "webhookTail": tg_tail(_dc["webhook"]),
             "channelId": _dc["channelId"],
@@ -3985,8 +4017,16 @@ def dc_webhook_ok(url: str) -> str:
     return urllib.parse.urlunsplit((u.scheme, u.netloc, path, "", ""))
 
 
-def dc_endpoint() -> "tuple[str, dict]":
-    """要往哪送、要不要帶認證 —— 兩種模式只差這裡，其餘的組版與佇列完全共用。"""
+def dc_route(rid: str) -> "dict | None":
+    with _dc_lock:
+        return next((dict(r) for r in _dc["routes"] if r["id"] == rid), None)
+
+
+def dc_endpoint(target: str = discord_routes.OTHER) -> "tuple[str, dict]":
+    """要往哪送、要不要帶認證 —— 兩種模式只差這裡，其餘的組版與佇列完全共用。
+
+    target：頻道 id，或 "other"（沒對到頻道的圖，走上面設定的那條 Webhook／Bot）。頻道一律是 webhook。
+    """
     with _dc_lock:
         mode = _dc["mode"]
         token = _dc["token"]
@@ -3996,6 +4036,11 @@ def dc_endpoint() -> "tuple[str, dict]":
         # Discord 會擋掉沒有 User-Agent 的請求。
         "User-Agent": "DanbooruTagMochi (https://github.com/bosen12/danbooru_tag_mochi, 1.0)",
     }
+    if target != discord_routes.OTHER:
+        route = dc_route(target)
+        if not route:
+            raise RuntimeError("這個頻道已經刪掉了")
+        return route["webhook"], headers
     if mode == "webhook":
         if not hook:
             raise RuntimeError("沒有 webhook 網址")
@@ -4010,8 +4055,8 @@ def dc_endpoint() -> "tuple[str, dict]":
     return f"{DC_API}/channels/{urllib.parse.quote(channel)}/messages", headers
 
 
-def dc_call(body: bytes, ctype: str, timeout: float = 60) -> dict:
-    url, headers = dc_endpoint()
+def dc_call(body: bytes, ctype: str, timeout: float = 60, target: str = discord_routes.OTHER) -> dict:
+    url, headers = dc_endpoint(target)
     req = urllib.request.Request(
         url,
         data=body,
@@ -4039,12 +4084,13 @@ def dc_call(body: bytes, ctype: str, timeout: float = 60) -> dict:
         raise RuntimeError(dc_scrub(str(exc))) from None
 
 
-def dc_send_text(text: str) -> dict:
+def dc_send_text(text: str, target: str = discord_routes.OTHER) -> dict:
     body = json.dumps({"content": text[:DC_CONTENT_MAX]}, ensure_ascii=False).encode("utf-8")
-    return dc_call(body, "application/json")
+    return dc_call(body, "application/json", target=target)
 
 
-def dc_send_photo(job: dict) -> None:
+def dc_fetch_image(job: dict) -> "tuple[bytes, str, str]":
+    """跟 ComfyUI 拿圖：(圖, mime, 安全的檔名)。一張圖送好幾個頻道也只拿一次。"""
     q = comfy_view_query(
         job.get("filename") or "",
         job.get("subfolder") or "",
@@ -4060,39 +4106,91 @@ def dc_send_photo(job: dict) -> None:
         mime = "image/jpeg"
     elif blob[:4] == b"RIFF":
         mime = "image/webp"
-    fname = dc_safe_filename(job.get("filename") or "shot.png")
+    return bytes(blob), mime, dc_safe_filename(job.get("filename") or "shot.png")
+
+
+def dc_send_photo(job: dict, target: str = discord_routes.OTHER, image: "tuple[bytes, str, str] | None" = None) -> None:
+    blob, mime, fname = image or dc_fetch_image(job)
+    route = dc_route(target) if target != discord_routes.OTHER else None
     with _dc_lock:
-        compact = bool(_dc["compact"])
+        compact = bool(route["compact"]) if route else bool(_dc["compact"])
     payload = dc_payload(job, fname, compact)
     body, boundary = tg_multipart(
         {"payload_json": json.dumps(payload, ensure_ascii=False)},
         fname,
-        bytes(blob),
+        blob,
         mime,
         field="files[0]",
     )
-    dc_call(body, f"multipart/form-data; boundary={boundary}")
+    dc_call(body, f"multipart/form-data; boundary={boundary}", target=target)
+
+
+def _dc_note(target: str, err: str = "") -> None:
+    """記一次送出結果。頻道連續失敗 PAUSE_AFTER 次就自動暫停並存檔。"""
+    paused = False
+    with _dc_lock:
+        if target == discord_routes.OTHER:
+            if err:
+                _dc["failed"] += 1
+                _dc["lastError"] = err
+            else:
+                _dc["sent"] += 1
+                _dc["lastError"] = ""
+            return
+        st = _dc_rstat.setdefault(target, {"sent": 0, "failed": 0, "lastError": "", "fails": 0})
+        if err:
+            st["failed"] += 1
+            st["lastError"] = err
+            st["fails"] += 1
+            route = next((r for r in _dc["routes"] if r["id"] == target), None)
+            if route and not route["paused"] and st["fails"] >= discord_routes.PAUSE_AFTER:
+                route["paused"] = True
+                paused = True
+        else:
+            st["sent"] += 1
+            st["lastError"] = ""
+            st["fails"] = 0
+    if paused:
+        try:
+            dc_save()
+        except Exception:
+            pass
+
+
+def dc_deliver(job: dict) -> None:
+    """佇列裡的一張圖：跟 ComfyUI 拿一次，依序送給它的每個目標（頻道或「其他」），每則隔 DC_GAP。"""
+    targets = job.get("_targets") or [discord_routes.OTHER]
+    try:
+        image = dc_fetch_image(job)
+    except Exception as exc:  # 拿不到圖：每個目標都記一次失敗
+        err = dc_scrub(str(exc))[:300]
+        for t in targets:
+            _dc_note(t, err)
+        return
+    for i, target in enumerate(targets):
+        if i:
+            time.sleep(DC_GAP)
+        try:
+            try:
+                dc_send_photo(job, target, image)
+            except RuntimeError as exc:
+                if getattr(exc, "dc_code", None) == 429:
+                    time.sleep(min(getattr(exc, "dc_retry", DC_RETRY_WAIT), 60))
+                    dc_send_photo(job, target, image)
+                else:
+                    raise
+            _dc_note(target)
+        except Exception as exc:  # 一個頻道送不出去，其他頻道照送
+            _dc_note(target, dc_scrub(str(exc))[:300])
 
 
 def dc_pump() -> None:
     while True:
         job = _dc_queue.get()
         try:
-            try:
-                dc_send_photo(job)
-            except RuntimeError as exc:
-                if getattr(exc, "dc_code", None) == 429:
-                    time.sleep(min(getattr(exc, "dc_retry", DC_RETRY_WAIT), 60))
-                    dc_send_photo(job)
-                else:
-                    raise
-            with _dc_lock:
-                _dc["sent"] += 1
-                _dc["lastError"] = ""
-        except Exception as exc:  # worker 絕不能死
-            with _dc_lock:
-                _dc["failed"] += 1
-                _dc["lastError"] = dc_scrub(str(exc))[:300]
+            dc_deliver(job)
+        except Exception:  # worker 絕不能死
+            pass
         finally:
             _dc_queue.task_done()
         time.sleep(DC_GAP)
@@ -4108,22 +4206,73 @@ def dc_start() -> None:
 
 def dc_enqueue(job: dict) -> dict:
     with _dc_lock:
-        ready = _dc_configured_locked() and bool(_dc["enabled"])
+        ready = _dc_can_send_locked() and bool(_dc["enabled"])
     if not ready:
         return {"ok": False, "error": "Discord 還沒設定或沒開"}
     if not comfy_view_query(
         job.get("filename") or "", job.get("subfolder") or "", job.get("type") or "output"
     ):
         return {"ok": False, "error": "bad image query"}
+    with _dc_lock:
+        routes = [dict(r) for r in _dc["routes"]]
+        other_ok = _dc_configured_locked()
+    # 照分級、角色、tag 分到頻道；一個都沒對到就送「其他」（discord_routes.py）。
+    targets = discord_routes.targets_for(routes, str(job.get("en") or ""), str(job.get("rating") or ""), other_ok)
+    if not targets:
+        return {"ok": False, "error": "沒有符合的頻道"}
     deep = _dc_queue.qsize()
     if deep >= DC_QUEUE_MAX:
         return {"ok": False, "error": f"Discord 佇列塞住了（{deep} 張待送），這張不排"}
     dc_start()
-    _dc_queue.put(job)
-    return {"ok": True, "queued": _dc_queue.qsize()}
+    _dc_queue.put({**job, "_targets": targets})
+    return {"ok": True, "queued": _dc_queue.qsize(), "targets": len(targets)}
+
+
+def dc_apply_route(op: dict) -> dict:
+    """頻道的新增／修改（save）、刪除（delete）、恢復（resume）。回傳 dc_status() 或 {ok: False, error}。"""
+    kind = str((op or {}).get("op") or "")
+    rid = str((op or {}).get("id") or "")
+    with _dc_lock:
+        routes = [dict(r) for r in _dc["routes"]]
+    at = next((i for i, r in enumerate(routes) if r["id"] == rid), -1) if rid else -1
+    if kind == "delete":
+        if at < 0:
+            return {"ok": False, "error": "找不到這個頻道"}
+        routes.pop(at)
+        _dc_rstat.pop(rid, None)
+    elif kind == "resume":
+        if at < 0:
+            return {"ok": False, "error": "找不到這個頻道"}
+        routes[at]["paused"] = False
+        _dc_rstat.get(rid, {})["fails"] = 0
+    elif kind == "save":
+        if rid and at < 0:
+            return {"ok": False, "error": "找不到這個頻道"}
+        if at < 0 and len(routes) >= discord_routes.MAX_ROUTES:
+            return {"ok": False, "error": f"頻道最多 {discord_routes.MAX_ROUTES} 個"}
+        try:
+            route = discord_routes.clean_route(op, routes[at] if at >= 0 else None, dc_webhook_ok)
+        except ValueError as exc:
+            return {"ok": False, "error": dc_scrub(str(exc))}
+        if at >= 0:
+            routes[at] = route
+            _dc_rstat.get(route["id"], {})["fails"] = 0
+        else:
+            routes.append(route)
+    else:
+        return {"ok": False, "error": "看不懂要對頻道做什麼"}
+    with _dc_lock:
+        _dc["routes"] = routes
+    try:
+        dc_save()
+    except Exception as exc:
+        return {"ok": False, "error": dc_scrub(str(exc))}
+    return dc_status()
 
 
 def dc_apply_config(payload: dict) -> dict:
+    if isinstance(payload.get("route"), dict):
+        return dc_apply_route(payload["route"])
     token = str(payload.get("token") or "").strip()
     channel = str(payload.get("channelId") or "").strip()
     mode = str(payload.get("mode") or "").strip().lower()
@@ -5247,10 +5396,17 @@ class Handler(BaseHTTPRequestHandler):
             return
         if path == "/api/discord":
             if payload.get("test"):
-                # 測試是同步的：面板要當場看到 Discord 回什麼。
+                # 測試是同步的：面板要當場看到 Discord 回什麼。routeId：測那個頻道的 webhook。
+                rid = str(payload.get("routeId") or "")
+                route = dc_route(rid) if rid else None
                 try:
+                    if rid and not route:
+                        raise RuntimeError("找不到這個頻道")
                     dc_send_text(
-                        "排字匣測試訊息。看得到這行就代表 bot token 和頻道 ID 都對了。"
+                        f"排字匣測試訊息（頻道「{route['name']}」）。看得到這行就代表這個 webhook 對了。"
+                        if route
+                        else "排字匣測試訊息。看得到這行就代表 bot token 和頻道 ID 都對了。",
+                        target=rid or discord_routes.OTHER,
                     )
                     self._json(200, {"ok": True})
                 except Exception as exc:
