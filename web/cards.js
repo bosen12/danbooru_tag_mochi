@@ -12,6 +12,8 @@ export { CARD_SUIT_INFO, CARD_SUITS };
 
 export const ERA_ZH = {
   any: "不限時代",
+  // 時代「混合」抽出來的（engine 的 eraMix）：不同時代的東西一起出現。
+  mixed: "混合",
   modern: "現代",
   ancient_china: "古中國",
   ancient_greece: "古希臘",

@@ -33,7 +33,8 @@ import { drawWithSeed, effectiveHeats, withEffectiveHeats } from "./draw-with-se
 import { favChars, withFavChars, paintFavChar, paintFavChars, favZone, dropToFav } from "./fav-chars.js";
 import { skeletonPicker } from "./skeleton-picker.js";
 import { compareThumb } from "./compare.js";
-import { ratingBlocked, RATING_LABEL } from "./rules/rating.js";
+import { ratingBlocked, ratingOf, RATING_LABEL } from "./rules/rating.js";
+import { mountRatingFree } from "./rating-free.js";
 import { searchMiss } from "./lib-hint.js";
 import { watchGone, sweepGone } from "./gone.js";
 import { HEATS, toggleHeat } from "./heats.js";
@@ -186,7 +187,7 @@ function put(node, ...kids) {
 }
 
 function rankOk(card) {
-  return (RATING_RANK[card.rating] ?? 2) <= (RATING_RANK[settings.rating] ?? 0);
+  return (RATING_RANK[card.rating] ?? 2) <= (RATING_RANK[ratingOf(settings)] ?? 0);
 }
 
 function announce(text) {
@@ -241,7 +242,7 @@ async function boot() {
   if (handoff) {
     for (const tag of handoff.tags) {
       const item = lib.byTag.get(tag);
-      if (item && !bans.has(tag) && !ratingBlocked(item.item, settings.rating) && !HARD_BANNED.includes(tag)) bed = placeCard(bed, tag, { lex, applyPin }).bed;
+      if (item && !bans.has(tag) && !ratingBlocked(item.item, ratingOf(settings)) && !HARD_BANNED.includes(tag)) bed = placeCard(bed, tag, { lex, applyPin }).bed;
     }
     bed = sanitizeBed({ ...bed, weights: handoff.weights }, tag => lib.byTag.has(tag));
   }
@@ -280,6 +281,8 @@ async function boot() {
   buildTrialShells();
   dockMobileTrials();
   renderRating();
+  // 分級左邊的「不限制」（rating-free.js）：開著所有牌不受分級限制、分級鈕變淡。setSettings 會重抽試印、重畫。
+  ratingFreePaint = mountRatingFree({ get: () => settings.ratingFree, set: (on) => (setSettings({ ratingFree: on }), renderRating()) });
   renderCaseTabs();
   // 字盒先畫完。四次試印抽牌跟字盒排在同一個任務裡會超過 50ms。
   // 呼應分頁要等試印的「常補」出來才列得準，所以那種分頁留到抽完再畫。
@@ -377,6 +380,8 @@ function retrial(start = 0, end = seeds.length) {
       missing: bed.pins.filter((t) => !inPos.has(t)),
       extra,
       eraClash: d.eraClash || [],
+      // 分級「不限制」開著：這張試印實際是哪一級（engine 照抽到的牌判斷）。
+      contentRating: d.contentRating || null,
     });
   }
   // 整批重抽就整個換掉；只抽其中幾張就換掉那幾格（其他的留著）。
@@ -460,7 +465,7 @@ const knownTrials = () => trials.filter((_, i) => trialKnown(i)).length;
 
 function missReason(tag) {
   const item = lex.byTag.get(tag);
-  if (item && ratingBlocked(item, settings.rating)) return `${RATING_LABEL[settings.rating]}抽不到它`;
+  if (item && ratingBlocked(item, ratingOf(settings))) return `${RATING_LABEL[settings.rating]}抽不到它`;
   if (trials.some((t) => t.eraClash.includes(tag))) return "跟那一張的時代對不上";
   if (heatMismatches(lex, [tag], effectiveHeats(settings)).length) return "目前勾的情境不收它";
   return "被同一格或相剋的字擠掉";
@@ -945,7 +950,8 @@ function printNow() {
     positive: trialPositive(t),
     width: settings.width,
     height: settings.height,
-    rating: settings.rating,
+    // 分級「不限制」開著：照這張試印抽到的牌自動判斷（送 ComfyUI 的負面提示詞、Discord 分頻道都看它）。
+    rating: (settings.ratingFree && t.contentRating) || settings.rating,
     loras: currentLorasPayload(),
     ckpt: currentCkpt(),
     workflowId: currentWorkflowId(),
@@ -1090,7 +1096,8 @@ function restorePrint(p) {
   if (p.fixedSeed) useSeed(p.seed);
   picked = Number.isInteger(p.picked) ? p.picked : 0;
   // 尺寸、尺度一起回到印的那時候：色情尺度印的那一版，在全年齡底下根本抽不到當時的牌。
-  const ratingBack = p.rating && p.rating !== settings.rating && RATING_RANK[p.rating] !== undefined;
+  // 「不限制」開著：每張牌都抽得到，不必動分級（那張的分級是自動判斷的，不該蓋掉使用者選的）。
+  const ratingBack = !settings.ratingFree && p.rating && p.rating !== settings.rating && RATING_RANK[p.rating] !== undefined;
   const sizeBack = p.width && p.height && (p.width !== settings.width || p.height !== settings.height);
   if (ratingBack || sizeBack) {
     settings = sanitizeSettings(
@@ -3755,8 +3762,10 @@ function renderRating() {
       )
     )
   );
+  ratingFreePaint?.();
 }
 
+let ratingFreePaint = null;
 
 function segmented(label, options, current, onPick) {
   return el(
@@ -3813,16 +3822,21 @@ function openRules() {
   const eraSel = el(
     "select",
     { class: "select", "aria-label": "時代" },
-    el("option", { value: "mixed" }, "混合（每張隨機）"),
+    // 隨機：每張挑一個時代，整張照那個時代（以前叫「混合」）。混合：不同時代的東西可以一起出現（漢服配摩天樓）。
+    el("option", { value: "random" }, "隨機（每張一個時代）"),
+    el("option", { value: "mix" }, "混合（不同時代一起出現）"),
     ERAS.map((e) => el("option", { value: e }, ERA_LABELS[e]))
   );
-  eraSel.value = settings.eras.length === 1 ? settings.eras[0] : "mixed";
-  eraSel.onchange = () => setSettings({ eras: eraSel.value === "mixed" ? [...ERAS] : [eraSel.value] });
+  eraSel.value = settings.eraMix ? "mix" : settings.eras.length === 1 ? settings.eras[0] : "random";
+  eraSel.onchange = () => {
+    const v = eraSel.value;
+    setSettings(v === "mix" ? { eras: [...ERAS], eraMix: true } : v === "random" ? { eras: [...ERAS], eraMix: false } : { eras: [v], eraMix: false });
+  };
   const heats = el(
     "div",
     { class: "rule-chips", role: "group", "aria-label": "情境" },
     HEATS.map((h) => {
-      const blocked = heatBlockedByRating(h, settings.rating);
+      const blocked = heatBlockedByRating(h, ratingOf(settings));
       return el(
         "button",
         {
@@ -3834,7 +3848,7 @@ function openRules() {
           "aria-disabled": blocked ? "true" : undefined,
           title: blocked ? `${RATING_LABEL[settings.rating]}不會出現${HEAT_ZH[h]}` : undefined,
           onclick: (e) => {
-            if (heatBlockedByRating(h, settings.rating)) return explainBlockedHeat(h, e.currentTarget, settings.rating);
+            if (heatBlockedByRating(h, ratingOf(settings))) return explainBlockedHeat(h, e.currentTarget, ratingOf(settings));
             setSettings({ heats: toggleHeat(effectiveHeats(settings), h) });
             e.currentTarget.setAttribute("aria-pressed", effectiveHeats(settings).includes(h) ? "true" : "false");
             // 姿勢選格裡誘惑／走光／性愛那幾格跟著變灰或亮回來。

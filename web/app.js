@@ -35,7 +35,8 @@ import { relationsOf } from "./fuse-bed.js";
 import { drawWithSeed, effectiveHeats, withEffectiveHeats } from "./draw-with-seed.js";
 import { zoomFromThumb } from "./zoom.js";
 import { favChars, withFavChars, paintFavChar, paintFavChars, favCharsButton, openFavChars, favZone, dropToFav, flyToFav, heartIcon } from "./fav-chars.js";
-import { ratingBlocked, RATING_LABEL } from "./rules/rating.js";
+import { ratingBlocked, ratingOf, RATING_LABEL } from "./rules/rating.js";
+import { mountRatingFree } from "./rating-free.js";
 import { searchMiss } from "./lib-hint.js";
 import { HEATS, toggleHeat } from "./heats.js";
 import { SCENE_MODES, SCENE_MODE_LABELS, heatBlockedByRating } from "./scene-policy.js";
@@ -206,6 +207,17 @@ async function boot() {
   pingLoop();
 
   renderRating();
+  // 分級左邊的「不限制」（rating-free.js）：開著所有牌不受分級限制、分級鈕變淡。
+  ratingFreePaint = mountRatingFree({
+    get: () => settings.ratingFree,
+    set: (on) => {
+      setSettings({ ratingFree: on });
+      renderRating();
+      renderLibrary();
+      renderPool();
+      renderRules();
+    },
+  });
   renderLibraryChrome();
   renderLibrary();
   renderPool();
@@ -260,6 +272,8 @@ function saveUi() {
 
 /* ================= 分級與 Comfy ================= */
 
+let ratingFreePaint = null;
+
 function renderRating() {
   const box = $("rating");
   syncChoices(box, "aria-checked",
@@ -287,6 +301,7 @@ function renderRating() {
       )
     )
   );
+  ratingFreePaint?.();
 }
 
 
@@ -599,7 +614,7 @@ let libNow = null;
 /** 字盒裡看不看得到：分級擋掉的、性別不合的、（只看這時代時）時代不合的收起來。釘選的字永遠看得到。 */
 function visible(card) {
   if (pool.has(card.tag)) return true;
-  if (ratingBlocked(card.item, settings.rating)) return false;
+  if (ratingBlocked(card.item, ratingOf(settings))) return false;
   if (card.gate === "male" && !settings.boy) return false;
   if (card.gate === "female" && !settings.girl) return false;
   if (ui.eraOnly && settings.eras.length === 1) {
@@ -615,7 +630,7 @@ function countLine(shown) {
   const hid = { rating: 0, gender: 0, era: 0 };
   for (const c of lib.cards) {
     if (pool.has(c.tag)) continue;
-    if (ratingBlocked(c.item, settings.rating)) hid.rating += 1;
+    if (ratingBlocked(c.item, ratingOf(settings))) hid.rating += 1;
     else if ((c.gate === "male" && !settings.boy) || (c.gate === "female" && !settings.girl)) hid.gender += 1;
     else if (!visible(c)) hid.era += 1;
   }
@@ -718,7 +733,7 @@ function libraryMiss(q) {
         run: () => pickSuit("all"),
       },
       {
-        hides: (c) => ratingBlocked(c.item, settings.rating),
+        hides: (c) => ratingBlocked(c.item, ratingOf(settings)),
         text: (c) => `「${c.zh}」要在「${RATING_LABEL[unlockRating(c)]}」才看得到`,
         label: (c) => `切到${RATING_LABEL[unlockRating(c)]}`,
         run: (c) => $("rating").querySelector(`[data-v="${unlockRating(c)}"]`)?.click(),
@@ -883,7 +898,7 @@ function buildHand() {
   hand = createHand({
     key: "mochi.hand.v1",
     makeNode: (t) => cardNode(lib.byTag.get(t), assets),
-    blocked: (t) => (lib.byTag.get(t) && ratingBlocked(lib.byTag.get(t).item, settings.rating) ? "分級擋掉" : null),
+    blocked: (t) => (lib.byTag.get(t) && ratingBlocked(lib.byTag.get(t).item, ratingOf(settings)) ? "分級擋掉" : null),
     // 托盤的牌跟字盒的一樣大：量字盒上的一張。
     sample: () => $("lib-grid")?.querySelector(".card"),
     inPool: (t) => pool.has(t),
@@ -1428,7 +1443,7 @@ function greetHandoff() {
   setTimeout(() => toast(`從${from}帶來 ${pool.size} 張牌，已經放進合成池`), DUR.long);
 }
 
-const starterAllowed = tag => lib.byTag.has(tag) && !ratingBlocked(lib.byTag.get(tag).item, settings.rating) && !bans.has(tag);
+const starterAllowed = tag => lib.byTag.has(tag) && !ratingBlocked(lib.byTag.get(tag).item, ratingOf(settings)) && !bans.has(tag);
 
 function reshuffleStarters() {
   starterPick = pickStarters(starterAllowed, (starterPick || []).map(s => s.name));
@@ -1543,7 +1558,7 @@ function renderPool(fresh) {
   well.replaceChildren(
     ...tags.map((t) => {
       const card = lib.byTag.get(t);
-      const blocked = ratingBlocked(card.item, settings.rating);
+      const blocked = ratingBlocked(card.item, ratingOf(settings));
       const node = eagerArt(cardNode(card, assets, { flag: blocked ? { kind: "ban", text: "分級擋掉" } : null, src: carriedBy[t] ? "附帶" : null }));
       if (t === fresh) node.classList.add("dropped");
       if (carriedBy[t]) node.title = `跟著「${zh(carriedBy[t])}」進來的`;
@@ -1614,13 +1629,13 @@ function renderRules() {
           class: "chip-toggle pressable",
           type: "button",
           dataset: { heat: h },
-          "aria-pressed": effectiveHeats(settings).includes(h) && !heatBlockedByRating(h, settings.rating) ? "true" : "false",
+          "aria-pressed": effectiveHeats(settings).includes(h) && !heatBlockedByRating(h, ratingOf(settings)) ? "true" : "false",
           // 分級擋掉的尺度跟主工具一樣變灰：這一級根本抽不到那種畫面。
           // 不用 disabled：手機沒有滑鼠停留的說明，點下去要有反應、說得出為什麼（explainBlockedHeat）。
-          "aria-disabled": heatBlockedByRating(h, settings.rating) ? "true" : undefined,
-          title: heatBlockedByRating(h, settings.rating) ? `${RATING_LABEL[settings.rating]}不會出現${HEAT_ZH[h]}` : undefined,
+          "aria-disabled": heatBlockedByRating(h, ratingOf(settings)) ? "true" : undefined,
+          title: heatBlockedByRating(h, ratingOf(settings)) ? `${RATING_LABEL[settings.rating]}不會出現${HEAT_ZH[h]}` : undefined,
           onclick: (e) => {
-            if (heatBlockedByRating(h, settings.rating)) return explainBlockedHeat(h, e.currentTarget, settings.rating);
+            if (heatBlockedByRating(h, ratingOf(settings))) return explainBlockedHeat(h, e.currentTarget, ratingOf(settings));
             const focused = document.activeElement === e.currentTarget;
             setSettings({ heats: toggleHeat(effectiveHeats(settings), h) });
             renderRules();
@@ -1636,12 +1651,15 @@ function renderRules() {
   const eraSel = el(
     "select",
     { class: "select", "aria-label": "時代" },
-    el("option", { value: "mixed" }, "混合（每張隨機）"),
+    // 隨機：每張挑一個時代，整張照那個時代（以前叫「混合」）。混合：不同時代的東西可以一起出現（漢服配摩天樓）。
+    el("option", { value: "random" }, "隨機（每張一個時代）"),
+    el("option", { value: "mix" }, "混合（不同時代一起出現）"),
     ERAS.map((e) => el("option", { value: e }, ERA_LABELS[e]))
   );
-  eraSel.value = settings.eras.length === 1 ? settings.eras[0] : "mixed";
+  eraSel.value = settings.eraMix ? "mix" : settings.eras.length === 1 ? settings.eras[0] : "random";
   eraSel.onchange = () => {
-    setSettings({ eras: eraSel.value === "mixed" ? [...ERAS] : [eraSel.value] });
+    const v = eraSel.value;
+    setSettings(v === "mix" ? { eras: [...ERAS], eraMix: true } : v === "random" ? { eras: [...ERAS], eraMix: false } : { eras: [v], eraMix: false });
     seat(eraSel);
     renderLibrary();
   };
@@ -2374,7 +2392,8 @@ function makeShot(drawn, seed, poolAtDraw, snapshot = null) {
     heat: drawn.heat,
     width: snapshot?.width ?? settings.width,
     height: snapshot?.height ?? settings.height,
-    rating: snapshot?.rating ?? settings.rating,
+    // 分級「不限制」開著：照這張抽到的牌自動判斷（engine 的 contentRating）。
+    rating: drawn.contentRating || (snapshot?.rating ?? settings.rating),
     loras: snapshot?.loras ?? currentLorasPayload(),
     ckpt: snapshot?.ckpt ?? currentCkpt(),
     workflowId: snapshot?.workflowId ?? currentWorkflowId(),
@@ -3550,7 +3569,7 @@ function openPastePool(text = "") {
     zh,
     apply: (tags, { replace, weights: w }) => applyCards(tags, { replace, label: "貼上的提示詞", weights: w }),
     // 合成池照樣收（牌上蓋「分級擋掉」、抽的時候不用），預覽先說。
-    off: (t) => (ratingBlocked(lib.byTag.get(t).item, settings.rating) ? `${RATING_LABEL[settings.rating]}用不了` : bans.has(t) ? "在廢字簍" : null),
+    off: (t) => (ratingBlocked(lib.byTag.get(t).item, ratingOf(settings)) ? `${RATING_LABEL[settings.rating]}用不了` : bans.has(t) ? "在廢字簍" : null),
   });
 }
 $("pool-paste").addEventListener("click", () => openPastePool());

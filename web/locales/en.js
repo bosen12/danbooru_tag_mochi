@@ -498,7 +498,11 @@ Enter 放上第一張，↓ 走進字盒|Enter adds the first result; ↓ moves 
 規則的「人物」沒開男生，男角色都收起來了。|Men are off under People in the rules, so male characters are hidden.
 規則的「人物」沒開女生，女角色都收起來了。|Women are off under People in the rules, so female characters are hidden.
 不限|Any
-混合（每張隨機）|Mixed · Random per image
+隨機（每張一個時代）|Random · one era per image
+不限制開著：所有牌都不受全年齡／敏感／色情限制，每張的分級照抽到的牌自動判斷|No limit is on: every card is allowed regardless of rating; each image's rating is decided from the cards it drew
+不限制：打開後所有牌都不受全年齡／敏感／色情限制|No limit: allow every card regardless of General / Sensitive / Explicit
+混合|Mixed
+混合（不同時代一起出現）|Mixed · eras can combine
 每張隨機|Random each
 每段抽幾個|Cards per category
 每段補幾張|Cards per category

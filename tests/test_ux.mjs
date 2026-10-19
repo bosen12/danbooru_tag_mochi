@@ -39,9 +39,10 @@ const E = await import(pathToFileURL(resolve(root, 'web/engine.js')));
 const indexed = E.indexLexicon(data);
 const appSource = await readFile(resolve(root, web, 'app.js'), 'utf8');
 const starterFilter = appSource.match(/const starterAllowed = [^\n]+/)[0];
+const { ratingOf } = await import(pathToFileURL(resolve(root, 'web/rules/rating.js')));
 for (const rating of ['general', 'sensitive', 'explicit']) {
   const wrapped = new Map(data.tags.map(it => [it.tag, { item: it, group: it.sub, tag: it.tag, gate: it.gate }]));
-  const allowed = runInNewContext(starterFilter + '\nstarterAllowed', { lib: { byTag: wrapped }, settings: { rating }, bans: new Set(), ratingBlocked: E.ratingBlocked });
+  const allowed = runInNewContext(starterFilter + '\nstarterAllowed', { lib: { byTag: wrapped }, settings: { rating }, bans: new Set(), ratingBlocked: E.ratingBlocked, ratingOf });
   for (const tag of ['large breasts', 'bent over']) assert.equal(allowed(tag), !E.ratingBlocked(lex.get(tag), rating), 'Starter eligibility uses canonical lexicon rating');
 }
 for (const story of STARTERS) {

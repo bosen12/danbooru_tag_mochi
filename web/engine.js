@@ -2265,6 +2265,8 @@ export const ERAS = [
   "victorian",
 ];
 export const ERA_LABELS = {
+  // 時代「混合」（settings.eraMix）：同一張圖裡不同時代的東西可以一起出現。抽出來的 era 標成 mixed。
+  mixed: "混合",
   modern: "現代",
   ancient_china: "古中國",
   ancient_greece: "古希臘",
@@ -3284,7 +3286,11 @@ function heatOk(item, heat) {
 
 const HISTORICAL = new Set(["ancient_china", "ancient_greece", "medieval", "edo"]);
 
+// 正在抽的這一張是「混合」時代（drawOne 包著設）：每個字都算合時代，漢服可以配摩天樓。
+let eraMixDraw = false;
+
 function eraOk(item, era) {
+  if (eraMixDraw) return true;
   const eras = item.era;
   const isAny = !eras || !eras.length || eras.includes("any");
   if (isAny) {
@@ -3587,6 +3593,13 @@ function chooseHeat(settings, pinned, lex, rand, ctx) {
 function chooseEra(settings, pinned, lex, rand, ctx) {
   let pool = (settings.eras || ERAS).filter((e) => ERAS.includes(e));
   if (!pool.length) pool = ["modern"];
+  // 混合：場景的底（時代錨、場地偏好）隨機挑，不跟著釘選走 —— 釘漢服不會變成整張古中國，
+  // 才有「漢服配摩天樓」。
+  if (settings.eraMix) {
+    const all = {};
+    for (const e of ERAS) all[e] = e === "modern" ? 1.4 : 1;
+    return pickWeighted(all, rand) || "modern";
+  }
   // 單一時代是使用者的硬選擇，贏過有衝突的釘選 —— 這條有測試在守
   // （"exclusive medieval beats bikini pin for era"）。所以「釘武士就變江戶」
   // 不能走這裡實作，得由組合按鈕自己帶時代（BUILTIN_PRESETS 的 era 欄位）。
@@ -3605,6 +3618,7 @@ function chooseEra(settings, pinned, lex, rand, ctx) {
 
 export function eraMismatches(lex, pinned, era) {
   const out = [];
+  if (era === "mixed") return out;
   for (const t of pinned) {
     const item = lex.byTag.get(t);
     const e = item?.era;
@@ -4219,7 +4233,32 @@ function drawNoHumans(lex, settings, pinned, userBanned, rand, seed, opts) {
 // 看起來未成年的字：任何路徑都不輸出（隨機、釘選、預設組都一樣）。
 const NEVER_DRAW = new Set(["loli", "shota"]);
 
+/**
+ * 抽一張。時代「混合」（settings.eraMix）時，這一張抽的期間 eraOk 一律放行（不同時代的字可以一起出現），
+ * 抽完一定恢復（巢狀的 drawNoHumans 也照樣）；回傳的 era 標成 "mixed"。
+ */
 export function drawOne(lex, settings, pinned, userBanned, rand, seed, opts) {
+  const prev = eraMixDraw;
+  eraMixDraw = !!(settings && settings.eraMix);
+  try {
+    const out = drawOneImpl(lex, settings, pinned, userBanned, rand, seed, opts);
+    if (eraMixDraw && out && typeof out === "object") out.era = "mixed";
+    // 分級「不限制」：這張實際是哪一級，照抽到的牌判斷（送 ComfyUI 的負面提示詞、Discord 分頻道都看它）。
+    if (settings && settings.ratingFree && out && typeof out === "object") {
+      const items = [];
+      for (const part of String(out.positive || "").split(",")) {
+        const it = lex.byTag.get(parseWeighted(part).tag.replace(/\\([()])/g, "$1"));
+        if (it) items.push(it);
+      }
+      out.contentRating = ratingOfDrawnTags(items, "explicit");
+    }
+    return out;
+  } finally {
+    eraMixDraw = prev;
+  }
+}
+
+function drawOneImpl(lex, settings, pinned, userBanned, rand, seed, opts) {
   // 釘選會繞過 allow() 直接放進畫面，所以在最前面就從釘選裡拿掉。
   if (pinned && [...pinned].some((t) => NEVER_DRAW.has(t))) pinned = new Set([...pinned].filter((t) => !NEVER_DRAW.has(t)));
   if (!(opts && opts[NO_HUMANS_INNER]) && pinned && typeof pinned.has === "function" && pinned.has(NO_HUMANS) && !(userBanned && userBanned.has && userBanned.has(NO_HUMANS))) {
@@ -8348,6 +8387,8 @@ export function defaultSettings(data) {
     heatPreset: d.heatPreset,
     weights: { ...data.heatWeights[d.heatPreset] },
     eras: d.eras ? [...d.eras] : [...ERAS],
+    eraMix: false,
+    ratingFree: false,
     samePerson: false,
     drawJob: false,
     // 抽角色：只替人物設定啟用的性別抽角色卡。加入系列名：角色後面接作品名（釘的角色也照這個）。
@@ -8400,6 +8441,8 @@ export function sanitizeSettings(raw, data) {
     heatPreset,
     weights,
     eras: eras.length ? eras : [...base.eras],
+    eraMix: raw.eraMix === true,
+    ratingFree: raw.ratingFree === true,
     samePerson: raw.samePerson === true,
     drawJob: raw.drawJob === true,
     drawCharacter: raw.drawCharacter === true,

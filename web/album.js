@@ -13,6 +13,7 @@ import { dateLocale, english } from "./i18n.js";
  *   - 分輯：依時代、髮色、服裝、場景把作品分段（album-groups.js）；詳情裡列出相似的作品。
  */
 import { RATING_LABEL, ratingBlocked } from "./rules/rating.js";
+import { mountRatingFree } from "./rating-free.js";
 import { buildLibrary, ERA_ZH } from "./cards.js";
 import { el, openSheet, toast, syncChoices, bootFailed, friendlyError, isNetError } from "./ui.js";
 import { zoomFromThumb } from "./zoom.js";
@@ -41,6 +42,10 @@ const RANK = { general: 0, sensitive: 1, explicit: 2 };
 let lib = null;
 let works = [];
 let rating = "general";
+// 分級「不限制」（rating-free.js，跟墨池同一份設定）：開著每件作品都看得到。
+let free = false;
+const seeRating = () => (free ? "explicit" : rating);
+let ratingFreePaint = null;
 let query = "";
 // 分頁：works（收藏的）／log（印過的每一張）。
 const TABS = [
@@ -98,6 +103,7 @@ async function boot() {
     return;
   }
   rating = (S.loadSettings() || {}).rating || "general";
+  free = (S.loadSettings() || {}).ratingFree === true;
   log = createLog({
     lib,
     zh,
@@ -121,6 +127,14 @@ async function boot() {
     },
   });
   renderRating();
+  ratingFreePaint = mountRatingFree({
+    get: () => free,
+    set: (on) => {
+      free = on;
+      S.saveSettings({ ...(S.loadSettings() || {}), ratingFree: on });
+      render();
+    },
+  });
   renderTabs();
   wireSearch();
   wireSound();
@@ -200,6 +214,7 @@ function renderRating() {
       )
     )
   );
+  ratingFreePaint?.();
 }
 
 
@@ -349,7 +364,7 @@ async function pickTab(v) {
 
 /* ================= 大圖牆 ================= */
 
-const visible = (w) => (RANK[w.rating] ?? 2) <= RANK[rating];
+const visible = (w) => (RANK[w.rating] ?? 2) <= RANK[seeRating()];
 
 function render({ deal = false } = {}) {
   const grid = $("album-grid");
@@ -361,13 +376,13 @@ function render({ deal = false } = {}) {
   if (tabTurn) swapIn({ works: grid, log: logBox, models: modelBox }[tab], `${tab}:${tabTurn}`, { firstToo: true });
   if (tab === "models") {
     $("album-hint").hidden = true;
-    const r = models.render(modelBox, { query, rating }, { deal });
+    const r = models.render(modelBox, { query, rating: seeRating() }, { deal });
     $("album-sum").textContent = r.total ? `從日誌裡印好的 ${r.total} 張算` : "";
     return;
   }
   if (tab === "log") {
     $("album-hint").hidden = true;
-    const r = log.render(logBox, { query, filter: logFilter, rating }, { deal });
+    const r = log.render(logBox, { query, filter: logFilter, rating: seeRating() }, { deal });
     $("album-sum").textContent = log.loaded && r.total
       ? `${r.shown}${english ? " images" : " 張"}${r.more ? "（還有更早的）" : ""}${r.hidden ? `・${r.hidden} 張在${RATING_LABEL[rating]}看不到` : ""}`
       : "";

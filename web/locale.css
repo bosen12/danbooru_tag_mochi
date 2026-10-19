@@ -248,7 +248,15 @@ html[lang="en"] .tseg span { font-size: 12px; letter-spacing: -0.02em; }
 }
 /* 1280 寬英文還差一點（疊印台差約 55px）：底模那顆只留疊層圖示，名稱給螢幕閱讀器、滑鼠提示照樣有全名（手機也是這樣）。
    LoRA 那顆不收：沒裝 LoRA Manager 時它只有字，收掉就是一顆空鈕。 */
+/* 分級左邊多了「不限制」開關（rating-free.js）之後，1366 寬也要只留圖示；1300 以下分級、分頁再收一點。 */
 @media (max-width: 1300px) {
+  html[lang="en"] .mast .segmented button { padding-inline: 5px; }
+  html[lang="en"] .page-switch a { padding-inline: 6px; }
+}
+/* 英文的「Any」看不出是什麼開關：英文版一律只留那顆小開關（說明在滑鼠提示）。 */
+html[lang="en"] .rating-free { padding-inline: 6px; }
+html[lang="en"] .rating-free-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+@media (max-width: 1400px) {
   html[lang="en"] .mast-tools #ckpt-pick-btn .gen-pick-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
   html[lang="en"] .mast-tools #ckpt-pick-btn { min-width: 36px; padding-inline: var(--space-xs); }
 }

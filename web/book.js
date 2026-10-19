@@ -16,6 +16,7 @@ import { cloneCard } from "./card-images.js";
  */
 import { indexLexicon } from "./engine.js";
 import { ratingBlocked, RATING_LABEL } from "./rules/rating.js";
+import { mountRatingFree } from "./rating-free.js";
 import { buildLibrary, sizeCards, groupChips, genderChips, chipRun, seriesRun, createAssets, cardNode, cardFacts, setCardFlag, eagerArt, cardMatches, CARD_SUIT_INFO, CARD_SUITS } from "./cards.js";
 import { el, openSheet, toast, syncChoices, bootFailed, friendlyError, isNetError } from "./ui.js";
 import { zoomFromThumb } from "./zoom.js";
@@ -90,6 +91,10 @@ let lib = null;
 let assets = null;
 let usage = null;
 let rating = "general";
+// 分級「不限制」（rating-free.js，跟墨池同一份設定）：開著所有牌都看得到，當色情處理。
+let free = false;
+const seeRating = () => (free ? "explicit" : rating);
+let ratingFreePaint = null;
 let list = [];
 let shown = 0;
 // 牌的節點留著重用：換排序時同一張牌是同一個節點，才滑得過去，圖也不必重載。
@@ -145,6 +150,7 @@ async function boot() {
     return;
   }
   rating = (S.loadSettings() || {}).rating || "general";
+  free = (S.loadSettings() || {}).ratingFree === true;
   // 第一次打開：從成品牆、晾紙繩補算（只做一次）。
   usage = seedUsage((t) => lib.byTag.has(t));
   if (!ORDER_ZH[ui.order]) ui.order = "desc";
@@ -167,6 +173,16 @@ async function boot() {
   watchMast();
   buildBox();
   renderRating();
+  ratingFreePaint = mountRatingFree({
+    get: () => free,
+    set: (on) => {
+      free = on;
+      S.saveSettings({ ...(S.loadSettings() || {}), ratingFree: on });
+      renderSuits();
+      render();
+      renderSummary();
+    },
+  });
   renderSort();
   renderUsedToggle();
   renderSuits();
@@ -229,6 +245,7 @@ function renderRating() {
       )
     )
   );
+  ratingFreePaint?.();
 }
 
 
@@ -538,7 +555,7 @@ function wireSearch() {
 /* ================= 牌格 ================= */
 
 function visibleCard(card) {
-  return !ratingBlocked(card.item, rating);
+  return !ratingBlocked(card.item, seeRating());
 }
 
 /** 角色頁的「性別：全部／女／男」：只是瀏覽篩選，不影響花色的點亮數。 */
@@ -762,7 +779,7 @@ function emptyNote() {
  * 一樣、半小時內，就把牌畫到那一張、捲回去。分頁自己一份（sessionStorage）。 */
 const SPOT_KEY = "mochi.book.spot.v1";
 const SPOT_TTL = 30 * 60 * 1000;
-const spotSig = () => JSON.stringify([ui.suit, ui.group, ui.order, ui.usedOnly, ui.query, rating]);
+const spotSig = () => JSON.stringify([ui.suit, ui.group, ui.order, ui.usedOnly, ui.query, seeRating()]);
 
 function saveSpot() {
   // 手機的頂欄不黏，捲下去就離開畫面（底緣變負的）：最少從畫面頂端算。
