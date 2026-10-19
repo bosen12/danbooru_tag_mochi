@@ -524,7 +524,7 @@ function commit(next, label, events = []) {
     };
   }
   retrialPicked();
-  renderAll(events);
+  renderAfterPlace(events);
   syncCaseStates();
   updateCaseFoot();
   // 呼應分頁要看四張試印「常補」什麼：等其他三張抽完（finishTrials）才重畫。
@@ -1131,6 +1131,34 @@ function renderAll(events = []) {
   renderTrials();
   renderPrintBar();
   renderUndo();
+}
+
+/**
+ * 放牌、拿牌、撤回：同 renderAll，但試印那一排和預覽等這一格畫面出去了再重畫。它們一起改的話，
+ * 按下去到牌出現那一格要多排版一大片（手機 CPU 降速 4 倍時放一張牌 0.5 秒）。資料（trials）照舊當場抽好，
+ * 付印、複製讀到的都是新的；只是畫面晚一格跟上。
+ */
+function renderAfterPlace(events = []) {
+  renderPlate(events);
+  hand?.update();
+  tickIfChanged($("hand-count"), "hand-count");
+  renderTrialsLater();
+  renderPrintBar();
+  renderUndo();
+}
+
+let laterWork = 0;
+function renderTrialsLater() {
+  const work = ++laterWork;
+  const run = () => {
+    if (work !== laterWork) return;
+    laterWork++;
+    renderPreview();
+    renderTrials();
+  };
+  // 下一格畫面之後；分頁在背景（不畫畫面）時 250ms 保底。
+  requestAnimationFrame(() => setTimeout(run, 0));
+  setTimeout(run, 250);
 }
 
 /* ================= 成品：選中的那張試印印出來的樣子 ================= */
@@ -2518,8 +2546,10 @@ function flyIn(tag, from, { delay = 0, src = null, startRotate = 0, startScale =
     inbound.delete(tag);
     return;
   }
-  const to = target.getBoundingClientRect();
-  const visible = to.bottom > 0 && to.top < window.innerHeight && to.width > 0;
+  // 沒有出發點（手機字盒抽屜開著，牌改飛進抽屜底下的「卡池 N 張」）或減少動態：不飛，就不必量落點。
+  // 以前一律先量，量一次要整頁同步排版 —— 手機放一張牌光這裡 225ms（CPU 降速 4 倍）。
+  const to = from && !reduced() ? target.getBoundingClientRect() : null;
+  const visible = !!to && to.bottom > 0 && to.top < window.innerHeight && to.width > 0;
   if (!from || reduced() || !visible) {
     // 手機上卡池捲出畫面了：牌飛進角落那顆「卡池」，看得到它確實放進去了。
     const pill = $("pool-pill");
@@ -2603,10 +2633,13 @@ function popIn(tag, delay) {
 
 function stamp(node, cls = "is-stamped") {
   if (reduced()) return;
+  // 以前用 void node.offsetWidth 逼一次排版好重播動畫：放牌的那一下整頁同步排版
+  // （手機 CPU 降速 4 倍時 180ms）。改成先拿掉、下一格畫面再加回去，一樣會重播，不必當場排版。
   node.classList.remove(cls);
-  void node.offsetWidth;
-  node.classList.add(cls);
-  setTimeout(() => node.classList.remove(cls), 560);
+  requestAnimationFrame(() => {
+    node.classList.add(cls);
+    setTimeout(() => node.classList.remove(cls), 560);
+  });
 }
 
 /**
@@ -4274,16 +4307,22 @@ function tuckIntoCaseFoot(tag, from) {
   const card = cardOf(tag);
   const target = $("case-foot-count");
   if (!card || !from || !from.width || !target || reduced()) return;
-  const f = cardNode(card, assets, { tagName: "div" });
-  f.classList.add("flying");
-  document.body.append(f);
-  flight(f, { left: from.left, top: from.top, width: from.width, height: from.height }, () => target, {
-    endScale: 0.3,
-    endOpacity: 0.3,
-    arc: 50,
-    zIndex: 120,
-    onLand: () => target.animate([{ transform: "scale(1.15)" }, { transform: "none" }], { duration: DUR.medium, easing: css(CURVE.settle) }),
-  });
+  // 下一格畫面才起飛：這一格先畫出「在池」和張數。當場起飛要量落點，放牌剛改完版面，
+  // 一量就整頁同步排版（手機 CPU 降速 4 倍時 185ms）；下一格版面已經排好，量起來不花錢。
+  // 兩層 rAF：第一層還在同一格畫面之前，第二層才是畫完之後的那一格。
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    if (!target.isConnected) return;
+    const f = cardNode(card, assets, { tagName: "div" });
+    f.classList.add("flying");
+    document.body.append(f);
+    flight(f, { left: from.left, top: from.top, width: from.width, height: from.height }, () => target, {
+      endScale: 0.3,
+      endOpacity: 0.3,
+      arc: 50,
+      zIndex: 120,
+      onLand: () => target.animate([{ transform: "scale(1.15)" }, { transform: "none" }], { duration: DUR.medium, easing: css(CURVE.settle) }),
+    });
+  }));
 }
 
 /** 抽屜收起來之後：卡池不在畫面上就捲回去，這次新放上的牌一張張浮起、落定。 */

@@ -241,6 +241,14 @@
       <ol class="line-list" id="line-list"></ol>
       <p class="line-empty" id="line-empty">付印的作品會夾在這條繩上。點一張可以回到它的版。</p>
     </section>
+    <!-- 繩上有沒有作品，開機才知道（fuse.js 的 renderLine）：以前先排成有作品的高度（91px），開機後沒有作品
+         才縮成一條（40px），底下整塊往上跳。先照存檔猜一次，跟開機時的判斷一樣（印好的、還接得回去的）。 -->
+    <script>
+      try {
+        const kept = (JSON.parse(localStorage.getItem("mochi.fuse.prints.v1") || "[]") || []).some((p) => p && p.id && p.positive && (p.status === "done" || (p.live && p.job) || p.waiting || p._waiting));
+        document.getElementById("line").dataset.empty = kept ? "false" : "true";
+      } catch {}
+    </script>
 
     <div class="press">
       <aside class="case" id="case" aria-labelledby="case-title">

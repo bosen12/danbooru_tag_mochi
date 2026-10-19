@@ -901,6 +901,29 @@
   .book {
     padding-inline: 4px;
   }
+  /* 開頁版面跳動（CLS 0.41）：花色、排序是開機時腳本才畫的，HTML 裡是空的（寬 0），排序和「只看用過的」
+   * 先擠在同一排，畫好才各自掉到下一排、把牌往下推 86px。空著時就照畫好的樣子佔滿一排、留好高度
+   * （360～430 寬實測；英文的排序兩行）。 */
+  #book-suits:empty {
+    flex-basis: 100%;
+    min-height: 68px;
+  }
+  #book-sort:empty {
+    flex-basis: 100%;
+    min-height: 38px;
+  }
+  html[lang="en"] #book-sort:empty {
+    min-height: 70px;
+  }
+  /* 「成就 4 / 11」：一開始跟標題同一排，張數一寫上去就被擠到下一排（又長高 33px）。一開始就放第二排。 */
+  .book-title::after {
+    content: "";
+    flex-basis: 100%;
+    order: 1;
+  }
+  .book-ach {
+    order: 2;
+  }
   /* 標題、搜尋、工具列縮進 10px（跟其他頁的標題同一條線）；牌格照舊貼邊，牌才夠大。 */
   .book-head,
   .book-tools-in {

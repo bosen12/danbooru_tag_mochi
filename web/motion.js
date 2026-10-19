@@ -879,6 +879,9 @@ export function rowChange(row, below) {
  * 上一段還沒長完又變：從那一刻的高度接著長。
  */
 export function heightChange(node) {
+  // 不在畫面上（手機的疊印台，預覽在卡池底下好幾百 px）：看不到長高，也不必量。量一次要整頁同步排版 ——
+  // 手機放一張牌，光這裡 165ms（CPU 降速 4 倍）。在不在畫面上靠 IntersectionObserver 記著，問它不用排版。
+  if (node && offscreen(node)) return { done() {} };
   const from = node && node.isConnected ? node.getBoundingClientRect().height : 0;
   return {
     done() {
@@ -904,6 +907,21 @@ export function heightChange(node) {
       };
     },
   };
+}
+
+// heightChange 用：第一次被叫到就開始看它在不在畫面上（上下各多看半屏，快捲進來的照樣演）。
+// 還沒回報過的當作在畫面上，照舊量。
+let viewIO = null;
+function offscreen(node) {
+  if (typeof IntersectionObserver !== "function") return false;
+  if (!node._view) {
+    viewIO ||= new IntersectionObserver((entries) => {
+      for (const e of entries) e.target._view = e.isIntersecting ? "in" : "out";
+    }, { rootMargin: "50% 0px" });
+    node._view = "unknown";
+    viewIO.observe(node);
+  }
+  return node._view === "out";
 }
 
 /** 一個東西進場：從上面一點浮下來。 */

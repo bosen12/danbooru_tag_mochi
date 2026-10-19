@@ -452,6 +452,35 @@ body #wf-pick-btn.has {
     min-width: 126px;
     min-height: 36px;
   }
+  /* 墨池手機：LoRA、底模、工作流程那幾顆要等伺服器回話才插進來，一插進來工具就放不下分級那一排、
+   * 擠出第三行，整頁往下掉 44px（開頁版面跳動 CLS 0.52）。一開始就讓工具自己一排（疊印台也是這樣）。
+   * 卡冊、作品冊的工具只有三顆，跟分級同一排放得下，不改。 */
+  .mast:has(~ .layout) .mast-tools {
+    flex-basis: 100%;
+  }
+}
+
+/* 墨池手機開頁：規則、抽牌列是開機才畫的（加起來約 500px），成品那一區原本先排在第一屏（y≈616），
+ * 開機時被推到畫面外 —— 看起來是一大塊閃一下就不見（開頁版面跳動 0.12）。開機中先不畫它（位置照留），
+ * 開機完它已經在畫面外，看不到跳動。 */
+@media (max-width: 40rem) {
+  html[data-booting] .work > section[aria-labelledby="wall-title"] {
+    visibility: hidden;
+  }
+}
+
+/* 墨池電腦：花色籤、規則、抽牌列是開機時腳本才畫的，HTML 裡是空的。先照畫好的高度留著（中英文、
+ * 1280～1920 寬實測：花色兩排 80px，規則、抽牌列一排各 85、71px），字盒的牌和底下的成品不會被往下推。 */
+@media (min-width: 64rem) {
+  #suit-tabs:empty {
+    min-height: 80px;
+  }
+  #rules:empty {
+    min-height: 85px;
+  }
+  #go-bar:empty {
+    min-height: 71px;
+  }
 }
 
 /* 頂欄的分頁和小連結（介紹影片、教學、導覽）、種子的「隨機／固定」：滑過的顏色淡一下，

@@ -3102,6 +3102,21 @@ body.fuse {
 /* 手機：疊印台的工具列一定放不進分級那一排（多一顆「規則」），最後總是自己一排。
    一開始就讓它自己一排：LoRA、設定、工作流、Discord 是腳本晚一點才插進來的，不要等它們把這排擠下去。
    （開頁往下跳的大頭是分級鈕還沒畫、那一格只有 6px，styles.css 的 #rating:empty 已經留好大小。） */
+/* 手機開頁：卡池、試印是開機時才畫的（從 174px 長到 1100 多），底下的預覽、字盒原本先擠在第一屏，
+ * 畫好才被推到 700px 外（開頁版面跳動）。開機中先把卡池撐滿一屏：預覽、字盒一開始就在畫面外。 */
+@media (max-width: 40rem) {
+  html[data-booting] .plate {
+    min-height: 100svh;
+  }
+  /* 試印（手機排在卡池上面）也是開機才畫：先照畫好的高度留著，卡池不會被往下推（360～430 寬實測）。 */
+  #mobile-proofs:empty {
+    min-height: 345px;
+  }
+  html[lang="en"] #mobile-proofs:empty {
+    min-height: 363px;
+  }
+}
+
 @media (max-width: 34rem) {
   body.fuse .mast-tools {
     flex-basis: 100%;

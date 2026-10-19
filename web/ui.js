@@ -139,7 +139,14 @@ export function openSheet(title, body, { wide = false, onClose, foot, translateT
   document.body.append(overlay);
   openOverlays.push(overlay);
   lockScroll(overlayId);
-  (sheet.querySelector(".sheet-foot .btn-primary") || closeBtn).focus({ preventScroll: true });
+  // 焦點等視窗畫出來的下一格才移進去：剛插進來就 focus()，瀏覽器要當場把整個視窗排版好才能移，
+  // 開成品詳情光這一下 281ms（手機 CPU 降速 4 倍）。畫完版面已經排好，移過去不花錢。
+  // 這一格裡按 Esc／Tab 照樣歸這個視窗（onKey 在 capture 階段接）。
+  const focusFirst = () => {
+    if (!overlay.isConnected || overlay.dataset.closing || sheet.contains(document.activeElement)) return;
+    (sheet.querySelector(".sheet-foot .btn-primary") || closeBtn).focus({ preventScroll: true });
+  };
+  requestAnimationFrame(() => requestAnimationFrame(focusFirst));
   return { close, sheet };
 }
 
