@@ -10,7 +10,7 @@
  */
 // 詞庫換過名的字：存著的舊名先換成新名（一定要第一個 import，見 tag-renames.js）。
 import "./tag-renames.js";
-import { guardPrerender, whenActive } from "./prerender.js";
+import { guardPrerender, prerenderNeighbors, whenActive } from "./prerender.js";
 import {
   indexLexicon,
   sanitizeSettings,
@@ -72,8 +72,8 @@ import { mountDiscord } from "./discord-link.js";
 import { english, t, takeLanguageState } from "./i18n.js";
 import { pickStarters, refreshStarters } from "./starters.js";
 
-// 背後預先開好的這一頁（prerender.js）：點進去之前這些存檔被別頁改過，就重新整理。
-guardPrerender({ local: ["mochi.pool.handoff.v1", "mochi.bans.v1", "mochi.settings.v1", "mochi.ui.v1", "mochi.hand.v1", "mochi.fav.chars.v1"], session: ["mochi.tab.pool.v1"] });
+// 背後預先開好的這一頁（prerender.js）：點進去之前這個房間讀的存檔被別頁改過，就重新整理。
+guardPrerender("index");
 
 const sfx = getSfx();
 // 聲音引擎第一次建立要幾十毫秒：第一個手勢時先在下一輪建好，等真的要出聲時已經在了。
@@ -234,6 +234,8 @@ async function boot() {
   if (matchMedia("(hover: none)").matches) $("lib-q").placeholder = $("lib-q").placeholder.replace(/（按[^）]*）/, "");
   document.addEventListener("keydown", onKey);
   settleMotion();
+  // 開好了：左右相鄰的房間在背後先開好，換過去不用再等開頁（prerender.js）。
+  whenActive(prerenderNeighbors);
   addEventListener("mochi:before-language-change", (event) => {
     event.detail.state = { pool: [...pool], weights: Object.fromEntries(weights) };
     S.saveShots(shots);

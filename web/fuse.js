@@ -15,7 +15,7 @@
  */
 // 詞庫換過名的字：存著的舊名先換成新名（一定要第一個 import，見 tag-renames.js）。
 import "./tag-renames.js";
-import { guardPrerender, whenActive } from "./prerender.js";
+import { guardPrerender, prerenderNeighbors, whenActive } from "./prerender.js";
 import {
   indexLexicon,
   sanitizeSettings,
@@ -72,8 +72,8 @@ import { t as translate, takeLanguageState } from "./i18n.js";
 import { candidateSummary } from "./composition.js";
 import { pickStarters as chooseStarters, refreshStarters } from "./starters.js";
 
-// 背後預先開好的這一頁（prerender.js）：點進去之前這些存檔被別頁改過，就重新整理。
-guardPrerender({ local: ["mochi.fuse.handoff.v1", "mochi.bans.v1", "mochi.fuse.settings.v1", "mochi.settings.v1", "mochi.fuse.tab.v1", "mochi.fuse.hand.v1", "mochi.fav.chars.v1"], session: ["mochi.tab.fuse.v1"] });
+// 背後預先開好的這一頁（prerender.js）：點進去之前這個房間讀的存檔被別頁改過，就重新整理。
+guardPrerender("fuse");
 
 const $ = (id) => document.getElementById(id);
 const LETTERS = ["A", "B", "C", "D"];
@@ -328,6 +328,8 @@ async function boot() {
   watchPrintBar();
   setTimeout(sweepPrints, 1500);
   settleMotion();
+  // 開好了：左右相鄰的房間在背後先開好，換過去不用再等開頁（prerender.js）。
+  whenActive(prerenderNeighbors);
   addEventListener("mochi:before-language-change", (event) => {
     event.detail.state = { bed, seeds, picked, history };
     savePrints();

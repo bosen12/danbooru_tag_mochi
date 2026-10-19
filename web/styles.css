@@ -4152,7 +4152,7 @@ body[data-fav-hand="true"] .tray-bridge { display: none; }
    * pagereveal 量好寫進 --ink-dx／--ink-sx），字（.page-switch-label）始終在它上面。 */
   .page-switch-ink.is-arriving {
     transform-origin: left center;
-    animation: tab-ink-arrive var(--dur-long) var(--ease-settle) both;
+    animation: tab-ink-arrive var(--dur-short) var(--ease-settle) both;
   }
 
   /* 滾筒光：一條朱線拖著淡淡的紙面反光，沿換版的方向掃過整個畫面，跟新的一版落下同步 ——
@@ -4195,7 +4195,7 @@ body[data-fav-hand="true"] .tray-bridge { display: none; }
    * 自己滑到新的位置。 */
   .mast #rating { view-transition-name: mast-rating; }
   ::view-transition-group(mast-rating) {
-    animation-duration: var(--dur-medium);
+    animation-duration: var(--dur-short);
     animation-timing-function: var(--ease-settle);
   }
   ::view-transition-old(mast-rating) { animation: none; opacity: 0; }
@@ -4203,7 +4203,7 @@ body[data-fav-hand="true"] .tray-bridge { display: none; }
 
   ::view-transition-old(favorite-tray),
   ::view-transition-new(favorite-tray) {
-    animation-duration: var(--dur-long);
+    animation-duration: var(--dur-short);
     animation-timing-function: var(--ease-travel);
   }
 
@@ -5371,10 +5371,9 @@ html {
 /* ---------- 換版：墨池 ↔ 疊印台（共用元素變形） ----------
  * 兩頁都有的東西直接「移過去」：字盒的標題與搜尋框從這頁的左欄滑到那頁的左欄、
  * 寬度跟著變；工作區標題（合成池 ↔ 卡池）原地換字；頂欄不動、分頁底線照舊滑過去。
- * 其他的舊內容很快淡掉，新內容依序落下 —— 字盒前幾排牌一張張發進來，卡池一列列、
- * 試印與成品由上往下錯開，進來的方向跟著換版的方向（往疊印台從右、回墨池從左）。約 0.5 秒。
- * 錯開的進場綁在 html[data-vt-in]（<head> 的 pagereveal 掛上、1.1 秒後拿掉）：
- * 字盒的牌要等詞庫讀完才發，可能比轉場晚一步，照樣一張張進來。 */
+ * 其他的舊內容很快淡掉，新的一版整頁從換版的方向滑進來（往右的房間從右、往左的從左）。約 0.2 秒。
+ * 以前新內容還要一張張錯開浮上來，整段拖到 1.3 秒，換房間像卡住：內容 0.2 秒就畫好了，
+ * 後面一秒都是在等動畫。現在一到就是完整的一版。 */
 @media (prefers-reduced-motion: no-preference) {
   /* 以前整塊整塊各自命名、各自滑；現在整頁當背景，只有共用的幾樣單獨一層。 */
   .library,
@@ -5405,7 +5404,7 @@ html {
   ::view-transition-group(case-title),
   ::view-transition-group(case-search),
   ::view-transition-group(stage-title) {
-    animation-duration: var(--dur-long);
+    animation-duration: var(--dur-short);
     animation-timing-function: var(--ease-travel);
   }
   /* 搜尋框兩頁寬度不同：不要把快照拉伸（字會被壓扁），靠左對齊、邊框跟著外框變形。 */
@@ -5436,8 +5435,8 @@ html {
    * 往左反過來。只動轉場快照的位置，不吃顯示卡；頂欄是另一層，不跟著動。 */
   html[data-vt="fwd"]::view-transition-old(root) { animation-name: vt-root-out-fwd; }
   html[data-vt="back"]::view-transition-old(root) { animation-name: vt-root-out-back; }
-  html[data-vt="fwd"]::view-transition-new(root) { animation: vt-root-in-fwd var(--dur-long) var(--ease-out) both; }
-  html[data-vt="back"]::view-transition-new(root) { animation: vt-root-in-back var(--dur-long) var(--ease-out) both; }
+  html[data-vt="fwd"]::view-transition-new(root) { animation: vt-root-in-fwd var(--dur-short) var(--ease-out) both; }
+  html[data-vt="back"]::view-transition-new(root) { animation: vt-root-in-back var(--dur-short) var(--ease-out) both; }
 
   /* 新的一版還沒畫好（<head> 的 pagereveal 掛 data-vt-hold，settleMotion 拿掉，最多 900ms）：
    * 整段轉場停在第一格 —— 舊的一版、舊的頂欄留在畫面上，新的先藏著。畫好了才一起演，
@@ -5455,47 +5454,6 @@ html {
   html[data-vt-hold]::view-transition-new(mast-rating) { opacity: 0 !important; }
   html[data-vt-hold] .page-switch-ink.is-arriving { animation-play-state: paused; }
 
-  html[data-vt-in] {
-    --vt-dx: var(--space-md);
-  }
-  html[data-vt-in="back"] {
-    --vt-dx: calc(var(--space-md) * -1);
-  }
-
-  html[data-vt-in] :is(
-    .pool-well, .rules, .go-bar, .wall-head, .wall > *, .wall-empty,
-    .lib-grid > *, .case-grid > *, .register, .side > *, .line-list > *, .plate-sub,
-    .suit-tabs, .case-tabs, .panel-head > :not(h2), .plate-head > :not(h2, .plate-sub),
-    .plate-scroll > *, .line-title, .line-empty
-  ) {
-    animation: vt-rise var(--dur-long) var(--ease-out) both;
-  }
-
-  /* 錯開：一格 24ms（micro 的五分之一）。 */
-  html[data-vt-in] :is(.suit-tabs, .case-tabs, .panel-head > :not(h2), .plate-head > :not(h2, .plate-sub), .line-title, .line-empty) { animation-delay: calc(var(--dur-micro) * 0.3); }
-  html[data-vt-in] :is(.pool-well, .register:nth-child(1), .side > :nth-child(1), .plate-sub, .plate-scroll > :nth-child(1)) { animation-delay: calc(var(--dur-micro) * 0.5); }
-  html[data-vt-in] :is(.rules, .register:nth-child(2), .side > :nth-child(2), .plate-scroll > :nth-child(2)) { animation-delay: calc(var(--dur-micro) * 0.7); }
-  html[data-vt-in] :is(.go-bar, .register:nth-child(3), .side > :nth-child(3), .plate-scroll > :nth-child(n + 3)) { animation-delay: calc(var(--dur-micro) * 0.9); }
-  html[data-vt-in] :is(.wall-head, .wall-empty, .register:nth-child(4), .side > :nth-child(4)) { animation-delay: calc(var(--dur-micro) * 1.1); }
-  html[data-vt-in] :is(.wall > :nth-child(1), .register:nth-child(5)) { animation-delay: calc(var(--dur-micro) * 1.3); }
-  html[data-vt-in] :is(.wall > :nth-child(2), .register:nth-child(6)) { animation-delay: calc(var(--dur-micro) * 1.5); }
-  html[data-vt-in] :is(.wall > :nth-child(3), .register:nth-child(7)) { animation-delay: calc(var(--dur-micro) * 1.7); }
-  html[data-vt-in] .wall > :nth-child(n + 4) { animation-delay: calc(var(--dur-micro) * 1.9); }
-
-  /* 字盒的牌：依序發進來，前三排一張張，之後的一起。 */
-  html[data-vt-in] :is(.lib-grid, .case-grid) > :nth-child(1) { animation-delay: calc(var(--dur-micro) * 0.6); }
-  html[data-vt-in] :is(.lib-grid, .case-grid) > :nth-child(2) { animation-delay: calc(var(--dur-micro) * 0.75); }
-  html[data-vt-in] :is(.lib-grid, .case-grid) > :nth-child(3) { animation-delay: calc(var(--dur-micro) * 0.9); }
-  html[data-vt-in] :is(.lib-grid, .case-grid) > :nth-child(4) { animation-delay: calc(var(--dur-micro) * 1.05); }
-  html[data-vt-in] :is(.lib-grid, .case-grid) > :nth-child(5) { animation-delay: calc(var(--dur-micro) * 1.2); }
-  html[data-vt-in] :is(.lib-grid, .case-grid) > :nth-child(6) { animation-delay: calc(var(--dur-micro) * 1.35); }
-  html[data-vt-in] :is(.lib-grid, .case-grid) > :nth-child(7) { animation-delay: calc(var(--dur-micro) * 1.5); }
-  html[data-vt-in] :is(.lib-grid, .case-grid) > :nth-child(8) { animation-delay: calc(var(--dur-micro) * 1.65); }
-  html[data-vt-in] :is(.lib-grid, .case-grid) > :nth-child(9) { animation-delay: calc(var(--dur-micro) * 1.8); }
-  html[data-vt-in] :is(.lib-grid, .case-grid) > :nth-child(10) { animation-delay: calc(var(--dur-micro) * 1.95); }
-  html[data-vt-in] :is(.lib-grid, .case-grid) > :nth-child(11) { animation-delay: calc(var(--dur-micro) * 2.1); }
-  html[data-vt-in] :is(.lib-grid, .case-grid) > :nth-child(12) { animation-delay: calc(var(--dur-micro) * 2.25); }
-  html[data-vt-in] :is(.lib-grid, .case-grid) > :nth-child(n + 13) { animation-delay: calc(var(--dur-micro) * 2.4); }
 }
 
 @keyframes vt-root-out {
@@ -5534,12 +5492,6 @@ html {
   }
 }
 
-@keyframes vt-rise {
-  from {
-    opacity: 0;
-    translate: var(--vt-dx, 0) var(--space-sm);
-  }
-}
 
 
 /* ---------- 手機：左右留白收窄（2026-10-06 專案主用 iPhone 17：左右各多 2mm 左右） ----------

@@ -500,7 +500,7 @@
 
 /* ---------- 換版：墨池／疊印台 → 卡冊 ----------
  * 三頁共用同一套（styles.css 的「換版」）：頂欄不動、分頁底線滑過來；字盒的標題與搜尋框
- * 變形成卡冊的標題與搜尋框；其他內容依序落下，方向跟著換版的方向。 */
+ * 變形成卡冊的標題與搜尋框；其他內容整頁跟著換版的方向滑進來（約 0.2 秒，不再一張張錯開）。 */
 @media (prefers-reduced-motion: no-preference) {
   #book-title {
     view-transition-name: case-title;
@@ -508,26 +508,6 @@
   #book-q {
     view-transition-name: case-search;
   }
-
-  html[data-vt-in] :is(.book-sum, .book-bar, .book-groups, .book-grid > .book-cell) {
-    animation: vt-rise var(--dur-long) var(--ease-out) both;
-  }
-  html[data-vt-in] .book-sum { animation-delay: calc(var(--dur-micro) * 0.3); }
-  html[data-vt-in] .book-bar { animation-delay: calc(var(--dur-micro) * 0.5); }
-  html[data-vt-in] .book-groups { animation-delay: calc(var(--dur-micro) * 0.7); }
-  html[data-vt-in] .book-grid > .book-cell:nth-child(1) { animation-delay: calc(var(--dur-micro) * 0.8); }
-  html[data-vt-in] .book-grid > .book-cell:nth-child(2) { animation-delay: calc(var(--dur-micro) * 0.95); }
-  html[data-vt-in] .book-grid > .book-cell:nth-child(3) { animation-delay: calc(var(--dur-micro) * 1.1); }
-  html[data-vt-in] .book-grid > .book-cell:nth-child(4) { animation-delay: calc(var(--dur-micro) * 1.25); }
-  html[data-vt-in] .book-grid > .book-cell:nth-child(5) { animation-delay: calc(var(--dur-micro) * 1.4); }
-  html[data-vt-in] .book-grid > .book-cell:nth-child(6) { animation-delay: calc(var(--dur-micro) * 1.55); }
-  html[data-vt-in] .book-grid > .book-cell:nth-child(7) { animation-delay: calc(var(--dur-micro) * 1.7); }
-  html[data-vt-in] .book-grid > .book-cell:nth-child(8) { animation-delay: calc(var(--dur-micro) * 1.85); }
-  html[data-vt-in] .book-grid > .book-cell:nth-child(9) { animation-delay: calc(var(--dur-micro) * 2); }
-  html[data-vt-in] .book-grid > .book-cell:nth-child(10) { animation-delay: calc(var(--dur-micro) * 2.15); }
-  html[data-vt-in] .book-grid > .book-cell:nth-child(11) { animation-delay: calc(var(--dur-micro) * 2.3); }
-  html[data-vt-in] .book-grid > .book-cell:nth-child(12) { animation-delay: calc(var(--dur-micro) * 2.45); }
-  html[data-vt-in] .book-grid > .book-cell:nth-child(n + 13) { animation-delay: calc(var(--dur-micro) * 2.6); }
 }
 
 /* ================= 卡盒 =================

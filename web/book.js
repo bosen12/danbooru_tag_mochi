@@ -1,6 +1,6 @@
 // 詞庫換過名的字：存著的舊名先換成新名（一定要第一個 import，見 tag-renames.js）。
 import "./tag-renames.js";
-import { guardPrerender } from "./prerender.js";
+import { guardPrerender, prerenderNeighbors, whenActive } from "./prerender.js";
 import { dateLocale, english } from "./i18n.js";
 import { cloneCard } from "./card-images.js";
 /**
@@ -38,8 +38,8 @@ import * as S from "./store.js";
 import { USAGE_KEY, loadUsage, seedUsage, fetchUsage, tagsOfPositive } from "./usage.js";
 import { weightsOfPositive } from "./weights.js";
 
-// 背後預先開好的這一頁（prerender.js）：點進去之前這些存檔被別頁改過，就重新整理。
-guardPrerender({ local: ["mochi.settings.v1", "mochi.bans.v1", "mochi.book.v1", "mochi.book.box.v1", "mochi.fav.chars.v1"] });
+// 背後預先開好的這一頁（prerender.js）：點進去之前這個房間讀的存檔被別頁改過，就重新整理。
+guardPrerender("book");
 
 const sfx = getSfx();
 const $ = (id) => document.getElementById(id);
@@ -191,6 +191,8 @@ async function boot() {
   attachTilt($("book-grid"));
   sizeCards($("book-grid"));
   settleMotion();
+  // 開好了：左右相鄰的房間在背後先開好，換過去不用再等開頁（prerender.js）。
+  whenActive(prerenderNeighbors);
 }
 
 /* ================= 頂欄 ================= */
