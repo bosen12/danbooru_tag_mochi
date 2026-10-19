@@ -3855,19 +3855,29 @@ def dc_lexicon() -> "tuple[dict, dict]":
     if _dc_lex["mtime"] != mtime:
         tags: dict = {}
         extra: dict = {}
+        series: dict = {}
         try:
             data = json.loads(path.read_text(encoding="utf-8"))
             for item in data.get("tags") or []:
                 if isinstance(item, dict) and item.get("tag"):
                     tags[str(item["tag"])] = (str(item.get("section") or ""), str(item.get("zh") or ""))
+                    # 角色 → 系列：分頻道的「整個系列」條件用（discord_routes.series_in）。
+                    if item.get("series"):
+                        series[discord_routes.norm_tag(item["tag"])] = discord_routes.norm_tag(item["series"])
             for t in data.get("quality") or []:
                 tags.setdefault(str(t), ("quality", ""))
             if isinstance(data.get("zh"), dict):
                 extra = {str(k): str(v) for k, v in data["zh"].items()}
         except Exception:
-            tags, extra = {}, {}
-        _dc_lex.update(mtime=mtime, tags=tags, zh=extra)
+            tags, extra, series = {}, {}, {}
+        _dc_lex.update(mtime=mtime, tags=tags, zh=extra, series=series)
     return _dc_lex["tags"], _dc_lex["zh"]
+
+
+def dc_series_of() -> dict:
+    """角色 tag → 系列（詞庫裡角色牌的 series）。讀不到詞庫就是空的：系列條件只認提示詞裡直接寫的系列名。"""
+    dc_lexicon()
+    return _dc_lex.get("series") or {}
 
 
 def dc_tag_of(part: str) -> str:
@@ -4217,7 +4227,7 @@ def dc_enqueue(job: dict) -> dict:
         routes = [dict(r) for r in _dc["routes"]]
         other_ok = _dc_configured_locked()
     # 照分級、角色、tag 分到頻道；一個都沒對到就送「其他」（discord_routes.py）。
-    targets = discord_routes.targets_for(routes, str(job.get("en") or ""), str(job.get("rating") or ""), other_ok)
+    targets = discord_routes.targets_for(routes, str(job.get("en") or ""), str(job.get("rating") or ""), other_ok, dc_series_of())
     if not targets:
         return {"ok": False, "error": "沒有符合的頻道"}
     deep = _dc_queue.qsize()

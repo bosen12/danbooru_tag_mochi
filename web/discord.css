@@ -469,9 +469,110 @@
 .dcr-main {
   display: flex;
   flex-direction: column;
+  align-items: flex-start;
   gap: 2px;
   min-width: 0;
   flex: 1 1 14rem;
+  /* 整塊可以點（點了編輯）：清掉按鈕的外觀。 */
+  margin: calc(var(--space-2xs) * -1);
+  padding: var(--space-2xs);
+  border: 0;
+  border-radius: var(--radius-xs, 4px);
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.dcr-main:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .dcr-main:hover .dcr-name {
+    text-decoration: underline;
+    text-decoration-color: var(--color-rule);
+    text-underline-offset: 3px;
+  }
+}
+
+/* 剛存好的那一列：亮一下，看得到存到哪裡了。 */
+.dcr-row.is-saved {
+  animation: dcr-saved 1.4s var(--ease-out) both;
+}
+
+@keyframes dcr-saved {
+  from {
+    border-color: var(--color-good);
+    background: color-mix(in oklch, var(--color-good) 14%, var(--color-paper-2));
+  }
+}
+
+/* 開關：一眼看得出開著還是關著。 */
+.dcr-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  min-height: 36px;
+  padding: 0 var(--space-sm) 0 var(--space-xs);
+  border: 1px solid var(--color-rule);
+  border-radius: 999px;
+  background: var(--color-paper-3);
+  color: var(--color-ink-2);
+  font: inherit;
+  font-size: var(--text-xs);
+  cursor: pointer;
+}
+
+.dcr-knob {
+  position: relative;
+  width: 28px;
+  height: 16px;
+  border-radius: 999px;
+  background: var(--color-paper-4);
+  transition: background-color var(--dur-short) var(--ease-out);
+}
+
+.dcr-knob::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--color-ink-2);
+  transition: translate var(--dur-short) var(--ease-settle), background-color var(--dur-short) var(--ease-out);
+}
+
+.dcr-switch[aria-checked="true"] {
+  color: var(--color-ink);
+}
+
+.dcr-switch[aria-checked="true"] .dcr-knob {
+  background: color-mix(in oklch, var(--color-good) 55%, var(--color-paper-4));
+}
+
+.dcr-switch[aria-checked="true"] .dcr-knob::after {
+  translate: 12px 0;
+  background: var(--color-ink);
+}
+
+.dcr-switch:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dcr-row.is-saved {
+    animation: none;
+  }
+  .dcr-knob,
+  .dcr-knob::after {
+    transition: none;
+  }
 }
 
 .dcr-name {
@@ -523,6 +624,17 @@
   margin-top: calc(var(--space-sm) * -1);
 }
 
+/* 編輯時存檔那排黏在面板底下（面板內容自己捲）。 */
+.dcr-bar {
+  position: sticky;
+  bottom: calc(var(--space-md) * -1);
+  z-index: 1;
+  margin-inline: calc(var(--space-md) * -1);
+  padding: var(--space-sm) var(--space-md);
+  border-top: 1px solid var(--color-rule-2);
+  background: var(--color-paper-2);
+}
+
 .dcr-chosen,
 .dcr-favs {
   display: flex;
@@ -564,6 +676,11 @@
   border-color: var(--color-rule);
   background: var(--color-paper-2);
   color: var(--color-ink-2);
+}
+
+/* 整個系列：跟單一角色分得開（虛線框）。 */
+.dcr-chip.is-series {
+  border-style: dashed;
 }
 
 .dcr-chip b {
@@ -620,6 +737,11 @@
 .dcr-hit strong {
   flex: none;
   max-width: 60%;
+}
+
+.dcr-hit.is-active {
+  background: var(--color-paper-3);
+  box-shadow: inset 2px 0 0 var(--color-ink-2);
 }
 
 .dcr-hit small {

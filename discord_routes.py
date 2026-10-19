@@ -3,9 +3,11 @@
 只有純函式：拆提示詞、比對、檢查設定。存檔、送出、佇列都在 server.py。
 
 一個頻道（route）長這樣（存在 .secrets/discord.json 的 routes）：
-    {"id", "name", "webhook", "ratings": [...], "chars": [...], "charMode": "any"|"all",
+    {"id", "name", "webhook", "ratings": [...], "chars": [...], "series": [...], "charMode": "any"|"all",
      "tags": [...], "tagMode": "any"|"all", "compact": bool, "enabled": bool, "paused": bool}
 三種條件之間是「都要符合」，沒設的那種不看；每個頻道至少要設一種（都不設＝收全部，那是「其他」的事）。
+角色條件可以是單一角色（chars），也可以是整個系列（series：詞庫角色牌的 series，例如 "spy x family"）；
+兩種合起來最多 MAX_CHARS 個。系列算「這張圖裡有這個系列的任何一位角色」（或提示詞裡直接有系列名）。
 """
 from __future__ import annotations
 
@@ -56,22 +58,43 @@ def _hits(want: "list[str]", mode: str, have: "set[str]") -> bool:
     return any(t in have for t in want)
 
 
-def route_matches(route: dict, tags: "set[str]", rating: str) -> bool:
-    """這張圖（tags、rating）送不送這個頻道。停用、暫停的一律不送。"""
+def series_in(tags: "set[str]", series_of: "dict[str, str] | None") -> "set[str]":
+    """這張圖裡出現的系列：每個角色 tag 照 series_of（角色 → 系列）換過去，加上直接寫在提示詞裡的系列名。"""
+    out = set(tags)
+    for t in tags:
+        s = (series_of or {}).get(t)
+        if s:
+            out.add(s)
+    return out
+
+
+def _cast_hits(route: dict, tags: "set[str]", series: "set[str]") -> bool:
+    """角色條件：每一項是角色（看 tags）或系列（看 series）；任一個／全部都要照 charMode。"""
+    items = [(t, tags) for t in route.get("chars") or []] + [(s, series) for s in route.get("series") or []]
+    if not items:
+        return True
+    if (route.get("charMode") or "any") == "all":
+        return all(x in pool for x, pool in items)
+    return any(x in pool for x, pool in items)
+
+
+def route_matches(route: dict, tags: "set[str]", rating: str, series: "set[str] | None" = None) -> bool:
+    """這張圖（tags、rating、出現的系列）送不送這個頻道。停用、暫停的一律不送。"""
     if not route.get("enabled", True) or route.get("paused"):
         return False
     ratings = route.get("ratings") or []
     if ratings and (rating or "general") not in ratings:
         return False
-    if not _hits(route.get("chars") or [], route.get("charMode") or "any", tags):
+    if not _cast_hits(route, tags, series if series is not None else tags):
         return False
     return _hits(route.get("tags") or [], route.get("tagMode") or "any", tags)
 
 
-def targets_for(routes: "list[dict]", en: str, rating: str, other_ok: bool) -> "list[str]":
+def targets_for(routes: "list[dict]", en: str, rating: str, other_ok: bool, series_of: "dict[str, str] | None" = None) -> "list[str]":
     """要送的目標：符合的頻道 id（照清單順序），一個都沒有而且「其他」設好了就是 ["other"]。"""
     tags = tags_of(en)
-    hit = [r["id"] for r in routes if route_matches(r, tags, rating)]
+    series = series_in(tags, series_of)
+    hit = [r["id"] for r in routes if route_matches(r, tags, rating, series)]
     if hit:
         return hit
     return [OTHER] if other_ok else []
@@ -119,8 +142,11 @@ def clean_route(raw: dict, old: "dict | None", webhook_ok) -> dict:
     if len(ratings) != len(set(ratings_raw)):
         raise ValueError("分級只能是全年齡、敏感、色情")
     chars = _tag_list(raw.get("chars"), MAX_CHARS, "角色")
+    series = _tag_list(raw.get("series"), MAX_CHARS, "系列")
+    if len(chars) + len(series) > MAX_CHARS:
+        raise ValueError(f"角色和系列合起來最多 {MAX_CHARS} 個")
     tags = _tag_list(raw.get("tags"), MAX_TAGS, "tag")
-    if not (ratings or chars or tags):
+    if not (ratings or chars or series or tags):
         raise ValueError("至少設一種條件（分級、角色或 tag）")
     char_mode = raw.get("charMode") if raw.get("charMode") in MODES else "any"
     tag_mode = raw.get("tagMode") if raw.get("tagMode") in MODES else "any"
@@ -130,6 +156,7 @@ def clean_route(raw: dict, old: "dict | None", webhook_ok) -> dict:
         "webhook": hook,
         "ratings": ratings,
         "chars": chars,
+        "series": series,
         "charMode": char_mode,
         "tags": tags,
         "tagMode": tag_mode,
@@ -161,6 +188,7 @@ def load_routes(raw) -> "list[dict]":
             "webhook": hook,
             "ratings": [x for x in RATINGS if x in (r.get("ratings") or [])],
             "chars": [norm_tag(x) for x in (r.get("chars") or [])][:MAX_CHARS],
+            "series": [norm_tag(x) for x in (r.get("series") or [])][:MAX_CHARS],
             "charMode": r.get("charMode") if r.get("charMode") in MODES else "any",
             "tags": [norm_tag(x) for x in (r.get("tags") or [])][:MAX_TAGS],
             "tagMode": r.get("tagMode") if r.get("tagMode") in MODES else "any",

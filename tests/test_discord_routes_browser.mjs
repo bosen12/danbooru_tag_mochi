@@ -99,17 +99,32 @@ try {
     await slot.getByText('至少設一種條件（分級、角色或 tag）').waitFor();
   });
 
-  await step('角色：搜尋中文、點偏好角色、滿 3 個鎖住、任一／全部', async () => {
+  await step('角色：搜尋中文、點偏好角色、系列用鍵盤選、滿 3 個鎖住、任一／全部', async () => {
     const pick = slot.locator('[data-pick="chars"]');
-    await pick.locator('input[type=search]').fill('約兒');
+    const search = pick.locator('input[type=search]');
+    await search.fill('約兒');
     await pick.locator('.dcr-hit', { hasText: '約兒' }).first().click();
     await pick.locator('.dcr-chosen .dcr-chip', { hasText: '約兒' }).waitFor();
     assert.equal(await pick.locator('.dcr-mode').isHidden(), true, '只有一個時不顯示任一／全部');
+    // 選了約兒：下面建議「也收整個系列《間諜家家酒》」。
+    await pick.locator('.dcr-favs .dcr-chip.is-series', { hasText: '間諜家家酒' }).waitFor();
     await pick.locator('.dcr-favs .dcr-chip', { hasText: '胡蝶忍' }).click();
     assert.equal(await pick.locator('.dcr-chosen .dcr-chip').count(), 2);
     await pick.getByRole('button', { name: '全部都要' }).click();
-    await pick.locator('input[type=search]').fill('菲歐娜');
-    await pick.locator('.dcr-hit').first().click();
+    // Esc 有字時只清搜尋、不關面板。
+    await search.fill('xyz');
+    await search.press('Escape');
+    assert.equal(await search.inputValue(), '');
+    assert.equal(await page.locator('#dc-modal').evaluate((n) => n.classList.contains('open')), true, 'Esc 清搜尋時面板不能關');
+    // 系列：搜尋先列系列（虛線框那種），↓↑ 移動、Enter 加入。
+    await search.fill('間諜');
+    const first = pick.locator('.dcr-hit').first();
+    assert.equal(await first.getAttribute('data-kind'), 'series');
+    assert.match(await first.textContent(), /整個系列/);
+    await search.press('ArrowDown');
+    await search.press('ArrowUp');
+    await search.press('Enter');
+    await pick.locator('.dcr-chosen .dcr-chip.is-series', { hasText: '間諜家家酒' }).waitFor();
     assert.equal(await pick.locator('.dcr-chosen .dcr-chip').count(), 3);
     assert.equal(await pick.locator('input[type=search]').isDisabled(), true);
     assert.equal(await pick.locator('.dcr-full').textContent(), '最多 3 個');
@@ -122,7 +137,8 @@ try {
     await save.click();
     await slot.locator('.dcr-row', { hasText: '約兒' }).waitFor();
     const s = saves.at(-1);
-    assert.deepEqual(s.chars, ['yor briar', 'kochou shinobu', 'fiona frost']);
+    assert.deepEqual(s.chars, ['yor briar', 'kochou shinobu']);
+    assert.deepEqual(s.series, ['spy x family']);
     assert.equal(s.charMode, 'all');
     assert.deepEqual(s.ratings, ['general']);
     assert.equal(s.webhook, HOOK);
@@ -131,6 +147,21 @@ try {
     assert.match(sum, /全年齡/);
     assert.match(sum, /約兒/);
     assert.match(sum, /（全部）/);
+    assert.match(sum, /《間諜家家酒》/);
+  });
+
+  await step('開關：點了就關掉、看得出狀態；點整列就能編輯', async () => {
+    const sw = slot.locator('.dcr-row .dcr-switch');
+    assert.equal(await sw.getAttribute('aria-checked'), 'true');
+    await sw.click();
+    await page.waitForFunction(() => document.querySelector('#dc-routes .dcr-switch')?.getAttribute('aria-checked') === 'false');
+    assert.equal(saves.at(-1).enabled, false);
+    await slot.locator('.dcr-row .dcr-switch').click();
+    await page.waitForFunction(() => document.querySelector('#dc-routes .dcr-switch')?.getAttribute('aria-checked') === 'true');
+    await slot.locator('.dcr-row .dcr-main').click();
+    await slot.locator('.dcr-editor').waitFor();
+    await slot.getByRole('button', { name: '取消' }).click();
+    await slot.locator('.dcr-row').waitFor();
   });
 
   await step('網頁上看不到完整網址', async () => {

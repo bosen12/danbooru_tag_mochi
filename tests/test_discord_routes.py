@@ -67,6 +67,21 @@ ok("都不符合送其他", dr.targets_for(routes, "himmel2", "explicit", True) 
 ok("其他沒設就不送", dr.targets_for(routes, "himmel2", "explicit", False) == [])
 ok("沒有頻道＝跟以前一樣送其他", dr.targets_for([], "anything", "general", True) == ["other"])
 
+# --- 整個系列 ---------------------------------------------------------------
+series_of = {"yor briar": "spy x family", "anya (spy x family)": "spy x family", "frieren": "sousou no frieren"}
+spy = dr.tags_of("1girl, yor briar, smile")
+seen = dr.series_in(spy, series_of)
+ok("系列：角色換成系列", "spy x family" in seen, str(seen))
+ok("系列：有這個系列的角色就算", dr.route_matches(route(series=["spy x family"]), spy, "general", seen))
+ok("系列：沒有就不算", not dr.route_matches(route(series=["sousou no frieren"]), spy, "general", seen))
+ok("系列：提示詞直接寫系列名也算", dr.route_matches(route(series=["spy x family"]), dr.tags_of("spy x family, 1girl"), "general", dr.series_in(dr.tags_of("spy x family, 1girl"), {})))
+ok("系列＋角色任一個", dr.route_matches(route(chars=["himmel"], series=["spy x family"]), spy, "general", seen))
+ok("系列＋角色全部都要（缺角色）", not dr.route_matches(route(chars=["himmel"], series=["spy x family"], charMode="all"), spy, "general", seen))
+both = dr.tags_of("yor briar, frieren")
+ok("兩個系列全部都要", dr.route_matches(route(series=["spy x family", "sousou no frieren"], charMode="all"), both, "general", dr.series_in(both, series_of)))
+ok("targets_for 用系列對照", dr.targets_for([route(id="s", series=["spy x family"])], "yor briar", "general", True, series_of) == ["s"])
+ok("沒給對照表時照舊（只認提示詞）", dr.targets_for([route(id="s", series=["spy x family"])], "yor briar", "general", True) == ["other"])
+
 # --- 存檔檢查 ---------------------------------------------------------------
 HOOK = "https://discord.com/api/webhooks/1234567890/abcdefghijklmnopqrstuvwxyz"
 HOOK2 = "https://discord.com/api/webhooks/2222222222/zyxwvutsrqponmlkjihgfedcba"
@@ -90,11 +105,19 @@ ok("存檔：別人的網域擋下", bad({"name": "x", "webhook": HOOK.replace("
 ok("存檔：角色超過 3 個擋下", "最多 3" in bad({"name": "x", "webhook": HOOK, "chars": ["a", "b", "c", "d"]}))
 ok("存檔：tag 超過 5 個擋下", "最多 5" in bad({"name": "x", "webhook": HOOK, "tags": list("abcdef")}))
 ok("存檔：沒有條件擋下", "至少" in bad({"name": "x", "webhook": HOOK}))
+ok("存檔：只有系列也算條件", bad({"name": "x", "webhook": HOOK, "series": ["spy x family"]}) == "")
+ok("存檔：角色＋系列合起來超過 3 個擋下", "合起來最多 3" in bad({"name": "x", "webhook": HOOK, "chars": ["a", "b"], "series": ["c", "d"]}))
+ok("存檔：系列正規化", dr.clean_route({"name": "x", "webhook": HOOK, "series": ["Spy_X_Family"]}, None, server.dc_webhook_ok)["series"] == ["spy x family"])
 ok("存檔：分級亂填擋下", bad({"name": "x", "webhook": HOOK, "ratings": ["nsfw"]}) != "")
 kept = dr.clean_route({"name": "改名", "chars": ["frieren"]}, good, server.dc_webhook_ok)
 ok("編輯：網址留空沿用、id 不變", kept["webhook"] == HOOK and kept["id"] == good["id"])
 ok("讀檔：壞資料略過", len(dr.load_routes([good, {"id": ""}, "x", {**good}])) == 1)
 ok("讀檔：不是清單＝沒有頻道", dr.load_routes(None) == [])
+
+# --- 伺服器：角色 → 系列對照從詞庫來 --------------------------------------
+real = server.dc_series_of()
+ok("詞庫的角色對到系列", real.get("yor briar") == "spy x family", str(real.get("yor briar")))
+ok("對照表夠大（每個角色都有）", len(real) > 500, str(len(real)))
 
 # --- 伺服器：分流、送出、暫停 ----------------------------------------------
 server.DC_SECRETS = Path(tempfile.mkdtemp()) / ".secrets" / "discord.json"

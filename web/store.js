@@ -164,10 +164,14 @@ export function hiresJobOf(t) {
 // 這個分頁自己撤下、裁掉的見過，不會被撿回來。
 const shotIdsHere = new Set();
 
+// 只抽牌、沒送去印的（status "drawn"）不存：重新整理就不見（專案主：只抽牌太佔牆面）。
+// 也不再佔掉存檔的上限 —— 以前抽一輪 50 張只抽牌，就把前面印好的圖從存檔裡擠掉。按「印這張」之後才算數。
+const keeps = (s) => s && typeof s === "object" && typeof s.id === "string" && s.status !== "drawn";
+
 export function saveShots(shots) {
   for (const s of shots) shotIdsHere.add(s.id);
-  const others = read(KEY.shots, []).filter((s) => s && typeof s === "object" && typeof s.id === "string" && !shotIdsHere.has(s.id));
-  const mine = shots.slice(0, SHOT_MAX).map((s) => ({
+  const others = read(KEY.shots, []).filter((s) => keeps(s) && !shotIdsHere.has(s.id));
+  const mine = shots.filter(keeps).slice(0, SHOT_MAX).map((s) => ({
       id: s.id,
       seed: s.seed,
       positive: s.positive,
@@ -213,7 +217,8 @@ export function saveShots(shots) {
 
 export function loadShots() {
   // 一筆一筆看：清單裡夾著 null、數字的話，後面 s.status 會整頁炸掉。
-  const list = read(KEY.shots, []).filter((s) => s && typeof s === "object" && typeof s.id === "string");
+  // 舊版存下來的只抽牌也略過。
+  const list = read(KEY.shots, []).filter(keeps);
   for (const s of list) shotIdsHere.add(s.id);
   return list;
 }

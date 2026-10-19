@@ -98,7 +98,8 @@ try {
   assert.equal(await size.evaluate(n => !!n.closest('details')), false, 'size should be visible');
   await page.evaluate(async () => {
     const S = await import('./store.js');
-    S.saveShots([{ id: 'copy-fixture', positive: 'red hair, kimono, standing', mine: ['red hair'], drawn: ['kimono', 'standing'], status: 'drawn', seed: 123, rating: 'general', at: Date.now() }]);
+    // 2026-10-20：只抽牌的（status drawn）重新整理就不留了，這裡用一張印好的。
+    S.saveShots([{ id: 'copy-fixture', positive: 'red hair, kimono, standing', mine: ['red hair'], drawn: ['kimono', 'standing'], status: 'done', image: '/favicon.svg?filename=copy.png', seed: 123, rating: 'general', at: Date.now() }]);
   });
   await page.reload();
   await page.locator('.shot-actions').waitFor();
