@@ -45,7 +45,9 @@ const sfx = getSfx();
 const $ = (id) => document.getElementById(id);
 const UI_KEY = "mochi.book.v1";
 // 一次畫幾張：上千張一次畫完會卡；捲到底附近再接著畫（跟字盒同一套）。
-const CHUNK = 72;
+// 手機一屏只看得到十來張：第一批畫 24 張就好，其他的由觀察器在畫面出去之後一批批補。開頁、換排序、
+// 換花色都是重畫這一批 —— 72 張時第一次排版 674ms（CPU 降速 4 倍），24 張 394ms。
+const CHUNK = matchMedia("(max-width: 40rem)").matches ? 24 : 72;
 // 捲動時補的那一批小一點：新格子第一次要算樣式、排版（一張牌二十幾個節點），72 張擠在同一格
 // 要 30～40ms，捲動時看得出頓一下。24 張一批，下一批由觀察器在下一格接著補（提前兩屏，來得及）。
 const MORE_CHUNK = 24;
