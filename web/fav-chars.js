@@ -28,9 +28,14 @@ import { DUR, CURVE, css, reducedMotion, flight } from "./motion.js";
 const HEART =
   '<svg viewBox="0 0 24 24" width="1em" height="1em" fill="currentColor" aria-hidden="true"><path d="M12 20.6 10.6 19.3C5.5 14.7 2.2 11.7 2.2 8 2.2 5 4.6 2.6 7.6 2.6c1.7 0 3.3.8 4.4 2.1 1.1-1.3 2.7-2.1 4.4-2.1 3 0 5.4 2.4 5.4 5.4 0 3.7-3.3 6.7-8.4 11.3L12 20.6z"/></svg>';
 
+// 解析一次就好，之後每顆都複製：卡冊往下補格時，每張角色牌各解析一次 SVG 佔了補格時間的三到六成。
+let heartSvg = null;
 /** 一顆 SVG 愛心（字的大小、顏色跟著外面）。 */
 export function heartIcon(cls = "") {
-  return el("span", { class: ("heart-icon " + cls).trim(), html: HEART, "aria-hidden": "true" });
+  if (!heartSvg) heartSvg = el("span", { html: HEART }).firstElementChild;
+  const box = el("span", { class: ("heart-icon " + cls).trim(), "aria-hidden": "true" });
+  box.append(heartSvg.cloneNode(true));
+  return box;
 }
 
 const KEY = "mochi.fav.chars.v1";

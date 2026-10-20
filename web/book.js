@@ -187,6 +187,7 @@ async function boot() {
   renderUsedToggle();
   renderSuits();
   wireSearch();
+  sizeCells($("book-grid"));
   render({ animate: false, deal: true });
   restoreSpot();
   addEventListener("pagehide", saveSpot);
@@ -658,6 +659,30 @@ let more = null;
 let observer = null;
 
 /**
+ * 卡冊的格寬（book.css 的 .book-grid 改成一排排折行）：跟 grid 的 repeat(auto-fill, minmax(最小, 1fr)) 同一個算法，
+ * 能放幾欄就放幾欄、平分剩下的寬。視窗一變就重算。
+ */
+function sizeCells(grid) {
+  let lastW = 0;
+  const fit = () => {
+    // 格子補進來網格只是變高：寬沒變就不重算（ResizeObserver 高度變了也會叫）。
+    if (grid.clientWidth === lastW) return;
+    lastW = grid.clientWidth;
+    const cs = getComputedStyle(grid);
+    const w = grid.clientWidth - (parseFloat(cs.paddingLeft) || 0) - (parseFloat(cs.paddingRight) || 0);
+    if (!(w > 0)) return;
+    const min = parseFloat(cs.getPropertyValue("--book-min")) || 104;
+    const gap = parseFloat(cs.columnGap) || 0;
+    const cols = Math.max(1, Math.floor((w + gap) / (min + gap)));
+    // 往下取到 0.01px：四捨五入多出一點點，最後一欄就會被擠到下一排。
+    const cell = `${Math.floor(((w - gap * (cols - 1)) / cols) * 100) / 100}px`;
+    if (grid.style.getPropertyValue("--book-cell-w") !== cell) grid.style.setProperty("--book-cell-w", cell);
+  };
+  fit();
+  if (typeof ResizeObserver === "function") new ResizeObserver(fit).observe(grid);
+}
+
+/**
  * 依目前的篩選與排序畫牌。
  *   animate：還在畫面上的牌從舊位置滑過去（FLIP），新來的錯開浮上來。
  *   shuffle：換排序的那一下，連移動也錯開一點點，看得出「重新洗過」。
@@ -756,6 +781,31 @@ function emptyNote() {
     );
   }
   const any = Object.keys(usage.counts).length;
+  // 搜得到、只是被分級擋住：以前只說「沒有符合的牌」，看起來像詞庫裡沒有這張。
+  const q = ui.query.toLowerCase();
+  const hidden = q ? lib.cards.filter((c) => !visibleCard(c) && cardMatches(c, q)) : [];
+  if (hidden.length) {
+    const need = hidden.some((c) => !ratingBlocked(c.item, "sensitive")) ? "sensitive" : "explicit";
+    const first = hidden[0];
+    return el(
+      "div",
+      { class: "book-empty" },
+      el("b", {}, `「${first.zh || first.tag}」在${RATING_LABEL[rating]}看不到`),
+      el(
+        "span",
+        {},
+        hidden.length > 1
+          ? `一共 ${hidden.length} 張搜得到的被擋住；${RATING_LABEL[need]}以上才有，或打開分級左邊的「不限制」。`
+          : `${RATING_LABEL[need]}以上才有，或打開分級左邊的「不限制」。`
+      ),
+      el(
+        "div",
+        { class: "book-empty-acts" },
+        el("button", { class: "btn btn-small", type: "button", onclick: () => $("rating")?.querySelector(`[data-v="${need}"]`)?.click() }, `切到${RATING_LABEL[need]}`),
+        el("button", { class: "btn btn-small btn-ghost", type: "button", onclick: () => $("rating-free")?.click() }, "打開不限制")
+      )
+    );
+  }
   return el(
     "div",
     { class: "book-empty" },
@@ -1100,7 +1150,7 @@ function worksOf(card) {
     const seen = new Set(items.map((x) => x.image));
     const extra = local.filter((x) => !seen.has(x.image));
     const all = [...items, ...extra];
-    count.textContent = all.length || total ? `${total + extra.length} 張${total > fromLog ? `・先看 ${all.length} 張` : ""}` : "";
+    count.textContent = all.length || total ? `${total + extra.length} 張圖${total > fromLog ? `・先看 ${all.length} 張` : ""}` : "";
     grid.replaceChildren(...all.map(workTile));
     grid.hidden = !all.length;
     note.hidden = !!all.length;

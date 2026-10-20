@@ -585,6 +585,11 @@ body.fuse {
   --card-w: 100%;
   width: 100%;
   font-size: 10px;
+  /* 捲出畫面的牌不排版、不繪製：字盒捲到兩千張時有八百多個合成圖層（牌被連鎖提升），每格光整理圖層就 28ms，
+   * 捲到底 396 個長任務。auto 記得畫過的實際大小，捲回來不跳；留一點邊給陰影、浮起來的那一下。 */
+  content-visibility: auto;
+  contain-intrinsic-size: auto 74px auto 108px;
+  overflow-clip-margin: 12px;
 }
 
 .case-grid .card[data-state="pinned"] {
@@ -2133,6 +2138,17 @@ body.fuse {
   padding: var(--space-sm) var(--space-md);
   border-top: 1px solid var(--color-rule);
   background: var(--color-paper);
+}
+
+/* 筆電（1280×800、1440×900）：印過一張以後成品那張紙長高，付印這一排被擠到右欄底下看不到（1280 時整顆在畫面外）。
+ * 右欄自己會捲：付印這一排黏在右欄底部，試印從它後面捲過去。 */
+@media (min-width: 68.75rem) {
+  .side .print-bar {
+    position: sticky;
+    bottom: 0;
+    z-index: 2;
+    box-shadow: 0 -10px 18px -12px var(--color-shade);
+  }
 }
 
 .pb-top {

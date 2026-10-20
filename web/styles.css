@@ -565,6 +565,19 @@ body #wf-pick-btn.has {
     white-space: nowrap;
   }
 }
+/* 手機：頂欄的分級在自己那一排，右邊還空著；字留著（手機沒有滑鼠提示，只有一顆小開關看不出是什麼）。 */
+@media (max-width: 40rem) {
+  html:not([lang="en"]) .rating-free {
+    padding-inline: 6px var(--space-xs);
+  }
+  html:not([lang="en"]) .rating-free-label {
+    position: static;
+    width: auto;
+    height: auto;
+    overflow: visible;
+    clip-path: none;
+  }
+}
 /* 中文也照英文版的做法收底模：1500 以下名稱短一點，1300 以下只留疊層圖示（全名在滑鼠提示）。 */
 @media (max-width: 1500px) {
   html:not([lang="en"]) .mast-tools #ckpt-pick-btn .gen-pick-label {
@@ -2204,6 +2217,19 @@ body #wf-pick-btn.has {
   overflow: hidden;
   text-overflow: ellipsis;
 }
+/* 截斷的是說明那句，「帶牌去疊印台」留著：以前它排在句子後面，1440 寬變成「帶牌去疊…」，1280 整顆被裁掉。 */
+html:not([lang="en"]) .pool > .panel-head .workspace-purpose {
+  display: flex;
+  align-items: baseline;
+}
+html:not([lang="en"]) .pool > .panel-head .workspace-purpose > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+html:not([lang="en"]) .pool > .panel-head .workspace-purpose > #pool-to-fuse {
+  flex: none;
+}
 /* 按鈕那一排：寬的時候一行；手機（尤其英文字比較長）擺不下就換行，不能凸出畫面。 */
 .pool > .panel-head > p:last-child {
   display: flex;
@@ -2690,6 +2716,14 @@ html[lang="en"] .pool > .panel-head .workspace-purpose {
   .shot > .shot-actions > * {
     pointer-events: auto;
   }
+  /* 只抽牌的那張：底部是「送去印這張」，按鈕列改浮在上緣，滑過去才不會蓋住它、按成別的。 */
+  .shot[data-status="drawn"] > .shot-actions {
+    align-self: start;
+    padding: var(--space-xs) var(--space-xs) var(--space-xl);
+    border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+    background: linear-gradient(rgba(6, 7, 10, 0.85), rgba(6, 7, 10, 0.55) 65%, transparent);
+    translate: 0 -6px;
+  }
   /* 焦點只算鍵盤走進來的（:focus-visible）：以前是 :focus-within，滑鼠按過一顆鈕（複製、修臉、牌·N、
    * 開詳情再關掉）焦點留在那張裡，滑鼠移開按鈕列還亮著，要點別處才消失 —— 移到別張就同時亮兩張。 */
   .shot:is(:hover, :has(:focus-visible)) > .shot-actions,
@@ -2736,6 +2770,10 @@ html[lang="en"] .pool > .panel-head .workspace-purpose {
 
 /* 撤下是這排唯一會拿掉東西的：推到最右、字色放淡，跟其他動作分開。
    五顆放不下一行時，它自己靠右落在第二行，看起來是分組，不是被擠下去。 */
+.shot[data-status="drawn"] .shot-reprint {
+  display: none;
+}
+
 .shot-actions .shot-remove {
   margin-left: auto;
   color: var(--color-muted);

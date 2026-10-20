@@ -1481,7 +1481,13 @@ export function loraPollDelay(hidden, prev) {
 // 前景用長輪詢：伺服器等到有新推送（最多 25 秒）才回。回得太快又沒東西，代表是還不會
 // 長輪詢的舊伺服器 —— 退回原本每 2.5 秒問一次，不要變成連續狂打。
 let LORA_LONG_POLL = true;
+// 同一時間只有一條在問。以前切回分頁就再開一條、正在等的那條也不收，快速切幾次就疊到 6 條長輪詢，
+// 把瀏覽器對這台主機的 6 條連線佔滿，整站的 API、圖片、送印都卡在排隊。
+let LORA_POLLING = false;
+let LORA_POLL_SOON = false;
 async function pollLoraPush() {
+  if (LORA_POLLING) return;
+  LORA_POLLING = true;
   const long = LORA_LONG_POLL && !document.hidden;
   const t0 = performance.now();
   let changed = false;
@@ -1509,13 +1515,20 @@ async function pollLoraPush() {
   if (long && !failed && !changed && performance.now() - t0 < 1000) LORA_LONG_POLL = false;
   LORA_POLL_MS = loraPollDelay(document.hidden, LORA_POLL_MS);
   // 長輪詢本身就在伺服器那邊等過了，回來就接著問；斷線時照舊隔一段再試。
-  const next = long && LORA_LONG_POLL && !failed ? 0 : LORA_POLL_MS;
+  // 在等的時候切回前景（LORA_POLL_SOON）：這條回來就馬上換成前景的長輪詢。
+  const next = (long && LORA_LONG_POLL && !failed) || (LORA_POLL_SOON && !failed) ? 0 : LORA_POLL_MS;
+  LORA_POLL_SOON = false;
+  LORA_POLLING = false;
   clearTimeout(LORA_POLL_TIMER);
   LORA_POLL_TIMER = setTimeout(pollLoraPush, next);
 }
 document.addEventListener("visibilitychange", () => {
   if (!document.hidden) {
     LORA_POLL_MS = 2500;
+    if (LORA_POLLING) {
+      LORA_POLL_SOON = true;
+      return;
+    }
     clearTimeout(LORA_POLL_TIMER);
     LORA_POLL_TIMER = setTimeout(pollLoraPush, 0);
   }

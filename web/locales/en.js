@@ -19,10 +19,10 @@ const copy = String.raw`
 選格時職業依這裡的選擇；自由補抽時依「抽職業」開關。體型依人物性別補。|In slot mode, the job choice here applies; in free mode, Draw jobs applies. Body types follow character gender.
 長相、服裝、姿勢設 1–4，場景設 1–3，可選擇補抽種類；更高的數字為自由補抽。釘選、指定必抽與必要附帶照樣保留。|Choose kinds at 1–4 for appearance, clothing and pose, or 1–3 for scene. Higher counts use free drawing. Pinned cards, required draws and their dependencies stay.
 點字盒的牌放進來，也可以拖曳|Click a library card to add it, or drag it here
-選牌後直接生成。疊印台可先比較四組提示詞；兩邊的選牌與規則各自獨立。|Choose cards and generate directly. The proofing press lets you compare four prompts first; each workspace has its own cards and settings.
-比較四組候選提示詞，選好再付印生圖。選牌與規則和墨池各自獨立。|Compare four candidate prompts, then print to generate an image. Cards and settings are independent from Mochi.
+選牌後直接生成。疊印台可先比較四組提示詞；兩邊的選牌與規則各自獨立。|Choose cards and generate directly. Fuse Bed lets you compare four prompts first; each room has its own cards and settings.
+比較四組候選提示詞，選好再付印生圖。選牌與規則和墨池各自獨立。|Compare four candidate prompts, then print to generate an image. Cards and settings are independent from Ink Pool.
 帶牌去疊印台|Take cards to the press
-帶牌去墨池|Take cards to Mochi
+帶牌去墨池|Take cards to Ink Pool
 無法交接選牌，請檢查瀏覽器儲存空間。|Could not transfer cards. Check browser storage.
 更多規則：每段張數與選格、場景、職業、角色|More rules: counts and slots, scene, jobs, characters
 這是候選提示詞，尚未生成圖片。按「付印」才會生圖。|This is a candidate prompt, with no image yet. Print to generate it.
@@ -34,10 +34,10 @@ const copy = String.raw`
 複製提示詞|Copy prompt
 只有配方，尚無圖片|Recipe only, no image yet
 圖片讀取失敗|Image could not load
-圖片讀取失敗。可以重試，或把牌帶回墨池重新生成。|Image could not load. Retry, or take the cards to Mochi to generate it again.
+圖片讀取失敗。可以重試，或把牌帶回墨池重新生成。|Image could not load. Retry, or take the cards to Ink Pool to generate it again.
 重試讀取圖片|Retry image
 正在重新讀取圖片…|Reloading image…
-這件作品只存了配方。把牌帶回墨池，就能重新生成圖片。|This work contains a recipe only. Take its cards to Mochi to generate an image.
+這件作品只存了配方。把牌帶回墨池，就能重新生成圖片。|This work contains a recipe only. Take its cards to Ink Pool to generate an image.
 牌組保存整組選牌與權重，之後可以重新套用；偏好卡牌則是每個工作區常用的單張牌。|Decks save a full selection and its weights for reuse. Favorites hold individual cards for each workspace.
 常用單張牌，最多十張；每個工作區各自保存。|Up to ten favorite cards, saved separately for each workspace.
 卡盒用來收集待用的牌，最多二十四張。想重複使用整組，請存成牌組。|The card box holds up to 24 cards to use next. Save a deck to reuse a whole selection.
@@ -165,7 +165,7 @@ tag（最多 5 個）|Tags (up to 5)
 維多利亞茶會|Victorian tea party
 希臘神殿|Greek temple
 跟那一張的時代對不上|Different era from this proof
-目前勾的情境不收它|Excluded by the selected themes
+目前勾的尺度不收它|Excluded by the selected content levels
 被同一格或相剋的字擠掉|Replaced by a slot or tag conflict
 時代不合拿下|Removed: different era
 拿下（沒有人物）|Removed: no characters
@@ -179,7 +179,7 @@ tag（最多 5 個）|Tags (up to 5)
 印刷機（ComfyUI）沒開，先不送|ComfyUI is offline. Start it before generating.
 回到舊版之前|Before restoring composition
 尺寸也換回當時的|Dimensions restored
-。規則（時代、情境、人物…）改過，試印跟當時不一樣|. Rules have changed, so the proofs may differ from the original.
+。規則（時代、尺度、人物…）改過，試印跟當時不一樣|. Rules have changed, so the proofs may differ from the original.
 回到這一版了|Composition restored
 排隊等印…|Queued…
 預覽：選試印後付印|Preview: choose a proof to generate
@@ -299,7 +299,7 @@ Python 3 · 標準函式庫，不用裝任何套件|Python 3 · Standard library
 再來，換疊印台|Next: Fuse Bed
 取消／停|Cancel / Stop
 抽並生圖／付印|Draw & generate / Generate
-付印的快捷鍵改成 G 了（跟墨池一樣：G 會生圖，P 不會）|Generate is now G, as in Mochi: G generates, P does not
+付印的快捷鍵改成 G 了（跟墨池一樣：G 會生圖，P 不會）|Generate is now G, as in Ink Pool: G generates, P does not
 撤回／復原|Undo / Restore
 選試印|Choose proof
 鍵盤，比滑鼠快|Keyboard shortcuts
@@ -714,7 +714,7 @@ POS 複製好了|Prompt copied
 換一批種子（R）|Redraw with new seeds (R)
 回到卡池|Back to layers
 往下到字盒挑牌|Scroll to card library
-規則（尺寸、人物、時代、情境、每段補幾張）|Rules: size, cast, era, context and card counts
+規則（尺寸、人物、時代、尺度、每段補幾張）|Rules: size, cast, era, content level and card counts
 字盒裡的牌：點一下放進卡池，再點一下拿下來|Library cards · Click to add or remove
 字盒裡的牌：點一下放進合成池，拖進廢字簍封鎖|Library cards · Click to pin, drag to blocked cards to exclude
 偏好卡牌：挑最多十張常用的牌，攤在視窗底部，點一下就放上版|Keep up to 10 favorite cards in the tray. Click to add to layers.
@@ -1303,7 +1303,7 @@ ComfyUI 沒有回報 checkpoint|ComfyUI returned no checkpoints.
 手機上字盒收在這顆「挑牌」裡：所有的牌（髮色、服裝、姿勢、場景…）都在裡面。|Browse cards opens your library of hair, outfits, poses and scenes.
 點一張牌，它就收進下面的合成池。上面可以打字找，或按花色篩選。|Click a card to pin it. Search or filter by category to find more.
 放進來的牌，每一張圖都一定會有。點牌看詳情；滑鼠停在牌上滾輪（或按 ＋／−）調份量，數字在牌的右下角。不要了再點一次字盒裡那張。|Pinned cards appear in every image. Click for details; scroll or use + / − to adjust weight. Click the library card again to remove it.
-尺度、時代、畫面裡有誰、姿勢參考。按「更多規則」還有尺寸、每段抽幾張。不確定就先用預設。|Set content level, era, characters and pose reference. More rules controls size and card counts. Defaults are a good starting point.
+尺度、時代、人物、尺寸、姿勢參考；「更多規則」裡是每段抽幾張、角色。灰掉的尺度要先在頂欄把分級換成敏感或色情。不確定就先用預設。|Set content level, era, cast, size and pose reference; More rules has card counts and characters. Greyed-out content levels need Sensitive or Explicit in the top bar first. Defaults are a good starting point.
 頂欄右邊可以換底模（畫風的基礎）、加 LoRA。不確定就先用預設的。|Choose your checkpoint and LoRA in the header. Start with the defaults if you're unsure.
 按下去：引擎照規則補齊其他牌，送 ComfyUI 畫。「一次」可以一次印好幾張；「只抽牌」只看抽到什麼、不畫。|Draw & generate fills the remaining cards and sends the prompt to ComfyUI. Set Batch for multiple images, or Draw only to inspect cards first.
 畫好的會出現在這下面：點開看大圖、☆ 收藏進作品冊、Hires 放大、不要的撤下。印的時候頂欄也看得到進度。|Results appear below. Open an image, save it to Gallery, upscale with Hires, or discard it. Progress also appears in the header.
@@ -1314,7 +1314,7 @@ ComfyUI 沒有回報 checkpoint|ComfyUI returned no checkpoints.
 你疊上的牌照花色排好，每一張都會進付印的圖。還空著時，可以點起手式或你的牌組直接套用；右上有撤回、清版。|Your cards are grouped by category and included in every image. Start with a preset or deck, or use Undo and Clear layers.
 引擎用你的牌補出四種組合，圓圈是它補進來的牌。點一格看它的組合；「換一批」整批重抽。|The engine creates four combinations. Dots show its additions. Choose a proof to inspect it, or Redraw for a new set.
 選好了按「付印」，送 ComfyUI 畫。畫的時候可以接著疊下一版。|Press Generate to send your proof to ComfyUI. You can keep composing while it runs.
-印好的作品夾在這條繩上；點一張回到它當時的版，也可以收藏、Hires 放大。|Recent images appear here. Click one to restore its layers, save it or upscale with Hires.
+印好的作品夾在這條繩上；點一張看大圖、收藏，或回到它當時的版。|Recent images appear here. Click one to view it, save it or restore its layers.
 疊幾張牌、挑一個試印、按「付印」試試看吧！之後想再看一次，按頂欄的「導覽」。|Add a few cards, choose a proof and press Generate. Restart this tour from the header any time.
 卡冊是你的牌的紀錄：每張牌用過幾次、印出來好不好、收集了多少。|Explore how often you use each card, how it performs and your collection progress.
 按花色篩選。花色圖章外圈那一圈，是這個花色點亮（用過）了幾成。|Filter by category. Each ring shows the proportion of cards you've used.
@@ -1491,7 +1491,7 @@ Discord 設定（自動傳送{0}）|Discord settings (auto sharing {0})
 {0}：{1}，疊上{2}|{0} · {1} · Layered {2}
 撤回：{0}|Undo · {0}
 付印試印 {0}|Generate proof {0}
-尺度切回「{0}」|Rating restored to {0}
+分級切回「{0}」|Rating restored to {0}
 回到這一版{0}{1}|Composition restored{0}{1}
 印製中 {0}%|Generating · {0}%
 試印 {0} 的成品，點開看大圖|Proof {0} result · Click to enlarge
@@ -1546,6 +1546,13 @@ Discord 設定（自動傳送{0}）|Discord settings (auto sharing {0})
 {0} / {1} 天|{0} / {1} days
 {0}（{1}）|{0} ({1})
 {0} 張|{0} cards
+{0} 張圖|{0} images
+時代改成「混合」：{0}放回來了，不同時代的牌可以一起出現|Era set to Mixed: {0} back in the pool; cards from different eras can appear together
+從{0}帶來 {1} 張牌，換掉了原本的 {2} 張|Pinned {1} cards from {0}, replacing the {2} you had
+「{0}」在{1}看不到|“{0}” is hidden at {1}
+一共 {0} 張搜得到的被擋住；{1}以上才有，或打開分級左邊的「不限制」。|{0} matching cards are hidden; they appear at {1} and above, or turn on No limit next to the rating.
+{0}以上才有，或打開分級左邊的「不限制」。|Appears at {0} and above, or turn on No limit next to the rating.
+種子固定 {0}|Seed fixed {0}
 {0} 張會一定進圖|{0} pinned cards
 合成池 {0} 張|{0} pinned cards
 點牌＝加進偏好卡牌 {0}/{1}|Tap a card = add to Favorite cards {0}/{1}
@@ -1767,6 +1774,12 @@ ComfyUI 畫的 PNG 或 API JSON，拖進來或點這裡選檔|Drop a ComfyUI PNG
 工作流「{0}」用它自己的底模（在工作流面板可以改成用這裡選的）|Workflow “{0!}” uses its own checkpoint (change this in the Workflow panel)
 人物改成不限|Set Cast to Any
 顯示所有時代|Show all eras
+時代改成混合|Switch era to Mixed
+改成混合，兩張都留|Switch to Mixed, keep both
+時代改成「混合」：不同時代的牌可以一起出現|Era set to Mixed: cards from different eras can appear together
+不限制開著：所有牌都抽得到；右邊選的分級是圖本身標的分級|No limit is on: every card can be drawn; the rating on the right is how the image is labeled
+不限制關了：牌照右邊選的分級篩選|No limit is off: cards follow the rating on the right
+打開不限制|Turn on No limit
 「{0}」在「{1}」裡|“{0}” is in {1}
 「{0}」要在「{1}」才看得到|“{0}” only appears at {1}
 切到{0}|Switch to {0}
@@ -1817,7 +1830,7 @@ LoRA：沒設定偏好路徑，改問 ComfyUI 也失敗了：{0}|LoRA: no prefer
 起手：{0}|Starter: {0}
 已選試印 {0}，尚未生成圖片|Proof {0} selected, no image generated yet
 試印 {0} 的提示詞|Prompt for proof {0}
-從墨池帶來 {0} 張牌；規則沿用疊印台的設定。|Brought {0} cards from Mochi; using the press settings.
+從墨池帶來 {0} 張牌；規則沿用疊印台的設定。|Brought {0} cards from Ink Pool; using the Fuse Bed settings.
 試印 {0}|Proof {0}
 常補 {0}/4|Used in {0}/4 proofs
 你的 {0} 張・引擎補 {1} 張|{0} pinned · {1} engine additions

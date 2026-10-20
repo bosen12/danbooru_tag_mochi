@@ -204,7 +204,7 @@ export function createLog(ctx) {
         day = k;
         const n = shown.filter((x) => dayKey(x.at) === k).length;
         list = el("div", { class: "log-list", role: "list" });
-        out.push(el("section", { class: "log-day" }, el("h3", { class: "log-day-head" }, dayLabel(e.at), el("small", {}, `${n} 張`)), list));
+        out.push(el("section", { class: "log-day" }, el("h3", { class: "log-day-head" }, dayLabel(e.at), el("small", {}, `${n} 張圖`)), list));
       }
       list.append(row(e));
     }

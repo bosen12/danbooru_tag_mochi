@@ -152,15 +152,26 @@
 
 /* ---------- 牌格 ---------- */
 
+/* 一排一排折行（flex-wrap），不用 CSS grid：捲下去格子越補越多，grid 每有一格切換 content-visibility
+ * 就整片重排，捲到三千格時電腦每格 26～43ms、手機最慢 0.66 秒。格寬照 grid 的 auto-fill 算法
+ * （最小 --book-min、平分剩下的寬）由 book.js 的 sizeCells 量好放進 --book-cell-w。 */
 .book-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
+  --book-min: 104px;
+  display: flex;
+  flex-wrap: wrap;
   gap: var(--space-md) var(--space-sm);
-  align-content: start;
+  align-content: flex-start;
   padding-top: var(--space-xs);
 }
 
+.book-grid > .book-more,
+.book-grid > .book-empty {
+  flex: 0 0 100%;
+}
+
 .book-cell {
+  flex: 0 0 auto;
+  width: var(--book-cell-w, var(--book-min));
   position: relative;
   display: grid;
   gap: 6px;
@@ -275,6 +286,12 @@
 .book-more {
   grid-column: 1 / -1;
   height: 1px;
+}
+
+.book-empty-acts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
 }
 
 .book-empty {
@@ -480,7 +497,7 @@
     max-width: none;
   }
   .book-grid {
-    grid-template-columns: repeat(auto-fill, minmax(88px, 1fr));
+    --book-min: 88px;
     gap: var(--space-sm) var(--space-xs);
   }
   .book-rank {
@@ -852,6 +869,15 @@
   .box-x {
     opacity: 1;
     transform: none;
+  }
+}
+
+/* 手指點的範圍做到 44px（看起來還是那顆 22px 的小圈）：以前常點到旁邊那張牌。 */
+@media (pointer: coarse) {
+  .box-x::after {
+    content: "";
+    position: absolute;
+    inset: -11px;
   }
 }
 

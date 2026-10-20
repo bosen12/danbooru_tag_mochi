@@ -186,10 +186,45 @@ function paint() {
       dd.textContent = status.lastError;
       stats.append(dt, dd);
     }
+    // 「其他」那條連續送不出去，伺服器自動暫停了（跟分頻道一樣）：按恢復，或改好設定再存一次。
+    if (status.otherPaused) {
+      const dt = document.createElement("dt");
+      dt.className = "tg-err";
+      dt.textContent = "暫停：連續送不出去";
+      const dd = document.createElement("dd");
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "ghost";
+      btn.id = "dc-resume";
+      btn.textContent = "恢復";
+      btn.addEventListener("click", resumeOther);
+      dd.append(btn);
+      stats.append(dt, dd);
+    }
   }
 }
 
+async function resumeOther() {
+  try {
+    const j = await getJson("/api/discord/config", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ route: { op: "resume", id: "other" } }),
+    });
+    if (j && j.ok) status = j;
+    else say(String((j && j.error) || "存不進去"), "err");
+  } catch (err) {
+    say(String(err.message || err), "err");
+  }
+  paint();
+}
+
+// 上一次問伺服器狀態的時間、還沒回來的那一次（freshStatus 用）。
+let askedAt = 0;
+let asking = null;
+
 async function refresh() {
+  askedAt = Date.now();
   try {
     const j = await getJson("/api/discord/config");
     if (j && j.ok) {
@@ -202,6 +237,16 @@ async function refresh() {
     /* 伺服器沒回就維持上一次的狀態，不吵 */
   }
   paint();
+}
+
+// 送圖前要的「伺服器現在怎麼說」：3 秒內問過就用那一次的答案（連印好幾張不必每張都問），正在問就等那一次。
+function freshStatus() {
+  if (asking) return asking;
+  if (Date.now() - askedAt < 3000) return Promise.resolve();
+  asking = refresh().finally(() => {
+    asking = null;
+  });
+  return asking;
 }
 
 function say(text, kind) {
@@ -360,7 +405,19 @@ export function onDcStatus(fn) {
 // card 可以是 null（墨池、疊印台不在圖上蓋章，面板的計數就是回饋）。
 // meta：{ source 哪一頁, rating, ckpt, loras, hires 放大的標示 } —— 伺服器拿去排來源行、頁尾和色條。
 export function dcSendCard(card, job, zh, meta = {}) {
-  if (!dcReady() || !job || !job.image) return;
+  if (!job || !job.image) return;
+  if (dcReady()) {
+    postCard(card, job, zh, meta);
+    return;
+  }
+  // 這頁記得的是「沒設定／沒開」：可能是開頁那一次沒讀到，或是別的分頁剛打開自動送。
+  // 問一次伺服器最新的再決定；真的沒開就安靜收手（不送上去讓伺服器回錯誤）。
+  freshStatus().then(() => {
+    if (dcReady()) postCard(card, job, zh, meta);
+  });
+}
+
+function postCard(card, job, zh, meta) {
   let q;
   try {
     q = new URL(job.image, location.href).searchParams;
@@ -390,10 +447,17 @@ export function dcSendCard(card, job, zh, meta = {}) {
   })
     .then((r) => r.json())
     .then((j) => {
-      if (j && j.ok) markCard(card);
+      if (j && j.ok) {
+        markCard(card);
+        return;
+      }
+      // 送圖失敗不吵抽圖（面板的失敗計數會記），但至少留在主控台查得到。
+      // 沒對到頻道是正常的；伺服器說沒開，就是別的分頁剛關掉自動送：重讀一次狀態，下一張就不送了。
+      if (j && j.code === "off") refresh();
+      else if (!j || j.code !== "nomatch") console.warn("Discord 沒排進佇列：", (j && j.error) || j);
     })
-    .catch(() => {
-      /* 送圖失敗不吵抽圖，面板的失敗計數會記 */
+    .catch((err) => {
+      console.warn("Discord 送圖請求失敗：", err);
     });
 }
 
@@ -450,6 +514,10 @@ export function initDiscord() {
       }
     });
   }
+  // 「自動送」以前只在開頁讀一次：那次沒讀到、或在別的分頁打開，這頁就永遠不送。切回這一頁就重讀。
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible") refresh();
+  });
   refresh();
 }
 

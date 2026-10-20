@@ -71,15 +71,28 @@ const PLACEHOLDER = { works: "找作品：牌名、提示詞…", log: "找印�
 
 const zh = (t) => lib?.byTag.get(t)?.zh || t;
 const fileUrl = (ref) => (ref && ref.file ? `/api/recipes/files/${encodeURIComponent(ref.file)}` : null);
+// 牆上、相似那一排的小格子：要 480 寬的縮圖（伺服器縮成 webp）。以前格子只有 180～270px 寬，抓的是 832×1216 的原圖，
+// 有的作品沒有縮圖就直接是 1MB 多的 PNG。縮不了的伺服器照舊回原圖。
+const smallUrl = (ref) => {
+  const u = fileUrl(ref);
+  return u && `${u}?w=480`;
+};
 const cardsOf = (w) => tagsOfPositive(w.positive || "").filter((t) => lib.byTag.has(t));
 const mineOf = (w) => (Array.isArray(w.pinned) ? w.pinned : []).filter((t) => lib.byTag.has(t));
 // 找相似用：去掉每張都有的人數牌（1個女性、單人），留下看得出差別的。
 const tellingOf = (w) => (w._telling ??= cardsOf(w).filter((t) => lib.byTag.get(t)?.item?.section !== "subject"));
 
+// 格式器建一次重複用：每格各呼叫一次 toLocaleDateString，作品冊 150 件時換分頁光它就佔 80ms。
+let dateFmt = null;
+let dateFmtFor = "";
 function dateText(iso) {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "";
-  return d.toLocaleDateString(dateLocale, { year: "numeric", month: "numeric", day: "numeric" });
+  if (!dateFmt || dateFmtFor !== String(dateLocale)) {
+    dateFmt = new Intl.DateTimeFormat(dateLocale, { year: "numeric", month: "numeric", day: "numeric" });
+    dateFmtFor = String(dateLocale);
+  }
+  return dateFmt.format(d);
 }
 
 /* ================= 開機 ================= */
@@ -444,7 +457,7 @@ function render({ deal = false } = {}) {
 }
 
 function tile(w) {
-  const src = fileUrl(w.thumbnail) || fileUrl(w.image);
+  const src = smallUrl(w.thumbnail) || smallUrl(w.image);
   const ratio = w.width && w.height ? `${w.width} / ${w.height}` : "2 / 3";
   const born = performance.now();
   const img = src
@@ -488,7 +501,7 @@ function similarBox(w, sheetOf) {
       "div",
       { class: "album-similar-row" },
       list.map(({ work: x, both }) => {
-        const src = fileUrl(x.thumbnail) || fileUrl(x.image);
+        const src = smallUrl(x.thumbnail) || smallUrl(x.image);
         return el(
           "button",
           {

@@ -2177,6 +2177,104 @@ finally:
     server._PREVIEW_ARGV.clear()
     server._PREVIEW_ARGV.update(_saved_pv[3])
 
+# 作品冊的圖 /api/recipes/files/<name>：?w=480／960 給縮圖（webp），ETag 是內容雜湊帶寬度，If-None-Match 對上回 304。
+# 作品冊的檔案導去暫存資料夾：這支測試沒設 RECIPE_DATA_DIR，不能讀寫真的 data/recipes。
+import hashlib  # noqa: E402
+import recipes as _rc  # noqa: E402
+
+_saved_rc = _rc.FILES_DIR
+_rc.FILES_DIR = Path(_env_tmp.mkdtemp()) / "files"
+_rsrv = server.AppServer(("127.0.0.1", 0), server.Handler)
+_th.Thread(target=_rsrv.serve_forever, daemon=True).start()
+_rbase = f"http://127.0.0.1:{_rsrv.server_address[1]}/api/recipes/files/"
+
+
+def _rget(name, query="", etag=None):
+    req = _ur.Request(_rbase + name + query, headers={"If-None-Match": etag} if etag else {})
+    try:
+        with _ur.urlopen(req, timeout=10) as r:
+            return r.status, dict(r.headers), r.read()
+    except _ue.HTTPError as e:
+        return e.code, dict(e.headers), e.read()
+
+
+try:
+    _rc.files_dir().mkdir(parents=True, exist_ok=True)
+    if server._pil_image() is not None:
+        import io as _io2
+        from PIL import Image as _Img2
+
+        _b = _io2.BytesIO()
+        _Img2.effect_noise((1024, 1024), 60).convert("RGB").save(_b, "PNG")
+        _orig = _b.getvalue()
+        (_rc.files_dir() / "album-a.png").write_bytes(_orig)
+        _st, _h, _body = _rget("album-a.png", "?w=480")
+        ok("album files: ?w=480 → 480 寬的 webp、比原圖小很多", _st == 200 and _h.get("Content-Type") == "image/webp" and _body[:4] == b"RIFF" and _Img2.open(_io2.BytesIO(_body)).size[0] == 480 and len(_body) < len(_orig) / 3, f"{_st} {_h.get('Content-Type')} {len(_body)} / {len(_orig)}")
+        _tag = _h.get("ETag") or ""
+        ok("album files: ETag 是內容 sha1 帶寬度", _tag == '"' + hashlib.sha1(_orig).hexdigest() + '-w480"', _tag)
+        ok("album files: 快取每次回來問（檔名會被同名的新作品重用）", _h.get("Cache-Control") == "private, no-cache", str(_h.get("Cache-Control")))
+        _st2, _h2, _body2 = _rget("album-a.png", "?w=480", _tag)
+        ok("album files: 第二次帶 If-None-Match 回 304、沒有本體", _st2 == 304 and _body2 == b"" and _h2.get("ETag") == _tag, f"{_st2} {len(_body2)}")
+        _st3, _h3, _body3 = _rget("album-a.png")
+        ok("album files: 沒帶 w 給原圖，ETag 不帶寬度", _st3 == 200 and _body3 == _orig and _h3.get("ETag") == '"' + hashlib.sha1(_orig).hexdigest() + '"')
+        ok("album files: 原圖的 ETag 拿去問縮圖不算數", _rget("album-a.png", "?w=480", _h3.get("ETag"))[0] == 200)
+        _st4, _h4, _ = _rget("album-a.png", "?w=123")
+        ok("album files: 不認得的寬度給原圖", _st4 == 200 and _h4.get("Content-Type") == "image/png")
+        (_rc.files_dir() / "album-a.png").write_bytes(_orig[:-16] + b"x" * 16)
+        ok("album files: 同名換了內容，舊 ETag 不再 304", _rget("album-a.png", "?w=480", _tag)[0] == 200)
+    else:
+        print("skip album thumb tests: Pillow not installed")
+    _b2 = b"\x89PNG small"
+    (_rc.files_dir() / "tiny.png").write_bytes(_b2)
+    _st5, _h5, _body5 = _rget("tiny.png", "?w=480")
+    ok("album files: 縮不了（不是真的圖）照舊給原圖", _st5 == 200 and _body5 == _b2 and _h5.get("Content-Type") == "image/png", f"{_st5} {_h5.get('Content-Type')}")
+    ok("album files: 找不到回 404", _rget("nope.png")[0] == 404)
+finally:
+    _rsrv.shutdown()
+    _rsrv.server_close()
+    _rc.FILES_DIR = _saved_rc
+
+# Telegram 設定檔也是安全寫入：正本＋.bak、不留暫存檔；正本壞了用 .bak 換回。
+import contextlib as _ctx  # noqa: E402
+
+_tgd = Path(_env_tmp.mkdtemp())
+_saved_tg = (server.TG_SECRETS, dict(server._tg))
+server.TG_SECRETS = _tgd / ".secrets" / "telegram.json"
+try:
+    server.tg_apply_config({"token": "123:SAFE", "chatId": "@c", "enabled": True})
+    _tbak = server.TG_SECRETS.with_name("telegram.json.bak")
+    ok("telegram 存檔：正本和 .bak、沒有暫存檔", server.TG_SECRETS.is_file() and _tbak.is_file() and not list(server.TG_SECRETS.parent.glob("*.tmp")))
+    server.TG_SECRETS.write_text("", encoding="utf-8")  # 0 位元組：停電時 write_text 留下的樣子
+    server._tg.update(token="", chatId="")
+    with _ctx.redirect_stdout(_io.StringIO()):
+        server.tg_load()
+    ok("telegram 讀檔：正本壞了用 .bak", server._tg["token"] == "123:SAFE" and server._tg["chatId"] == "@c")
+finally:
+    server.TG_SECRETS = _saved_tg[0]
+    server._tg.clear()
+    server._tg.update(_saved_tg[1])
+
+# 開機時問 ComfyUI 的幾項在背景執行緒做：main() 不同步等（ComfyUI 卡住時要 19 秒才開始接連線）。
+_main_src = inspect.getsource(server.main)
+ok("boot: main 把問 ComfyUI 的檢查丟到背景", "threading.Thread(target=boot_comfy_report" in _main_src and "check_ckpt()" not in _main_src and "_comfy_answers" not in _main_src and "lora_manager_count" not in _main_src and "prune_hires_inputs" not in _main_src)
+_saved_boot = (server.comfy_base, wfmod._comfy_answers, server.lora_scan.lora_manager_count, server.check_ckpt, server.prune_hires_inputs)
+try:
+    server.comfy_base = lambda: "http://127.0.0.1:1"
+    wfmod._comfy_answers = lambda base, timeout=0.6: True
+    server.lora_scan.lora_manager_count = lambda *a, **k: 7
+    server.check_ckpt = lambda: print("ckpt     fake")
+    server.prune_hires_inputs = lambda: []
+    _out = _io.StringIO()
+    with _ctx.redirect_stdout(_out):
+        server.boot_comfy_report()
+    ok("boot: 背景檢查照樣印 Comfy、LoRA Manager、底模", "Comfy http://127.0.0.1:1" in _out.getvalue() and "LoRA Manager：7 個" in _out.getvalue() and "ckpt     fake" in _out.getvalue(), _out.getvalue())
+    server.check_ckpt = lambda: (_ for _ in ()).throw(RuntimeError("boom"))
+    with _ctx.redirect_stdout(_io.StringIO()) as _o2:
+        server.boot_comfy_report()
+    ok("boot: 背景檢查出錯不會丟出去", "開機檢查沒做完" in _o2.getvalue())
+finally:
+    server.comfy_base, wfmod._comfy_answers, server.lora_scan.lora_manager_count, server.check_ckpt, server.prune_hires_inputs = _saved_boot
+
 if failed:
     print(f"\n{failed} failed")
     sys.exit(1)

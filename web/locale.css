@@ -123,7 +123,9 @@ html[lang="en"] :is(.card-name, .card-peek-name) {
   font: 650 var(--u)/1.25 var(--font-body);
   letter-spacing: -0.01em;
   white-space: normal;
-  overflow-wrap: anywhere;
+  /* 照字換行，一個字真的放不下才斷，斷的地方加連字號（skyscra-per），不是隨便從字中間切成「outdoor / s」。 */
+  overflow-wrap: break-word;
+  hyphens: auto;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;

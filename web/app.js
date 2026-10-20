@@ -37,6 +37,7 @@ import { zoomFromThumb } from "./zoom.js";
 import { favChars, withFavChars, paintFavChar, paintFavChars, favCharsButton, openFavChars, favZone, dropToFav, flyToFav, heartIcon } from "./fav-chars.js";
 import { ratingBlocked, ratingOf, RATING_LABEL } from "./rules/rating.js";
 import { mountRatingFree } from "./rating-free.js";
+import { whenPrinter, settingsToWrite, onOtherTab } from "./tab-sync.js";
 import { searchMiss } from "./lib-hint.js";
 import { HEATS, toggleHeat } from "./heats.js";
 import { SCENE_MODES, SCENE_MODE_LABELS, heatBlockedByRating } from "./scene-policy.js";
@@ -101,6 +102,8 @@ let settings = null;
 let pool = new Set();
 // 從卡冊帶來的牌加進了剛才那一池（不是換掉）：歡迎詞照這個說。
 let handoffMerged = false;
+// 疊印台、作品冊帶來的牌換掉了原本那一池：原本的那一池（greetHandoff 的「復原」用）。
+let handoffReplaced = null;
 // 空池抽一次，普通重畫保留；放牌後重設，清空時再抽。
 let starterPick = null;
 // 合成池裡每張牌的份量（weights.js）：只記調過的（不是 1.0 的）。
@@ -173,6 +176,8 @@ async function boot() {
     S.saveBans(banned);
     weights = new Map(Object.entries(before.weights || {}).filter(([t, w]) => pool.has(t) && w !== 1));
   } else if (handoff.length) {
+    // 疊印台、作品冊帶來的是一整組：換掉原本那一池，但記著，提示上給「復原」拿回來。
+    if (kept.length && kept.some((t) => !handoff.includes(t))) handoffReplaced = { tags: kept, weights: { ...(before?.weights || {}) } };
     pool = new Set(handoff);
     weights = new Map(Object.entries(S.handoffWeights).filter(([t, w]) => pool.has(t) && w !== 1));
   } else {
@@ -228,14 +233,49 @@ async function boot() {
   setTimeout(sweepShots, 1500);
   $("wall-start").addEventListener("click", () => $("go-bar").querySelector(".btn-primary")?.click());
   renderTrash();
+  // 別的墨池分頁收藏、Hires、印好了：這邊那張跟著換（tab-sync.js 的三方比對，這邊沒動過的才換）。
+  // 別的分頁（卡冊、作品冊、另一個墨池）改了分級、不限制、時代…：這邊跟著換、重畫，不然之後一存又寫回舊的。
+  onOtherTab(S.SETTINGS_KEY, (v) => {
+    if (!v || typeof v !== "object") return;
+    settings = sanitizeSettings({ ...settings, ...v }, data);
+    renderRating();
+    renderLibrary();
+    renderPool();
+    renderRules();
+    renderGoBar();
+    hand?.update();
+  });
+  S.syncShots({
+    list: () => shots,
+    adopt: (list) => {
+      for (const t of list) {
+        const s = shots.find((x) => x.id === t.id);
+        if (s) updateShot(S.applyStored(s, t));
+      }
+    },
+  });
   // 接著印、接回 Hires：背後預先開好的頁（prerender.js）等點進去才做，沒點進去的頁會被丟掉，那時送出去就白印了。
-  whenActive(() => {
-    for (const s of resumable) generator.resume(s);
-    for (const s of waiting) generator.enqueue(s);
-    if (waiting.length) toast(`接著印剛才排著的 ${waiting.length} 張`);
+  // 只有一個墨池分頁接（tab-sync.js 的 whenPrinter）：另一個分頁也開著的話，排著的那幾張由它印，這邊只看。
+  // 它關掉才輪到這邊：那時存檔可能已經印掉了，重讀一次還在排的才接。
+  whenActive(() => whenPrinter("mochi", (first) => {
+    let resumeNow = resumable;
+    let waitNow = waiting;
+    if (!first) {
+      const stored = new Map(S.peekShots().map((t) => [t.id, t]));
+      resumeNow = shots.filter((s) => {
+        const t = stored.get(s.id);
+        if (!t || !t.live || !t.job || t.status === "done") return false;
+        s.job = t.job;
+        return true;
+      });
+      waitNow = shots.filter((s) => S.stillWaiting(stored.get(s.id))).reverse();
+    }
+    for (const s of resumeNow) generator.resume(s);
+    for (const s of waitNow) generator.enqueue(s);
+    if (waitNow.length) toast(`接著印剛才排著的 ${waitNow.length} 張`);
     // Hires 做到一半就重新整理的：接回去。
     for (const s of shots) if (s.status === "done" && s.hiresJob) hiresRun.resume(s, s.hiresJob);
-  });
+  }));
   for (const root of [$("lib-grid"), $("pool-well"), $("wall"), hand?.fan]) {
     attachPeek(root, ".card[data-tag]", peekInfo);
     // 牌拿在手上：滑過跟著游標微微傾斜、插畫上一道反光（card-tilt.js）。
@@ -254,14 +294,15 @@ async function boot() {
   });
 }
 
-function saveSettings() {
-  S.saveSettings(settings);
+function saveSettings(prev) {
+  S.saveSettings(settingsToWrite(S.loadSettings(), prev, settings));
 }
 
 function setSettings(patch) {
+  const prev = settings;
   // Heat selection has automatic weights; inherited weights belong to the old selection.
   settings = sanitizeSettings({ ...settings, ...(patch.heats ? { weights: undefined } : {}), ...patch }, data);
-  saveSettings();
+  saveSettings(prev);
   // 規則換了（分級…）：托盤上出不了的牌要重新蓋章／拿掉章。
   hand?.update();
 }
@@ -747,12 +788,13 @@ function libraryMiss(q) {
       {
         hides: (c) => !visible(c),
         text: (c) => `「${c.zh}」不屬於現在的時代`,
-        label: () => "顯示所有時代",
+        // 改成「混合」而不是只把字盒打開：放進去的牌才不會在抽的時候、放下一張的時候又被時代拿掉。
+        label: () => "時代改成混合",
         run: () => {
-          ui.eraOnly = false;
-          saveUi();
+          setSettings({ eras: [...ERAS], eraMix: true });
           renderRules();
           renderLibrary();
+          toast("時代改成「混合」：不同時代的牌可以一起出現");
         },
       },
     ],
@@ -1134,6 +1176,21 @@ function pin(tag) {
   const carried = [...pool].filter((t) => t !== tag && !before.has(t));
   carried.forEach((t, i) => popCarried(t, 200 + i * 90));
   if (gone.length) announce(poolNote.text);
+  // 手機的挑牌抽屜開著時，池子底下那行被抽屜蓋住：同一句也浮成提示（疊印台也是這樣）。
+  if (gone.length && pickerOpen) toast(poolNote.text);
+}
+
+/** 被時代擠掉的牌：時代改成「混合」、放回池子，兩張都留（漢服配摩天樓）。 */
+function keepBothEras(tags) {
+  poolNote = null;
+  setSettings({ eras: [...ERAS], eraMix: true });
+  let next = new Set(pool);
+  for (const t of tags) if (lib.byTag.has(t)) next = applyPin(lex, next, bans, t, { eraMix: true }).pinned;
+  pool = next;
+  commitPins();
+  renderRules();
+  renderLibrary();
+  toast(`時代改成「混合」：${tags.map((t) => `「${zh(t)}」`).join("")}放回來了，不同時代的牌可以一起出現`);
 }
 
 function popCarried(tag, delay) {
@@ -1167,7 +1224,7 @@ function replaceNote(tag, gone) {
   if (people.length) bits.push(tag === "no humans" ? `畫面沒有人物：${people.map((t) => `「${zh(t)}」`).join("")}拿下來了` : "放了人物的牌：「沒有人物」拿下來了");
   if (slot.length) bits.push(`同一格只留一張：${slot.map((t) => `「${zh(t)}」`).join("")}換成「${zh(tag)}」`);
   if (era.length) bits.push(`${era.map((t) => `「${zh(t)}」`).join("")}跟「${zh(tag)}」不是同一個時代，先拿下來了`);
-  return { text: bits.join("；"), back: gone[0] };
+  return { text: bits.join("；"), back: gone[0], era };
 }
 
 let poolNote = null;
@@ -1207,8 +1264,11 @@ function renderPoolNote() {
   }
   box.hidden = false;
   const back = poolNote.back;
+  const era = poolNote.era || [];
   box.replaceChildren(
     el("span", {}, poolNote.text),
+    // 時代對不上：先給「兩張都留」（改成混合），「換回」會把剛放的那張又踢掉。
+    era.length ? el("button", { class: "link-btn", type: "button", onclick: () => keepBothEras(era) }, "改成混合，兩張都留") : null,
     back && lib.byTag.has(back)
       ? el("button", { class: "link-btn", type: "button", onclick: () => { poolNote = null; pin(back); } }, "換回")
       : null
@@ -1440,7 +1500,22 @@ function greetHandoff() {
     );
     setTimeout(() => sfx.deal?.(Math.min(6, cards.length + 1)), DUR.short);
   }
-  setTimeout(() => toast(`從${from}帶來 ${pool.size} 張牌，已經放進合成池`), DUR.long);
+  const was = handoffReplaced;
+  handoffReplaced = null;
+  if (!was) return void setTimeout(() => toast(`從${from}帶來 ${pool.size} 張牌，已經放進合成池`), DUR.long);
+  setTimeout(
+    () =>
+      poolUndoToast(`從${from}帶來 ${pool.size} 張牌，換掉了原本的 ${was.tags.length} 張`, {
+        label: "復原",
+        key: "Z",
+        run: () => {
+          pool = new Set(was.tags);
+          weights = new Map(Object.entries(was.weights).filter(([t, w]) => pool.has(t) && w !== 1));
+          commitPins();
+        },
+      }),
+    DUR.long
+  );
 }
 
 const starterAllowed = tag => lib.byTag.has(tag) && !ratingBlocked(lib.byTag.get(tag).item, ratingOf(settings)) && !bans.has(tag);
@@ -2556,7 +2631,8 @@ function shotNode(shot, deal, { printing = false } = {}) {
       // 收進作品冊（album.html）：印好了才出現。
       favButton(shot, { zh, persist: () => S.saveShots(shots) }),
       el("button", { class: "btn btn-small btn-ghost", type: "button", onclick: (e) => copyPos(shot, e.currentTarget) }, "複製提示詞"),
-      el("button", { class: "btn btn-small btn-ghost", type: "button", onclick: () => reprint(shot), title: "同樣的 POS、同一顆種子再送一次" }, "同種子重印"),
+      // 只抽牌的那張沒印過，「重印」說不通；滑過時浮出來還剛好蓋在「送去印這張」上，按下去變成多排一張（styles.css 收起來）。
+      el("button", { class: "btn btn-small btn-ghost shot-reprint", type: "button", onclick: () => reprint(shot), title: "同樣的 POS、同一顆種子再送一次" }, "同種子重印"),
       el("button", { class: "btn btn-small btn-ghost shot-remove", type: "button", onclick: () => removeShot(shot) }, "撤下")
     )
   );
@@ -3206,7 +3282,8 @@ function showShot(shot, { focus } = {}) {
   };
   const footFor = (s) => [
     favButton(s, { zh, persist: () => (S.saveShots(shots), $("wall").querySelector(`.shot[data-id="${s.id}"] .fav-btn`)?._paint?.()), className: "btn btn-small" }),
-    el("button", { class: "btn btn-small", type: "button", onclick: () => reprint(s), title: "同樣的提示詞、同一顆種子再送一次" }, "同種子重印"),
+    // 只抽牌的那張：左邊已經有「送去印這張」，這裡不再放一顆意思不清的「重印」。
+    s.status === "drawn" ? null : el("button", { class: "btn btn-small", type: "button", onclick: () => reprint(s), title: "同樣的提示詞、同一顆種子再送一次" }, "同種子重印"),
     el("button", { class: "btn btn-small", type: "button", onclick: (e) => copyPos(s, e.currentTarget) }, "複製提示詞"),
     s.image ? el("a", { class: "btn btn-small", href: s.image, target: "_blank", rel: "noopener" }, "開原圖") : null,
     // 分頻道（discord-routes.js）：帶入這張的角色、分級，貼上 webhook 就好。詳情先關，兩層彈窗不要一起搶鍵盤。

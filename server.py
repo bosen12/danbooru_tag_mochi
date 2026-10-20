@@ -2927,6 +2927,104 @@ def preview_extra() -> dict:
     return {} if _PREVIEW_ARGV["set"] else {"preview_method": "latent2rgb"}
 
 
+# ComfyUI 中途斷線（關掉、當掉、網路斷）時給人看的話。以前直接冒出「[WinError 10054] 遠端主機已強制關閉…」。
+COMFY_GONE_TEXT = "ComfyUI 中途斷線（關掉或當掉了）：等燈號變綠再印一次"
+COMFY_DELETED_TEXT = "這張在 ComfyUI 被刪掉了"
+# 多久問一次 /queue（秒）。還在排隊的不算逾時；佇列和 history 都找不到這張，就是在 ComfyUI 那邊被刪掉了 ——
+# 以前只能乾等到 GEN_TIMEOUT（600 秒）。
+QUEUE_CHECK_EVERY = 10.0
+# 斷線類的 Windows 錯誤碼（WSAE*）：10053 連線被本機中止、10054 被對方重設、10061 拒絕連線……
+_NET_WINERRORS = {10050, 10051, 10052, 10053, 10054, 10057, 10058, 10061, 10064, 10065}
+
+
+class ComfyFinished(RuntimeError):
+    """ComfyUI 那邊已經結束這張（出錯、被中斷、做完卻沒圖、被刪掉）：不必再去佇列刪、也不必中斷。"""
+
+
+def comfy_disconnected(exc: BaseException) -> bool:
+    """這個例外是不是「跟 ComfyUI 的連線斷了」。逾時不算（Comfy 可能只是忙），ComfyUI 回了 4xx／5xx 也不算（它還活著）。"""
+    if isinstance(exc, urllib.error.HTTPError):
+        return False
+    if isinstance(exc, urllib.error.URLError):
+        reason = exc.reason
+        return not isinstance(reason, TimeoutError)
+    if isinstance(exc, TimeoutError):  # socket.timeout 也是它
+        return False
+    if isinstance(exc, ConnectionError):  # ConnectionResetError、ConnectionAbortedError、ConnectionRefusedError、RemoteDisconnected
+        return True
+    if isinstance(exc, OSError) and getattr(exc, "winerror", None) in _NET_WINERRORS:
+        return True
+    import http.client  # noqa: PLC0415
+
+    return isinstance(exc, http.client.HTTPException)  # 回應讀到一半斷掉（IncompleteRead、BadStatusLine）
+
+
+def comfy_queue_where(q, prompt_id: str) -> str | None:
+    """GET /queue 的回應裡這張在哪："running"、"pending"；都不在回 None。看不懂的回應回 "?"（不能當成被刪掉）。"""
+    if not isinstance(q, dict) or not isinstance(q.get("queue_running"), list) or not isinstance(q.get("queue_pending"), list):
+        return "?"
+    for key, where in (("queue_running", "running"), ("queue_pending", "pending")):
+        for item in q[key]:
+            if isinstance(item, (list, tuple)) and len(item) > 1 and item[1] == prompt_id:
+                return where
+    return None
+
+
+def history_outcome(entry: dict, save_ids, hires: dict | None) -> str | None:
+    """history 的一筆 → 成品網址。ComfyUI 記成出錯、或做完了卻沒有圖：丟 ComfyFinished 說原因。還沒做完回 None。
+
+    完成通知（websocket）可能弄丟，history 裡的 status 才是準的 —— 以前 gen_via_ws 只找圖，
+    出錯或沒產出的那張要乾等到逾時。gen_via_poll 一直是這樣判的，現在兩邊共用。"""
+    try:
+        image = finished_image(entry, save_ids, hires)
+    except ComfyFinished:
+        raise
+    except RuntimeError as exc:  # 修臉沒找到臉：那張已經做完了
+        raise ComfyFinished(str(exc)) from None
+    if image:
+        return image
+    status = entry.get("status") or {}
+    msgs = [m for m in status.get("messages") or [] if isinstance(m, (list, tuple)) and len(m) > 1]
+    if status.get("status_str") == "error":
+        err = next((m[1] for m in msgs if m[0] == "execution_error"), None)
+        if not isinstance(err, dict) and any(m[0] == "execution_interrupted" for m in msgs):
+            raise ComfyFinished("ComfyUI 中斷了這張")
+        raise ComfyFinished(comfy_exec_error_text(err if isinstance(err, dict) else {}))
+    if status.get("completed"):
+        raise ComfyFinished("Comfy 沒有產出圖片")
+    return None
+
+
+_DROPPED: dict[str, float] = {}
+_DROPPED_LOCK = threading.Lock()
+
+
+def comfy_drop(prompt_id) -> None:
+    """把這一張從 ComfyUI 拿掉：還在排隊的從佇列刪掉（/interrupt 只砍正在畫的），畫到一半的中斷。
+
+    一定帶 prompt_id：全域中斷會砍掉 Comfy 當下在跑的任何東西（使用者已經開始的下一張也算）。
+    沒有 prompt_id 就什麼都不做。同一張只送一次：gen_via_ws 收尾、GenJob 按停或沒人接回來、
+    串流斷線，都可能輪到同一張，第二次以後是多餘的。"""
+    if not prompt_id:
+        return
+    now = time.time()
+    with _DROPPED_LOCK:
+        for k, t in list(_DROPPED.items()):
+            if now - t > 3600:
+                del _DROPPED[k]
+        if prompt_id in _DROPPED:
+            return
+        _DROPPED[prompt_id] = now
+    try:
+        api("POST", "/queue", {"delete": [prompt_id]}, timeout=8)
+    except Exception:
+        pass
+    try:
+        comfy_interrupt(prompt_id)
+    except Exception:
+        pass
+
+
 def gen_via_ws(width: int, height: int, seed: int, positive: str, wf: dict, hires: dict | None = None):
     cid = uuid.uuid4().hex
     ckpt = workflows.ckpt_name_of(wf) or CKPT
@@ -2935,6 +3033,10 @@ def gen_via_ws(width: int, height: int, seed: int, positive: str, wf: dict, hire
         ws = ws_connect(comfy_base(), cid, timeout=20)
     except Exception as exc:
         raise WsUnavailable(str(exc)) from exc
+    prompt_id = None
+    # ComfyUI 那邊已經不必收拾這張了（印好、出錯、被中斷、被刪掉）。其他結束方式 —— 逾時、斷線、
+    # 按停或沒人接回來時 GenJob 把這裡關掉 —— 都要在 finally 把它從佇列拿掉、中斷，不然 Comfy 照畫完，GPU 白跑。
+    settled = False
     # POST /prompt 以前落在 try 外面：它一丟例外（Comfy 忙、顯存不夠、工作流被退件），
     # 剛開好的 websocket 就沒人關，跑一整晚會把 socket 和 Comfy 的 client 一起積爆。
     try:
@@ -2949,6 +3051,12 @@ def gen_via_ws(width: int, height: int, seed: int, positive: str, wf: dict, hire
         beat = t0
         last_pv = 0.0
         last_history = t0
+        last_queue = t0
+        # 逾時從這張真的開始畫才算（execution_start、第一格進度、/queue 說它在跑）。以前從送進佇列就算，
+        # 排在後面的那張還沒開始畫就報「超過 600 秒沒有產出」，Comfy 照樣畫完。還在排隊的時候，
+        # 從上一次在 /queue 看到它還在算起：問得到它在排隊就不會逾時。
+        started_at = None
+        seen_at = t0
 
         def completed_image():
             nonlocal last_history
@@ -2959,15 +3067,57 @@ def gen_via_ws(width: int, height: int, seed: int, positive: str, wf: dict, hire
                 hist = api("GET", f"/history/{prompt_id}", timeout=8)
             except (OSError, urllib.error.URLError):
                 return None
-            return finished_image(hist[prompt_id], save_ids, hires) if hist and prompt_id in hist else None
+            entry = hist.get(prompt_id) if isinstance(hist, dict) else None
+            return history_outcome(entry, save_ids, hires) if isinstance(entry, dict) else None
 
-        while time.time() - t0 < GEN_TIMEOUT:
-            # 其他工作的廣播可能讓 recv 永遠不逾時；不能只在安靜時查完成紀錄。
-            if time.time() - last_history >= 5:
-                image = completed_image()
+        def check_queue():
+            """在排隊的續命、在跑的記成開始畫；佇列和 history 都沒有這張，就是被刪掉了。印好了回成品網址。"""
+            nonlocal last_queue, started_at, seen_at
+            last_queue = time.time()
+            try:
+                where = comfy_queue_where(api("GET", "/queue", timeout=8), prompt_id)
+            except (OSError, urllib.error.URLError, ValueError):
+                return None  # 一下子問不到：下一輪再問
+            if where in ("running", "pending"):
+                seen_at = time.time()
+                if where == "running" and started_at is None:
+                    started_at = seen_at
+                return None
+            if where != "?":
+                # 不在佇列：不是做完了（history 有）就是被刪掉了。先問佇列再問 history ——
+                # ComfyUI 是在同一把鎖裡把它移出佇列、寫進 history 的，順序反過來才會誤判。
+                try:
+                    hist = api("GET", f"/history/{prompt_id}", timeout=8)
+                except (OSError, urllib.error.URLError, ValueError):
+                    return None
+                entry = hist.get(prompt_id) if isinstance(hist, dict) else None
+                if not isinstance(entry, dict):
+                    raise ComfyFinished(COMFY_DELETED_TEXT)
+                image = history_outcome(entry, save_ids, hires)
+                if not image:
+                    raise ComfyFinished("Comfy 沒有產出圖片")
+                return image
+            return None
+
+        while True:
+            now = time.time()
+            if now - (started_at if started_at is not None else seen_at) >= GEN_TIMEOUT:
+                # 還沒開始畫：判逾時前再問一次佇列（GEN_TIMEOUT 設得比 QUEUE_CHECK_EVERY 短也一樣），還在排隊就續命。
+                image = check_queue() if started_at is None else None
                 if image:
+                    settled = True
                     yield ("done", _job(seed, width, height, positive, image, ckpt, hires))
                     return
+                if time.time() - (started_at if started_at is not None else seen_at) >= GEN_TIMEOUT:
+                    raise TimeoutError(f"Comfy 超過 {GEN_TIMEOUT} 秒沒有產出（prompt {prompt_id}）")
+            # 其他工作的廣播可能讓 recv 永遠不逾時；不能只在安靜時查完成紀錄。
+            image = completed_image() if now - last_history >= 5 else None
+            if not image and time.time() - last_queue >= QUEUE_CHECK_EVERY:
+                image = check_queue()
+            if image:
+                settled = True
+                yield ("done", _job(seed, width, height, positive, image, ckpt, hires))
+                return
             # 忙碌的外來廣播也不能餓死心跳；前端看門狗與取消檢查靠它續行。
             now = time.time()
             if now - beat >= 5:
@@ -2979,6 +3129,7 @@ def gen_via_ws(width: int, height: int, seed: int, positive: str, wf: dict, hire
             except socket.timeout:
                 image = completed_image() if time.time() - last_history >= 2 else None
                 if image:
+                    settled = True
                     yield ("done", _job(seed, width, height, positive, image, ckpt, hires))
                     return
                 # 心跳：載模型的時候 Comfy 可以安靜一分鐘以上。沒有這一下，前端分不出
@@ -2991,8 +3142,10 @@ def gen_via_ws(width: int, height: int, seed: int, positive: str, wf: dict, hire
             if op == 8:
                 # 對面收線。先撈一次 history —— 圖可能已經存好了，只是收線比 executed 快。
                 hist = api("GET", f"/history/{prompt_id}", timeout=20)
-                image = finished_image(hist[prompt_id], save_ids, hires) if hist and prompt_id in hist else None
+                entry = hist.get(prompt_id) if isinstance(hist, dict) else None
+                image = history_outcome(entry, save_ids, hires) if isinstance(entry, dict) else None
                 if image:
+                    settled = True
                     yield ("done", _job(seed, width, height, positive, image, ckpt, hires))
                     return
                 raise ConnectionError("Comfy 關掉了 websocket")
@@ -3000,6 +3153,9 @@ def gen_via_ws(width: int, height: int, seed: int, positive: str, wf: dict, hire
                 ws.send(data, 10)
                 continue
             if op == 2:
+                # 預覽只推給送這張的連線（client_id 每張都不一樣）：收到就是開始畫了。
+                if started_at is None:
+                    started_at = time.time()
                 now = time.time()
                 if not preview_due(last_pv, now):
                     continue
@@ -3021,6 +3177,8 @@ def gen_via_ws(width: int, height: int, seed: int, positive: str, wf: dict, hire
             d = msg.get("data") or {}
             if d.get("prompt_id") and d["prompt_id"] != prompt_id:
                 continue
+            if started_at is None and (typ == "progress" or (typ in ("execution_start", "execution_cached", "executing") and d.get("prompt_id") == prompt_id)):
+                started_at = time.time()
             if typ == "progress":
                 yield (
                     "progress",
@@ -3032,21 +3190,30 @@ def gen_via_ws(width: int, height: int, seed: int, positive: str, wf: dict, hire
             elif typ == "execution_error":
                 if d.get("prompt_id") and d.get("prompt_id") != prompt_id:
                     continue
-                raise RuntimeError(comfy_exec_error_text(d))
+                raise ComfyFinished(comfy_exec_error_text(d))
             elif typ == "execution_interrupted" and d.get("prompt_id") == prompt_id:
                 # 這則是廣播給所有連線的：只認自己那張的 prompt_id，別張被中斷不關我的事。
-                raise RuntimeError("ComfyUI 中斷了這張")
+                raise ComfyFinished("ComfyUI 中斷了這張")
             elif typ in ("execution_success", "executed"):
                 nid = str(d.get("node") or "")
                 if typ == "executed" and save_ids and nid not in save_ids:
                     continue
                 image = completed_image()
                 if image:
+                    settled = True
                     yield ("done", _job(seed, width, height, positive, image, ckpt, hires))
                     return
-        raise TimeoutError(f"Comfy 超過 {GEN_TIMEOUT} 秒沒有產出（prompt {prompt_id}）")
+    except ComfyFinished:
+        settled = True
+        raise
+    except Exception as exc:
+        if comfy_disconnected(exc):
+            raise ConnectionError(COMFY_GONE_TEXT) from exc
+        raise
     finally:
         ws.close()
+        if not settled:
+            comfy_drop(prompt_id)
 
 
 # === 可以接回去的出圖工作 =====================================================
@@ -3259,14 +3426,8 @@ class GenJob:
                 # 按停的時候 prompt_id 可能還沒回來（cancel() 那時什麼都做不了）：在這裡補做。
                 # 沒人接回來的也一樣要從佇列拿掉 —— /interrupt 只砍正在畫的，還在排隊的會被
                 # Comfy 照樣畫完（沒人要的圖），後面每一張都被往後推。刪一個已經在畫的是無害的。
-                try:
-                    api("POST", "/queue", {"delete": [self.prompt_id]}, timeout=8)
-                except Exception:
-                    pass
-                try:
-                    comfy_interrupt(self.prompt_id)
-                except Exception:
-                    pass
+                # 上面關掉 _events 時 gen_via_ws 的 finally 多半已經送過了：comfy_drop 同一張只送一次。
+                comfy_drop(self.prompt_id)
             if gave_up:
                 self.push("error", {"error": "已取消" if self.cancelled else "連線斷了太久沒接回來，這張已經停掉"})
             self.push("error", {"error": "出圖流程中途結束"})  # 已經結束的不會再記
@@ -3279,14 +3440,7 @@ class GenJob:
         if done or not pid:
             return
         # 還在排隊的：從 Comfy 的佇列拿掉（/interrupt 只砍正在畫的那張）。畫到一半的：中斷。
-        try:
-            api("POST", "/queue", {"delete": [pid]}, timeout=8)
-        except Exception:
-            pass
-        try:
-            comfy_interrupt(pid)
-        except Exception:
-            pass
+        comfy_drop(pid)
 
 
 def find_job(jid: str) -> "GenJob | None":
@@ -3336,28 +3490,57 @@ def gen_via_poll(width: int, height: int, seed: int, positive: str, wf: dict, hi
     prompt_id = (posted or {}).get("prompt_id")
     if not prompt_id:
         raise RuntimeError(f"Comfy 沒有回 prompt_id：{posted!r}"[:200])
-    yield ("ping", {"stage": "queued", "prompt_id": prompt_id})
-    t0 = time.time()
-    while time.time() - t0 < GEN_TIMEOUT:
-        try:
-            hist = api("GET", f"/history/{prompt_id}", timeout=8)
-        except (OSError, urllib.error.URLError):
-            hist = None  # 一下子連不上：下一輪再查
-        entry = hist.get(prompt_id) if isinstance(hist, dict) else None
-        if isinstance(entry, dict):
-            image = finished_image(entry, save_ids, hires)
-            if image:
-                yield ("done", _job(seed, width, height, positive, image, ckpt, hires))
-                return
-            status = entry.get("status") or {}
-            if status.get("status_str") == "error":
-                err = next((m[1] for m in status.get("messages") or [] if isinstance(m, list) and len(m) > 1 and m[0] == "execution_error"), {})
-                raise RuntimeError(comfy_exec_error_text(err if isinstance(err, dict) else {}))
-            if status.get("completed"):
-                raise RuntimeError("Comfy 沒有產出圖片")
-        yield ("ping", {"waited": round(time.time() - t0, 1)})
-        time.sleep(POLL_EVERY)
-    raise TimeoutError(f"Comfy 超過 {GEN_TIMEOUT} 秒沒有產出（prompt {prompt_id}）")
+    # 跟 gen_via_ws 同一套：逾時從開始畫算（/queue 說它在跑），排隊中的不算；佇列和 history 都沒有就是被刪掉了；
+    # 不是好好結束的（逾時、按停、沒人接回來），finally 把它從 Comfy 拿掉。
+    settled = False
+    try:
+        yield ("ping", {"stage": "queued", "prompt_id": prompt_id})
+        t0 = time.time()
+        last_queue = t0
+        started_at = None
+        seen_at = t0
+        while time.time() - (started_at if started_at is not None else seen_at) < GEN_TIMEOUT:
+            try:
+                hist = api("GET", f"/history/{prompt_id}", timeout=8)
+            except (OSError, urllib.error.URLError):
+                hist = None  # 一下子連不上：下一輪再查
+            entry = hist.get(prompt_id) if isinstance(hist, dict) else None
+            if isinstance(entry, dict):
+                image = history_outcome(entry, save_ids, hires)
+                if image:
+                    settled = True
+                    yield ("done", _job(seed, width, height, positive, image, ckpt, hires))
+                    return
+            elif time.time() - last_queue >= QUEUE_CHECK_EVERY or (
+                # 還沒開始畫、下一輪就要判逾時了：先問一次佇列，還在排隊就續命（GEN_TIMEOUT 比 QUEUE_CHECK_EVERY 短也一樣）。
+                started_at is None and time.time() + POLL_EVERY - seen_at >= GEN_TIMEOUT
+            ):
+                last_queue = time.time()
+                try:
+                    where = comfy_queue_where(api("GET", "/queue", timeout=8), prompt_id)
+                except (OSError, urllib.error.URLError, ValueError):
+                    where = "?"
+                if where in ("running", "pending"):
+                    seen_at = time.time()
+                    if where == "running" and started_at is None:
+                        started_at = seen_at
+                elif where is None and hist is not None:
+                    # 剛才那次 history 還沒有、現在佇列也沒有：再問一次 history（可能剛好在這中間做完）。
+                    try:
+                        again = api("GET", f"/history/{prompt_id}", timeout=8)
+                    except (OSError, urllib.error.URLError):
+                        again = None
+                    if isinstance(again, dict) and not isinstance(again.get(prompt_id), dict):
+                        raise ComfyFinished(COMFY_DELETED_TEXT)
+            yield ("ping", {"waited": round(time.time() - t0, 1)})
+            time.sleep(POLL_EVERY)
+        raise TimeoutError(f"Comfy 超過 {GEN_TIMEOUT} 秒沒有產出（prompt {prompt_id}）")
+    except ComfyFinished:
+        settled = True
+        raise
+    finally:
+        if not settled:
+            comfy_drop(prompt_id)
 
 
 def gen(payload: dict) -> dict:
@@ -3380,6 +3563,28 @@ def gen(payload: dict) -> dict:
     if meta.get("hires"):
         out["hires"] = meta["hires"]
     return out
+
+
+def _secrets_read(path: Path, label: str, tag: str):
+    """讀 .secrets 底下的設定檔（file_lock.read_json：壞了用 .bak 換回、壞檔改名留著）。讀不到回 None，原因印在視窗上。"""
+    try:
+        with file_lock.locked(path):
+            return file_lock.read_json(path, label=label)
+    except file_lock.StoreCorrupt as exc:
+        print(f"{tag} {exc}", flush=True)
+    except (OSError, TimeoutError) as exc:
+        print(f"{tag} 讀不到 {path.name}：{exc}", flush=True)
+    return None
+
+
+def _secrets_write(path: Path, body: dict) -> None:
+    """安全寫入（暫存檔＋fsync＋換上＋.bak），正本和 .bak 都只給自己讀。呼叫者拿著 file_lock.locked(path)。"""
+    file_lock.write_text(path, json.dumps(body, ensure_ascii=False, indent=2))
+    for p in (path, file_lock.backup_path(path)):
+        try:
+            os.chmod(p, 0o600)
+        except OSError:
+            pass  # Windows 上沒什麼效果，靠 .gitignore 擋 git
 
 
 # --- Telegram: 把成圖投到頻道 ---------------------------------------------
@@ -3409,12 +3614,15 @@ _tg = {
 }
 
 
+_tg_save_lock = threading.Lock()
+
+
 def tg_load() -> None:
-    try:
-        raw = json.loads(TG_SECRETS.read_text(encoding="utf-8"))
-    except Exception:
+    raw = _secrets_read(TG_SECRETS, "Telegram 設定", "telegram")
+    if raw is None:
         return
     if not isinstance(raw, dict):
+        print(f"telegram {TG_SECRETS.name} 看不懂（不是一個物件），當成沒設定", flush=True)
         return
     with _tg_lock:
         _tg["token"] = str(raw.get("token") or "")
@@ -3423,18 +3631,15 @@ def tg_load() -> None:
 
 
 def tg_save() -> None:
-    with _tg_lock:
-        body = {
-            "token": _tg["token"],
-            "chatId": _tg["chatId"],
-            "enabled": _tg["enabled"],
-        }
-    TG_SECRETS.parent.mkdir(parents=True, exist_ok=True)
-    TG_SECRETS.write_text(json.dumps(body, ensure_ascii=False, indent=2), encoding="utf-8")
-    try:
-        os.chmod(TG_SECRETS, 0o600)
-    except OSError:
-        pass  # Windows 上沒什麼效果，靠 .gitignore 擋 git
+    # 跟 dc_save 一樣：安全寫入，拿狀態和寫檔在同一把鎖裡。
+    with _tg_save_lock, file_lock.locked(TG_SECRETS):
+        with _tg_lock:
+            body = {
+                "token": _tg["token"],
+                "chatId": _tg["chatId"],
+                "enabled": _tg["enabled"],
+            }
+        _secrets_write(TG_SECRETS, body)
 
 
 def tg_tail(token: str) -> str:
@@ -3678,6 +3883,15 @@ DC_SECTIONS = (
 )
 DC_GAP = 1.0
 DC_RETRY_WAIT = 5.0
+# 5xx 和網路錯誤（Discord 一下子不舒服）再試幾次、每次隔多久（秒）。以前只有 429 重試一次，其他一次就算失敗。
+# 重試排回佇列尾、到時間才拿出來送：送圖的執行緒不睡在那裡等，一個頻道在退避，別的頻道照送。
+DC_RETRY_BACKOFF = (5.0, 20.0, 60.0)
+# 429 照 Discord 給的 retry_after 等（同樣排回佇列尾），最多等這麼久。
+DC_RETRY_AFTER_MAX = 120.0
+# Discord 沒加成的伺服器，一則訊息的附件上限 10 MB（multipart 的其他欄位另外算）。
+# 原圖超過這個就請 ComfyUI 轉一張同尺寸的 webp 再送；還是太大才放棄。
+DC_FILE_MAX = int(9.5 * 1024 * 1024)
+DC_TOO_BIG = "圖太大（超過 Discord 10MB 上限）"
 DC_QUEUE_MAX = int(cfg("discord.queueMax", "", 200))
 # Webhook 模式。Discord 的 webhook 不需要 bot：在頻道設定 → 整合 → 建立 Webhook
 # 就拿得到一個網址，POST 上去就好，官方文件對那個端點的說法是
@@ -3703,19 +3917,26 @@ _dc = {
     "sent": 0,
     "failed": 0,
     "lastError": "",
+    # 「其他」那條連續失敗幾次（不存檔）、是不是自動暫停了（存檔）。跟分頻道一樣，連續 PAUSE_AFTER 次就暫停。
+    "fails": 0,
+    "otherPaused": False,
     # 分頻道（discord_routes.py）：每個頻道自己的 webhook 和條件。沒對到任何頻道的圖送上面那條（「其他」）。
     "routes": [],
 }
 # 每個頻道這次開伺服器以來的計數：sent、failed、lastError、fails（連續失敗）。不存檔。
 _dc_rstat: "dict[str, dict]" = {}
+# 等著重試的：[(什麼時候可以再送（time.time()）, 工作)]。送圖的執行緒每一輪把到時間的排回佇列尾。由 _dc_lock 保護。
+_dc_later: "list[tuple[float, dict]]" = []
+# 存設定檔整段（拿狀態 → 寫檔）在這把鎖裡：自動暫停（送圖的執行緒）和面板存檔可能同時寫。
+_dc_save_lock = threading.Lock()
 
 
 def dc_load() -> None:
-    try:
-        raw = json.loads(DC_SECRETS.read_text(encoding="utf-8"))
-    except Exception:
+    raw = _secrets_read(DC_SECRETS, "Discord 設定", "discord ")
+    if raw is None:
         return
     if not isinstance(raw, dict):
+        print(f"discord  {DC_SECRETS.name} 看不懂（不是一個物件），當成沒設定", flush=True)
         return
     with _dc_lock:
         _dc["token"] = str(raw.get("token") or "")
@@ -3726,26 +3947,26 @@ def dc_load() -> None:
         _dc["mode"] = mode if mode in ("bot", "webhook") else "bot"
         _dc["enabled"] = bool(raw.get("enabled"))
         _dc["compact"] = bool(raw.get("compact"))
+        _dc["otherPaused"] = bool(raw.get("otherPaused"))
         _dc["routes"] = discord_routes.load_routes(raw.get("routes"))
 
 
 def dc_save() -> None:
-    with _dc_lock:
-        body = {
-            "mode": _dc["mode"],
-            "token": _dc["token"],
-            "channelId": _dc["channelId"],
-            "webhook": _dc["webhook"],
-            "enabled": _dc["enabled"],
-            "compact": _dc["compact"],
-            "routes": [dict(r) for r in _dc["routes"]],
-        }
-    DC_SECRETS.parent.mkdir(parents=True, exist_ok=True)
-    DC_SECRETS.write_text(json.dumps(body, ensure_ascii=False, indent=2), encoding="utf-8")
-    try:
-        os.chmod(DC_SECRETS, 0o600)
-    except OSError:
-        pass  # Windows 上沒什麼效果，靠 .gitignore 擋 git
+    # 以前直接 write_text：寫到一半當掉就是半個檔，下次開機讀不懂、靜靜當成沒設定（webhook 全丟）。
+    # 拿狀態和寫檔在同一把鎖裡，兩邊同時存時，後寫的一定是比較新的那份。
+    with _dc_save_lock, file_lock.locked(DC_SECRETS):
+        with _dc_lock:
+            body = {
+                "mode": _dc["mode"],
+                "token": _dc["token"],
+                "channelId": _dc["channelId"],
+                "webhook": _dc["webhook"],
+                "enabled": _dc["enabled"],
+                "compact": _dc["compact"],
+                "otherPaused": _dc["otherPaused"],
+                "routes": [dict(r) for r in _dc["routes"]],
+            }
+        _secrets_write(DC_SECRETS, body)
 
 
 def dc_scrub(text: str) -> str:
@@ -3784,8 +4005,13 @@ def _dc_configured_locked() -> bool:
 
 
 def _dc_can_send_locked() -> bool:
-    """有沒有地方可以送：「其他」設好了，或至少有一個啟用、沒暫停的頻道。呼叫者持有 _dc_lock。"""
-    return _dc_configured_locked() or any(r["enabled"] and not r["paused"] for r in _dc["routes"])
+    """有沒有地方可以送：「其他」設好了（沒自動暫停），或至少有一個啟用、沒暫停的頻道。呼叫者持有 _dc_lock。"""
+    return _dc_other_ok_locked() or any(r["enabled"] and not r["paused"] for r in _dc["routes"])
+
+
+def _dc_other_ok_locked() -> bool:
+    """「其他」那條現在能不能送：設好了、也沒有因為連續失敗自動暫停。呼叫者持有 _dc_lock。"""
+    return _dc_configured_locked() and not _dc["otherPaused"]
 
 
 def _dc_route_public(r: dict) -> dict:
@@ -3811,6 +4037,8 @@ def dc_status() -> dict:
             # configured：有地方可以送（網頁的 dcReady 看這個）；otherConfigured：「其他」那條設好了沒。
             "configured": configured,
             "otherConfigured": _dc_configured_locked(),
+            # 「其他」連續送不出去、自動暫停了：面板上顯示，按「恢復」或重新存設定就解開。
+            "otherPaused": bool(_dc["otherPaused"]),
             "routes": [_dc_route_public(r) for r in _dc["routes"]],
             "tokenTail": tg_tail(_dc["token"]),
             "webhookTail": tg_tail(_dc["webhook"]),
@@ -3820,7 +4048,9 @@ def dc_status() -> dict:
             "sent": _dc["sent"],
             "failed": _dc["failed"],
             "lastError": _dc["lastError"],
-            "queued": _dc_queue.qsize(),
+            # 排隊中包含等著重試的（retrying 是其中幾張）。
+            "queued": _dc_queue.qsize() + len(_dc_later),
+            "retrying": len(_dc_later),
         }
 
 
@@ -4065,8 +4295,18 @@ def dc_endpoint(target: str = discord_routes.OTHER) -> "tuple[str, dict]":
     return f"{DC_API}/channels/{urllib.parse.quote(channel)}/messages", headers
 
 
-def dc_call(body: bytes, ctype: str, timeout: float = 60, target: str = discord_routes.OTHER) -> dict:
+def dc_aborted(exc: BaseException) -> bool:
+    """WinError 10053（連線被中止）：Discord 嫌檔案太大時常常不回 413，直接把上傳到一半的連線砍掉。"""
+    inner = exc.reason if isinstance(exc, urllib.error.URLError) and not isinstance(exc, urllib.error.HTTPError) else exc
+    return isinstance(inner, ConnectionAbortedError) or getattr(inner, "winerror", None) == 10053
+
+
+def dc_call(body: bytes, ctype: str, timeout: float | None = None, target: str = discord_routes.OTHER) -> dict:
     url, headers = dc_endpoint(target)
+    if timeout is None:
+        # 以前一律等 60 秒：Discord 不回話的時候，一則文字也要卡住整條佇列一分鐘。
+        # 改成照大小給：基本 15 秒，再照 256 KB/s 的上傳算（10 MB 的圖約 55 秒）。
+        timeout = min(60.0, 15.0 + len(body) / (256 * 1024))
     req = urllib.request.Request(
         url,
         data=body,
@@ -4081,8 +4321,10 @@ def dc_call(body: bytes, ctype: str, timeout: float = 60, target: str = discord_
             got = json.loads(exc.read().decode("utf-8") or "{}")
         except Exception:
             got = {}
+        if not isinstance(got, dict):
+            got = {}
         desc = got.get("message") or f"HTTP {exc.code}"
-        err = RuntimeError(f"{exc.code} {desc}")
+        err = RuntimeError(DC_TOO_BIG if exc.code == 413 else f"{exc.code} {desc}")
         err.dc_code = exc.code  # type: ignore[attr-defined]
         # 429 要等多久 Discord 自己會講，照它說的等，不要拿固定值猜。
         try:
@@ -4091,7 +4333,13 @@ def dc_call(body: bytes, ctype: str, timeout: float = 60, target: str = discord_
             err.dc_retry = DC_RETRY_WAIT  # type: ignore[attr-defined]
         raise err from None
     except Exception as exc:
-        raise RuntimeError(dc_scrub(str(exc))) from None
+        if dc_aborted(exc):
+            raise RuntimeError(DC_TOO_BIG) from None
+        err = RuntimeError(dc_scrub(str(exc)))
+        # 連不上、被重設、逾時：網路的問題，等一下再試多半就好了（dc_retry_wait）。
+        # 回應看不懂（ValueError）不算 —— Discord 多半已經收下了，再送一次會重複貼。
+        err.dc_net = not isinstance(exc, ValueError)  # type: ignore[attr-defined]
+        raise err from None
 
 
 def dc_send_text(text: str, target: str = discord_routes.OTHER) -> dict:
@@ -4111,12 +4359,24 @@ def dc_fetch_image(job: dict) -> "tuple[bytes, str, str]":
     blob = api("GET", f"/view?{q}", timeout=60)
     if not isinstance(blob, (bytes, bytearray)):
         raise RuntimeError("Comfy 沒給圖")
+    fname = dc_safe_filename(job.get("filename") or "shot.png")
+    if len(blob) > DC_FILE_MAX:
+        # 超過 Discord 的上限（大尺寸 Hires 的 PNG 很容易）：請 ComfyUI 轉一張同尺寸的 webp，
+        # 作品冊的縮圖也是這一招（/view 的 preview=）。轉不出來、還是太大，才報太大。
+        try:
+            small = api("GET", f"/view?{q}&preview=" + urllib.parse.quote("webp;90"), timeout=60)
+        except Exception:
+            small = None
+        if not isinstance(small, (bytes, bytearray)) or bytes(small[:4]) != b"RIFF" or len(small) > DC_FILE_MAX:
+            raise RuntimeError(DC_TOO_BIG)
+        stem = fname.rsplit(".", 1)[0] if "." in fname else fname
+        return bytes(small), "image/webp", dc_safe_filename(stem + ".webp")
     mime = "image/png"
     if blob[:3] == b"\xff\xd8\xff":
         mime = "image/jpeg"
     elif blob[:4] == b"RIFF":
         mime = "image/webp"
-    return bytes(blob), mime, dc_safe_filename(job.get("filename") or "shot.png")
+    return bytes(blob), mime, fname
 
 
 def dc_send_photo(job: dict, target: str = discord_routes.OTHER, image: "tuple[bytes, str, str] | None" = None) -> None:
@@ -4135,31 +4395,41 @@ def dc_send_photo(job: dict, target: str = discord_routes.OTHER, image: "tuple[b
     dc_call(body, f"multipart/form-data; boundary={boundary}", target=target)
 
 
-def _dc_note(target: str, err: str = "") -> None:
-    """記一次送出結果。頻道連續失敗 PAUSE_AFTER 次就自動暫停並存檔。"""
+def _dc_note(target: str, err: str = "", streak: bool = True) -> None:
+    """記一次送出結果。頻道（和「其他」那條）連續失敗 PAUSE_AFTER 次就自動暫停並存檔。
+
+    streak=False：失敗不是那個頻道的錯（跟 ComfyUI 拿不到圖、圖太大），照記失敗，但不算進連續失敗。"""
     paused = False
     with _dc_lock:
         if target == discord_routes.OTHER:
             if err:
                 _dc["failed"] += 1
                 _dc["lastError"] = err
+                if streak:
+                    _dc["fails"] += 1
+                    # 以前「其他」只記失敗不暫停：webhook 被刪掉之後，無限抽每一張都再撞一次。
+                    if not _dc["otherPaused"] and _dc["fails"] >= discord_routes.PAUSE_AFTER:
+                        _dc["otherPaused"] = True
+                        paused = True
             else:
                 _dc["sent"] += 1
                 _dc["lastError"] = ""
-            return
-        st = _dc_rstat.setdefault(target, {"sent": 0, "failed": 0, "lastError": "", "fails": 0})
-        if err:
-            st["failed"] += 1
-            st["lastError"] = err
-            st["fails"] += 1
-            route = next((r for r in _dc["routes"] if r["id"] == target), None)
-            if route and not route["paused"] and st["fails"] >= discord_routes.PAUSE_AFTER:
-                route["paused"] = True
-                paused = True
+                _dc["fails"] = 0
         else:
-            st["sent"] += 1
-            st["lastError"] = ""
-            st["fails"] = 0
+            st = _dc_rstat.setdefault(target, {"sent": 0, "failed": 0, "lastError": "", "fails": 0})
+            if err:
+                st["failed"] += 1
+                st["lastError"] = err
+                if streak:
+                    st["fails"] += 1
+                route = next((r for r in _dc["routes"] if r["id"] == target), None)
+                if route and not route["paused"] and st["fails"] >= discord_routes.PAUSE_AFTER:
+                    route["paused"] = True
+                    paused = True
+            else:
+                st["sent"] += 1
+                st["lastError"] = ""
+                st["fails"] = 0
     if paused:
         try:
             dc_save()
@@ -4167,36 +4437,96 @@ def _dc_note(target: str, err: str = "") -> None:
             pass
 
 
+def _dc_note_retry(target: str, err: str, wait: float) -> None:
+    """這次沒送出去、排了重試：只更新「最後錯誤」讓面板看得到，不算失敗（重試也失敗才算）。"""
+    text = f"{err}（{wait:.0f} 秒後重試）"[:300]
+    with _dc_lock:
+        if target == discord_routes.OTHER:
+            _dc["lastError"] = text
+        else:
+            _dc_rstat.setdefault(target, {"sent": 0, "failed": 0, "lastError": "", "fails": 0})["lastError"] = text
+
+
+def dc_retry_wait(exc: BaseException, tries: int) -> "float | None":
+    """這次失敗要不要再試、隔幾秒。None＝不試了：4xx（webhook 不對、沒權限）、圖太大、已經試了 DC_RETRY_BACKOFF 那麼多次。
+
+    tries：這張對這個目標已經重試過幾次。"""
+    if tries >= len(DC_RETRY_BACKOFF):
+        return None
+    code = getattr(exc, "dc_code", None)
+    if code == 429:
+        try:
+            wait = float(getattr(exc, "dc_retry", DC_RETRY_WAIT))
+        except (TypeError, ValueError):
+            wait = DC_RETRY_WAIT
+        return max(0.5, min(wait, DC_RETRY_AFTER_MAX))
+    if (isinstance(code, int) and 500 <= code < 600) or getattr(exc, "dc_net", False):
+        return DC_RETRY_BACKOFF[tries]
+    return None
+
+
+def dc_later(job: dict, wait: float) -> None:
+    """排一張重試：wait 秒後才會被送圖的執行緒拿回佇列尾。"""
+    with _dc_lock:
+        _dc_later.append((time.time() + wait, job))
+
+
+def dc_requeue_due(now: "float | None" = None) -> int:
+    """把到時間的重試排回佇列尾。回傳排回幾張。"""
+    now = time.time() if now is None else now
+    with _dc_lock:
+        due = [job for at, job in _dc_later if at <= now]
+        _dc_later[:] = [(at, job) for at, job in _dc_later if at > now]
+    for job in due:
+        _dc_queue.put(job)
+    return len(due)
+
+
 def dc_deliver(job: dict) -> None:
-    """佇列裡的一張圖：跟 ComfyUI 拿一次，依序送給它的每個目標（頻道或「其他」），每則隔 DC_GAP。"""
+    """佇列裡的一張圖：跟 ComfyUI 拿一次，依序送給它的每個目標（頻道或「其他」），每則隔 DC_GAP。
+
+    5xx、網路錯誤、429：那幾個目標合成一張重試排回佇列尾（帶嘗試次數和下次可送的時間，見 dc_retry_wait），
+    不在這裡睡著等 —— 一個頻道在退避，佇列裡別的圖、別的頻道照送。重試時再跟 ComfyUI 拿一次圖：
+    不把幾 MB 的圖留在記憶體裡等。"""
     targets = job.get("_targets") or [discord_routes.OTHER]
+    tries = int(job.get("_tries") or 0)
     try:
         image = dc_fetch_image(job)
-    except Exception as exc:  # 拿不到圖：每個目標都記一次失敗
+    except Exception as exc:  # 拿不到圖：每個目標都記一次失敗（不是頻道的錯，不算連續失敗）
         err = dc_scrub(str(exc))[:300]
         for t in targets:
-            _dc_note(t, err)
+            _dc_note(t, err, streak=False)
         return
+    again: "list[str]" = []
+    wait_max = 0.0
     for i, target in enumerate(targets):
         if i:
             time.sleep(DC_GAP)
         try:
-            try:
-                dc_send_photo(job, target, image)
-            except RuntimeError as exc:
-                if getattr(exc, "dc_code", None) == 429:
-                    time.sleep(min(getattr(exc, "dc_retry", DC_RETRY_WAIT), 60))
-                    dc_send_photo(job, target, image)
-                else:
-                    raise
+            dc_send_photo(job, target, image)
             _dc_note(target)
         except Exception as exc:  # 一個頻道送不出去，其他頻道照送
-            _dc_note(target, dc_scrub(str(exc))[:300])
+            err = dc_scrub(str(exc))[:300]
+            wait = dc_retry_wait(exc, tries)
+            if wait is None:
+                # 圖太大是這張圖的問題，不是頻道壞了：不算進連續失敗（不然幾張大圖就把頻道暫停）。
+                _dc_note(target, err, streak=str(exc) != DC_TOO_BIG)
+            else:
+                _dc_note_retry(target, err, wait)
+                again.append(target)
+                wait_max = max(wait_max, wait)
+    if again:
+        dc_later({**job, "_targets": again, "_tries": tries + 1}, wait_max)
 
 
 def dc_pump() -> None:
     while True:
-        job = _dc_queue.get()
+        dc_requeue_due()
+        try:
+            # 最多等半秒就回頭看一次有沒有到時間的重試。
+            job = _dc_queue.get(timeout=0.5)
+        except queue.Empty:
+            continue
         try:
             dc_deliver(job)
         except Exception:  # worker 絕不能死
@@ -4217,31 +4547,49 @@ def dc_start() -> None:
 def dc_enqueue(job: dict) -> dict:
     with _dc_lock:
         ready = _dc_can_send_locked() and bool(_dc["enabled"])
+    # code：網頁（dcSendCard）分得出「沒開」（該重讀狀態）、「沒對到頻道」（正常，不吵）和其他真的錯誤。
     if not ready:
-        return {"ok": False, "error": "Discord 還沒設定或沒開"}
+        with _dc_lock:
+            paused = _dc["otherPaused"] and _dc_configured_locked() and bool(_dc["enabled"])
+        if paused:
+            return {"ok": False, "error": "Discord 暫停了：連續送不出去（到 Discord 設定按「恢復」）", "code": "off"}
+        return {"ok": False, "error": "Discord 還沒設定或沒開", "code": "off"}
     if not comfy_view_query(
         job.get("filename") or "", job.get("subfolder") or "", job.get("type") or "output"
     ):
         return {"ok": False, "error": "bad image query"}
+    # 底線開頭的欄位是佇列自己用的（目標、嘗試次數），不收網頁送來的。
+    job = {k: v for k, v in job.items() if not str(k).startswith("_")}
     with _dc_lock:
         routes = [dict(r) for r in _dc["routes"]]
-        other_ok = _dc_configured_locked()
+        other_ok = _dc_other_ok_locked()
+        later = len(_dc_later)
     # 照分級、角色、tag 分到頻道；一個都沒對到就送「其他」（discord_routes.py）。
     targets = discord_routes.targets_for(routes, str(job.get("en") or ""), str(job.get("rating") or ""), other_ok, dc_series_of())
     if not targets:
-        return {"ok": False, "error": "沒有符合的頻道"}
-    deep = _dc_queue.qsize()
+        return {"ok": False, "error": "沒有符合的頻道", "code": "nomatch"}
+    deep = _dc_queue.qsize() + later
     if deep >= DC_QUEUE_MAX:
-        return {"ok": False, "error": f"Discord 佇列塞住了（{deep} 張待送），這張不排"}
+        return {"ok": False, "error": f"Discord 佇列塞住了（{deep} 張待送），這張不排", "code": "full"}
     dc_start()
     _dc_queue.put({**job, "_targets": targets})
-    return {"ok": True, "queued": _dc_queue.qsize(), "targets": len(targets)}
+    return {"ok": True, "queued": _dc_queue.qsize() + later, "targets": len(targets)}
 
 
 def dc_apply_route(op: dict) -> dict:
     """頻道的新增／修改（save）、刪除（delete）、恢復（resume）。回傳 dc_status() 或 {ok: False, error}。"""
     kind = str((op or {}).get("op") or "")
     rid = str((op or {}).get("id") or "")
+    if kind == "resume" and rid == discord_routes.OTHER:
+        # 「其他」那條自動暫停之後，面板上的「恢復」。
+        with _dc_lock:
+            _dc["otherPaused"] = False
+            _dc["fails"] = 0
+        try:
+            dc_save()
+        except Exception as exc:
+            return {"ok": False, "error": dc_scrub(str(exc))}
+        return dc_status()
     with _dc_lock:
         routes = [dict(r) for r in _dc["routes"]]
     at = next((i for i, r in enumerate(routes) if r["id"] == rid), -1) if rid else -1
@@ -4303,6 +4651,9 @@ def dc_apply_config(payload: dict) -> dict:
             _dc["enabled"] = bool(payload.get("enabled"))
         if "compact" in payload:
             _dc["compact"] = bool(payload.get("compact"))
+        # 重新存一次設定（換了網址、開關自動送）就當作修好了：「其他」的自動暫停一起解開。
+        _dc["otherPaused"] = False
+        _dc["fails"] = 0
     try:
         dc_save()
     except Exception as exc:
@@ -4562,7 +4913,26 @@ class Handler(BaseHTTPRequestHandler):
                 return
             raw = stored.read_bytes()
             mime = mimetypes.guess_type(stored.name)[0] or "application/octet-stream"
-            self._bytes(200, raw, mime)
+            # 作品冊的牆：網址帶 w=480／960 就給縮圖（webp，跟 LoRA 預覽同一套 preview_thumb），縮不了照舊給原圖。
+            width = thumb_width(urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query))
+            if not mime.startswith("image/"):
+                width = 0
+            # ETag 是內容雜湊（帶寬度：同一張的原圖和縮圖是不同的東西）。快取一律回來問（no-cache），不給 max-age：
+            # 檔名是作品的 id（<id>.png、<id>.thumb.webp），刪掉一件再存一件同名的，id 會一樣、檔名一樣、內容換了 ——
+            # 給了 max-age，瀏覽器會拿舊的那張頂著新作品一整天。回來問的代價只是一個 304。
+            etag = f'"{hashlib.sha1(raw).hexdigest()}' + (f'-w{width}"' if width else '"')
+            cache = {"ETag": etag, "Cache-Control": "private, no-cache"}
+            if self.headers.get("If-None-Match") == etag:
+                self.send_response(304)
+                for k, v in cache.items():
+                    self.send_header(k, v)
+                self.end_headers()
+                return
+            small = preview_thumb(raw, width) if width else None
+            if small:
+                self._bytes(200, small, "image/webp", cache)
+            else:
+                self._bytes(200, raw, mime, cache)
             return
         pid = self._recipe_pid(path)
         if not pid:
@@ -4902,15 +5272,9 @@ class Handler(BaseHTTPRequestHandler):
         if gone:
             # 還在排隊的從佇列拿掉 —— /interrupt 只砍正在畫的那張，排隊中的會被 Comfy
             # 照樣畫完，沒人要的圖把後面每一張往後推（多台裝置一起抽的時候特別明顯）。
-            if prompt_id:
-                try:
-                    api("POST", "/queue", {"delete": [prompt_id]}, timeout=8)
-                except Exception:
-                    pass
-            try:
-                comfy_interrupt(prompt_id)
-            except Exception:
-                pass
+            # 上面的 events.close() 多半已經讓 gen_via_ws 送過了（comfy_drop 同一張只送一次）。
+            # 還沒拿到 prompt_id 就是還沒送進 Comfy：什麼都不做，不送全域中斷。
+            comfy_drop(prompt_id)
 
     def _serve_comfy_image(self) -> None:
         qs = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
@@ -5631,6 +5995,31 @@ def open_browser(port: int, delay: float = 0.3) -> None:
     threading.Timer(delay, lambda: webbrowser.open(url)).start()
 
 
+def boot_comfy_report() -> None:
+    """開機時要問 ComfyUI 的幾項，在背景執行緒做、做完印出來（main 不等它，伺服器先開始接連線）。"""
+    try:
+        base = comfy_base()
+        if workflows._comfy_answers(base, 1.0):
+            print(f"comfy    Comfy {base}", flush=True)
+        elif not (os.environ.get("COMFY_API") or workflows.saved_comfy_api() or str(cfg("comfy.api", "", "")).strip()):
+            print("comfy    Comfy 還沒開（找過 8188 和 ComfyUI Desktop 的 8000）：開好之後網頁會自動接上 / ComfyUI not found yet; the page connects when it starts", flush=True)
+        else:
+            print(f"comfy    Comfy 連不到 {base}：開好 ComfyUI，或在網頁頂欄的 Comfy 燈號改網址 / cannot reach ComfyUI at {base}", flush=True)
+        lm_total = lora_scan.lora_manager_count()
+        if lm_total is not None:
+            print(f"loras    ComfyUI 的 LoRA Manager：{lm_total} 個，預覽圖和觸發詞從它來 / {lm_total} LoRAs via LoRA Manager（{lora_scan.lm_manager_url()}）", flush=True)
+        elif not lora_scan.LORA_ROOT:
+            print("loras    （ComfyUI 沒有 LoRA Manager、也沒設定 paths.loraRoot：LoRA 清單改問 Comfy，沒有預覽圖和觸發詞。"
+                  "墨池準備面板可選擇安裝 LoRA Manager，裝完重開 ComfyUI）")
+            print("         No LoRA Manager in ComfyUI: LoRAs are listed without previews; the setup panel can install it", flush=True)
+        check_ckpt()
+        removed = prune_hires_inputs()
+        if removed:
+            print(f"hires    清掉 {len(removed)} 張舊的上傳原圖，input/danbooru_hires 留下最近 {HIRES_INPUT_KEEP} 張", flush=True)
+    except Exception as exc:  # noqa: BLE001 —— 開機訊息印不出來不影響伺服器
+        print(f"comfy    開機檢查沒做完：{exc}", flush=True)
+
+
 def main() -> None:
     host = str(cfg("server.host", "HOST", "127.0.0.1"))
     port = int(cfg("server.port", "PORT", 8796))
@@ -5647,17 +6036,10 @@ def main() -> None:
         open_browser(port, delay=0)
         time.sleep(0.5)
         raise SystemExit(1) from None
-    base = comfy_base()
-    if workflows._comfy_answers(base, 1.0):
-        comfy_note = f"Comfy {base}"
-    elif not (os.environ.get("COMFY_API") or workflows.saved_comfy_api() or str(cfg("comfy.api", "", "")).strip()):
-        comfy_note = "Comfy 還沒開（找過 8188 和 ComfyUI Desktop 的 8000）：開好之後網頁會自動接上 / ComfyUI not found yet; the page connects when it starts"
-    else:
-        comfy_note = f"Comfy 連不到 {base}：開好 ComfyUI，或在網頁頂欄的 Comfy 燈號改網址 / cannot reach ComfyUI at {base}"
     # 0.0.0.0 是「聽所有網卡」，不是能打開的網址：印這台自己的。
     shown = "127.0.0.1" if host in ("0.0.0.0", "::", "") else host
     name = "墨池 Mochi" if (WEB / "setup-panel.js").is_file() else "排字匣"
-    print(f"{name}  http://{shown}:{port}/   畫面 {WEB.name}   {comfy_note}")
+    print(f"{name}  http://{shown}:{port}/   畫面 {WEB.name}")
     print("allow    " + ",".join(str(n) for n in ALLOW_NETS))
     print(f"設定檔  {CONFIG_PATH}" + ("" if CONFIG else "（沒有，全部用預設值 / not found, using defaults）"))
     # 第一次 clone 下來最常見的兩個「怎麼是空的」就是這兩項沒設定。
@@ -5666,13 +6048,8 @@ def main() -> None:
         print(f"loras    偏好路徑 {lora_scan.preferred_path()}（在 LoRA 面板的「偏好路徑」改）")
     if ckpt_pref():
         print(f"ckpts    偏好路徑 {ckpt_pref()}（在底模面板的「偏好路徑」改）")
-    lm_total = lora_scan.lora_manager_count()
-    if lm_total is not None:
-        print(f"loras    ComfyUI 的 LoRA Manager：{lm_total} 個，預覽圖和觸發詞從它來 / {lm_total} LoRAs via LoRA Manager（{lora_scan.lm_manager_url()}）")
-    elif not lora_scan.LORA_ROOT:
-        print("loras    （ComfyUI 沒有 LoRA Manager、也沒設定 paths.loraRoot：LoRA 清單改問 Comfy，沒有預覽圖和觸發詞。"
-              "墨池準備面板可選擇安裝 LoRA Manager，裝完重開 ComfyUI）")
-        print("         No LoRA Manager in ComfyUI: LoRAs are listed without previews; the setup panel can install it")
+    if not lora_scan.LORA_ROOT:
+        pass  # ComfyUI 有沒有 LoRA Manager 要問它：boot_comfy_report 在背景印
     elif not lora_scan.LORA_ROOT.is_dir():
         print(
             f"loras    {lora_scan.LORA_ROOT}（路徑不存在，LoRA 面板會是空的）\n"
@@ -5704,7 +6081,9 @@ def main() -> None:
             else f"{ds['channelId']}  token {ds['tokenTail']}"
         )
         print(f"discord  {where}  自動送 {'開' if ds['enabled'] else '關'}")
-    check_ckpt()
+    # 要問 ComfyUI 的幾項（連不連得到、LoRA Manager、底模、清上傳原圖）丟到背景：
+    # 以前在這裡一項一項同步問，ComfyUI 卡住時要 19 秒才開始接連線（網頁一直轉圈）。
+    threading.Thread(target=boot_comfy_report, name="boot-comfy", daemon=True).start()
     if (WEB / "setup-panel.js").is_file():
         # 這個版面在網頁上顯示準備進度（web6/setup-panel.js）：卡面、LoRA Manager、放大模型、
         # 姿勢參考、烘焙都由 setup_tasks 在背景做，ComfyUI 什麼時候開都接得上。
@@ -5714,9 +6093,6 @@ def main() -> None:
         print("         Keep this window open while you use Mochi / 用的時候這個視窗不要關")
     else:
         start_card_fetch()
-    removed = prune_hires_inputs()
-    if removed:
-        print(f"hires    清掉 {len(removed)} 張舊的上傳原圖，input/danbooru_hires 留下最近 {HIRES_INPUT_KEEP} 張")
     _OUTPUT_PRUNE["enabled"] = True
     if OUTPUT_KEEP > 0:
         def _startup_prune():

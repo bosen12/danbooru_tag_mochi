@@ -444,7 +444,8 @@ export function cardFacts(card, lex, data) {
     const eg = sibs.slice(0, 2).map((t) => lex.byTag.get(t)?.zh || t).join("、");
     facts.push(["同一格", sibs.length ? `一張圖只留一個：跟${eg}${sibs.length > 2 ? ` 等 ${sibs.length} 個` : ""}互斥` : "一張圖只留一個"]);
   }
-  const rel = [...(item.implies || []), ...(item.bind || [])];
+  // implies 跟 bind 可能列同一張（漢服兩邊都有中式服裝）：去掉重複，不然寫成「中式服裝、中式服裝」。
+  const rel = [...new Set([...(item.implies || []), ...(item.bind || [])])];
   if (rel.length) facts.push(["附帶", rel.map((t) => lex.byTag.get(t)?.zh || t).join("、")]);
   void data;
   return facts;

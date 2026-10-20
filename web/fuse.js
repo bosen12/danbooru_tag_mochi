@@ -35,6 +35,7 @@ import { skeletonPicker } from "./skeleton-picker.js";
 import { compareThumb } from "./compare.js";
 import { ratingBlocked, ratingOf, RATING_LABEL } from "./rules/rating.js";
 import { mountRatingFree } from "./rating-free.js";
+import { makeShelf, whenPrinter, settingsToWrite, onOtherTab } from "./tab-sync.js";
 import { searchMiss } from "./lib-hint.js";
 import { watchGone, sweepGone } from "./gone.js";
 import { HEATS, toggleHeat } from "./heats.js";
@@ -300,16 +301,39 @@ async function boot() {
   if (caseTab === "match") renderCase();
   renderLine();
   // 接著印、接回 Hires：背後預先開好的頁（prerender.js）等點進去才做，沒點進去的頁會被丟掉，那時送出去就白印了。
-  whenActive(() => {
-    for (const p of prints) if (p.status === "queued" && p.live && p.job) generator.resume(p);
-    // 還排著沒送出去的（去別頁晃一下回來）：照原本的順序接著印（繩上新的在左邊，所以倒過來）。
-    const waiting = prints.filter((p) => p._waiting).reverse();
-    for (const p of waiting) {
-      delete p._waiting;
-      generator.enqueue(p);
+  // 只有一個疊印台分頁接（tab-sync.js 的 whenPrinter）：另一個分頁也開著的話由它印，這邊只看；
+  // 它關掉才輪到這邊，那時重讀存檔，還在排的才接。
+  whenActive(() => whenPrinter("fuse", (first) => {
+    const stored = first ? null : new Map((readJ(FK.prints, []) || []).filter((p) => p && p.id).map((p) => [p.id, p]));
+    for (const p of prints) {
+      if (p.status !== "queued") continue;
+      const t = stored ? stored.get(p.id) : p;
+      if (t && t.live && t.job && t.status !== "done") {
+        p.job = t.job;
+        generator.resume(p);
+      }
     }
+    // 還排著沒送出去的（去別頁晃一下回來）：照原本的順序接著印（繩上新的在左邊，所以倒過來）。
+    const waiting = prints.filter((p) => (stored ? S.stillWaiting(stored.get(p.id)) : p._waiting)).reverse();
+    for (const p of prints) delete p._waiting;
+    for (const p of waiting) generator.enqueue(p);
     if (waiting.length) toast(`接著印剛才排著的 ${waiting.length} 張`);
     for (const p of prints) if (p.status === "done" && p.hiresJob) hiresRun.resume(p, p.hiresJob);
+  }));
+  // 別的疊印台分頁印好、收藏、Hires 了：繩上那張跟著換（這邊沒動過的才換）。
+  onOtherTab(FK.prints, (v) => {
+    if (!Array.isArray(v)) return;
+    const mine = new Map(prints.map((p) => [p.id, p]));
+    adoptPrints(printShelf.changed(v.filter((p) => p && p.id), (id) => (mine.has(id) ? serPrint(mine.get(id)) : null)));
+  });
+  // 別的疊印台分頁改了規則：這邊跟著換、重抽試印。
+  onOtherTab(FK.settings, (v) => {
+    if (!v || typeof v !== "object") return;
+    settings = sanitizeSettings({ ...settings, ...v }, data);
+    renderRating();
+    retrial();
+    renderAll();
+    renderCase();
   });
   attachPeek($("case-grid"), ".card[data-tag]", peekInfo);
   attachTilt($("case-grid"));
@@ -347,10 +371,16 @@ function freshSeeds() {
   return Array.from({ length: TRIALS }, () => randomSeed());
 }
 
+// 只寫這次真的變了的欄位（tab-sync.js）：開兩個疊印台分頁，一邊改了分級，另一邊之後一存不會把舊的寫回去。
+function saveFuseSettings(prev) {
+  writeJ(FK.settings, settingsToWrite(readJ(FK.settings, null), prev, settings));
+}
+
 function setSettings(patch) {
+  const prev = settings;
   // Heat selection has automatic weights; inherited weights belong to the old selection.
   settings = sanitizeSettings({ ...settings, ...(patch.heats ? { weights: undefined } : {}), ...patch }, data);
-  writeJ(FK.settings, settings);
+  saveFuseSettings(prev);
   retrial();
   renderAll();
   renderCase();
@@ -465,7 +495,7 @@ function missReason(tag) {
   const item = lex.byTag.get(tag);
   if (item && ratingBlocked(item, ratingOf(settings))) return `${RATING_LABEL[settings.rating]}抽不到它`;
   if (trials.some((t) => t.eraClash.includes(tag))) return "跟那一張的時代對不上";
-  if (heatMismatches(lex, [tag], effectiveHeats(settings)).length) return "目前勾的情境不收它";
+  if (heatMismatches(lex, [tag], effectiveHeats(settings)).length) return "目前勾的尺度不收它";
   return "被同一格或相剋的字擠掉";
 }
 
@@ -620,7 +650,7 @@ function replacedNote(tag, events) {
   toastUndo(parts.join("；"));
 }
 
-/** 分級擋掉的情境被點了：牌搖一下、說為什麼，頂欄的分級亮一下（跟墨池同一套）。 */
+/** 分級擋掉的尺度被點了：牌搖一下、說為什麼，頂欄的分級亮一下（跟墨池同一套）。 */
 function explainBlockedHeat(h, btn, rating) {
   refuse(btn);
   toast(`${RATING_LABEL[rating]}不會出現${HEAT_ZH[h]}：要用的話，先把頂端的分級換成「敏感」或「色情」`);
@@ -735,8 +765,9 @@ function undoRestore(r) {
   restoreSeed(r.seed);
   const ratingBack = r.rating !== settings.rating;
   if (ratingBack || r.width !== settings.width || r.height !== settings.height) {
+    const prev = settings;
     settings = sanitizeSettings({ ...settings, width: r.width, height: r.height, rating: r.rating }, data);
-    writeJ(FK.settings, settings);
+    saveFuseSettings(prev);
   }
   if (ratingBack) {
     renderRating();
@@ -1023,9 +1054,16 @@ function dropCancelled(p) {
   });
 }
 
+// 繩上的印樣存檔：開兩個疊印台分頁時三方比對合併，不互相蓋（tab-sync.js）。
+const printShelf = makeShelf({
+  read: () => (readJ(FK.prints, []) || []).filter((p) => p && p.id),
+  write: (v) => writeJ(FK.prints, v),
+  max: PRINT_MAX,
+  when: (p) => Number(p.at) || Date.parse(p.at) || 0,
+});
+
 function loadPrints() {
-  const list = readJ(FK.prints, []);
-  if (!Array.isArray(list)) return [];
+  const list = printShelf.load((readJ(FK.prints, []) || []).filter((p) => p && p.id));
   // 重新整理就把沒印出來的（失敗、取消、停掉的）拿下繩子；只留印好的和畫到一半還接得回去的。
   return list
     .filter((p) => p && p.id && p.positive)
@@ -1042,43 +1080,60 @@ function loadPrints() {
 }
 
 function savePrints() {
-  writeJ(
-    FK.prints,
-    prints.slice(0, PRINT_MAX).map((p) => ({
-      id: p.id,
-      albumId: p.albumId || null,
-      sig: p.sig,
-      seed: p.seed,
-      positive: p.positive,
-      width: p.width,
-      height: p.height,
-      rating: p.rating,
-      loras: p.loras,
-      ckpt: p.ckpt,
-      workflowId: p.workflowId,
-      sampling: p.sampling || {},
-      pose: p.pose || null,
-      bed: p.bed,
-      fixedSeed: !!p.fixedSeed,
-      seeds: p.seeds,
-      picked: p.picked,
-      letter: p.letter,
-      mine: p.mine,
-      era: p.era,
-      status: p.status === "done" ? "done" : p.status === "failed" ? "failed" : "stopped",
-      image: p.image || null,
-      baseImage: p.baseImage || null,
-      hires: p.hires || null,
-      face: p.face || null,
-      hiresJob: S.hiresJobOf(p),
-      job: p.job || null,
-      live: !!p.job && (p.status === "running" || p.status === "queued"),
-      waiting: S.isWaiting(p),
-      waitedAt: S.isWaiting(p) ? Date.now() : 0,
-      note: p.status === "done" ? "" : p.note || "",
-      at: p.at,
-    }))
-  );
+  adoptPrints(printShelf.save(prints.slice(0, PRINT_MAX).map(serPrint)));
+}
+
+/** 別的分頁改過的那幾張（存檔的樣子）套回繩上：套完 serPrint(p) 跟它一樣，下次存檔才不會又寫回舊的。 */
+function adoptPrints(list) {
+  if (!list.length) return;
+  for (const t of list) {
+    const p = prints.find((x) => x.id === t.id);
+    if (!p) continue;
+    for (const k of Object.keys(t)) if (!["status", "live", "waiting", "waitedAt", "hiresJob", "note"].includes(k)) p[k] = t[k];
+    p.job = t.job || null;
+    p.status = t.status === "done" ? "done" : t.status === "failed" ? "failed" : t.live || t.waiting ? "queued" : "stopped";
+    p.note = t.note || "";
+    p.hi = t.hiresJob ? { ...t.hiresJob, status: "queued" } : null;
+    if (p.status === "done") p.progress = 1;
+  }
+  renderLine();
+}
+
+function serPrint(p) {
+  return {
+    id: p.id,
+    albumId: p.albumId || null,
+    sig: p.sig,
+    seed: p.seed,
+    positive: p.positive,
+    width: p.width,
+    height: p.height,
+    rating: p.rating,
+    loras: p.loras,
+    ckpt: p.ckpt,
+    workflowId: p.workflowId,
+    sampling: p.sampling || {},
+    pose: p.pose || null,
+    bed: p.bed,
+    fixedSeed: !!p.fixedSeed,
+    seeds: p.seeds,
+    picked: p.picked,
+    letter: p.letter,
+    mine: p.mine,
+    era: p.era,
+    status: p.status === "done" ? "done" : p.status === "failed" ? "failed" : "stopped",
+    image: p.image || null,
+    baseImage: p.baseImage || null,
+    hires: p.hires || null,
+    face: p.face || null,
+    hiresJob: S.hiresJobOf(p),
+    job: p.job || null,
+    live: !!p.job && (p.status === "running" || p.status === "queued"),
+    waiting: S.isWaiting(p),
+    waitedAt: S.isWaiting(p) ? Date.now() : 0,
+    note: p.status === "done" ? "" : p.note || "",
+    at: p.at,
+  };
 }
 
 function restorePrint(p) {
@@ -1098,21 +1153,22 @@ function restorePrint(p) {
   const ratingBack = p.rating && p.rating !== settings.rating && RATING_RANK[p.rating] !== undefined;
   const sizeBack = p.width && p.height && (p.width !== settings.width || p.height !== settings.height);
   if (ratingBack || sizeBack) {
+    const prev = settings;
     settings = sanitizeSettings(
       { ...settings, ...(sizeBack ? { width: p.width, height: p.height } : {}), ...(ratingBack ? { rating: p.rating } : {}) },
       data
     );
-    writeJ(FK.settings, settings);
+    saveFuseSettings(prev);
   }
   rowNotes = {};
   retrial();
   const t = trials[picked];
   const same = t && sigOf(t) === p.sig;
-  const bits = [ratingBack ? `尺度切回「${RATING_LABEL[p.rating]}」` : "", sizeBack ? "尺寸也換回當時的" : ""].filter(Boolean);
+  const bits = [ratingBack ? `分級切回「${RATING_LABEL[p.rating]}」` : "", sizeBack ? "尺寸也換回當時的" : ""].filter(Boolean);
   // 看得見的說明：尺度換了、或是規則改過對不上當時那張，都寫在卡池上面。
   plateNotice =
     bits.length || !same
-      ? { kind: same ? "info" : "err", text: `回到這一版${bits.length ? "：" + bits.join("，") : ""}${same ? "" : "。規則（時代、情境、人物…）改過，試印跟當時不一樣"}` }
+      ? { kind: same ? "info" : "err", text: `回到這一版${bits.length ? "：" + bits.join("，") : ""}${same ? "" : "。規則（時代、尺度、人物…）改過，試印跟當時不一樣"}` }
       : null;
   if (ratingBack) {
     renderRating();
@@ -2864,6 +2920,9 @@ function renderPrintBar() {
     ERA_ZH[t.era] || "",
     RATING_ZH[settings.rating],
     (SIZES.find((s) => s.w === settings.width && s.h === settings.height) || SIZES[0]).zh,
+    // 種子跟墨池共用（seed-control.js）：在墨池點過「seed …」固定了，這裡印 A／B／C／D 都是同一顆，
+    // 種子設定又收在「更多設定」裡 —— 寫在看得到的這一行，不然只會納悶怎麼每張都很像。
+    isFixedSeed() ? `種子固定 ${seedState().value}` : "",
   ].filter(Boolean);
   // 印製中每一格進度都會叫到這裡。只有進度變了的話，只改付印鈕的字跟進度條，
   // 不整排重畫 —— 以前「停」一秒換好幾次新的，滑鼠停在上面會閃、按下去常常按不到。
@@ -3832,7 +3891,7 @@ function openRules() {
   };
   const heats = el(
     "div",
-    { class: "rule-chips", role: "group", "aria-label": "情境" },
+    { class: "rule-chips", role: "group", "aria-label": "尺度" },
     HEATS.map((h) => {
       const blocked = heatBlockedByRating(h, ratingOf(settings));
       return el(
@@ -3895,7 +3954,7 @@ function openRules() {
       row("時代", eraSel),
       // 姿勢參考：人物照一張圖的姿勢擺（pose.js）。
       row("姿勢參考", poseButton({ recent: () => prints.filter((p) => p.status === "done" && p.image && !p._gone).map((p) => ({ src: viewSrc(p.image), full: p.image })), wf: currentWorkflowId, rating: () => settings.rating, size: () => ({ w: settings.width, h: settings.height }) })),
-      row("情境", heats),
+      row("尺度", heats),
       row(
         "每段補幾張",
         el(
@@ -3916,7 +3975,7 @@ function openRules() {
       ),
       picker.node
     ),
-    { foot: [el("button", { class: "btn btn-primary", type: "button", onclick: () => sheet && sheet.close() }, "好了")] }
+    { foot: [el("button", { class: "btn btn-primary", type: "button", onclick: () => sheet && sheet.close() }, "完成")] }
   );
 }
 

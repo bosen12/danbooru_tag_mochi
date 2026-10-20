@@ -4,6 +4,7 @@
  * 目的頁下一次打開時拿走就刪掉，放太久（30 分鐘）也不算數。
  */
 import { whenActive } from "./prerender.js";
+import { makeShelf } from "./tab-sync.js";
 
 const KEY = {
   pool: "mochi.pool.v1", // 舊版一直存著的合成池：讀到就刪
@@ -145,6 +146,7 @@ export function takePool() {
 }
 export const loadBans = () => read(KEY.bans, []);
 export const saveBans = (tags) => write(KEY.bans, [...tags]);
+export const SETTINGS_KEY = KEY.settings;
 export const loadSettings = () => read(KEY.settings, null);
 export const saveSettings = (s) => write(KEY.settings, s);
 export const loadUi = () => read(KEY.ui, {});
@@ -159,66 +161,107 @@ export function hiresJobOf(t) {
     : null;
 }
 
-// 這個分頁讀過、印過的成品編號。存檔時存檔裡多出來、這裡沒見過的，是另一個分頁新印的：一起留著。
-// 以前整份覆寫：開兩個墨池分頁，後存的那邊把另一邊印的整面蓋掉（連收藏、Hires、修臉的紀錄）。
-// 這個分頁自己撤下、裁掉的見過，不會被撿回來。
-const shotIdsHere = new Set();
-
 // 只抽牌、沒送去印的（status "drawn"）不存：重新整理就不見（專案主：只抽牌太佔牆面）。
 // 也不再佔掉存檔的上限 —— 以前抽一輪 50 張只抽牌，就把前面印好的圖從存檔裡擠掉。按「印這張」之後才算數。
 const keeps = (s) => s && typeof s === "object" && typeof s.id === "string" && s.status !== "drawn";
 
+/** 一張成品存檔時的樣子。 */
+function serShot(s) {
+  return {
+    id: s.id,
+    seed: s.seed,
+    positive: s.positive,
+    mine: s.mine,
+    drawn: s.drawn,
+    missing: s.missing,
+    era: s.era,
+    heat: s.heat,
+    width: s.width,
+    height: s.height,
+    rating: s.rating,
+    loras: s.loras,
+    ckpt: s.ckpt,
+    workflowId: s.workflowId,
+    sampling: s.sampling || {},
+    // 姿勢參考（pose.js）：這張用的那一份，重印照舊。
+    pose: s.pose || null,
+    image: s.image || null,
+    // 收進作品冊的那一筆（album-save.js）：成品上顯示「已收藏」。
+    albumId: s.albumId || null,
+    weights: s.weights || null,
+    // Hires 過的：image 是大圖，baseImage 是原圖（再 Hires 從原圖放大、也可以還原）。
+    baseImage: s.baseImage || null,
+    hires: s.hires || null,
+    // 修過臉：from 是修之前那張（再修一次從它開始、拿掉修臉換回它）。
+    face: s.face || null,
+    // Hires 做到一半：伺服器那邊的工作編號，重新整理之後接回去。
+    hiresJob: hiresJobOf(s),
+    // 伺服器那邊的出圖工作。畫到一半就重新整理的話，下次打開用它接回去（gen.js 的 resume）。
+    job: s.job || null,
+    live: !!s.job && (s.status === "running" || s.status === "queued"),
+    waiting: isWaiting(s),
+    waitedAt: isWaiting(s) ? Date.now() : 0,
+    status: s.status === "done" ? "done" : s.status === "drawn" ? "drawn" : s.status === "failed" ? "failed" : "stopped",
+    note: s.status === "done" || s.status === "drawn" ? "" : s.note || "",
+    at: s.at,
+  };
+}
+
+const SHOT_FIELDS = ["seed", "positive", "mine", "drawn", "missing", "era", "heat", "width", "height", "rating", "loras", "ckpt", "workflowId", "sampling", "pose", "image", "albumId", "weights", "baseImage", "hires", "face", "at"];
+/**
+ * 別的分頁改過的那一份（存檔的樣子）套回記憶體裡的成品：套完 serShot(s) 跟它一樣，
+ * 下次存檔才不會被當成「這邊改過」又把舊的寫回去。
+ */
+export function applyStored(s, t) {
+  for (const k of SHOT_FIELDS) s[k] = t[k];
+  s.job = t.job || null;
+  s.status = t.status === "done" ? "done" : t.status === "failed" ? "failed" : t.live || t.waiting ? "queued" : "stopped";
+  s.note = t.note || "";
+  s.hi = t.hiresJob ? { ...t.hiresJob, status: "queued" } : null;
+  return s;
+}
+
+// 照時間新到舊排（兩個分頁交錯印的），超過上限的裁掉。
+const shotWhen = (s) => Number(s.at) || Date.parse(s.at) || 0;
+// 兩個墨池分頁一起開：三方比對合併，不互相蓋（tab-sync.js）。
+const shotShelf = makeShelf({ read: () => read(KEY.shots, []).filter(keeps), write: (v) => write(KEY.shots, v), max: SHOT_MAX, when: shotWhen });
+// 墨池給的：現在記憶體裡的成品、把別的分頁改過的幾張換進來重畫。
+let shotsNow = () => [];
+let adoptShots = null;
+/** 墨池開機時接上：別的分頁收藏、Hires、印好了，這邊的畫面跟著換。 */
+export function syncShots({ list, adopt }) {
+  shotsNow = list;
+  adoptShots = adopt;
+}
+
 export function saveShots(shots) {
-  for (const s of shots) shotIdsHere.add(s.id);
-  const others = read(KEY.shots, []).filter((s) => keeps(s) && !shotIdsHere.has(s.id));
-  const mine = shots.filter(keeps).slice(0, SHOT_MAX).map((s) => ({
-      id: s.id,
-      seed: s.seed,
-      positive: s.positive,
-      mine: s.mine,
-      drawn: s.drawn,
-      missing: s.missing,
-      era: s.era,
-      heat: s.heat,
-      width: s.width,
-      height: s.height,
-      rating: s.rating,
-      loras: s.loras,
-      ckpt: s.ckpt,
-      workflowId: s.workflowId,
-      sampling: s.sampling || {},
-      // 姿勢參考（pose.js）：這張用的那一份，重印照舊。
-      pose: s.pose || null,
-      image: s.image || null,
-      // 收進作品冊的那一筆（album-save.js）：成品上顯示「已收藏」。
-      albumId: s.albumId || null,
-      weights: s.weights || null,
-      // Hires 過的：image 是大圖，baseImage 是原圖（再 Hires 從原圖放大、也可以還原）。
-      baseImage: s.baseImage || null,
-      hires: s.hires || null,
-      // 修過臉：from 是修之前那張（再修一次從它開始、拿掉修臉換回它）。
-      face: s.face || null,
-      // Hires 做到一半：伺服器那邊的工作編號，重新整理之後接回去。
-      hiresJob: hiresJobOf(s),
-      // 伺服器那邊的出圖工作。畫到一半就重新整理的話，下次打開用它接回去（gen.js 的 resume）。
-      job: s.job || null,
-      live: !!s.job && (s.status === "running" || s.status === "queued"),
-      waiting: isWaiting(s),
-      waitedAt: isWaiting(s) ? Date.now() : 0,
-      status: s.status === "done" ? "done" : s.status === "drawn" ? "drawn" : s.status === "failed" ? "failed" : "stopped",
-      note: s.status === "done" || s.status === "drawn" ? "" : s.note || "",
-      at: s.at,
-    }));
-  // 照時間新到舊排回去（兩邊交錯印的），超過上限的裁掉。
-  const when = (s) => Number(s.at) || Date.parse(s.at) || 0;
-  const all = others.length ? [...mine, ...others].sort((a, b) => when(b) - when(a)) : mine;
-  write(KEY.shots, all.slice(0, SHOT_MAX));
+  const adopted = shotShelf.save(shots.filter(keeps).slice(0, SHOT_MAX).map(serShot));
+  if (adopted.length) adoptShots?.(adopted);
 }
 
 export function loadShots() {
   // 一筆一筆看：清單裡夾著 null、數字的話，後面 s.status 會整頁炸掉。
   // 舊版存下來的只抽牌也略過。
-  const list = read(KEY.shots, []).filter(keeps);
-  for (const s of list) shotIdsHere.add(s.id);
-  return list;
+  return shotShelf.load(read(KEY.shots, []).filter(keeps));
+}
+
+/** 只看不記：等到輪到這個分頁印的時候（tab-sync.js 的 whenPrinter），重讀還有哪幾張要接著印。 */
+export const peekShots = () => read(KEY.shots, []).filter(keeps);
+
+if (typeof addEventListener === "function") {
+  addEventListener("storage", (e) => {
+    if (e.key !== KEY.shots || !adoptShots) return;
+    let stored = [];
+    try {
+      stored = sameShape(JSON.parse(e.newValue || "[]"), []).filter(keeps);
+    } catch {
+      return;
+    }
+    const mine = new Map(shotsNow().map((s) => [s.id, s]));
+    const got = shotShelf.changed(stored, (id) => {
+      const s = mine.get(id);
+      return s && keeps(s) ? serShot(s) : null;
+    });
+    if (got.length) adoptShots(got);
+  });
 }
