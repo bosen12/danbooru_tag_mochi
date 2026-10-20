@@ -167,7 +167,7 @@ async function boot() {
   if (handoff.length && S.handoffFrom === "book" && kept.length) {
     let pinned = new Set(kept);
     let banned = new Set(S.loadBans().filter((t) => lib.byTag.has(t)));
-    for (const t of handoff) ({ pinned, userBanned: banned } = applyPin(lex, pinned, banned, t));
+    for (const t of handoff) ({ pinned, userBanned: banned } = applyPin(lex, pinned, banned, t, { eraMix: settings.eraMix }));
     pool = pinned;
     handoffMerged = true;
     S.saveBans(banned);
@@ -1110,7 +1110,7 @@ function pin(tag) {
   if (HARD_BANNED.includes(tag)) return;
   haptic(8);
   const before = new Set(pool);
-  const next = applyPin(lex, pool, bans, tag);
+  const next = applyPin(lex, pool, bans, tag, { eraMix: settings.eraMix });
   pool = next.pinned;
   bans = next.userBanned;
   const gone = [...before].filter((t) => !pool.has(t));
@@ -1514,7 +1514,7 @@ function renderPool(fresh) {
             const tags = starter.tags;
             return el("button", { class: "btn btn-small btn-ghost", type: "button", dataset: { starter: starter.name }, title: tags.map(zh).join("、"), onclick: () => {
               let next = new Set(pool);
-              for (const tag of tags) next = applyPin(lex, next, bans, tag).pinned;
+              for (const tag of tags) next = applyPin(lex, next, bans, tag, { eraMix: settings.eraMix }).pinned;
               pool = next;
               commitPins();
               announce(`起手：${starter.name}`);
@@ -2622,7 +2622,7 @@ function pinAllFromShot(shot, btn) {
   let next = new Set(pool);
   let nextBans = bans;
   for (const t of tags) {
-    const r = applyPin(lex, next, nextBans, t);
+    const r = applyPin(lex, next, nextBans, t, { eraMix: settings.eraMix });
     next = r.pinned;
     nextBans = r.userBanned;
   }
@@ -3595,7 +3595,7 @@ function applyCards(tags, { replace = true, label = "", weights: w = {} } = {}) 
   let banned = new Set(bans);
   for (const t of tags) {
     if (HARD_BANNED.includes(t) || !lib.byTag.has(t)) continue;
-    const r = applyPin(lex, pinned, banned, t);
+    const r = applyPin(lex, pinned, banned, t, { eraMix: settings.eraMix });
     pinned = r.pinned;
     banned = r.userBanned;
   }

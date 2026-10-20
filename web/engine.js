@@ -2718,7 +2718,9 @@ function eraCompatible(lex, tagA, tagB) {
   return erasIntersect(a, b);
 }
 
-export function applyPin(lex, pinned, userBanned, tag) {
+// opts.eraMix：時代選「混合」（settings.eraMix）時不同時代的牌可以一起放（漢服配摩天樓），不因時代擠掉別張。
+export function applyPin(lex, pinned, userBanned, tag, opts) {
+  const mixEras = !!(opts && opts.eraMix);
   const nextPin = new Set(pinned);
   const nextBan = new Set(userBanned);
   nextBan.delete(tag);
@@ -2730,8 +2732,10 @@ export function applyPin(lex, pinned, userBanned, tag) {
     nextPin.delete(NO_HUMANS);
   }
   for (const sib of mutexSiblings(lex, tag)) nextPin.delete(sib);
-  for (const other of [...nextPin]) {
-    if (other !== tag && !eraCompatible(lex, tag, other)) nextPin.delete(other);
+  if (!mixEras) {
+    for (const other of [...nextPin]) {
+      if (other !== tag && !eraCompatible(lex, tag, other)) nextPin.delete(other);
+    }
   }
   nextPin.add(tag);
   const item = lex.byTag.get(tag);

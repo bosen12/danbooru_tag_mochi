@@ -40,6 +40,17 @@ test("mixed era: items from other eras appear next to hanfu, and the era reads m
   assert.ok(mixed >= out.length * 0.8, `only ${mixed}/${out.length} images mixed eras`);
 });
 
+test("mixed era: pinning hanfu after skyscraper keeps both (applyPin eraMix)", () => {
+  let pins = new Set();
+  for (const t of ["skyscraper", "hanfu"]) pins = eng.applyPin(lex, pins, new Set(), t, { eraMix: true }).pinned;
+  assert.ok(pins.has("skyscraper") && pins.has("hanfu"), [...pins].join(", "));
+  let strict = new Set();
+  for (const t of ["skyscraper", "hanfu"]) strict = eng.applyPin(lex, strict, new Set(), t).pinned;
+  assert.ok(!strict.has("skyscraper"), "without eraMix the clashing era still steps aside");
+  const settings = eng.sanitizeSettings({ rating: "general", eras: [...eng.ERAS], eraMix: true }, data);
+  for (const d of draws(settings, ["skyscraper", "hanfu"], 20)) assert.ok(tagsOf(d).includes("skyscraper") && tagsOf(d).includes("hanfu"), d.positive);
+});
+
 test("mixed era does not leak into the next draw (the flag is per draw)", () => {
   const mix = eng.sanitizeSettings({ rating: "general", eras: [...eng.ERAS], eraMix: true }, data);
   const one = eng.sanitizeSettings({ rating: "general", eras: ["ancient_china"] }, data);

@@ -242,7 +242,7 @@ async function boot() {
   if (handoff) {
     for (const tag of handoff.tags) {
       const item = lib.byTag.get(tag);
-      if (item && !bans.has(tag) && !ratingBlocked(item.item, ratingOf(settings)) && !HARD_BANNED.includes(tag)) bed = placeCard(bed, tag, { lex, applyPin }).bed;
+      if (item && !bans.has(tag) && !ratingBlocked(item.item, ratingOf(settings)) && !HARD_BANNED.includes(tag)) bed = placeCard(bed, tag, { lex, applyPin: pinFor }).bed;
     }
     bed = sanitizeBed({ ...bed, weights: handoff.weights }, tag => lib.byTag.has(tag));
   }
@@ -486,7 +486,9 @@ function printFor(sig) {
 
 /* ================= 動作：放、拿、撤回 ================= */
 
-const deps = () => ({ lex, applyPin });
+// 時代選「混合」：不同時代的牌可以一起上版，不因時代擠掉別張。
+function pinFor(l, p, b, t) { return applyPin(l, p, b, t, { eraMix: settings.eraMix }); }
+const deps = () => ({ lex, applyPin: pinFor });
 
 // 提示上的「撤回」只撤它講的那一步：之後又動了卡池、或已經按 Z／工具列撤過，就把提示收掉。
 // 以前提示還掛著，按下去會再多撤一步（撤掉的是別的動作）。
