@@ -207,7 +207,7 @@ async function boot() {
   pingLoop();
 
   renderRating();
-  // 分級左邊的「不限制」（rating-free.js）：開著所有牌不受分級限制、分級鈕變淡。
+  // 分級左邊的「不限制」（rating-free.js）：開著所有牌不受分級限制，分級鈕照樣選圖本身的分級。
   ratingFreePaint = mountRatingFree({
     get: () => settings.ratingFree,
     set: (on) => {
@@ -2392,8 +2392,7 @@ function makeShot(drawn, seed, poolAtDraw, snapshot = null) {
     heat: drawn.heat,
     width: snapshot?.width ?? settings.width,
     height: snapshot?.height ?? settings.height,
-    // 分級「不限制」開著：照這張抽到的牌自動判斷（engine 的 contentRating）。
-    rating: drawn.contentRating || (snapshot?.rating ?? settings.rating),
+    rating: snapshot?.rating ?? settings.rating,
     loras: snapshot?.loras ?? currentLorasPayload(),
     ckpt: snapshot?.ckpt ?? currentCkpt(),
     workflowId: snapshot?.workflowId ?? currentWorkflowId(),

@@ -1,6 +1,6 @@
 // 時代「隨機／混合」（settings.eraMix）與分級「不限制」（settings.ratingFree）的引擎行為。
 // 隨機＝每張挑一個時代、整張照那個時代（以前叫混合）；混合＝不同時代的東西可以一起出現（漢服配摩天樓）。
-// 不限制＝所有牌不受全年齡／敏感／色情限制，成品的分級照抽到的牌判斷（contentRating）。
+// 不限制＝所有牌不受全年齡／敏感／色情限制；分級鈕照樣選，選的那一級是圖本身的分級（提示詞尾巴照它）。
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
@@ -50,7 +50,7 @@ test("mixed era does not leak into the next draw (the flag is per draw)", () => 
   assert.deepEqual(eng.eraMismatches(lex, new Set(["skyscraper"]), "mixed"), [], "mixed: no pin is out of era");
 });
 
-test("rating free: general draws can include blocked cards, and each image gets its own rating", () => {
+test("rating free: general draws can include blocked cards, and the image keeps the picked rating", () => {
   const heats = ["activity", "tease", "flash", "sex"];
   const off = eng.sanitizeSettings({ rating: "general", heats }, data);
   const on = eng.sanitizeSettings({ rating: "general", heats, ratingFree: true }, data);
@@ -59,9 +59,13 @@ test("rating free: general draws can include blocked cards, and each image gets 
   const blockedIn = (d) => tagsOf(d).some((t) => { const it = lex.byTag.get(t); return it && ratingBlocked(it, "general"); });
   const offDraws = draws(off, []);
   assert.equal(offDraws.filter(blockedIn).length, 0, "free off: general stays general");
-  assert.ok(offDraws.every((d) => d.contentRating === undefined), "free off: no contentRating");
   const onDraws = draws(on, []);
   assert.ok(onDraws.filter(blockedIn).length > 10, "free on: blocked cards show up");
-  assert.ok(onDraws.every((d) => ["general", "sensitive", "explicit"].includes(d.contentRating)));
-  assert.ok(new Set(onDraws.map((d) => d.contentRating)).size >= 2, "ratings vary with what was drawn");
+  const tail = (d, list) => list.every((t) => tagsOf(d).includes(t));
+  for (const [rating, key] of [["general", "sfwTail"], ["sensitive", "sensitiveTail"], ["explicit", "nsfwTail"]]) {
+    const list = data[key] || [];
+    if (!list.length) continue;
+    const picked = eng.sanitizeSettings({ rating, heats, ratingFree: true }, data);
+    assert.ok(draws(picked, [], 12).every((d) => tail(d, list)), `free on + ${rating}: the prompt tail follows the picked rating`);
+  }
 });

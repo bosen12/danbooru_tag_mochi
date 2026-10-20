@@ -340,8 +340,8 @@ export const RATINGS = ["general", "sensitive", "explicit"];
 export const RATING_LABEL = { general: "全年齡", sensitive: "敏感", explicit: "色情" };
 
 export function ratingOf(settings) {
-  // 「不限制」開關（settings.ratingFree）：所有牌都不受分級限制，抽牌、字盒都當色情處理；
-  // 成品的分級改照抽到的牌自動判斷（engine 的 drawOne 回傳 contentRating）。
+  // 「不限制」開關（settings.ratingFree）：所有牌都不受分級限制，抽牌、字盒都當色情處理。
+  // 圖本身標哪一級（提示詞尾巴、負面、成品的分級）仍照 settings.rating，分級鈕照樣能選。
   if (settings && settings.ratingFree) return "explicit";
   const r = settings && settings.rating;
   return RATINGS.includes(r) ? r : "explicit";

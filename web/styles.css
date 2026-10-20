@@ -483,7 +483,7 @@ body #wf-pick-btn.has {
   }
 }
 
-/* 分級左邊的「不限制」（rating-free.js）：小小的一顆開關＋「不限」。開著：朱色、分級鈕變淡按不了。 */
+/* 分級左邊的「不限制」（rating-free.js）：小小的一顆開關＋「不限」。開著：朱色；分級鈕照樣能選（選的是圖本身的分級）。 */
 .rating-free {
   display: inline-flex;
   align-items: center;
@@ -549,10 +549,6 @@ body #wf-pick-btn.has {
     color: var(--color-ink);
     border-color: var(--color-ink-2);
   }
-}
-
-#rating[data-free="true"] {
-  opacity: 0.45;
 }
 
 /* 筆電寬度：頂欄已經擠滿（多這顆就換成兩排）。只留那顆小開關，「不限」給滑鼠提示和螢幕閱讀器。 */

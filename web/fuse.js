@@ -281,7 +281,7 @@ async function boot() {
   buildTrialShells();
   dockMobileTrials();
   renderRating();
-  // 分級左邊的「不限制」（rating-free.js）：開著所有牌不受分級限制、分級鈕變淡。setSettings 會重抽試印、重畫。
+  // 分級左邊的「不限制」（rating-free.js）：開著所有牌不受分級限制，分級鈕照樣選圖本身的分級。setSettings 會重抽試印、重畫。
   ratingFreePaint = mountRatingFree({ get: () => settings.ratingFree, set: (on) => (setSettings({ ratingFree: on }), renderRating()) });
   renderCaseTabs();
   // 字盒先畫完。四次試印抽牌跟字盒排在同一個任務裡會超過 50ms。
@@ -380,8 +380,6 @@ function retrial(start = 0, end = seeds.length) {
       missing: bed.pins.filter((t) => !inPos.has(t)),
       extra,
       eraClash: d.eraClash || [],
-      // 分級「不限制」開著：這張試印實際是哪一級（engine 照抽到的牌判斷）。
-      contentRating: d.contentRating || null,
     });
   }
   // 整批重抽就整個換掉；只抽其中幾張就換掉那幾格（其他的留著）。
@@ -950,8 +948,7 @@ function printNow() {
     positive: trialPositive(t),
     width: settings.width,
     height: settings.height,
-    // 分級「不限制」開著：照這張試印抽到的牌自動判斷（送 ComfyUI 的負面提示詞、Discord 分頻道都看它）。
-    rating: (settings.ratingFree && t.contentRating) || settings.rating,
+    rating: settings.rating,
     loras: currentLorasPayload(),
     ckpt: currentCkpt(),
     workflowId: currentWorkflowId(),
@@ -1096,8 +1093,7 @@ function restorePrint(p) {
   if (p.fixedSeed) useSeed(p.seed);
   picked = Number.isInteger(p.picked) ? p.picked : 0;
   // 尺寸、尺度一起回到印的那時候：色情尺度印的那一版，在全年齡底下根本抽不到當時的牌。
-  // 「不限制」開著：每張牌都抽得到，不必動分級（那張的分級是自動判斷的，不該蓋掉使用者選的）。
-  const ratingBack = !settings.ratingFree && p.rating && p.rating !== settings.rating && RATING_RANK[p.rating] !== undefined;
+  const ratingBack = p.rating && p.rating !== settings.rating && RATING_RANK[p.rating] !== undefined;
   const sizeBack = p.width && p.height && (p.width !== settings.width || p.height !== settings.height);
   if (ratingBack || sizeBack) {
     settings = sanitizeSettings(

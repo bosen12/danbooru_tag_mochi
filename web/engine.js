@@ -4243,15 +4243,6 @@ export function drawOne(lex, settings, pinned, userBanned, rand, seed, opts) {
   try {
     const out = drawOneImpl(lex, settings, pinned, userBanned, rand, seed, opts);
     if (eraMixDraw && out && typeof out === "object") out.era = "mixed";
-    // 分級「不限制」：這張實際是哪一級，照抽到的牌判斷（送 ComfyUI 的負面提示詞、Discord 分頻道都看它）。
-    if (settings && settings.ratingFree && out && typeof out === "object") {
-      const items = [];
-      for (const part of String(out.positive || "").split(",")) {
-        const it = lex.byTag.get(parseWeighted(part).tag.replace(/\\([()])/g, "$1"));
-        if (it) items.push(it);
-      }
-      out.contentRating = ratingOfDrawnTags(items, "explicit");
-    }
     return out;
   } finally {
     eraMixDraw = prev;
@@ -4271,6 +4262,9 @@ function drawOneImpl(lex, settings, pinned, userBanned, rand, seed, opts) {
   const tagSources = tracer.enabled ? new Map() : null;
   const commitMeta = { source: SOURCES.random, stage: STAGES.fill, parent: null };
   const rating = ratingOf(settings);
+  // 分級「不限制」（settings.ratingFree）只解開牌的限制（上面的 rating 當色情）；
+  // 這張圖標哪一級（提示詞尾巴、進度顯示）仍照使用者選的分級。
+  const pickedRating = ratingOf({ ...settings, ratingFree: false });
   const sfw = rating !== "explicit";
   const blockedByRating = (item) => ratingBlocked(item, rating);
   // Scene policy once per draw — allow/allowSlow (and related) close over these.
@@ -4513,7 +4507,7 @@ function drawOneImpl(lex, settings, pinned, userBanned, rand, seed, opts) {
     emitDrawStage(drawOpts, {
       stage: "intent",
       intent: {
-        rating,
+        rating: pickedRating,
         heat,
         era,
         cast: { female, male, people },
@@ -8085,7 +8079,7 @@ function drawOneImpl(lex, settings, pinned, userBanned, rand, seed, opts) {
   //
   // 漏字那件事仍然值得修，但那是詞庫分類的問題；尾巴該不該由內容決定是另一回事，
   // 這裡照專案主的決定走：滑桿說了算。
-  const shownRating = rating;
+  const shownRating = pickedRating;
   const nsfw =
     shownRating === "explicit"
       ? lex.data.nsfwTail
