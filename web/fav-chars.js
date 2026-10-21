@@ -134,6 +134,13 @@ function push() {
       .then((r) => (r.ok ? r.json() : null))
       .then((j) => {
         if (!j || !Array.isArray(j.tags)) return;
+        // 只送了改動、伺服器那邊卻是剛建的（原本沒有檔案）：它不知道這台原本的名單。
+        // 兩邊合起來整份再送一次，不要拿只有新加那幾位的名單蓋掉這台。
+        if (j.fresh && !body.tags) {
+          adopt([...new Set([...j.tags, ...tags])]);
+          dirty = true;
+          return push();
+        }
         dirty = false;
         markSynced();
         // 送出去的這批清掉；送的途中又改的留著，下一次再送。
@@ -164,7 +171,13 @@ function pull() {
       if (!j || !Array.isArray(j.tags)) return;
       server = true;
       if (dirty) return push();
-      if (!j.saved) return tags.length ? push() : markSynced();
+      // 伺服器說沒存過（換了一份資料夾跑、檔案被刪掉）：這台的整份搬上去，不管以前對過沒有。
+      // 以前這台已經對過一次（synced）就只送改動：伺服器建了一份只有新加那幾位的名單，回來把這台整份蓋掉（2026-10-21）。
+      if (!j.saved) {
+        if (!tags.length) return markSynced();
+        dirty = true;
+        return push();
+      }
       if (!synced()) {
         // 第一次：伺服器的在前，這台多出來的接在後面（兩邊都不丟）。
         const merged = [...new Set([...j.tags, ...tags])];

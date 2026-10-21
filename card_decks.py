@@ -178,12 +178,15 @@ def save_fav_chars(payload: dict) -> dict:
     if not ops and not isinstance(payload.get("tags"), list):
         raise DeckError("tags 要是陣列")
     now = int(time.time() * 1000)
+    fresh = False
     with _LOCK, file_lock.locked(FAV_CHARS_PATH):
         if ops:
             try:
                 current = file_lock.read_json(FAV_CHARS_PATH, label="偏好角色")
             except (OSError, file_lock.StoreCorrupt):
                 current = None
+            # 原本沒有名單（換了一份資料夾、檔案被刪掉）卻只收到改動：回 fresh，網頁會把它那整份合起來再送一次。
+            fresh = not isinstance(current, dict)
             have = _clean_fav(current.get("tags")) if isinstance(current, dict) else []
             gone = set(_clean_fav(payload.get("remove")))
             added = [t for t in _clean_fav(payload.get("add")) if t not in gone]
@@ -191,7 +194,7 @@ def save_fav_chars(payload: dict) -> dict:
         else:
             tags = _clean_fav(payload["tags"])
         file_lock.write_text(FAV_CHARS_PATH, json.dumps({"v": 1, "at": now, "tags": tags}, ensure_ascii=False, separators=(",", ":")))
-    return {"tags": tags, "saved": True, "at": now}
+    return {"tags": tags, "saved": True, "at": now, **({"fresh": True} if fresh else {})}
 
 
 def delete(rid: str) -> dict:
