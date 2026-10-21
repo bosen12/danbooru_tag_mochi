@@ -3,6 +3,7 @@
  * 花色、分級、插畫檔名都來自 web/card-art.js（字鋪、烘焙腳本共用同一份）。
  */
 import { isCard, cardSuit, ratingTier, artFile, artSources, artUrl, groupSeal, CARD_SUIT_INFO, CARD_SUITS } from "./card-art.js";
+import { toSimplified } from "./t2s.js";
 import { el, ICONS } from "./ui.js";
 import { miniSet, bindArt, artFallback } from "./card-images.js";
 import { DUR, CURVE, css, reducedMotion } from "./motion.js";
@@ -65,10 +66,130 @@ export function buildLibrary(data, { ratingBlocked }) {
  * 搜尋框的字對不對得上這張牌（q 已經轉小寫）：中文名、標籤；
  * 角色牌另外對作品——打「航海王」「one piece」就列出那部作品的角色。
  */
+/* ---------- 字盒搜尋（墨池、疊印台、卡冊、Discord 分頻道、偏好角色共用） ----------
+ * 比之前搜尋字和牌名都換成同一種寫法（searchKey）：小寫、底線當空白（Danbooru 的 red_hair）、
+ * 繁體換成簡體（打「红发」「紅髮」都對得上；往簡體換是一對一的，發／髮都是发）。
+ * 空白分開＝每一段都要有（「白 和服」找到白和服、「hair long」找到 long hair）。
+ * 2026-10-21 實測 60 個常見說法：簡體、底線、兩個條件全部 0 張；完全相符的那張常常不在第一（按 Enter 放錯牌）。 */
+export const searchKey = (s) => toSimplified(String(s ?? "").toLowerCase().replace(/_/g, " ")).replace(/\s+/g, " ").trim();
+
+const keyCache = new WeakMap();
+function keysOf(c) {
+  let k = keyCache.get(c);
+  if (!k) {
+    k = { zh: searchKey(c.zh), tag: searchKey(c.tag), extra: c.suit === "chara" ? searchKey(`${c.groupZh || ""} ${c.item?.series || ""}`) : "" };
+    keyCache.set(c, k);
+  }
+  return k;
+}
+
+let lastQ = null;
+let lastTerms = [];
+function termsOf(q) {
+  if (q !== lastQ) {
+    lastQ = q;
+    lastTerms = searchKey(q).split(" ").filter(Boolean);
+  }
+  return lastTerms;
+}
+
+const hits = (k, t) => k.zh.includes(t) || k.tag.includes(t) || (!!k.extra && k.extra.includes(t));
+
 export function cardMatches(c, q) {
   if (!q) return true;
-  if (c.zh.toLowerCase().includes(q) || c.tag.includes(q)) return true;
-  return c.suit === "chara" && ((c.groupZh || "").toLowerCase().includes(q) || (c.item?.series || "").includes(q));
+  const terms = termsOf(q);
+  if (!terms.length) return true;
+  const k = keysOf(c);
+  // 英文的牌名本身就有空白（red hair）：整句先比一次，比不到才拆開每一段都要有。
+  return (terms.length > 1 && hits(k, terms.join(" "))) || terms.every((t) => hits(k, t));
+}
+
+/**
+ * 跟搜尋字有多接近（小的排前面）：完全相符 → 開頭相符 → 英文某個字的開頭 → 中文名裡有 → tag 裡有 → 作品名。
+ * 搜「和服」第一張是和服，不是「和服敞開」；搜「yor」第一張是約兒（yor briar），不是 conveyor belt sushi。
+ */
+export function matchRank(c, q) {
+  return rankBy(keysOf(c), termsOf(q).join(" "));
+}
+
+function rankBy(k, qk) {
+  if (!qk) return 0;
+  if (k.zh === qk || k.tag === qk) return 0;
+  if (k.zh.startsWith(qk) || k.tag.startsWith(qk)) return 1;
+  if (k.tag.includes(" " + qk) || k.tag.includes("(" + qk)) return 2;
+  if (k.zh.includes(qk)) return 3;
+  if (k.tag.includes(qk)) return 4;
+  return 5;
+}
+
+/**
+ * 找不到的時候猜：牌名的字依序都出現在打的字裡（打「紅頭髮」→ 紅髮、「摩天大樓」→ 摩天樓、「下雨」→ 雨）。
+ * 牌名至少要佔打的字的一半，不然「的」「人」這種一個字的牌什麼都對得上。長的（對到越多字的）排前面。
+ */
+function guessCards(pool, q, limit = 8) {
+  const qk = termsOf(q).join("");
+  if ([...qk].length < 2) return [];
+  const chars = [...qk];
+  const within = (name) => {
+    let i = 0;
+    for (const ch of chars) if (ch === name[i]) i++;
+    return i === name.length;
+  };
+  const out = [];
+  for (const c of pool) {
+    const name = [...keysOf(c).zh.replace(/ /g, "")];
+    if (!name.length || name.length * 2 < chars.length || name.length >= chars.length) continue;
+    if (within(name)) out.push({ c, n: name.length });
+  }
+  return out.sort((a, b) => b.n - a.n).slice(0, limit).map((x) => x.c);
+}
+
+/**
+ * 篩過花色、分級…之後的 pool 裡搜 q：回 { list, mode }。
+ *   all：每一段都有的（照 matchRank 排）。
+ *   any：打了好幾段、沒有一張同時都有：各段分別找到的，照段的順序排（「長髮 紅髮」兩種都列出來）。
+ *   guess：都找不到，猜的（guessCards）。none：真的沒有。
+ */
+export function searchCards(pool, q) {
+  const terms = termsOf(q);
+  if (!terms.length) return { list: pool, mode: "all" };
+  const all = pool.filter((c) => cardMatches(c, q));
+  const qk = terms.join(" ");
+  if (all.length) return { list: all.map((c, i) => [c, rankBy(keysOf(c), qk), i]).sort((a, b) => a[1] - b[1] || a[2] - b[2]).map((x) => x[0]), mode: "all" };
+  // 分別找只給中文：英文拆開來每個字都太常見（red hair long 會冒出一百多張紅血球、小紅帽）。
+  if (terms.length > 1 && terms.every((t) => /[㐀-鿿]/.test(t))) {
+    const seen = new Set();
+    const any = [];
+    for (const t of terms) {
+      const one = pool.filter((c) => !seen.has(c) && hits(keysOf(c), t));
+      for (const c of one.map((c, i) => [c, rankBy(keysOf(c), t), i]).sort((a, b) => a[1] - b[1] || a[2] - b[2]).map((x) => x[0])) {
+        seen.add(c);
+        any.push(c);
+      }
+    }
+    if (any.length) return { list: any, mode: "any" };
+  }
+  const guess = guessCards(pool, q);
+  return guess.length ? { list: guess, mode: "guess" } : { list: [], mode: "none" };
+}
+
+/** 搜尋結果不是「每一段都有」的那種（分別找到、猜的）：牌格上面一行說清楚。grid 是牌格，沒有要說的就拿掉那一行。 */
+export function searchNote(grid, res, q) {
+  if (!grid) return;
+  let note = grid.previousElementSibling?.classList.contains("search-note") ? grid.previousElementSibling : null;
+  const text =
+    // 照打的字寫（不是比對用的簡體）。
+    res.mode === "any" ? `沒有一張同時有「${String(q).trim().split(/\s+/).join("」「")}」，分別找到這些`
+    : res.mode === "guess" ? `找不到「${String(q).trim()}」，你是不是要找這幾張？`
+    : "";
+  if (!text) return void note?.remove();
+  if (!note) {
+    note = el("p", { class: "search-note", role: "status" });
+    grid.before(note);
+  }
+  // 英文版：換成英文再比（畫面上永遠是英文，直接比中文每次都不一樣）。
+  const shown = t(text);
+  if (note.textContent !== shown) note.textContent = shown;
 }
 
 /**

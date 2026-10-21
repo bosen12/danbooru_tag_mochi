@@ -1350,6 +1350,15 @@ body #wf-pick-btn.has {
   height: 1px;
 }
 
+/* 字盒搜尋沒有每段都對上的（cards.js 的 searchNote）：牌格上面一行，說是分別找到的、還是猜的。 */
+.search-note {
+  margin: 0;
+  padding: var(--space-xs) var(--space-md) 0;
+  color: var(--color-warn);
+  font-size: var(--text-xs);
+  line-height: 1.6;
+}
+
 .lib-empty {
   grid-column: 1 / -1;
   padding: var(--space-lg) 0;

@@ -8,19 +8,13 @@
  *   { hides(card) → bool, text(card) → 句子, label(card) → 按鈕字, run(card) → 解開（沒有 run 就只說明） }
  */
 import { el } from "./ui.js";
+import { cardMatches, matchRank } from "./cards.js";
 
 export function searchMiss({ cards, q, query, reasons, className }) {
   // 最像搜尋字的牌先講：搜 kimono 要講「和服」，不是先講「和服敞開」被分級收起來
-  // （解開了分級，和服本身還是被時代藏著）。完全相同 → 開頭相同 → 包含。
-  const score = (c) => {
-    const zh = c.zh.toLowerCase();
-    if (c.tag === q || zh === q) return 0;
-    if (c.tag.startsWith(q) || zh.startsWith(q)) return 1;
-    return 2;
-  };
-  const matches = cards
-    .filter((c) => c.zh.toLowerCase().includes(q) || c.tag.includes(q))
-    .sort((a, b) => score(a) - score(b));
+  // （解開了分級，和服本身還是被時代藏著）。比法跟字盒同一套（cards.js 的 cardMatches、matchRank：
+  // 簡體、底線、空白分開每段都要有）。
+  const matches = cards.filter((c) => cardMatches(c, q)).sort((a, b) => matchRank(a, q) - matchRank(b, q));
   for (const card of matches) {
     const reason = reasons.find((r) => r.hides(card));
     if (!reason) continue;

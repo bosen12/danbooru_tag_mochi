@@ -47,7 +47,7 @@ import { SCENE_MODES, SCENE_MODE_LABELS, heatBlockedByRating } from "./scene-pol
 import { initLoraPicker, currentLorasPayload, currentTriggerText, currentCkpt, handleLoraKeys, applyRecipeModels, joinTriggerParts, modelTitles } from "./lora.js";
 import { initWorkflow, currentWorkflowId, currentSampling, wfHandleKeys } from "./workflow.js";
 import { HARD_BANNED } from "./card-art.js";
-import { buildLibrary, sizeCards, groupChips, genderChips, chipRun, seriesRun, groupNow, createAssets, cardNode, setCardFlag, setEnterTarget, eagerArt, cardFacts, cardMatches, CARD_SUIT_INFO, CARD_SUITS, RATING_ZH } from "./cards.js";
+import { buildLibrary, sizeCards, groupChips, genderChips, chipRun, seriesRun, groupNow, createAssets, cardNode, setCardFlag, setEnterTarget, eagerArt, cardFacts, cardMatches, searchCards, searchNote, CARD_SUIT_INFO, CARD_SUITS, RATING_ZH } from "./cards.js";
 import { bindArt, artFallback } from "./card-images.js";
 import { el, openSheet, anyOverlay, toast, runToastAction, dropToastAction, ICONS, syncChoices, bootFailed, friendlyError, isNetError } from "./ui.js";
 import { mountKeysHelp } from "./keys-help.js";
@@ -749,7 +749,14 @@ function renderLibrary() {
     swapIn(chips, ui.suit);
     libNow(ui.group ? runs.flatMap((r) => r.items).find((i) => i.g === ui.group) : null, (e) => pickGroup("", e.currentTarget));
   }
-  const list = inSuit.filter((c) => (!ui.group || c.group === ui.group) && cardMatches(c, q));
+  // 搜尋（cards.js 的 searchCards）：完全相符的排第一（按 Enter 放的就是它）、簡體和底線照樣找、
+  // 空白分開每段都要有；都沒有就分別找、或猜「你是不是要找」，牌格上面一行說明（searchNote）。
+  const inGroup = inSuit.filter((c) => !ui.group || c.group === ui.group);
+  let found = q ? searchCards(inGroup, q) : { list: inGroup, mode: "all" };
+  // 整盒找得到、只是被花色、分級、時代…收起來：照舊說是哪個開關擋住（libraryMiss），不要用猜的蓋過去。
+  if (found.mode !== "all" && lib.cards.some((c) => cardMatches(c, q))) found = { list: [], mode: "none" };
+  const list = found.list;
+  searchNote($("lib-grid"), found, ui.query);
   countLine(list.length);
   const grid = $("lib-grid");
   const was = $("library").dataset.search;

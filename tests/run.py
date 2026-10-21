@@ -26,6 +26,7 @@ checks = [
     ("test_discord_routes.py", "test_discord_routes.py"),
     ("test_era_mix_rating_free.mjs", "test_era_mix_rating_free.mjs"),
     ("test_tab_sync.mjs", "test_tab_sync.mjs"),
+    ("test_card_search.mjs", "test_card_search.mjs"),
     ("test_launchers.py", "test_mochi_launchers.py"), ("test_smoke.py", "test_mochi_smoke.py"),
     ("test_lexicon_rebuild.py", "test_lexicon_rebuild.py"),
 ]

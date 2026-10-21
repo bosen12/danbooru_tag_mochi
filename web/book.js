@@ -17,7 +17,7 @@ import { cloneCard } from "./card-images.js";
 import { indexLexicon } from "./engine.js";
 import { ratingBlocked, RATING_LABEL } from "./rules/rating.js";
 import { mountRatingFree } from "./rating-free.js";
-import { buildLibrary, sizeCards, groupChips, genderChips, chipRun, seriesRun, createAssets, cardNode, cardFacts, setCardFlag, eagerArt, cardMatches, CARD_SUIT_INFO, CARD_SUITS } from "./cards.js";
+import { buildLibrary, sizeCards, groupChips, genderChips, chipRun, seriesRun, createAssets, cardNode, cardFacts, setCardFlag, eagerArt, cardMatches, searchCards, searchNote, matchRank, CARD_SUIT_INFO, CARD_SUITS } from "./cards.js";
 import { el, openSheet, toast, syncChoices, bootFailed, friendlyError, isNetError } from "./ui.js";
 import { zoomFromThumb } from "./zoom.js";
 import { mountKeysHelp } from "./keys-help.js";
@@ -732,23 +732,36 @@ function pickGender(g, from) {
   render();
 }
 
+// 上一次 listNow 的搜尋結果是哪一種（searchCards 的 mode）：牌格上面那一行說明要用。
+let lastFound = { list: [], mode: "all" };
+
 function listNow() {
   const q = ui.query.toLowerCase();
   const order = new Map(lib.cards.map((c, i) => [c.tag, i]));
-  const out = lib.cards.filter(
+  const base = lib.cards.filter(
     (c) =>
       visibleCard(c) &&
       genderOk(c) &&
       (ui.suit === "all" || c.suit === ui.suit) &&
       (!ui.group || c.group === ui.group) &&
       (!ui.usedOnly || countOf(c.tag) > 0) &&
-      (!isWar() || warOf(c.tag)[0] >= WAR_MIN) &&
-      cardMatches(c, q)
+      (!isWar() || warOf(c.tag)[0] >= WAR_MIN)
   );
-  if (isWar()) return out.sort((a, b) => warScore(b.tag) - warScore(a.tag) || warOf(b.tag)[0] - warOf(a.tag)[0] || order.get(a.tag) - order.get(b.tag));
+  // 搜尋（cards.js 的 searchCards）：分別找到的、猜的照它的順序；每段都有的照下面的排序，
+  // 再讓完全相符、開頭相符的排前面（按 Enter 打開的就是它）。
+  lastFound = q ? searchCards(base, q) : { list: base, mode: "all" };
+  // 整盒找得到、只是被分級擋住：交給 emptyNote 說清楚，不要用猜的蓋過去。
+  if (lastFound.mode !== "all" && lib.cards.some((c) => cardMatches(c, q))) lastFound = { list: [], mode: "none" };
+  if (lastFound.mode !== "all") return lastFound.list;
+  const out = lastFound.list.slice();
+  if (isWar()) out.sort((a, b) => warScore(b.tag) - warScore(a.tag) || warOf(b.tag)[0] - warOf(a.tag)[0] || order.get(a.tag) - order.get(b.tag));
   // 次數一樣時：多到少看誰最近用過，少到多照字盒的順序（花色 → 細分類）。
-  if (ui.order === "desc") out.sort((a, b) => countOf(b.tag) - countOf(a.tag) || lastOf(b.tag) - lastOf(a.tag) || order.get(a.tag) - order.get(b.tag));
+  else if (ui.order === "desc") out.sort((a, b) => countOf(b.tag) - countOf(a.tag) || lastOf(b.tag) - lastOf(a.tag) || order.get(a.tag) - order.get(b.tag));
   else out.sort((a, b) => countOf(a.tag) - countOf(b.tag) || order.get(a.tag) - order.get(b.tag));
+  if (q) {
+    const rank = new Map(out.map((c) => [c, matchRank(c, q)]));
+    out.sort((a, b) => rank.get(a) - rank.get(b));
+  }
   return out;
 }
 
@@ -859,6 +872,7 @@ function render({ animate = true, shuffle = false, deal = false } = {}) {
     }
   }
   list = listNow();
+  searchNote($("book-grid"), lastFound, ui.query);
   shown = Math.min(list.length, CHUNK);
   const frag = document.createDocumentFragment();
   list.slice(0, shown).forEach((card, i) => {

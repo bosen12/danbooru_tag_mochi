@@ -1568,6 +1568,8 @@ Discord 設定（自動傳送{0}）|Discord settings (auto sharing {0})
 {0}（{1}）|{0} ({1})
 {0} 張|{0} cards
 {0} 張圖|{0} images
+沒有一張同時有「{0}」，分別找到這些|No single card has all of “{0!}”; showing each separately
+找不到「{0}」，你是不是要找這幾張？|No match for “{0!}”. Did you mean these?
 印製中 {0}%|Printing {0}%
 修臉 {0}%|Face fix {0}%
 排隊 {0} 張|{0} queued

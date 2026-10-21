@@ -44,7 +44,7 @@ import { heatBlockedByRating } from "./scene-policy.js";
 import { initLoraPicker, currentLorasPayload, currentTriggerText, currentCkpt, handleLoraKeys } from "./lora.js";
 import { initWorkflow, currentWorkflowId, currentSampling, wfHandleKeys } from "./workflow.js";
 import { HARD_BANNED, applyArtSources } from "./card-art.js";
-import { buildLibrary, sizeCards, groupChips, genderChips, chipRun, seriesRun, groupNow, cardMatches, createAssets, cardNode, cardFacts, setEnterTarget, eagerArt, CARD_SUIT_INFO, CARD_SUITS, RATING_ZH, ERA_ZH } from "./cards.js";
+import { buildLibrary, sizeCards, groupChips, genderChips, chipRun, seriesRun, groupNow, cardMatches, searchCards, searchNote, createAssets, cardNode, cardFacts, setEnterTarget, eagerArt, CARD_SUIT_INFO, CARD_SUITS, RATING_ZH, ERA_ZH } from "./cards.js";
 import { el, openSheet, anyOverlay, toast, dropToastAction, syncChoices, bootFailed, friendlyError, isNetError } from "./ui.js";
 import { zoomFromThumb } from "./zoom.js";
 import { mountKeysHelp } from "./keys-help.js";
@@ -3678,8 +3678,19 @@ function renderCase() {
   if (caseTab === "chara" && caseGender) list = list.filter((c) => c.gate === caseGender);
   renderCaseGroups(list);
   if (caseGroup) list = list.filter((c) => c.group === caseGroup);
-  // 跟墨池字盒同一套（cards.js 的 cardMatches，角色牌對得上作品名「one piece」）；這裡另外也對小分類名。
-  if (q) list = list.filter((c) => cardMatches(c, q) || (c.groupZh || "").toLowerCase().includes(q));
+  // 跟墨池字盒同一套（cards.js 的 searchCards：完全相符排第一、簡體和底線照樣找、空白分開每段都要有、
+  // 找不到就分別找或猜）；這裡另外也對小分類名，對到的接在後面。
+  let found = { list, mode: "all" };
+  if (q) {
+    found = searchCards(list, q);
+    const have = new Set(found.mode === "all" ? found.list : []);
+    const byGroup = list.filter((c) => !have.has(c) && (c.groupZh || "").toLowerCase().includes(q));
+    if (byGroup.length) found = { list: found.mode === "all" ? [...found.list, ...byGroup] : byGroup, mode: "all" };
+    // 整盒找得到、只是被花色、分級收起來：照舊說是哪個擋住（caseMiss），不要用猜的蓋過去。
+    if (found.mode !== "all" && lib.cards.some((c) => cardMatches(c, q))) found = { list: [], mode: "none" };
+    list = found.list;
+  }
+  searchNote($("case-grid"), found, caseQuery);
   caseList = list;
   caseShown = 0;
   const grid = $("case-grid");

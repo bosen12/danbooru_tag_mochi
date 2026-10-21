@@ -35,6 +35,9 @@ Separate material and third-party notices
 - Chiron Sung HK font (subset for headings; no Reserved Font Names): SIL Open Font License 1.1; see web/fonts/OFL-ChironSungHK.txt.
 - Noto Serif TC font (subset for the films): SIL Open Font License 1.1; see web/fonts/OFL-NotoSerifTC.txt.
 - three.js: MIT; see web/vendor/three/LICENSE.
+- Traditional-to-Simplified character table in web/t2s.js (card search):
+  derived from OpenCC dictionary data, Apache License 2.0; see
+  web/vendor/opencc/LICENSE and web/vendor/opencc/NOTICE.
 Keep the copyright and license notices for those components intact.
 ComfyUI, checkpoints, LoRAs and downloaded models retain their own terms;
 the Mochi GPL license does not relicense them or user-generated images.
