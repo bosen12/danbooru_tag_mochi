@@ -7342,7 +7342,7 @@ html:not([lang="en"]) :is(.wordmark, .panel-head h2, #wall-title, #pool-title, #
 }
 
 /* ---------- 螢幕保護（screensaver.js） ----------
- * 整面墨色，中間一點暖光是牌河的盡頭；牌河的畫布載好才淡進來。滑鼠游標藏起來。
+ * 整面墨色，中間一點暖光是牌河的盡頭；牌河的畫布載好才淡進來。滑鼠游標照常看得到（專案主：藏起來找不到滑鼠在哪）。
  * 左下「墨池」和提示，提示幾秒後淡掉；右下時間。剛印好的那張底下一行字。 */
 .saver {
   position: fixed;
@@ -7350,7 +7350,7 @@ html:not([lang="en"]) :is(.wordmark, .panel-head h2, #wall-title, #pool-title, #
   z-index: 900;
   overflow: hidden;
   background: radial-gradient(ellipse 60% 50% at 50% 50%, #17130d 0%, #08090c 55%, #040507 100%);
-  cursor: none;
+  cursor: default;
 }
 
 .saver-gl {
