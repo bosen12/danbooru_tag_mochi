@@ -416,7 +416,7 @@ function render({ deal = false } = {}) {
   const tiles = [];
   const parts = grouped
     ? groups.map((g) => {
-        const ts = g.items.map(tile);
+        const ts = g.items.map(tileOf);
         tiles.push(...ts);
         return el(
           "section",
@@ -426,7 +426,7 @@ function render({ deal = false } = {}) {
         );
       })
     : (groups[0]?.items || []).map((w) => {
-        const t = tile(w);
+        const t = tileOf(w);
         tiles.push(t);
         return t;
       });
@@ -459,6 +459,22 @@ function render({ deal = false } = {}) {
   }
 }
 
+// 牆上的格子照作品留著重用（卡冊的 cells 同一招）：換分頁、換分段、搜尋都是同一批作品重新排，
+// 以前每次整片重建，150 件時手機換回「作品」分頁要 256ms。名字、圖、日期變了才重做那一格。
+const tileCache = new Map();
+function tileOf(w) {
+  const sig = [w.name, w.thumbnail?.file, w.image?.file, w.width, w.height, w.createdAt, String(dateLocale)].join("|");
+  const had = tileCache.get(w.id);
+  if (had && had.sig === sig) {
+    had.node._work = w;
+    return had.node;
+  }
+  const node = tile(w);
+  node._work = w;
+  tileCache.set(w.id, { sig, node });
+  return node;
+}
+
 function tile(w) {
   const src = smallUrl(w.thumbnail) || smallUrl(w.image);
   const ratio = w.width && w.height ? `${w.width} / ${w.height}` : "2 / 3";
@@ -486,7 +502,7 @@ function tile(w) {
     el("span", { class: "album-frame", style: `aspect-ratio: ${ratio}` }, img),
     el("span", { class: "album-cap" }, el("b", { dataset: { noI18n: "" } }, w.name), el("small", {}, dateText(w.createdAt)))
   );
-  node.addEventListener("click", () => openWork(w));
+  node.addEventListener("click", () => openWork(node._work || w));
   return node;
 }
 

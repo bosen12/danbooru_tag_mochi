@@ -2933,6 +2933,10 @@ html[lang="en"] .pool > .panel-head .workspace-purpose {
 
 .fan .card {
   --card-w: var(--fan-w);
+  /* 牌寬就是 --fan-w：字直接照它算，牌不當容器（card.css 的 [data-sized] 同一招）。成品詳情一打開兩三十張牌，
+   * 每張都是容器的話手機上第一格光排版就 150～270ms。 */
+  container-type: normal;
+  --card-f: calc(var(--fan-w) * 0.125);
 }
 
 .fan .card + .card {

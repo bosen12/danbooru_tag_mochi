@@ -114,6 +114,7 @@ html[lang="en"] :is(.card-spine, .card-peek-spine) {
   border-top: 2px solid var(--suit, var(--peek-suit));
 }
 html[lang="en"] [data-sized] .card-spine { --u: max(8px, calc(var(--card-cq) * 9)); }
+html[lang="en"] .fan .card-spine { --u: max(8px, calc(var(--fan-w) * 0.09)); }
 html[lang="en"] :is(.card-suit, .card-peek-suit) { flex: none; width: calc(var(--u) * 1.875); height: calc(var(--u) * 1.875); font-size: var(--u); }
 html[lang="en"] :is(.card-name, .card-peek-name) {
   flex: 1 1 auto;
