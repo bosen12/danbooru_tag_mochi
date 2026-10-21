@@ -1568,6 +1568,11 @@ Discord 設定（自動傳送{0}）|Discord settings (auto sharing {0})
 {0}（{1}）|{0} ({1})
 {0} 張|{0} cards
 {0} 張圖|{0} images
+印製中 {0}%|Printing {0}%
+修臉 {0}%|Face fix {0}%
+排隊 {0} 張|{0} queued
+今晚印好 {0} 張|{0} printed tonight
+今天印好 {0} 張|{0} printed today
 這張會標成「{0}」，但尺度勾了{1}：內容可能比標的分級露骨|This image will be labeled {0}, but the content level includes {1}; it may be more explicit than the label
 分級改成{0}|Set rating to {0}
 時代改成「混合」：{0}放回來了，不同時代的牌可以一起出現|Era set to Mixed: {0} back in the pool; cards from different eras can appear together
@@ -1798,6 +1803,7 @@ ComfyUI 畫的 PNG 或 API JSON，拖進來或點這裡選檔|Drop a ComfyUI PNG
 人物改成不限|Set Cast to Any
 顯示所有時代|Show all eras
 時代改成混合|Switch era to Mixed
+ComfyUI 連不上|ComfyUI unreachable
 換種子再印|New seed, print again
 同一組牌換一顆生圖種子，再印一張（G）|Print the same cards again with a new image seed (G)
 ComfyUI 連不上，等它開好就接著印|ComfyUI is unreachable; printing resumes when it is back

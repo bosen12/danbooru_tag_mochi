@@ -7393,6 +7393,54 @@ html:not([lang="en"]) :is(.wordmark, .panel-head h2, #wall-title, #pool-title, #
   opacity: 0.7;
 }
 
+/* 時間左邊的印製狀態（screensaver.js 的 renderStatus）：「印製中 40%・排隊 2 張・今晚印好 23 張」。
+ * 正在印的時候字底下一條細細的金線走進度；ComfyUI 連不上時字變暖紅。沒有東西要說就整個不佔位。 */
+.saver-status {
+  position: relative;
+  margin-left: auto;
+  padding-bottom: 6px;
+  color: rgba(241, 234, 217, 0.72);
+  font-size: 0.9rem;
+  letter-spacing: 0.12em;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  /* 後面常常是整面牌：墊一層暗影，字才讀得清楚。 */
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9), 0 2px 14px rgba(0, 0, 0, 0.85);
+  transition: opacity var(--dur-medium) var(--ease-out);
+}
+
+.saver-status[data-on="false"] {
+  opacity: 0;
+}
+
+.saver-status[data-warn="true"] {
+  color: rgba(240, 140, 110, 0.85);
+}
+
+.saver-status::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 2px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, rgba(201, 164, 94, 0.95), rgba(241, 214, 150, 0.95));
+  box-shadow: 0 0 10px rgba(201, 164, 94, 0.6);
+  transform: scaleX(var(--p, 0));
+  transform-origin: left center;
+  opacity: 0;
+  transition: transform var(--dur-long) var(--ease-out), opacity var(--dur-medium) var(--ease-out);
+}
+
+.saver-status[data-running="true"]::after {
+  opacity: 1;
+}
+
+.saver-status ~ .saver-clock {
+  margin-left: var(--space-md);
+}
+
 .saver-clock {
   margin-left: auto;
   font-family: var(--font-mono);

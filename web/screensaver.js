@@ -9,7 +9,7 @@
  * 墨池、疊印台、卡冊、作品冊都掛（mountScreensaver）；介紹影片、教學不掛。
  */
 import { el, openSheet } from "./ui.js";
-import { english } from "./i18n.js";
+import { english, t } from "./i18n.js";
 import { reducedMotion, DUR, CURVE, css } from "./motion.js";
 import { buildLibrary, createAssets, CARD_SUITS, CARD_SUIT_INFO } from "./cards.js";
 import { ratingBlocked } from "./rules/rating.js";
@@ -139,15 +139,17 @@ export async function startScreensaver() {
   const fresh = el("p", { class: "saver-fresh", "aria-hidden": "true" });
   const title = el("div", { class: "saver-act", "aria-hidden": "true" });
   const clock = el("span", { class: "saver-clock" });
+  // 右下時間左邊：正在印的那張到幾 %、排隊幾張、今晚印好幾張；ComfyUI 連不上也寫在這裡（renderStatus）。
+  const status = el("span", { class: "saver-status" });
   const layer = el(
     "div",
     { class: "saver", id: "screensaver", role: "presentation" },
     canvas,
     title,
     fresh,
-    el("div", { class: "saver-foot" }, el("span", { class: "saver-mark" }, "墨池"), el("span", { class: "saver-hint" }, matchMedia("(pointer: coarse)").matches ? "點一下回來" : "按 Enter 或空白鍵回來"), clock)
+    el("div", { class: "saver-foot" }, el("span", { class: "saver-mark" }, "墨池"), el("span", { class: "saver-hint" }, matchMedia("(pointer: coarse)").matches ? "點一下回來" : "按 Enter 或空白鍵回來"), status, clock)
   );
-  const state = { layer, gl: null, timer: 0, poll: 0, seen: new Set(), at: performance.now() };
+  const state = { layer, gl: null, timer: 0, poll: 0, jobsPoll: 0, seen: new Set(), at: performance.now(), done: null, comfy: true, jobs: [] };
   active = state;
   document.body.append(layer);
   const tick = () => {
@@ -220,16 +222,50 @@ export async function startScreensaver() {
   state.gl = gl;
   gl.start();
   canvas.classList.add("is-on");
-  // 正在印（墨池、疊印台、別的分頁都算，問伺服器）：螢幕保護降到每秒 60 格，把顯示卡留給 ComfyUI。
-  const throttle = async () => {
-    const busy = await printing();
-    if (active === state) gl.setMaxFps(busy ? PRINTING_FPS : 0);
+  // 一律每秒最多 60 格。以前只有在印圖時才限，平常螢幕能跑多快就畫多快（165Hz 的螢幕每秒 165 格），
+  // 螢幕保護常常一開就是一整晚，顯示卡白白多做將近三倍的工；60 格看起來一樣順。
+  gl.setMaxFps(SAVER_FPS);
+  const renderStatus = () => {
+    if (active !== state) return;
+    const run = state.jobs.find((j) => j.state === "running");
+    const queued = state.jobs.filter((j) => j.state === "queued").length;
+    const bits = [];
+    if (run) bits.push(`${run.kind === "hires" ? (run.face ? "修臉" : "Hires") : "印製中"} ${Math.round((run.progress || 0) * 100)}%`);
+    if (queued) bits.push(`排隊 ${queued} 張`);
+    if (!run && !queued && !state.comfy) bits.push("ComfyUI 連不上");
+    if (state.done && (state.done.n || run || queued)) bits.push(`${state.done.label}印好 ${state.done.n}${state.done.more ? "+" : ""} 張`);
+    // 每一段各自翻（英文版畫面上永遠是英文，比對也要比翻過的）。
+    const text = bits.map((b) => t(b)).join(english ? " · " : "・");
+    const label = status.querySelector(".saver-status-text") || status.appendChild(el("span", { class: "saver-status-text" }));
+    if (label.textContent !== text) label.textContent = text;
+    status.dataset.on = text ? "true" : "false";
+    status.dataset.warn = !run && !queued && !state.comfy ? "true" : "false";
+    // 正在印的那張：字底下一條細線走進度。
+    status.style.setProperty("--p", run ? String(run.progress || 0) : "0");
+    status.dataset.running = run ? "true" : "false";
   };
-  throttle();
+  // 印製進度：每 2 秒問一次伺服器（墨池、疊印台、別的分頁送的都算）。
+  const pollJobs = async () => {
+    if (document.hidden || active !== state) return;
+    const jobs = await activeJobs();
+    if (jobs) state.jobs = jobs;
+    renderStatus();
+  };
+  // 今晚印好幾張、ComfyUI 在不在：每 8 秒問一次。
+  const pollCount = async () => {
+    if (active !== state) return;
+    const [done, up] = await Promise.all([printedTonight(), comfyUp()]);
+    if (done) state.done = done;
+    state.comfy = up;
+    renderStatus();
+  };
+  pollJobs();
+  pollCount();
+  state.jobsPoll = setInterval(pollJobs, 2000);
   // 新印好的：每 8 秒看一次出圖日誌。
   state.poll = setInterval(async () => {
     if (document.hidden) return;
-    throttle();
+    pollCount();
     for (const p of (await recentPrints(loadSaver(), 8)).reverse()) {
       if (state.seen.has(p.id) || active !== state) continue;
       state.seen.add(p.id);
@@ -238,17 +274,57 @@ export async function startScreensaver() {
   }, 8000);
 }
 
-const PRINTING_FPS = 60;
+const SAVER_FPS = 60;
 
-/** 伺服器那邊有沒有還在排隊、正在畫的（不分哪一頁送的）。問不到就當沒有。 */
-async function printing() {
+/** 伺服器那邊還在排隊、正在畫、剛印完的工作（GET /api/gen/active）。問不到回 null（畫面照舊）。 */
+async function activeJobs() {
   try {
     const r = await fetch("/api/gen/active", { cache: "no-store" });
-    if (!r.ok) return false;
+    if (!r.ok) return null;
     const { jobs } = await r.json();
-    return Array.isArray(jobs) && jobs.some((j) => j.state === "queued" || j.state === "running");
+    return Array.isArray(jobs) ? jobs : null;
+  } catch {
+    return null;
+  }
+}
+
+/** ComfyUI 在不在（/api/ping）。問不到伺服器也算不在。 */
+async function comfyUp() {
+  try {
+    const r = await fetch("/api/ping", { cache: "no-store" });
+    return r.ok && !!(await r.json()).ok;
   } catch {
     return false;
+  }
+}
+
+/**
+ * 「今晚」印好幾張：18:00 到隔天 06:00 算今晚（過了午夜不歸零，整晚無限抽才數得對），06:00～18:00 算今天。
+ * 從出圖日誌數印好的（Hires、修臉不算一張）。
+ */
+export function nightWindow(now = new Date()) {
+  const d = new Date(now);
+  const h = d.getHours();
+  if (h >= 18 || h < 6) {
+    if (h < 6) d.setDate(d.getDate() - 1);
+    d.setHours(18, 0, 0, 0);
+    return { since: d.getTime(), label: "今晚" };
+  }
+  d.setHours(6, 0, 0, 0);
+  return { since: d.getTime(), label: "今天" };
+}
+
+async function printedTonight() {
+  const { since, label } = nightWindow();
+  try {
+    const r = await fetch("/api/genlog?limit=500", { cache: "no-store" });
+    if (!r.ok) return null;
+    const { items = [], more = false } = await r.json();
+    const mine = items.filter((e) => e.ok && e.kind !== "hires" && (e.at || 0) >= since);
+    // 一頁 500 筆全在這段時間裡、後面還有：寫「500+」。
+    return { label, n: mine.length, more: more && mine.length === items.length };
+  } catch {
+    return null;
   }
 }
 
@@ -263,6 +339,7 @@ export function stopScreensaver(now = false) {
   lastInput = performance.now();
   clearInterval(state.timer);
   clearInterval(state.poll);
+  clearInterval(state.jobsPoll);
   let finished = false;
   const done = () => {
     if (finished) return;
