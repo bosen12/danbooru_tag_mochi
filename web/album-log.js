@@ -6,6 +6,7 @@ import { dateLocale } from "./i18n.js";
  *   - 每一列：縮圖、牌名、時間、哪一頁送的、耗時、狀態（★ 收藏、撤下、印壞、Hires）。
  *   - 收藏的認法：作品冊那一筆的種子＋用到的牌一樣（作品冊沒記工作編號）。
  *   - ComfyUI 那邊的原圖刪掉了：縮圖換成「原圖不在了」，也就收藏不了。
+ *   - 詳情的主鈕「照這張再印」：牌、份量、時代、種子、底模、LoRA 一起帶回墨池；其他動作手機上收進「⋯」。
  */
 import { el, openSheet } from "./ui.js";
 import { zoomFromThumb } from "./zoom.js";
@@ -15,6 +16,11 @@ import { tagsOfPositive } from "./usage.js";
 import { favButton } from "./album-save.js";
 import { weightsOfPositive } from "./weights.js";
 import { RATING_LABEL } from "./rules/rating.js";
+import { footMore } from "./foot-more.js";
+import { recipeOf } from "./store.js";
+
+/** 一張牌的籤：點了打開卡冊那張牌的詳情（book.html 開頁時看 #card=）。作品冊也用這個。 */
+export const cardHref = (tag) => `book.html#card=${encodeURIComponent(tag)}`;
 
 const PAGE = 300;
 const ORIGIN_ZH = { mochi: "墨池", fuse: "疊印台" };
@@ -276,14 +282,18 @@ export function createLog(ctx) {
         "div",
         { class: "album-info" },
         el("dl", { class: "album-facts" }, facts.flatMap(([k, v]) => [el("dt", {}, k), el("dd", {}, v)])),
-        c.length ? el("section", {}, el("h3", {}, `用到的牌・${c.length}`), el("div", { class: "album-chips is-drawn" }, c.map((t) => el("span", { class: "album-chip", title: t }, ctx.zh(t) + (weights[t] ? ` ${weights[t]}` : ""))))) : null,
+        c.length ? el("section", {}, el("h3", {}, `用到的牌・${c.length}`), el("div", { class: "album-chips is-drawn" }, c.map((t) => el("a", { class: "album-chip pressable", href: cardHref(t), title: `${t}・在卡冊看這張牌` }, ctx.zh(t) + (weights[t] ? ` ${weights[t]}` : ""))))) : null,
         el("details", { class: "album-pos" }, el("summary", {}, "提示詞"), el("pre", { class: "pos-text" }, e.positive || ""))
       )
     );
+    // 主鈕：照這張再印（牌、份量、時代、種子、底模、LoRA）；只帶牌、收藏、複製、開原圖是次要的，手機上收進「⋯」。
+    const again = c.length
+      ? el("button", { class: "btn btn-small btn-primary reprint-btn", type: "button", title: "牌、份量、時代、種子、底模、LoRA 一起帶去墨池", onclick: (ev) => ctx.toMochi(c, `這張的 ${c.length} 張牌`, e, ev.currentTarget, { recipe: recipeOf(e) }) }, "照這張再印")
+      : null;
     const sheet = openSheet(title(e), body, {
       wide: true,
-      foot: [
-        c.length ? el("button", { class: "btn btn-small btn-primary", type: "button", onclick: () => ctx.toMochi(c, `這張的 ${c.length} 張牌`, e) }, "牌帶回墨池") : null,
+      foot: footMore(again, [
+        c.length ? el("button", { class: "btn btn-small", type: "button", onclick: (ev) => ctx.toMochi(c, `這張的 ${c.length} 張牌`, e, ev.currentTarget) }, "只帶牌") : null,
         fav,
         el(
           "button",
@@ -304,7 +314,7 @@ export function createLog(ctx) {
           "複製 POS"
         ),
         full ? el("a", { class: "btn btn-small", href: e.image, target: "_blank", rel: "noopener" }, "開原圖") : null,
-      ],
+      ]),
     });
     // 圖從那一列的小縮圖長大到彈窗、關掉時縮回去（zoom.js）；沒有縮圖可以接的照舊淡進來。
     const big = body.querySelector(".album-big img");

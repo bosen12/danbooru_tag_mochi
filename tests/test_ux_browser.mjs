@@ -133,7 +133,8 @@ try {
   assert.equal(await page.locator('.trial-summary').count(), 4);
   const different = page.locator('#trials button').filter({ has: page.locator('.trial-summary .is-different') }).first();
   if (await different.count()) assert.match(await different.getAttribute('aria-label'), /與已選試印不同/, 'screen readers receive the differences');
-  assert.ok((await page.locator('.trial-summary').first().innerText()).includes('红') || (await page.locator('.trial-summary').first().innerText()).includes('紅髮'));
+  // 2026-10-21：版上釘住的紅髮四張一定一樣，摘要不再每張寫一次（composition.js 的 trialSummaries）。
+  assert.ok((await page.locator('.trial-summary').allInnerTexts()).every(t => !t.includes('紅髮')), 'pinned hair colour is not repeated in each proof');
   await page.locator('#print-bar select[aria-label="尺寸"]').selectOption('portrait');
   assert.match(await page.locator('.pb-detail').innerText(), /直/);
   const pos = page.locator('#print-bar .pb-links button');

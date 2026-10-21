@@ -87,6 +87,8 @@ def entry_of(job_id: str, payload: dict, ok: bool, data: dict, *, origin: str, k
         "loras": _loras(p.get("loras")),
         "workflowId": str(p.get("workflowId") or "")[:120],
         "rating": str(p.get("rating") or "")[:20],
+        # 抽到的時代（"mixed"＝混合）：作品冊日誌的「照這張再印」把它帶回墨池。
+        "era": str(p.get("era") or "")[:40],
         "steps": _num(p.get("steps"), int),
         "cfg": _num(p.get("cfg")),
     }

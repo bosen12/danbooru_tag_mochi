@@ -2170,6 +2170,59 @@ body #wf-pick-btn.has {
   border-top: 1px solid var(--color-rule-2);
 }
 
+/* 照這張再印（作品冊、日誌帶過來的，app.js 的 greetRecipe）：抽牌那排上面一張小便條。
+ * 左邊一道池水色的邊，說時代、種子照那張；模型不一樣時問要不要換。 */
+.recipe-note {
+  position: relative;
+  display: grid;
+  gap: var(--space-2xs);
+  margin: var(--space-sm) var(--space-md) 0;
+  padding: var(--space-sm) calc(var(--space-md) + 32px) var(--space-sm) var(--space-md);
+  border: 1px solid var(--color-rule-2);
+  border-left: 3px solid var(--color-pool);
+  border-radius: var(--radius-sm);
+  background: color-mix(in oklch, var(--color-pool) 9%, var(--color-paper-2));
+  font-size: var(--text-sm);
+  overflow: hidden;
+}
+.recipe-note p {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2xs) var(--space-xs);
+  margin: 0;
+}
+.recipe-note-head b {
+  letter-spacing: 0.04em;
+}
+.recipe-note-head span,
+.recipe-note-models small {
+  color: var(--color-muted);
+}
+.recipe-note-models > span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.recipe-note-x {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-muted);
+  cursor: pointer;
+}
+.recipe-note-x:hover {
+  color: var(--color-ink);
+  background: var(--color-paper-3);
+}
+
 /* 生圖種子（web/seed-control.js）：電腦上跟張數、開關排同一行（夾在開關和按鈕中間），
  * 「生圖種子」四個字收起來（螢幕閱讀器照樣念得到）；擠不下時自己換行。手機上自己一行（下面 40rem 那段）。 */
 .go-bar > .seed-ctl {
@@ -2688,6 +2741,37 @@ html[lang="en"] .pool > .panel-head .workspace-purpose {
 /* 牌・N 在圖底下那一行的最右邊。 */
 .shot-meta .shot-toggle {
   margin-left: auto;
+}
+
+/* 成品詳情「換掉這張重抽」換出來的（app.js 的 rerollCard）：圖的左上角一枚「換了：A → B」的籤。 */
+.shot:has(> .shot-swap) {
+  grid-template-columns: minmax(0, 1fr);
+}
+.shot:has(> .shot-swap) > .shot-frame {
+  grid-area: 1 / 1;
+}
+.shot > .shot-swap {
+  grid-area: 1 / 1;
+  align-self: start;
+  justify-self: start;
+  z-index: 2;
+  display: block;
+  max-width: calc(100% - 12px);
+  margin: 6px;
+  padding: 2px 8px 2px 6px;
+  border-radius: 999px;
+  background: rgba(12, 14, 18, 0.72);
+  color: #f1ead9;
+  font-size: var(--text-xs);
+  line-height: 1.5;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  pointer-events: none;
+}
+.shot-swap-mark {
+  margin-right: 4px;
+  color: color-mix(in oklch, var(--color-accent) 70%, #fff);
 }
 
 /* 電腦（滑鼠可以懸停）：動作按鈕不再在每張圖底下排兩排（十幾張圖就是一整面按鈕），
@@ -3252,6 +3336,55 @@ body[data-dragging="true"] .library[data-over="true"] {
   padding: var(--space-sm) var(--space-lg) var(--space-lg);
   background: var(--color-paper-2);
   border-top: 1px solid var(--color-rule-2);
+}
+
+/* 手機的彈窗底部：主鈕＋「⋯」（foot-more.js），其他動作收進往上長的小選單。主鈕撐滿剩下的寬。 */
+.sheet-foot:has(> .foot-more) {
+  flex-wrap: nowrap;
+}
+.sheet-foot:has(> .foot-more) > .btn-primary {
+  flex: 1;
+  min-height: 44px;
+}
+.foot-more {
+  position: relative;
+  flex: none;
+}
+.foot-more-btn {
+  min-width: 44px;
+  min-height: 44px;
+  font-size: var(--text-lg);
+  line-height: 1;
+}
+.foot-more-menu {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + var(--space-xs));
+  z-index: 5;
+  display: grid;
+  gap: 2px;
+  min-width: 13rem;
+  padding: var(--space-2xs);
+  background: var(--color-paper);
+  border: 1px solid var(--color-rule-2);
+  border-radius: var(--radius-md, 8px);
+  box-shadow: 0 18px 36px -18px var(--color-shade);
+  transform-origin: bottom right;
+}
+.foot-more-menu[hidden] {
+  display: none;
+}
+.foot-more-menu > .btn {
+  justify-content: flex-start;
+  width: 100%;
+  min-height: 44px;
+  border-color: transparent;
+  background: transparent;
+  text-align: start;
+}
+.foot-more-menu > .btn:hover,
+.foot-more-menu > .btn:focus-visible {
+  background: var(--color-paper-2);
 }
 
 .detail {

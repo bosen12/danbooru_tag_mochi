@@ -1207,9 +1207,39 @@
   display: none;
 }
 .book-work-cards {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
   margin: 0;
   color: var(--color-ink-2);
   font-size: var(--text-xs);
+}
+/* 成品裡的牌名是籤：點了打開那張牌的詳情。 */
+.book-work-chip {
+  min-height: 28px;
+  padding: 2px var(--space-xs);
+  border: 1px solid var(--color-rule-2);
+  border-radius: 999px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  transition:
+    background-color var(--dur-short) var(--ease-out),
+    border-color var(--dur-short) var(--ease-out);
+}
+@media (hover: hover) {
+  .book-work-chip:hover {
+    border-color: var(--color-ink-2);
+    background: var(--color-paper-2);
+    color: var(--color-ink);
+  }
+}
+@media (pointer: coarse) {
+  .book-work-chip {
+    min-height: 32px;
+    padding-inline: var(--space-sm);
+  }
 }
 
 /* 角色牌的「加入偏好角色」：跟右下角的「放進卡盒」同一種圓鈕，放在左下角；加了之後愛心變實心、一直亮著。 */
@@ -1267,4 +1297,129 @@
 /* 卡冊的角色牌有自己的愛心圓鈕（看得出加了沒），牌上的愛心章就不再疊一顆。 */
 .book-cell .card-heart {
   display: none;
+}
+
+/* ---------- 手機：往上滑時頂端接回來的小工具列（book.js 的 mountMiniBar） ----------
+ * 捲過工具列之後往上滑一點才出現，往下捲就收回去；高 44px（加上瀏海那一截）。
+ * 找牌、花色、排序、清除篩選；花色、排序的選單從工具列底下長出來。電腦上工具列本來就黏著，不用這條。 */
+.book-mini {
+  position: fixed;
+  inset: 0 0 auto;
+  z-index: 25;
+  padding-top: env(safe-area-inset-top);
+  background: color-mix(in oklch, var(--color-paper) 96%, transparent);
+  border-bottom: 1px solid var(--color-rule-2);
+  box-shadow: 0 12px 20px -18px var(--color-shade);
+  transform: translateY(-110%);
+  visibility: hidden;
+  transition:
+    transform var(--dur-short) var(--ease-exit),
+    visibility 0s linear var(--dur-short);
+}
+/* 頂欄冒出來時接在它底下（頂欄 z-index 30，小工具列從它後面滑下來）。 */
+html[data-mast="peek"] .book-mini {
+  top: calc(env(safe-area-inset-top) + var(--mast-h, 0px));
+  padding-top: 0;
+}
+.book-mini[data-show="true"] {
+  transform: none;
+  visibility: visible;
+  transition:
+    transform var(--dur-medium) var(--ease-out),
+    visibility 0s;
+}
+.book-mini-in {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 44px;
+  padding-inline: 10px;
+}
+.book-mini-q {
+  flex: 1 1 6rem;
+  min-width: 0;
+  height: 34px;
+  padding: 0 var(--space-xs);
+  border: 1px solid var(--color-rule);
+  border-radius: var(--radius-sm);
+  background: var(--color-paper-2);
+  color: var(--color-ink);
+  font: inherit;
+  font-size: 16px;
+}
+.book-mini-btn {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 4px;
+  height: 34px;
+  max-width: 7.5rem;
+  padding: 0 var(--space-xs);
+  border: 1px solid var(--color-rule);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-ink);
+  font: inherit;
+  font-size: var(--text-xs);
+  white-space: nowrap;
+  overflow: hidden;
+  cursor: pointer;
+}
+.book-mini-btn > span:last-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.book-mini-btn[aria-expanded="true"] {
+  border-color: var(--color-ink-2);
+  background: var(--color-paper-2);
+}
+.book-mini-clear {
+  color: var(--color-accent);
+}
+.book-mini-clear[hidden],
+.book-mini-menu[hidden] {
+  display: none;
+}
+.book-mini-menu {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(7.5rem, 1fr));
+  gap: 4px;
+  max-height: min(60dvh, 26rem);
+  padding: 6px 10px 10px;
+  overflow-y: auto;
+  border-top: 1px solid var(--color-rule-2);
+}
+.book-mini-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 0 var(--space-xs);
+  border: 1px solid var(--color-rule-2);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-ink);
+  font: inherit;
+  font-size: var(--text-sm);
+  text-align: start;
+  cursor: pointer;
+}
+.book-mini-item > b {
+  color: var(--suit, currentColor);
+}
+.book-mini-item[aria-checked="true"] {
+  border-color: var(--color-ink);
+  background: var(--color-paper-2);
+  font-weight: 600;
+}
+@media (min-width: 40.0625rem) {
+  .book-mini {
+    display: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .book-mini,
+  .book-mini[data-show="true"] {
+    transition: none;
+  }
 }

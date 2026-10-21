@@ -2275,6 +2275,46 @@ try:
 finally:
     server.comfy_base, wfmod._comfy_answers, server.lora_scan.lora_manager_count, server.check_ckpt, server.prune_hires_inputs = _saved_boot
 
+# 送印的工作編號由網頁取（gen.js）：還沒建起來就按停，晚到的同編號送印擋掉；同編號重送接回同一張，不畫兩次。
+_saved_job = (server.GenJob.start, server.find_job)
+try:
+    server.GenJob.start = lambda self: self
+    _made = {}
+    server.find_job = lambda jid: _made.get(str(jid or ""))
+    ok("job id: 編號格式不對就不收", server.client_job_id("a b") is None and server.client_job_id("x" * 65) is None and server.client_job_id("abcDEF12_-") == "abcDEF12_-")
+    ok("job id: 還沒建起來就按停 → 記下編號", server.cancel_job_id("early000001") == "early")
+    _state, _job = server.open_gen_job({"job": "early000001", "positive": "x"})
+    ok("job id: 晚到的同編號送印擋掉", _state == "cancelled" and _job is None)
+    _state, _job = server.open_gen_job({"job": "fresh000001", "positive": "x"})
+    ok("job id: 新的編號照用，payload 裡不留 job", _state == "new" and _job.id == "fresh000001" and "job" not in _job.payload)
+    _made["fresh000001"] = _job
+    _state2, _job2 = server.open_gen_job({"job": "fresh000001", "positive": "x"})
+    ok("job id: 同編號重送接回同一張", _state2 == "again" and _job2 is _job)
+    ok("job id: 編號亂打的停回 missing", server.cancel_job_id("??") == "missing")
+    _state3, _job3 = server.open_gen_job({"positive": "x"})
+    ok("job id: 舊網頁沒帶編號照舊由伺服器取", _state3 == "new" and len(_job3.id) == 16)
+finally:
+    server.GenJob.start, server.find_job = _saved_job
+
+# 伺服器重開過：網頁拿工作編號、prompt_id 回來問這張後來怎麼了（/api/gen/recover）。
+_saved_rec = (server.gen_log.all_items, server.api)
+try:
+    server.gen_log.all_items = lambda: [{"id": "logged00001", "ok": True, "image": "/api/image?filename=a.png", "seed": 7}, {"id": "bad00000001", "ok": False, "error": "顯示卡記憶體不夠"}]
+    ok("recover: 出圖日誌有就直接給成品", server.recover_gen("logged00001", "") == {"ok": True, "state": "done", "image": "/api/image?filename=a.png", "seed": 7})
+    ok("recover: 日誌記成失敗就說原因", server.recover_gen("bad00000001", "")["state"] == "failed")
+    _hist = {"pid-done-01": {"outputs": {"9": {"images": [{"filename": "b.png", "subfolder": "", "type": "output"}]}}, "status": {"completed": True}}}
+    _queue = {"queue_running": [[0, "pid-run-001"]], "queue_pending": []}
+    server.api = lambda method, path, *a, **k: (_hist if path.startswith("/history/") else _queue)
+    _r = server.recover_gen("gone0000001", "pid-done-01")
+    ok("recover: ComfyUI 畫完了就給成品", _r["state"] == "done" and "b.png" in _r["image"], str(_r))
+    ok("recover: 還在 ComfyUI 佇列裡就等", server.recover_gen("gone0000001", "pid-run-001")["state"] == "pending")
+    ok("recover: 兩邊都沒有就是不見了", server.recover_gen("gone0000001", "pid-none-01")["state"] == "gone")
+    ok("recover: prompt_id 格式不對不去問 ComfyUI", server.recover_gen("gone0000001", "../x")["state"] == "gone")
+    server.api = lambda *a, **k: (_ for _ in ()).throw(ConnectionRefusedError())
+    ok("recover: ComfyUI 連不上回 unknown（網頁等一下再問）", server.recover_gen("gone0000001", "pid-run-001")["state"] == "unknown")
+finally:
+    server.gen_log.all_items, server.api = _saved_rec
+
 if failed:
     print(f"\n{failed} failed")
     sys.exit(1)

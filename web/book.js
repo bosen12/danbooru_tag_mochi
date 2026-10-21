@@ -1,7 +1,7 @@
 // 詞庫換過名的字：存著的舊名先換成新名（一定要第一個 import，見 tag-renames.js）。
 import "./tag-renames.js";
 import { guardPrerender, prerenderNeighbors, whenActive } from "./prerender.js";
-import { dateLocale, english } from "./i18n.js";
+import { dateLocale, english, t } from "./i18n.js";
 import { cloneCard } from "./card-images.js";
 /**
  * 卡冊：每張牌進過幾張圖。
@@ -187,6 +187,7 @@ async function boot() {
   renderUsedToggle();
   renderSuits();
   wireSearch();
+  mountMiniBar();
   sizeCells($("book-grid"));
   render({ animate: false, deal: true });
   restoreSpot();
@@ -212,6 +213,28 @@ async function boot() {
   settleMotion();
   // 開好了：左右相鄰的房間在背後先開好，換過去不用再等開頁（prerender.js）。
   whenActive(prerenderNeighbors);
+  // 作品冊、成品上點牌名過來（book.html#card=red%20hair）：直接打開那張牌的詳情。
+  openFromHash();
+  addEventListener("hashchange", openFromHash);
+}
+
+/** 網址帶 #card=<tag>：打開那張牌的詳情（作品冊的牌名籤點過來的）。打開後把 #card 拿掉，重新整理不會又開。 */
+function openFromHash() {
+  const m = /^#card=(.+)$/.exec(location.hash);
+  if (!m) return;
+  let tag = "";
+  try {
+    tag = decodeURIComponent(m[1]);
+  } catch {
+    return;
+  }
+  history.replaceState(null, "", location.pathname + location.search);
+  const card = lib.byTag.get(tag);
+  if (!card) return toast("詞庫裡沒有這張牌了");
+  const node = $("book-grid").querySelector(`.card[data-tag="${CSS.escape(tag)}"]`);
+  // 牌在格子裡（沒被篩掉）：捲到它、從它飛進詳情；不在（被篩掉、還沒畫到）照樣打開詳情。
+  node?.scrollIntoView({ block: "center" });
+  openCard(card, node);
 }
 
 /* ================= 頂欄 ================= */
@@ -551,6 +574,142 @@ function wireSearch() {
       q.focus();
     }
   });
+}
+
+/* ================= 手機：頂欄往上滑回來時多接一條小工具列 =================
+ * 手機的工具列不黏（兩三行高，加上頂欄會佔掉四分之一個螢幕），捲到中間想換花色、排序、找別的牌
+ * 得一路捲回頂端。頂欄往上滑冒出來（motion.js 的 watchMastPeek，html[data-mast="peek"]）而工具列已經捲走時，
+ * 頂欄底下多接一條 44px：找牌、花色、排序、清除篩選；頂欄收回去它也跟著收。
+ * 花色、排序按的是工具列上原本那幾顆（同一套規則、同一個畫面）。 */
+const MINI_MQ = "(max-width: 40rem)";
+
+function filtersOn() {
+  return ui.suit !== "all" || !!ui.group || !!ui.query || ui.usedOnly || !!ui.charGender;
+}
+
+function clearFilters() {
+  ui.suit = "all";
+  ui.group = "";
+  ui.query = "";
+  ui.usedOnly = false;
+  ui.charGender = "";
+  $("book-q").value = "";
+  saveUi();
+  renderSuits();
+  renderUsedToggle();
+  render();
+  renderSummary();
+}
+
+function mountMiniBar() {
+  const mq = matchMedia(MINI_MQ);
+  const q = el("input", { class: "book-mini-q", type: "search", placeholder: "找牌", "aria-label": "找牌", autocomplete: "off", enterkeyhint: "search" });
+  const suitBtn = el("button", { class: "book-mini-btn pressable", type: "button", "aria-haspopup": "menu", "aria-expanded": "false", dataset: { menu: "suit" } });
+  const sortBtn = el("button", { class: "book-mini-btn pressable", type: "button", "aria-haspopup": "menu", "aria-expanded": "false", dataset: { menu: "sort" } });
+  const clear = el("button", { class: "book-mini-btn book-mini-clear pressable", type: "button", title: "清除篩選", "aria-label": "清除篩選" }, "清除");
+  const menu = el("div", { class: "book-mini-menu", role: "menu", hidden: true });
+  const bar = el("div", { class: "book-mini", id: "book-mini", role: "toolbar", "aria-label": "卡冊工具", dataset: { show: "false" }, inert: true }, el("div", { class: "book-mini-in" }, q, suitBtn, sortBtn, clear), menu);
+  document.body.append(bar);
+  const sync = () => {
+    if (document.activeElement !== q) q.value = ui.query;
+    const s = ui.suit === "all" ? null : CARD_SUIT_INFO[ui.suit];
+    suitBtn.replaceChildren(s ? el("b", { class: "suit-glyph", "aria-hidden": "true", style: `color: var(--suit-${ui.suit})` }, s.glyph) : null, el("span", {}, s ? s.zh : "全部花色"));
+    suitBtn.setAttribute("aria-label", t(`花色：${s ? s.zh : "全部"}`));
+    sortBtn.replaceChildren(el("span", { class: "sort-arrow", "aria-hidden": "true" }, ORDER_MARK[ui.order]), el("span", {}, ORDER_ZH[ui.order]));
+    sortBtn.setAttribute("aria-label", t(`排序：${ORDER_ZH[ui.order]}`));
+    clear.hidden = !filtersOn();
+  };
+  bar._sync = sync;
+  let shown = false;
+  const show = (on) => {
+    if (on === shown) return;
+    shown = on;
+    if (on) sync();
+    else shutMenu();
+    bar.dataset.show = on ? "true" : "false";
+    bar.inert = !on;
+  };
+  function shutMenu() {
+    if (menu.hidden) return;
+    menu.hidden = true;
+    for (const b of [suitBtn, sortBtn]) b.setAttribute("aria-expanded", "false");
+  }
+  function openMenu(kind, btn) {
+    if (!menu.hidden && menu.dataset.kind === kind) return shutMenu();
+    menu.dataset.kind = kind;
+    // 選單裡的每一顆按的是工具列上原本那一顆：規則、存檔、動畫都是同一套。
+    const source = kind === "suit" ? [...$("book-suits").querySelectorAll(".suit-tab")] : [...$("book-sort").querySelectorAll("button")];
+    menu.replaceChildren(
+      ...source.map((orig) =>
+        el(
+          "button",
+          {
+            class: "book-mini-item pressable",
+            type: "button",
+            role: "menuitemradio",
+            "aria-checked": orig.getAttribute("aria-pressed") === "true" || orig.getAttribute("aria-checked") === "true" ? "true" : "false",
+            style: orig.getAttribute("style") || undefined,
+            onclick: () => {
+              shutMenu();
+              orig.click();
+              // 換了花色、排序：從第一張開始看（手機的工具列不黏，回到牌格頂端）。
+              const top = $("book-grid").getBoundingClientRect().top + scrollY - bar.offsetHeight - 8;
+              if (scrollY > top) scrollTo({ top, behavior: "instant" });
+              sync();
+            },
+          },
+          [...orig.childNodes].map((n) => n.cloneNode(true))
+        )
+      )
+    );
+    menu.hidden = false;
+    for (const b of [suitBtn, sortBtn]) b.setAttribute("aria-expanded", b === btn ? "true" : "false");
+    if (!reducedMotion()) menu.animate([{ opacity: 0, transform: "translateY(-6px)" }, { opacity: 1, transform: "none" }], { duration: DUR.short, easing: css(CURVE.out) });
+  }
+  suitBtn.addEventListener("click", () => openMenu("suit", suitBtn));
+  sortBtn.addEventListener("click", () => openMenu("sort", sortBtn));
+  clear.addEventListener("click", () => {
+    shutMenu();
+    clearFilters();
+    sync();
+    toast("篩選都清掉了");
+  });
+  // 找牌：跟上面那個搜尋框同一份（打在這裡等於打在那裡，排法、組字規則都一樣）。
+  q.addEventListener("input", (e) => {
+    const main = $("book-q");
+    main.value = q.value;
+    main.dispatchEvent(new InputEvent("input", { isComposing: e.isComposing }));
+    clear.hidden = !filtersOn() && !q.value.trim();
+  });
+  q.addEventListener("compositionend", () => $("book-q").dispatchEvent(new Event("compositionend")));
+  q.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") q.blur();
+    else if (e.key === "Escape" && q.value) {
+      q.value = "";
+      q.dispatchEvent(new Event("input"));
+    }
+  });
+  document.addEventListener("pointerdown", (e) => {
+    if (!bar.contains(e.target)) shutMenu();
+  }, true);
+  // 跟著頂欄：頂欄冒出來（peek）、而且原本那排工具列已經捲到頂欄後面去了，才接上來。
+  // 捲回工具列看得到的地方就收（上面就有原本那排）；正在打字、選單開著時不收。
+  const root = document.documentElement;
+  const update = () => {
+    if (!mq.matches) return show(false);
+    const mastH = parseFloat(getComputedStyle(root).getPropertyValue("--mast-h")) || 0;
+    const past = $("book-tools").getBoundingClientRect().bottom < mastH;
+    if (shown && past && (document.activeElement === q || !menu.hidden)) return;
+    show(past && root.dataset.mast === "peek");
+  };
+  new MutationObserver(update).observe(root, { attributes: true, attributeFilter: ["data-mast"] });
+  let ticking = false;
+  addEventListener("scroll", () => {
+    if (!shown || ticking) return;
+    ticking = true;
+    requestAnimationFrame(() => ((ticking = false), update()));
+  }, { passive: true });
+  mq.addEventListener("change", update);
 }
 
 /* ================= 牌格 ================= */
@@ -1211,7 +1370,16 @@ function openWork(x, thumb) {
       { class: "book-work-full" },
       big,
       el("p", { class: "tag-en" }, [x.width && x.height ? `${x.width}×${x.height}` : "", x.seed != null ? `seed ${x.seed}` : "", new Date(x.at).toLocaleString(dateLocale), x.fav ? "★ 收藏過" : x.mark === "discard" ? "撤下過" : ""].filter(Boolean).join("・")),
-      cards.length ? el("p", { class: "book-work-cards" }, cards.map((t) => lib.byTag.get(t).zh).join("・")) : null
+      // 牌名是籤：點了關掉這張、打開那張牌的詳情。
+      cards.length
+        ? el(
+            "p",
+            { class: "book-work-cards" },
+            cards.map((t) =>
+              el("button", { class: "book-work-chip pressable", type: "button", title: `${t}・看這張牌`, onclick: () => (sheet.close(), setTimeout(() => openCard(lib.byTag.get(t), $("book-grid").querySelector(`.card[data-tag="${CSS.escape(t)}"]`)), reducedMotion() ? 0 : DUR.short)) }, lib.byTag.get(t).zh)
+            )
+          )
+        : null
     ),
     {
       wide: true,

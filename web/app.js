@@ -41,7 +41,7 @@ import { whenPrinter, settingsToWrite, onOtherTab } from "./tab-sync.js";
 import { searchMiss } from "./lib-hint.js";
 import { HEATS, toggleHeat } from "./heats.js";
 import { SCENE_MODES, SCENE_MODE_LABELS, heatBlockedByRating } from "./scene-policy.js";
-import { initLoraPicker, currentLorasPayload, currentTriggerText, currentCkpt, handleLoraKeys } from "./lora.js";
+import { initLoraPicker, currentLorasPayload, currentTriggerText, currentCkpt, handleLoraKeys, applyRecipeModels, joinTriggerParts, modelTitles } from "./lora.js";
 import { initWorkflow, currentWorkflowId, currentSampling, wfHandleKeys } from "./workflow.js";
 import { HARD_BANNED } from "./card-art.js";
 import { buildLibrary, sizeCards, groupChips, genderChips, chipRun, seriesRun, groupNow, createAssets, cardNode, setCardFlag, setEnterTarget, eagerArt, cardFacts, cardMatches, CARD_SUIT_INFO, CARD_SUITS, RATING_ZH } from "./cards.js";
@@ -63,7 +63,7 @@ import { createHand } from "./hand.js";
 import { createTrashPanel } from "./trash-panel.js";
 import { createGenerator, comfyOnline, viewSrc, tabTitle, markGenLog } from "./gen.js";
 import { pingLoop } from "./ping.js";
-import { genSeed, mountSeedControl, seedUseButton } from "./seed-control.js";
+import { genSeed, mountSeedControl, seedUseButton, useSeed } from "./seed-control.js";
 import { attachPeek, hidePeek } from "./card-peek.js";
 import { attachTilt } from "./card-tilt.js";
 import { createHires, openHiresPicker, openFacePicker, paintHiresVeil, hiresBusy, faceBusy, faceDepth, HIRES_MODES } from "./hires.js";
@@ -104,6 +104,8 @@ let pool = new Set();
 let handoffMerged = false;
 // 疊印台、作品冊帶來的牌換掉了原本那一池：原本的那一池（greetHandoff 的「復原」用）。
 let handoffReplaced = null;
+// 作品冊、日誌按「照這張再印」帶來的配方（store.js 的 recipeOf）：時代、種子開機時套好，底模、LoRA 問一聲（greetRecipe）。
+let handoffRecipe = null;
 // 空池抽一次，普通重畫保留；放牌後重設，清空時再抽。
 let starterPick = null;
 // 合成池裡每張牌的份量（weights.js）：只記調過的（不是 1.0 的）。
@@ -184,6 +186,19 @@ async function boot() {
     pool = new Set(kept);
     weights = new Map(Object.entries(before?.weights || {}).filter(([t, w]) => pool.has(t) && w !== 1));
   }
+  // 照這張再印：時代跟著那張（抽到「混合」的就是混合），種子固定成那一顆。底模、LoRA 不自己換（greetRecipe 問）。
+  handoffRecipe = handoff.length ? S.handoffRecipe : null;
+  if (handoffRecipe) {
+    const era = handoffRecipe.era;
+    const prev = settings;
+    if (era === "mixed") settings = sanitizeSettings({ ...settings, eras: [...ERAS], eraMix: true }, data);
+    else if (ERAS.includes(era)) settings = sanitizeSettings({ ...settings, eras: [era], eraMix: false }, data);
+    // 尺寸：墨池有的那三種才換（作品冊記的是 Hires 之後的大小時就照現在的）。
+    const size = SIZES.find((s) => s.w === handoffRecipe.width && s.h === handoffRecipe.height);
+    if (size) settings = sanitizeSettings({ ...settings, width: size.w, height: size.h }, data);
+    if (settings !== prev) saveSettings(prev);
+    if (handoffRecipe.seed != null) useSeed(handoffRecipe.seed);
+  }
   addEventListener("pagehide", () => S.saveTab(S.TAB_POOL, { tags: [...pool], weights: Object.fromEntries(weights) }));
   const languageState = takeLanguageState();
   if (languageState) {
@@ -227,6 +242,7 @@ async function boot() {
   renderLibrary();
   renderPool();
   greetHandoff();
+  greetRecipe();
   renderRules();
   renderGoBar();
   renderWall();
@@ -1518,6 +1534,74 @@ function greetHandoff() {
   );
 }
 
+const modelName = (p) => String(p || "").split(/[\\/]/).pop().replace(/\.safetensors$/i, "");
+
+/**
+ * 照這張再印（作品冊、日誌）：池子上方一張小便條，說這張的時代、種子已經照那張；
+ * 那張的底模、LoRA 跟現在選的不一樣就問「換成這組模型」——換模型要重新載入、很慢，不自己換。
+ */
+function greetRecipe() {
+  const r = handoffRecipe;
+  handoffRecipe = null;
+  if (!r) return;
+  const size = SIZES.find((s) => s.w === r.width && s.h === r.height);
+  const bits = [r.era ? `時代：${ERA_LABELS[r.era] || r.era}` : "", size ? size.zh : "", r.seed != null ? `種子固定 ${r.seed}` : ""].filter(Boolean);
+  const nowLoras = currentLorasPayload().map((l) => modelName(l.file)).sort().join("|");
+  const wantLoras = r.loras ? r.loras.map((l) => modelName(l.file)).sort().join("|") : nowLoras;
+  const ckptDiff = !!r.ckpt && modelName(r.ckpt) !== modelName(currentCkpt());
+  const differ = ckptDiff || wantLoras !== nowLoras;
+  let names = [modelName(r.ckpt) || modelName(currentCkpt()) || "預設底模", ...(r.loras || []).map((l) => modelName(l.file))];
+  const close = el("button", { class: "recipe-note-x", type: "button", "aria-label": "收起", title: "收起", html: ICONS.close, onclick: () => dismiss() });
+  const swap = differ
+    ? el("button", { class: "btn btn-small btn-primary", type: "button", onclick: (e) => takeModels(e.currentTarget) }, "換成這組模型")
+    : null;
+  const keep = differ ? el("button", { class: "btn btn-small btn-ghost", type: "button", onclick: () => dismiss() }, "不用，照現在的") : null;
+  const used = el("span", {}, `這張用 ${names.join("＋")}`);
+  const line = el("p", { class: "recipe-note-models" }, used, differ ? null : el("small", {}, "（跟現在選的一樣）"), swap, keep);
+  // 檔名換成清單上的名字（LoRA 的檔名常常是一串亂碼）：清單讀到了再換，讀不到就留檔名。
+  modelTitles()
+    .then((title) => {
+      names = [(r.ckpt && title.ckpt(r.ckpt)) || names[0], ...(r.loras || []).map((l, i) => title.lora(l.file) || names[i + 1])];
+      if (used.isConnected) used.textContent = t(`這張用 ${names.join("＋")}`);
+    })
+    .catch(() => {});
+  const note = el(
+    "div",
+    { class: "recipe-note", id: "recipe-note", role: "status" },
+    el("p", { class: "recipe-note-head" }, el("b", {}, "照這張再印"), bits.length ? el("span", {}, bits.join("・")) : null),
+    line,
+    close
+  );
+  $("go-bar").before(note);
+  if (!reducedMotion()) note.animate([{ opacity: 0, transform: "translateY(-8px)" }, { opacity: 1, transform: "none" }], { duration: DUR.long, delay: DUR.long, easing: css(CURVE.out), fill: "backwards" });
+  // 模型一樣：只是說一聲，過一下自己收；不一樣的等人決定。
+  if (!differ) setTimeout(() => dismiss(), 9000);
+  async function takeModels(btn) {
+    btn.disabled = true;
+    btn.textContent = "換模型中…";
+    let missing = [];
+    try {
+      missing = await applyRecipeModels({ checkpoint: r.ckpt, loras: r.loras || currentLorasPayload() });
+    } catch (err) {
+      btn.disabled = false;
+      btn.textContent = "換成這組模型";
+      refuse(btn);
+      return toast(`換不了模型：${friendlyError(err)}`);
+    }
+    if (missing.length) toast(`換好了，但這台找不到：${missing.map(modelName).join("、")}`);
+    else toast("換成這張的底模和 LoRA 了");
+    line.replaceChildren(el("span", {}, missing.length ? `這台找不到 ${missing.map(modelName).join("、")}，其他照那張` : `模型換成 ${names.join("＋")} 了`));
+    setTimeout(() => dismiss(), 2400);
+  }
+  function dismiss() {
+    if (!note.isConnected || note.dataset.out) return;
+    note.dataset.out = "true";
+    if (reducedMotion()) return note.remove();
+    const h = note.getBoundingClientRect().height;
+    note.animate([{ opacity: 1, height: `${h}px` }, { opacity: 0, height: "0px", marginBlock: "0px", paddingBlock: "0px" }], { duration: DUR.medium, easing: css(CURVE.out) }).onfinish = () => note.remove();
+  }
+}
+
 const starterAllowed = tag => lib.byTag.has(tag) && !ratingBlocked(lib.byTag.get(tag).item, ratingOf(settings)) && !bans.has(tag);
 
 function reshuffleStarters() {
@@ -1935,6 +2019,8 @@ const generator = createGenerator({
     ckpt: shot.ckpt,
     rating: shot.rating,
     workflowId: shot.workflowId,
+    // 日誌記著這張的時代（作品冊日誌的「照這張再印」帶回墨池用）；伺服器出圖不看它。
+    era: shot.era,
     // 工作流面板裡改過的 steps／CFG（沒改就不送，伺服器用預設）。
     ...(shot.sampling || {}),
     // 姿勢參考（pose.js）：這張抽的時候選的那一份。
@@ -2591,6 +2677,8 @@ function shotNode(shot, deal, { printing = false } = {}) {
     "article",
     { class: "shot", dataset: { id: shot.id, status: shot.status } },
     frame,
+    // 「換掉這張重抽」換出來的：圖底下一行說換了哪張（rerollCard）。
+    shot.swap ? el("p", { class: "shot-swap", title: swapText(shot.swap) }, el("span", { class: "shot-swap-mark", "aria-hidden": "true" }, "⇄"), swapText(shot.swap)) : null,
     el(
       "div",
       { class: "shot-meta" },
@@ -2668,7 +2756,7 @@ function shotCards(shot, deal) {
   }
   // --n：這把扇子幾張（疊多緊由 CSS 照寬度算，見 styles.css 的 .fan）。
   const fans = CARD_SUITS.filter((s) => bySuit.has(s)).map((s) =>
-    el("div", { class: "fan", dataset: { suit: s }, style: `--n: ${bySuit.get(s).length}`, "aria-label": CARD_SUIT_INFO[s].zh }, bySuit.get(s).map((d) => dealt(resultCard(d.tag, SRC_ZH[d.src] || null))))
+    el("div", { class: "fan", dataset: { suit: s }, style: `--n: ${bySuit.get(s).length}`, "aria-label": CARD_SUIT_INFO[s].zh }, bySuit.get(s).map((d) => dealt(resultCard(d.tag, SRC_ZH[d.src] || null, undefined, shot))))
   );
   return el(
     "div",
@@ -2739,7 +2827,8 @@ function pinAllFromShot(shot, btn) {
   });
 }
 
-function resultCard(tag, src, flag) {
+/** shot：這張牌是哪一張成品抽到的（點開詳情時主鈕是「換掉這張重抽」，見 rerollCard）。 */
+function resultCard(tag, src, flag, shot = null) {
   const card = lib.byTag.get(tag);
   const node = cardNode(card, assets, { src, flag });
   // 成品的牌也標「池中／封鎖」（跟字盒同一套）：在詳情裡一張張挑，挑到第五張還分得出哪幾張處理過了。
@@ -2748,7 +2837,7 @@ function resultCard(tag, src, flag) {
     node.classList.add("result-card");
     paintState(node, tag);
   }
-  node.addEventListener("click", () => showCard(tag, "shot"));
+  node.addEventListener("click", () => showCard(tag, "shot", { shot }));
   drag.attach(node, { tag, from: "shot" });
   return node;
 }
@@ -3156,6 +3245,60 @@ function reprint(shot) {
   renderGoBar();
 }
 
+/**
+ * 成品詳情裡的「換掉這張重抽」：這張成品其他的牌暫時釘住（不放進合成池）、這張這一次排除，
+ * 時代、分級跟著那張，用同一顆種子只抽一次牌；模型、尺寸、份量照那張。新的成品排在牆的最前面，
+ * 標「換了：A → B」。那張有印過就接著送去印（兩張擺在一起比較），只抽牌的就只抽牌。
+ */
+function rerollCard(shot, tag, btn, closeCard) {
+  const kept = [...shot.mine, ...shot.drawn.map((d) => d.tag)].filter((t) => t !== tag && lib.byTag.has(t));
+  const era = shot.era === "mixed" ? { eras: [...ERAS], eraMix: true } : ERAS.includes(shot.era) ? { eras: [shot.era], eraMix: false } : {};
+  const base = sanitizeSettings({ ...settings, rating: shot.rating || settings.rating, ...era }, data);
+  const drawn = drawWithSeed(lex, withFavChars(withEffectiveHeats(base)), new Set(kept), new Set([...bans, ...HARD_BANNED, tag]), shot.seed, { trace: true });
+  const snapshot = {
+    width: shot.width, height: shot.height, rating: shot.rating, loras: structuredClone(shot.loras || []), ckpt: shot.ckpt,
+    workflowId: shot.workflowId, sampling: shot.sampling || {}, pose: shot.pose || null,
+    trigger: joinTriggerParts((shot.loras || []).map((l) => (l && l.strength > 0 ? l.trigger || "" : ""))),
+    weights: shot.weights || {},
+  };
+  const next = drawn.positive && String(drawn.positive).trim() ? makeShot(drawn, shot.seed, new Set(shot.mine), snapshot) : null;
+  // 只比牌（品質詞、分級詞不算）：換了哪幾張是給人看的。
+  const before = new Set([...shot.mine, ...shot.drawn.map((d) => d.tag)].filter((t) => lib.byTag.has(t)));
+  const after = next ? new Set([...next.mine, ...next.drawn.map((d) => d.tag)]) : before;
+  const to = [...after].filter((t) => !before.has(t));
+  if (!next || !to.length) {
+    refuse(btn);
+    toast(`「${zh(tag)}」這個位置抽不出別張了：規則、廢字簍把其他的都擋掉了`);
+    return;
+  }
+  const from = [...before].filter((t) => !after.has(t));
+  // 留下來的牌標著原本的來歷（附帶、時代…）；它們這次是「暫時釘住」的，不是新抽的。
+  const src = new Map(shot.drawn.map((d) => [d.tag, d.src]));
+  next.drawn = next.drawn.map((d) => (src.has(d.tag) ? { ...d, src: src.get(d.tag) } : d));
+  next.swap = { from, to };
+  const gen = shot.status !== "drawn";
+  closeCard?.();
+  document.querySelector(".sheet-shot .sheet-close")?.click();
+  shots.unshift(next);
+  noteUses([next]);
+  const node = shotNode(next, true, { printing: gen });
+  flip($("wall"), () => $("wall").prepend(node));
+  enter(node);
+  const r = node.getBoundingClientRect();
+  if (r.top < 0 || r.top > innerHeight - 80) node.scrollIntoView({ behavior: reducedMotion() ? "auto" : "smooth", block: "nearest" });
+  trimWall();
+  if (gen) generator.enqueue(next);
+  S.saveShots(shots);
+  renderGoBar();
+  sfx.deal?.(3);
+  toast(`${swapText(next.swap)}${gen ? "，送去印了" : ""}`);
+}
+
+/** 「換了：紅髮 → 金髮」：成品上、詳情裡、提示都用這一句。 */
+function swapText(swap) {
+  return `換了：${swap.from.map(zh).join("、") || "—"} → ${swap.to.map(zh).join("、")}`;
+}
+
 function removeShot(shot) {
   if (shot.status === "running" || shot.status === "queued") {
     toast("這張還在印，先按「停」");
@@ -3233,7 +3376,7 @@ function promptChips(shot) {
 function shotDetailBody(shot, { deal = true } = {}) {
   const src = viewSrc(shot.image) || shot.preview;
   const size = shot.hires ? `${shot.hires.width}×${shot.hires.height}（原圖 ${shot.width}×${shot.height}）` : `${shot.width}×${shot.height}`;
-  const chips = [size, RATING_ZH[shot.rating], ERA_LABELS[shot.era], shot.face ? "修過臉" : "", shotWhen(shot)].filter(Boolean);
+  const chips = [size, RATING_ZH[shot.rating], ERA_LABELS[shot.era], shot.face ? "修過臉" : "", shot.swap ? swapText(shot.swap) : "", shotWhen(shot)].filter(Boolean);
   return el(
     "div",
     { class: "shot-detail" },
@@ -3344,9 +3487,11 @@ function showShot(shot, { focus } = {}) {
 
 /* ================= 單張牌的詳情 ================= */
 
-function showCard(tag, from) {
+function showCard(tag, from, { shot = null } = {}) {
   const card = lib.byTag.get(tag);
   if (!card) return;
+  // 成品詳情裡點一張抽到的牌：主鈕是「換掉這張重抽」（其他牌釘住、這張排除、同一顆種子抽一次）。
+  const swapShot = from === "shot" && shot && shot.drawn.some((d) => d.tag === tag) ? shot : null;
   const srcNode = from === "pool" ? poolNode(tag) : from === "library" ? libCardNode(tag) : null;
   // 詳情裡那張大圖目前的位置（按鈕要讓牌從這裡飛去合成池／廢字簍）。
   const artNow = () => {
@@ -3414,7 +3559,10 @@ function showCard(tag, from) {
           : el("button", { class: "btn", type: "button", onclick: () => { const a = artNow(); sheet.close(); ban(tag, { from: a }); } }, "丟進廢字簍（不再抽到）"),
         inPool
           ? el("button", { class: "btn btn-pool", type: "button", onclick: () => { unpin(tag); sheet.close(); } }, "拿出合成池")
-          : el("button", { class: "btn btn-primary", type: "button", onclick: () => { const a = artNow(); sheet.close(); pin(tag); if (a) flyInto(tag, a.rect); } }, "放進合成池"),
+          : el("button", { class: swapShot ? "btn" : "btn btn-primary", type: "button", onclick: () => { const a = artNow(); sheet.close(); pin(tag); if (a) flyInto(tag, a.rect); } }, "放進合成池"),
+        swapShot
+          ? el("button", { class: "btn btn-primary reroll-card", type: "button", title: "這張成品的其他牌不動，只把這張換掉、同一顆種子重抽一次", onclick: (e) => rerollCard(swapShot, tag, e.currentTarget, () => sheet.close()) }, "換掉這張重抽")
+          : null,
       ],
     }
   );

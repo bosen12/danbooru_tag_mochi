@@ -32,6 +32,18 @@ globalThis.addEventListener?.("pageshow", () => (leaving = false));
 /** 伺服器（或 Comfy）說這張壞了：不是連線問題，重接也沒用。 */
 class GenError extends Error {}
 
+// 送印時網頁自己取的工作編號（伺服器照用）：還沒收到回應就按停，停也找得到這張。
+const newJobId = () => {
+  try {
+    if (globalThis.crypto?.randomUUID) return crypto.randomUUID().replace(/-/g, "").slice(0, 20);
+  } catch {
+    /* 舊瀏覽器：下面那一招 */
+  }
+  return Date.now().toString(36) + Math.random().toString(36).slice(2, 12);
+};
+// 伺服器重開過之後，接不回的那張最多再等多久（ComfyUI 那邊可能還在畫）。
+const RECOVER_MS = 15 * 60 * 1000;
+
 async function errorOf(res) {
   let msg = "伺服器回了 " + res.status;
   try {
@@ -89,7 +101,9 @@ export function createGenerator(hooks) {
     // 每接一次一個新的 AbortController：看門狗、斷線砍掉的是那一條連線，接回去要用新的。
     // 按停（cancelOne／stop）砍的是 current.ctrl，也就是當下那一條。
     let ctrl = new AbortController();
-    current = { shot, ctrl, promptId: null, job: shot.job || null };
+    // reserved：這次送印自己取的編號（同一張重送沿用，伺服器認得就接回同一個工作，不會畫兩次）。
+    if (!shot.job && !shot._reserved) shot._reserved = newJobId();
+    current = { shot, ctrl, promptId: shot.promptId || null, job: shot.job || null, reserved: shot._reserved || null };
     shot.status = "running";
     shot.progress = shot.progress || 0;
     shot.note = shot.job ? "接回剛才那張…" : "排隊中";
@@ -109,6 +123,42 @@ export function createGenerator(hooks) {
         const t = setTimeout(resolve, ms);
         ctrl.signal.addEventListener("abort", () => (clearTimeout(t), resolve()), { once: true });
       });
+    const finish = (data) => {
+      shot.status = "done";
+      shot.image = data.image;
+      shot.preview = null;
+      shot.progress = 1;
+      shot.note = "";
+      shot.result = data;
+      if (data.seed !== undefined && data.seed !== null) shot.seed = data.seed;
+      hooks.update(shot);
+    };
+    // 伺服器重開過：先問出圖日誌，再問 ComfyUI 本身（/api/gen/recover）。還在畫就隔幾秒再問，畫完就拿成品。
+    // 以前直接報「找不到這張」記成失敗，ComfyUI 照樣畫完，成品就丟了。
+    const recover = async () => {
+      clearTimeout(watchdog);
+      const until = Date.now() + RECOVER_MS;
+      while (Date.now() < until && shot.status !== "cancelled" && !ctrl.signal.aborted) {
+        let r = null;
+        try {
+          const q = `job=${encodeURIComponent(current.job || "")}&prompt_id=${encodeURIComponent(current.promptId || "")}`;
+          r = await fetch(`/api/gen/recover?${q}`, { signal: ctrl.signal }).then((x) => (x.ok ? x.json() : null));
+        } catch {
+          r = null;
+        }
+        const st = r && r.state;
+        if (st === "done" && r.image) {
+          finish(r);
+          return true;
+        }
+        if (st === "failed") throw new GenError(r.error || "Comfy 報錯");
+        if (st !== "pending" && st !== "unknown") return false;
+        shot.note = st === "pending" ? "伺服器重開過：ComfyUI 還在畫這張，等它畫完…" : "伺服器重開過，問 ComfyUI 這張怎麼了…";
+        hooks.update(shot);
+        await wait(3000);
+      }
+      return false;
+    };
     // 收過幾則（預覽不算，伺服器那邊也不記）：接回去時只補後面的，進度條不會先跳回 0 再衝回來。
     // 重新整理之後接回來的從 0 開始，整段重播才拿得回進度和說明。
     let seen = 0;
@@ -118,7 +168,7 @@ export function createGenerator(hooks) {
         : fetch("/api/gen", {
             method: "POST",
             headers: { "Content-Type": "application/json", Accept: "text/event-stream", "X-Gen-Resume": "1" },
-            body: JSON.stringify({ ...hooks.payload(shot), origin: hooks.origin, positive: escapeForComfy(shot.positive), seed: shot.seed }),
+            body: JSON.stringify({ ...hooks.payload(shot), origin: hooks.origin, positive: escapeForComfy(shot.positive), seed: shot.seed, job: current.reserved }),
             signal: ctrl.signal,
           });
     try {
@@ -132,6 +182,11 @@ export function createGenerator(hooks) {
         try {
           const res = await open();
           if (!res.ok) {
+            // 接回時伺服器說找不到：多半是伺服器重開過（工作只存在記憶體裡）。問一下這張後來怎麼了。
+            if (res.status === 404 && current.job) {
+              const got = await recover();
+              if (got) return true;
+            }
             throw await errorOf(res);
           }
           const job = res.headers.get("X-Gen-Job");
@@ -143,7 +198,11 @@ export function createGenerator(hooks) {
           for await (const { event, data } of sseEvents(res)) {
             kick();
             if (event !== "preview") seen++;
-            if (data && data.prompt_id) current.promptId = data.prompt_id;
+            if (data && data.prompt_id && data.prompt_id !== shot.promptId) {
+              current.promptId = data.prompt_id;
+              // 存起來（store.js、fuse.js 的存檔）：伺服器重開之後還能拿它去問 ComfyUI 這張畫完了沒。
+              shot.promptId = data.prompt_id;
+            }
             if (event === "queued") {
               shot.note = "排隊中";
             } else if (event === "progress") {
@@ -154,14 +213,7 @@ export function createGenerator(hooks) {
               shot.preview = data.image;
               shot.note = shot.note || "預覽中";
             } else if (event === "done") {
-              shot.status = "done";
-              shot.image = data.image;
-              shot.preview = null;
-              shot.progress = 1;
-              shot.note = "";
-              shot.result = data;
-              if (data.seed !== undefined) shot.seed = data.seed;
-              hooks.update(shot);
+              finish(data);
               return true;
             } else if (event === "error") {
               throw new GenError(data.error || "Comfy 報錯");
@@ -274,8 +326,12 @@ export function createGenerator(hooks) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ job }),
     })
-      .then((r) => {
-        if (!r.ok) interrupt(promptId);
+      .then(async (r) => {
+        if (!r.ok) return interrupt(promptId);
+        // 伺服器那邊沒有這個工作（還沒建起來，或伺服器重開過）：它記下編號擋掉晚到的送印；
+        // 手上有 prompt_id 的話 ComfyUI 那邊可能還在畫，一起砍。
+        const j = await r.json().catch(() => ({}));
+        if (j.early) interrupt(promptId);
       })
       .catch(() => interrupt(promptId));
   }
@@ -283,7 +339,7 @@ export function createGenerator(hooks) {
   return {
     enqueue(shot) {
       // Fresh retry/reprint creates a server job; only resume() retains one.
-      Object.assign(shot, { job: null, live: false, _savedJob: null, progress: 0, preview: null, result: null, netFail: false });
+      Object.assign(shot, { job: null, live: false, _savedJob: null, _reserved: null, promptId: null, progress: 0, preview: null, result: null, netFail: false });
       shot.status = "queued";
       shot.note = "等前面的印完";
       queue.push(shot);
@@ -310,7 +366,7 @@ export function createGenerator(hooks) {
       shot.status = "cancelled";
       shot.note = "取消了";
       if (current && current.shot === shot) {
-        cancelJob(current.job, current.promptId);
+        cancelJob(current.job || current.reserved, current.promptId);
         current.ctrl.abort();
       } else hooks.update(shot);
     },
@@ -325,7 +381,7 @@ export function createGenerator(hooks) {
       if (current) {
         current.shot.status = "cancelled";
         current.shot.note = "取消了";
-        cancelJob(current.job, current.promptId);
+        cancelJob(current.job || current.reserved, current.promptId);
         current.ctrl.abort();
       }
     },

@@ -89,11 +89,47 @@ export function takeFuse() {
 
 /** 疊印台把一版牌交給墨池：寫一張便條，墨池下次打開時拿走。 */
 /** from：從哪裡交過來（"fuse"、"book"），墨池接到時跟使用者說一聲。 */
-export const handOffPool = (tags, from = "", weights = {}) => write(KEY.handoff, { tags: [...tags], at: Date.now(), from, weights });
+/** recipe：作品冊、日誌的「照這張再印」多帶的那一份（時代、種子、底模、LoRA），見 recipeOf。 */
+export const handOffPool = (tags, from = "", weights = {}, recipe = null) =>
+  write(KEY.handoff, { tags: [...tags], at: Date.now(), from, weights, ...(recipe ? { recipe } : {}) });
 /** 上一次 takePool() 拿到的便條是從哪裡來的（沒有便條就是空字串）。 */
 export let handoffFrom = "";
 /** 上一次 takePool() 拿到的便條裡各張牌的份量（作品冊、疊印台交過來的）。 */
 export let handoffWeights = {};
+/** 上一次 takePool() 拿到的「照這張再印」配方（沒有就是 null）。 */
+export let handoffRecipe = null;
+
+/**
+ * 「照這張再印」的配方：作品冊那一筆、日誌那一張、成品都可以。只留認得的欄位、型別不對的丟掉 ——
+ * 便條在 localStorage 裡，別的版本、外掛寫壞了也不能讓墨池開不起來。
+ *   era：抽到的時代（"mixed"＝混合）；seed：送 ComfyUI 的那顆；ckpt：底模；loras：[{ file, folder, strength, trigger }]
+ *   width、height：原圖的尺寸（Hires 之前；墨池有這個尺寸就換過去）
+ */
+export function recipeOf(src) {
+  if (!src || typeof src !== "object") return null;
+  const out = {};
+  if (typeof src.era === "string" && /^[a-z_]{1,40}$/.test(src.era)) out.era = src.era;
+  const seed = Number(src.seed);
+  if (src.seed !== null && src.seed !== "" && Number.isSafeInteger(seed) && seed >= 0) out.seed = seed;
+  const w = Number(src.width);
+  const h = Number(src.height);
+  if (Number.isInteger(w) && Number.isInteger(h) && w >= 256 && h >= 256 && w <= 4096 && h <= 4096) Object.assign(out, { width: w, height: h });
+  const ckpt = src.ckpt ?? src.checkpoint;
+  if (typeof ckpt === "string" && ckpt) out.ckpt = ckpt.slice(0, 300);
+  if (Array.isArray(src.loras)) {
+    out.loras = src.loras
+      .map((l) => (typeof l === "string" ? { file: l } : l))
+      .filter((l) => l && typeof l === "object" && typeof (l.file || l.name) === "string" && (l.file || l.name))
+      .slice(0, 2)
+      .map((l) => ({
+        file: String(l.file || l.name).slice(0, 300),
+        ...(typeof l.folder === "string" ? { folder: l.folder.slice(0, 300) } : {}),
+        ...(Number.isFinite(Number(l.strength)) && l.strength !== null && l.strength !== "" ? { strength: Number(l.strength) } : {}),
+        ...(typeof l.trigger === "string" ? { trigger: l.trigger.slice(0, 500) } : {}),
+      }));
+  }
+  return Object.keys(out).length ? out : null;
+}
 
 /**
  * 合成池、卡池跟著這個分頁走（sessionStorage）：去卡冊查一張牌再回來，組到一半的牌還在。
@@ -142,6 +178,7 @@ export function takePool() {
   if (!note || !Array.isArray(note.tags) || !(Date.now() - note.at < HANDOFF_MS)) return [];
   handoffFrom = typeof note.from === "string" ? note.from : "";
   handoffWeights = note.weights && typeof note.weights === "object" ? note.weights : {};
+  handoffRecipe = recipeOf(note.recipe);
   return note.tags.filter((t) => typeof t === "string");
 }
 export const loadBans = () => read(KEY.bans, []);
@@ -189,6 +226,8 @@ function serShot(s) {
     // 收進作品冊的那一筆（album-save.js）：成品上顯示「已收藏」。
     albumId: s.albumId || null,
     weights: s.weights || null,
+    // 成品詳情的「換掉這張重抽」換出來的：換了哪幾張（app.js 的 rerollCard），成品上標「換了：A → B」。
+    swap: s.swap || null,
     // Hires 過的：image 是大圖，baseImage 是原圖（再 Hires 從原圖放大、也可以還原）。
     baseImage: s.baseImage || null,
     hires: s.hires || null,
@@ -198,6 +237,8 @@ function serShot(s) {
     hiresJob: hiresJobOf(s),
     // 伺服器那邊的出圖工作。畫到一半就重新整理的話，下次打開用它接回去（gen.js 的 resume）。
     job: s.job || null,
+    // ComfyUI 那邊的編號：伺服器重開過也能拿它去問這張畫完了沒（gen.js 的 recover）。
+    promptId: s.job ? s.promptId || null : null,
     live: !!s.job && (s.status === "running" || s.status === "queued"),
     waiting: isWaiting(s),
     waitedAt: isWaiting(s) ? Date.now() : 0,
@@ -207,7 +248,7 @@ function serShot(s) {
   };
 }
 
-const SHOT_FIELDS = ["seed", "positive", "mine", "drawn", "missing", "era", "heat", "width", "height", "rating", "loras", "ckpt", "workflowId", "sampling", "pose", "image", "albumId", "weights", "baseImage", "hires", "face", "at"];
+const SHOT_FIELDS = ["promptId", "seed", "positive", "mine", "drawn", "missing", "era", "heat", "width", "height", "rating", "loras", "ckpt", "workflowId", "sampling", "pose", "image", "albumId", "weights", "swap", "baseImage", "hires", "face", "at"];
 /**
  * 別的分頁改過的那一份（存檔的樣子）套回記憶體裡的成品：套完 serShot(s) 跟它一樣，
  * 下次存檔才不會被當成「這邊改過」又把舊的寫回去。

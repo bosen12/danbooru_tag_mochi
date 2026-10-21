@@ -1080,7 +1080,21 @@ export async function applyRecipeModels({ checkpoint, loras } = {}) {
       GEN_LORA_SLOTS[i].twPicks = twPicksFromTrigger(hit, spec.trigger);
     } else missing.push(spec.file || spec.name);
   }
+  // 頂欄的「選 LoRA」鈕跟著換名字（墨池「照這張再印」換了模型，按鈕上要看得到）。
+  renderGenCurrent();
   return missing;
+}
+
+/**
+ * 底模、LoRA 給人看的名字（清單上的 title；LoRA 的檔名常常是一串亂碼）。清單還沒讀就先讀（各讀一次）。
+ * 回傳 (檔名或 ckpt_name) → 名字；找不到的回 ""。墨池「照這張再印」的便條用。
+ */
+export async function modelTitles() {
+  if (GEN_CKPTS === null) await fetchCkpts();
+  if (GEN_LORAS === null) await fetchGenLoras();
+  const ck = new Map((GEN_CKPTS || []).map((c) => [c.ckpt_name, c.title || ""]));
+  const lo = new Map((GEN_LORAS || []).map((l) => [l.file, l.title || l.name || ""]));
+  return { ckpt: (name) => ck.get(name) || "", lora: (file) => lo.get(file) || "" };
 }
 
 export function currentLorasPayload() {

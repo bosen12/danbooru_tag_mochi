@@ -1,8 +1,9 @@
-import { messages, templates } from "./locales/en.js";
 import { groups } from "./locales/groups.js";
 
 export const language = globalThis.MochiLanguage?.resolve() || "zh-Hant";
 export const english = language === "en";
+// 英文字典（119 KB，載入時把每個模板編成正規式）只有英文版才載：中文版四頁每次開都白白下載、解析一遍。
+const { messages, templates } = english ? await import("./locales/en.js") : { messages: {}, templates: [] };
 export const dateLocale = english ? "en-US" : "zh-TW";
 const stateKey = "mochi.language.state.v1";
 export function takeLanguageState() {

@@ -3317,8 +3317,9 @@ def genlog_stats() -> dict:
 
 
 class GenJob:
-    def __init__(self, events, payload: dict | None = None):
-        self.id = uuid.uuid4().hex[:16]
+    def __init__(self, events, payload: dict | None = None, jid: str | None = None):
+        # 網頁自己取的編號（client_job_id）：送出去還沒拿到回應就按停，停也找得到這張。
+        self.id = jid or uuid.uuid4().hex[:16]
         # 頂欄的生圖進度（GET /api/gen/active）：哪一頁送的、是不是 Hires、建立時間、畫到哪。
         src = payload if isinstance(payload, dict) else {}
         self.origin = src.get("origin") if src.get("origin") in ("mochi", "fuse") else ""
@@ -3446,6 +3447,85 @@ class GenJob:
 def find_job(jid: str) -> "GenJob | None":
     with _JOBS_LOCK:
         return _JOBS.get(str(jid or ""))
+
+
+# 網頁送印時自己帶一個工作編號（gen.js）。以前編號是伺服器建工作時才給：/api/gen 先問一次 ComfyUI
+# （最久 8 秒）才建工作，這段時間按停，網頁手上沒有編號、什麼都送不出去，那張照樣畫完。
+# 現在按停時這張還沒建起來，就記下這個編號；晚到的同編號送印直接拒絕。
+_CLIENT_JOB_RE = re.compile(r"^[A-Za-z0-9_-]{8,64}$")
+_EARLY_CANCELLED: dict[str, float] = {}
+_EARLY_LOCK = threading.Lock()
+EARLY_CANCEL_SEC = 120
+
+
+def client_job_id(v) -> str | None:
+    return v if isinstance(v, str) and _CLIENT_JOB_RE.match(v) else None
+
+
+def cancel_job_id(jid) -> str:
+    """按停：工作在就收掉（"cancelled"）；還沒建起來就記下編號（"early"）；編號不對（"missing"）。"""
+    with _EARLY_LOCK:
+        job = find_job(jid)
+        if job is not None:
+            job.cancel()
+            return "cancelled"
+        cid = client_job_id(jid)
+        if not cid:
+            return "missing"
+        now = time.time()
+        for k, t in list(_EARLY_CANCELLED.items()):
+            if now - t > EARLY_CANCEL_SEC:
+                del _EARLY_CANCELLED[k]
+        _EARLY_CANCELLED[cid] = now
+        return "early"
+
+
+def open_gen_job(payload: dict) -> "tuple[str, GenJob | None]":
+    """送印建工作。回 ("new"／"again"／"cancelled", 工作)：同一個編號已經在跑（網頁沒收到回應又送一次）就接回那一張，不重畫。"""
+    cid = client_job_id(payload.get("job"))
+    clean = {k: v for k, v in payload.items() if k != "job"}
+    with _EARLY_LOCK:
+        if cid and time.time() - _EARLY_CANCELLED.get(cid, 0) < EARLY_CANCEL_SEC:
+            return "cancelled", None
+        old = find_job(cid) if cid else None
+        if old is not None:
+            return "again", old
+        return "new", GenJob(gen_events(clean), clean, cid).start()
+
+
+def recover_gen(job_id: str, prompt_id: str) -> dict:
+    """伺服器重開過（工作只存在記憶體裡）、或離開太久工作已經收掉：網頁拿編號回來問這張後來怎麼了。
+
+    先看出圖日誌（工作做完都會記一行，編號就是工作編號）；沒記到再問 ComfyUI 本身：
+    history 有就是畫完了（或出錯了），還在佇列裡就是還在畫，網頁等一下再問。"""
+    jid = str(job_id or "")[:64]
+    if jid:
+        for e in reversed(gen_log.all_items()):
+            if e.get("t") == "mark" or e.get("id") != jid:
+                continue
+            if e.get("ok") and e.get("image"):
+                return {"ok": True, "state": "done", "image": e["image"], "seed": e.get("seed")}
+            return {"ok": True, "state": "failed", "error": e.get("error") or "Comfy 報錯"}
+    pid = str(prompt_id or "")
+    if not re.match(r"^[A-Za-z0-9-]{8,64}$", pid):
+        return {"ok": True, "state": "gone"}
+    try:
+        hist = api("GET", f"/history/{pid}", timeout=8)
+        entry = hist.get(pid) if isinstance(hist, dict) else None
+        if isinstance(entry, dict):
+            image = first_image_src(entry)
+            if image:
+                return {"ok": True, "state": "done", "image": image}
+            try:
+                history_outcome(entry, None, None)
+            except ComfyFinished as exc:
+                return {"ok": True, "state": "failed", "error": str(exc)}
+        where = comfy_queue_where(api("GET", "/queue", timeout=8), pid)
+    except Exception:
+        return {"ok": True, "state": "unknown"}
+    if where in ("running", "pending", "?"):
+        return {"ok": True, "state": "pending", "where": where}
+    return {"ok": True, "state": "gone"}
 
 
 def gen_events(payload: dict):
@@ -5552,6 +5632,10 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/api/gen/active":
             self._json(200, {"ok": True, "jobs": active_jobs(keep=urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query).get("keep") == ["1"])})
             return
+        if path == "/api/gen/recover":
+            qs = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
+            self._json(200, recover_gen((qs.get("job") or [""])[0], (qs.get("prompt_id") or [""])[0]))
+            return
         if path == "/api/gen/attach":
             qs = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
             job = find_job((qs.get("job") or [""])[0])
@@ -5699,7 +5783,11 @@ class Handler(BaseHTTPRequestHandler):
             accept = self.headers.get("Accept") or ""
             if "text/event-stream" in accept:
                 if self.headers.get("X-Gen-Resume") == "1":
-                    self._sse_job(GenJob(gen_events(payload), payload).start())
+                    state, job = open_gen_job(payload)
+                    if job is None:
+                        self._json(409, {"ok": False, "error": "這張按過停了", "code": "cancelled"})
+                        return
+                    self._sse_job(job)
                 else:
                     self._sse(gen_events(payload))
                 return
@@ -5711,12 +5799,11 @@ class Handler(BaseHTTPRequestHandler):
                 self._json(500, {"ok": False, "error": str(exc)})
             return
         if path == "/api/gen/cancel":
-            job = find_job((payload or {}).get("job"))
-            if job is None:
+            state = cancel_job_id((payload or {}).get("job"))
+            if state == "missing":
                 self._json(404, {"ok": False, "error": "找不到這張（伺服器重開過，或已經結束太久）"})
                 return
-            job.cancel()
-            self._json(200, {"ok": True})
+            self._json(200, {"ok": True, "early": state == "early"})
             return
         if path == "/api/interrupt":
             try:

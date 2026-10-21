@@ -38,7 +38,7 @@ Mochi is the card interface of [danbooru_tag_random](https://github.com/bosen12/
 | **Ink Pool** `/` | Browse the card library by suit (Cast, Characters, Appearance, Clothing, Pose, Scene, Style), or search in English or Chinese. Pinned cards appear in every image; the engine fills the remaining slots. Rules set content level, era, characters, pose reference and size. Batch, continuous and draw-only modes. |
 | **Fuse Bed** `/fuse.html` | One card per ink layer. Pinned cards stack into six suit rows; grey shadows are the engine's additions. Four same-seed proofs redraw instantly, so you see what each card changes before you generate. |
 | **Card Book** `/book.html` | How often each card was used, its save and discard rates, and the images it appeared in. Achievements. |
-| **Gallery** `/album.html` | Saved images, the full generation history, and a report card for every checkpoint and LoRA. Send a work's cards back to the Ink Pool. |
+| **Gallery** `/album.html` | Saved images, the full generation history, and a report card for every checkpoint and LoRA. **Print this again** sends a work's cards, weights, era, seed, size, checkpoint and LoRA back to the Ink Pool; tap a card name to open it in the Card Book. |
 
 **Choose a workflow.** The Ink Pool randomly picks three starters from the same 30-story catalog as the Fuse Bed and has a visible size selector. Use **More starters** for another group; an empty workspace picks a new group when reopened or cleared, while ordinary redraws keep the current choices. The Fuse Bed shows four candidate prompts, with readable hair, clothing, pose and scene summaries; ≠ marks differences from the selected proof. Printing generates the image. On phones, the candidates appear before the card layers. Each workspace keeps its own cards and settings; use **Take cards** to transfer the selection and its weights explicitly.
 
@@ -219,7 +219,7 @@ Mochi code is distributed under **GNU GPLv3 only (`GPL-3.0-only`)**, see [LICENS
 | **墨池** `/` | 左邊字盒依花色（人數、角色、長相、服裝、姿勢、場景、風格）翻牌，中英文都能搜。點牌或拖進**合成池**＝每張圖都一定有；剩下的格子由引擎抽牌補齊。底下的規則管尺度、時代、畫面裡有誰、姿勢參考、尺寸。可以一次抽幾張、無限抽、只抽牌不生圖。 |
 | **疊印台** `/fuse.html` | 一張牌一層墨：放的牌照花色疊進六列卡池，灰色的影子是引擎補的牌。四張同種子的試印即時重抽，看清楚加了這張之後引擎補了什麼，挑一張再付印。 |
 | **卡冊** `/book.html` | 每張牌用過幾次、收藏和撤下的比例、這張牌進過哪些圖。成就牆。 |
-| **作品冊** `/album.html` | 收藏的成品、每一張出圖的日誌、每個底模和 LoRA 的成績單；作品上的牌可以帶回墨池再印。 |
+| **作品冊** `/album.html` | 收藏的成品、每一張出圖的日誌、每個底模和 LoRA 的成績單；「照這張再印」把牌、份量、時代、種子、尺寸、底模、LoRA 一起帶回墨池；點牌名打開卡冊那張牌。 |
 
 **選擇操作方式**：墨池與疊印台共用三十組起手式，每次重新開頁或清空後隨機選三組，也可按「換一組」換掉；一般畫面重畫會保留當前選項。尺寸直接可選。疊印台先比較四組候選提示詞，髮色、服裝、姿勢與場景都有文字摘要，≠ 標出與已選試印不同的內容；按付印才會生成圖片。手機會先顯示候選，再往下看卡牌。兩個工作區的選牌與規則各自獨立，按「帶牌」才會明確交接選牌與權重。
 

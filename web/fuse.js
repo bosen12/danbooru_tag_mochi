@@ -71,7 +71,7 @@ import { createSfx } from "./fuse-sfx.js";
 import { genSeed, isFixedSeed, mountSeedControl, onSeedChange, restoreSeed, seedState, seedUseButton, useSeed } from "./seed-control.js";
 import { mountDiscord, openRouteFromShot } from "./discord-link.js";
 import { t as translate, takeLanguageState } from "./i18n.js";
-import { candidateSummary } from "./composition.js";
+import { trialSummaries } from "./composition.js";
 import { pickStarters as chooseStarters, refreshStarters } from "./starters.js";
 
 // 背後預先開好的這一頁（prerender.js）：點進去之前這個房間讀的存檔被別頁改過，就重新整理。
@@ -394,23 +394,7 @@ function retrial(start = 0, end = seeds.length) {
   const batch = [];
   for (let i = start; i < end && i < seeds.length; i++) {
     const seed = seeds[i];
-    const d = drawWithSeed(lex, withFavChars(withEffectiveHeats(settings)), pins, banned, seed);
-    const inPos = new Set(String(d.positive || "").split(",").map((x) => x.trim()));
-    const extra = [];
-    for (const sec of SECTION_ORDER) {
-      for (const t of d.sections[sec] || []) if (lib.byTag.has(t) && !pins.has(t) && !extra.includes(t)) extra.push(t);
-    }
-    batch.push({
-      letter: LETTERS[i],
-      seed,
-      positive: d.positive || "",
-      era: d.era,
-      heat: d.heat,
-      mine: bed.pins.filter((t) => inPos.has(t)),
-      missing: bed.pins.filter((t) => !inPos.has(t)),
-      extra,
-      eraClash: d.eraClash || [],
-    });
+    batch.push(trialOf(drawWithSeed(lex, withFavChars(withEffectiveHeats(settings)), pins, banned, seed), i, seed));
   }
   // 整批重抽就整個換掉；只抽其中幾張就換掉那幾格（其他的留著）。
   const whole = start === 0 && end >= seeds.length;
@@ -419,6 +403,71 @@ function retrial(start = 0, end = seeds.length) {
   trials = next;
   if (whole) settleTrials();
   else if (trialsPending) for (let i = start; i < end; i++) trialsPending.delete(i);
+}
+
+/** 抽出來的那一張 → 一張試印（引擎補的 extra 是版上沒有的那幾張）。 */
+function trialOf(d, i, seed) {
+  const pins = new Set(bed.pins);
+  const inPos = new Set(String(d.positive || "").split(",").map((x) => x.trim()));
+  const extra = [];
+  for (const sec of SECTION_ORDER) {
+    for (const t of d.sections[sec] || []) if (lib.byTag.has(t) && !pins.has(t) && !extra.includes(t)) extra.push(t);
+  }
+  return {
+    letter: LETTERS[i],
+    seed,
+    positive: d.positive || "",
+    era: d.era,
+    heat: d.heat,
+    mine: bed.pins.filter((t) => inPos.has(t)),
+    missing: bed.pins.filter((t) => !inPos.has(t)),
+    extra,
+    eraClash: d.eraClash || [],
+  };
+}
+
+/**
+ * 影子小視窗的「換一張」：只重抽選中那張試印的這個位置。這張試印其他補的牌暫時釘住、這張這一次排除，
+ * 同一顆種子抽一次；換到的牌就是那個位置的新影子。其他三張試印不動。版上一換牌（retrial）就照常重抽。
+ */
+function swapGhost(tag, from) {
+  finishTrials();
+  const i = picked;
+  const t = trials[i];
+  if (!t || !t.extra.includes(tag)) return;
+  const pins = new Set([...bed.pins, ...t.extra.filter((x) => x !== tag)]);
+  const banned = new Set([...bans, ...HARD_BANNED, tag]);
+  const next = trialOf(drawWithSeed(lex, withFavChars(withEffectiveHeats(settings)), pins, banned, t.seed), i, t.seed);
+  const added = next.extra.filter((x) => !t.extra.includes(x));
+  const lost = t.extra.filter((x) => !next.extra.includes(x));
+  if (!added.length) {
+    refuse(from);
+    toast(`試印 ${t.letter} 的這個位置抽不出別張了（規則、廢字簍擋掉了其他的）`);
+    return;
+  }
+  next.swapped = { from: lost, to: added };
+  trials = trials.slice();
+  trials[i] = next;
+  // 不整片淡入（swapGhosts）：只有換上來的那張演，其他影子原地不動。
+  renderPlate([]);
+  renderPreview();
+  renderTrials();
+  renderPrintBar();
+  sfx.shuffle();
+  const text = `試印 ${t.letter} 換了：${lost.map(zh).join("、")} → ${added.map(zh).join("、")}`;
+  toast(text);
+  announce(text);
+  // 換上來的那張影子亮一下：眼睛知道換到哪裡去了。
+  setTimeout(() => {
+    for (const x of added) {
+      const node = document.querySelector(`#plate .ghost-card[data-tag="${cssEsc(x)}"]`);
+      if (!node) continue;
+      node.classList.remove("is-swapped");
+      void node.offsetWidth;
+      node.classList.add("is-swapped");
+      node.addEventListener("animationend", () => node.classList.remove("is-swapped"), { once: true });
+    }
+  }, 30);
 }
 
 /*
@@ -850,7 +899,8 @@ let discord = null;
 
 const generator = createGenerator({
   origin: "fuse",
-  payload: (p) => ({ width: p.width, height: p.height, loras: p.loras, ckpt: p.ckpt, rating: p.rating, workflowId: p.workflowId, ...(p.sampling || {}) , ...(p.pose ? { pose: p.pose } : {}) }),
+  // era：日誌記著這張的時代（作品冊日誌的「照這張再印」帶回墨池用）；伺服器出圖不看它。
+  payload: (p) => ({ width: p.width, height: p.height, loras: p.loras, ckpt: p.ckpt, rating: p.rating, workflowId: p.workflowId, era: p.era, ...(p.sampling || {}) , ...(p.pose ? { pose: p.pose } : {}) }),
   update: (p) => {
     tabNote.shot(p, generator.pending);
     paintLineItem(p);
@@ -1128,6 +1178,8 @@ function serPrint(p) {
     face: p.face || null,
     hiresJob: S.hiresJobOf(p),
     job: p.job || null,
+    // ComfyUI 那邊的編號：伺服器重開過也能拿它去問這張畫完了沒（gen.js 的 recover）。
+    promptId: p.job ? p.promptId || null : null,
     live: !!p.job && (p.status === "running" || p.status === "queued"),
     waiting: S.isWaiting(p),
     waitedAt: S.isWaiting(p) ? Date.now() : 0,
@@ -1520,7 +1572,10 @@ function peekAt(i) {
 function renderTrials() {
   // 試印按鈕裡的字變多變少、按鈕跟著變高變矮時，底下的付印列滑過去，不是一格跳（rowChange）。
   const rowMove = rowChange($("trials"), $("print-bar"));
-  const reference = new Map(candidateSummary(trials[picked], lex.byTag).map(x => [x.kind, x.tag]));
+  // 摘要跳過版上釘住的牌決定的那一種（四張一定一樣）；四張都一樣的收成標題底下一行灰字（trialSummaries）。
+  const { rows, same } = trialSummaries(trials, lex.byTag, new Set(bed.pins));
+  renderTrialsSame(same);
+  const reference = new Map((rows[picked] || []).map(x => [x.kind, x.tag]));
   trials.forEach((t, i) => {
     const n = trialNodes[i];
     n.node.setAttribute("aria-checked", i === picked ? "true" : "false");
@@ -1551,7 +1606,7 @@ function renderTrials() {
       );
     }
     paintTrialFace(i, p);
-    const summary = candidateSummary(t, lex.byTag);
+    const summary = rows[i] || [];
     // 換已選試印只改差異標記；保留文字節點讓顏色過渡、不打斷閱讀。
     const summaryKey = summary.map(x => `${x.kind}:${x.tag}`).join("|");
     if (n.summary.dataset.key !== summaryKey) {
@@ -1571,6 +1626,23 @@ function renderTrials() {
     );
   });
   rowMove.done();
+}
+
+/** 四張試印都一樣的那幾種（髮色、場景…）：標題底下一行灰字，不在四張裡各寫一次。 */
+function renderTrialsSame(same) {
+  const head = document.querySelector(".trials-head");
+  if (!head) return;
+  let line = head.querySelector(".trials-same");
+  const key = same.map(x => `${x.kind}:${x.tag}`).join("|");
+  if (!same.length) {
+    line?.remove();
+    return;
+  }
+  if (!line) head.append((line = el("p", { class: "trials-same" })));
+  if (line.dataset.key === key) return;
+  line.dataset.key = key;
+  put(line, el("span", {}, "四張都一樣："), same.map((x, j) => el("span", { title: `${x.kind}：${x.label}` }, j ? "・" : "", el("span", {}, x.label))));
+  swapIn(line, key);
 }
 
 /** 試印左邊那一格：印過就放成品的小圖，沒印過就是字母。 */
@@ -2538,6 +2610,20 @@ function openPop(anchor, tag, from) {
           },
         },
         "收下這張"
+      ),
+      // 換一張：只重抽選中這張試印的這個位置（swapGhost），其他補的牌、其他三張試印都不動。
+      el(
+        "button",
+        {
+          class: "btn btn-small swap-ghost",
+          type: "button",
+          title: `只重抽試印 ${t.letter} 的這個位置，其他補的牌不動`,
+          onclick: () => {
+            closePop();
+            swapGhost(tag, anchor);
+          },
+        },
+        "換一張"
       )
     );
   }

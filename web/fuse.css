@@ -1059,6 +1059,31 @@ body.fuse {
   }
 }
 
+/* 影子小視窗按「換一張」（fuse.js 的 swapGhost）：換上來的那張影子從上面落下、外圈暈一圈朱色再收掉。 */
+.ghost-card.is-swapped {
+  animation: ghost-swapped var(--dur-story, 900ms) var(--ease-out);
+}
+@keyframes ghost-swapped {
+  0% {
+    transform: translateY(-14px) rotate(-3deg) scale(0.92);
+    opacity: 0;
+    box-shadow: 0 0 0 0 color-mix(in oklch, var(--color-accent) 0%, transparent);
+  }
+  35% {
+    transform: none;
+    opacity: 1;
+    box-shadow: 0 0 0 4px color-mix(in oklch, var(--color-accent) 45%, transparent);
+  }
+  100% {
+    box-shadow: 0 0 0 10px color-mix(in oklch, var(--color-accent) 0%, transparent);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ghost-card.is-swapped {
+    animation: none;
+  }
+}
+
 .ghost-card:focus-visible {
   opacity: 1;
   filter: none;
@@ -1855,6 +1880,20 @@ body.fuse {
 }
 
 /* ---------- 右欄：試印 ---------- */
+
+/* 四張試印都一樣的那幾種（fuse.js 的 renderTrialsSame）：標題底下一行灰字，不在四張裡各寫一次。 */
+.trials-head:has(.trials-same) {
+  flex-wrap: wrap;
+}
+.trials-same {
+  flex-basis: 100%;
+  order: 9;
+  margin: 0;
+  color: var(--color-muted);
+  font-size: var(--text-xs);
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
 
 .trials-head {
   display: flex;

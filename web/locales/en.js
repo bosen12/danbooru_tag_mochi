@@ -1405,6 +1405,27 @@ ComfyUI 在別台電腦、或改過埠號才要填。按「自動找」回到自
 LoRA 面板：換到 LoRA 1／LoRA 2 那一槽|LoRA panel: switch to slot LoRA 1 / LoRA 2
 看這張用到的牌（成品詳情）|See the cards this image used (details)
 改回自動找：找到哪個就連哪個。|Back to auto-detect: connects to whichever ComfyUI answers.
+照這張再印|Print this again
+牌、份量、時代、種子、底模、LoRA 一起帶去墨池|Send cards, weights, era, seed, checkpoint and LoRA to Ink Pool
+只帶你選的牌|Send only your pinned cards
+只帶牌|Send only the cards
+更多動作|More actions
+換成這組模型|Use these models
+不用，照現在的|No, keep current
+（跟現在選的一樣）|(same as your current selection)
+換模型中…|Switching models…
+換成這張的底模和 LoRA 了|Switched to this image's checkpoint and LoRA
+預設底模|Default checkpoint
+換掉這張重抽|Swap this card and redraw
+這張成品的其他牌不動，只把這張換掉、同一顆種子重抽一次|Keep the other cards, swap only this one, and redraw once with the same seed
+換一張|Swap this one
+四張都一樣：|Same on all four:
+詞庫裡沒有這張牌了|This card is no longer in the dictionary
+卡冊工具|Card book tools
+清除篩選|Clear filters
+清除|Clear
+全部花色|All suits
+篩選都清掉了|Filters cleared
 `;
 
 export const messages = Object.freeze(Object.fromEntries(copy.trim().split("\n").map((line) => {
@@ -1851,6 +1872,23 @@ LoRA {0} 空著——從中間挑一張|LoRA {0} is empty. Pick one from the gri
 已連上 {0}|Connected to {0!}
 連不到 {0}|Cannot reach {0!}
 印好 {0} 張了|{0} images ready
+照這張再印：{0}帶去墨池…|Print this again: sending {0} to Ink Pool…
+{0}・在卡冊看這張牌|{0!} · View this card in the card book
+{0}・看這張牌|{0!} · View this card
+時代：{0}|Era: {0}
+這張用 {0}|This image used {0!}
+換不了模型：{0}|Could not switch models: {0}
+換好了，但這台找不到：{0}|Switched, but this computer is missing: {0!}
+這台找不到 {0}，其他照那張|Missing {0!} here; everything else matches
+模型換成 {0} 了|Models switched to {0!}
+「{0}」這個位置抽不出別張了：規則、廢字簍把其他的都擋掉了|No other card fits “{0}”'s slot: rules and the trash block the rest
+換了：{0} → {1}，送去印了|Swapped: {0} → {1}, sent to print
+換了：{0} → {1}|Swapped: {0} → {1}
+只重抽試印 {0} 的這個位置，其他補的牌不動|Redraw only this slot in proof {0}; other engine cards stay
+試印 {0} 的這個位置抽不出別張了（規則、廢字簍擋掉了其他的）|No other card fits this slot in proof {0} (rules and the trash block the rest)
+試印 {0} 換了：{1} → {2}|Proof {0} swapped: {1} → {2}
+花色：{0}|Suit: {0}
+排序：{0}|Sort: {0}
 `;
 export const templates = parameterized.trim().split("\n").map((line) => {
   const split = line.indexOf("|");

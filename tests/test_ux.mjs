@@ -7,7 +7,7 @@ import { existsSync } from 'node:fs';
 import { runInNewContext } from 'node:vm';
 const root = resolve(import.meta.dirname, '..');
 const web = existsSync(resolve(root, 'web6')) ? 'web6' : 'web';
-const { candidateSummary } = await import(pathToFileURL(resolve(root, web, 'composition.js')));
+const { candidateSummary, trialSummaries } = await import(pathToFileURL(resolve(root, web, 'composition.js')));
 const startersModule = resolve(root, web, 'starters.js');
 assert.ok(existsSync(startersModule), 'Both workspaces share the existing Fuse starter catalog and picker');
 const { STARTERS, pickStarters, refreshStarters } = await import(pathToFileURL(startersModule));
@@ -56,6 +56,21 @@ assert.equal(summary[0].kind, '髮色');
 assert.equal(summary[0].label, '紅髮');
 assert.deepEqual(candidateSummary({ mine: [], extra: ['unknown', 'smile'] }, lex).map(x => x.tag), ['smile']);
 assert.deepEqual(candidateSummary({ mine: [], extra: [] }, lex), []);
+// 試印摘要：版上釘住的牌決定的那一種（紅髮）不寫；四張都一樣的收成一行 same，每張只列不一樣的。
+assert.deepEqual(candidateSummary({ mine: ['red hair'], extra: ['long hair', 'kimono', 'standing', 'street'] }, lex, { pinned: new Set(['red hair']) }).map(x => x.kind), ['服裝', '姿勢', '場景'], 'pinned hair colour is not summarized');
+const proofs = [
+  { mine: ['red hair'], extra: ['kimono', 'standing', 'street'] },
+  { mine: ['red hair'], extra: ['kimono', 'sitting', 'street'] },
+  { mine: ['red hair'], extra: ['kimono', 'standing', 'street'] },
+  { mine: ['red hair'], extra: ['kimono', 'lying', 'street'] },
+];
+const grouped = trialSummaries(proofs, lex, new Set(['red hair']));
+assert.deepEqual(grouped.same.map(x => x.tag), ['kimono', 'street'], 'values shared by all four proofs collapse into one line');
+assert.deepEqual(grouped.rows.map(r => r.map(x => x.tag)), [['standing'], ['sitting'], ['standing'], ['lying']], 'each proof lists only what differs');
+assert.ok(grouped.rows.every(r => r.every(x => x.kind !== '髮色')), 'pinned kind never appears');
+const identical = trialSummaries([proofs[0], proofs[0], proofs[0], proofs[0]], lex, new Set(['red hair']));
+assert.deepEqual(identical.rows, [[], [], [], []], 'four identical proofs show only the shared line');
+assert.equal(identical.same.length, 3);
 
 const memory = new Map();
 globalThis.localStorage = { getItem: k => memory.get(k) ?? null, setItem: (k, v) => memory.set(k, v), removeItem: k => memory.delete(k) };
@@ -73,6 +88,25 @@ S.handOffFuse(['red hair']);
 const invalid = JSON.parse(memory.get(key)); invalid.tags = 'red hair';
 memory.set(key, JSON.stringify(invalid));
 assert.equal(S.takeFuse(), null);
+// 照這張再印：配方（時代、種子、底模、LoRA）跟著便條走，型別不對的欄位丟掉。
+assert.deepEqual(S.recipeOf({ era: 'edo', seed: 42, checkpoint: 'models/wai.safetensors', loras: [{ folder: 'a', file: 'x.safetensors', strength: 0.7, trigger: 'xx' }, 'y.safetensors', { nope: 1 }, 'z'] }),
+  { era: 'edo', seed: 42, ckpt: 'models/wai.safetensors', loras: [{ file: 'x.safetensors', folder: 'a', strength: 0.7, trigger: 'xx' }, { file: 'y.safetensors' }] });
+assert.deepEqual(S.recipeOf({ era: 'mixed', seed: '7', ckpt: 'w' }), { era: 'mixed', seed: 7, ckpt: 'w' }, 'mixed era and string seed are kept');
+assert.deepEqual(S.recipeOf({ width: 832, height: 1216 }), { width: 832, height: 1216 }, 'size travels with the recipe');
+assert.equal(S.recipeOf({ width: 832 }), null, 'half a size is no size');
+assert.equal(S.recipeOf({ era: 'Bad Era!', seed: -1, ckpt: 3, loras: 'x' }), null, 'nothing usable means no recipe');
+assert.equal(S.recipeOf(null), null);
+assert.equal(S.handOffPool(['red hair', 'kimono'], 'album', { 'red hair': 1.2 }, S.recipeOf({ era: 'mixed', seed: 9, ckpt: 'w.safetensors', loras: [] })), true);
+assert.deepEqual(S.takePool(), ['red hair', 'kimono']);
+assert.equal(S.handoffFrom, 'album');
+assert.deepEqual(S.handoffRecipe, { era: 'mixed', seed: 9, ckpt: 'w.safetensors', loras: [] }, 'recipe arrives with the cards');
+S.handOffPool(['red hair'], 'book');
+S.takePool();
+assert.equal(S.handoffRecipe, null, 'a plain handoff clears the previous recipe');
+const tampered = { tags: ['red hair'], at: Date.now(), from: 'album', recipe: { seed: 'x', loras: 5, era: 3 } };
+memory.set('mochi.pool.handoff.v1', JSON.stringify(tampered));
+S.takePool();
+assert.equal(S.handoffRecipe, null, 'a broken recipe is ignored, not passed on');
 localStorage.setItem = () => { throw new Error('quota'); };
 assert.equal(S.handOffFuse(['red hair']), false, 'UI must stay put when storage fails');
 // Prepare sound between interactions without playing or resuming audio before a gesture.
