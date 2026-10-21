@@ -1314,7 +1314,7 @@ ComfyUI 沒有回報 checkpoint|ComfyUI returned no checkpoints.
 你疊上的牌照花色排好，每一張都會進付印的圖。還空著時，可以點起手式或你的牌組直接套用；右上有撤回、清版。|Your cards are grouped by category and included in every image. Start with a preset or deck, or use Undo and Clear layers.
 引擎用你的牌補出四種組合，圓圈是它補進來的牌。點一格看它的組合；「換一批」整批重抽。|The engine creates four combinations. Dots show its additions. Choose a proof to inspect it, or Redraw for a new set.
 選好了按「付印」，送 ComfyUI 畫。畫的時候可以接著疊下一版。|Press Generate to send your proof to ComfyUI. You can keep composing while it runs.
-印好的作品夾在這條繩上；點一張看大圖、收藏，或回到它當時的版。|Recent images appear here. Click one to view it, save it or restore its layers.
+印好的作品夾在這條繩上；點一張看大圖、收藏、Hires、修臉，或回到它當時的版。|Recent images appear here. Click one to view it, save it, upscale with Hires, fix faces or restore its layers.
 疊幾張牌、挑一個試印、按「付印」試試看吧！之後想再看一次，按頂欄的「導覽」。|Add a few cards, choose a proof and press Generate. Restart this tour from the header any time.
 卡冊是你的牌的紀錄：每張牌用過幾次、印出來好不好、收集了多少。|Explore how often you use each card, how it performs and your collection progress.
 按花色篩選。花色圖章外圈那一圈，是這個花色點亮（用過）了幾成。|Filter by category. Each ring shows the proportion of cards you've used.
@@ -1568,6 +1568,8 @@ Discord 設定（自動傳送{0}）|Discord settings (auto sharing {0})
 {0}（{1}）|{0} ({1})
 {0} 張|{0} cards
 {0} 張圖|{0} images
+這張會標成「{0}」，但尺度勾了{1}：內容可能比標的分級露骨|This image will be labeled {0}, but the content level includes {1}; it may be more explicit than the label
+分級改成{0}|Set rating to {0}
 時代改成「混合」：{0}放回來了，不同時代的牌可以一起出現|Era set to Mixed: {0} back in the pool; cards from different eras can appear together
 從{0}帶來 {1} 張牌，換掉了原本的 {2} 張|Pinned {1} cards from {0}, replacing the {2} you had
 「{0}」在{1}看不到|“{0}” is hidden at {1}
@@ -1796,6 +1798,12 @@ ComfyUI 畫的 PNG 或 API JSON，拖進來或點這裡選檔|Drop a ComfyUI PNG
 人物改成不限|Set Cast to Any
 顯示所有時代|Show all eras
 時代改成混合|Switch era to Mixed
+換種子再印|New seed, print again
+同一組牌換一顆生圖種子，再印一張（G）|Print the same cards again with a new image seed (G)
+ComfyUI 連不上，等它開好就接著印|ComfyUI is unreachable; printing resumes when it is back
+ComfyUI 連不上，等它開好就接著印…|ComfyUI is unreachable; printing resumes when it is back…
+ComfyUI 回來了，接著印|ComfyUI is back; printing resumes
+ComfyUI 連不上（沒開或重開中），等它開好就接著印|ComfyUI is unreachable (closed or restarting); printing resumes when it is back
 改成混合，兩張都留|Switch to Mixed, keep both
 時代改成「混合」：不同時代的牌可以一起出現|Era set to Mixed: cards from different eras can appear together
 不限制開著：所有牌都抽得到；右邊選的分級是圖本身標的分級|No limit is on: every card can be drawn; the rating on the right is how the image is labeled

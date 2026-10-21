@@ -46,13 +46,18 @@ const RECOVER_MS = 15 * 60 * 1000;
 
 async function errorOf(res) {
   let msg = "伺服器回了 " + res.status;
+  let code = "";
   try {
     const j = await res.json();
     if (j.error) msg = j.error;
+    if (j.code) code = String(j.code);
   } catch {
     /* 不是 JSON */
   }
-  return new GenError(msg);
+  const err = new GenError(msg);
+  err.status = res.status;
+  err.code = code;
+  return err;
 }
 
 async function* sseEvents(res) {
@@ -238,6 +243,14 @@ export function createGenerator(hooks) {
         return false;
       }
       if (leaving && !(err instanceof GenError)) return false;
+      // 伺服器說 ComfyUI 連不上（503、沒有別的代號）：這張還沒送出去，不算壞。排回去等 ComfyUI 開好（pump 的 "comfy"）。
+      // 以前算一張失敗：ComfyUI 重開那 30～60 秒連續失敗三張，無限抽就停了。
+      if (err instanceof GenError && err.status === 503 && !err.code && !current.job) {
+        shot.status = "queued";
+        shot.note = "ComfyUI 連不上，等它開好就接著印";
+        hooks.update(shot);
+        return "comfy";
+      }
       // 不是伺服器報錯：是連線的問題（斷了、卡住、連不到主機），重接也接不回。
       // 不送取消：伺服器那邊的那張可能好好的、甚至已經畫好；沒人接的工作伺服器過一陣子自己會收。
       shot.netFail = !(err instanceof GenError);
@@ -289,6 +302,12 @@ export function createGenerator(hooks) {
           hooks.stopped && hooks.stopped("一直送不出去，停下來了：" + netFailText(new TypeError("Failed to fetch")));
           break;
         } else await new Promise((r) => setTimeout(r, NET_RETRY_GAP));
+        continue;
+      }
+      if (ok === "comfy") {
+        // ComfyUI 沒開、重開到一半：這張排回最前面，等燈號回綠（/api/ping 說 ComfyUI 好了）再送。按停就不等了。
+        queue.unshift(shot);
+        await waitComfy(() => !halted && queue[0] === shot, hooks.comfyWaiting);
         continue;
       }
       quickNet = 0;
@@ -483,6 +502,20 @@ async function waitOnline(still, onWait) {
       }
       window.addEventListener("online", done);
     });
+  }
+  if (said && onWait) onWait(false);
+  return said;
+}
+
+/** 等 ComfyUI 開好（/api/ping 回 ok）。still() 不成立（按了停、這張被拿掉）就不等了。onWait(true／false)：開始等、等到了。 */
+async function waitComfy(still, onWait) {
+  let said = false;
+  while (still()) {
+    const st = await linkState();
+    if (st === "ok") break;
+    if (!said && onWait) onWait(true);
+    said = true;
+    await new Promise((resolve) => setTimeout(resolve, 4000));
   }
   if (said && onWait) onWait(false);
   return said;

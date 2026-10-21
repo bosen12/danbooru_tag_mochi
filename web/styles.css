@@ -2170,6 +2170,20 @@ body #wf-pick-btn.has {
   border-top: 1px solid var(--color-rule-2);
 }
 
+/* 不限制開著、尺度超過右邊選的分級（rating-free.js 的 overreachLine）：抽牌那排上面一行黃字＋「分級改成…」。 */
+.rating-overreach {
+  margin: 0;
+  padding: var(--space-xs) var(--space-md) 0;
+  border-top: 1px solid var(--color-rule-2);
+  font-size: var(--text-xs);
+  line-height: 1.6;
+  color: var(--color-warn);
+}
+
+.rating-overreach + .go-bar {
+  border-top: 0;
+}
+
 /* 照這張再印（作品冊、日誌帶過來的，app.js 的 greetRecipe）：抽牌那排上面一張小便條。
  * 左邊一道池水色的邊，說時代、種子照那張；模型不一樣時問要不要換。 */
 .recipe-note {

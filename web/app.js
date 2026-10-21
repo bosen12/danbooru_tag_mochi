@@ -36,10 +36,11 @@ import { drawWithSeed, effectiveHeats, withEffectiveHeats } from "./draw-with-se
 import { zoomFromThumb } from "./zoom.js";
 import { favChars, withFavChars, paintFavChar, paintFavChars, favCharsButton, openFavChars, favZone, dropToFav, flyToFav, heartIcon } from "./fav-chars.js";
 import { ratingBlocked, ratingOf, RATING_LABEL } from "./rules/rating.js";
-import { mountRatingFree } from "./rating-free.js";
+import { mountRatingFree, overreachLine } from "./rating-free.js";
 import { whenPrinter, settingsToWrite, onOtherTab } from "./tab-sync.js";
 import { createLibWindow } from "./lib-window.js";
-import { warmDrawWorker, drawInWorker } from "./draw-pool.js";
+import { warmDrawWorker, drawInWorker, hasDrawWorker } from "./draw-pool.js";
+import { footMore } from "./foot-more.js";
 import { searchMiss } from "./lib-hint.js";
 import { HEATS, toggleHeat } from "./heats.js";
 import { SCENE_MODES, SCENE_MODE_LABELS, heatBlockedByRating } from "./scene-policy.js";
@@ -326,6 +327,8 @@ function setSettings(patch) {
   saveSettings(prev);
   // 規則換了（分級…）：托盤上出不了的牌要重新蓋章／拿掉章。
   hand?.update();
+  // 分級、尺度、不限制換了：抽牌列上面那行提醒跟著換。
+  renderOverreach();
 }
 
 function saveUi() {
@@ -2097,6 +2100,8 @@ const generator = createGenerator({
   },
   // 網路斷了：佇列停在原地等，回來就接著印（見 gen.js waitOnline）。
   waiting: (on) => toast(on ? "連不到主機，網路回來就接著印…" : "網路回來了，接著印"),
+  // ComfyUI 沒開、重開中：一樣停在原地等，燈號回綠就接著印（見 gen.js waitComfy）。無限抽不會因此停掉。
+  comfyWaiting: (on) => toast(on ? "ComfyUI 連不上，等它開好就接著印…" : "ComfyUI 回來了，接著印"),
 });
 
 // Hires：印好的那張放大、重畫細節，做好直接換掉牆上那張（見 hires.js）。
@@ -2196,6 +2201,21 @@ function renderGoStatus() {
   if (s) s.textContent = goStatusText();
 }
 
+/** 抽牌列上面那一行：不限制開著、尺度超過右邊選的分級時提醒（rating-free.js 的 overreachLine）。 */
+function renderOverreach() {
+  const bar = $("go-bar");
+  if (!bar) return;
+  const line = overreachLine(settings, effectiveHeats(settings));
+  const old = document.getElementById("rating-overreach");
+  const key = line ? line.textContent : "";
+  if ((old?.dataset.key || "") === key) return;
+  if (!line) return void old?.remove();
+  line.id = "rating-overreach";
+  line.dataset.key = key;
+  if (old) old.replaceWith(line);
+  else bar.before(line);
+}
+
 function renderGoBar() {
   const bar = $("go-bar");
   const busy = generator.busy || looping || drawingRounds > 0;
@@ -2205,6 +2225,7 @@ function renderGoBar() {
   // 元素上，瀏覽器不算一次點擊 —— 要按好幾次才停得下來。
   // 「偏好卡牌」在合成池標題列（跟疊印台一樣放在池子旁邊）：只換選中狀態和張數，不跟著整排重畫。
   syncHandBtn();
+  renderOverreach();
   const key = [busy, generator.pending, infinite, n, settings.samePerson].join("|");
   if (bar.dataset.key === key && bar.childElementCount) return renderGoFloat();
   bar.dataset.key = key;
@@ -2383,7 +2404,7 @@ async function drawBatchNow(gen, intent, epoch) {
     const seed = randomSeed();
     const drawSettings = withFavChars(withEffectiveHeats(intent.settings));
     // 背景執行緒抽（draw-pool.js）：抽的時候畫面照常動、按得到。抽不了才在這邊抽（結果一樣）。
-    const viaWorker = await drawInWorker({ settings: drawSettings, pins, banned, seeds: [seed], trace: true });
+    const viaWorker = hasDrawWorker() ? await drawInWorker({ settings: drawSettings, pins, banned, seeds: [seed], trace: true }) : null;
     if (epoch !== drawEpoch) break;
     const drawn = viaWorker?.[0] || drawWithSeed(lex, drawSettings, pins, banned, seed, { trace: true });
     if (drawn.positive && String(drawn.positive).trim()) {
@@ -3463,15 +3484,34 @@ function showShot(shot, { focus } = {}) {
     prevBtn.disabled = !nav(-1);
     nextBtn.disabled = !nav(1);
   };
-  const footFor = (s) => [
-    favButton(s, { zh, persist: () => (S.saveShots(shots), $("wall").querySelector(`.shot[data-id="${s.id}"] .fav-btn`)?._paint?.()), className: "btn btn-small" }),
-    // 只抽牌的那張：左邊已經有「送去印這張」，這裡不再放一顆意思不清的「重印」。
-    s.status === "drawn" ? null : el("button", { class: "btn btn-small", type: "button", onclick: () => reprint(s), title: "同樣的提示詞、同一顆種子再送一次" }, "同種子重印"),
-    el("button", { class: "btn btn-small", type: "button", onclick: (e) => copyPos(s, e.currentTarget) }, "複製提示詞"),
-    s.image ? el("a", { class: "btn btn-small", href: s.image, target: "_blank", rel: "noopener" }, "開原圖") : null,
-    // 分頻道（discord-routes.js）：帶入這張的角色、分級，貼上 webhook 就好。詳情先關，兩層彈窗不要一起搶鍵盤。
-    el("button", { class: "btn btn-small", type: "button", onclick: () => (sheet.close(), openRouteFromShot(s)) }, "用這張開 Discord 頻道"),
-  ];
+  // Hires、修臉的小面板跟著牆上那張的按鈕走（位置、進度都在那一格）：詳情先關，捲到那張、從那顆按鈕打開。
+  // 以前看完大圖想放大或修臉，得自己關掉視窗、回牆上找那一張。
+  const fromWall = (sel, open) => () => {
+    const s = current;
+    sheet.close();
+    setTimeout(() => {
+      const node = shotNodeOf(s);
+      const btn = node?.querySelector(sel);
+      if (!btn) return;
+      node.scrollIntoView({ block: "center", behavior: reducedMotion() ? "auto" : "smooth" });
+      setTimeout(() => open(s, btn), reducedMotion() ? 0 : DUR.medium);
+    }, reducedMotion() ? 0 : DUR.short);
+  };
+  const footFor = (s) => {
+    const done = s.status === "done" && !!s.image;
+    return footMore(favButton(s, { zh, persist: () => (S.saveShots(shots), $("wall").querySelector(`.shot[data-id="${s.id}"] .fav-btn`)?._paint?.()), className: "btn btn-small" }), [
+      done ? el("button", { class: "btn btn-small", type: "button", onclick: fromWall(".shot-hires", openHires), title: "放大並重畫細節（快速／深度）" }, "Hires") : null,
+      done ? el("button", { class: "btn btn-small", type: "button", onclick: fromWall(".shot-face", openFace), title: "找到臉、只重畫臉（FaceDetailer）" }, "修臉") : null,
+      // 只抽牌的那張：左邊已經有「送去印這張」，這裡不再放一顆意思不清的「重印」。
+      s.status === "drawn" ? null : el("button", { class: "btn btn-small", type: "button", onclick: () => reprint(s), title: "同樣的提示詞、同一顆種子再送一次" }, "同種子重印"),
+      el("button", { class: "btn btn-small", type: "button", onclick: (e) => copyPos(s, e.currentTarget) }, "複製提示詞"),
+      s.image ? el("a", { class: "btn btn-small", href: s.image, target: "_blank", rel: "noopener" }, "開原圖") : null,
+      // 分頻道（discord-routes.js）：帶入這張的角色、分級，貼上 webhook 就好。詳情先關，兩層彈窗不要一起搶鍵盤。
+      el("button", { class: "btn btn-small", type: "button", onclick: () => (sheet.close(), openRouteFromShot(s)) }, "用這張開 Discord 頻道"),
+      // 撤下：關掉詳情、從牆上拿掉（提示上照樣有「復原」）。
+      el("button", { class: "btn btn-small btn-ghost", type: "button", onclick: () => (sheet.close(), removeShot(current)) }, "撤下"),
+    ]);
+  };
   const sheet = openSheet(shotTitle(shot), shotDetailBody(shot), {
     wide: true,
     foot: footFor(shot),

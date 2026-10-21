@@ -34,7 +34,7 @@ import { favChars, withFavChars, paintFavChar, paintFavChars, favZone, dropToFav
 import { skeletonPicker } from "./skeleton-picker.js";
 import { compareThumb } from "./compare.js";
 import { ratingBlocked, ratingOf, RATING_LABEL } from "./rules/rating.js";
-import { mountRatingFree } from "./rating-free.js";
+import { mountRatingFree, overreachLine } from "./rating-free.js";
 import { makeShelf, whenPrinter, settingsToWrite, onOtherTab } from "./tab-sync.js";
 import { warmDrawWorker, drawInWorker } from "./draw-pool.js";
 import { searchMiss } from "./lib-hint.js";
@@ -575,9 +575,14 @@ const poseSig = () => {
   return p ? `|pose:${p.name}:${p.strength}` : "";
 };
 
+// 同一張試印「換種子再印」的那幾張，簽名在後面多一段「|v種子」：都算這張試印的，取最新的那張
+// （prints 新的在前面）—— 付印列、成品那張紙跟著最新印的走。
 function printFor(sig) {
-  return sig ? prints.find((p) => p.sig === sig) : null;
+  return sig ? prints.find((p) => p.sig === sig || p.sig.startsWith(sig + "|v")) : null;
 }
+
+/** 這張印樣是不是選中那張試印現在看的那一張（最新的那張，含換種子再印的）。 */
+const isPickedPrint = (p) => !!trials[picked] && printFor(sigOf(trials[picked])) === p;
 
 /* ================= 動作：放、拿、撤回 ================= */
 
@@ -926,8 +931,7 @@ const generator = createGenerator({
       savePrints();
     }
     paintTrialFacesFor(p.sig);
-    const t = trials[picked];
-    if (t && p.sig === sigOf(t)) {
+    if (isPickedPrint(p)) {
       renderPreview({ develop: p.status === "done" });
       renderPrintBar();
     } else if (p._shownStatus !== p.status) {
@@ -943,7 +947,7 @@ const generator = createGenerator({
     } else if (p.status === "failed") {
       sfx.fail();
       savePrints();
-      if (trials[picked] && p.sig === sigOf(trials[picked])) refuse(pv?.sheet);
+      if (isPickedPrint(p)) refuse(pv?.sheet);
     } else if (p.status === "cancelled") dropCancelled(p);
   },
   stopped: (msg) => {
@@ -956,15 +960,21 @@ const generator = createGenerator({
     else if (plateNotice && plateNotice.text === NET_WAIT_TEXT) plateNotice = null;
     renderPlateNotice();
   },
+  // ComfyUI 沒開、重開中：一樣停在原地等，燈號回綠就接著印（見 gen.js waitComfy）。
+  comfyWaiting: (on) => {
+    if (on) plateNotice = { kind: "err", text: COMFY_WAIT_TEXT };
+    else if (plateNotice && plateNotice.text === COMFY_WAIT_TEXT) plateNotice = null;
+    renderPlateNotice();
+  },
 });
 const NET_WAIT_TEXT = "連不到主機（網路斷了？），網路回來就接著印";
+const COMFY_WAIT_TEXT = "ComfyUI 連不上（沒開或重開中），等它開好就接著印";
 
 // Hires：印好的那張放大、重畫細節，做好直接換掉（成品區、晾紙繩都是同一張，見 hires.js）。
 const hiresRun = createHires({
   origin: "fuse",
   update: (p) => {
-    const t = trials[picked];
-    if (t && p.sig === sigOf(t)) {
+    if (isPickedPrint(p)) {
       const fresh = !p.hi && p._hiresFresh;
       p._hiresFresh = false;
       renderPreview({ develop: fresh });
@@ -1021,11 +1031,13 @@ function openHires(p, btn) {
   });
 }
 
-function printNow() {
+function printNow({ fresh = false } = {}) {
   const t = trials[picked];
   if (!t) return;
-  const sig = sigOf(t);
-  const same = printFor(sig);
+  // fresh：印好的那張再印一張，換一顆生圖種子（同一顆種子印出來一模一樣，再印沒有意義）。
+  const freshSeed = fresh ? randomSeed() : null;
+  const sig = fresh ? `${sigOf(t)}|v${freshSeed}` : sigOf(t);
+  const same = printFor(sigOf(t));
   if (same && (same.status === "queued" || same.status === "running")) {
     announce("這一張已經在印了");
     return refuse($("print-bar").querySelector(".pb-go"));
@@ -1042,7 +1054,7 @@ function printNow() {
   const p = {
     id: "f" + Date.now().toString(36) + Math.random().toString(36).slice(2, 5),
     sig,
-    seed: printSeedOf(t),
+    seed: fresh ? freshSeed : printSeedOf(t),
     fixedSeed: isFixedSeed(),
     positive: trialPositive(t),
     width: settings.width,
@@ -1680,7 +1692,8 @@ function paintTrialFace(i, p = printFor(sigOf(trials[i]))) {
 
 function paintTrialFacesFor(sig) {
   trials.forEach((t, i) => {
-    if (sigOf(t) === sig) paintTrialFace(i);
+    // 換種子再印的那幾張簽名後面多一段「|v種子」，也算這張試印的。
+    if (sig && (sigOf(t) === sig || sig.startsWith(sigOf(t) + "|v"))) paintTrialFace(i);
   });
 }
 
@@ -2946,7 +2959,9 @@ function printAction(btn) {
   if (!t) return;
   const p = printFor(sigOf(t));
   if (p && p._gone) return reprint(p);
-  if (p && p.status === "done") return openHires(p, btn);
+  // 印好了：主鈕是「換種子再印」（Hires、修臉在旁邊）。以前主鈕直接變成 Hires，想再印一張的人按下去打開的是 Hires。
+  // 種子固定的時候照舊：固定就是要一模一樣，再印也一樣，主鈕留給 Hires。
+  if (p && p.status === "done") return isFixedSeed() ? openHires(p, btn) : printNow({ fresh: true });
   if (p && p.status === "failed") return reprint(p);
   return printNow();
 }
@@ -3009,9 +3024,9 @@ function renderPrintBar() {
     disabled = true;
   } else if (p && p._gone) label = "再印一次";
   else if (p && p.status === "done") {
-    // 印好了：這顆鈕換成下一步 —— Hires。做的時候鈕上走進度，跟付印一樣。
+    // 印好了：主鈕「換種子再印」，Hires、修臉在旁邊（種子固定時主鈕照舊是 Hires）。Hires／修臉做的時候主鈕上走進度。
     const what = faceBusy(p) ? "修臉" : "Hires";
-    label = hiresBusy(p) ? (p.hi.status === "running" ? `${what} ${Math.round((p.hi.progress || 0) * 100)}%` : `${what} 排隊中…`) : "Hires";
+    label = hiresBusy(p) ? (p.hi.status === "running" ? `${what} ${Math.round((p.hi.progress || 0) * 100)}%` : `${what} 排隊中…`) : isFixedSeed() ? "Hires" : "換種子再印";
     disabled = hiresBusy(p);
   } else if (p && p.status === "failed") label = "再印一次";
   const summary = [
@@ -3031,7 +3046,7 @@ function renderPrintBar() {
   const wasOffline = bar.dataset.offline === "1";
   bar.dataset.offline = offline ? "1" : "0";
   const hiBusy = !!p && p.status === "done" && hiresBusy(p);
-  const key = [t.letter, sigOf(t), p ? p.status : "", p?._gone ? "gone" : "", p?.hi?.status || "", p?.hi?.mode || "", p?.hires?.scale || "", p?.face ? "face" + faceDepth(p) : "", summary.join("・"), detail.join("・"), t.missing.join(","), offline, linkNow, p && p.status === "failed" ? p.note : "", !!bed.pins.length].join("|");
+  const key = [t.letter, sigOf(t), p ? p.status : "", p?._gone ? "gone" : "", p?.hi?.status || "", p?.hi?.mode || "", p?.hires?.scale || "", p?.face ? "face" + faceDepth(p) : "", summary.join("・"), detail.join("・"), t.missing.join(","), offline, linkNow, p && p.status === "failed" ? p.note : "", !!bed.pins.length, settings.ratingFree ? effectiveHeats(settings).join(",") : ""].join("|");
   const go = bar.querySelector(".pb-go");
   // 放一張牌、換一張試印時，常常只有「試印 A／你的 N 張・引擎補 N 張／時代・分級・尺寸」幾個字變了：
   // 只改字，不把整排（連同收著的種子設定）拆掉重建 —— 手機上每放一張牌都在重建它。
@@ -3075,6 +3090,8 @@ function renderPrintBar() {
       )
     ),
     t.missing.length ? el("p", { class: "pb-warn" }, `這張沒收到：${t.missing.map(zh).join("、")}`) : null,
+    // 不限制開著、尺度超過右邊選的分級：付印前說一聲（rating-free.js）。
+    overreachLine(settings, effectiveHeats(settings), "pb-warn"),
     el("label", { class: "pb-size" }, "尺寸", el("select", { class: "select", "aria-label": "尺寸", onchange: (e) => {
       const hadFocus = document.activeElement === e.currentTarget;
       const size = SIZES.find(s => s.id === e.currentTarget.value);
@@ -3092,14 +3109,24 @@ function renderPrintBar() {
           disabled: disabled || undefined,
           dataset: { wide: [...label].length <= 2 ? "true" : "false", busy: busy || hiBusy ? "true" : "false" },
           style: busy ? `--p: ${p.status === "running" ? p.progress || 0 : 0}` : hiBusy ? `--p: ${p.hi.status === "running" ? p.hi.progress || 0 : 0}` : undefined,
-          "aria-haspopup": p && p.status === "done" && !p._gone ? "dialog" : undefined,
+          "aria-haspopup": p && p.status === "done" && !p._gone && isFixedSeed() ? "dialog" : undefined,
           onclick: (e) => printAction(e.currentTarget),
-          title: p && p.status === "done" && !p._gone ? "放大並重畫細節（快速／深度）" : "付印（G）",
+          title: p && p.status === "done" && !p._gone ? (isFixedSeed() ? "放大並重畫細節（快速／深度）" : "同一組牌換一顆生圖種子，再印一張（G）") : "付印（G）",
         },
         label
       ),
       busy ? el("button", { class: "btn", type: "button", onclick: stopPrinting }, "停") : null,
-      // 印好了、沒在忙：Hires 旁邊多一顆修臉（只重畫臉）。
+      // 印好了、沒在忙：Hires（主鈕換成「換種子再印」時）、修臉放在旁邊。
+      p && p.status === "done" && !p._gone && !hiBusy && !isFixedSeed()
+        ? el("button", {
+            class: "btn pb-hires",
+            type: "button",
+            "aria-haspopup": "dialog",
+            "aria-expanded": "false",
+            title: "放大並重畫細節（快速／深度）",
+            onclick: (e) => openHires(p, e.currentTarget),
+          }, "Hires")
+        : null,
       p && p.status === "done" && !p._gone && !hiBusy
         ? el("button", {
             class: "btn pb-face",
@@ -3354,6 +3381,14 @@ function openPrint(p, from) {
   const src = printSrc(p);
   const mine = (p.mine && p.mine.length ? p.mine : p.bed?.pins || []).filter((t) => lib.byTag.has(t));
   let sheet = null;
+  const fromLine = (open) => {
+    sheet.close();
+    setTimeout(() => {
+      const node = $("line-list").querySelector(`.print[data-id="${CSS.escape(String(p.id))}"]`);
+      node?.scrollIntoView({ block: "nearest", inline: "center", behavior: reduced() ? "auto" : "smooth" });
+      open(p, node || $("print-bar"));
+    }, reduced() ? 0 : DUR.short);
+  };
   const foot = [
     el(
       "button",
@@ -3371,6 +3406,9 @@ function openPrint(p, from) {
       ? el("button", { class: "btn btn-small", type: "button", onclick: () => (sheet.close(), reprint(p)) }, "再印一次")
       : null,
     p._gone ? null : favButton(p, { zh, persist: savePrints, className: "btn btn-small" }),
+    // Hires、修臉直接對這張作品做，不必先「回到這一版」把現在疊的版換掉。小面板跟著繩上那一張走：詳情先關、從那一張打開。
+    p.status === "done" && p.image && !p._gone ? el("button", { class: "btn btn-small", type: "button", title: "放大並重畫細節（快速／深度）", onclick: () => fromLine(openHires) }, "Hires") : null,
+    p.status === "done" && p.image && !p._gone ? el("button", { class: "btn btn-small", type: "button", title: "找到臉、只重畫臉（FaceDetailer）", onclick: () => fromLine(openFace) }, "修臉") : null,
     // 分頻道（discord-routes.js）：帶入這張的角色、分級。詳情先關，兩層彈窗不要一起搶鍵盤。
     p._gone ? null : el("button", { class: "btn btn-small", type: "button", onclick: () => (sheet.close(), openRouteFromShot(p)) }, "用這張開 Discord 頻道"),
     p.image && !p._gone ? el("a", { class: "btn btn-small", href: p.image, target: "_blank", rel: "noopener" }, "開原圖") : null,

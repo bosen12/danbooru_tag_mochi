@@ -40,6 +40,9 @@ export function warmDrawWorker(url) {
   worker.postMessage({ warm: url });
 }
 
+/** 有沒有背景執行緒可用：沒有的話叫的人直接在這邊抽，不必多等一拍。 */
+export const hasDrawWorker = () => !!worker;
+
 export function drawInWorker({ settings, pins, banned, seeds, trace = false }, timeout = 5000) {
   if (!worker) return Promise.resolve(null);
   const id = ++seq;
