@@ -38,6 +38,8 @@ import { favChars, withFavChars, paintFavChar, paintFavChars, favCharsButton, op
 import { ratingBlocked, ratingOf, RATING_LABEL } from "./rules/rating.js";
 import { mountRatingFree } from "./rating-free.js";
 import { whenPrinter, settingsToWrite, onOtherTab } from "./tab-sync.js";
+import { createLibWindow } from "./lib-window.js";
+import { warmDrawWorker, drawInWorker } from "./draw-pool.js";
 import { searchMiss } from "./lib-hint.js";
 import { HEATS, toggleHeat } from "./heats.js";
 import { SCENE_MODES, SCENE_MODE_LABELS, heatBlockedByRating } from "./scene-policy.js";
@@ -146,12 +148,15 @@ async function boot() {
   mountTour("mochi");
   mountScreensaver();
   mountGenStatus("mochi");
+  const lexUrl = document.querySelector('link[rel="preload"][href^="lexicon.json"]')?.href || "lexicon.json";
   try {
     const [lexicon, manifest] = await Promise.all([
-      fetch(document.querySelector('link[rel="preload"][href^="lexicon.json"]')?.href || "lexicon.json").then((r) => r.json()),
+      fetch(lexUrl).then((r) => r.json()),
       fetch(document.querySelector('link[rel="preload"][href^="cards/manifest.json"]')?.href || "cards/manifest.json").then((r) => (r.ok ? r.json() : {})).catch(() => ({})),
     ]);
     data = lexicon;
+    // 抽牌在背景執行緒做（draw-pool.js）。詞庫這邊抓到了（進了瀏覽器快取）才叫它去讀：同時抓會下載兩次。
+    warmDrawWorker(new URL(lexUrl, location.href).href);
     lex = indexLexicon(data);
     lib = buildLibrary(data, { ratingBlocked });
     assets = createAssets(manifest);
@@ -463,6 +468,8 @@ function buildPicker() {
   pickerMQ.addEventListener?.("change", () => {
     if (!pickerMode() && pickerOpen) closePicker();
     syncCollapse();
+    // 跨過手機寬度：字盒換一種畫法（只留畫面附近的牌 ↔ 一路往下補）。
+    renderLibrary();
     // 空合成池的提示照版面寫（手機「按上面的挑牌」、電腦「點字盒的牌」）：平板轉向、拉窄視窗跨過去要換字。
     if (!pool.size) renderPool();
   });
@@ -492,6 +499,8 @@ function openPicker() {
   // 字盒平常就跟著花色、搜尋、池子重畫，打開時已經是最新的：不再整盒重建（慢手機上抽屜要等 240ms 才開始滑）。
   // 還沒畫過（開機到一半就點）才畫。
   if (!$("lib-grid").querySelector(".card")) renderLibrary();
+  // 收著的時候抽屜沒有高度，量不出一排多高：打開了再照捲到的地方畫。
+  else if (libWin?.active) requestAnimationFrame(() => libWin.update());
   if (!reducedMotion()) {
     lib.animate([{ transform: "translateY(100%)" }, { transform: "none" }], { duration: DUR.long, easing: css(CURVE.out) });
     $("picker-scrim").animate([{ opacity: 0 }, { opacity: 1 }], { duration: DUR.medium, easing: css(CURVE.out) });
@@ -745,6 +754,7 @@ function renderLibrary() {
   // 打到沒有符合的那一下，搜尋框輕輕搖頭（跟疊印台的找牌框一樣）。之後繼續打、仍然沒有，不再搖。
   if (q && !list.length && was !== "empty") refuse($("lib-q"));
   if (!list.length) {
+    libWin?.stop();
     // 角色頁選了「男」，規則的「人物」卻沒開男生：男角色全被收起來了，說清楚，不要只寫「沒有字」。
     const offSide = ui.suit === "chara" && ((ui.charGender === "male" && !settings.boy) || (ui.charGender === "female" && !settings.girl));
     rowMove.done();
@@ -757,9 +767,17 @@ function renderLibrary() {
     return;
   }
   libList = list;
-  libShown = 0;
-  grid.replaceChildren();
-  moreLibrary(LIB_FIRST);
+  libObserver?.disconnect();
+  if (pickerMode()) {
+    // 手機挑牌抽屜：只留畫面附近的牌（lib-window.js），不再一路往下補、補過的永遠留著。
+    libShown = list.length;
+    libWindow().set(list);
+  } else {
+    libWin?.stop();
+    libShown = 0;
+    grid.replaceChildren();
+    moreLibrary(LIB_FIRST);
+  }
   rowMove.done();
   if (dealLibrary && !matchMedia("(prefers-reduced-motion: reduce)").matches) {
     [...grid.querySelectorAll(".card")].slice(0, 20).forEach((c, i) => {
@@ -884,6 +902,24 @@ const LIB_PAGE = 24;
 let libList = [];
 let libShown = 0;
 let libObserver = null;
+let libWin = null;
+
+function libWindow() {
+  libWin ||= createLibWindow({
+    grid: $("lib-grid"),
+    scroller: $("lib-scroll"),
+    make: libCard,
+    first: LIB_FIRST,
+    // 牌離開畫面的這段時間池子、廢字簍、偏好卡牌、偏好角色可能變了：插回來時照現在的重蓋一次。
+    refresh: (node, card) => {
+      paintState(node, card.tag);
+      if (hand?.has(card.tag)) node.dataset.inHand = "true";
+      else delete node.dataset.inHand;
+      if (card.suit === "chara") paintFavChar(node, card.tag);
+    },
+  });
+  return libWin;
+}
 
 function moreLibrary(n = LIB_PAGE) {
   const grid = $("lib-grid");
@@ -2345,7 +2381,11 @@ async function drawBatchNow(gen, intent, epoch) {
       for (const t of identityBans(lex, first)) if (!pins.has(t)) banned.add(t);
     }
     const seed = randomSeed();
-    const drawn = drawWithSeed(lex, withFavChars(withEffectiveHeats(intent.settings)), pins, banned, seed, { trace: true });
+    const drawSettings = withFavChars(withEffectiveHeats(intent.settings));
+    // 背景執行緒抽（draw-pool.js）：抽的時候畫面照常動、按得到。抽不了才在這邊抽（結果一樣）。
+    const viaWorker = await drawInWorker({ settings: drawSettings, pins, banned, seeds: [seed], trace: true });
+    if (epoch !== drawEpoch) break;
+    const drawn = viaWorker?.[0] || drawWithSeed(lex, drawSettings, pins, banned, seed, { trace: true });
     if (drawn.positive && String(drawn.positive).trim()) {
       if (!first) first = drawn.positive;
       // 抽牌種子每張隨機；固定的生圖種子跟這輪其他設定一起保存。

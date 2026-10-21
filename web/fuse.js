@@ -36,6 +36,7 @@ import { compareThumb } from "./compare.js";
 import { ratingBlocked, ratingOf, RATING_LABEL } from "./rules/rating.js";
 import { mountRatingFree } from "./rating-free.js";
 import { makeShelf, whenPrinter, settingsToWrite, onOtherTab } from "./tab-sync.js";
+import { warmDrawWorker, drawInWorker } from "./draw-pool.js";
 import { searchMiss } from "./lib-hint.js";
 import { watchGone, sweepGone } from "./gone.js";
 import { HEATS, toggleHeat } from "./heats.js";
@@ -216,12 +217,16 @@ async function boot() {
     renderPreview();
     renderPrintBar();
   });
+  const lexUrl = document.querySelector('link[rel="preload"][href^="lexicon.json"]')?.href || "lexicon.json";
   try {
     const [lexicon, man] = await Promise.all([
-      fetch(document.querySelector('link[rel="preload"][href^="lexicon.json"]')?.href || "lexicon.json").then((r) => r.json()),
+      fetch(lexUrl).then((r) => r.json()),
       fetch(document.querySelector('link[rel="preload"][href^="cards/manifest.json"]')?.href || "cards/manifest.json").then((r) => (r.ok ? r.json() : {})).catch(() => ({})),
     ]);
     data = lexicon;
+    // 開頁的四張試印丟到背景執行緒抽（draw-pool.js）：詞庫這邊抓到了（進了瀏覽器快取）才叫它去讀，
+    // 同時抓會下載兩次。它建索引的時候，這邊也在建、接著排字盒。
+    warmDrawWorker(new URL(lexUrl, location.href).href);
     lex = indexLexicon(data);
     lib = buildLibrary(data, { ratingBlocked });
     assets = createAssets(man || {});
@@ -266,6 +271,10 @@ async function boot() {
   }
   caseTab = readJ(FK.tab, "all") || "all";
   prints = loadPrints();
+  // 版、種子、規則都定了：四張試印現在就交給背景執行緒抽，這邊接著排字盒、畫畫面（手機上四張要 0.6 秒）。
+  const trialSig = () => JSON.stringify([seeds, bed.pins, settings, [...bans]]);
+  const earlySig = trialSig();
+  const early = drawInWorker({ settings: withFavChars(withEffectiveHeats(settings)), pins: bed.pins, banned: [...bans, ...HARD_BANNED], seeds });
 
   initLoraPicker({ gallery: true, motion: { DUR, CURVE, css } });
   initWorkflow({ sampling: true, faceFix: true, gallery: true, motion: { DUR, CURVE, css } });
@@ -290,11 +299,18 @@ async function boot() {
   if (caseTab !== "match") renderCase();
   // 抽牌、把試印畫上去，各是一個任務：合在一起會超過 50ms。yield 的後續比繪製優先，第一格仍一起出來。
   const yoke = () => (typeof scheduler !== "undefined" && scheduler.yield ? scheduler.yield() : Promise.resolve());
-  // 四次抽牌約 50ms 出頭。拆成兩半，每一半自己一個任務。
-  await yoke();
-  retrial(0, 2);
-  await yoke();
-  retrial(2, seeds.length);
+  // 背景執行緒抽好了就直接用（同一支引擎、同一顆種子，抽出來一樣）。抽不了、逾時，
+  // 或等的這段時間版、種子、規則被動過：照舊在這邊抽，拆成兩半，每一半自己一個任務。
+  const pre = await early;
+  if (pre && pre.length === seeds.length && trialSig() === earlySig) {
+    trials = pre.map((d, i) => trialOf(d, i, seeds[i]));
+    settleTrials();
+  } else {
+    await yoke();
+    retrial(0, 2);
+    await yoke();
+    retrial(2, seeds.length);
+  }
   await yoke();
   renderAll();
   if (handoff) toast(`從墨池帶來 ${bed.pins.length} 張牌；規則沿用疊印台的設定。`);
