@@ -287,6 +287,11 @@ a.album-chip:focus-visible {
     min-height: 32px;
     padding-inline: var(--space-sm);
   }
+  /* 分輯（不分／時代／髮色…）只有一排，手機上直接做大一點（原本 28px 高）。 */
+  .group-chip {
+    min-height: 36px;
+    padding-inline: var(--space-sm);
+  }
 }
 
 .album-pos summary {

@@ -36,7 +36,7 @@ import { compareThumb } from "./compare.js";
 import { ratingBlocked, ratingOf, RATING_LABEL } from "./rules/rating.js";
 import { mountRatingFree, overreachLine } from "./rating-free.js";
 import { makeShelf, whenPrinter, settingsToWrite, onOtherTab } from "./tab-sync.js";
-import { warmDrawWorker, drawInWorker } from "./draw-pool.js";
+import { warmDrawWorker, drawInWorker, hasDrawWorker } from "./draw-pool.js";
 import { searchMiss } from "./lib-hint.js";
 import { watchGone, sweepGone } from "./gone.js";
 import { HEATS, toggleHeat } from "./heats.js";
@@ -507,6 +507,43 @@ function deferTrials() {
   const work = ++trialsWork;
   clearTimeout(trialsTimer);
   cancelAnimationFrame(trialsFrame);
+  // 有背景執行緒（draw-pool.js）：剩下那幾張整批丟過去抽。手機上一張要 130ms 左右，
+  // 以前三張輪流卡主執行緒，正好卡在牌飛過去的那一段。同一支引擎、同一顆種子，抽出來一樣。
+  // 抽回來時又放了牌、重抽過（trialsWork 換了）就丟掉；版、種子、規則被別的路改過，或抽不了、逾時，照下面在這邊一張張抽。
+  if (hasDrawWorker() && trialsPending && trialsPending.size) {
+    // 等按下去那一格畫面出去再送：同時抽，手機上兩邊搶 CPU，那一格反而慢 50ms 左右。
+    const ask = () => {
+      if (work !== trialsWork || !trialsPending) return;
+      clearTimeout(trialsTimer);
+      cancelAnimationFrame(trialsFrame);
+      const todo = [...trialsPending];
+      const sig = () => JSON.stringify([todo.map((i) => seeds[i]), bed.pins, settings, [...bans]]);
+      const asked = sig();
+      drawInWorker({ settings: withFavChars(withEffectiveHeats(settings)), pins: bed.pins, banned: [...bans, ...HARD_BANNED], seeds: todo.map((i) => seeds[i]) }).then((out) => {
+        if (work !== trialsWork || !trialsPending) return;
+        if (!out || out.length !== todo.length || sig() !== asked) return deferTrialsHere(work);
+        const next = trials.slice();
+        todo.forEach((i, k) => {
+          if (trialsPending.has(i)) next[i] = trialOf(out[k], i, seeds[i]);
+          trialsPending.delete(i);
+        });
+        trials = next;
+        finishTrials();
+      });
+    };
+    trialsFrame = requestAnimationFrame(() => {
+      clearTimeout(trialsTimer);
+      trialsTimer = setTimeout(ask, 0);
+    });
+    // 分頁在背景（不畫畫面）時照樣送。
+    trialsTimer = setTimeout(ask, 250);
+    return;
+  }
+  deferTrialsHere(work);
+}
+
+/** 在這邊（主執行緒）一張張抽剩下的試印：每抽一張讓出一格畫面。 */
+function deferTrialsHere(work) {
   const next = () => {
     // 放下一張、重抽或當場讀完四張之後，舊任務即使已排進佇列也不能再動新版。
     if (work !== trialsWork || !trialsPending) return;
@@ -516,13 +553,13 @@ function deferTrials() {
     // hand.receive 的影子由共用 flight 標 aria-hidden；拖放的影子用 drag-ghost。
     // 背景不等畫面，照保底任務抽完（flight 自己也有背景落地保底）。
     if (!document.hidden && document.querySelector('.flying, .drag-ghost, body > .card[aria-hidden="true"]')) {
-      deferTrials();
+      deferTrialsHere(work);
       return;
     }
     const i = trialsPending.values().next().value;
     if (i !== undefined) retrial(i, i + 1);
     // 一個任務只抽一張，中間留畫面給正在飛的牌；小點仍整批抽完才補上。
-    if (trialsPending.size) deferTrials();
+    if (trialsPending.size) deferTrialsHere(work);
     else finishTrials();
   };
   // 下一格畫面之後的第一個任務；分頁在背景（不畫畫面）時也保證會抽完。

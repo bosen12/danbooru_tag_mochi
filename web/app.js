@@ -121,7 +121,11 @@ let infinite = false;
 let stopAsked = false;
 // 無限抽印完一輪、還沒排下一輪的那一小段空檔：照樣算「在忙」，「停」不能在這時候閃掉。
 let looping = false;
-const ui = S.typedLike({ suit: "all", group: "", query: "", eraOnly: true, charGender: "", collapsed: matchMedia("(max-width: 63.99rem)").matches, wallCols: "auto" }, S.loadUi());
+// 無限抽這一趟送出去幾張（打開開關、或開著時自己按「抽並生圖」從 0 算起）；到 ui.loopMax 就停（0＝不限）。
+let loopSent = 0;
+const LOOP_MAX_CHOICES = [0, 10, 20, 50, 100, 200];
+const ui = S.typedLike({ suit: "all", group: "", query: "", eraOnly: true, charGender: "", collapsed: matchMedia("(max-width: 63.99rem)").matches, wallCols: "auto", loopMax: 0 }, S.loadUi());
+if (!LOOP_MAX_CHOICES.includes(ui.loopMax)) ui.loopMax = 0;
 // 存檔裡的花色不是現在有的（改版、壞掉）：回到「全部」，不然字盒整盒是空的。
 if (ui.suit !== "all" && !CARD_SUITS.includes(ui.suit)) ui.suit = "all";
 // 成品牆每排幾張：自動（照寬度，每張至少約 19rem）或固定 3～6 張（視窗太窄時自己少幾欄，每張不小於 140px）。
@@ -332,7 +336,7 @@ function setSettings(patch) {
 }
 
 function saveUi() {
-  S.saveUi({ suit: ui.suit, group: ui.group, eraOnly: ui.eraOnly, collapsed: ui.collapsed, charGender: ui.charGender, wallCols: ui.wallCols });
+  S.saveUi({ suit: ui.suit, group: ui.group, eraOnly: ui.eraOnly, collapsed: ui.collapsed, charGender: ui.charGender, wallCols: ui.wallCols, loopMax: ui.loopMax });
 }
 
 /* ================= 分級與 Comfy ================= */
@@ -2091,6 +2095,11 @@ const generator = createGenerator({
     renderGoBar();
   },
   idle: () => {
+    // 無限抽印到設定的張數：這一輪印完就停，不接下一輪。
+    if (infinite && !stopAsked && ui.loopMax && loopSent >= ui.loopMax) {
+      infinite = false;
+      toast(`無限抽印完 ${loopSent} 張，到了設定的張數，停下了`);
+    }
     looping = infinite && !stopAsked;
     renderGoBar();
     if (!looping) return;
@@ -2182,9 +2191,26 @@ let seedNode = null;
 
 /** 抽牌那一列的狀態字：忙的時候講進度；閒著但「同一個人」開著卻沒作用時說一聲。 */
 function goStatusText(busy = generator.busy || looping || drawingRounds > 0) {
-  if (busy) return `${generator.pending ? `印製中，還有 ${generator.pending} 張` : "下一輪…"}${infinite ? "・無限抽開著" : ""}`;
+  if (busy) return `${generator.pending ? `印製中，還有 ${generator.pending} 張` : "下一輪…"}${infinite ? (ui.loopMax ? `・無限抽 ${loopSent} / ${ui.loopMax}` : "・無限抽開著") : ""}`;
   // 同一個人是「同一輪裡」第 2 張起才鎖長相：一次 1 張的時候開著也沒有作用。
   return settings.samePerson && settings.n < 2 ? "同一個人：一次 2 張以上才有作用" : "";
+}
+
+/** 無限抽開著時，開關旁邊的「印幾張停」：不限、10、20、50、100、200 張。記在這台瀏覽器（ui）。 */
+function loopMaxPicker() {
+  const sel = el(
+    "select",
+    { class: "select loop-max", "aria-label": "無限抽印到幾張停", title: "無限抽印到這麼多張就停（一輪印完才停，不會切掉一半）" },
+    ...LOOP_MAX_CHOICES.map((v) => el("option", { value: String(v) }, v ? `印 ${v} 張停` : "不限張數"))
+  );
+  sel.value = String(ui.loopMax);
+  sel.hidden = !infinite;
+  sel.onchange = () => {
+    ui.loopMax = Number(sel.value) || 0;
+    saveUi();
+    renderGoStatus();
+  };
+  return sel;
 }
 
 /** 只換狀態字，不整列重畫（改張數、開關的時候：重畫會把鍵盤焦點弄丟）。 */
@@ -2246,8 +2272,13 @@ function renderGoBar() {
     }),
     switchBox("無限抽", infinite, (v) => {
       infinite = v;
+      if (v) loopSent = 0;
       if (!v) stopAsked = true;
-    }, "抽完一輪自動接著抽下一輪，一直到按「停」"),
+      // 只把「印幾張停」露出來／收起來，不整列重畫（開關的鍵盤焦點會丟掉）。
+      const pick = $("go-bar").querySelector(".loop-max");
+      if (pick) pick.hidden = !v;
+    }, "抽完一輪自動接著抽下一輪，一直到按「停」，或印到右邊設定的張數"),
+    loopMaxPicker(),
     switchBox("同一個人", settings.samePerson, (v) => {
       setSettings({ samePerson: v });
       renderGoStatus();
@@ -2372,6 +2403,11 @@ function drawBatch(gen, { auto = false } = {}) {
       weights: Object.fromEntries(weights),
     },
   };
+  // 無限抽有設張數：自己按的那一下從 0 算起；最後一輪只抽剩下的張數（設 10 張、一次 4 張：4、4、2）。
+  if (gen && infinite) {
+    if (!auto) loopSent = 0;
+    if (ui.loopMax) intent.settings.n = Math.max(1, Math.min(intent.settings.n, ui.loopMax - loopSent));
+  }
   const epoch = drawEpoch;
   // 連按仍各抽一輪，依序做；不能讓兩輪的同一個人、亂數與成品順序交錯。
   drawingRounds++;
@@ -2493,6 +2529,8 @@ async function drawBatchNow(gen, intent, epoch) {
   S.saveShots(shots);
   // 一次抽超過 80 張時，最舊的幾張剛做好就被 trimWall 裁掉了：只送還在牆上的。
   if (gen && epoch === drawEpoch) {
+    // 先記張數再排進佇列：排進去就會重畫狀態字，那時「無限抽 4 / 10」才對得上。
+    if (infinite) loopSent += made.length;
     for (const shot of made) if (shots.includes(shot)) generator.enqueue(shot);
     // 排進佇列之後再存一次：存檔才知道它們還排著（去別頁晃一下回來接著印）。
     S.saveShots(shots);

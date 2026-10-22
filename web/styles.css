@@ -2415,6 +2415,10 @@ html[lang="en"] .pool > .panel-head .workspace-purpose {
   .go-bar > .seed-ctl {
     order: 5;
   }
+  /* 無限抽的「印幾張停」：自己一整行，緊接在開關下面（兩欄排的話會跟「同一個人」並排，看起來像它的選項）。 */
+  .go-bar > .loop-max {
+    grid-column: 1 / -1;
+  }
 }
 
 /* ---------- 成品牆 ---------- */
@@ -2688,9 +2692,11 @@ html[lang="en"] .pool > .panel-head .workspace-purpose {
 }
 
 @media (max-width: 640px) {
+  /* 手機上這排常停在「更多規則」這類字上面：半透明時後面的字透上來，看起來像疊了兩層字。底色塗滿。 */
   .go-float {
     left: var(--space-md);
     transform: translate(0, calc(100% + var(--space-lg)));
+    background: var(--color-paper-2);
   }
   .go-float[data-show="true"] {
     transform: none;
@@ -6155,6 +6161,15 @@ html[data-booting] :is(#lib-grid, #case-grid, #book-grid):empty::before {
     content: "";
     position: absolute;
     inset: -5px 0;
+  }
+  /* 頂欄的分級（全年齡／敏感／色情）30px 高：上下各擴 7px。左右是鄰居，不擴。 */
+  #rating button {
+    position: relative;
+  }
+  #rating button::before {
+    content: "";
+    position: absolute;
+    inset: -7px 0;
   }
 }
 

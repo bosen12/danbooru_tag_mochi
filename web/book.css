@@ -623,6 +623,25 @@
   }
 }
 
+/* 手指點的範圍 40px（看起來還是那顆 30px 的圈）：外面多一圈 5px 透明的框，底色只塗到框裡面，
+ * 原本那條 1px 的邊改成往內的影子；兩條線（::before／::after）照樣以圓心為準。以前常點到牌、打開了詳情。 */
+@media (pointer: coarse) {
+  .box-add {
+    width: 40px;
+    height: 40px;
+    margin: -5px;
+    border: 5px solid transparent;
+    background-clip: padding-box;
+    box-shadow: inset 0 0 0 1px var(--color-rule), 0 6px 14px -6px var(--color-shade);
+  }
+  /* 放進去的底色是 background 簡寫（會把 background-clip 蓋回 border-box），這裡再設一次。 */
+  .box-add[aria-pressed="true"] {
+    border-color: transparent;
+    background-clip: padding-box;
+    box-shadow: inset 0 0 0 1px var(--color-pool-2), 0 6px 14px -6px var(--color-shade);
+  }
+}
+
 .box-add:active {
   transform: scale(0.9);
   transition-duration: var(--dur-micro);
@@ -954,6 +973,52 @@
   .book-head,
   .book-tools-in {
     padding-inline: 10px;
+  }
+  /* 手機上第一張牌以前在螢幕四分之三的地方（標題、成就、搜尋、花色兩排、排序、只看用過的、引導各佔一排）。
+   * 收成：標題＋張數一排；搜尋框旁邊放「成就」；「只看用過的」塞進花色第二排的空位；引導只留一行。
+   * 標題那塊用 display: contents 把裡面的東西交給 .book-head 排（::after 照樣在，當換行）。 */
+  .book-title {
+    display: contents;
+  }
+  .book-head {
+    align-items: center;
+    gap: var(--space-xs) var(--space-sm);
+  }
+  .book-q {
+    flex: 1 1 0;
+    order: 2;
+    min-width: 0;
+  }
+  .book-ach {
+    order: 3;
+    min-height: 40px;
+  }
+  .book-bar {
+    justify-content: flex-start;
+    gap: var(--space-2xs);
+  }
+  #book-suits:not(:empty),
+  .book-order {
+    display: contents;
+  }
+  #book-used {
+    order: 1;
+    margin-left: auto;
+  }
+  #book-sort {
+    order: 2;
+    flex-basis: 100%;
+    margin-top: var(--space-2xs);
+  }
+  /* 花色還沒畫（開頁那一下）：「只看用過的」先不出來，免得自己佔一排、畫好再縮回去把牌往上拉。 */
+  .book-bar:has(#book-suits:empty) #book-used {
+    display: none;
+  }
+  .book-hint {
+    padding: var(--space-xs) var(--space-sm);
+  }
+  .book-hint span {
+    display: none;
   }
 }
 

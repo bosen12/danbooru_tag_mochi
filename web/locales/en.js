@@ -499,7 +499,7 @@ Enter 放上第一張，↓ 走進字盒|Enter adds the first result; ↓ moves 
 規則的「人物」沒開女生，女角色都收起來了。|Women are off under People in the rules, so female characters are hidden.
 不限|Any
 隨機（每張一個時代）|Random · one era per image
-不限制開著：所有牌都不受全年齡／敏感／色情限制，右邊選的分級是圖本身標的分級|No limit is on: every card is allowed regardless of rating; each image's rating is decided from the cards it drew
+不限制開著：所有牌都不受全年齡／敏感／色情限制，右邊選的分級是圖本身標的分級|No limit is on: every card is allowed regardless of rating; the rating picked on the right is how each image is labeled
 不限制：打開後所有牌都不受全年齡／敏感／色情限制|No limit: allow every card regardless of General / Sensitive / Explicit
 混合|Mixed
 混合（不同時代一起出現）|Mixed · eras can combine
@@ -526,7 +526,13 @@ Enter 放上第一張，↓ 走進字盒|Enter adds the first result; ↓ moves 
 同一個人|Same character
 同一個人：一次 2 張以上才有作用|Same character requires a batch of at least 2 images.
 一次抽好幾張時，第 2 張起沿用第 1 張的長相：同一個角色換姿勢、換衣服|Reuse the first image's appearance throughout a batch, with new poses and outfits.
-抽完一輪自動接著抽下一輪，一直到按「停」|Keep drawing new batches until you press Stop.
+抽完一輪自動接著抽下一輪，一直到按「停」，或印到右邊設定的張數|Keep drawing new batches until you press Stop, or until the count set on the right is reached.
+無限抽印到幾張停|Stop continuous generation after
+無限抽印到這麼多張就停（一輪印完才停，不會切掉一半）|Continuous generation stops after this many images (the current batch always finishes)
+印 {0} 張停|Stop after {0}
+不限張數|No limit
+無限抽 {0} / {1}|Continuous {0} / {1}
+無限抽印完 {0} 張，到了設定的張數，停下了|Continuous generation stopped after {0} images, as set
 只抽牌|Draw only
 抽並生圖|Draw & generate
 只抽牌，不送 Comfy（P）|Draw cards without generating an image (P)
