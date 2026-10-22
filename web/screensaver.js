@@ -147,7 +147,7 @@ export async function startScreensaver() {
     canvas,
     title,
     fresh,
-    el("div", { class: "saver-foot" }, el("span", { class: "saver-mark" }, "墨池"), el("span", { class: "saver-hint" }, matchMedia("(pointer: coarse)").matches ? "點一下回來" : "按 Enter 或空白鍵回來"), status, clock)
+    el("div", { class: "saver-foot" }, el("span", { class: "saver-mark" }, "墨池"), el("span", { class: "saver-hint" }, matchMedia("(pointer: coarse)").matches ? "點一下回來" : "點一下或按 Enter 回來"), status, clock)
   );
   const state = { layer, gl: null, timer: 0, poll: 0, jobsPoll: 0, seen: new Set(), at: performance.now(), done: null, comfy: true, jobs: [] };
   active = state;
@@ -418,7 +418,7 @@ export function mountScreensaver() {
   if (sound && !document.getElementById("saver-btn")) {
     sound.before(el("button", { class: "ghost icon-btn", id: "saver-btn", type: "button", title: "螢幕保護", "aria-label": "螢幕保護設定", html: MOON, onclick: openSettings }));
   }
-  // 滑鼠動到、按了別的鍵：右下「按 Enter 或空白鍵回來」亮一下，告訴人怎麼回去。
+  // 滑鼠動到、按了別的鍵：左下「點一下或按 Enter 回來」亮一下，告訴人怎麼回去（游標看得到之後，點一下也會回來）。
   let eatClickUntil = 0;
   const nudge = () => {
     const hint = active?.layer.querySelector(".saver-hint");

@@ -100,6 +100,14 @@ let shown = 0;
 // 牌的節點留著重用：換排序時同一張牌是同一個節點，才滑得過去，圖也不必重載。
 const cells = new Map();
 const ui = S.typedLike({ suit: "all", group: "", query: "", order: "desc", usedOnly: false, charGender: "" }, readUi());
+// 搜尋字跟著這個分頁走（store.js 的 saveTab／loadTab，跟合成池同一套）：去墨池放一張牌再回來，剛才找的字還在，
+// 「回到剛才看的地方」（spotSig 裡有搜尋字）也對得上。重新整理照舊是空的；離開太久（半小時）不帶回來。
+const QUERY_TAB = "mochi.book.query.v1";
+{
+  const back = S.loadTab(QUERY_TAB);
+  if (back && typeof back.q === "string" && Date.now() - (Number(back.at) || 0) < 30 * 60 * 1000) ui.query = back.q;
+}
+addEventListener("pagehide", () => S.saveTab(QUERY_TAB, { q: ui.query, at: Date.now() }));
 // 存檔裡的花色不是現在有的（改版、壞掉）：回到「全部」，不然卡冊整片是空的。
 if (ui.suit !== "all" && !CARD_SUITS.includes(ui.suit)) ui.suit = "all";
 

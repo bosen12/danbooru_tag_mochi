@@ -1383,6 +1383,7 @@ ComfyUI 沒有回報 checkpoint|ComfyUI returned no checkpoints.
 生成的圖和牌的插畫都算；模糊的只看得到顏色，牌名照樣看得到。|Applies to generated images and card art. Blurred images show only their colors; card names stay readable.
 現在看看|Preview now
 按 Enter 或空白鍵回來|Press Enter or Space to return
+點一下或按 Enter 回來|Click or press Enter to return
 點一下回來|Tap to return
 新的一張|New image
 30 秒|30 sec
