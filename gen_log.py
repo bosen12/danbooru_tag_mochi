@@ -25,11 +25,16 @@ LOG_PATH = Path(os.environ.get("GEN_LOG_PATH") or ROOT / "data" / "gen_log.jsonl
 MAX_POSITIVE = 12000
 MARKS = ("discard",)
 PAGE_MAX = 2000
+# 最多留幾張（最新的那幾張）。以前沒有上限：兩萬筆時檔案 16 MB，每印一張重算統計要 0.7 秒，一直變慢。
+# 超過上限一成才整理一次（不是每寫一筆就重寫整份），最舊的直接丟掉、不另外封存。GEN_LOG_MAX 可以改。
+MAX_ENTRIES = max(200, int(os.environ.get("GEN_LOG_MAX") or 5000))
 
 _LOCK = threading.Lock()
 # 整段是 (tag:1.2) 才是權重（跟 engine.js 的 parseWeighted 一樣）；字本身的括號（star (sky)）留著。
 _WEIGHTED = re.compile(r"^\((.+):(\d+(?:\.\d+)?)\)$")
 _cache: dict = {"key": None, "items": []}
+# 檔案現在大概有幾行（第一次寫的時候數一次，之後每寫一行加一）：超過上限一成就整理。
+_lines: dict = {"path": None, "n": -1}
 
 
 def _path() -> Path:
@@ -120,6 +125,65 @@ def _append(row: dict) -> None:
             pass
         with path.open("a", encoding="utf-8") as f:
             f.write(line)
+        if _lines["path"] != str(path) or _lines["n"] < 0:
+            _lines["path"] = str(path)
+            _lines["n"] = _count_lines(path)
+        else:
+            _lines["n"] += 1
+        if _lines["n"] > MAX_ENTRIES + max(50, MAX_ENTRIES // 10):
+            _lines["n"] = _trim(path)
+
+
+def _count_lines(path: Path) -> int:
+    try:
+        with path.open("rb") as f:
+            return sum(1 for _ in f)
+    except OSError:
+        return 0
+
+
+def _trim(path: Path) -> int:
+    """只留最新的 MAX_ENTRIES 張（照時間）和它們的註記，其他丟掉。先寫暫存檔再換上：寫到一半斷電，原本那份還在。
+    換不上（Windows 上別人正開著讀）就這次先不整理，回原本的行數，下一次再試。呼叫的人拿著 _LOCK。"""
+    gens: list[tuple] = []
+    marks: dict[str, str] = {}
+    total = 0
+    try:
+        with path.open(encoding="utf-8", errors="replace") as f:
+            for raw in f:
+                total += 1
+                try:
+                    row = json.loads(raw)
+                except ValueError:
+                    continue
+                if not isinstance(row, dict) or not row.get("id"):
+                    continue
+                if row.get("t") == "gen":
+                    gens.append((row.get("at") or 0, str(row["id"]), raw if raw.endswith("\n") else raw + "\n"))
+                elif row.get("t") == "mark":
+                    marks[str(row["id"])] = raw if raw.endswith("\n") else raw + "\n"
+    except OSError:
+        return total
+    if len(gens) <= MAX_ENTRIES:
+        return total
+    gens.sort(key=lambda g: (g[0], g[1]))
+    keep = gens[-MAX_ENTRIES:]
+    ids = {g[1] for g in keep}
+    lines = [g[2] for g in keep] + [m for jid, m in marks.items() if jid in ids]
+    tmp = path.with_name(f"{path.name}.{os.getpid()}.trim")
+    try:
+        with tmp.open("w", encoding="utf-8", newline="") as f:
+            f.writelines(lines)
+            f.flush()
+            os.fsync(f.fileno())
+        os.replace(tmp, path)
+    except OSError:
+        try:
+            tmp.unlink()
+        except OSError:
+            pass
+        return total
+    return len(lines)
 
 
 def record(entry: dict) -> None:
