@@ -3417,7 +3417,8 @@ function showDonePill() {
     );
     document.body.append(donePill);
   }
-  donePill.querySelector("img").src = viewSrc(latest.image) || "";
+  // 膠囊上的圖只有 34×46：用牆上那張已經載好的縮圖（wallSrc），以前另外抓一張整張 webp（每批幾百 KB）。
+  donePill.querySelector("img").src = wallSrc(latest.image) || "";
   donePill.querySelector("b").textContent = doneQueue.length > 1 ? `印好 ${doneQueue.length} 張了` : "印好了";
   const fresh = donePill.dataset.show !== "true";
   donePill.dataset.show = "true";

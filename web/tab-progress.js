@@ -47,9 +47,13 @@ export function tabProgress({ base = document.title } = {}) {
   const ok = () => cssVar("--color-ok", "#3f9b5a");
   const danger = () => cssVar("--color-danger", "#c0392b");
 
+  // 顏色讀一次就記著（一趟印製裡重畫幾十次）：每次 getComputedStyle 都逼瀏覽器先把整頁樣式算完，
+  // 印製中牆上正在演動畫，手機上一趟加起來兩百多毫秒。回到 idle（印完、切回來）再重讀，換了主題也跟得上。
+  let colors = {};
   function cssVar(name, fallback) {
+    if (name in colors) return colors[name];
     const v = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
-    return v || fallback;
+    return (colors[name] = v || fallback);
   }
 
   function paintTitle() {
@@ -64,19 +68,23 @@ export function tabProgress({ base = document.title } = {}) {
 
   function paintIcon() {
     if (!link) return;
-    // 同一格百分比不重畫：toDataURL 一次幾毫秒，進度事件一秒好幾則。
-    const key = state + ":" + (state === "run" ? Math.round(p * 40) : "");
+    // 同一格百分比不重畫：toDataURL 一次幾毫秒，進度事件一秒好幾則。分頁列上的圖示只有 16～32px，
+    // 24 格就看得出在走（以前 40 格，手機上一張要重畫 40 次）。
+    const key = state + ":" + (state === "run" ? Math.round(p * 24) : "");
     if (key === lastKey) return;
     lastKey = key;
     if (state === "idle") {
+      colors = {};
       setIcon(baseHref, baseType);
       return;
     }
     try {
+      // 照 64 格的座標畫，畫布只開 32×32（分頁列最大就是 32px）：像素少四倍，toDataURL 跟著快。
       const S = 64;
       const c = document.createElement("canvas");
-      c.width = c.height = S;
+      c.width = c.height = S / 2;
       const g = c.getContext("2d");
+      g.scale(0.5, 0.5);
       if (logoReady) {
         // 圖示縮小一點放中間，外面留一圈給進度環。
         g.drawImage(logo, 10, 10, S - 20, S - 20);

@@ -1488,6 +1488,12 @@ let LORA_PUSH_EPOCH = localStorage.getItem("yz-lora-push-epoch") || "";
 let LORA_PUSH_VER = +(localStorage.getItem("yz-lora-push-ver") || 0);
 let LORA_POLL_MS = 2500;
 let LORA_POLL_TIMER = 0;
+// 連不上（伺服器關了、網路斷了）：每失敗一次等久一點，最多 30 秒；連上就回到原本的節奏。
+// 以前斷線時照樣每 2.5 秒打一次，開兩個分頁 40 秒就打了 30 次。
+let LORA_FAIL_MS = 0;
+export function loraFailDelay(prev) {
+  return Math.min(30000, Math.round((prev || 1600) * 1.6));
+}
 export function loraPollDelay(hidden, prev) {
   if (!hidden) return 2500;
   return Math.min(30000, Math.round((prev || 2500) * 1.6));
@@ -1528,9 +1534,10 @@ async function pollLoraPush() {
   }
   if (long && !failed && !changed && performance.now() - t0 < 1000) LORA_LONG_POLL = false;
   LORA_POLL_MS = loraPollDelay(document.hidden, LORA_POLL_MS);
+  LORA_FAIL_MS = failed ? loraFailDelay(LORA_FAIL_MS) : 0;
   // 長輪詢本身就在伺服器那邊等過了，回來就接著問；斷線時照舊隔一段再試。
   // 在等的時候切回前景（LORA_POLL_SOON）：這條回來就馬上換成前景的長輪詢。
-  const next = (long && LORA_LONG_POLL && !failed) || (LORA_POLL_SOON && !failed) ? 0 : LORA_POLL_MS;
+  const next = (long && LORA_LONG_POLL && !failed) || (LORA_POLL_SOON && !failed) ? 0 : Math.max(LORA_POLL_MS, LORA_FAIL_MS);
   LORA_POLL_SOON = false;
   LORA_POLLING = false;
   clearTimeout(LORA_POLL_TIMER);
