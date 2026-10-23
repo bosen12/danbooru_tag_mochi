@@ -3361,6 +3361,10 @@ class GenJob:
         with self.cond:
             if self.finished:
                 return
+            # 按過停的工作：接下來不管 ComfyUI 回什麼錯（中斷、從佇列拿掉），都說「已取消」。
+            # 以前別的裝置按停時，這邊收到的是「ComfyUI 中斷了這張」，網頁當成印壞了掛在牆上。
+            if event == "error" and self.cancelled:
+                data = {**(data if isinstance(data, dict) else {}), "error": "已取消", "code": "cancelled"}
             if isinstance(data, dict) and data.get("prompt_id"):
                 self.prompt_id = data["prompt_id"]
             if event == "preview":

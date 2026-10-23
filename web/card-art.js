@@ -447,6 +447,8 @@ export const STILL_LIFE = new Set([
   "pocket watch", "cane", "birdcage", "violin", "lace", "rose", "clock", "pillow", "bed sheet", "chair",
   "swivel chair", "office chair", "gaming chair", "shower head", "innertube", "mirror",
   "full-length mirror", "tissue box", "basketball (object)", "soccer ball", "tennis ball",
+  // 2026-10-23：彩球照場景烘會畫成一條公園步道，看不到彩球。
+  "pom pom (cheerleading)",
   "volleyball (object)", "baseball (object)", "bowling ball", "golf ball", "tennis racket",
   "baseball bat", "golf club", "badminton racket", "table tennis paddle", "baseball mitt",
   "bow (weapon)", "shuttlecock", "table tennis ball", "arrow (projectile)", "guitar", "book", "pen",

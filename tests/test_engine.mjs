@@ -5687,7 +5687,9 @@ function indoorOutdoorClash(have) {
     // 第四十一次（2026-10-14）：WAI v17 實測後，Danbooru 併掉的舊名、替代字加成同中文名的卡（alt_names.json，29 張），
     // 截肢補動作、上衣補下著在收尾後再補一次。池子變大，這張整張換過。仍是 1girl solo，沒有男生，也沒有人類陰莖。
     // 2026-10-16：細肩帶背心算上衣（GARMENT_KEYS 加 camisole），拉吊帶背心沒穿著它就不進池，亂數往後挪一格：hip focus → foot focus。
-    "1girl, solo, very short hair, yellow eyes, aqua hair, sidelocks, large breasts, hair between eyes, bindi, forehead mark, facial mark, long legs, nude, red hat, hat, semi-rimless eyewear, glasses, red bowtie, bowtie, high heels, masturbation, kicking, profile, averting eyes, :q, foot focus, streetcar, outdoors, sunrise, dappled sunlight, sparks, scissors, nsfw, explicit, masterpiece, best quality, amazing quality");
+    // 2026-10-23：摔角、觀眾、公開場合 28 個字進池，牌序再位移。這張換成藍帽、地鐵站。仍是 1girl solo，沒有男生或人類陰莖。
+    // 2026-10-23 第二輪：主人指定加回 12 個字、族裔這批進池，六招限摔角場地。這張換成籃球服、天堂。仍是 1girl solo，沒有男生或人類陰莖。
+    "1girl, solo, very short hair, yellow eyes, aqua hair, sidelocks, large breasts, breast expansion, purple lips, lipstick, dreadlocks, basketball uniform, sportswear, bra, gothic, pantyhose, masturbation through clothes, outstretched arm, cropped torso, looking afar, evil smile, crazy eyes, heaven, outdoors, sunrise, shade, pizza, can, nsfw, explicit, masterpiece, best quality, amazing quality");
   ok("drawOne exposes shadow diagnostics", Array.isArray(shadowIntegrationDraw.shadowViolations));
 
   const eatProneShadow = validateSupportShadow({
@@ -7865,6 +7867,9 @@ function indoorOutdoorClash(have) {
     "gym uniform", "track uniform", "soccer uniform", "basketball uniform",
     "tennis uniform", "volleyball uniform", "baseball uniform",
     "cheerleader", "buruma",
+    // 2026-10-23 摔角那批：跟 engine 的 SPORTWEAR_NEEDS 同步（摔角服 implies 運動服）。
+    "wrestling", "sumo", "martial arts", "mixed martial arts", "wrestling ring", "arena",
+    "wrestling outfit", "wrestler", "singlet",
   ]);
   let pasties = 0;
   let pastiesHidden = 0;

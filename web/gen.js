@@ -243,6 +243,14 @@ export function createGenerator(hooks) {
         return false;
       }
       if (leaving && !(err instanceof GenError)) return false;
+      // 伺服器說這張已經被取消（別的分頁、別的裝置按了停，或從 ComfyUI 那邊刪掉）：跟自己按停一樣算取消，
+      // 不算印壞（以前會變成「印壞了：已取消」留在牆上，也算進連續失敗三張）。
+      if (err instanceof GenError && (err.message === "已取消" || err.code === "cancelled")) {
+        shot.status = "cancelled";
+        shot.note = "取消了";
+        hooks.update(shot);
+        return false;
+      }
       // 伺服器說 ComfyUI 連不上（503、沒有別的代號）：這張還沒送出去，不算壞。排回去等 ComfyUI 開好（pump 的 "comfy"）。
       // 以前算一張失敗：ComfyUI 重開那 30～60 秒連續失敗三張，無限抽就停了。
       if (err instanceof GenError && err.status === 503 && !err.code && !current.job) {

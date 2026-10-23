@@ -34,9 +34,9 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 CARDS = ROOT / "web" / "cards"
 # 換版時標記跟著換：有 v1 標記、沒有 v2 標記的人，下次啟動會去補 v2 多的那些。
-MARKER = CARDS / ".card-art-v8"
+MARKER = CARDS / ".card-art-v9"
 # 縮圖包已經解好（原圖包還沒）：中斷、下次啟動直接從原圖包接著抓。
-THUMB_MARKER = CARDS / ".card-art-v8-thumbs"
+THUMB_MARKER = CARDS / ".card-art-v9-thumbs"
 # 縮圖包裡記的「要換新的那些卡」（上一版公開包放的、這一版重畫了）：原圖包解的時候照它換原圖。
 UPGRADE = CARDS / ".card-art-upgrade.json"
 
@@ -53,11 +53,13 @@ UPGRADE = CARDS / ".card-art-upgrade.json"
 # v8（2026-10-14）：2570 張。WAI v17 實測後的同名卡（scripts/alt_names.json）：舊名、替代字
 #   （no legwear、sleeves past elbows、column、kyoto、gothic…）加成卡；只認新名的原卡（missing legwear、
 #   three-quarter sleeves、colonnade…）不再放。v7 的卡沒有重畫。已經有 v7 的人：缺新加的那幾張 → 抓一次補上。
+# v9（2026-10-24）：2613 張。補上摔角、觀眾、公開場合、族裔（Grok 兩輪實測）的全年齡牌 43 張；
+#   彩球改成靜物。v8 的卡沒有重畫。已經有 v8 的人：缺那 43 張 → 抓一次補上。
 # CARD_ART_BASE 可以換來源（測試時指向本機的 file:// 資料夾）；大小、雜湊照樣要對。
-BASE = os.environ.get("CARD_ART_BASE") or "https://github.com/bosen12/danbooru_tag_mochi/releases/download/card-art-v8/"
-THUMBS = {"name": "card-art-thumbs.zip", "size": 30096736, "sha256": "7b861cb1132ff8429af66992d23ee2b28f9ec9129264a6426494a273498d0a03"}
-FULL = {"name": "card-art-full.zip", "size": 103340808, "sha256": "0cf074d88164e3aa975adaf04b50ba25c0fa1a28e3e921c35f3ec05766f6d681"}
-EXPECTED = 2570  # 這一版全年齡的張數
+BASE = os.environ.get("CARD_ART_BASE") or "https://github.com/bosen12/danbooru_tag_mochi/releases/download/card-art-v9/"
+THUMBS = {"name": "card-art-thumbs.zip", "size": 30669374, "sha256": "eba5c7ffe6fc0f093c31a6de597af15126f1391f93506f7e0e3ce5912ebfa9fa"}
+FULL = {"name": "card-art-full.zip", "size": 105139230, "sha256": "09c1647ce5502c2c9d6034b01aaa4570b0951c1549bfc12dd632e3a3f17c214d"}
+EXPECTED = 2613  # 這一版全年齡的張數
 
 
 JOBS = ROOT / "scripts" / "card_jobs.json"

@@ -2086,6 +2086,8 @@ const generator = createGenerator({
       else if (shot.status === "failed") sfx.fail();
       shot._heard = shot.status;
     }
+    // 按停（或別的地方取消）的那幾張：留一下讓人看到「取消了」，再一起從牆上收掉。
+    if (shot.status === "cancelled" && shot.note === "取消了") scheduleCancelSweep();
     updateShot(shot);
     discord?.shot(shot);
     // 拿到伺服器的工作編號就先存一次：畫到一半重新整理也接得回來。
@@ -3562,6 +3564,47 @@ function removeShot(shot) {
   // 印好的那張單獨撤下：出圖日誌記一筆「不要」（牌的戰績用）。
   if (shot.status === "done") markGenLog(shot.job, "discard");
   toast("撤下了一張", { action: { label: "復原", key: "Z", run: () => restoreShot(shot, at) } });
+}
+
+/*
+ * 取消的成品自己收掉。以前按了停，排隊的那幾張變成「取消了」一直掛在牆上，要重新整理才會清
+ * （開頁時本來就會把取消、印壞的拿掉）。從 Mac 遠端看的時候最明顯：一按停牆上一整排灰框。
+ * 現在停下來 1.2 秒後一起縮掉、旁邊的補位，提示只跳一次，可以「復原」放回原位（照舊能「再印一次」）。
+ * 只收「取消了」：連續失敗三張、連不到主機而停下來的那幾張留著，上面寫著為什麼。
+ */
+let cancelSweepTimer = 0;
+function scheduleCancelSweep() {
+  clearTimeout(cancelSweepTimer);
+  cancelSweepTimer = setTimeout(sweepCancelled, 1200);
+}
+
+function sweepCancelled() {
+  const gone = shots
+    .map((s, i) => [s, i])
+    .filter(([s]) => s.status === "cancelled" && s.note === "取消了" && !hiresBusy(s));
+  if (!gone.length) return;
+  const ids = new Set(gone.map(([s]) => s.id));
+  shots = shots.filter((s) => !ids.has(s.id));
+  const wall = $("wall");
+  const nodes = gone.map(([s]) => wall.querySelector(`.shot[data-id="${CSS.escape(String(s.id))}"]`)).filter(Boolean);
+  // 每一張各自縮掉，全部縮完再一次補位（不要一張一張跳）。
+  let left = nodes.length;
+  const settle = () => {
+    if (--left > 0) return;
+    flip(wall, () => nodes.forEach((n) => n.remove()));
+  };
+  if (nodes.length) nodes.forEach((n) => leave(n, settle));
+  syncWallEmpty(shots.length > 0);
+  S.saveShots(shots);
+  renderGoFloat();
+  toast(gone.length > 1 ? `收掉了 ${gone.length} 張取消的` : "收掉了一張取消的", {
+    action: {
+      label: "復原",
+      key: "Z",
+      // 照原本的位置由前往後放回去，每一張的位置才對得上。
+      run: () => gone.forEach(([s, i]) => restoreShot(s, i)),
+    },
+  });
 }
 
 function restoreShot(shot, at) {

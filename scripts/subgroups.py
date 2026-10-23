@@ -192,6 +192,10 @@ SUBS = {
             "yellow skin", "orange skin", "aqua skin", "metal skin",
             "multicolored skin", "two-tone skin", "colored extremities", "patchwork skin", "albino",
         ]),
+        # 族裔不放種族（精靈獸人）。中文不用「皮膚・」開頭，免得把膚色那格的翻譯拆開。
+        ("ethnicity", "族裔", [
+            "east asian", "desi",
+        ]),
         ("skin_flush", "皮膚・臉紅汗濕", [
             "blush", "nose blush", "body blush", "blush stickers", "sweat", "nervous sweating",
             "sweatdrop", "wet", "wet hair", "steaming body",
@@ -397,7 +401,7 @@ SUBS = {
             "pointing at self", "pointing up",
         ]),
         ("pose_two", "動作・兩人互動", [
-            "hug", "hug from behind", "cuddling", "clinging", "kiss", "holding hands",
+            "hug", "bearhug", "head between thighs", "hug from behind", "cuddling", "clinging", "kiss", "holding hands",
             "interlocked fingers", "arms around neck", "hand on another's head",
             "hand on another's shoulder", "hand on another's face", "hand on another's cheek",
             "kabedon", "sitting on lap", "sitting between legs", "lap pillow", "princess carry",
@@ -418,7 +422,7 @@ SUBS = {
             "adjusting hair", "tying hair", "adjusting clothes", "adjusting eyewear",
             "adjusting gloves", "clothes tug", "clothes grab", "lifting own clothes",
             "washing hair", "after bathing", "splashing", "pillow hug", "self hug", "head on pillow",
-            "face in pillow", "smelling", "licking", "punching", "struggling", "between legs",
+            "face in pillow", "smelling", "licking", "punching", "struggling", "defeat", "between legs",
             "breast shake", "fanning breasts", "wiping breasts",
             ]),
         ("pose_hold", "動作・手持物", [
@@ -440,7 +444,7 @@ SUBS = {
             "back focus", "hand focus", "thigh focus", "pectoral focus", "hair focus",
             "navel focus", "leg focus",
             "spread cleavage", "wardrobe malfunction", "accidental exposure",
-            "groping", "voyeurism", "breastfeeding", "netorare", "cheating (relationship)",
+            "groping", "sexual harassment", "pulling another's clothes", "voyeurism", "breastfeeding", "netorare", "cheating (relationship)",
             "face to breasts", "breasts on head", "breast pillow", "breasts on another's back",
             "covering another's breasts", "imminent breast grab", "cheek-to-breast",
             "tickling breasts", "torso grab", "pectoral docking", "surrounded by hands",
@@ -504,7 +508,7 @@ SUBS = {
             "nursing fingering", "reverse nursing fingering", "reverse nursing handjob", "pecjob",
         ]),
         ("sex_touch", "性愛・自慰愛撫", [
-            "masturbation", "female masturbation", "male masturbation",
+            "masturbation", "public masturbation", "masturbating while watching", "female masturbation", "male masturbation",
             "masturbation through clothes", "mutual masturbation", "hand in panties",
             "fingering", "anal fingering", "spread pussy", "spread ass", "spread anus",
             "pussy peek", "nipple tweak", "nipple pull", "ass grab", "crotch grab",
@@ -545,7 +549,7 @@ SUBS = {
             "after anal", "after fellatio", "after paizuri", "after ejaculation", "afterglow",
         ]),
         ("sex_bdsm", "性愛・拘束支配", [
-            "bondage", "bdsm", "restrained", "bound ankles", "frogtie", "hogtie",
+            "bondage", "bdsm", "restrained", "public bondage", "bound ankles", "frogtie", "hogtie",
             "tape bondage", "suspension", "crucifixion", "crotch rope", "butt plug",
             "anal beads", "leash pull", "pet play", "slave", "femdom", "pegging",
             "prostate milking", "humiliation", "objectification", "human furniture",
@@ -599,6 +603,10 @@ SUBS = {
             "table tennis", "soccer", "golf", "archery", "boxing", "skiing",
             "horseback riding", "riding bicycle",
             "fighting",
+            "wrestling", "suplex", "german suplex", "submission hold", "armlock", "scissorhold",
+            "choke hold", "triangle choke", "piledriver (wrestling)", "pinned", "catfight",
+            "mixed-sex combat",
+            "arm wrestling", "sumo", "mixed martial arts", "martial arts", "cheering",
             "battle", "riding", "broom riding",
         ]),
         ("act_water", "活動・玩水洗浴", [
@@ -645,7 +653,7 @@ SUBS = {
         ("op_uniform", "連身・制服套裝", [
             "school uniform", "serafuku", "gakuran", "gym uniform", "track uniform",
             "sportswear", "basketball uniform", "soccer uniform", "baseball uniform",
-            "tennis uniform", "volleyball uniform", "cheerleader", "maid", "apron", "miko",
+            "tennis uniform", "volleyball uniform", "cheerleader", "wrestler", "referee", "maid", "apron", "miko",
             "nun", "police uniform", "military uniform", "suit", "business suit", "pant suit",
             "tuxedo", "hospital gown", "racing suit", "mecha pilot suit", "overalls", "jumpsuit",
             "idol clothes", "magical girl", "superhero costume", "santa costume",
@@ -661,7 +669,7 @@ SUBS = {
             "side-tie bikini bottom",
         ]),
         ("op_body", "連身・緊身特裝", [
-            "leotard", "black leotard", "highleg leotard", "thong leotard", "playboy bunny",
+            "leotard", "wrestling outfit", "singlet", "black leotard", "highleg leotard", "thong leotard", "playboy bunny",
             "reverse bunnysuit", "bodysuit", "black bodysuit", "blue bodysuit", "red bodysuit",
             "open bodysuit", "torn bodysuit", "latex bodysuit", "catsuit", "bodystocking",
             "living clothes", "straitjacket", "bikini armor", "power armor",
@@ -758,6 +766,7 @@ SUBS = {
             "animal costume",
             "formal clothes",
             "winter clothes", "goth fashion", "jirai kei", "yume kawaii", "arabian clothes",
+            "indian clothes",
             "ouji fashion", "biker clothes", "ainu clothes", "y2k fashion", "cyber fashion",
             "streetwear", "punk",
         ]),
@@ -769,7 +778,7 @@ SUBS = {
         ]),
         ("acc_head", "飾品・帽子頭飾", [
             "hat", "top hat", "sun hat", "witch hat", "cowboy hat", "sombrero", "beret",
-            "baseball cap", "police hat", "nurse cap", "chef hat", "hard hat", "helmet",
+            "baseball cap", "police hat", "nurse cap", "chef hat", "hard hat", "helmet", "boxing headgear",
             "bicycle helmet", "swim cap", "bonnet", "hood", "turban", "hijab", "veil",
             "crown", "tiara", "circlet", "kokoshnik", "laurel crown", "halo",
             "maid headdress", "fake animal ears", "hair ornament", "hair ribbon", "hairband",
@@ -787,7 +796,7 @@ SUBS = {
         ]),
         ("acc_face", "飾品・眼鏡面具耳機", [
             "glasses", "coke-bottle glasses", "sunglasses", "goggles", "eyewear on head",
-            "eyepatch", "medical eyepatch", "mask", "masquerade mask", "headphones",
+            "eyepatch", "medical eyepatch", "mask", "wrestling mask", "masquerade mask", "headphones",
             "headphones around neck", "earbuds",
             "mask on head", "fox mask",
             "ear covers", "headset",
@@ -821,6 +830,7 @@ SUBS = {
             "gloves", "black gloves", "elbow gloves", "fingerless gloves", "latex gloves",
             "boxing gloves", "belt", "black belt", "brown belt", "belt buckle", "buckle",
             "obi", "sash", "o-ring", "armband", "shoulder armor", "knee pads",
+            "elbow pads", "championship belt", "martial arts belt",
             "wristband", "gauntlets", "pauldrons",
             "bridal gauntlets", "epaulettes",
             "white gloves", "red gloves", "brown gloves", "blue gloves", "purple gloves", "pink gloves",
@@ -885,7 +895,7 @@ SUBS = {
         ("pl_sport", "地點・運動場", [
             "fitness gym", "dojo", "stadium", "sports court", "basketball court",
             "tennis court", "soccer field", "baseball stadium", "golf course", "running track",
-            "boxing ring", "bowling alley", ]),
+            "boxing ring", "wrestling ring", "arena", "bowling alley", ]),
         ("pl_public", "地點・公共設施", [
             "hospital", "clinic", "prison", "prison cell", "dungeon",
             "public restroom", "toilet stall", "glory hole", "sewer", "parking lot",
@@ -921,7 +931,8 @@ SUBS = {
             "nature",
         ]),
         ("pl_history", "地點・古蹟宗教", [
-            "shrine", "torii", "temple", "pagoda", "east asian architecture", "pavilion",
+            "shrine", "torii", "temple", "pagoda", "east asian architecture",
+            "middle eastern architecture", "pavilion",
             "palace", "castle", "throne", "throne room", "mansion", "gothic architecture",
             "colonnade", "colosseum", "ruins", "altar", "graveyard", "battlefield",
             "church", "cathedral",
@@ -1040,6 +1051,7 @@ SUBS = {
             "baseball bat", "baseball mitt", "tennis racket", "badminton racket",
             "table tennis paddle", "golf club", "dumbbell", "skateboard",
             "surfboard", "innertube", "beach umbrella", "beach towel", "fishing rod",
+            "pom pom (cheerleading)",
             "ball", "beachball",
         ]),
         ("obj_flag", "物品・旗幟", [

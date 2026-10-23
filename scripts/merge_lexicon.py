@@ -5161,6 +5161,197 @@ def load_characters() -> list[dict]:
     return data
 
 
+def extra_wrestle_tags() -> list[dict]:
+    """摔角、觀眾、公開場合。2026-10-23 用 WAI v17 測過，只收 D≥3/5 的字。
+
+    觀眾和擁擠照 crowd：mutex 空、由 groups.py 歸背景，不用 needs crowd。
+    招式跟 fighting 一樣佔 activity，needs pair，不限性別。catfight 是女生打架，needs 2female。
+    熊抱鎖測出來是相擁，放兩人互動，不佔活動格。勝利姿勢照 fighting stance 的 body_pose。
+    摔角服是運動連身衣，三檔都進；不照 leotard 的女性和 tease/flash，那兩格對不上測到的圖。
+    彩球佔手持格。沒有活動鉤子之前抽不到，鉤子在 engine 的 ACT_PROP，這裡不動。
+    腰帶用 waist，跟 belt 同一格，正常模式才抽得到。
+    2026-10-23 第二輪：專案主要把上一輪 D 不到 3/5 的 12 個也加進來。
+    招式仍佔 activity、needs pair。鎖喉不讓裸絞 implies。
+    頭夾腿間兩張算過的都是穿衣服、臉夾在大腿間，不是性交，所以三檔都進、歸誘惑。
+    摔角緊身衣照摔角服，implies 運動服。裁判照摔角手放連身衣，模型畫成西裝也不改成西裝。
+    """
+    all_h = list(HEATS)
+    modern = ["modern"]
+    sex = ["sex"]
+    edo_mod = ["edo", "modern"]
+
+    def pose(tag, mutex=None, implies=None, needs=None, heat=None, era=None, zh=""):
+        return {
+            "tag": tag,
+            "section": "pose",
+            "gate": "any",
+            "heat": list(heat or all_h),
+            "mutex": mutex,
+            "bind": [],
+            "implies": implies or [],
+            "layer": "normal",
+            "era": era or ["any"],
+            "needs": needs or [],
+            "zh": zh,
+        }
+
+    def env(tag, mutex=None, implies=None, era=None, zh=""):
+        return {
+            "tag": tag,
+            "section": "env",
+            "gate": "any",
+            "heat": all_h,
+            "mutex": mutex,
+            "bind": [],
+            "implies": implies or [],
+            "layer": "normal",
+            "era": era or modern,
+            "zh": zh,
+        }
+
+    def cloth(tag, mutex=None, layer="accessory", implies=None, zh=""):
+        return {
+            "tag": tag,
+            "section": "clothing",
+            "gate": "any",
+            "heat": all_h,
+            "mutex": mutex,
+            "bind": [],
+            "implies": implies or [],
+            "layer": layer,
+            "era": modern,
+            "zh": zh,
+        }
+
+    return [
+        env("audience", era=["any"], zh="觀眾"),
+        env("crowded", era=["any"], zh="擁擠"),
+        env("wrestling ring", mutex="place", implies=["indoors"], zh="摔角擂台"),
+        # 圓頂看台可室內可室外，不單向暗示。照 sports court。
+        # 「競技場」已經是 colosseum（古羅馬那種）。arena 是現代有看台的比賽場館。
+        env("arena", mutex="place", zh="競技館"),
+        env("pom pom (cheerleading)", mutex="held_prop", zh="彩球"),
+        pose("wrestling", mutex="activity", era=modern, zh="摔角"),
+        pose("suplex", mutex="activity", needs=["pair"], zh="背摔"),
+        pose("german suplex", mutex="activity", needs=["pair"], zh="德式背摔"),
+        pose("submission hold", mutex="activity", needs=["pair"], zh="關節技"),
+        pose("armlock", mutex="activity", needs=["pair"], zh="鎖臂"),
+        pose("scissorhold", mutex="activity", needs=["pair"], zh="剪刀腳"),
+        pose("choke hold", mutex="activity", needs=["pair"], zh="鎖喉"),
+        pose("triangle choke", mutex="activity", needs=["pair"], zh="三角絞"),
+        pose("piledriver (wrestling)", mutex="activity", needs=["pair"], zh="倒插"),
+        pose("pinned", mutex="activity", needs=["pair"], zh="壓制"),
+        pose("catfight", mutex="activity", needs=["2female"], zh="女生打架"),
+        pose("arm wrestling", mutex="activity", needs=["pair"], zh="比腕力"),
+        pose("sumo", mutex="activity", era=edo_mod, zh="相撲"),
+        pose("mixed martial arts", mutex="activity", era=modern, zh="綜合格鬥"),
+        pose("martial arts", mutex="activity", zh="武術"),
+        pose("cheering", mutex="activity", zh="加油歡呼"),
+        pose("victory pose", mutex="body_pose", zh="勝利姿勢"),
+        pose("bearhug", needs=["pair"], zh="熊抱鎖"),
+        pose("head between thighs", needs=["pair"], zh="頭夾腿間"),
+        pose("sexual harassment", needs=["pair"], zh="性騷擾"),
+        pose("pulling another's clothes", needs=["pair"], zh="扯別人衣服"),
+        pose("defeat", zh="落敗"),
+        pose("public masturbation", implies=["masturbation"], heat=sex, zh="公開自慰"),
+        pose("masturbating while watching", implies=["masturbation"], heat=sex, zh="邊看邊自慰"),
+        pose("public bondage", implies=["restrained"], heat=sex, zh="公開綁縛"),
+        cloth("wrestling outfit", mutex="onepiece", layer="garment", implies=["sportswear"], zh="摔角服"),
+        cloth("singlet", mutex="onepiece", layer="garment", implies=["sportswear"], zh="摔角緊身衣"),
+        # Danbooru 的 wrestler 是「練摔角的人」。詞庫裡 cheerleader 是那套衣服，
+        # 職業預設不抽，所以摔角手跟啦啦隊服一樣放連身衣，不放 job。
+        cloth("wrestler", mutex="onepiece", layer="garment", zh="摔角手"),
+        cloth("referee", mutex="onepiece", layer="garment", zh="裁判"),
+        cloth("wrestling mask", mutex="headwear", implies=["mask"], zh="摔角面具"),
+        cloth("championship belt", mutex="waist", zh="冠軍腰帶"),
+        cloth("elbow pads", zh="護肘"),
+        cloth("wrestling boots", mutex="feet", layer="garment", implies=["boots"], zh="摔角靴"),
+        cloth("boxing headgear", mutex="headwear", implies=["helmet"], zh="拳擊頭盔"),
+        cloth("martial arts belt", mutex="waist", zh="武術腰帶"),
+    ]
+
+
+def extra_ethnic_tags() -> list[dict]:
+    """族裔與周邊。2026-10-23 用 WAI v17 測過，只收 D≥3/5。
+
+    族裔 mutex 是 ethnicity，groups.py 把它歸皮膚那組，不放 race（正常模式會擋種族）。
+    不 implies 膚色或衣服。東亞、南亞的舊名由 alt_names.json 並排。
+    印度服飾只認舊名 indian clothes，不暗示莎麗或眉心點。
+    中東建築照東亞建築佔地點、暗示室外，但時代用 any：東亞建築鎖古中國加江戶，
+    預設現代會抽不到。
+    男女對打照女生打架佔 activity，needs 男和女，不佔兩人。
+    """
+    all_h = list(HEATS)
+
+    def feat(tag, zh):
+        return {
+            "tag": tag,
+            "section": "feature",
+            "gate": "any",
+            "heat": all_h,
+            "mutex": "ethnicity",
+            "bind": [],
+            "implies": [],
+            "layer": "normal",
+            "era": ["any"],
+            "needs": [],
+            "zh": zh,
+        }
+
+    def cloth(tag, zh):
+        return {
+            "tag": tag,
+            "section": "clothing",
+            "gate": "any",
+            "heat": all_h,
+            "mutex": None,
+            "bind": [],
+            "implies": [],
+            "layer": "garment",
+            "era": ["any"],
+            "needs": [],
+            "mutexExtra": ["print_style"],
+            "zh": zh,
+        }
+
+    def env(tag, zh):
+        return {
+            "tag": tag,
+            "section": "env",
+            "gate": "any",
+            "heat": all_h,
+            "mutex": "place",
+            "bind": [],
+            "implies": ["outdoors"],
+            "layer": "normal",
+            "era": ["any"],
+            "zh": zh,
+        }
+
+    def pose(tag, zh):
+        return {
+            "tag": tag,
+            "section": "pose",
+            "gate": "any",
+            "heat": all_h,
+            "mutex": "activity",
+            "bind": [],
+            "implies": [],
+            "layer": "normal",
+            "era": ["any"],
+            "needs": ["male", "female"],
+            "zh": zh,
+        }
+
+    return [
+        feat("east asian", "東亞人"),
+        feat("desi", "南亞人"),
+        cloth("indian clothes", "印度服飾"),
+        env("middle eastern architecture", "中東建築"),
+        pose("mixed-sex combat", "男女對打"),
+    ]
+
+
 def extra_character_tags() -> list[dict]:
     """characters.json 裡 character_ban 為 false 的角色。被 ban 的不進詞庫。
 
@@ -5323,6 +5514,8 @@ def main() -> None:
     rows.extend(extra_style_tags())
     rows.extend(extra_quality_boost_tags())
     rows.extend(extra_look_tags())
+    rows.extend(extra_wrestle_tags())
+    rows.extend(extra_ethnic_tags())
     rows.extend(extra_character_tags())
 
     old_zh: dict[str, str] = {}

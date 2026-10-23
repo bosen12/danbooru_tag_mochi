@@ -331,6 +331,7 @@
     "eye_shape": "眼睛・眼型瞳孔",
     "mouth_bits": "嘴牙舌",
     "skin_tone": "皮膚・膚色",
+    "ethnicity": "族裔",
     "skin_flush": "皮膚・臉紅汗濕",
     "skin_mark": "皮膚・痣疤傷",
     "tattoo": "皮膚・刺青印記",
@@ -657,6 +658,7 @@
       "mouth_bits",
       "makeup",
       "skin_tone",
+      "ethnicity",
       "skin_flush",
       "skin_mark",
       "tattoo",
@@ -23306,8 +23308,8 @@
       ],
       "group": "place",
       "sub": "pl_history",
-      "zh": "柱廊",
-      "replaces": "colonnade"
+      "replaces": "colonnade",
+      "zh": "柱廊"
     },
     {
       "tag": "goblin",
@@ -74902,6 +74904,1015 @@
       "group": "background",
       "sub": "background",
       "zh": "路人"
+    },
+    {
+      "tag": "audience",
+      "section": "env",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "background",
+      "sub": "background",
+      "zh": "觀眾"
+    },
+    {
+      "tag": "crowded",
+      "section": "env",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "background",
+      "sub": "background",
+      "zh": "擁擠"
+    },
+    {
+      "tag": "wrestling ring",
+      "section": "env",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "place",
+      "bind": [],
+      "implies": [
+        "indoors"
+      ],
+      "layer": "normal",
+      "era": [
+        "modern"
+      ],
+      "group": "place",
+      "sub": "pl_sport",
+      "zh": "摔角擂台"
+    },
+    {
+      "tag": "arena",
+      "section": "env",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "place",
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "modern"
+      ],
+      "group": "place",
+      "sub": "pl_sport",
+      "zh": "競技館"
+    },
+    {
+      "tag": "pom pom (cheerleading)",
+      "section": "env",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "held_prop",
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "modern"
+      ],
+      "group": "other",
+      "sub": "obj_sport",
+      "zh": "彩球"
+    },
+    {
+      "tag": "wrestling",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "activity",
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "modern"
+      ],
+      "group": "activity",
+      "sub": "act_sport",
+      "zh": "摔角"
+    },
+    {
+      "tag": "suplex",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "activity",
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "activity",
+      "sub": "act_sport",
+      "needs": [
+        "pair"
+      ],
+      "zh": "背摔"
+    },
+    {
+      "tag": "german suplex",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "activity",
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "activity",
+      "sub": "act_sport",
+      "needs": [
+        "pair"
+      ],
+      "zh": "德式背摔"
+    },
+    {
+      "tag": "submission hold",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "activity",
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "activity",
+      "sub": "act_sport",
+      "needs": [
+        "pair"
+      ],
+      "zh": "關節技"
+    },
+    {
+      "tag": "armlock",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "activity",
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "activity",
+      "sub": "act_sport",
+      "needs": [
+        "pair"
+      ],
+      "zh": "鎖臂"
+    },
+    {
+      "tag": "scissorhold",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "activity",
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "activity",
+      "sub": "act_sport",
+      "needs": [
+        "pair"
+      ],
+      "zh": "剪刀腳"
+    },
+    {
+      "tag": "choke hold",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "activity",
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "activity",
+      "sub": "act_sport",
+      "needs": [
+        "pair"
+      ],
+      "zh": "鎖喉"
+    },
+    {
+      "tag": "triangle choke",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "activity",
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "activity",
+      "sub": "act_sport",
+      "needs": [
+        "pair"
+      ],
+      "zh": "三角絞"
+    },
+    {
+      "tag": "piledriver (wrestling)",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "activity",
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "activity",
+      "sub": "act_sport",
+      "needs": [
+        "pair"
+      ],
+      "zh": "倒插"
+    },
+    {
+      "tag": "pinned",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "activity",
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "activity",
+      "sub": "act_sport",
+      "needs": [
+        "pair"
+      ],
+      "zh": "壓制"
+    },
+    {
+      "tag": "catfight",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "activity",
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "activity",
+      "sub": "act_sport",
+      "needs": [
+        "2female"
+      ],
+      "zh": "女生打架"
+    },
+    {
+      "tag": "arm wrestling",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "activity",
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "activity",
+      "sub": "act_sport",
+      "needs": [
+        "pair"
+      ],
+      "zh": "比腕力"
+    },
+    {
+      "tag": "sumo",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "activity",
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "edo",
+        "modern"
+      ],
+      "group": "activity",
+      "sub": "act_sport",
+      "zh": "相撲"
+    },
+    {
+      "tag": "mixed martial arts",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "activity",
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "modern"
+      ],
+      "group": "activity",
+      "sub": "act_sport",
+      "zh": "綜合格鬥"
+    },
+    {
+      "tag": "martial arts",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "activity",
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "activity",
+      "sub": "act_sport",
+      "zh": "武術"
+    },
+    {
+      "tag": "cheering",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "activity",
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "activity",
+      "sub": "act_sport",
+      "zh": "加油歡呼"
+    },
+    {
+      "tag": "victory pose",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "body_pose",
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "body",
+      "sub": "body",
+      "zh": "勝利姿勢"
+    },
+    {
+      "tag": "bearhug",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "tease",
+      "sub": "pose_two",
+      "needs": [
+        "pair"
+      ],
+      "zh": "熊抱鎖"
+    },
+    {
+      "tag": "head between thighs",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "tease",
+      "sub": "pose_two",
+      "needs": [
+        "pair"
+      ],
+      "zh": "頭夾腿間"
+    },
+    {
+      "tag": "sexual harassment",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "tease",
+      "sub": "pose_situ",
+      "needs": [
+        "pair"
+      ],
+      "zh": "性騷擾"
+    },
+    {
+      "tag": "pulling another's clothes",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "tease",
+      "sub": "pose_situ",
+      "needs": [
+        "pair"
+      ],
+      "zh": "扯別人衣服"
+    },
+    {
+      "tag": "defeat",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "tease",
+      "sub": "pose_act",
+      "zh": "落敗"
+    },
+    {
+      "tag": "public masturbation",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [
+        "masturbation"
+      ],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "sex",
+      "sub": "sex_touch",
+      "zh": "公開自慰"
+    },
+    {
+      "tag": "masturbating while watching",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [
+        "masturbation"
+      ],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "sex",
+      "sub": "sex_touch",
+      "zh": "邊看邊自慰"
+    },
+    {
+      "tag": "public bondage",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [
+        "restrained"
+      ],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "sex",
+      "sub": "sex_bdsm",
+      "zh": "公開綁縛"
+    },
+    {
+      "tag": "wrestling outfit",
+      "section": "clothing",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "onepiece",
+      "bind": [],
+      "implies": [
+        "sportswear"
+      ],
+      "layer": "garment",
+      "era": [
+        "modern"
+      ],
+      "group": "onepiece",
+      "sub": "op_body",
+      "zh": "摔角服"
+    },
+    {
+      "tag": "singlet",
+      "section": "clothing",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "onepiece",
+      "bind": [],
+      "implies": [
+        "sportswear"
+      ],
+      "layer": "garment",
+      "era": [
+        "modern"
+      ],
+      "group": "onepiece",
+      "sub": "op_body",
+      "zh": "摔角緊身衣"
+    },
+    {
+      "tag": "wrestler",
+      "section": "clothing",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "onepiece",
+      "bind": [],
+      "implies": [],
+      "layer": "garment",
+      "era": [
+        "modern"
+      ],
+      "group": "onepiece",
+      "sub": "op_uniform",
+      "zh": "摔角手"
+    },
+    {
+      "tag": "referee",
+      "section": "clothing",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "onepiece",
+      "bind": [],
+      "implies": [],
+      "layer": "garment",
+      "era": [
+        "modern"
+      ],
+      "group": "onepiece",
+      "sub": "op_uniform",
+      "zh": "裁判"
+    },
+    {
+      "tag": "wrestling mask",
+      "section": "clothing",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "headwear",
+      "bind": [],
+      "implies": [
+        "mask"
+      ],
+      "layer": "accessory",
+      "era": [
+        "modern"
+      ],
+      "group": "acc",
+      "sub": "acc_face",
+      "zh": "摔角面具"
+    },
+    {
+      "tag": "championship belt",
+      "section": "clothing",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "waist",
+      "bind": [],
+      "implies": [],
+      "layer": "accessory",
+      "era": [
+        "modern"
+      ],
+      "group": "acc",
+      "sub": "acc_hand",
+      "zh": "冠軍腰帶"
+    },
+    {
+      "tag": "elbow pads",
+      "section": "clothing",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "accessory",
+      "era": [
+        "modern"
+      ],
+      "group": "acc",
+      "sub": "acc_hand",
+      "zh": "護肘"
+    },
+    {
+      "tag": "wrestling boots",
+      "section": "clothing",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "feet",
+      "bind": [],
+      "implies": [
+        "boots"
+      ],
+      "layer": "garment",
+      "era": [
+        "modern"
+      ],
+      "group": "feet",
+      "sub": "feet",
+      "zh": "摔角靴"
+    },
+    {
+      "tag": "boxing headgear",
+      "section": "clothing",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "headwear",
+      "bind": [],
+      "implies": [
+        "helmet"
+      ],
+      "layer": "accessory",
+      "era": [
+        "modern"
+      ],
+      "group": "acc",
+      "sub": "acc_head",
+      "zh": "拳擊頭盔"
+    },
+    {
+      "tag": "martial arts belt",
+      "section": "clothing",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "waist",
+      "bind": [],
+      "implies": [],
+      "layer": "accessory",
+      "era": [
+        "modern"
+      ],
+      "group": "acc",
+      "sub": "acc_hand",
+      "zh": "武術腰帶"
+    },
+    {
+      "tag": "east asian",
+      "section": "feature",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "ethnicity",
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "skin",
+      "sub": "ethnicity",
+      "zh": "東亞人"
+    },
+    {
+      "tag": "asian",
+      "section": "feature",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "ethnicity",
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "skin",
+      "sub": "ethnicity",
+      "zh": "東亞人",
+      "altOf": "east asian"
+    },
+    {
+      "tag": "desi",
+      "section": "feature",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "ethnicity",
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "skin",
+      "sub": "ethnicity",
+      "zh": "南亞人"
+    },
+    {
+      "tag": "indian",
+      "section": "feature",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "ethnicity",
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "skin",
+      "sub": "ethnicity",
+      "zh": "南亞人",
+      "altOf": "desi"
+    },
+    {
+      "tag": "indian clothes",
+      "section": "clothing",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "garment",
+      "era": [
+        "any"
+      ],
+      "group": "fabric",
+      "sub": "fab_style",
+      "mutexExtra": [
+        "print_style"
+      ],
+      "zh": "印度服飾"
+    },
+    {
+      "tag": "middle eastern architecture",
+      "section": "env",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "place",
+      "bind": [],
+      "implies": [
+        "outdoors"
+      ],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "place",
+      "sub": "pl_history",
+      "zh": "中東建築"
+    },
+    {
+      "tag": "mixed-sex combat",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "activity",
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "activity",
+      "sub": "act_sport",
+      "needs": [
+        "male",
+        "female"
+      ],
+      "zh": "男女對打"
     },
     {
       "tag": "yor briar",

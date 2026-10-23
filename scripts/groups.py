@@ -242,6 +242,7 @@ FABRIC = {
     "jirai kei",
     "yume kawaii",
     "arabian clothes",
+    "indian clothes",
     "ouji fashion",
     "biker clothes",
     "ainu clothes",
@@ -848,6 +849,9 @@ def assign_group(item: dict) -> str:
             return "sex"
         if mx == "job":
             return "job"
+        # 族裔不是精靈獸人。race 在正常模式會被擋掉，放進去就抽不到。
+        if mx == "ethnicity":
+            return "skin"
         if mx == "race" or tag in {"monster boy", "monster girl"}:
             return "race"
         if mx == "male_build" or tag in {
@@ -1021,7 +1025,8 @@ def assign_group(item: dict) -> str:
 
     if sec == "env":
         # crowd：背景裡一群不具名的人，不算角色（人數算的是主角），所以歸背景。
-        if mx in ("background", "bg_blur") or tag in ("crowd", "people"):
+        # audience、crowded 跟 crowd 一樣是背景裡的人，不是角色人數。
+        if mx in ("background", "bg_blur") or tag in ("crowd", "people", "audience", "crowded"):
             return "background"
         if mx == "effect":
             return "effect"

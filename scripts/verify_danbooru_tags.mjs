@@ -126,6 +126,16 @@ export const MODEL_VOCAB = new Set([
   "t-head trainer",
   "taihou (forbidden feast) (azur lane)",
   "shion (tensei shitara slime datta ken)",
+
+  // --- 2026-10-23 族裔：停用晚於訓練、WAI v17 仍畫得出來（討論區第二輪）---------
+  //
+  // asian：2026-03 以前是 east asian 的別名。現名 D 3/5、舊名 D 3/5，並排同名卡。
+  // indian：2026-02 以前是 desi 的名字。現名 D 3/5、舊名 D 5/5，並排同名卡。
+  // indian clothes：2026-03 以前是 asian indian clothes 的名字。新名 D 0/5（畫成中國衣），
+  //   只留這個舊名當卡，不是缺席新名的別名。
+  "asian",
+  "indian",
+  "indian clothes",
 ]);
 
 // 使用者點名必須擋掉的：deprecated、post_count 0、或 alias 舊名。

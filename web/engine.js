@@ -256,6 +256,11 @@ for (const act of SPORT_MOVE_ACTS) {
 }
 const AWAKE_ACT = new Set([
   ...MOVE_ACT,
+  // 2026-10-23 摔角那批：睡著不能打。以前睡著配綜合格鬥時兩邊的場地沒有交集，場地格空掉（釘蠟燭 400 張有 4 張沒場地）。
+  "wrestling", "sumo", "martial arts", "mixed martial arts", "suplex", "german suplex",
+  "submission hold", "armlock", "scissorhold", "choke hold", "triangle choke",
+  "piledriver (wrestling)",
+  "pinned", "catfight", "mixed-sex combat", "arm wrestling", "cheering",
   "fishing",
   "wading",
   "carrying",
@@ -941,6 +946,7 @@ const INDOOR_ROOM = new Set([
   "apartment",
   "bowling alley",
   "boxing ring",
+  "wrestling ring",
   "izakaya",
   "tavern",
   "ryokan",
@@ -1008,6 +1014,8 @@ const SPORT_PLACE = new Set([
   "baseball stadium",
   "bowling alley",
   "boxing ring",
+  "wrestling ring",
+  "arena",
   "running track",
   "sports court",
   "golf course",
@@ -1102,6 +1110,36 @@ const FISH_PLACE = new Set(["beach", "ocean", "poolside", "pool", "pond", "river
 // 仍會把現代的煮飯換成廚房，所以現代的測試一個字都不會變。不把 courtyard
 // 再加進女僕場地：那會讓女僕去運動，見 JOB_PLACE.maid。
 const COOK_PLACE = new Set(["kitchen", "castle", "palace", "courtyard", "ryokan"]);
+// 打鬥類活動能在哪裡做（2026-10-23 摔角那批，Grok 抽樣、Opus 釘 200 張驗）。運動預設（sports.js）沒有這幾個，
+// 以前一般模式完全不限場地：釘摔角、相撲、武術 200 張有 5～9 張在情人旅館、浴缸、廚房。
+// 寫實模式由 ACT_PLACE 展開同一份；一般模式在 placeFitsActs 照這份擋。
+const WRESTLING_PLACE = new Set(["wrestling ring", "arena", "stadium", "school gym", "fitness gym", "dojo"]);
+// 摔角招式在每個時代都打得起來：古中國的庭院、寺廟、戰場；古希臘的競技場；中世紀的城堡、酒館；
+// 維多利亞的酒館、街頭；江戶的道場、寺廟。現代照摔角那一組，再加街頭（街頭打架）。
+const HOLD_PLACE = new Set([
+  ...WRESTLING_PLACE,
+  "courtyard", "temple", "battlefield", "colosseum", "castle", "tavern", "street",
+]);
+const FIGHT_PLACE = {
+  wrestling: WRESTLING_PLACE,
+  sumo: new Set(["dojo", "arena", "stadium", "shrine"]),
+  // 武術在海邊、河邊練也是常見的畫面（沙灘練拳）。
+  "martial arts": new Set(["dojo", "fitness gym", "school gym", "courtyard", "park", "forest", "mountain", "temple", "shrine", "rooftop", "arena", "ruins", "beach"]),
+  "mixed martial arts": new Set(["arena", "stadium", "fitness gym", "boxing ring", "wrestling ring"]),
+  // 2026-10-23 第二輪：這六招跟背摔一樣是摔角固定技。1500 張預設裡場地是溫泉、浴缸、
+  // 池畔、旅館、教室、電梯、咖啡廳，沒有一張在擂台或道場。跟摔角用同一組場地。
+  // 背摔、倒插也是摔角的拋摔，驗收時照 Grok 的建議一起放進來（抽樣裡散在衣服店、夜店）。
+  // 壓制、女生打架、男女對打哪裡都可能打起來，不限場地。
+  // 這八招不限時代（專案主 2026-10-23：比較多元），所以場地另外補上各時代打得起來的地方。
+  suplex: HOLD_PLACE,
+  "piledriver (wrestling)": HOLD_PLACE,
+  "german suplex": HOLD_PLACE,
+  "submission hold": HOLD_PLACE,
+  "armlock": HOLD_PLACE,
+  "scissorhold": HOLD_PLACE,
+  "choke hold": HOLD_PLACE,
+  "triangle choke": HOLD_PLACE,
+};
 const INDOOR_FURN = new Set(["on bed", "on chair", "office chair", "gaming chair", "swivel chair", "bunk bed", "on couch", "on desk", "wooden horse", "vacuum bed"]);
 const DRY_NO_WATER = new Set([
   "airplane interior",
@@ -1178,6 +1216,8 @@ export const ACT_PLACE = {
   // 人再穿漢服也只靠衣服。池塘、河是這個時代真的有的水。
   swimming: new Set(["pool", "ocean", "beach", "underwater", "pond", "river"]),
   "pole dancing": new Set(["stage"]),
+  // 摔角、相撲、武術、綜合格鬥：見 FIGHT_PLACE（同一份，兩種模式都看）。
+  ...FIGHT_PLACE,
   wading: new Set(["beach", "ocean", "pool", "poolside", "pond", "river"]),
   floating: new Set(["pool", "ocean", "bathtub", "ofuro", "onsen", "bubble bath", "pond", "river"]),
   "shared bathing": new Set(["onsen", "bathhouse", "ofuro", "bath"]),
@@ -1313,9 +1353,10 @@ const NO_HUMANS_INNER = Symbol("noHumansInner");
 // 沒有人也說得通的鏡頭：拍景的遠近、角度。其餘（半身、全身、pov、背影…）都在說一個人。
 const SCENERY_CAMERA = new Set(["wide shot", "very wide shot", "from above", "from below", "dutch angle", "fisheye"]);
 // 場景段裡其實在說人的：一群人、人的剪影、單人焦點。
-const PERSON_ENV = new Set(["crowd", "people", "silhouette"]);
-// 背景裡的一群人。
-const CROWD_TAGS = new Set(["crowd", "people"]);
+const PERSON_ENV = new Set(["crowd", "people", "silhouette", "audience", "crowded"]);
+// 背景裡的一群人。觀眾、擁擠（2026-10-23）跟 crowd 一樣：私密場地不放、單人寫 solo focus。
+// 以前釘觀眾 200 張有 13 張在臥室、廚房，138 張還寫著 solo。
+const CROWD_TAGS = new Set(["crowd", "people", "audience", "crowded"]);
 // 不會有一群人的地方（自己家裡、關起門來的）。溫泉、澡堂是公共的，不在這裡。
 const CROWD_BAD_PLACE = new Set([
   "bedroom", "hotel room", "love hotel", "bathroom", "bathtub", "bath", "shower (place)", "ofuro",
@@ -1353,7 +1394,7 @@ const BG_SCENERY = new Set([
   "veranda", "wooden floor", "stone lantern", "koi", "noren", "fusuma", "rock garden", "arch",
   "stone wall", "greco-roman architecture", "tower", "windmill", "bamboo", "pillar", "stone floor",
   "shouji", "tatami", "lotus", "willow", "pine tree", "water", "curtains", "tree", "carpet", "bush",
-  "locker", "campfire", "stained glass", "iron bars", "railing", "tiles", "rubble", "crowd", "people", "grass",
+  "locker", "campfire", "stained glass", "iron bars", "railing", "tiles", "rubble", "crowd", "people", "audience", "crowded", "grass",
   "sand", "moss", "full moon", "falling leaves",
 ]);
 
@@ -1398,6 +1439,8 @@ const ACT_PROP = {
   // 直播蓋手機，不蓋麥克風：麥克風是唱歌／卡拉 OK 的身份。cellphone 沒有
   // NEEDS_CONTEXT，stamp 後不會被剝。實測釘 livestream 40/40 沒道具。
   livestream: ["cellphone"],
+  // 加油歡呼拿彩球（2026-10-23）。彩球是現代的，eraOk 會在別的時代篩掉。以前隨機永遠抽不到彩球。
+  cheering: ["pom pom (cheerleading)"],
 };
 const JOB_PLACE = {
   "office lady": new Set(["office"]),
@@ -1660,6 +1703,7 @@ export function placeFitsActs(place, acts, realistic = false) {
     );
   }
   if (acts.has("playing sports") || acts.has("exercising") || acts.has("training")) return SPORT_PLACE.has(place);
+  for (const a of acts) if (FIGHT_PLACE[a] && !FIGHT_PLACE[a].has(place)) return false;
   if (acts.has("hiking")) return !INDOOR_ROOM.has(place) && !BATH_PLACE.has(place);
   if (acts.has("skiing")) return place === "mountain";
   if (acts.has("karaoke")) {
@@ -1980,6 +2024,9 @@ const SPORTWEAR_NEEDS = new Set([
   "gym uniform", "track uniform", "soccer uniform", "basketball uniform",
   "tennis uniform", "volleyball uniform", "baseball uniform",
   "cheerleader", "buruma",
+  // 2026-10-23 摔角那批：摔角服 implies 運動服，以前沒有場合時運動服被剝掉（釘摔角服 200 張只剩 43 張帶著）。
+  "wrestling", "sumo", "martial arts", "mixed martial arts", "wrestling ring", "arena",
+  "wrestling outfit", "wrestler", "singlet",
 ]);
 
 export const NEEDS_CONTEXT = {
@@ -1994,7 +2041,16 @@ export const NEEDS_CONTEXT = {
   "knee pads": new Set([
     "playing sports", "exercising", "training", "skiing", "basketball", "volleyball",
     "skating", "stadium", "school gym", "fitness gym",
+    "wrestling", "wrestling ring", "mixed martial arts",
   ]),
+  // 護肘跟護膝同一種場合（2026-10-23）。
+  "elbow pads": new Set([
+    "playing sports", "exercising", "training", "skiing", "basketball", "volleyball",
+    "skating", "stadium", "school gym", "fitness gym",
+    "wrestling", "wrestling ring", "mixed martial arts",
+  ]),
+  "boxing headgear": new Set(["boxing", "boxing ring", "mixed martial arts", "martial arts", "fitness gym", "training", "exercising"]),
+  "championship belt": new Set(["wrestling", "wrestling ring", "arena", "boxing", "boxing ring", "mixed martial arts", "wrestler", "wrestling outfit", "stadium"]),
   microphone: new Set(["singing", "karaoke"]),
   clipboard: new Set([
     "office", "office lady", "salaryman", "teacher", "classroom", "nurse", "doctor",
@@ -2002,7 +2058,8 @@ export const NEEDS_CONTEXT = {
   ]),
   // 這四個是原本手寫規則允許的範圍，原樣搬過來。騎士配頭盔照理也說得通，
   // 但那是擴大行為、不是修這個 bug，這次不動。
-  helmet: new Set(["riding bicycle", "skiing", "construction site", "construction worker"]),
+  // 拳擊頭盔 implies 頭盔：有拳擊頭盔就是場合（以前釘拳擊頭盔 200 張，頭盔被剝到剩 7 張）。
+  helmet: new Set(["riding bicycle", "skiing", "construction site", "construction worker", "boxing headgear"]),
   "bicycle helmet": new Set(["riding bicycle", "street", "city", "park", "stadium"]),
   "shoulder armor": new Set([
     "armor", "plate armor", "leather armor", "chinese armor", "japanese armor",
@@ -2516,6 +2573,8 @@ const CLOSED_GAG = new Set(["tape gag", "bit gag"]);
 const NOT_PUBLIC_SCENE = new Set([
   "bedroom", "hotel room", "love hotel", "bathroom", "shower", "bathtub", "on bed", "bed",
 ]);
+// 字面上就是「在公開場合」的：不進上面那些地方。
+const PUBLIC_ONLY = new Set(["public nudity", "public vibrator", "public masturbation", "public bondage"]);
 const AMPUTEE_MOVE = new Set(["walking", "walking away", "running", "jumping", "tiptoes", "footjob", "thigh sex", "leg lock", "hugging own legs", "fetal position", "curled up", "kicking"]);
 // 穿在手上、臂上、或綁在兩腿之間的東西。無袖上衣不算。
 const AMPUTEE_WORN = new Set([
@@ -4955,17 +5014,11 @@ function drawOneImpl(lex, settings, pinned, userBanned, rand, seed, opts) {
     if (MALE_FACE.has(item.tag) && used.has("faceless male")) return false;
     // 第一人稱的手是觀看者的手。畫面上已經有兩個人時不再加。
     if (item.tag === "pov hands" && people >= 2 && !pinned.has("pov hands")) return false;
-    // 公開裸體、公共跳蛋不進臥室這類私密場景。
-    if (
-      (item.tag === "public nudity" || item.tag === "public vibrator") &&
-      hasUsed((t) => NOT_PUBLIC_SCENE.has(t))
-    ) {
+    // 公開裸體、公共跳蛋、公開自慰、公開綁縛不進臥室這類私密場景。
+    if (PUBLIC_ONLY.has(item.tag) && hasUsed((t) => NOT_PUBLIC_SCENE.has(t))) {
       return false;
     }
-    if (
-      NOT_PUBLIC_SCENE.has(item.tag) &&
-      (used.has("public nudity") || used.has("public vibrator"))
-    ) {
+    if (NOT_PUBLIC_SCENE.has(item.tag) && [...PUBLIC_ONLY].some((t) => used.has(t))) {
       return false;
     }
     // 釘了「只穿內衣」：水景、浴場不補內衣，收尾會把這個釘選清掉（場景說了算）。
