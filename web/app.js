@@ -2963,7 +2963,9 @@ function paintShot(node, shot) {
   const frame = node.querySelector(".shot-frame");
   const src = wallSrc(shot.image) || shot.preview;
   if (shot._goneSrc && shot._goneSrc !== viewSrc(shot.image)) clearShotGone(shot, node);
-  let img = frame.querySelector("img");
+  // 只拿畫框自己那張圖：沒有圖的時候，畫框裡第一張 <img> 是手牌上的插畫（以前被當成成品圖拿掉，
+  // 排隊時每重畫一次就少一張牌的圖）。
+  let img = frame.querySelector(":scope > img:not(.shot-under)");
   if (src) {
     if (!img) {
       // lazy：牆上 80 張不必一開頁就全部下載，捲到附近才抓。
@@ -3018,6 +3020,10 @@ function paintShot(node, shot) {
   node.dataset.shown = shot.status;
   let empty = frame.querySelector(".shot-empty");
   const words = shotWords(shot);
+  const handNow = !src && holdsHand(shot);
+  // 上一刻還攤著一手牌、這一刻開始畫了（有進度、有預覽，或直接印好）：牌合起來（mergeHand）。
+  const oldHand = empty?.querySelector(".hand");
+  if (oldHand && !handNow) mergeHand(frame, oldHand);
   if (!src) {
     if (!empty) {
       empty = el("div", { class: "shot-empty" });
@@ -3027,7 +3033,13 @@ function paintShot(node, shot) {
     const key = shot.status + "|" + (words[shot.status] || "");
     if (empty.dataset.key !== key) {
       empty.dataset.key = key;
-      empty.replaceChildren(...draftFace(shot, words[shot.status] || ""));
+      // 同一手牌從「等前面的印完」到「排隊中」：牌留著只換字，扇子收攏的過渡才看得到（重建的話一格就跳過去）。
+      const keep = handNow ? empty.querySelector(".hand") : null;
+      const parts = draftFace(shot, words[shot.status] || "", { hand: !keep });
+      if (keep) {
+        for (const c of [...empty.children]) if (c !== keep) c.remove();
+        empty.append(...parts);
+      } else empty.replaceChildren(...parts);
     }
   } else if (empty) empty.remove();
   paintHiresVeil(frame, shot, { onCancel: () => hiresRun.cancel(shot), onDismiss: () => hiresRun.dismiss(shot) });
@@ -3071,10 +3083,134 @@ function shotWords(shot) {
   };
 }
 
-/** 沒有圖的畫框：只抽牌的攤一手牌，印壞的給一顆再印。在成品詳情視窗裡按了，視窗收起來、回牆上看它印。 */
-function draftFace(shot, text) {
+/**
+ * 畫框裡攤一手牌的那幾種：只抽牌、等前面的印完、送到 ComfyUI 還沒開始畫（排隊中、等 ComfyUI 開好、接回剛才那張）。
+ * 開始畫（有進度或預覽）就合起來（mergeHand），之後是預覽和進度條。
+ */
+function holdsHand(shot) {
+  return shot.status === "drawn" || shot.status === "queued" || (shot.status === "running" && !(shot.progress > 0) && !shot.preview);
+}
+
+/**
+ * 開始畫了：攤著的那手牌合起來。由外往內收成一疊、滑到畫框正中，壓成一道光，
+ * 炸開一圈墨暈和幾點花色的星火；底下的「繪製中」或第一張預覽從墨暈裡透出來。約 1.2 秒。
+ * 牌搬到畫框上一層（.shot-merge）演，畫框底下照常換成印製中的樣子，不等動畫。
+ * 減少動態、分頁在背景、這一格在畫面外（量不到大小）：不演，牌直接收掉。
+ */
+function mergeHand(frame, hand) {
+  const still = !reducedMotion() && !document.hidden && frame.isConnected;
+  const fr = frame.getBoundingClientRect();
+  const hr = hand.getBoundingClientRect();
+  const cards = [...hand.querySelectorAll(".hand-card")];
+  // 拿走之前先量：牌現在的樣子（扇開的角度）、這手牌在畫框裡的位置。
+  const from = still ? cards.map((c) => getComputedStyle(c).transform) : [];
+  const suits = still ? cards.map((c) => getComputedStyle(c).getPropertyValue("--suit").trim() || "var(--color-pool)") : [];
+  const ch = cards[0]?.offsetHeight || 100;
+  hand.remove();
+  if (!still || !fr.width || !fr.height || !hr.width || !cards.length || fr.bottom < 0 || fr.top > innerHeight) return;
+  // 疊在畫框上一層、放回原本那個位置。
+  const layer = el("div", { class: "shot-merge", "aria-hidden": "true" });
+  hand.style.cssText = `position:absolute;left:${(hr.left - fr.left).toFixed(1)}px;top:${(hr.top - fr.top).toFixed(1)}px;width:${hr.width.toFixed(1)}px;height:${hr.height.toFixed(1)}px;margin:0`;
+  layer.append(hand);
+  frame.append(layer);
+  // 那一疊的中心：畫框正中。
+  const dy = fr.height / 2 - (hr.top - fr.top) - (6 + ch / 2);
+  const n = cards.length;
+  const reach = Math.max(...cards.map((_, i) => Math.abs(i - (n - 1) / 2)));
+  const GATHER = DUR.xl;
+  cards.forEach((c, i) => {
+    const o = i - (n - 1) / 2;
+    // 最外面的先收，往中間一張張疊上去；疊好的那一疊每張錯開一點點，看得出是一疊。
+    const delay = (reach - Math.abs(o)) * 55;
+    const lift = (n - 1 - i) * 1.2;
+    c.animate(
+      [
+        { transform: from[i] === "none" ? "none" : from[i] },
+        { transform: `translateY(${(dy - lift - 10).toFixed(1)}px) rotate(${(o * 2.5).toFixed(1)}deg) scale(0.96)`, offset: 0.7 },
+        { transform: `translateY(${(dy - lift).toFixed(1)}px) rotate(${(o * 0.6).toFixed(1)}deg) scale(0.9)` },
+      ],
+      { duration: GATHER - delay * 0.4, delay, easing: css(CURVE.inOut), fill: "forwards" }
+    );
+  });
+  // 一疊壓成一道光：先吸一口氣（微微放大、變亮），再橫向壓扁、亮到發白、消失。
+  hand.style.transformOrigin = `50% ${(6 + ch / 2 + dy).toFixed(1)}px`;
+  const PRESS = GATHER - 40;
+  hand.animate(
+    [
+      { transform: "none", filter: "brightness(1)", opacity: 1, easing: css(CURVE.out) },
+      { transform: "scale(1.07)", filter: "brightness(1.6)", opacity: 1, offset: 0.35, easing: css(CURVE.in) },
+      { transform: "scale(1.15, 0.08)", filter: "brightness(4)", opacity: 1, offset: 0.8 },
+      { transform: "scale(0.6, 0.02)", filter: "brightness(6)", opacity: 0 },
+    ],
+    { duration: DUR.long, delay: PRESS, fill: "forwards" }
+  );
+  const burst = PRESS + DUR.medium;
+  const cx = fr.width / 2;
+  const cy = fr.height / 2;
+  const diag = Math.hypot(fr.width, fr.height);
+  const at = (node, size, tall = size) => {
+    node.style.cssText = `left:${(cx - size / 2).toFixed(1)}px;top:${(cy - tall / 2).toFixed(1)}px;width:${size.toFixed(1)}px;height:${tall.toFixed(1)}px`;
+    layer.append(node);
+    return node;
+  };
+  // 壓扁的那一疊變成一道橫的光，從中間往兩邊拉開到畫框邊，再收成一點炸開。
+  const streak = at(el("i", { class: "merge-streak" }), fr.width, 3);
+  streak.style.setProperty("--a", suits[0]);
+  streak.animate(
+    [
+      { transform: "scaleX(0.1)", opacity: 0 },
+      { transform: "scaleX(0.35)", opacity: 1, offset: 0.25 },
+      { transform: "scaleX(1)", opacity: 1, offset: 0.6 },
+      { transform: "scaleX(0.02)", opacity: 0 },
+    ],
+    { duration: DUR.medium, delay: PRESS + DUR.short, easing: css(CURVE.inOut), fill: "forwards" }
+  );
+  // 中間一團光：牌的花色混在一起。
+  const flash = at(el("i", { class: "merge-flash" }), Math.min(fr.width, fr.height) * 0.7);
+  flash.style.setProperty("--a", suits[0]);
+  flash.style.setProperty("--b", suits[Math.floor(n / 2)] || suits[0]);
+  flash.animate(
+    [
+      { transform: "scale(0)", opacity: 0 },
+      { transform: "scale(0.55)", opacity: 1, offset: 0.25 },
+      { transform: "scale(1.9)", opacity: 0 },
+    ],
+    { duration: DUR.story, delay: burst - 40, easing: css(CURVE.out), fill: "forwards" }
+  );
+  // 一圈墨暈往外推到畫框外。
+  const ring = at(el("i", { class: "merge-ring" }), diag);
+  ring.animate(
+    [
+      { transform: "scale(0.02)", opacity: 0.95, borderWidth: "10px" },
+      { transform: "scale(1)", opacity: 0, borderWidth: "1px" },
+    ],
+    { duration: DUR.story, delay: burst, easing: css(CURVE.out), fill: "forwards" }
+  );
+  // 星火：每張牌一點自己花色的光，往四面飛散。
+  const R = Math.min(fr.width, fr.height);
+  suits.concat(suits).forEach((color, k) => {
+    const spark = at(el("i", { class: "merge-spark" }), 5 + (k % 3));
+    spark.style.background = color;
+    spark.style.color = color;
+    const angle = (k / (suits.length * 2)) * Math.PI * 2 + (k % 2 ? 0.35 : -0.2);
+    const dist = R * (0.28 + ((k * 37) % 23) / 100);
+    spark.animate(
+      [
+        { transform: "translate(0, 0) scale(1.4)", opacity: 1 },
+        { transform: `translate(${(Math.cos(angle) * dist).toFixed(1)}px, ${(Math.sin(angle) * dist).toFixed(1)}px) scale(0.3)`, opacity: 0 },
+      ],
+      { duration: DUR.xl + (k % 4) * 70, delay: burst + (k % 3) * 25, easing: css(CURVE.out), fill: "forwards" }
+    );
+  });
+  // 畫框像被蓋了一下印：輕輕一沉再回來。
+  frame.animate([{ transform: "none" }, { transform: "scale(0.985)", offset: 0.35 }, { transform: "none" }], { duration: DUR.long, delay: burst - 20, easing: css(CURVE.settle) });
+  setTimeout(() => layer.remove(), burst + 1000);
+}
+
+/** 沒有圖的畫框：只抽牌、還在排隊的攤一手牌，印壞的給一顆再印。在成品詳情視窗裡按了，視窗收起來、回牆上看它印。 */
+function draftFace(shot, text, { hand = true } = {}) {
   const out = [];
-  if (shot.status === "drawn") out.push(draftHand(shot));
+  if (hand && holdsHand(shot)) out.push(draftHand(shot));
   out.push(el("p", {}, text));
   if (REPRINTABLE.has(shot.status)) {
     out.push(
@@ -3572,23 +3708,141 @@ function showShot(shot, { focus } = {}) {
   // 箭頭貼在大圖框的左右兩邊（不蓋到右欄的按鈕）；換張時跟著搬進新的圖框。
   sheet.sheet.querySelector(".sd-image")?.append(prevBtn, nextBtn);
   syncNav();
-  // 換一張：內容原地換掉（不關掉再開），圖從旁邊滑進來。
-  function go(dir) {
+  // 左右兩張先在背後載好：換過去的時候圖已經解碼完，不會先空一格再跳出來。
+  const warm = new Map();
+  const warmNeighbors = () => {
+    for (const s of [nav(-1), nav(1)]) {
+      const src = s && (viewSrc(s.image) || s.preview);
+      if (!src || warm.has(src)) continue;
+      const im = new Image();
+      im.decoding = "async";
+      im.src = src;
+      warm.set(src, im);
+    }
+  };
+  warmNeighbors();
+  let navToken = 0;
+  /**
+   * 換一張：內容原地換掉（不關掉再開）。像翻一疊印好的圖 —— 舊的那張縮一點、往反方向滑走淡掉，
+   * 新的從按的那一邊滑進來，兩張交疊著換；右欄的資訊、牌、提示詞跟著同一個方向一段段進來。
+   * 新圖先解碼好再換（最多等 160ms）。連按的話只換到最後那一張，中間的不演。
+   * dragged：手機用手指拖過來的距離（換的時候從那裡接著滑，不跳回原位）。
+   */
+  async function go(dir, { dragged = 0 } = {}) {
     const next = nav(dir);
     if (!next) return refuse(dir < 0 ? prevBtn : nextBtn);
+    const token = ++navToken;
     current = next;
+    syncNav();
+    const btn = dir < 0 ? prevBtn : nextBtn;
+    if (!reducedMotion() && !dragged) btn.animate([{ transform: "none" }, { transform: `translateX(${dir * 5}px)` }, { transform: "none" }], { duration: DUR.short, easing: css(CURVE.out) });
+    const src = viewSrc(next.image) || next.preview;
+    if (src && !reducedMotion()) {
+      const probe = warm.get(src) || new Image();
+      if (!probe.src) probe.src = src;
+      await Promise.race([probe.decode().catch(() => {}), new Promise((r) => setTimeout(r, 160))]);
+      if (token !== navToken || !sheet.sheet.isConnected) return;
+    }
+    swapTo(next, dir, dragged);
+    warmNeighbors();
+  }
+  function swapTo(next, dir, dragged) {
     const body = sheet.sheet.querySelector(".shot-detail");
+    const oldBox = body.querySelector(".sd-image");
+    const motion = !reducedMotion();
+    // 舊的那張留下來當影子（.sd-ghost），疊在新圖框裡滑出去；上一個還沒演完的影子直接收掉。
+    const ghost = motion && oldBox ? el("div", { class: "sd-ghost", "aria-hidden": "true" }, ...[...oldBox.children].filter((n) => !n.classList.contains("sd-nav") && !n.classList.contains("sd-ghost"))) : null;
+    for (const n of ghost ? ghost.children : []) n.style.transform = "";
     const fresh = shotDetailBody(next, { deal: false });
     body.replaceWith(fresh);
-    fresh.querySelector(".sd-image")?.append(prevBtn, nextBtn);
-    sheet.sheet.querySelector("h2").textContent = shotTitle(next);
+    const box = fresh.querySelector(".sd-image");
+    box?.append(prevBtn, nextBtn);
+    const h2 = sheet.sheet.querySelector("h2");
+    h2.textContent = shotTitle(next);
     sheet.sheet.querySelector(".sheet-foot")?.replaceChildren(...footFor(next).filter(Boolean));
-    syncNav();
-    if (!reducedMotion()) {
-      fresh.querySelector(".sd-image")?.animate([{ opacity: 0, transform: `translateX(${dir * 28}px)` }, { opacity: 1, transform: "none" }], { duration: DUR.medium, easing: css(CURVE.out) });
-      fresh.querySelector(".sd-side")?.animate([{ opacity: 0 }, { opacity: 1 }], { duration: DUR.short, easing: css(CURVE.out) });
+    if (!motion || !box) return;
+    const shift = Math.min(box.clientWidth * 0.18, 140);
+    if (ghost) {
+      box.append(ghost);
+      ghost
+        .animate(
+          [
+            { transform: `translateX(${dragged.toFixed(1)}px)`, opacity: 1, filter: "brightness(1)" },
+            { transform: `translateX(${(dragged - dir * shift * 0.6).toFixed(1)}px) scale(0.9)`, opacity: 0, filter: "brightness(0.45)" },
+          ],
+          { duration: DUR.long, easing: css(CURVE.exit), fill: "forwards" }
+        )
+        .finished.then(() => ghost.remove(), () => ghost.remove());
     }
+    for (const n of [...box.children].filter((c) => !c.classList.contains("sd-nav") && c !== ghost)) {
+      n.animate(
+        [
+          { transform: `translateX(${(dir * shift).toFixed(1)}px) scale(0.97)`, opacity: 0 },
+          { transform: `translateX(${(dir * shift * 0.45).toFixed(1)}px) scale(0.985)`, opacity: 1, offset: 0.3 },
+          { transform: "none", opacity: 1 },
+        ],
+        { duration: DUR.xl, easing: css(CURVE.out), fill: "backwards" }
+      );
+    }
+    [h2, ...fresh.querySelectorAll(".sd-side > *")].forEach((n, i) =>
+      n.animate(
+        [
+          { transform: `translateX(${dir * 16}px)`, opacity: 0 },
+          { transform: "none", opacity: 1 },
+        ],
+        { duration: DUR.long, delay: 60 + Math.min(i, 5) * 45, easing: css(CURVE.out), fill: "backwards" }
+      )
+    );
   }
+  // 手機：在大圖上左右滑換張。圖跟著手指走；放開時拖過四分之一寬、或甩得夠快就換，不然彈回去。
+  // 頭尾那張拉不太動（只跟三成）。上下滑照常捲彈窗（.sd-image 是 touch-action: pan-y）。
+  sheet.sheet.addEventListener("pointerdown", (e) => {
+    if (e.pointerType === "mouse" || !e.isPrimary) return;
+    const box = e.target.closest?.(".sd-image");
+    if (!box || e.target.closest(".sd-nav, button, a")) return;
+    const content = [...box.children].filter((n) => !n.classList.contains("sd-nav") && !n.classList.contains("sd-ghost"));
+    const x0 = e.clientX;
+    const y0 = e.clientY;
+    let axis = null;
+    let dx = 0;
+    let lastX = x0;
+    let lastT = performance.now();
+    let v = 0;
+    const move = (ev) => {
+      if (ev.pointerId !== e.pointerId) return;
+      const mx = ev.clientX - x0;
+      const my = ev.clientY - y0;
+      if (!axis) {
+        if (Math.hypot(mx, my) < 8) return;
+        axis = Math.abs(mx) > Math.abs(my) ? "x" : "y";
+        if (axis === "x") box.setPointerCapture?.(e.pointerId);
+      }
+      if (axis !== "x") return;
+      const now = performance.now();
+      v = (ev.clientX - lastX) / Math.max(1, now - lastT);
+      lastX = ev.clientX;
+      lastT = now;
+      dx = nav(mx < 0 ? 1 : -1) ? mx : mx * 0.3;
+      for (const n of content) n.style.transform = `translateX(${dx.toFixed(1)}px) rotate(${(dx * 0.012).toFixed(2)}deg)`;
+    };
+    const end = () => {
+      removeEventListener("pointermove", move, true);
+      removeEventListener("pointerup", end, true);
+      removeEventListener("pointercancel", end, true);
+      if (axis !== "x" || !dx) return;
+      const dir = dx < 0 ? 1 : -1;
+      const flick = Math.abs(v) > 0.45 && Math.sign(v) === Math.sign(dx);
+      if ((Math.abs(dx) > box.clientWidth * 0.25 || flick) && nav(dir)) return void go(dir, { dragged: dx });
+      for (const n of content) {
+        const from = n.style.transform;
+        n.style.transform = "";
+        if (!reducedMotion()) n.animate([{ transform: from }, { transform: "none" }], { duration: DUR.medium, easing: css(CURVE.settle) });
+      }
+    };
+    addEventListener("pointermove", move, true);
+    addEventListener("pointerup", end, true);
+    addEventListener("pointercancel", end, true);
+  });
   function onKey(e) {
     if (e.target?.closest?.("input, textarea, select, [contenteditable]")) return;
     // 只有這個彈窗在最上面時才換（上面又疊了牌的詳情就讓給它）。
@@ -3603,7 +3857,7 @@ function showShot(shot, { focus } = {}) {
   }
   // 圖從牆上那一格長大到彈窗中間，關掉時縮回去（zoom.js）。牆可能在看的時候重畫，關的時候重新找那一格。
   zoomFromThumb({
-    from: () => document.querySelector(`#wall .shot[data-id="${CSS.escape(String(current.id))}"] .shot-frame img:not(.shot-under)`),
+    from: () => document.querySelector(`#wall .shot[data-id="${CSS.escape(String(current.id))}"] .shot-frame > img:not(.shot-under)`),
     sheet: sheet.sheet,
     to: sheet.sheet.querySelector(".sd-image > img"),
     aspect: shot.width / shot.height,

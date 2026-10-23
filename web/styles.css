@@ -1392,7 +1392,8 @@ body #wf-pick-btn.has {
   --reg: color-mix(in oklch, var(--color-pool) 62%, transparent);
   --reg-len: 18px;
   --reg-w: 1.5px;
-  --pool-card-w: clamp(64px, 7vw, 92px);
+  /* 牌稍微大一點（以前 64～92px）：十張也還放得進兩排，空的時候框只高一點點。 */
+  --pool-card-w: clamp(68px, 7.5vw, 100px);
   position: relative;
   margin: var(--space-sm) var(--space-md);
   /* 空的時候就留一張牌的高度（牌 480:702＋上下留白）：放第一張牌時框不長高，底下的規則、抽牌列不會被推一下。 */
@@ -2649,6 +2650,87 @@ html[lang="en"] .pool > .panel-head .workspace-purpose {
   }
 }
 
+/* 排隊的那幾張也攤著牌（app.js holdsHand）。
+ * 等前面的印完：牌褪一點色，還沒輪到。
+ * 送到 ComfyUI、還沒開始畫：扇子慢慢收攏、牌緣亮起自己的花色，準備合起來（開始畫時 mergeHand 接手）。 */
+.shot[data-status="queued"] .hand-card {
+  filter: saturate(0.7) brightness(0.9);
+}
+
+.shot[data-status="running"] .hand-card {
+  transform: translateX(calc(var(--o) * min(14px, 4.4cqi))) translateY(calc(var(--y) * 1px + 4px)) rotate(calc(var(--o) * 3deg));
+  transition: transform var(--dur-story) var(--ease-out), filter var(--dur-story) var(--ease-out);
+  animation: hand-ready var(--dur-breath) var(--ease-in-out) infinite alternate;
+}
+
+@keyframes hand-ready {
+  from {
+    box-shadow: var(--shadow-card), 0 0 0 1px color-mix(in oklch, var(--suit) 35%, transparent);
+  }
+  to {
+    box-shadow: var(--shadow-card), 0 0 0 1px color-mix(in oklch, var(--suit) 70%, transparent), 0 0 16px -2px color-mix(in oklch, var(--suit) 70%, transparent);
+  }
+}
+
+/* 牌合起來那一下（app.js mergeHand）：疊在畫框上一層，演完就拿掉。 */
+.shot-merge {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.shot-merge .hand-card {
+  animation: none;
+  transition: none;
+}
+
+.merge-streak {
+  position: absolute;
+  border-radius: 2px;
+  background: linear-gradient(90deg, transparent, color-mix(in oklch, white 70%, var(--a)) 20%, white 50%, color-mix(in oklch, white 70%, var(--a)) 80%, transparent);
+  box-shadow: 0 0 12px 2px color-mix(in oklch, white 50%, var(--a)), 0 0 30px 6px color-mix(in oklch, var(--a) 50%, transparent);
+}
+
+/* 還沒輪到它演的時候（delay 那一段）一律看不見：動畫只寫 forwards，沒開始前用這裡的 0。 */
+.merge-streak,
+.merge-flash,
+.merge-ring,
+.merge-spark {
+  opacity: 0;
+}
+
+.merge-flash,
+.merge-ring,
+.merge-spark {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.merge-flash {
+  background: radial-gradient(
+    circle,
+    color-mix(in oklch, white 92%, var(--a)) 0,
+    color-mix(in oklch, var(--a) 70%, transparent) 22%,
+    color-mix(in oklch, var(--b) 40%, transparent) 46%,
+    transparent 70%
+  );
+  mix-blend-mode: screen;
+}
+
+.merge-ring {
+  border: 2px solid color-mix(in oklch, var(--color-pool) 80%, white);
+  box-shadow:
+    0 0 24px color-mix(in oklch, var(--color-pool) 60%, transparent),
+    inset 0 0 24px color-mix(in oklch, var(--color-pool) 40%, transparent);
+}
+
+.merge-spark {
+  box-shadow: 0 0 8px currentColor;
+}
+
 /* 捲到成品牆時浮在底部的那排按鈕。跟合成池底下那排是同一組動作。 */
 .go-float {
   position: fixed;
@@ -3561,7 +3643,29 @@ body[data-dragging="true"] .library[data-over="true"] {
   }
 }
 
+/* 左右換張（app.js showShot 的 go）：舊的那張疊在新圖框裡滑走。手機上左右滑交給頁面的手勢、上下滑照常捲。 */
+.sd-image {
+  touch-action: pan-y;
+}
+
+/* 新的那張疊在上面落下來，舊的在底下變暗、縮小（像把一張新印好的放到上一張上面）。 */
 .sd-image > img {
+  position: relative;
+  z-index: 1;
+}
+
+.sd-ghost {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  display: grid;
+  place-items: center;
+  padding: var(--space-md);
+  pointer-events: none;
+}
+
+.sd-image > img,
+.sd-ghost > img {
   display: block;
   width: auto;
   height: auto;
@@ -3639,8 +3743,14 @@ body[data-dragging="true"] .library[data-over="true"] {
   flex-wrap: wrap;
   gap: var(--space-sm) var(--space-md);
 }
+/* 成品詳情裡的牌比牆上那份大一點（58／60px → 66px）。再大的話右欄一排放不下八張，外觀那一疊就疊到只剩書脊。 */
+.sd-cards .deal-row .card {
+  --card-w: 66px;
+}
+
 /* 一疊是 container（寬度不靠內容撐）：並排時照張數給寬，放不下就換行、最寬到整排。 */
 .sd-cards .fan {
+  --fan-w: 66px;
   flex: none;
   width: calc(var(--n, 1) * (var(--fan-w) + 4px));
   max-width: 100%;
