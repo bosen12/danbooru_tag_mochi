@@ -5689,7 +5689,8 @@ function indoorOutdoorClash(have) {
     // 2026-10-16：細肩帶背心算上衣（GARMENT_KEYS 加 camisole），拉吊帶背心沒穿著它就不進池，亂數往後挪一格：hip focus → foot focus。
     // 2026-10-23：摔角、觀眾、公開場合 28 個字進池，牌序再位移。這張換成藍帽、地鐵站。仍是 1girl solo，沒有男生或人類陰莖。
     // 2026-10-23 第二輪：主人指定加回 12 個字、族裔這批進池，六招限摔角場地。這張換成籃球服、天堂。仍是 1girl solo，沒有男生或人類陰莖。
-    "1girl, solo, very short hair, yellow eyes, aqua hair, sidelocks, large breasts, breast expansion, purple lips, lipstick, dreadlocks, basketball uniform, sportswear, bra, gothic, pantyhose, masturbation through clothes, outstretched arm, cropped torso, looking afar, evil smile, crazy eyes, heaven, outdoors, sunrise, shade, pizza, can, nsfw, explicit, masterpiece, best quality, amazing quality");
+    // 2026-10-24 第三輪：口塞、衣外繩縛、綁法、俘虜進池。這張多了性玩具、拉珠，披薩換成月餅。仍是 1girl solo，沒有男生或人類陰莖。
+    "1girl, solo, very short hair, yellow eyes, aqua hair, sidelocks, large breasts, breast expansion, purple lips, lipstick, dreadlocks, basketball uniform, sportswear, bra, gothic, pantyhose, sex toy, masturbation through clothes, outstretched arm, cropped torso, looking afar, evil smile, anal beads, heaven, outdoors, sunrise, shade, mooncake, chopsticks, nsfw, explicit, masterpiece, best quality, amazing quality");
   ok("drawOne exposes shadow diagnostics", Array.isArray(shadowIntegrationDraw.shadowViolations));
 
   const eatProneShadow = validateSupportShadow({

@@ -2567,9 +2567,17 @@ const GAG_BLOCKS = new Set([
 ]);
 // 同一張嘴只能有一種口塞。變體 implies gag，父子不算兩種。
 // 嘴叼物（第六輪）也算嘴裡的一樣東西：跟口塞不並存，口交、接吻也進不來。
-const GAG_KIND = new Set(["gag", "tape gag", "bit gag", "ring gag", "ball gag", "mouth hold"]);
+const GAG_KIND = new Set([
+  "gag", "tape gag", "bit gag", "ring gag", "ball gag", "mouth hold",
+  // 第三輪實測認得出的種類。被塞口是狀態，不加。
+  "improvised gag", "cleave gag", "gag harness", "harness gag",
+]);
 // 膠帶和咬棒把嘴封住。開口器是撐開，不在這組。
-const CLOSED_GAG = new Set(["tape gag", "bit gag"]);
+// 臨時口塞、勒口布、口塞頭套（含舊名）五張裡嘴是封住的，所以加進來。
+const CLOSED_GAG = new Set([
+  "tape gag", "bit gag",
+  "improvised gag", "cleave gag", "gag harness", "harness gag",
+]);
 const NOT_PUBLIC_SCENE = new Set([
   "bedroom", "hotel room", "love hotel", "bathroom", "shower", "bathtub", "on bed", "bed",
 ]);
@@ -3845,6 +3853,8 @@ const ODD_MOTIF = new Set([
   "split mouth", "no mouth", "no nose", "faceless", "no eyes", "extra eyes", "eyeball",
   "third eye", "one-eyed", "black sclera", "yellow sclera", "extra ears", "patchwork skin",
   "metal skin", "fake screenshot", "fake phone screenshot", "viewfinder",
+  // 2026-10-24：秒墮五張都畫成兩格前後漫畫（Grok 實測）。專案主看過圖要留，但只在釘了才出現。
+  "instant loss",
 ]);
 // 只當父字用的動作：騎乘要有騎的東西（騎馬、騎車、騎掃帚帶出來）。自己被抽到時
 // 畫面沒有坐騎（以前 41 張裡 11 張）。釘它、必抽照收。

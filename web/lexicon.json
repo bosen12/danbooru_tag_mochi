@@ -75915,6 +75915,382 @@
       "zh": "男女對打"
     },
     {
+      "tag": "gagged",
+      "section": "clothing",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [
+        "gag"
+      ],
+      "layer": "accessory",
+      "era": [
+        "any"
+      ],
+      "group": "acc",
+      "sub": "acc_bind",
+      "zh": "被塞口"
+    },
+    {
+      "tag": "improvised gag",
+      "section": "clothing",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [
+        "gag"
+      ],
+      "layer": "accessory",
+      "era": [
+        "any"
+      ],
+      "group": "acc",
+      "sub": "acc_bind",
+      "zh": "臨時口塞"
+    },
+    {
+      "tag": "cleave gag",
+      "section": "clothing",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [
+        "gag"
+      ],
+      "layer": "accessory",
+      "era": [
+        "any"
+      ],
+      "group": "acc",
+      "sub": "acc_bind",
+      "zh": "勒口布"
+    },
+    {
+      "tag": "gag harness",
+      "section": "clothing",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [
+        "gag"
+      ],
+      "layer": "accessory",
+      "era": [
+        "any"
+      ],
+      "group": "acc",
+      "sub": "acc_bind",
+      "zh": "口塞頭套"
+    },
+    {
+      "tag": "harness gag",
+      "section": "clothing",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [
+        "gag"
+      ],
+      "layer": "accessory",
+      "era": [
+        "any"
+      ],
+      "group": "acc",
+      "sub": "acc_bind",
+      "zh": "口塞頭套",
+      "altOf": "gag harness"
+    },
+    {
+      "tag": "shibari over clothes",
+      "section": "clothing",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [
+        "shibari"
+      ],
+      "layer": "accessory",
+      "era": [
+        "any"
+      ],
+      "group": "acc",
+      "sub": "acc_bind",
+      "zh": "衣外繩縛"
+    },
+    {
+      "tag": "bound arms",
+      "section": "clothing",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "accessory",
+      "era": [
+        "any"
+      ],
+      "group": "acc",
+      "sub": "acc_bind",
+      "zh": "綁手臂"
+    },
+    {
+      "tag": "bound legs",
+      "section": "clothing",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "accessory",
+      "era": [
+        "any"
+      ],
+      "group": "acc",
+      "sub": "acc_bind",
+      "zh": "綁腿"
+    },
+    {
+      "tag": "bound torso",
+      "section": "clothing",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "accessory",
+      "era": [
+        "any"
+      ],
+      "group": "acc",
+      "sub": "acc_bind",
+      "zh": "綁軀幹"
+    },
+    {
+      "tag": "captured",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "sex",
+      "sub": "sex_bdsm",
+      "zh": "被俘"
+    },
+    {
+      "tag": "tied to chair",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [
+        "chair"
+      ],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "sex",
+      "sub": "sex_bdsm",
+      "zh": "綁在椅子上"
+    },
+    {
+      "tag": "chained",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "sex",
+      "sub": "sex_bdsm",
+      "zh": "被鎖鏈拴住"
+    },
+    {
+      "tag": "prisoner",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "sex",
+      "sub": "sex_bdsm",
+      "zh": "囚犯"
+    },
+    {
+      "tag": "small penis humiliation",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [
+        "small penis"
+      ],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "sex",
+      "sub": "sex_bdsm",
+      "needs": [
+        "male",
+        "female"
+      ],
+      "zh": "小陰莖羞辱"
+    },
+    {
+      "tag": "chastity cage",
+      "section": "pose",
+      "gate": "male",
+      "heat": [
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "modern"
+      ],
+      "group": "sex",
+      "sub": "sex_bdsm",
+      "needs": [
+        "male"
+      ],
+      "zh": "貞操鎖"
+    },
+    {
+      "tag": "instant loss",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "sex",
+      "sub": "sex_bdsm",
+      "needs": [
+        "male",
+        "female",
+        "pair"
+      ],
+      "zh": "秒墮"
+    },
+    {
+      "tag": "forced to watch",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "sex",
+      "sub": "sex_bdsm",
+      "needs": [
+        "group"
+      ],
+      "zh": "被迫觀看"
+    },
+    {
+      "tag": "cage",
+      "section": "env",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "other",
+      "sub": "obj_classic",
+      "zh": "籠子"
+    },
+    {
       "tag": "yor briar",
       "section": "subject",
       "gate": "female",

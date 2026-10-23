@@ -136,6 +136,11 @@ export const MODEL_VOCAB = new Set([
   "asian",
   "indian",
   "indian clothes",
+
+  // --- 2026-10-24 口塞：0 張的舊名，WAI v17 仍畫得出頭套（討論區第三輪）-----
+  //
+  // harness gag：2013 起的空殼，沒標停用。現名 gag harness D 5/5、舊名 D 5/5，並排同名卡。
+  "harness gag",
 ]);
 
 // 使用者點名必須擋掉的：deprecated、post_count 0、或 alias 舊名。

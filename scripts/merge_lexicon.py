@@ -5352,6 +5352,86 @@ def extra_ethnic_tags() -> list[dict]:
     ]
 
 
+def extra_gag_tags() -> list[dict]:
+    """口塞、繩縛、俘虜、羞辱。2026-10-24 用 WAI v17 測過，只收 D≥3/5。
+
+    口塞照 bit gag 放飾品，但圖是穿衣服的肖像，所以三檔都開、時代 any
+    （不要用摔角那支會鎖現代的 cloth）。種類都 implies gag；被塞口是狀態，也 implies gag。
+    衣外繩縛、綁手臂、綁腿、綁軀幹照 shibari、bound wrists，三檔都開。
+    俘虜和綁在椅子上照 restrained，只有 sex。綁在椅子上 implies chair。
+    被俘不 implies restrained。小陰莖羞辱 implies small penis，要男和女。
+    貞操鎖是男用器具，gate male、needs male、時代 modern。
+    籠子是鐵條物件，跟鳥籠同格，不佔地點。口塞頭套的舊名由 alt_names 並排。
+    秒墮、被迫觀看是主人看過圖後留下的。秒墮照交配壓制只開 sex、要一男一女，
+    但不佔性愛動作格，也不 implies 交配壓制（圖常是兩格，體位不固定）。
+    被迫觀看只要三人，needs group。兩個都進 sex_bdsm。
+    """
+    all_h = list(HEATS)
+    sex = ["sex"]
+
+    def cloth(tag, implies=None, zh=""):
+        return {
+            "tag": tag,
+            "section": "clothing",
+            "gate": "any",
+            "heat": all_h,
+            "mutex": None,
+            "bind": [],
+            "implies": implies or [],
+            "layer": "accessory",
+            "era": ["any"],
+            "needs": [],
+            "zh": zh,
+        }
+
+    def pose(tag, implies=None, needs=None, gate="any", era=None, zh=""):
+        return {
+            "tag": tag,
+            "section": "pose",
+            "gate": gate,
+            "heat": sex,
+            "mutex": None,
+            "bind": [],
+            "implies": implies or [],
+            "layer": "normal",
+            "era": era or ["any"],
+            "needs": needs or [],
+            "zh": zh,
+        }
+
+    return [
+        cloth("gagged", ["gag"], "被塞口"),
+        cloth("improvised gag", ["gag"], "臨時口塞"),
+        cloth("cleave gag", ["gag"], "勒口布"),
+        cloth("gag harness", ["gag"], "口塞頭套"),
+        cloth("shibari over clothes", ["shibari"], "衣外繩縛"),
+        cloth("bound arms", zh="綁手臂"),
+        cloth("bound legs", zh="綁腿"),
+        cloth("bound torso", zh="綁軀幹"),
+        pose("captured", zh="被俘"),
+        pose("tied to chair", ["chair"], zh="綁在椅子上"),
+        pose("chained", zh="被鎖鏈拴住"),
+        pose("prisoner", zh="囚犯"),
+        pose("small penis humiliation", ["small penis"], ["male", "female"], zh="小陰莖羞辱"),
+        pose("chastity cage", gate="male", needs=["male"], era=["modern"], zh="貞操鎖"),
+        pose("instant loss", needs=["male", "female", "pair"], zh="秒墮"),
+        pose("forced to watch", needs=["group"], zh="被迫觀看"),
+        {
+            "tag": "cage",
+            "section": "env",
+            "gate": "any",
+            "heat": all_h,
+            "mutex": None,
+            "bind": [],
+            "implies": [],
+            "layer": "normal",
+            "era": ["any"],
+            "needs": [],
+            "zh": "籠子",
+        },
+    ]
+
+
 def extra_character_tags() -> list[dict]:
     """characters.json 裡 character_ban 為 false 的角色。被 ban 的不進詞庫。
 
@@ -5516,6 +5596,7 @@ def main() -> None:
     rows.extend(extra_look_tags())
     rows.extend(extra_wrestle_tags())
     rows.extend(extra_ethnic_tags())
+    rows.extend(extra_gag_tags())
     rows.extend(extra_character_tags())
 
     old_zh: dict[str, str] = {}

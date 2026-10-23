@@ -550,6 +550,9 @@ SUBS = {
         ]),
         ("sex_bdsm", "性愛・拘束支配", [
             "bondage", "bdsm", "restrained", "public bondage", "bound ankles", "frogtie", "hogtie",
+            "captured", "tied to chair", "chained", "prisoner",
+            "small penis humiliation", "chastity cage",
+            "instant loss", "forced to watch",
             "tape bondage", "suspension", "crucifixion", "crotch rope", "butt plug",
             "anal beads", "leash pull", "pet play", "slave", "femdom", "pegging",
             "prostate milking", "humiliation", "objectification", "human furniture",
@@ -856,8 +859,10 @@ SUBS = {
             "breast pump", "milking machine", "nipple suction cups", "speculum", ]),
         ("acc_bind", "飾品・拘束具", [
             "blindfold", "gag", "ball gag", "bit gag", "ring gag", "tape gag", "nose hook",
+            "gagged", "improvised gag", "cleave gag", "gag harness",
             "leash", "chain leash", "handcuffs", "cuffs", "shackles", "restraints",
-            "bound wrists", "rope", "shibari", "spreader bar", "pillory", "stocks",
+            "bound wrists", "bound arms", "bound legs", "bound torso",
+            "rope", "shibari", "shibari over clothes", "spreader bar", "pillory", "stocks",
         ]),
     ],
     "env": [
@@ -995,7 +1000,7 @@ SUBS = {
         ("obj_classic", "景物・古風擺設", [
             "folding screen", "stone lantern", "paper lantern", "rock garden", "incense",
             "incense burner", "scroll", "calligraphy", "ofuda", "komainu", "jizou",
-            "teapot", "teacup", "tea set", "silk", "beads", "amphora", "birdcage",
+            "teapot", "teacup", "tea set", "silk", "beads", "amphora", "birdcage", "cage",
             "crystal ball", "pocket watch", "cane", "statue", "lace",
         ]),
         ("obj_plant", "景物・植物動物", [

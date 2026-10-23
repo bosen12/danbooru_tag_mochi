@@ -266,6 +266,8 @@ const ART_EXTRA = {
   "butt plug": "ass, from behind, nude",
   "anal beads": "ass, from behind, nude",
   "crotch rope": "standing, nude",
+  // 2026-10-24：上半身構圖看不到腿上的繩。
+  "bound legs": "full body",
   "sideboob": "breasts, from side",
   "underboob": "breasts, from below",
   "backboob": "breasts, from behind",
