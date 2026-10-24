@@ -1352,7 +1352,8 @@ function indoorOutdoorClash(have) {
   const nude = [];
   let nudeInBath = 0;
   let bathScenes = 0;
-  for (let i = 0; i < 40; i++) {
+  // 2026-10-24 Grok 建議池 558 張：40 張剛好一張浴場都沒有（護欄紅了）。規則沒變，樣本放大到 200。
+  for (let i = 0; i < 200; i++) {
     const d = drawOne(lex, s, new Set(), new Set(), mulberry32(26000 + i), 26000 + i);
     const h = tagsOf(d);
     const inBath = BATH_OK.some((t) => h.has(t));
@@ -1366,7 +1367,7 @@ function indoorOutdoorClash(have) {
   // 護欄：上面那條若因為 40 張裡一顆浴場都沒抽到而「空過」，這條會紅。
   // 沒有它的話，把整個浴場例外寫死成永不觸發也照樣通過。
   ok("tease sample actually reaches a bath scene", bathScenes > 0,
-     `40 張裡浴場 ${bathScenes} 張、其中全裸 ${nudeInBath} 張`);
+     `200 張裡浴場 ${bathScenes} 張、其中全裸 ${nudeInBath} 張`);
 }
 
 {
@@ -1941,6 +1942,8 @@ function indoorOutdoorClash(have) {
   s.weights = { tease: 0, flash: 1, sex: 0 };
   let mismatch = 0;
   let noAct = 0;
+  // 浴場裡本來就光著、沒有衣服可以掀（2026-10-24 Grok 建議池 558 張：seed 31047 換到淋浴間＋人體彩繪）。
+  const BATH_SCENE = ["bath", "bathtub", "bubble bath", "onsen", "hot spring", "ofuro", "bathhouse", "sauna", "shower (place)", "showering", "bathing", "shared bathing"];
   for (let i = 0; i < 50; i++) {
     const d = drawOne(lex, s, new Set(), new Set(), mulberry32(31000 + i), 31000 + i);
     const h = tagsOf(d);
@@ -1949,7 +1952,7 @@ function indoorOutdoorClash(have) {
       const it = lex.byTag.get(t);
       return it && (it.mutex === "clothes_action" || it.group === "flash");
     });
-    if (!acts.length) noAct += 1;
+    if (!acts.length && !BATH_SCENE.some((t) => h.has(t))) noAct += 1;
     for (const a of acts) {
       if (actionFitsClothes(a, cloth) === 0) mismatch += 1;
     }
@@ -1969,7 +1972,8 @@ function indoorOutdoorClash(have) {
       const it = lex.byTag.get(t);
       return it && (it.mutex === "clothes_action" || it.group === "flash");
     });
-    if (!acts.length) cheerNoAct += 1;
+    // 同上：seed 31167 換到溫泉（啦啦隊員圍浴巾）。
+    if (!acts.length && !BATH_SCENE.some((t) => h.has(t))) cheerNoAct += 1;
     for (const a of acts) {
       if (actionFitsClothes(a, cloth) === 0) cheerMismatch += 1;
     }
@@ -5694,7 +5698,8 @@ function indoorOutdoorClash(have) {
     // 2026-10-23 第二輪：主人指定加回 12 個字、族裔這批進池，六招限摔角場地。這張換成籃球服、天堂。仍是 1girl solo，沒有男生或人類陰莖。
     // 2026-10-24 第三輪：口塞、衣外繩縛、綁法、俘虜進池。這張多了性玩具、拉珠，披薩換成月餅。仍是 1girl solo，沒有男生或人類陰莖。
     // 2026-10-24 第四輪：468 張新卡進池（Codex），Opus 驗收補上早晨／夜晚、室內外規則與戶外傢俱格，整張換過。仍是 1girl solo，沒有男生或人類陰莖。
-    "1girl, solo, very short hair, yellow eyes, aqua hair, long sidelocks, sidelocks, small breasts, two side up, nervous sweating, sweat, maid, platform shoes, shoes, toeless legwear, single sleeve, animal costume, female masturbation, legs apart, out of frame, looking at mirror, come hither, nyotaimori, food on body, kitchen, indoors, sunrise, shadow, motorcycle, full-length mirror, mirror, nsfw, explicit, masterpiece, best quality, amazing quality");
+    // 2026-10-24 Grok 建議池 558 張進池（Opus 驗收），整張換過。仍是 1girl solo，沒有男生或人類陰莖。
+    "1girl, solo, very short hair, yellow eyes, aqua hair, blunt bangs, small breasts, long legs, thick thighs, body blush, miko, panties around one leg, garter belt, frilled apron, striped bra, bra, female masturbation, bowlegged pose, upside-down, looking around, laughing, orgasm, cockpit, indoors, on bench, day, dappled sunlight, diffraction spikes, nsfw, explicit, masterpiece, best quality, amazing quality");
   ok("drawOne exposes shadow diagnostics", Array.isArray(shadowIntegrationDraw.shadowViolations));
 
   const eatProneShadow = validateSupportShadow({
@@ -5896,7 +5901,8 @@ function indoorOutdoorClash(have) {
       s.mustDraw = { "clothing:era": 1 };
     }, 90300 + i);
     const h = tagsOf(d);
-    if (["showering", "bathing", "swimming", "shared bathing", "diving"].some((t) => h.has(t))) continue;
+    // 2026-10-24 Grok 建議池 558 張：seed 90315 換到浴缸（圍浴巾），清單只寫了 showering／bathing，地點類的浴場沒列到。
+    if (["showering", "bathing", "swimming", "shared bathing", "diving", "bath", "bathtub", "bubble bath", "onsen", "hot spring", "ofuro", "bathhouse", "sauna", "shower (place)"].some((t) => h.has(t))) continue;
     eraEligible += 1;
     if (groupCount(d, "clothing", "era") >= 1) eraGot += 1;
   }
@@ -7406,11 +7412,23 @@ function indoorOutdoorClash(have) {
     return (it.mutex || it.group) === "bottom";
   };
   const isOnepiece = (t) => lex.byTag.get(t)?.mutex === "onepiece";
-  const h = tagsOf(drawOne(lex, s, new Set(["white shirt", "coat"]), new Set(), mulberry32(63001), 63001));
   // 2026-10-12：內褲在 LOWER_COVER_TAGS 裡，「上衣＋內褲」是誘惑本來就有的穿法，修復不補下著
   // （HEAD 釘這兩件 200 張也有 25 張這樣）。這條要守的是 coat 不算數，所以內褲也算交代了下半身。
-  const lowerStated = [...h].some(isBottom) || h.has("panties");
-  ok("外套不能冒充下著：上衣＋coat 會補 bottom，不疊穿 onepiece", lowerStated && ![...h].some(isOnepiece), [...h].join(", "));
+  // 2026-10-24 Grok 建議池 558 張：以前只看 seed 63001 一張，換到浴缸泡澡（浴場本來就脫）就紅。改成掃 40 張、浴場不算；
+  // 運動服照引擎的規則（underwearOnlyClash）算蓋住下半身。
+  const BATH_HERE = ["bath", "bathtub", "bubble bath", "onsen", "hot spring", "ofuro", "bathhouse", "sauna", "shower (place)", "showering", "bathing"];
+  const coatBad = [];
+  let coatSeen = 0;
+  let h = new Set();
+  for (let i = 0; i < 40; i++) {
+    const seed = 63001 + i;
+    h = tagsOf(drawOne(lex, s, new Set(["white shirt", "coat"]), new Set(), mulberry32(seed), seed));
+    if (BATH_HERE.some((t) => h.has(t))) continue;
+    coatSeen += 1;
+    const lowerStated = [...h].some(isBottom) || h.has("panties") || h.has("sportswear");
+    if (!lowerStated || [...h].some(isOnepiece)) coatBad.push(`${seed}: ${[...h].join(", ")}`);
+  }
+  ok("外套不能冒充下著：上衣＋coat 會補 bottom，不疊穿 onepiece", coatSeen >= 30 && !coatBad.length, coatBad[0] || `只看到 ${coatSeen} 張`);
   const s1 = { ...s, counts: { ...s.counts, clothing: 1 } };
   const h1 = tagsOf(drawOne(lex, s1, new Set(["white shirt", "coat"]), new Set(), mulberry32(63001), 63001));
   ok("服裝 1、釘了上衣＋coat：釘選已佔滿，不再補下身", ![...h1].some(isBottom), [...h1].join(", "));
@@ -8739,7 +8757,8 @@ function indoorOutdoorClash(have) {
     let bare = 0;
     let bath = 0;
     const BATH = new Set(["bath", "bathtub", "bathing", "onsen", "shower", "ofuro"]);
-    for (let i = 1; i <= 400; i++) {
+    // 2026-10-24 Grok 建議池 558 張：400 張只剩 4 張浴場（要 10）。規則沒變，樣本放大到 1200。
+    for (let i = 1; i <= 1200; i++) {
       const have = tagsOf(drawOne(lex, s, new Set(), new Set(), mulberry32(i), i));
       if (![...have].some((t) => BATH.has(t))) continue;
       bath += 1;

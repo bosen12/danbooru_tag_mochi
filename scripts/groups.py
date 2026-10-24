@@ -877,7 +877,45 @@ ROUND4_BATCH3_GROUPS = {
 }
 
 
+
+
+# 2026-10-24 建議池。inherit_eras 會再叫一次 assign_group，字名片段會把角、翅膀、景物分錯。
+ROUND_1500_GROUPS = {
+    **dict.fromkeys('red bow|red ribbon|black bow|black ribbon|blue bow|white bow|pink bow|black hairband|white hairband|red hairband|tate eboshi|ajirogasa|blue hairband|blue halo|pink halo|military hat|sailor hat|garrison cap|flat cap|fedora|bucket hat|jester cap|arm warmers|bracer|wrist scrunchie|red scrunchie|blue scrunchie|black scrunchie|tinted eyewear|heart earrings|star earrings|jingasa'.split("|"), 'acc'),
+    **dict.fromkeys("drying|wiping face|wiping sweat|brushing another's hair|sleeping on person|shared food|chewing|tickling|chasing|fleeing|throwing|riding pokemon|imminent kiss|after kiss|surprise kiss|pocky kiss|untying|poking|confession|comforting".split("|"), 'activity'),
+    **dict.fromkeys('sidesaddle|legs folded|head down|knees apart feet together|bowlegged pose|heel up'.split("|"), 'body'),
+    **dict.fromkeys('legs|feet|toes|toenails|back|knees|kneepits|nape|obliques|dimples of venus|full-package futanari|puckered anus|dark anus|median furrow|spine|palms'.split("|"), 'body_f'),
+    **dict.fromkeys('long beard|thick beard|thick mustache|sideburns stubble|mustache stubble|goatee stubble|strongman waist|sidepec|manly|hairy|navel hair|fake mustache|pectoral cleavage'.split("|"), 'body_m'),
+    **dict.fromkeys('red shorts|grey shorts|brown shorts|green shorts|purple shorts|pink shorts|yellow shorts|orange shorts|striped shorts|suspender shorts|puffy shorts|high-waist shorts|yellow skirt|orange skirt|aqua skirt|striped skirt|print skirt|medium skirt|circle skirt|pink pants'.split("|"), 'bottom'),
+    **dict.fromkeys('spill|spilling|melting|shards|debris|energy ball|dark aura|destruction|laser|paint splatter|electrokinesis|telekinesis'.split("|"), 'effect'),
+    **dict.fromkeys('kote|yugake|kesa|kusazuri|sode|faulds|muneate|hachimaki|kappougi|greco-roman clothes|dougi|black hakama|blue hakama|obiage|hakama pants'.split("|"), 'era'),
+    **dict.fromkeys('blue pupils|uneven eyes|forked eyebrows|curly eyebrows|huge eyebrows|eyebrow cut|mismatched eyebrows|drop-shaped pupils|rabbit-shaped pupils|power symbol-shaped pupils|blue sclera|flaming eye|unusually open eyes|short eyebrows|heart in eye|no eyebrows'.split("|"), 'eyes'),
+    **dict.fromkeys('gradient clothes|two-sided fabric|diagonal-striped clothes|fur-trimmed cape|fur-trimmed dress|fur-trimmed capelet|cable knit|feather trim|fringe trim|ribbon-trimmed skirt|lace-trimmed dress|frilled shirt collar|blue sailor collar|white sailor collar|black sailor collar|shoulder cutout|navel cutout|back cutout|side cutout|partially unbuttoned|open fly|open collar|buttoned cuffs|popped collar'.split("|"), 'fabric'),
+    **dict.fromkeys('doyagao|gloom (expression)|false smile|completely unamused|screaming|happy tears|jealous|worried|sigh|dot mouth|cheek bulge|uvula|spitting|sick|pain|xd|o3o|u u|cheek pinching'.split("|"), 'face'),
+    **dict.fromkeys('fur-trimmed boots|blue shoes|pink shoes|yellow shoes|green shoes|orange shoes|purple shoes|grey shoes|red boots|blue boots|pink boots|brown sandals|white sandals|high heel sandals|strappy heels|platform heels|flats|ballet slippers|roller skates|inline skates|skates|paw shoes|single shoe|mismatched footwear|asymmetrical footwear|shoe soles|shoelaces'.split("|"), 'feet'),
+    **dict.fromkeys('wide spread legs|spread pussy under clothes|covering nipples|clothes down|clothed female nude female|covered penis'.split("|"), 'flash'),
+    **dict.fromkeys('under covers'.split("|"), 'furniture'),
+    **dict.fromkeys('blank stare|covered eyes'.split("|"), 'gaze'),
+    **dict.fromkeys('long hair between eyes|hairpods|bun cover|quad tails|tri tails|ringlets|pointy hair|cowlick|diagonal bangs|arched bangs|short bangs|blunt tresses|long sideburns|split ponytail|prehensile hair|hair spread out|multiple braids|updo|loose hair strand|low-tied sidelocks|hair flowing over'.split("|"), 'hair_style'),
+    **dict.fromkeys('utaite'.split("|"), 'job'),
+    **dict.fromkeys('purple thighhighs|blue thighhighs|pink thighhighs|yellow thighhighs|green thighhighs|orange thighhighs|striped pantyhose|purple pantyhose|pink pantyhose|blue pantyhose|red pantyhose|frilled thighhighs|lace-trimmed thighhighs|print thighhighs|ribbed thighhighs|seamed legwear|back-seamed legwear|thighhighs under boots|argyle pantyhose'.split("|"), 'legs'),
+    **dict.fromkeys('grey nails|very long fingernails'.split("|"), 'makeup'),
+    **dict.fromkeys('brown dress|grey dress|yellow dress|striped dress|two-tone dress|orange dress|aqua dress|plaid dress|polka dot dress|print dress|taut dress|medium dress|microdress|tube dress|turtleneck dress|santa dress|black bikini|white bikini|red bikini|frilled bikini|striped bikini|purple bikini|blue leotard|red leotard|short jumpsuit|unitard|romper'.split("|"), 'onepiece'),
+    **dict.fromkeys('genderswap (mtf)|genderswap (ftm)|crossdressing|clone|animalization|single horn|curled horns|black horns|red horns|multiple horns|antlers|fiery horns|cone horns|asymmetrical horns|uneven horns|lipstick tube|on lap|round table|chest of drawers|hospital bed|bar stool|stove|tanzaku|ema|bamboo broom|ginkgo leaf|petals on liquid|log|crate|analog clock|dandelion|lily of the valley|food stand|chimney|round window|traffic cone|morning glory|orange rose|chalk|globe|helicopter|scooter|race vehicle|hagoita|daruma doll|hamaya|kouhaku nawa|mahjong tile|broken horn|dog tail|mouse tail|raccoon tail|tiger tail|shark tail|squirrel tail|lion tail|monkey tail|bird tail|ghost tail|snake tail|spiked tail|heart tail|cow tail|blue wings|mini wings|multicolored wings|purple wings|spread wings|sharp teeth|fangs|fang out|round teeth|buck teeth|lower teeth only|long tongue|forked tongue|colored tongue|blue tongue|tail raised|prehensile tail|on shoulder'.split("|"), 'other'),
+    **dict.fromkeys('pink jacket|yellow jacket|purple jacket|orange jacket|red coat|blue coat|pink coat|grey coat|green coat|yellow coat|purple coat|duffel coat|military jacket|camouflage jacket|collared coat|brown cardigan|pink cardigan|grey cardigan|black cardigan|blue cardigan|white cardigan'.split("|"), 'outer'),
+    **dict.fromkeys('furry female|furry male|draph|erune|hyur|au ra|mithra (ff11)|taur'.split("|"), 'race'),
+    **dict.fromkeys("futa with female|futa with male|futa with futa|crotch rub|reach-around|ejaculating while penetrated|cum on male|male penetrated|vibrator under panties|hand in another's panties|anal object insertion|cum on self|hand on another's ass|oral invitation|futa on male".split("|"), 'sex'),
+    **dict.fromkeys('cross scar|scar on forehead|scar on neck|scar on mouth|burn scar|scar across eye|stitches|scratches|bandaid on leg|bandaid on arm|heart facial mark|crescent facial mark|teardrop facial mark|bandaid on hand|facial tattoo|back tattoo|breast tattoo|stomach tattoo|star tattoo|number tattoo|hand tattoo|barcode tattoo|mole on thigh|mole on neck|mole above mouth|mole on ass|scar on nose|multiple moles'.split("|"), 'skin'),
+    **dict.fromkeys('oekaki|blue theme|pink theme|red theme|green theme|purple theme|yellow theme|horror (theme)|orange theme|black theme|white theme|brown theme'.split("|"), 'style'),
+    **dict.fromkeys("hands on own knees|hands on lap|hand on own stomach|hands on feet|leg between thighs|lying on person|rubbing eyes|pulling own clothes|convenient leg|convenient arm|shoe dangle|grabbing own ass|hands on own ass|tucking hair|hair lift|brushing hair|hands in own hair|spread toes|hand on own leg|elbow rest|pinky out|spread fingers|weapon over shoulder|weapon on back|sword over shoulder|sword on back|reverse grip|hand on hilt|finger on trigger|drawing sword|holstered|holding behind back|twirling hair|finger to cheek|finger to own chin|licking finger|pocky in mouth|teasing|arm around another's waist|hand on another's hip|kissing forehead|sexually suggestive".split("|"), 'tease'),
+    **dict.fromkeys('bare back|single bare shoulder|taut shirt|tight shirt|plaid shirt|pinstripe shirt|orange shirt|long shirt|ribbed shirt|impossible shirt|vertical-striped shirt|two-tone shirt|strapless shirt|halter shirt|sideless shirt|sleeveless hoodie|white camisole|pink camisole|turtleneck shirt|untucked shirt|black hoodie|white hoodie|blue hoodie|pink hoodie|grey hoodie|brown sweater|grey sweater|pink sweater'.split("|"), 'top'),
+    **dict.fromkeys('green panties|aqua panties|yellow panties|orange panties|grey panties|print panties|bow panties|purple bra|green bra|grey bra|frilled bra|polka dot bra|print bra|white male underwear|black male underwear|micro panties|cat ear panties|panty straps|bra strap|cupless bra'.split("|"), 'underwear'),
+    **dict.fromkeys('reference sheet|turnaround|column lineup|collage'.split("|"), 'camera'),
+}
+
 def assign_group(item: dict) -> str:
+    if item.get("tag") in ROUND_1500_GROUPS:
+        return ROUND_1500_GROUPS[item["tag"]]
     if item.get("tag") in ROUND4_BATCH1_GROUPS:
         return ROUND4_BATCH1_GROUPS[item["tag"]]
     if item.get("tag") in ROUND4_BATCH2_GROUPS:

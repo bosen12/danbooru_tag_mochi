@@ -199,6 +199,7 @@
       }
     </style>
     <link rel="preload" href="lexicon.json" as="fetch" crossorigin />
+    <link rel="preload" href="tag_dates.json" as="fetch" crossorigin />
     <link rel="preload" href="cards/manifest.json" as="fetch" crossorigin />
     <link rel="modulepreload" href="engine.js" />
     <link rel="stylesheet" href="fonts.css" />
@@ -252,6 +253,7 @@
             <div class="book-order">
               <div class="segmented" id="book-sort" role="radiogroup" aria-label="排序"></div>
               <button class="chip-toggle pressable book-used" id="book-used" type="button" aria-pressed="false">只看用過的</button>
+              <button class="chip-toggle pressable book-used" id="book-banned" type="button" aria-pressed="false" title="把禁用角色也列出來（不能帶去墨池）">含禁用</button>
             </div>
           </div>
           <div class="group-chips book-groups" id="book-groups" role="group" aria-label="小分類" hidden></div>

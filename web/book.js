@@ -8,7 +8,7 @@ import { cloneCard } from "./card-images.js";
  *
  * 次數由墨池、疊印台記（usage.js）：墨池每抽出一張、疊印台每付印一張，用到的牌各加一。
  * 這一頁只讀、排、看：
- *   - 多到少／少到多，花色、細分類、找字、只看用過的。
+ *   - 多到少／少到多、新到舊／舊到新，花色、細分類、找字、只看用過的、含禁用。
  *   - 換排序、換花色時，還在畫面上的牌從舊位置滑到新位置（FLIP），新來的錯開浮上來。
  *   - 點一張牌：牌飛進詳情，大數字從 0 數上來，看你親手放幾次、引擎補幾次、最近一次。
  *     「帶去墨池」把它放進墨池的合成池（store.js 的交接便條）再換版過去。
@@ -45,15 +45,30 @@ guardPrerender("book");
 const sfx = getSfx();
 const $ = (id) => document.getElementById(id);
 const UI_KEY = "mochi.book.v1";
-// 一次畫幾張：上千張一次畫完會卡；捲到底附近再接著畫（跟字盒同一套）。
-// 手機一屏只看得到十來張：第一批畫 24 張就好，其他的由觀察器在畫面出去之後一批批補。開頁、換排序、
-// 換花色都是重畫這一批 —— 72 張時第一次排版 674ms（CPU 降速 4 倍），24 張 394ms。
-const CHUNK = matchMedia("(max-width: 40rem)").matches ? 24 : 72;
-// 捲動時補的那一批小一點：新格子第一次要算樣式、排版（一張牌二十幾個節點），72 張擠在同一格
-// 要 30～40ms，捲動時看得出頓一下。24 張一批，下一批由觀察器在下一格接著補（提前兩屏，來得及）。
-const MORE_CHUNK = 24;
-const ORDER_ZH = { desc: "多到少", asc: "少到多", good: "出好圖", bad: "常撤下" };
-const ORDER_MARK = { desc: "↓", asc: "↑", good: "★", bad: "✕" };
+// 只畫看得到的那幾排（2026-10-24）：以前一批批往下補、從不拿掉，捲到底一千多格、兩萬多個節點，
+// 手機（CPU 降速 4 倍）捲 2 秒卡 23 次。現在格子固定高度，照捲動位置算該畫第幾排到第幾排，
+// 上下各一塊空白撐住高度；捲出去的格子拿掉（節點留著，捲回來直接接上）。
+// 畫面上方多留半屏、下方多留一屏半：往下捲時下一排已經在了，圖也先開始抓。
+const BEHIND = 0.5;
+const AHEAD = 1.5;
+// 一格畫面最多花幾毫秒做新的牌：做不完的先放空位撐住版面，下一格接著換（以前一次 24 張，手機 50～70ms）。
+const BUDGET_MS = 6;
+// 做好的格子最多留幾個：捲很遠之後最久沒看到的放掉，記憶體不會一直長。
+const CACHE_MAX = 900;
+// 電腦（滑鼠）：卡盒「＋」、愛心等滑鼠移過去才做（每格少四五個節點）；觸控一直看得到，照舊一開始就做。
+const HOVER = matchMedia("(hover: hover) and (pointer: fine)");
+const ORDER_ZH = { desc: "多到少", asc: "少到多", good: "出好圖", bad: "常撤下", new: "新到舊", old: "舊到新" };
+const ORDER_MARK = { desc: "↓", asc: "↑", good: "★", bad: "✕", new: "↓", old: "↑" };
+// 禁用角色的原因（跟詞庫表同一套說法）。
+const BAN_REASON = {
+  minor: "未滿 18 歲",
+  student: "學生",
+  childlike: "外觀像兒童",
+  real_person: "真人／VTuber",
+  non_human: "非人形",
+  unsure: "年齡查不到或沒把握",
+};
+const banReason = (card) => BAN_REASON[card.reason] || "禁用";
 // 牌的戰績（出好圖／常撤下）：印好的圖裡，用了這張牌的有幾成被收藏、幾成被單張撤下。
 // 從出圖日誌算（server.py 的 /api/genlog/stats），所以只算有日誌之後印的。
 // 少於 WAR_MIN 張的不排（印 1 張收 1 張就 100%，沒意義）；排的時候用信賴下界，
@@ -62,6 +77,7 @@ const WAR_MIN = 3;
 let war = null;
 const warOf = (tag) => (war && war.cards[tag]) || [0, 0, 0];
 const isWar = () => ui.order === "good" || ui.order === "bad";
+const isDate = () => ui.order === "new" || ui.order === "old";
 function lowerBound(k, n, z = 1.28) {
   if (!n) return 0;
   const p = k / n;
@@ -87,6 +103,8 @@ async function fetchWar() {
 
 let data = null;
 let lex = null;
+// 詞庫索引（cardFacts 用）：開頁不建，第一次打開詳情、浮空放大卡才建。
+const lexNow = () => (lex ||= indexLexicon(data));
 let lib = null;
 let assets = null;
 let usage = null;
@@ -96,10 +114,9 @@ let free = false;
 const seeRating = () => (free ? "explicit" : rating);
 let ratingFreePaint = null;
 let list = [];
-let shown = 0;
 // 牌的節點留著重用：換排序時同一張牌是同一個節點，才滑得過去，圖也不必重載。
 const cells = new Map();
-const ui = S.typedLike({ suit: "all", group: "", query: "", order: "desc", usedOnly: false, charGender: "" }, readUi());
+const ui = S.typedLike({ suit: "all", group: "", query: "", order: "desc", usedOnly: false, showBanned: false, charGender: "" }, readUi());
 // 搜尋字跟著這個分頁走（store.js 的 saveTab／loadTab，跟合成池同一套）：去墨池放一張牌再回來，剛才找的字還在，
 // 「回到剛才看的地方」（spotSig 裡有搜尋字）也對得上。重新整理照舊是空的；離開太久（半小時）不帶回來。
 const QUERY_TAB = "mochi.book.query.v1";
@@ -121,15 +138,58 @@ function readUi() {
 }
 function saveUi() {
   try {
-    localStorage.setItem(UI_KEY, JSON.stringify({ suit: ui.suit, group: ui.group, order: ui.order, usedOnly: ui.usedOnly, charGender: ui.charGender }));
+    localStorage.setItem(UI_KEY, JSON.stringify({ suit: ui.suit, group: ui.group, order: ui.order, usedOnly: ui.usedOnly, showBanned: ui.showBanned, charGender: ui.charGender }));
   } catch {
     /* 存不了就算了 */
   }
 }
 
+/** 加入日（web/tag_dates.json）貼到牌上，並把禁用角色補進卡冊。不進詞庫的抽牌清單。 */
+function attachDates(lib, dates) {
+  const added = (dates && dates.added) || {};
+  for (const card of lib.cards) card.added = added[card.tag] || "";
+  for (const row of (dates && dates.banned) || []) {
+    const tag = row && row.tag;
+    if (!tag || lib.byTag.has(tag) || tag === "loli" || tag === "shota") continue;
+    const gate = row.gate === "female" || row.gate === "male" ? row.gate : "any";
+    const card = {
+      tag,
+      zh: row.zh || tag,
+      suit: "chara",
+      group: row.group || "character",
+      groupZh: row.groupZh || "角色",
+      seal: null,
+      rating: "general",
+      gate,
+      eras: ["any"],
+      added: row.added || added[tag] || "",
+      banned: true,
+      reason: row.reason || "",
+      item: {
+        tag,
+        zh: row.zh || tag,
+        section: "subject",
+        group: "character",
+        sub: row.group || "character",
+        series: row.series || "",
+        gate,
+        era: ["any"],
+        heat: ["tease"],
+        implies: [],
+        bind: [],
+        mutex: null,
+      },
+    };
+    lib.cards.push(card);
+    lib.byTag.set(tag, card);
+  }
+}
+
 const countOf = (tag) => usage.counts[tag] || 0;
 const lastOf = (tag) => usage.last[tag] || 0;
-const fmt = (n) => n.toLocaleString(dateLocale);
+// 數字格式器建一次重用：toLocaleString 每次都建一個，開頁時手機（降速 4 倍）光這個 32ms。
+const numFmt = new Intl.NumberFormat(dateLocale);
+const fmt = (n) => numFmt.format(n);
 
 /* ================= 開機 ================= */
 
@@ -142,14 +202,19 @@ async function boot() {
   mountScreensaver();
   // 墨池、疊印台正在印的：頂欄看得到，點了回去（gen-status.js）。
   mountGenStatus("book");
+  // 加入日（852KB）跟詞庫一起開始抓，但不等它：先畫第一屏，到了再補上日期。
+  // 現在就要用到的（照日期排、含禁用）才等它，不然要整格重畫一次。
+  const datesP = fetch(document.querySelector('link[rel="preload"][href^="tag_dates.json"]')?.href || "tag_dates.json").then((r) => (r.ok ? r.json() : {})).catch(() => ({}));
+  let datesLate = false;
   try {
     const [lexicon, manifest] = await Promise.all([
       fetch(document.querySelector('link[rel="preload"][href^="lexicon.json"]')?.href || "lexicon.json").then((r) => r.json()),
       fetch(document.querySelector('link[rel="preload"][href^="cards/manifest.json"]')?.href || "cards/manifest.json").then((r) => (r.ok ? r.json() : {})).catch(() => ({})),
     ]);
     data = lexicon;
-    lex = indexLexicon(data);
     lib = buildLibrary(data, { ratingBlocked });
+    if (isDate() || ui.showBanned) attachDates(lib, await datesP);
+    else datesLate = true;
     assets = createAssets(manifest);
   } catch (err) {
     // 連線問題（手機網路斷一下、伺服器沒開）：說「連不到主機」、給重試；不是叫人用 start.bat 開。
@@ -193,12 +258,23 @@ async function boot() {
   });
   renderSort();
   renderUsedToggle();
+  renderBannedToggle();
   renderSuits();
   wireSearch();
   mountMiniBar();
   sizeCells($("book-grid"));
+  wireGrid();
   render({ animate: false, deal: true });
   restoreSpot();
+  watchScroll();
+  if (datesLate)
+    datesP.then((dates) => {
+      attachDates(lib, dates);
+      // 日期到了：畫面上的格子補上那一行。等的時候已經切到照日期排、含禁用的話，整格照新的重排一次。
+      if (isDate() || ui.showBanned) render({ animate: false });
+      else repaintLive();
+      renderSummary();
+    });
   addEventListener("pagehide", saveSpot);
   renderSummary({ count: true });
   pingLoop();
@@ -239,9 +315,13 @@ function openFromHash() {
   history.replaceState(null, "", location.pathname + location.search);
   const card = lib.byTag.get(tag);
   if (!card) return toast("詞庫裡沒有這張牌了");
-  const node = $("book-grid").querySelector(`.card[data-tag="${CSS.escape(tag)}"]`);
-  // 牌在格子裡（沒被篩掉）：捲到它、從它飛進詳情；不在（被篩掉、還沒畫到）照樣打開詳情。
-  node?.scrollIntoView({ block: "center" });
+  // 牌在清單裡（沒被篩掉）：捲到那一排、接上，從它飛進詳情；不在（被篩掉）照樣打開詳情。
+  const i = list.indexOf(card);
+  if (i >= 0 && rowH) {
+    scrollTo({ top: gridTopY() + Math.floor(i / cols) * rowH - innerHeight / 3, behavior: "instant" });
+    layoutWindow();
+  }
+  const node = cells.get(tag)?.isConnected ? cells.get(tag).querySelector(".card") : null;
   openCard(card, node);
 }
 
@@ -304,7 +384,7 @@ function wireSound() {
 
 let sumShown = { used: 0, total: 0 };
 function renderSummary({ count = false } = {}) {
-  const pool = lib.cards.filter(visibleCard);
+  const pool = lib.cards.filter(drawable);
   const used = pool.filter((c) => countOf(c.tag) > 0).length;
   const total = pool.reduce((n, c) => n + countOf(c.tag), 0);
   const box = $("book-sum");
@@ -533,6 +613,20 @@ function renderSort() {
   );
 }
 
+function renderBannedToggle() {
+  const b = $("book-banned");
+  b.setAttribute("aria-pressed", ui.showBanned ? "true" : "false");
+  b.onclick = () => {
+    ui.showBanned = !ui.showBanned;
+    saveUi();
+    b.setAttribute("aria-pressed", ui.showBanned ? "true" : "false");
+    seat(b);
+    backToTop();
+    renderSuits();
+    render();
+  };
+}
+
 function renderUsedToggle() {
   const b = $("book-used");
   b.setAttribute("aria-pressed", ui.usedOnly ? "true" : "false");
@@ -592,7 +686,7 @@ function wireSearch() {
 const MINI_MQ = "(max-width: 40rem)";
 
 function filtersOn() {
-  return ui.suit !== "all" || !!ui.group || !!ui.query || ui.usedOnly || !!ui.charGender;
+  return ui.suit !== "all" || !!ui.group || !!ui.query || ui.usedOnly || ui.showBanned || !!ui.charGender;
 }
 
 function clearFilters() {
@@ -600,11 +694,13 @@ function clearFilters() {
   ui.group = "";
   ui.query = "";
   ui.usedOnly = false;
+  ui.showBanned = false;
   ui.charGender = "";
   $("book-q").value = "";
   saveUi();
   renderSuits();
   renderUsedToggle();
+  renderBannedToggle();
   render();
   renderSummary();
 }
@@ -722,8 +818,19 @@ function mountMiniBar() {
 
 /* ================= 牌格 ================= */
 
+/** 能拿去抽的牌。禁用角色只在卡冊裡查日期，不進使用統計、名次、成就。 */
+// 分級擋不擋：每張牌、每一檔各算一次就記住（規則是固定的）。以前每次排、篩都把 7238 張重算一遍。
+const blockedMemo = new Map();
+function blocked(card, level) {
+  let m = blockedMemo.get(card);
+  if (!m) blockedMemo.set(card, (m = {}));
+  return (m[level] ??= ratingBlocked(card.item, level));
+}
+const drawable = (card) => !card.banned && !blocked(card, seeRating());
+
 function visibleCard(card) {
-  return !ratingBlocked(card.item, seeRating());
+  if (card.banned) return ui.showBanned;
+  return !blocked(card, seeRating());
 }
 
 /** 角色頁的「性別：全部／女／男」：只是瀏覽篩選，不影響花色的點亮數。 */
@@ -763,6 +870,10 @@ function listNow() {
   if (lastFound.mode !== "all") return lastFound.list;
   const out = lastFound.list.slice();
   if (isWar()) out.sort((a, b) => warScore(b.tag) - warScore(a.tag) || warOf(b.tag)[0] - warOf(a.tag)[0] || order.get(a.tag) - order.get(b.tag));
+  // 沒有日期的排最後。同一天維持字盒順序（花色 → 細分類）。
+  // 沒有日期的：詞庫剛加、還沒重跑 scripts/tag_dates.py 的字，其實是最新的。新到舊排最前面，舊到新排最後。
+  else if (ui.order === "new") out.sort((a, b) => (b.added || "9999-99-99").localeCompare(a.added || "9999-99-99") || order.get(a.tag) - order.get(b.tag));
+  else if (ui.order === "old") out.sort((a, b) => (a.added || "9999-99-99").localeCompare(b.added || "9999-99-99") || order.get(a.tag) - order.get(b.tag));
   // 次數一樣時：多到少看誰最近用過，少到多照字盒的順序（花色 → 細分類）。
   else if (ui.order === "desc") out.sort((a, b) => countOf(b.tag) - countOf(a.tag) || lastOf(b.tag) - lastOf(a.tag) || order.get(a.tag) - order.get(b.tag));
   else out.sort((a, b) => countOf(a.tag) - countOf(b.tag) || order.get(a.tag) - order.get(b.tag));
@@ -776,41 +887,95 @@ function listNow() {
 /** 一張牌的格子：牌＋底下的次數。名次（前三）、沒用過的樣子每次排完重上。 */
 function cellOf(card) {
   let cell = cells.get(card.tag);
-  if (!cell) {
-    const node = cardNode(card, assets);
-    node.addEventListener("click", () => openCard(card, node));
-    const n = el("b", { class: "book-n" });
-    const meta = el("span", { class: "book-meta" }, n, el("span", { class: "book-unit" }));
-    cell = el("div", { class: "book-cell", role: "listitem", dataset: { tag: card.tag } }, node, meta, boxAddButton(card));
-    // 角色牌：左下角一顆愛心（點一下加進偏好角色），也可以直接拖到畫面右緣的愛心。
-    if (card.suit === "chara") {
-      cell.append(favAddButton(card));
-      paintFavChar(node, card.tag);
-      favDrag().attach(node, { tag: card.tag, from: "book" });
-    }
+  if (cell) {
+    // 最近用到的排到後面（Map 照放進去的順序）：快取滿了先放掉最久沒看到的。
+    cells.delete(card.tag);
     cells.set(card.tag, cell);
+    return cell;
+  }
+  // 禁用角色不接卡面：舊圖就算還在磁碟上，也不在卡冊裡顯示。
+  const node = cardNode(card, card.banned ? { art: () => null, sources: () => null, mini: () => null } : assets);
+  // 點牌打開詳情：整格網格一個監聽（wireGrid），不再每張牌各掛一個。
+  const n = el("b", { class: "book-n" });
+  const meta = el("span", { class: "book-meta" }, n, el("span", { class: "book-unit" }), el("span", { class: "book-when" }));
+  cell = el("div", { class: "book-cell", role: "listitem", dataset: { tag: card.tag } }, node, meta);
+  cell._card = card;
+  // 禁用角色沒有卡盒、也沒有愛心：不能帶去抽。電腦上等滑鼠移過去才做（wireGrid）。
+  if (!card.banned) {
+    if (HOVER.matches) cell._lazyButtons = true;
+    else addButtons(cell, card);
+  }
+  // 角色牌：左下角一顆愛心（點一下加進偏好角色），也可以直接拖到畫面右緣的愛心。
+  if (card.suit === "chara" && !card.banned) {
+    paintFavChar(node, card.tag);
+    favDrag().attach(node, { tag: card.tag, from: "book" });
+  }
+  cells.set(card.tag, cell);
+  if (cells.size > CACHE_MAX) {
+    for (const [tag, c] of cells) {
+      if (cells.size <= CACHE_MAX * 0.8) break;
+      if (!c.isConnected) cells.delete(tag);
+    }
   }
   return cell;
+}
+
+/** 卡盒「＋」、角色的愛心。 */
+function addButtons(cell, card) {
+  cell._lazyButtons = false;
+  cell.append(boxAddButton(card));
+  if (card.suit === "chara") cell.append(favAddButton(card));
+  paintBoxMark(cell, card.tag);
+}
+
+/** 網格上的事件：點牌開詳情；滑鼠移到（或 Tab 到）一格才做那一格的按鈕。 */
+function wireGrid() {
+  const grid = $("book-grid");
+  grid.addEventListener("click", (e) => {
+    const node = e.target.closest?.(".book-cell > .card");
+    const cell = node?.parentElement;
+    if (!cell?._card || !grid.contains(cell)) return;
+    openCard(cell._card, node);
+  });
+  const arm = (e) => {
+    const cell = e.target.closest?.(".book-cell");
+    if (cell?._lazyButtons && cell._card) addButtons(cell, cell._card);
+  };
+  grid.addEventListener("pointerover", arm, { passive: true });
+  grid.addEventListener("focusin", arm);
 }
 
 function paintCell(cell, card, rank) {
   const c = countOf(card.tag);
   cell.dataset.unused = c ? "false" : "true";
+  cell.dataset.banned = card.banned ? "true" : "false";
   const n = cell.querySelector(".book-n");
   const unit = cell.querySelector(".book-unit");
+  const when = cell.querySelector(".book-when");
   if (isWar()) {
-    // 戰績：大字是幾成，小字是「收藏（撤下）・印過幾張」。
+    // 戰績：大字是幾成，小字是「收藏（撤下）・印過幾張」。日期留在第三行。
     const [w, fav, drop] = warOf(card.tag);
     const k = ui.order === "good" ? fav : drop;
     cell.dataset.war = ui.order;
     cell.dataset.warZero = k ? "false" : "true";
+    delete cell.dataset.face;
     n.textContent = `${pct(k, w)}%`;
     unit.textContent = `${ui.order === "good" ? "收藏" : "撤下"}・${fmt(w)} 張`;
+    when.textContent = card.added || "";
+  } else if (isDate()) {
+    delete cell.dataset.war;
+    delete cell.dataset.warZero;
+    cell.dataset.face = "date";
+    n.textContent = card.added || "—";
+    unit.textContent = card.added ? "加入" : "沒有日期";
+    when.textContent = c ? `${fmt(c)} 次` : "未使用";
   } else {
     delete cell.dataset.war;
     delete cell.dataset.warZero;
+    delete cell.dataset.face;
     n.textContent = c ? fmt(c) : "—";
     unit.textContent = c ? "次" : "未使用";
+    when.textContent = card.added || "";
   }
   const old = cell.querySelector(".book-rank");
   if (rank) {
@@ -821,45 +986,226 @@ function paintCell(cell, card, rank) {
       cell._stampRank = true;
     }
   } else old?.remove();
-  paintBoxMark(cell, card.tag);
+  if (card.banned) setCardFlag(cell.querySelector(".card"), { kind: "ban", text: "禁用" });
+  else paintBoxMark(cell, card.tag);
   const [w, fav, drop] = warOf(card.tag);
+  const addedNote = card.added ? `，${card.added} 加入` : "";
   cell
     .querySelector(".card")
     .setAttribute(
       "aria-description",
       isWar()
-        ? `印過 ${w} 張，收藏 ${fav} 張、撤下 ${drop} 張${rank ? `，第 ${rank} 名` : ""}`
+        ? `印過 ${w} 張，收藏 ${fav} 張、撤下 ${drop} 張${rank ? `，第 ${rank} 名` : ""}${addedNote}`
         : c
-          ? `用過 ${c} 次${rank ? `，第 ${rank} 名` : ""}`
-          : "還沒用過"
+          ? `用過 ${c} 次${rank ? `，第 ${rank} 名` : ""}${addedNote}`
+          : card.added
+            ? `還沒用過，${card.added} 加入`
+            : "還沒用過"
     );
 }
 
-let more = null;
-let observer = null;
+/* ================= 只畫看得到的那幾排 =================
+ * list 是整份排好的牌；畫面上只接 list[winStart..winEnd) 這一段（live），上下各一塊空白（book-pad）撐住高度。
+ * 格子固定高（--book-cell-h，第一次畫好量一次，格寬變了再量），所以第 i 張在第 floor(i / cols) 排、
+ * 離網格頂端 排數 × rowH，不用一格格量。 */
+let cols = 1;
+let rowH = 0;
+let gapY = 0;
+let padY = 0;
+let padTop = null;
+let padBottom = null;
+let tail = null;
+let live = [];
+let winStart = 0;
+let winEnd = 0;
+let scrollFrame = 0;
+let fillFrame = 0;
+let aheadId = 0;
+// 上一次照捲動位置接牌時，畫面頂端那一排的第一張（換寬時捲回它）。
+let topIndex = 0;
 
 /**
  * 卡冊的格寬（book.css 的 .book-grid 改成一排排折行）：跟 grid 的 repeat(auto-fill, minmax(最小, 1fr)) 同一個算法，
- * 能放幾欄就放幾欄、平分剩下的寬。視窗一變就重算。
+ * 能放幾欄就放幾欄、平分剩下的寬。視窗一變就重算，格高跟著重量。
  */
 function sizeCells(grid) {
   let lastW = 0;
   const fit = () => {
-    // 格子補進來網格只是變高：寬沒變就不重算（ResizeObserver 高度變了也會叫）。
+    // 網格的高一直在變（捲動時上下的空白）：寬沒變就不重算。
     if (grid.clientWidth === lastW) return;
     lastW = grid.clientWidth;
     const cs = getComputedStyle(grid);
     const w = grid.clientWidth - (parseFloat(cs.paddingLeft) || 0) - (parseFloat(cs.paddingRight) || 0);
     if (!(w > 0)) return;
+    // 換寬之前畫面頂端是第幾張（上一次捲動時記下的；這時版面已經照新寬度排過，現量會量錯）：
+    // 換完捲回那張牌所在的那一排，不然排數變了，看到的是別處。
+    const anchor = live.length && rowH && topIndex > 0 ? topIndex : -1;
     const min = parseFloat(cs.getPropertyValue("--book-min")) || 104;
     const gap = parseFloat(cs.columnGap) || 0;
-    const cols = Math.max(1, Math.floor((w + gap) / (min + gap)));
+    cols = Math.max(1, Math.floor((w + gap) / (min + gap)));
+    gapY = parseFloat(cs.rowGap) || 0;
+    padY = parseFloat(cs.paddingTop) || 0;
     // 往下取到 0.01px：四捨五入多出一點點，最後一欄就會被擠到下一排。
     const cell = `${Math.floor(((w - gap * (cols - 1)) / cols) * 100) / 100}px`;
     if (grid.style.getPropertyValue("--book-cell-w") !== cell) grid.style.setProperty("--book-cell-w", cell);
+    // 欄數、格寬變了：格高跟著變。拿畫面上的格子（已經是新寬度）直接重量，捲回剛才那張，再重接這一段。
+    // 以前先清掉 rowH 重畫：中間那一下網格只剩前幾排，頁面變短、捲動位置被瀏覽器夾掉，畫面一片空白。
+    if (live.length && measureRow()) {
+      if (anchor >= 0) scrollTo({ top: gridTopY() + Math.floor(anchor / cols) * rowH, behavior: "instant" });
+      layoutWindow(true);
+    }
   };
   fit();
   if (typeof ResizeObserver === "function") new ResizeObserver(fit).observe(grid);
+}
+
+/** 網格內容（第一排）在整頁的哪個高度。 */
+const gridTopY = () => $("book-grid").getBoundingClientRect().top + scrollY + padY;
+
+/** 量一排多高：拿現在畫好的格子（不是空位）裡最高的，定成全部格子的高。 */
+function measureRow() {
+  const grid = $("book-grid");
+  const probes = live.filter((n) => !n._skel).slice(0, cols * 2);
+  if (!probes.length) return false;
+  grid.style.removeProperty("--book-cell-h");
+  let h = 0;
+  for (const c of probes) h = Math.max(h, c.offsetHeight);
+  if (!h) return false;
+  grid.style.setProperty("--book-cell-h", `${h}px`);
+  rowH = h + gapY;
+  return true;
+}
+
+/** 現在該畫哪一段：[開始, 結束)，都是整排。 */
+function windowNow() {
+  if (!list.length) return [0, 0];
+  if (!rowH) return [0, Math.min(list.length, cols * 6)];
+  const top = scrollY - gridTopY();
+  topIndex = Math.max(0, Math.floor(top / rowH)) * cols;
+  const r0 = Math.max(0, Math.floor((top - innerHeight * BEHIND) / rowH));
+  const r1 = Math.max(r0 + 1, Math.ceil((top + innerHeight * (1 + AHEAD)) / rowH));
+  return [Math.min(list.length, r0 * cols), Math.min(list.length, r1 * cols)];
+}
+
+/** 空白撐住跳過的排數：n 排 = n × rowH（空白本身跟第一排之間還有一個列間距）。0 排就拿掉，不留間距。 */
+function setPad(pad, rows) {
+  const h = rows > 0 && rowH ? rows * rowH - gapY : 0;
+  pad.hidden = !(h > 0);
+  pad.style.height = `${Math.max(0, h)}px`;
+}
+
+/** 第 i 張牌的格子：做過的直接拿來、重上次數；這一格畫面的時間用完了就先放空位。 */
+function nodeAt(i, t0) {
+  const card = list[i];
+  if (!cells.has(card.tag) && performance.now() - t0 > BUDGET_MS) {
+    const s = el("div", { class: "book-cell is-skel", "aria-hidden": "true" });
+    s._skel = true;
+    return s;
+  }
+  const cell = cellOf(card);
+  paintCell(cell, card, rankAt(card, i));
+  // 接上畫面的格子（看得到的和下方一屏半）：圖立刻開始抓，不等捲到眼前。
+  const img = cell.querySelector('img[loading="lazy"]');
+  if (img) img.loading = "eager";
+  return cell;
+}
+
+/**
+ * 照捲動位置接上該畫的那一段。force：整段重接（換排序、換篩選、格寬變了）。
+ * 一般捲動只在頭尾加減幾排：留下來的格子不動，不必整片重新算樣式。
+ */
+function layoutWindow(force = false) {
+  const grid = $("book-grid");
+  if (!padTop) return;
+  const [s, e] = windowNow();
+  if (!force && s === winStart && e === winEnd) return;
+  const t0 = performance.now();
+  if (force || e <= winStart || s >= winEnd) {
+    live = [];
+    for (let i = s; i < e; i++) live.push(nodeAt(i, t0));
+    grid.replaceChildren(padTop, ...live, padBottom, ...(tail ? [tail] : []));
+  } else {
+    for (; winStart < s; winStart++) live.shift().remove();
+    for (; winEnd > e; winEnd--) live.pop().remove();
+    const head = [];
+    for (let i = s; i < winStart; i++) head.push(nodeAt(i, t0));
+    if (head.length) {
+      padTop.after(...head);
+      live.unshift(...head);
+    }
+    const more = [];
+    for (let i = winEnd; i < e; i++) more.push(nodeAt(i, t0));
+    if (more.length) {
+      padBottom.before(...more);
+      live.push(...more);
+    }
+  }
+  winStart = s;
+  winEnd = e;
+  setPad(padTop, Math.floor(s / cols));
+  setPad(padBottom, Math.ceil(list.length / cols) - Math.ceil(e / cols));
+  // 第一次畫：量好一排多高，照真的捲動位置再接一次。
+  if (!rowH && live.length && measureRow()) return layoutWindow(true);
+  if (live.some((n) => n._skel)) fillSoon();
+  else buildAhead();
+}
+
+/** 空位一格畫面換幾張成真的牌（同樣的時間預算），換完為止。 */
+function fillSoon() {
+  if (fillFrame) return;
+  fillFrame = requestAnimationFrame(() => {
+    fillFrame = 0;
+    const t0 = performance.now();
+    for (let k = 0; k < live.length; k++) {
+      if (!live[k]._skel) continue;
+      if (performance.now() - t0 > BUDGET_MS) break;
+      const cell = nodeAt(winStart + k, Infinity);
+      live[k].replaceWith(cell);
+      live[k] = cell;
+    }
+    if (live.some((n) => n._skel)) fillSoon();
+    else buildAhead();
+  });
+}
+
+const idle = typeof requestIdleCallback === "function" ? requestIdleCallback : (fn) => setTimeout(() => fn({ timeRemaining: () => 8 }), 60);
+/** 閒下來時先把下方一屏的格子做好（不接上畫面）：捲下去時直接接上，不用當場做。 */
+function buildAhead() {
+  if (aheadId || !rowH) return;
+  aheadId = idle((deadline) => {
+    aheadId = 0;
+    const end = Math.min(list.length, winEnd + Math.ceil(innerHeight / rowH) * cols);
+    for (let i = winEnd; i < end; i++) {
+      if (cells.has(list[i].tag)) continue;
+      if (deadline.timeRemaining() < 2) return buildAhead();
+      cellOf(list[i]);
+    }
+  });
+}
+
+/** 捲動、視窗高度變了：下一格畫面換那一段。 */
+function watchScroll() {
+  const soon = () => {
+    if (!scrollFrame) scrollFrame = requestAnimationFrame(() => {
+      scrollFrame = 0;
+      layoutWindow();
+    });
+  };
+  addEventListener("scroll", soon, { passive: true });
+  // 只有高度變（手機網址列收起來）才在這裡接；寬度變了交給 sizeCells（要先重量格高），
+  // 不然這裡先用舊的格高算一次，記下的頂端那張就錯了。
+  let w = innerWidth;
+  addEventListener("resize", () => {
+    if (innerWidth !== w) return void (w = innerWidth);
+    soon();
+  }, { passive: true });
+}
+
+/** 畫面上的格子重上一次（日期到了、次數變了）。 */
+function repaintLive() {
+  live.forEach((n, k) => {
+    if (!n._skel && n._card) paintCell(n, n._card, rankAt(n._card, winStart + k));
+  });
 }
 
 /**
@@ -874,35 +1220,27 @@ function render({ animate = true, shuffle = false, deal = false } = {}) {
   // 改之前：畫面上（含上下各一點）的牌在哪。
   const before = new Map();
   if (motion) {
-    for (const cell of grid.querySelectorAll(".book-cell")) {
+    for (const cell of grid.querySelectorAll(".book-cell:not(.is-skel)")) {
       const r = cell.getBoundingClientRect();
       if (r.bottom > -80 && r.top < innerHeight + 80) before.set(cell.dataset.tag, r);
     }
   }
   list = listNow();
   searchNote($("book-grid"), lastFound, ui.query);
-  shown = Math.min(list.length, CHUNK);
-  const frag = document.createDocumentFragment();
-  list.slice(0, shown).forEach((card, i) => {
-    const cell = cellOf(card);
-    paintCell(cell, card, rankAt(card, i));
-    frag.append(cell);
-  });
-  if (!list.length) frag.append(emptyNote());
-  more = el("span", { class: "book-more", "aria-hidden": "true" });
-  frag.append(more);
-  grid.replaceChildren(frag);
+  padTop ||= el("div", { class: "book-pad", "aria-hidden": "true" });
+  padBottom ||= el("div", { class: "book-pad", "aria-hidden": "true" });
+  tail = list.length ? null : emptyNote();
+  layoutWindow(true);
   // 有沒有任何使用紀錄：有的話沒用過的牌才褪色；一筆都沒有就在上面放一行引導。
   const any = Object.values(usage.counts).some((n) => n > 0);
   grid.dataset.any = any ? "true" : "false";
   // 戰績排序看的是日誌，不是使用次數：「還沒有使用紀錄」的引導不出現（沒資料時格子裡自己會說）。
   $("book-hint").hidden = any || isWar();
-  watchMore();
   if (!motion) return;
   if (deal) return;
   let entering = 0;
   let moving = 0;
-  for (const cell of grid.querySelectorAll(".book-cell")) {
+  for (const cell of grid.querySelectorAll(".book-cell:not(.is-skel)")) {
     const r = cell.getBoundingClientRect();
     if (r.top > innerHeight + 40) break;
     if (r.bottom < -40) continue;
@@ -964,7 +1302,18 @@ function emptyNote() {
   const any = Object.keys(usage.counts).length;
   // 搜得到、只是被分級擋住：以前只說「沒有符合的牌」，看起來像詞庫裡沒有這張。
   const q = ui.query.toLowerCase();
-  const hidden = q ? lib.cards.filter((c) => !visibleCard(c) && cardMatches(c, q)) : [];
+  const hidden = q ? lib.cards.filter((c) => !c.banned && blocked(c, seeRating()) && cardMatches(c, q)) : [];
+  const bannedHits = q && !ui.showBanned ? lib.cards.filter((c) => c.banned && cardMatches(c, q)) : [];
+  if (!hidden.length && bannedHits.length) {
+    const first = bannedHits[0];
+    return el(
+      "div",
+      { class: "book-empty" },
+      el("b", {}, bannedHits.length > 1 ? `一共 ${bannedHits.length} 張禁用角色被藏著` : `「${first.zh}」是禁用角色`),
+      el("span", {}, "打開「含禁用」才看得到。"),
+      el("div", { class: "book-empty-acts" }, el("button", { class: "btn btn-small", type: "button", onclick: () => $("book-banned")?.click() }, "含禁用"))
+    );
+  }
   if (hidden.length) {
     const need = hidden.some((c) => !ratingBlocked(c.item, "sensitive")) ? "sensitive" : "explicit";
     const first = hidden[0];
@@ -1010,7 +1359,7 @@ function emptyNote() {
  * 一樣、半小時內，就把牌畫到那一張、捲回去。分頁自己一份（sessionStorage）。 */
 const SPOT_KEY = "mochi.book.spot.v1";
 const SPOT_TTL = 30 * 60 * 1000;
-const spotSig = () => JSON.stringify([ui.suit, ui.group, ui.order, ui.usedOnly, ui.query, seeRating()]);
+const spotSig = () => JSON.stringify([ui.suit, ui.group, ui.order, ui.usedOnly, ui.showBanned, ui.query, seeRating()]);
 
 function saveSpot() {
   // 手機的頂欄不黏，捲下去就離開畫面（底緣變負的）：最少從畫面頂端算。
@@ -1018,7 +1367,7 @@ function saveSpot() {
   const tools = $("book-tools");
   const under = getComputedStyle(tools).position === "sticky" ? tools.getBoundingClientRect().bottom : mast;
   // 最上面那張「看得到」的牌：底緣在頂欄（電腦是黏住的工具列）下面的第一張。
-  const cell = [...$("book-grid").querySelectorAll(".book-cell")].find((c) => c.getBoundingClientRect().bottom > under + 8);
+  const cell = [...$("book-grid").querySelectorAll(".book-cell:not(.is-skel)")].find((c) => c.getBoundingClientRect().bottom > under + 8);
   try {
     if (!cell || scrollY < 80) return sessionStorage.removeItem(SPOT_KEY);
     sessionStorage.setItem(SPOT_KEY, JSON.stringify({ tag: cell.dataset.tag, top: cell.getBoundingClientRect().top, sig: spotSig(), at: Date.now() }));
@@ -1036,74 +1385,21 @@ function restoreSpot() {
   }
   if (!spot || spot.sig !== spotSig() || Date.now() - spot.at > SPOT_TTL) return;
   const i = list.findIndex((c) => c.tag === spot.tag);
-  if (i < 0) return;
-  while (shown <= i && shown < list.length) moreCells();
-  const cell = cells.get(spot.tag);
-  if (!cell) return;
-  scrollTo({ top: cell.getBoundingClientRect().top + scrollY - spot.top, behavior: "instant" });
+  if (i < 0 || !rowH) return;
+  // 那張牌在第幾排就直接算得出來：捲過去，再接上那一段。
+  scrollTo({ top: gridTopY() + Math.floor(i / cols) * rowH - spot.top, behavior: "instant" });
+  layoutWindow();
 }
 
-function watchMore() {
-  if (typeof IntersectionObserver !== "function") return;
-  if (!observer) {
-    // 提前兩屏多補下一批（格子現在不在畫面就不排版，多補不花力氣），抓圖才有時間跑在前面。
-    observer = new IntersectionObserver((entries) => {
-      if (entries.some((e) => e.isIntersecting)) moreCells();
-    }, { rootMargin: "1800px" });
-  }
-  observer.disconnect();
-  if (shown < list.length && more) observer.observe(more);
-  queuePrefetch();
-}
 
-/* 遠端（手機走 Tailscale）時，懶載入的牌圖要捲到附近才開始抓，每張一趟來回：捲得快就一格一格等。
- * 畫面下方 PREFETCH_SCREENS 屏內的牌先改成立刻載入，往下捲時這條線跟著往前推。
- * 圖的網址在格子排好時就照實際大小挑好了（card-images.js），這裡只是提早開始抓同一張。 */
-const PREFETCH_SCREENS = 3;
-// 以前每捲一格就從頭量每一格的位置（getBoundingClientRect），1700 格時每格逼一次整頁排版 25～28ms，
-// 電腦上捲卡冊掉格。改用 IntersectionObserver：瀏覽器自己算，進到上方一屏、下方三屏內才通知。
-let prefetchIO = null;
-function queuePrefetch() {
-  prefetchIO ||= new IntersectionObserver(
-    (entries) => {
-      for (const e of entries) {
-        if (!e.isIntersecting) continue;
-        const img = e.target.querySelector('img[loading="lazy"]');
-        if (img) img.loading = "eager";
-        prefetchIO.unobserve(e.target);
-      }
-    },
-    { rootMargin: `100% 0px ${PREFETCH_SCREENS * 100}% 0px` }
-  );
-  for (const img of $("book-grid").querySelectorAll('.book-cell img[loading="lazy"]')) {
-    const cell = img.closest(".book-cell");
-    if (cell && !cell._prefetch) {
-      cell._prefetch = true;
-      prefetchIO.observe(cell);
-    }
-  }
-}
-
-function moreCells() {
-  if (shown >= list.length) return;
-  const grid = $("book-grid");
-  const next = list.slice(shown, shown + MORE_CHUNK);
-  const frag = document.createDocumentFragment();
-  next.forEach((card, k) => {
-    const cell = cellOf(card);
-    paintCell(cell, card, rankAt(card, shown + k));
-    frag.append(cell);
-  });
-  shown += next.length;
-  grid.insertBefore(frag, more);
-  watchMore();
-}
 
 function peekInfo(node) {
   const card = lib.byTag.get(node.dataset.tag);
   if (!card) return null;
   const c = countOf(card.tag);
-  const facts = cardFacts(card, lex, data).filter(([k]) => k !== "分級");
+  const facts = cardFacts(card, lexNow(), data).filter(([k]) => k !== "分級");
+  facts.unshift(["加入", card.added || "沒有日期"]);
+  if (card.banned) facts.unshift(["禁用", banReason(card)]);
   facts.unshift(["用過", c ? `${fmt(c)} 次・最近 ${ago(lastOf(card.tag))}` : "還沒用過"]);
   return {
     zh: card.zh,
@@ -1144,10 +1440,10 @@ function openCard(card, srcNode) {
   sfx.tap?.();
   const c = countOf(card.tag);
   const mine = usage.mine[card.tag] || 0;
-  const pool = lib.cards.filter(visibleCard);
+  const pool = lib.cards.filter(drawable);
   const all = rankIn(card, pool);
   const inSuit = rankIn(card, pool.filter((x) => x.suit === card.suit));
-  const art = assets.art(card.tag);
+  const art = card.banned ? null : assets.art(card.tag);
   const big = el("b", { class: "book-big-n" }, c ? "0" : "—");
   const stats = el(
     "dl",
@@ -1160,6 +1456,10 @@ function openCard(card, srcNode) {
     el("dd", {}, `${Math.max(0, c - mine)} 次`),
     el("dt", {}, "最近一次"),
     el("dd", {}, ago(usage.last[card.tag] || 0)),
+    el("dt", {}, "加入"),
+    el("dd", {}, card.added || "沒有日期"),
+    card.banned ? el("dt", {}, "禁用") : null,
+    card.banned ? el("dd", {}, banReason(card)) : null,
     el("dt", {}, "戰績"),
     el("dd", { class: "book-war" }, warText(card.tag))
   );
@@ -1184,12 +1484,13 @@ function openCard(card, srcNode) {
           c ? el("i", { class: "book-bar-fill", "aria-hidden": "true" }) : null
         ),
         stats,
-        el("dl", {}, cardFacts(card, lex, data).map(([k, v]) => [el("dt", {}, k), el("dd", {}, v)]))
+        el("dl", {}, cardFacts(card, lexNow(), data).map(([k, v]) => [el("dt", {}, k), el("dd", {}, v)])),
+        card.banned ? el("p", { class: "book-ban-note" }, "這張是禁用角色，不能帶去墨池，也不能放進卡盒。") : null
       ),
       worksOf(card)
     ),
     {
-      foot: [
+      foot: card.banned ? [] : [
         el(
           "button",
           {
@@ -1230,7 +1531,7 @@ function openCard(card, srcNode) {
 /* ---------- 成就牆（achievements.js） ---------- */
 
 function achNow() {
-  const f = measure({ cards: lib.cards.filter(visibleCard), usage, war });
+  const f = measure({ cards: lib.cards.filter(drawable), usage, war });
   return [f, evaluate(f)];
 }
 
@@ -1545,9 +1846,11 @@ function paintFavButton(b, card) {
 // 名單一變（這一頁點的、墨池那邊加的、另一個分頁改的）：牌上的愛心和按鈕跟著換。
 favChars.onChange(() => {
   for (const [tag, cell] of cells) {
+    const card = lib.byTag.get(tag);
+    if (card?.suit !== "chara" || card.banned) continue;
+    // 電腦上按鈕要滑鼠移過去才做：還沒做的照樣換牌上的愛心。
     const b = cell.querySelector(".fav-add");
-    if (!b) continue;
-    paintFavButton(b, lib.byTag.get(tag));
+    if (b) paintFavButton(b, card);
     paintFavChar(cell.querySelector(".card"), tag);
   }
 });
@@ -1574,6 +1877,7 @@ function paintBoxMark(cell, tag) {
 }
 
 function toggleBox(card, fromNode) {
+  if (card.banned) return;
   if (inBox(card.tag)) {
     box = box.filter((t) => t !== card.tag);
     saveBox();
@@ -1986,7 +2290,7 @@ function bumpTo(next) {
     usage = next;
     // 數字原地跳一下；排序不自己動（牌在手底下跑掉很煩），給一顆「重新排序」。
     let changed = 0;
-    for (const cell of $("book-grid").querySelectorAll(".book-cell")) {
+    for (const cell of $("book-grid").querySelectorAll(".book-cell:not(.is-skel)")) {
       const t = cell.dataset.tag;
       if ((before.counts[t] || 0) === countOf(t)) continue;
       changed += 1;

@@ -630,6 +630,20 @@ POS 複製好了|Prompt copied
 少到多|Least used
 出好圖|Most saved
 常撤下|Most discarded
+新到舊|Newest
+舊到新|Oldest
+含禁用|Include blocked
+加入|Added
+沒有日期|No date
+禁用|Blocked
+未滿 18 歲|Under 18
+學生|Student
+外觀像兒童|Looks underage
+真人／VTuber|Real person / VTuber
+非人形|Not a person
+年齡查不到或沒把握|Age unknown
+這張是禁用角色，不能帶去墨池，也不能放進卡盒。|This character is blocked. It stays out of Ink Pool and the card box.
+打開「含禁用」才看得到。|Turn on Include blocked to see them.
 排序|Sort
 只看用過的|Used only
 日誌裡印好|Generated in history
@@ -1332,7 +1346,7 @@ ComfyUI 沒有回報 checkpoint|ComfyUI returned no checkpoints.
 疊幾張牌、挑一個試印、按「付印」試試看吧！之後想再看一次，按頂欄的「導覽」。|Add a few cards, choose a proof and press Generate. Restart this tour from the header any time.
 卡冊是你的牌的紀錄：每張牌用過幾次、印出來好不好、收集了多少。|Explore how often you use each card, how it performs and your collection progress.
 按花色篩選。花色圖章外圈那一圈，是這個花色點亮（用過）了幾成。|Filter by category. Each ring shows the proportion of cards you've used.
-多到少、少到多；「出好圖」「常撤下」看哪些牌常出好圖、哪些常被你撤下（要先印一陣子才排得出來）。|Sort by usage or by save and discard rates. Generate some images first to build a useful ranking.
+多到少、少到多、新到舊、舊到新；「出好圖」「常撤下」看哪些牌常出好圖、哪些常被你撤下（要先印一陣子才排得出來）。「含禁用」把不能用的角色也列出來。|Sort by usage, by the date a card was added, or by save and discard rates. Generate some images first to build a useful ranking. Include blocked lists characters that cannot be drawn.
 用過幾次、戰績、用它做過的圖都在這裡；可以帶去墨池，或放進卡盒。|See usage, performance and images for this card. Send it to Ink Pool or collect it in your card box.
 邊逛邊把牌收進卡盒（牌上的 ＋），收好一次帶去墨池，或存成牌組。|Use + to collect cards in the box. Send them to Ink Pool together, or save them as a deck.
 作品＝你收藏的；日誌＝印過的每一張（沒收藏的也查得到）；模型＝每個底模、LoRA 的成績。|Saved contains your favorites. History tracks every generation. Models compares checkpoints and LoRA.
@@ -1511,6 +1525,13 @@ export const messages = Object.freeze(Object.fromEntries(copy.trim().split("\n")
 // {0} is translated again (card names, ratings); {0!} is inserted verbatim
 // because it is user content: deck, work, model and workflow names, search text.
 const parameterized = String.raw`
+「{0}」是禁用角色|“{0!}” is blocked
+一共 {0} 張禁用角色被藏著|{0} blocked characters are hidden
+用過 {0} 次，{1} 加入|Used {0} times, added {1!}
+用過 {0} 次，第 {1} 名，{2} 加入|Used {0} times, rank {1}, added {2!}
+還沒用過，{0} 加入|Never used, added {0!}
+，{0} 加入|, added {0!}
+，第 {0} 名，{1} 加入| · Rank #{0}, added {1!}
 繪製 {0}/25 · ComfyUI 即時預覽|Generating {0}/25 · ComfyUI live preview
 第 {0} 張|Image {0}
 卡面 ✓ {0} 張|Card art ✓ {0} cards

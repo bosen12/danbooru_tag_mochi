@@ -356,7 +356,11 @@ export function buildMochiScene(ctx) {
     /* ---- 附帶：太陽裙自己帶了「洋裝」（bar 23–25） ---- */
     {
       const tTab = b(23, 1);
-      lib.view("wear", { suit: "wear" }, tTab + 0.05);
+      // 2026-10-24：建議池加了上百件衣服，sundress 被擠到服裝前 20 張之外，影片一開就斷。
+      // 照樣是服裝花色的牌，只是保證 sundress 在第一排（游標、飛牌的位置都照它算，放哪一格都對）。
+      const wearTags = viewList({ suit: "wear" }).map((c) => c.tag).filter((t) => t !== "sundress").slice(0, 19);
+      wearTags.splice(2, 0, "sundress");
+      lib.view("wear", { suit: "wear" }, tTab + 0.05, { tags: wearTags });
       clickAt(tTab, tabAt("wear"), { dur: 0.5 });
       const r = pinCard("wear", "sundress", b(23, 3));
       const dress = r.added[0];

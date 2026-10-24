@@ -142,7 +142,7 @@ try {
       const art = document.createElement('span'); art.className = 'card-art'; art.innerHTML = '<img src="/flight.svg" srcset="/flight.svg 1x" alt="">'; card.append(art);
     });
     await waitFor(() => heldImages.length > 0);
-    if (target === 'detail') await page.locator('.book-cell .card').first().click(); else await page.locator('.book-cell .box-add').first().click();
+    if (target === 'detail') await page.locator('.book-cell .card').first().click(); else { await page.locator('.book-cell:not(.is-skel)').first().hover(); await page.locator('.book-cell .box-add').first().click(); }
     const ghost = target === 'detail' ? 'body > .card-art' : '.box-ghost';
     assert.equal(await page.locator(ghost + ' img').getAttribute('srcset'), null, 'flight uses its source selected image without a new responsive selection');
     heldImages.splice(0).forEach(f => f(true));

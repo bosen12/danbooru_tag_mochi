@@ -228,6 +228,10 @@ const EXPLICIT_ONLY_EXTRA = new Set([
   // dominatrix（女王，穿著衣服的角色）—— 女王留在敏感。
   "uterus",
   "cervix",
+  // 2026-10-24：掛在 body_f，字面沒有 futanari，敏感分級會照樣抽到。
+  "full-package futanari",
+  // 沒有罩杯，乳頭露出。mutex 已經讓敏感分級抽不到，這裡讓畫出來的圖標成色情。
+  "cupless bra",
 ]);
 
 // 只有 explicit 能出現：真正的性、裸露、脫衣走光、內衣當外衣。
@@ -294,6 +298,12 @@ const EXPLICIT_CONTENT_RE = new RegExp(
 );
 
 // 看得出尺度但還沒到露點的：內衣外露、泳裝、透視、乳溝、走光。
+// 字面沒有內衣、乳溝、走光。熱度已停在走光與性愛，內容仍是敏感而不是露點。
+const SENSITIVE_CONTENT_EXTRA = new Set([
+  "open fly",
+  "sideless shirt",
+]);
+
 const SENSITIVE_CONTENT_RE = new RegExp(
   "\\b(panty|panties|bra|lingerie|underwear|thong|garter|fundoshi|" +
     "bikini|swimsuit|see-through|wet clothes|cleavage|underboob|sideboob|backboob|" +
@@ -322,6 +332,7 @@ export function hasSensitiveContent(item) {
   if (SFW_KEEP.has(item.tag)) return false;
   if (item.mutex === "underwear_top" || item.mutex === "underwear_bottom") return true;
   if (item.group === "flash") return true;
+  if (SENSITIVE_CONTENT_EXTRA.has(item.tag)) return true;
   return SENSITIVE_CONTENT_RE.test(item.tag);
 }
 

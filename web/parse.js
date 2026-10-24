@@ -12,7 +12,7 @@ import { guardPrerender, prerenderNeighbors, whenActive } from "./prerender.js";
  *   - 點一張就不帶它；分級擋住的牌先不帶（到頂欄換分級就能帶）。詞庫沒有的字列在下面，可以複製。
  *   - 帶走：選好的牌飛進按鈕，再換版過去（合成池：store.js 的 handOffPool；疊印台：handOffFuse）。
  *   - 解析設定（模型、最低信心、角色門檻、不要的字）存在這個瀏覽器（mochi.parse.v1），每次解析一起送。
- *   - 剛才解析的那一張跟著這個分頁（sessionStorage）：帶去合成池、再回來，還在。重新整理就是空的。
+ *   - 剛才解析的那一張跟著這個分頁（sessionStorage）30 分鐘：帶去合成池、再回來，還在。重新整理就清掉。
  */
 import { ratingBlocked, RATING_LABEL } from "./rules/rating.js";
 import { mountRatingFree } from "./rating-free.js";
@@ -773,8 +773,22 @@ function keep() {
 }
 
 function restore() {
+  // 重新整理＝不要了：連存著的那份一起刪掉。以前只是這次不讀，之後換到合成池再回來，舊的那張又冒出來。
+  if (S.reloaded()) {
+    try {
+      sessionStorage.removeItem(TAB_KEY);
+    } catch {
+      /* 刪不了：下面照樣不讀 */
+    }
+  }
   const was = S.loadTab(TAB_KEY);
-  if (!was || typeof was.url !== "string" || !Array.isArray(was.tags) || Date.now() - (Number(was.at) || 0) > 6 * 60 * 60 * 1000) {
+  // 只留 30 分鐘（跟卡冊的搜尋字一樣）：帶去合成池、看一下再回來還在，隔太久就是新的一頁。
+  if (!was || typeof was.url !== "string" || !Array.isArray(was.tags) || Date.now() - (Number(was.at) || 0) > 30 * 60 * 1000) {
+    try {
+      sessionStorage.removeItem(TAB_KEY);
+    } catch {
+      /* 刪不了就算了 */
+    }
     setState("empty");
     render();
     return;
