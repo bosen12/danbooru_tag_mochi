@@ -570,6 +570,7 @@ SUBS = {
             "covering breasts", "covering one breast", "covering crotch", "covering privates", ]),
         ("sex_pos", "性愛・體位與情境", [
             "sex", "vaginal", "anal", "missionary", "mating press", "piledriver (sex)", "folded",
+            "sexual coaching",
             "leg lock", "boy on top", "girl on top", "cowgirl position",
             "reverse cowgirl position", "squatting cowgirl position", "amazon position",
             "upright straddle", "reverse upright straddle", "doggystyle", "standing doggystyle",
@@ -617,6 +618,7 @@ SUBS = {
         ]),
         ("sex_group", "性愛・多人", [
             "threesome", "mmf threesome", "ffm threesome", "foursome", "fivesome",
+            "shimaidon", "oyakodon (sex)", "group incest",
             "group sex", "orgy", "gangbang", "spitroast", "reverse spitroast",
             "double penetration", "triple penetration", "double vaginal", "double anal",
             "surrounded by penises", "public use", "netorase",

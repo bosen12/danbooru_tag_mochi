@@ -5454,6 +5454,38 @@ def extra_gag_tags() -> list[dict]:
     ]
 
 
+def extra_family_sex_tags() -> list[dict]:
+    """姊妹丼、親子丼、家族群交、性愛指導（2026-10-25 專案主指定，專案主自己測過圖）。
+
+    Danbooru 都是一般標籤、沒有停用（389～3382 張）。只開 sex（色情分級才有），
+    而且進 engine.js 的 ODD_MOTIF：只在釘了才出現，引擎不會隨機抽到家族性愛的設定。
+    姊妹丼、親子丼是兩女一男：implies 姊妹／母女和 ffm threesome，needs 一男兩女、三人。
+    家族群交 implies group sex，needs 三人。性愛指導只要兩人。卡面照多人規則帶 adult、mature。
+    """
+    def pose(tag, implies=None, needs=None, zh=""):
+        return {
+            "tag": tag,
+            "section": "pose",
+            "gate": "any",
+            "heat": ["sex"],
+            "mutex": None,
+            "bind": [],
+            "implies": implies or [],
+            "layer": "normal",
+            "era": ["any"],
+            "needs": needs or [],
+            "zh": zh,
+        }
+
+    trio = ["male", "female", "2female", "pair", "group"]
+    return [
+        pose("shimaidon", ["sisters", "ffm threesome"], trio, "姊妹丼"),
+        pose("oyakodon (sex)", ["mother and daughter", "ffm threesome"], trio, "親子丼"),
+        pose("group incest", ["group sex"], ["pair", "group"], "家族群交"),
+        pose("sexual coaching", needs=["pair"], zh="性愛指導"),
+    ]
+
+
 # 色彩玫瑰照自然花卉，帶 flower（any），不帶僅中世紀／維多利亞的裝飾 rose。
 # 2026-10-24：帶 rose 會被 inherit_eras 收窄，錯把現代花卉當古代錨，並連吐兩個時代詞。
 def extra_round4_scenes() -> list[dict]:
@@ -6721,6 +6753,7 @@ def main() -> None:
     rows.extend(extra_wrestle_tags())
     rows.extend(extra_ethnic_tags())
     rows.extend(extra_gag_tags())
+    rows.extend(extra_family_sex_tags())
     rows.extend(extra_round4_scenes())
     rows.extend(extra_round4_clothes())
     rows.extend(extra_round4_other())

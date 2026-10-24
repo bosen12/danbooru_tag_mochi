@@ -3880,6 +3880,8 @@ const ODD_MOTIF = new Set([
   "metal skin", "fake screenshot", "fake phone screenshot", "viewfinder",
   // 2026-10-24：秒墮五張都畫成兩格前後漫畫（Grok 實測）。專案主看過圖要留，但只在釘了才出現。
   "instant loss",
+  // 2026-10-25：姊妹丼、親子丼、家族群交、性愛指導（專案主指定）。家族性愛的設定只在釘了才出現。
+  "shimaidon", "oyakodon (sex)", "group incest", "sexual coaching",
   // 2026-10-24 第四輪（Codex 實測、建議）：會改掉整張圖版面的字（畫框、出框、黑邊、插圖、3D 背景）
   // 和無臉女性，只在釘了才出現。
   "3d background", "black border", "white border", "outside border", "pillarboxed",

@@ -76291,6 +76291,107 @@
       "zh": "籠子"
     },
     {
+      "tag": "shimaidon",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [
+        "sisters",
+        "ffm threesome"
+      ],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "sex",
+      "sub": "sex_group",
+      "needs": [
+        "male",
+        "female",
+        "2female",
+        "pair",
+        "group"
+      ],
+      "zh": "姊妹丼"
+    },
+    {
+      "tag": "oyakodon (sex)",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [
+        "mother and daughter",
+        "ffm threesome"
+      ],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "sex",
+      "sub": "sex_group",
+      "needs": [
+        "male",
+        "female",
+        "2female",
+        "pair",
+        "group"
+      ],
+      "zh": "親子丼"
+    },
+    {
+      "tag": "group incest",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [
+        "group sex"
+      ],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "sex",
+      "sub": "sex_group",
+      "needs": [
+        "pair",
+        "group"
+      ],
+      "zh": "家族群交"
+    },
+    {
+      "tag": "sexual coaching",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "sex",
+      "sub": "sex_pos",
+      "needs": [
+        "pair"
+      ],
+      "zh": "性愛指導"
+    },
+    {
       "tag": "black flower",
       "section": "env",
       "gate": "any",
