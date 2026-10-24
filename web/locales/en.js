@@ -271,6 +271,11 @@ Python 3 · 標準函式庫，不用裝任何套件|Python 3 · Standard library
 偏好卡牌與廢字簍|Favorites and blocked cards
 一張牌，一層墨|One card, one layer
 放牌|Place cards
+互斥|Exclusive
+帶上|Include
+拿掉的不抽回來|Keep removed ones out
+開：釘了一張牌，抽的時候把它附帶的牌一起帶上（夏日洋裝帶洋裝）。關：你從池子拿掉的附帶牌不會被抽回來|On: a pinned card brings its companion cards when drawing (sundress brings dress). Off: companions you removed from the pool stay out.
+開：放一張牌時，池子裡跟它互斥的牌拿下來（放黑髮，紅髮下來）。關：互斥的牌都留著，兩張都寫進提示詞|On: adding a card takes conflicting cards out of the pool (black hair replaces red hair). Off: conflicting cards both stay and both go into the prompt.
 影子與關係|Engine additions and links
 四張試印|Four proofs
 付印與晾紙|Generate and collect

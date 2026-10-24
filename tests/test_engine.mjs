@@ -9471,6 +9471,27 @@ function indoorOutdoorClash(have) {
   ok("角色：被 ban 的角色釘不上去", !tagsOf(drawOne(lex, s, pinBan, new Set(), mulberry32(933200), 933200)).has("anya (spy x family)"));
 }
 
+{
+  // 2026-10-25：放牌的兩個開關（墨池合成池、疊印台）。預設都開，跟以前一樣。
+  const on = defaultSettings(data);
+  const off = { ...on, pinCompanions: false };
+  eq("附帶、互斥預設都開", [on.pinCompanions, on.pinMutex], [true, true]);
+  eq("存檔沒寫就是開；寫了 false 才關", [sanitizeSettings({}, data).pinCompanions, sanitizeSettings({ pinCompanions: false, pinMutex: false }, data).pinMutex], [true, false]);
+  let back = 0;
+  let gone = 0;
+  for (let i = 1; i <= 40; i++) {
+    if (tagsOf(drawOne(lex, on, new Set(["sundress"]), new Set(), mulberry32(i), i)).has("dress")) back += 1;
+    if (tagsOf(drawOne(lex, off, new Set(["sundress"]), new Set(), mulberry32(i), i)).has("dress")) gone += 1;
+  }
+  eq("附帶開：拿掉的洋裝會被夏日洋裝抽回來", back, 40);
+  eq("附帶關：拿掉的洋裝不抽回來", gone, 0);
+  ok("附帶關：留在池子裡的附帶牌照樣在", tagsOf(drawOne(lex, off, new Set(["sundress", "dress"]), new Set(), mulberry32(3), 3)).has("dress"));
+  eq("互斥開：放黑髮，紅髮下來", [...applyPin(lex, new Set(["red hair"]), new Set(), "black hair").pinned], ["black hair"]);
+  eq("互斥關：兩張都留", [...applyPin(lex, new Set(["red hair"]), new Set(), "black hair", { keepMutex: true }).pinned].sort(), ["black hair", "red hair"]);
+  const both = tagsOf(drawOne(lex, on, new Set(["red hair", "black hair"]), new Set(), mulberry32(5), 5));
+  ok("互斥的兩張都釘著：兩張都寫進提示詞", both.has("red hair") && both.has("black hair"));
+}
+
 if (failed) {
   console.error(`\n${failed} failed`);
   process.exit(1);

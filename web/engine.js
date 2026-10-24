@@ -2811,6 +2811,8 @@ function eraCompatible(lex, tagA, tagB) {
 // opts.eraMix：時代選「混合」（settings.eraMix）時不同時代的牌可以一起放（漢服配摩天樓），不因時代擠掉別張。
 export function applyPin(lex, pinned, userBanned, tag, opts) {
   const mixEras = !!(opts && opts.eraMix);
+  // keepMutex：合成池的「互斥」開關關掉時，互斥的牌不拿下來（兩張都留；抽的時候釘選本來就兩張都寫）。
+  const keepMutex = !!(opts && opts.keepMutex);
   const nextPin = new Set(pinned);
   const nextBan = new Set(userBanned);
   nextBan.delete(tag);
@@ -2821,7 +2823,7 @@ export function applyPin(lex, pinned, userBanned, tag, opts) {
   } else if (nextPin.has(NO_HUMANS) && isPersonTag(lex, tag)) {
     nextPin.delete(NO_HUMANS);
   }
-  for (const sib of mutexSiblings(lex, tag)) nextPin.delete(sib);
+  if (!keepMutex) for (const sib of mutexSiblings(lex, tag)) nextPin.delete(sib);
   if (!mixEras) {
     for (const other of [...nextPin]) {
       if (other !== tag && !eraCompatible(lex, tag, other)) nextPin.delete(other);
@@ -2847,7 +2849,7 @@ export function applyPin(lex, pinned, userBanned, tag, opts) {
       ) continue;
       nextPin.add(i);
       nextBan.delete(i);
-      for (const sib of mutexSiblings(lex, i)) nextPin.delete(sib);
+      if (!keepMutex) for (const sib of mutexSiblings(lex, i)) nextPin.delete(sib);
     }
   }
   return { pinned: nextPin, userBanned: nextBan };
@@ -4573,6 +4575,8 @@ function drawOneImpl(lex, settings, pinned, userBanned, rand, seed, opts) {
     if (item) {
       for (const g of extraMutex(item)) mutexTaken.set(g, tag);
       for (const d of dependents(lex, tag)) {
+        // 「附帶」關掉：附帶的牌只認池子裡還在的。使用者拿掉的（例如釘夏日洋裝、拿掉洋裝）不抽回來。
+        if (settings.pinCompanions === false && !pinned.has(d)) continue;
         // 兩邊都行的場地：使用者已經釘了另一側，就不要把詞庫的室內／室外再補進來。
         if (keepPlaceSide(tag, d, (other) => pinned.has(other) || used.has(other))) continue;
         if (banned.has(d) && !pinned.has(d)) continue;
@@ -8500,6 +8504,11 @@ export function defaultSettings(data) {
     eraMix: false,
     ratingFree: false,
     samePerson: false,
+    // 放牌的兩個開關（2026-10-25，墨池合成池、疊印台）：
+    //   pinCompanions 附帶：釘了一張牌，引擎抽的時候把它附帶的牌（bind、implies）一起帶上。關掉＝你從池子拿掉的附帶牌不會被抽回來。
+    //   pinMutex 互斥：放牌時把池子裡跟它互斥的牌拿下來（applyPin 的 keepMutex 看這個）。關掉＝兩張都留、兩張都寫進提示詞。
+    pinCompanions: true,
+    pinMutex: true,
     drawJob: false,
     // 抽角色：只替人物設定啟用的性別抽角色卡。加入系列名：角色後面接作品名（釘的角色也照這個）。
     drawCharacter: false,
@@ -8554,6 +8563,8 @@ export function sanitizeSettings(raw, data) {
     eraMix: raw.eraMix === true,
     ratingFree: raw.ratingFree === true,
     samePerson: raw.samePerson === true,
+    pinCompanions: raw.pinCompanions !== false,
+    pinMutex: raw.pinMutex !== false,
     drawJob: raw.drawJob === true,
     drawCharacter: raw.drawCharacter === true,
     characterSeries: raw.characterSeries === true,

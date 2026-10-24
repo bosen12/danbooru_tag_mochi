@@ -182,7 +182,7 @@ async function boot() {
   if (handoff.length && S.handoffFrom === "book" && kept.length) {
     let pinned = new Set(kept);
     let banned = new Set(S.loadBans().filter((t) => lib.byTag.has(t)));
-    for (const t of handoff) ({ pinned, userBanned: banned } = applyPin(lex, pinned, banned, t, { eraMix: settings.eraMix }));
+    for (const t of handoff) ({ pinned, userBanned: banned } = applyPin(lex, pinned, banned, t, pinOpts()));
     pool = pinned;
     handoffMerged = true;
     S.saveBans(banned);
@@ -1214,11 +1214,16 @@ function haptic(ms) {
   navigator.vibrate(ms);
 }
 
+/** 放牌的選項：時代混不混，合成池的「互斥」開關（關掉＝互斥的牌不拿下）。 */
+function pinOpts(extra = {}) {
+  return { eraMix: settings.eraMix, keepMutex: settings.pinMutex === false, ...extra };
+}
+
 function pin(tag) {
   if (HARD_BANNED.includes(tag)) return;
   haptic(8);
   const before = new Set(pool);
-  const next = applyPin(lex, pool, bans, tag, { eraMix: settings.eraMix });
+  const next = applyPin(lex, pool, bans, tag, pinOpts());
   pool = next.pinned;
   bans = next.userBanned;
   const gone = [...before].filter((t) => !pool.has(t));
@@ -1251,7 +1256,7 @@ function keepBothEras(tags) {
   poolNote = null;
   setSettings({ eras: [...ERAS], eraMix: true });
   let next = new Set(pool);
-  for (const t of tags) if (lib.byTag.has(t)) next = applyPin(lex, next, bans, t, { eraMix: true }).pinned;
+  for (const t of tags) if (lib.byTag.has(t)) next = applyPin(lex, next, bans, t, pinOpts({ eraMix: true })).pinned;
   pool = next;
   commitPins();
   renderRules();
@@ -1723,7 +1728,7 @@ function renderPool(fresh) {
             const tags = starter.tags;
             return el("button", { class: "btn btn-small btn-ghost", type: "button", dataset: { starter: starter.name }, title: tags.map(zh).join("、"), onclick: () => {
               let next = new Set(pool);
-              for (const tag of tags) next = applyPin(lex, next, bans, tag, { eraMix: settings.eraMix }).pinned;
+              for (const tag of tags) next = applyPin(lex, next, bans, tag, pinOpts()).pinned;
               pool = next;
               commitPins();
               announce(`起手：${starter.name}`);
@@ -1960,6 +1965,9 @@ function renderRules() {
     renderLibrary();
   });
 
+  // 放牌的兩個開關（預設都開，跟以前一樣）。
+  const companions = switchBox("附帶", settings.pinCompanions !== false, (v) => setSettings({ pinCompanions: v }), "開：釘了一張牌，抽的時候把它附帶的牌一起帶上（夏日洋裝帶洋裝）。關：你從池子拿掉的附帶牌不會被抽回來");
+  const mutex = switchBox("互斥", settings.pinMutex !== false, (v) => setSettings({ pinMutex: v }), "開：放一張牌時，池子裡跟它互斥的牌拿下來（放黑髮，紅髮下來）。關：互斥的牌都留著，兩張都寫進提示詞");
   box.replaceChildren(
     // 標籤跟它的控制項包成一組：窄畫面換行時整組一起走，不會出現「時代」掛在上一行尾、選單在下一行。
     el(
@@ -1970,7 +1978,8 @@ function renderRules() {
       rulePair("人物", whoRow),
       rulePair("尺寸", sizeSel),
       // 姿勢參考：人物照一張圖的姿勢擺（pose.js）。
-      rulePair("姿勢", poseButton({ recent: poseRecent, wf: currentWorkflowId, rating: () => settings.rating, size: () => ({ w: settings.width, h: settings.height }) }))
+      rulePair("姿勢", poseButton({ recent: poseRecent, wf: currentWorkflowId, rating: () => settings.rating, size: () => ({ w: settings.width, h: settings.height }) })),
+      rulePair("放牌", el("span", { class: "rule-pair" }, companions, mutex))
     ),
     el(
       "details",
@@ -2894,7 +2903,7 @@ function pinAllFromShot(shot, btn) {
   let next = new Set(pool);
   let nextBans = bans;
   for (const t of tags) {
-    const r = applyPin(lex, next, nextBans, t, { eraMix: settings.eraMix });
+    const r = applyPin(lex, next, nextBans, t, pinOpts());
     next = r.pinned;
     nextBans = r.userBanned;
   }
@@ -4243,7 +4252,7 @@ function applyCards(tags, { replace = true, label = "", weights: w = {} } = {}) 
   let banned = new Set(bans);
   for (const t of tags) {
     if (HARD_BANNED.includes(t) || !lib.byTag.has(t)) continue;
-    const r = applyPin(lex, pinned, banned, t, { eraMix: settings.eraMix });
+    const r = applyPin(lex, pinned, banned, t, pinOpts());
     pinned = r.pinned;
     banned = r.userBanned;
   }

@@ -4147,6 +4147,8 @@ function openRules() {
       // 姿勢參考：人物照一張圖的姿勢擺（pose.js）。
       row("姿勢參考", poseButton({ recent: () => prints.filter((p) => p.status === "done" && p.image && !p._gone).map((p) => ({ src: viewSrc(p.image), full: p.image })), wf: currentWorkflowId, rating: () => settings.rating, size: () => ({ w: settings.width, h: settings.height }) })),
       row("尺度", heats),
+      // 附帶：開＝釘了一張牌，抽的時候把它附帶的牌一起帶上；關＝你從卡池拿掉的附帶牌不會被抽回來。
+      row("附帶", segmented("附帶", [["on", "帶上"], ["off", "拿掉的不抽回來"]], settings.pinCompanions === false ? "off" : "on", (v) => setSettings({ pinCompanions: v === "on" }))),
       row(
         "每段補幾張",
         el(
