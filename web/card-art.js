@@ -268,6 +268,10 @@ const ART_EXTRA = {
   "crotch rope": "standing, nude",
   // 2026-10-24：上半身構圖看不到腿上的繩。
   "bound legs": "full body",
+  // 2026-10-24（建議池烤卡抽檢）：romper 跟一個小個子角色綁得很緊，只寫 adult 照樣畫成 Q 版小孩；
+  // column lineup 只寫字畫成鐵欄後面的人影。補成熟、高挑，跟並排的幾個視角。
+  romper: "mature female, tall, long legs",
+  "column lineup": "mature female, multiple views, standing, full body, white background",
   "sideboob": "breasts, from side",
   "underboob": "breasts, from below",
   "backboob": "breasts, from behind",

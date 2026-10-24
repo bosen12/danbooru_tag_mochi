@@ -31,6 +31,8 @@ const SFW_EXTRA = new Set([
   "heart-shaped pupils",
   "fucked silly",
   "rolling eyes",
+  // 2026-10-24（建議池烤卡抽檢）：性暗示本身就是 Danbooru 的敏感級，卡面畫出來是跪著含著東西。
+  "sexually suggestive",
   // 實際抽 4320 張之後看出來的漏網：規則對了，但這些字規則抓不到。
   // 透視與極度暴露的衣著
   "see-through shirt",
