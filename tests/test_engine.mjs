@@ -5151,7 +5151,8 @@ function indoorOutdoorClash(have) {
     let n = 0;
     for (let i = 0; i < 40; i++) {
       const h = tagsOf(drawOne(lex, s, p, new Set(), mulberry32(seed + i), seed + i));
-      if ([...h].some((t) => /\b(bikini|swimsuit)\b/.test(t))) n += 1;
+      // 2026-10-24：bikini tan 是曬痕，不是穿著泳裝；這條檢查衣物。
+      if ([...h].some((t) => lex.byTag.get(t)?.section === "clothing" && /\b(bikini|swimsuit)\b/.test(t))) n += 1;
     }
     return n;
   }
@@ -5302,11 +5303,12 @@ function indoorOutdoorClash(have) {
   eq("riding bicycle never auto on chair", bikeChair, 0);
   const pinEx = applyPin(lex, new Set(), new Set(), "exercising").pinned;
   let exStand = 0;
-  for (let i = 0; i < 40; i++) {
+  // 2026-10-24：候選池擴大後原來 40 顆種子為 0；200 顆仍可達，避免把取樣誤當禁止。
+  for (let i = 0; i < 200; i++) {
     const h = tagsOf(drawOne(lex, s, pinEx, new Set(), mulberry32(441160 + i), 441160 + i));
     if (h.has("standing")) exStand += 1;
   }
-  ok("pinned exercising can stand", exStand > 0, `stand=${exStand}/40`);
+  ok("pinned exercising can stand", exStand > 0, `stand=${exStand}/200`);
   const pinLift = applyPin(lex, new Set(), new Set(), "weightlifting").pinned;
   let liftStand = 0;
   for (let i = 0; i < 40; i++) {
@@ -5690,7 +5692,7 @@ function indoorOutdoorClash(have) {
     // 2026-10-23：摔角、觀眾、公開場合 28 個字進池，牌序再位移。這張換成藍帽、地鐵站。仍是 1girl solo，沒有男生或人類陰莖。
     // 2026-10-23 第二輪：主人指定加回 12 個字、族裔這批進池，六招限摔角場地。這張換成籃球服、天堂。仍是 1girl solo，沒有男生或人類陰莖。
     // 2026-10-24 第三輪：口塞、衣外繩縛、綁法、俘虜進池。這張多了性玩具、拉珠，披薩換成月餅。仍是 1girl solo，沒有男生或人類陰莖。
-    "1girl, solo, very short hair, yellow eyes, aqua hair, sidelocks, large breasts, breast expansion, purple lips, lipstick, dreadlocks, basketball uniform, sportswear, bra, gothic, pantyhose, sex toy, masturbation through clothes, outstretched arm, cropped torso, looking afar, evil smile, anal beads, heaven, outdoors, sunrise, shade, mooncake, chopsticks, nsfw, explicit, masterpiece, best quality, amazing quality");
+    "1girl, solo, very short hair, yellow eyes, aqua hair, long sidelocks, sidelocks, small breasts, mascara, eyeshadow, nude, green hat, hat, white scarf, scarf, medical eyepatch, eyepatch, latex gloves, gloves, female masturbation, on stomach, from below, looking back, rape face, rolling eyes, grid background, simple background, dim lighting, condensation, ice, fish, nsfw, explicit, masterpiece, best quality, amazing quality");
   ok("drawOne exposes shadow diagnostics", Array.isArray(shadowIntegrationDraw.shadowViolations));
 
   const eatProneShadow = validateSupportShadow({

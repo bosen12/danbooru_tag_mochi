@@ -814,7 +814,76 @@ SEX = {
 }
 
 
+# 第四輪第1批：依語意歸類，避免靠字名片段誤判（例如冷氣不是光線）。
+ROUND4_BATCH1_GROUPS = {
+    **dict.fromkeys('headlamp'.split("|"), 'acc'),
+    **dict.fromkeys('opening door'.split("|"), 'activity'),
+    **dict.fromkeys('diagonal-striped background|plaid background|sunburst background|vertical-striped background'.split("|"), 'background'),
+    **dict.fromkeys('3d background|black border|outside border|white border'.split("|"), 'camera'),
+    **dict.fromkeys('breath|falling feathers|glint|light trail|sunburst|musical note|notice lines|puff of air|spoken musical note|squiggle|zzz'.split("|"), 'effect'),
+    **dict.fromkeys('cloud print|starry sky print|neon trim'.split("|"), 'fabric'),
+    **dict.fromkeys('on bench|on floor|on ground|on swing|on table'.split("|"), 'furniture'),
+    **dict.fromkeys('black flower|black rose|blue flower|blue rose|orange flower|pink flower|pink rose|purple flower|purple rose|red flower|red rose|white flower|white rose|yellow flower|yellow rose|green flower|camellia|daisy (flower)|tulip|white lily|wisteria|bare tree|branch|lily pad|palm leaf|tree stump|vines|bird|butterfly|cat|dog|fish|school desk|school chair|chalkboard|book stack|cabinet|drawer|flower pot|picture frame|potted plant|rug|shelf|tablecloth|wooden table|window blinds|barrel|candlestand|gohei|shimenawa|vase|wind chime|wooden bucket|treasure chest|cardboard box|doll|gift|ceiling|checkered floor|door|doorway|gate|ladder|open door|open window|pole|reflective floor|sliding doors|tile floor|tile wall|tombstone|wooden fence|wooden wall|spider web|pavement|road sign|poster (object)|trash can|air conditioner|alarm clock|electric fan|light bulb|refrigerator|television|faucet|toilet|cooking pot|drinking glass|kettle|crystal|seashell|shallow water|starfish|waves|rubber duck|aircraft|fighter jet|flight deck|military vehicle|motor vehicle|motorcycle|sports car|truck|smokestack|watercraft|warship|glowing sword|glowing weapon|happy halloween|happy valentine|nengajou|year of the rabbit|year of the tiger|wreath|setsubun|tanabata|spring (season)|autumn|snowman|folding chair|lounge chair'.split("|"), 'other'),
+    **dict.fromkeys('gym storeroom'.split("|"), 'place'),
+    **dict.fromkeys('cold|hot'.split("|"), 'skin'),
+    **dict.fromkeys('grey sky|cumulonimbus cloud|constellation|contrail|red moon'.split("|"), 'sky'),
+    **dict.fromkeys('against railing|against tree|in tree|sitting in tree|standing on liquid|holding lantern'.split("|"), 'tease'),
+    **dict.fromkeys('morning'.split("|"), 'time'),
+    **dict.fromkeys('snowing'.split("|"), 'weather'),
+}
+
+
+# 第四輪第2批：依語意歸類，避免靠字名片段誤判（例如冷氣不是光線）。
+ROUND4_BATCH2_GROUPS = {
+    **dict.fromkeys('obijime|tasuki|vambraces|heart pasties|single earring|bangle|goggles on head|straw hat|mini crown|headpiece|bandana|wristwatch|hair tie|earmuffs'.split("|"), 'acc'),
+    **dict.fromkeys('bare hips'.split("|"), 'body_f'),
+    **dict.fromkeys('red skirt|green skirt|grey skirt|pink skirt|purple skirt|layered skirt|denim skirt|white pants|grey pants|white shorts|no pants'.split("|"), 'bottom'),
+    **dict.fromkeys('black kimono|red kimono|pink kimono|red hakama|kariginu|full armor|red cape'.split("|"), 'era'),
+    **dict.fromkeys('vertical-striped clothes|checkered clothes|argyle clothes|cross-laced clothes|asymmetrical clothes|taut clothes|unbuttoned|raglan sleeves|wing collar|double-breasted|asymmetrical legwear|partially undressed|jacket on shoulders'.split("|"), 'fabric'),
+    **dict.fromkeys('greaves|black shoes|white shoes|brown shoes|red shoes|black boots|white boots|brown boots|black sandals|flip-flops|pumps'.split("|"), 'feet'),
+    **dict.fromkeys('black pantyhose|white pantyhose|brown pantyhose|thighband pantyhose|black socks|striped thighhighs|brown thighhighs|red thighhighs|leg warmers'.split("|"), 'legs'),
+    **dict.fromkeys('nude cover'.split("|"), 'nude'),
+    **dict.fromkeys('naked cape|naked sheet|collared dress|long dress|pleated dress|halter dress|layered dress|strapless leotard|white leotard|black one-piece swimsuit|highleg one-piece swimsuit|naval uniform'.split("|"), 'onepiece'),
+    **dict.fromkeys('unworn panties|unworn bra'.split("|"), 'other'),
+    **dict.fromkeys('white jacket|red jacket|brown jacket|fur-trimmed jacket|grey jacket|black coat|hooded coat'.split("|"), 'outer'),
+    **dict.fromkeys('no shirt|black vest|grey shirt|yellow shirt|purple shirt|brown shirt|cropped shirt|polo shirt|undershirt|tied shirt|black sweater|black camisole'.split("|"), 'top'),
+    **dict.fromkeys('pink panties|purple panties|frilled panties|polka dot panties|lace panties|thong panties|bow bra|lace-trimmed bra|red bra|striped bra'.split("|"), 'underwear'),
+}
+
+
+# 第四輪第3批：依語意歸類，避免靠字名片段誤判（例如冷氣不是光線）。
+ROUND4_BATCH3_GROUPS = {
+    **dict.fromkeys('waking up|dressing|playing with own hair|unsheathing|drawing bow|soaking feet'.split("|"), 'activity'),
+    **dict.fromkeys('sleeping upright|spread arms|legs together|feet up'.split("|"), 'body'),
+    **dict.fromkeys('faceless female|toned female|hip bones|armpit crease|armpit peek|perky breasts|full cleavage|framed breasts'.split("|"), 'body_f'),
+    **dict.fromkeys('large pectorals|bare pectorals|muscular arms|veiny arms|linea alba|body hair|armpit hair|sideburns|full beard|beard stubble'.split("|"), 'body_m'),
+    **dict.fromkeys('partially underwater shot|pov across table|aiming at viewer|female pov|facing to the side|other focus|zoom layer|pillarboxed|chibi inset|reference inset'.split("|"), 'camera'),
+    **dict.fromkeys('colored sclera|symbol in eye|solid circle eyes|thick eyelashes|horizontal pupils|star in eye|red sclera|yellow pupils|x-shaped pupils|alternate eye color'.split("|"), 'eyes'),
+    **dict.fromkeys('enmaided|partially unzipped'.split("|"), 'fabric'),
+    **dict.fromkeys('light frown|scowl|disgust|unamused|confused|grimace|evil grin|wiping tears|streaming tears|puckered lips'.split("|"), 'face'),
+    **dict.fromkeys('bursting breasts|butt crack|breast slip|bikini top lift|untied bikini top|untied bikini bottom|bikini bottom pull|skirt pull|shorts pull|pantyhose pull'.split("|"), 'flash'),
+    **dict.fromkeys('looking at animal|looking over eyewear|staring|upturned eyes'.split("|"), 'gaze'),
+    **dict.fromkeys('red streaks|blue streaks|black streaks|pink streaks|official alternate hair color'.split("|"), 'hair_color'),
+    **dict.fromkeys('buzz cut|bowl cut|inverted bob|front ponytail|high side ponytail|wide ponytail|side braids|nape braid|low-braided long hair|single side bun|side up bun|long sidelocks|drill sidelocks|fiery hair|hair over breasts'.split("|"), 'hair_style'),
+    **dict.fromkeys('sailor|shinsengumi'.split("|"), 'job'),
+    **dict.fromkeys('purple nails|green nails|aqua nails|yellow nails|orange nails|white nails|multicolored nails|nail art|red eyeliner|sharp fingernails'.split("|"), 'makeup'),
+    **dict.fromkeys('nontraditional miko|nontraditional playboy bunny|wa maid|male maid|unconventional maid|roswaal mansion maid uniform|employee uniform'.split("|"), 'onepiece'),
+    **dict.fromkeys("viera|plant girl|fish girl|shark girl|miqo'te|tiger girl|lion girl|merfolk|fins|antennae".split("|"), 'race'),
+    **dict.fromkeys('disembodied penis|girthy penis|clitoral hood|no pussy|partially visible vulva|fat mons|anus peek|urethra|pubic hair peek|colored pubic hair|caressing testicles|gloved handjob|two-footed footjob|cooperative fellatio|clitoral stimulation|female orgasm|fellatio gesture|hitachi magic wand|vibrator under clothes'.split("|"), 'sex'),
+    **dict.fromkeys('whisker markings|body markings|star facial mark|birthmark|scar on stomach|scar on chest|scar on arm|flower tattoo|shoulder tattoo|chest tattoo|one-piece tan|bikini tan|cracked skin|wrinkled skin|very sweaty|turn pale|dirty|dirty face|ear blush|alternate skin color'.split("|"), 'skin'),
+    **dict.fromkeys('toon (style)|faux traditional media|outline|white outline|hatching (texture)|no lineart'.split("|"), 'style'),
+    **dict.fromkeys('petting|adjusting swimsuit|carrying over shoulder|hands on own face|hand on own head|hand to own mouth|hands on own cheeks|hands on own head|open hands|hand over own mouth|midriff peek|bra peek|panty peek|strap gap|button gap|crop top overhang|pantylines|plunging neckline|necktie between breasts'.split("|"), 'tease'),
+    **dict.fromkeys('breast curtains|open hoodie'.split("|"), 'top'),
+}
+
+
 def assign_group(item: dict) -> str:
+    if item.get("tag") in ROUND4_BATCH1_GROUPS:
+        return ROUND4_BATCH1_GROUPS[item["tag"]]
+    if item.get("tag") in ROUND4_BATCH2_GROUPS:
+        return ROUND4_BATCH2_GROUPS[item["tag"]]
+    if item.get("tag") in ROUND4_BATCH3_GROUPS:
+        return ROUND4_BATCH3_GROUPS[item["tag"]]
     sec = item.get("section") or ""
     mx = item.get("mutex") or ""
     layer = item.get("layer") or ""

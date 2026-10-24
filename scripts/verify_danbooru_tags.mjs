@@ -141,6 +141,8 @@ export const MODEL_VOCAB = new Set([
   //
   // harness gag：2013 起的空殼，沒標停用。現名 gag harness D 5/5、舊名 D 5/5，並排同名卡。
   "harness gag",
+  // 2026-10-24 第四輪：五種子 D/C 證明仍可用的舊名（現名也留）。
+  "gray sky", "floor tiles", "trash bin",
 ]);
 
 // 使用者點名必須擋掉的：deprecated、post_count 0、或 alias 舊名。
