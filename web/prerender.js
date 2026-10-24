@@ -23,18 +23,21 @@ const KEYS = {
   },
   book: { local: ["mochi.settings.v1", "mochi.bans.v1", "mochi.book.v1", "mochi.book.box.v1", "mochi.fav.chars.v1"], session: [] },
   album: { local: ["mochi.settings.v1", "mochi.album.group.v1"], session: [] },
+  // 解析池：設定、分級；剛才解析的那一張存在這個分頁（sessionStorage）。
+  parse: { local: ["mochi.settings.v1", "mochi.parse.v1"], session: ["mochi.parse.tab.v1"] },
 };
 for (const k of Object.values(KEYS)) {
   k.local.push("mochi.language.v1");
   k.session.push("mochi.language.state.v1");
 }
 
-// 由左到右的四個房間（頂欄分頁的順序）。
+// 由左到右的五個房間（頂欄分頁的順序）。
 const ROOMS = [
   ["index", "./"],
   ["fuse", "fuse.html"],
   ["book", "book.html"],
   ["album", "album.html"],
+  ["parse", "parse.html"],
 ];
 const roomHere = () => {
   const file = location.pathname.split("/").pop() || "index.html";

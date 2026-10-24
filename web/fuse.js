@@ -313,7 +313,11 @@ async function boot() {
   }
   await yoke();
   renderAll();
-  if (handoff) toast(`從墨池帶來 ${bed.pins.length} 張牌；規則沿用疊印台的設定。`);
+  if (handoff && handoff.from === "parse") {
+    // 解析池帶來的常有互斥的（兩種髮色、站坐都有）：疊進卡池時後面那張蓋掉前面的，少了幾張要說。
+    const lost = handoff.tags.length - bed.pins.length;
+    toast(lost > 0 ? `從解析池帶來 ${bed.pins.length} 張牌；${lost} 張跟別張互斥或被分級擋掉，沒放進去。` : `從解析池帶來 ${bed.pins.length} 張牌；規則沿用疊印台的設定。`);
+  } else if (handoff) toast(`從墨池帶來 ${bed.pins.length} 張牌；規則沿用疊印台的設定。`);
   if (caseTab === "match") renderCase();
   renderLine();
   // 接著印、接回 Hires：背後預先開好的頁（prerender.js）等點進去才做，沒點進去的頁會被丟掉，那時送出去就白印了。

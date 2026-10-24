@@ -1,0 +1,837 @@
+/* ================= 解析池（parse.html） =================
+ * 左邊一張底片（放圖、解析時一道朱光從上掃到下），右邊照花色落下解析出來的牌，底下一條帶走的膠囊。
+ * 牌從圖裡飛出來、確定／全部切換的 FLIP、帶走時飛進按鈕都在 parse.js；這裡管靜態的樣子和小動作。 */
+
+.parse {
+  display: grid;
+  gap: var(--space-md);
+  padding: var(--space-md) var(--space-md) var(--space-2xl);
+  max-width: 1600px;
+  margin: 0 auto;
+}
+
+.parse-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  justify-content: space-between;
+  gap: var(--space-sm) var(--space-lg);
+}
+
+.parse-title {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: var(--space-2xs) var(--space-md);
+  min-width: 0;
+}
+
+.parse-title h2 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: var(--text-xl);
+  letter-spacing: 0.06em;
+}
+
+.parse-sum {
+  margin: 0;
+  color: var(--color-muted);
+  font-size: var(--text-sm);
+}
+
+.parse-body {
+  display: grid;
+  grid-template-columns: minmax(260px, 5fr) minmax(0, 9fr);
+  gap: var(--space-lg) var(--space-xl);
+  align-items: start;
+}
+
+/* ---------- 底片 ---------- */
+
+.parse-plate {
+  position: sticky;
+  top: calc(var(--mast-h, 56px) + var(--space-md));
+  display: grid;
+  gap: var(--space-sm);
+  min-width: 0;
+}
+
+.parse-file {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.parse-drop {
+  position: relative;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: var(--space-xs);
+  aspect-ratio: 4 / 5;
+  max-height: min(68vh, 640px);
+  padding: var(--space-lg);
+  border: 1.5px dashed var(--color-rule);
+  border-radius: var(--radius-md);
+  background:
+    radial-gradient(60% 50% at 50% 46%, var(--color-pool-soft), transparent 70%),
+    var(--color-paper-2);
+  color: var(--color-ink-2);
+  text-align: center;
+  cursor: pointer;
+  overflow: hidden;
+  transition:
+    border-color var(--dur-short) var(--ease-out),
+    background-color var(--dur-short) var(--ease-out),
+    transform var(--dur-medium) var(--ease-settle);
+}
+
+.parse-drop:hover,
+.parse-file:focus-visible + .parse-shot,
+.parse-plate:has(.parse-file:focus-visible) .parse-drop {
+  border-color: var(--color-pool);
+}
+
+.parse-plate:has(.parse-file:focus-visible) .parse-drop {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 3px;
+}
+
+/* 拖著圖經過頁面：底片亮起來、微微迎上來。 */
+.parse-plate[data-over] .parse-drop,
+.parse-plate[data-over] .parse-frame {
+  border-color: var(--color-accent);
+  border-style: solid;
+  transform: scale(1.012);
+}
+
+.parse-plate[data-over] .parse-drop {
+  background:
+    radial-gradient(60% 50% at 50% 46%, color-mix(in oklch, var(--color-accent) 22%, transparent), transparent 72%),
+    var(--color-paper-2);
+}
+
+/* 朱印：一個「析」字，外面兩圈墨暈慢慢擴散。 */
+.parse-drop-mark {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  margin-bottom: var(--space-xs);
+  border-radius: 12px;
+  background: linear-gradient(150deg, var(--color-accent), var(--color-accent-3));
+  box-shadow: 0 10px 24px -10px var(--color-accent-3), inset 0 1px 0 oklch(100% 0 0 / 0.25);
+  rotate: -4deg;
+  transition: rotate var(--dur-long) var(--ease-settle), scale var(--dur-long) var(--ease-settle);
+}
+
+.parse-drop-mark::before {
+  content: "析";
+  color: var(--color-accent-ink);
+  font-family: var(--font-heading);
+  font-size: 34px;
+  line-height: 1;
+}
+
+.parse-drop:hover .parse-drop-mark,
+.parse-plate[data-over] .parse-drop-mark {
+  rotate: 0deg;
+  scale: 1.08;
+}
+
+.parse-drop-ring,
+.parse-drop-ring::after {
+  position: absolute;
+  top: calc(50% - 46px);
+  left: calc(50% - 60px);
+  width: 120px;
+  height: 120px;
+  border: 1px solid var(--color-pool);
+  border-radius: 50%;
+  opacity: 0;
+  pointer-events: none;
+  animation: parse-ripple 3.6s var(--ease-out) infinite;
+}
+
+.parse-drop-ring::after {
+  content: "";
+  top: -1px;
+  left: -1px;
+  animation-delay: 1.8s;
+}
+
+@keyframes parse-ripple {
+  0% {
+    opacity: 0.55;
+    transform: scale(0.55);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(2.1);
+  }
+}
+
+.parse-drop-title {
+  color: var(--color-ink);
+  font-family: var(--font-display);
+  font-size: var(--text-lg);
+  letter-spacing: 0.08em;
+}
+
+.parse-drop-sub {
+  font-size: var(--text-sm);
+  color: var(--color-muted);
+}
+
+/* ---------- 放進來的圖 ---------- */
+
+.parse-shot {
+  display: grid;
+  gap: var(--space-sm);
+}
+
+.parse-frame {
+  position: relative;
+  width: fit-content;
+  max-width: 100%;
+  margin-inline: auto;
+  overflow: hidden;
+  border: 1px solid var(--color-rule-2);
+  border-radius: var(--radius-md);
+  background: var(--color-paper-2);
+  box-shadow: 0 18px 40px -22px var(--color-shade);
+  transition:
+    transform var(--dur-medium) var(--ease-settle),
+    border-color var(--dur-short) var(--ease-out);
+}
+
+.parse-img {
+  display: block;
+  max-width: 100%;
+  max-height: min(68vh, 760px);
+  transition: filter var(--dur-xl) var(--ease-out);
+}
+
+/* 掃描：一道朱光從上掃到下，後面拖一段淡淡的光暈；底下一層細細的掃描線。 */
+.parse-scan,
+.parse-grain {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity var(--dur-long) var(--ease-out);
+}
+
+.parse-scan {
+  background:
+    linear-gradient(to bottom,
+      transparent 0%,
+      color-mix(in oklch, var(--color-accent) 10%, transparent) 60%,
+      color-mix(in oklch, var(--color-accent) 42%, transparent) 96%,
+      oklch(97% 0.05 40 / 0.95) 99%,
+      transparent 100%) no-repeat;
+  background-size: 100% 42%;
+  background-position: 0 -60%;
+  mix-blend-mode: screen;
+}
+
+.parse-grain {
+  background: repeating-linear-gradient(to bottom, oklch(100% 0 0 / 0.05) 0 1px, transparent 1px 4px);
+}
+
+.parse-plate[data-state="loading"] .parse-img {
+  filter: saturate(0.35) brightness(0.72) contrast(1.05);
+}
+
+.parse-plate[data-state="loading"] .parse-scan {
+  opacity: 1;
+  animation: parse-sweep 1.9s var(--ease-in-out) infinite;
+}
+
+.parse-plate[data-state="loading"] .parse-grain {
+  opacity: 1;
+}
+
+.parse-plate[data-state="loading"] .parse-frame {
+  border-color: color-mix(in oklch, var(--color-accent) 55%, var(--color-rule-2));
+  animation: parse-breathe 1.9s var(--ease-in-out) infinite;
+}
+
+/* 解析完：最後一道光很快掃過、收掉，牌在這時候飛出來。 */
+.parse-frame[data-flash] .parse-scan {
+  opacity: 1;
+  animation: parse-sweep 0.9s var(--ease-out) 1 forwards, parse-fade 1.2s var(--ease-out) 1 forwards;
+}
+
+@keyframes parse-sweep {
+  from {
+    background-position: 0 -60%;
+  }
+  to {
+    background-position: 0 175%;
+  }
+}
+
+@keyframes parse-fade {
+  60% {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes parse-breathe {
+  50% {
+    box-shadow: 0 0 0 4px color-mix(in oklch, var(--color-accent) 16%, transparent), 0 18px 40px -22px var(--color-shade);
+  }
+}
+
+.parse-status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-2xs) var(--space-sm);
+  min-height: 1.6em;
+  color: var(--color-ink-2);
+  font-size: var(--text-sm);
+}
+
+.parse-status b {
+  color: var(--color-ink);
+  font-weight: 600;
+}
+
+.parse-run,
+.parse-done {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 0.4em;
+}
+
+.parse-done > * + *::before {
+  content: "・";
+  margin-right: 0.15em;
+  color: var(--color-muted);
+  font-weight: 400;
+}
+
+.parse-secs {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.parse-why {
+  display: block;
+  flex-basis: 100%;
+  margin-top: var(--space-2xs);
+  color: var(--color-muted);
+  font-size: var(--text-xs);
+}
+
+.parse-err {
+  color: var(--color-accent-text);
+}
+
+.parse-model {
+  padding: 1px var(--space-xs);
+  border: 1px solid var(--color-rule-2);
+  border-radius: 999px;
+  color: var(--color-muted);
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+}
+
+.parse-shot-tools {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--space-xs);
+}
+
+.parse-swap {
+  cursor: pointer;
+}
+
+/* ---------- 解析出來的牌 ---------- */
+
+.parse-out {
+  display: grid;
+  gap: var(--space-lg);
+  align-content: start;
+  min-width: 0;
+}
+
+.parse-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-xs) var(--space-sm);
+}
+
+.parse-drop[hidden],
+.parse-shot[hidden],
+.parse-tools[hidden],
+.parse-bar[hidden],
+.parse-empty[hidden] {
+  display: none;
+}
+
+.parse-groups {
+  display: grid;
+  gap: var(--space-lg);
+}
+
+.parse-suit {
+  display: grid;
+  gap: var(--space-sm);
+}
+
+.parse-suit[hidden] {
+  display: none;
+}
+
+.parse-suit[data-suit="cast"] { --suit: var(--suit-cast); }
+.parse-suit[data-suit="chara"] { --suit: var(--suit-chara); }
+.parse-suit[data-suit="look"] { --suit: var(--suit-look); }
+.parse-suit[data-suit="wear"] { --suit: var(--suit-wear); }
+.parse-suit[data-suit="pose"] { --suit: var(--suit-pose); }
+.parse-suit[data-suit="scene"] { --suit: var(--suit-scene); }
+.parse-suit[data-suit="style"] { --suit: var(--suit-style); }
+
+.parse-suit-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  margin: 0;
+  padding-bottom: var(--space-2xs);
+  border-bottom: 1px solid var(--color-rule-2);
+  color: var(--color-ink);
+  font-family: var(--font-display);
+  font-size: var(--text-md);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+}
+
+.parse-suit-glyph {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  background: var(--suit);
+  color: var(--color-paper);
+  font-size: var(--text-xs);
+}
+
+.parse-suit-n {
+  margin-left: auto;
+  color: var(--color-muted);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  font-weight: 400;
+}
+
+.parse-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-md) var(--space-sm);
+  padding-top: var(--space-2xs);
+}
+
+.parse-cell {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+}
+
+.parse-cell[hidden] {
+  display: none;
+}
+
+.parse-cell > .card {
+  --card-w: 96px;
+  transition:
+    transform var(--dur-short) var(--ease-out),
+    scale var(--dur-short) var(--ease-settle),
+    box-shadow var(--dur-short) var(--ease-out),
+    opacity var(--dur-medium) var(--ease-out),
+    filter var(--dur-medium) var(--ease-out);
+}
+
+/* 不帶的牌：褪成灰、沉下去一點，勾勾變成空圈。 */
+.parse-cell[data-on="0"] > .card {
+  filter: grayscale(0.85) brightness(0.62);
+  opacity: 0.5;
+  scale: 0.95;
+}
+
+.parse-tick {
+  position: absolute;
+  top: -7px;
+  right: -7px;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--color-accent);
+  box-shadow: 0 4px 10px -4px var(--color-shade), 0 0 0 2px var(--color-paper);
+  pointer-events: none;
+  transition: background-color var(--dur-short) var(--ease-out);
+}
+
+.parse-tick::before {
+  content: "";
+  width: 9px;
+  height: 5px;
+  margin-top: -2px;
+  border-left: 2px solid var(--color-accent-ink);
+  border-bottom: 2px solid var(--color-accent-ink);
+  rotate: -45deg;
+  transition: opacity var(--dur-micro) var(--ease-out);
+}
+
+.parse-cell[data-on="0"] .parse-tick {
+  background: var(--color-paper-3);
+  box-shadow: 0 0 0 2px var(--color-paper), inset 0 0 0 1.5px var(--color-rule);
+}
+
+.parse-cell[data-on="0"] .parse-tick::before {
+  opacity: 0;
+}
+
+.parse-cell[data-lock] .parse-tick {
+  display: none;
+}
+
+/* 信心：兩格短條。確定兩格都亮（綠），可能只亮一格（黃）。 */
+.parse-conf {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  color: var(--color-muted);
+  font-size: var(--text-2xs);
+  letter-spacing: 0.04em;
+}
+
+.parse-conf > i {
+  width: 9px;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--color-rule);
+}
+
+.parse-cell[data-sure="1"] .parse-conf > i {
+  background: var(--color-good);
+}
+
+.parse-cell[data-sure="0"] .parse-conf > i:first-child {
+  background: var(--color-warn);
+}
+
+.parse-conf-text {
+  margin-left: 3px;
+}
+
+.parse-cell[data-sure="1"] .parse-conf-text {
+  color: var(--color-ink-2);
+}
+
+.parse-cell[data-lock] .parse-conf-text {
+  color: var(--color-warn);
+}
+
+.parse-none,
+.parse-empty {
+  margin: 0;
+  color: var(--color-muted);
+  font-size: var(--text-sm);
+}
+
+/* 還沒放圖：右邊三張斜放的空牌位，告訴你牌會落在這裡。 */
+.parse-empty {
+  position: relative;
+  display: grid;
+  align-content: end;
+  min-height: 260px;
+  padding: var(--space-lg);
+  border: 1px dashed var(--color-rule-2);
+  border-radius: var(--radius-md);
+  text-align: center;
+  overflow: hidden;
+}
+
+.parse-empty::before,
+.parse-empty::after {
+  content: "";
+  position: absolute;
+  top: 34px;
+  left: calc(50% - 44px);
+  width: 88px;
+  aspect-ratio: 480 / 702;
+  border: 1.5px dashed var(--color-rule);
+  border-radius: 7px;
+  rotate: -9deg;
+  translate: -58px 6px;
+  box-shadow: 116px -6px 0 -1.5px var(--color-paper), 116px -6px 0 0 var(--color-rule);
+}
+
+.parse-empty::after {
+  rotate: 4deg;
+  translate: 0 0;
+  border-style: solid;
+  border-color: color-mix(in oklch, var(--color-accent) 50%, var(--color-rule));
+  background: color-mix(in oklch, var(--color-accent) 6%, transparent);
+  box-shadow: none;
+}
+
+/* ---------- 詞庫沒有的字 ---------- */
+
+.parse-extra {
+  display: grid;
+  gap: var(--space-sm);
+}
+
+.parse-more {
+  border-top: 1px solid var(--color-rule-2);
+  padding-top: var(--space-sm);
+}
+
+.parse-more > summary {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  color: var(--color-ink-2);
+  font-size: var(--text-sm);
+  cursor: pointer;
+  list-style: none;
+}
+
+.parse-more > summary::-webkit-details-marker {
+  display: none;
+}
+
+.parse-more > summary::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+  rotate: -45deg;
+  transition: rotate var(--dur-short) var(--ease-out);
+}
+
+.parse-more[open] > summary::before {
+  rotate: 45deg;
+}
+
+.parse-more-note {
+  margin: var(--space-xs) 0;
+  color: var(--color-muted);
+  font-size: var(--text-xs);
+}
+
+.parse-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2xs);
+}
+
+.parse-chip {
+  padding: 2px var(--space-xs);
+  border: 1px solid var(--color-rule-2);
+  border-radius: var(--radius-xs);
+  color: var(--color-muted);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+}
+
+.parse-chip[data-sure="1"] {
+  color: var(--color-ink);
+  border-color: var(--color-rule);
+  font-weight: 600;
+}
+
+.parse-blocked {
+  margin: 0;
+  color: var(--color-muted);
+  font-size: var(--text-xs);
+}
+
+/* ---------- 帶走 ---------- */
+
+.parse-bar {
+  position: sticky;
+  bottom: max(var(--space-md), env(safe-area-inset-bottom));
+  z-index: 20;
+  justify-self: end;
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs) var(--space-sm);
+  padding: var(--space-xs) var(--space-xs) var(--space-xs) var(--space-md);
+  border: 1px solid var(--color-rule);
+  border-radius: 999px;
+  background: color-mix(in oklch, var(--color-paper-2) 94%, transparent);
+  box-shadow: 0 18px 40px -16px var(--color-shade), 0 1px 0 var(--color-shine) inset;
+  animation: parse-bar-in var(--dur-xl) var(--ease-settle) both;
+}
+
+@keyframes parse-bar-in {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.96);
+  }
+}
+
+.parse-count {
+  margin: 0 var(--space-xs) 0 0;
+  color: var(--color-ink-2);
+  font-size: var(--text-sm);
+  white-space: nowrap;
+}
+
+.parse-count b {
+  color: var(--color-accent-text);
+  font-family: var(--font-mono);
+  font-size: var(--text-md);
+}
+
+.parse-bar .btn {
+  border-radius: 999px;
+}
+
+/* ---------- 解析設定 ---------- */
+
+.parse-set {
+  display: grid;
+  gap: var(--space-md);
+}
+
+.parse-set-row {
+  display: grid;
+  gap: var(--space-2xs);
+}
+
+.parse-set-label {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  color: var(--color-ink);
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+
+.parse-set-val {
+  color: var(--color-accent-text);
+  font-family: var(--font-mono);
+  font-weight: 500;
+}
+
+.parse-set-note {
+  color: var(--color-muted);
+  font-size: var(--text-xs);
+}
+
+.parse-set-model,
+.parse-set-ex {
+  min-height: 40px;
+  padding: var(--space-xs) var(--space-sm);
+  border: 1px solid var(--color-rule-2);
+  border-radius: var(--radius-sm);
+  background: var(--color-paper-2);
+  color: var(--color-ink);
+  font: inherit;
+  font-size: var(--text-sm);
+}
+
+.parse-set-ex {
+  resize: vertical;
+  font-family: var(--font-mono);
+}
+
+.parse-set input[type="range"] {
+  width: 100%;
+  accent-color: var(--color-accent);
+}
+
+/* ---------- 手機 ---------- */
+
+@media (max-width: 52rem) {
+  .parse-body {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .parse-plate {
+    position: static;
+  }
+
+  .parse-drop {
+    aspect-ratio: auto;
+    min-height: 220px;
+  }
+
+  .parse-img {
+    max-height: 46vh;
+  }
+
+  .parse-bar {
+    justify-self: stretch;
+  }
+
+  .parse-count {
+    flex: 1;
+  }
+}
+
+@media (max-width: 40rem) {
+  .parse-cell > .card {
+    --card-w: 80px;
+  }
+
+  .parse-bar .btn {
+    padding-inline: var(--space-sm);
+  }
+}
+
+/* 很窄（320～400）：張數一行、兩顆鈕平分下一行，不會被切掉。 */
+@media (max-width: 26rem) {
+  .parse-bar {
+    flex-wrap: wrap;
+    justify-content: center;
+    padding: var(--space-xs);
+    border-radius: var(--radius-md);
+  }
+
+  .parse-count {
+    flex: 1 0 100%;
+    margin: 0;
+    text-align: center;
+  }
+
+  .parse-bar .btn {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .parse-drop-ring,
+  .parse-drop-ring::after,
+  .parse-plate[data-state="loading"] .parse-scan,
+  .parse-plate[data-state="loading"] .parse-frame,
+  .parse-bar {
+    animation: none;
+  }
+
+  .parse-plate[data-state="loading"] .parse-scan {
+    background-position: 0 50%;
+  }
+}

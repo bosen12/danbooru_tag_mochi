@@ -841,6 +841,12 @@ Impact Subpack 的臉部偵測節點|the face detector node (Impact Subpack)
 停了：下次啟動會再問|Stopped. You will be asked again next launch.
 不再問（刪掉 .no-face-fetch 就會再問）|Will not ask again (delete .no-face-fetch to be asked)
 節點在資料夾裡，ComfyUI 卻沒載入：重開 ComfyUI；還是不行，看 ComfyUI 啟動時 Impact Pack 的錯誤訊息|The nodes are installed but ComfyUI has not loaded them. Restart ComfyUI; if that does not help, check Impact Pack's errors in the ComfyUI startup log.
+圖片解析（WD14 Tagger）|Image parsing (WD14 Tagger)
+選用：解析池（丟一張圖、認出畫面裡的字變成牌）。要裝 WD14 Tagger 節點和 wd-vit-tagger-v3 模型（約 380 MB），裝完要重開 ComfyUI|Optional: the Parse room (drop in an image, turn the tags it recognizes into cards). Installs the WD14 Tagger node and the wd-vit-tagger-v3 model (about 380 MB). Restart ComfyUI afterwards.
+選用：解析池要的 WD14 模型 wd-vit-tagger-v3（約 380 MB）。不先下載的話，第一次解析時 ComfyUI 會自己抓，要等好幾分鐘|Optional: the WD14 model wd-vit-tagger-v3 for the Parse room (about 380 MB). Without it, ComfyUI downloads it during your first parse, which takes several minutes.
+安裝節點、下載 WD14 模型（約 380 MB）|Installing the node and downloading the WD14 model (about 380 MB)
+不再問（刪掉 .no-tagger-fetch 就會再問）|Will not ask again (delete .no-tagger-fetch to be asked)
+節點在資料夾裡，ComfyUI 卻沒載入：重開 ComfyUI；還是不行，看 ComfyUI 啟動時 WD14 Tagger 的錯誤訊息|The node is installed but ComfyUI has not loaded it. Restart ComfyUI; if that does not help, check WD14 Tagger's errors in the ComfyUI startup log.
 這張已經太大，不能再放大。|This image is already at the maximum size.
 還原原圖|Restore original
 原圖不在了（ComfyUI 那邊刪掉了）|Original missing from ComfyUI
@@ -1435,6 +1441,66 @@ LoRA 面板：換到 LoRA 1／LoRA 2 那一槽|LoRA panel: switch to slot LoRA 1
 清除|Clear
 全部花色|All suits
 篩選都清掉了|Filters cleared
+解析池|Parse Pool
+墨池 · 解析池|Mochi · Parse Pool
+墨池的解析池：丟一張圖進來，WD14 Tagger 認出畫面裡的字，變成牌帶去合成池或疊印台。|Drop in an image, let the WD14 Tagger read its tags, and take them to the Ink Pool or Fuse Bed as cards.
+丟一張圖進來：認出畫面裡的字變成牌，帶去合成池或疊印台|Drop in an image: turn the tags it recognizes into cards for the Ink Pool or Fuse Bed
+丟一張圖進來，認出畫面裡的字，變成牌。|Drop in an image. The tags it recognizes become cards.
+解析設定|Parse settings
+要解析的圖|Image to parse
+把圖拖進來|Drop an image here
+或貼上（Ctrl+V）、點這裡選圖|or paste it (Ctrl+V), or click to choose one
+用新設定重新解析|Parse again with the new settings
+換一張圖|Use another image
+解析出來的牌|Parsed cards
+要哪些牌|Which cards
+解析出來的牌會落在這裡：照花色排好，每張標「確定」或「可能」，點一下就不帶它。|Parsed cards land here, sorted by suit and marked Sure or Likely. Click a card to leave it out.
+送到疊印台|Send to Fuse Bed
+帶去合成池|Take to Ink Pool
+要一張圖（PNG、JPEG、WebP）|Please use an image (PNG, JPEG or WebP)
+剪貼簿裡是文字。要變成牌的提示詞，到墨池按 Ctrl+V；這裡要貼一張圖。|The clipboard holds text. To turn a prompt into cards, press Ctrl+V in the Ink Pool; paste an image here.
+這張圖打不開，換一張試試|This image cannot be opened. Try another one.
+解析中…|Parsing…
+還在解析…|Still parsing…
+ComfyUI 可能正在印別張（等那張印完就輪到），或第一次用這個模型、正在下載。|ComfyUI may be busy with another image (this one is next), or it is downloading this model for the first time.
+再試一次|Try again
+解析失敗|Parsing failed
+解析用的模型（解析設定裡換）|Model used for parsing (change it in Parse settings)
+確定|Sure
+可能|Likely
+一張牌都對不上：詞庫沒有這些字。下面列出認出來的字，可以複製去別處用。|None of these tags are cards in the vocabulary. The recognized tags are listed below; copy them for use elsewhere.
+張要帶走|to take
+還沒選牌|No cards chosen
+全選|Select all
+全不選|Select none
+認得出來、但詞庫沒有這張牌（或是引擎自己會處理的字）。粗體是確定的。|Recognized, but not a card in the vocabulary (or handled by the engine). Bold ones are sure.
+解析模型|Tagger model
+（預設）| (default)
+最低信心|Minimum confidence
+角色門檻|Character threshold
+角色名字要多有把握才列出來；設 1 就不認角色。|How sure it must be before naming a character. Set 1 to skip characters.
+不要的字|Tags to exclude
+ComfyUI 的 WD14 Tagger 認得的模型。沒下載過的第一次用會先下載（幾百 MB）。|Models the WD14 Tagger in ComfyUI knows. One you have not used yet is downloaded first (a few hundred MB).
+逗號分開，底線、空格都可以。這些字不會出現。|Separate with commas; underscores or spaces both work. These tags never show up.
+例如：simple background, white background|For example: simple background, white background
+恢復預設|Reset to defaults
+存起來|Save
+解析設定存好了|Parse settings saved
+要一張 PNG、JPEG 或 WebP 的圖|Please use a PNG, JPEG or WebP image
+圖片壞了|The image is damaged
+圖片太大（上限 3MB；網頁會先縮小，還是太大就換一張）|The image is too large (3 MB limit after shrinking). Try another one.
+ComfyUI 沒有裝 WD14 Tagger：在 ComfyUI Manager 搜「WD14 Tagger」（pysssss）安裝、重開 ComfyUI|ComfyUI does not have the WD14 Tagger. Install “WD14 Tagger” (pysssss) from ComfyUI Manager and restart ComfyUI.
+解析太久沒回來（ComfyUI 可能還在下載模型，等一下再試）|Parsing took too long (ComfyUI may still be downloading the model). Try again in a moment.
+Tagger 出錯（ComfyUI 的主控台有詳細原因）|The tagger failed (details in the ComfyUI console)
+歡迎來到解析池|Welcome to the Parse Pool
+丟一張圖進來，ComfyUI 的 WD14 Tagger 認出畫面裡的字，詞庫有的變成牌。|Drop in an image. ComfyUI's WD14 Tagger reads its tags, and the ones in the vocabulary become cards.
+放圖|Add an image
+把圖拖進來、貼上（Ctrl+V），或點一下選圖。放進來就開始解析，大約幾秒。|Drag an image in, paste it (Ctrl+V), or click to choose one. Parsing starts right away and takes a few seconds.
+換模型、調最低信心（低一點認得多、也比較會亂猜）、角色門檻、不要的字。|Change the model, the minimum confidence (lower finds more but guesses more), the character threshold, and tags to exclude.
+牌照花色排好，每張標「確定」或「可能」。點一張就不帶它；上面可以切換只要確定的。|Cards are sorted by suit and marked Sure or Likely. Click one to leave it out, or switch to sure ones only at the top.
+帶走|Take them
+選好的牌放進墨池的合成池，或送到疊印台一層層疊。|Add the chosen cards to the Ink Pool, or send them to the Fuse Bed to layer them.
+貼上一張圖就開始解析|Paste an image to start parsing
 `;
 
 export const messages = Object.freeze(Object.fromEntries(copy.trim().split("\n").map((line) => {
@@ -1877,6 +1943,8 @@ LoRA：沒設定偏好路徑，改問 ComfyUI 也失敗了：{0}|LoRA: no prefer
 已選試印 {0}，尚未生成圖片|Proof {0} selected, no image generated yet
 試印 {0} 的提示詞|Prompt for proof {0}
 從墨池帶來 {0} 張牌；規則沿用疊印台的設定。|Brought {0} cards from Ink Pool; using the Fuse Bed settings.
+從解析池帶來 {0} 張牌；規則沿用疊印台的設定。|Brought {0} cards from Parse Pool; using the Fuse Bed settings.
+從解析池帶來 {0} 張牌；{1} 張跟別張互斥或被分級擋掉，沒放進去。|Brought {0} cards from Parse Pool; {1} clashed with other cards or were blocked by the rating and were left out.
 試印 {0}|Proof {0}
 常補 {0}/4|Used in {0}/4 proofs
 你的 {0} 張・引擎補 {1} 張|{0} pinned · {1} engine additions
@@ -1914,6 +1982,21 @@ LoRA {0} 空著——從中間挑一張|LoRA {0} is empty. Pick one from the gri
 試印 {0} 換了：{1} → {2}|Proof {0} swapped: {1} → {2}
 花色：{0}|Suit: {0}
 排序：{0}|Sort: {0}
+解析中 {0} 秒|Parsing {0} sec
+認出 {0} 個字|{0} tags found
+{0} 張是牌|{0} are cards
+全部 {0}|All {0}
+只要確定的 {0}|Sure only {0}
+{0}：會帶走，點一下不帶|{0}: will be taken; click to leave it out
+{0}：不帶，點一下帶走|{0}: left out; click to take it
+{0}：{1}用不了（到頂欄換分級）|{0}: unavailable at {1} rating (change the rating at the top)
+{0}：{1}用不了，到頂欄換分級|{0}: unavailable at {1} rating. Change the rating at the top.
+詞庫沒有的字・{0}|Not in the vocabulary · {0}
+不收 {0} 個字（未成年相關、或不能用的角色）。|Rejected {0} tags (minor-related, or characters that cannot be used).
+低一點認得多、也比較會亂猜；{0} 以上的標「確定」。|Lower finds more but guesses more; {0} and above are marked Sure.
+Tagger 出錯：{0}|The tagger failed: {0!}
+連不到 ComfyUI：{0}|Cannot reach ComfyUI: {0!}
+ComfyUI 不收：{0}|ComfyUI rejected it: {0!}
 `;
 export const templates = parameterized.trim().split("\n").map((line) => {
   const split = line.indexOf("|");

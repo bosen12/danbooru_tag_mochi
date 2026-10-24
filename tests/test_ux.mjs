@@ -76,8 +76,11 @@ const memory = new Map();
 globalThis.localStorage = { getItem: k => memory.get(k) ?? null, setItem: (k, v) => memory.set(k, v), removeItem: k => memory.delete(k) };
 const S = await import(pathToFileURL(resolve(root, web, 'store.js')));
 assert.equal(S.handOffFuse(['red hair', 'kimono'], { 'red hair': 1.2 }), true);
-assert.deepEqual(S.takeFuse(), { tags: ['red hair', 'kimono'], weights: { 'red hair': 1.2 } });
+assert.deepEqual(S.takeFuse(), { tags: ['red hair', 'kimono'], weights: { 'red hair': 1.2 }, from: '' });
 assert.equal(S.takeFuse(), null, 'handoff is consumed only once');
+// 解析池交過去的帶 from（疊印台接到時說「從解析池帶來」）。
+S.handOffFuse(['red hair'], {}, 'parse');
+assert.equal(S.takeFuse().from, 'parse');
 S.handOffFuse(['red hair']);
 const key = 'mochi.fuse.handoff.v1';
 const stale = JSON.parse(memory.get(key));

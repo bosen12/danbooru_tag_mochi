@@ -15,6 +15,7 @@
   upscale     Hires 放大模型（RealESRGAN_x4plus_anime_6B）                  （同上）
   pose        姿勢參考（ControlNet 節點＋模型，2.5 GB）：先問               （同上）
   face        修臉（Impact Pack＋Subpack 節點、face_yolov8m 偵測模型）：先問 （同上）
+  tagger      解析池（WD14 Tagger 節點＋wd-vit-tagger-v3 模型，約 380 MB）：先問（同上）
   bake        卡面下載完，全年齡缺的、提示詞改過的直接烘
   bake_adult  敏感／色情卡面不公開下載：先問（每次啟動缺的時候都問，不記答案）
 
@@ -47,6 +48,7 @@ TITLES = {
     "upscale": "Hires 放大模型",
     "pose": "姿勢參考",
     "face": "修臉（FaceDetailer）",
+    "tagger": "圖片解析（WD14 Tagger）",
     "bake": "烘焙卡面",
     "bake_adult": "敏感、色情卡面",
     "bake_chars": "角色卡面",
@@ -169,7 +171,7 @@ _last_check = [""]
 # 正在跑的子程序（烘焙、姿勢參考下載可以按「停止」）。
 _procs: dict = {}
 _stopped: set = set()
-STOPPABLE = ("bake", "bake_adult", "bake_chars", "pose", "face")
+STOPPABLE = ("bake", "bake_adult", "bake_chars", "pose", "face", "tagger")
 
 
 def stop(key: str) -> tuple[bool, str]:
@@ -308,6 +310,11 @@ def face_node_loaded() -> bool:
     fd = _get("/object_info/FaceDetailer")
     det = _get("/object_info/UltralyticsDetectorProvider")
     return bool(fd and "FaceDetailer" in fd and det and "UltralyticsDetectorProvider" in det)
+
+
+def tagger_node_loaded() -> bool:
+    info = _get("/object_info/WD14Tagger%7Cpysssss")
+    return bool(info and "WD14Tagger|pysssss" in info)
 
 
 def can_restart() -> bool:
@@ -544,6 +551,41 @@ def _face_install() -> None:
     _wait_loaded("face", face_node_loaded)
 
 
+def _tagger() -> None:
+    if os.environ.get("NO_TAGGER_FETCH") or (ROOT / ".no-tagger-fetch").exists():
+        _set("tagger", "skip", "")
+        return
+    if _check("fetch_tagger.py") != 3:
+        if comfy_up() and not tagger_node_loaded():
+            _set("tagger", "skip", "節點在資料夾裡，ComfyUI 卻沒載入：重開 ComfyUI；還是不行，看 ComfyUI 啟動時 WD14 Tagger 的錯誤訊息")
+            return
+        _set("tagger", "done", "")
+        return
+    if "node ok, model missing" in _last_check[0]:
+        # 節點早就裝了（自己用 ComfyUI-Manager 裝的），只缺模型：不用重開 ComfyUI。
+        _set("tagger", "ask", "選用：解析池要的 WD14 模型 wd-vit-tagger-v3（約 380 MB）。不先下載的話，第一次解析時 ComfyUI 會自己抓，要等好幾分鐘",
+             answers=["yes", "no", "never"])
+        return
+    _set("tagger", "ask", "選用：解析池（丟一張圖、認出畫面裡的字變成牌）。要裝 WD14 Tagger 節點和 wd-vit-tagger-v3 模型（約 380 MB），裝完要重開 ComfyUI",
+         answers=["yes", "no", "never"])
+
+
+def _tagger_install() -> None:
+    _set("tagger", "run", "安裝節點、下載 WD14 模型（約 380 MB）")
+    rc = _run("tagger", ["fetch_tagger.py"])
+    if "tagger" in _stopped:
+        _set("tagger", "skip", "停了：下次啟動會再問（下載會接著抓）")
+        return
+    if rc != 0:
+        _set("tagger", "error", _failed("安裝失敗") + "（下次啟動接著做）")
+        return
+    if tagger_node_loaded():
+        _set("tagger", "done", "")
+        return
+    _set("tagger", "restart", "裝好了，重開 ComfyUI 才會生效")
+    _wait_loaded("tagger", tagger_node_loaded)
+
+
 # 卡面一次只能烘一批（bake_card_art 用 web/cards/.baking 擋第二個）。敏感和角色兩題都答「要」時，
 # 後答的那批排隊等前一批烘完，不能直接開：以前第二批碰到鎖就結束、回報成功，角色卡面標「完成」卻一張沒烘。
 _bake_turn = threading.Lock()
@@ -672,21 +714,22 @@ def _thread(fn, *a) -> None:
 def _main() -> None:
     _thread(_cards)
     _thread(_pillow)
-    comfy_keys = ["lora", "upscale", "pose", "face", "bake", "bake_adult", "bake_chars"]
+    comfy_keys = ["lora", "upscale", "pose", "face", "tagger", "bake", "bake_adult", "bake_chars"]
     _wait_comfy(comfy_keys)
     if comfy_local():
         _lora()
         _upscale()
         _pose()
         _face()
+        _tagger()
     else:
-        for k in ("lora", "upscale", "pose", "face"):
+        for k in ("lora", "upscale", "pose", "face", "tagger"):
             _set(k, "skip", "ComfyUI 在別台電腦：這台不動它")
     _thread(_bake)
 
 
 def answer(key: str, value: str) -> tuple[bool, str]:
-    """網頁上的回答：pose／face yes/no/never、bake_adult yes/no、restart；跑著的烘焙、姿勢／修臉下載可以 stop。"""
+    """網頁上的回答：pose／face／tagger yes/no/never、bake_adult yes/no、restart；跑著的烘焙、姿勢／修臉下載可以 stop。"""
     if key == "restart":
         return restart_comfy()
     if value == "stop":
@@ -701,9 +744,9 @@ def answer(key: str, value: str) -> tuple[bool, str]:
         if key == "lora":
             _thread(_lora_install, cur.get("action", "install"))
         else:
-            _thread({"pose": _pose_install, "face": _face_install, "bake_chars": _bake_chars, "bake": _bake_general}.get(key, _bake_adult))
-    elif value == "never" and key in ("pose", "face", "lora", "bake_chars"):
-        marker = {"pose": ".no-pose-fetch", "face": ".no-face-fetch", "lora": ".no-lora-manager-fetch",
+            _thread({"pose": _pose_install, "face": _face_install, "tagger": _tagger_install, "bake_chars": _bake_chars, "bake": _bake_general}.get(key, _bake_adult))
+    elif value == "never" and key in ("pose", "face", "tagger", "lora", "bake_chars"):
+        marker = {"pose": ".no-pose-fetch", "face": ".no-face-fetch", "tagger": ".no-tagger-fetch", "lora": ".no-lora-manager-fetch",
                   "bake_chars": ".no-character-bake"}[key]
         try:
             (ROOT / marker).write_text("", encoding="utf-8")

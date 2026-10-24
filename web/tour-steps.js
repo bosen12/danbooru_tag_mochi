@@ -7,7 +7,7 @@
  */
 import { anyOverlay } from "./ui.js";
 
-export const ROOM_ZH = { mochi: "墨池", fuse: "疊印台", book: "卡冊", album: "作品冊" };
+export const ROOM_ZH = { mochi: "墨池", fuse: "疊印台", book: "卡冊", album: "作品冊", parse: "解析池" };
 
 const $ = (sel) => document.querySelector(sel);
 const count = (sel) => document.querySelectorAll(sel).length;
@@ -264,4 +264,31 @@ const ALBUM = [
   },
 ];
 
-export const STEPS = { mochi: MOCHI, fuse: FUSE, book: BOOK, album: ALBUM };
+const PARSE = [
+  {
+    title: "歡迎來到解析池",
+    text: "丟一張圖進來，ComfyUI 的 WD14 Tagger 認出畫面裡的字，詞庫有的變成牌。",
+  },
+  {
+    target: () => $("#parse-plate"),
+    title: "放圖",
+    text: "把圖拖進來、貼上（Ctrl+V），或點一下選圖。放進來就開始解析，大約幾秒。",
+  },
+  {
+    target: () => $("#parse-gear"),
+    title: "解析設定",
+    text: "換模型、調最低信心（低一點認得多、也比較會亂猜）、角色門檻、不要的字。",
+  },
+  {
+    target: () => $("#parse-out"),
+    title: "挑牌",
+    text: "牌照花色排好，每張標「確定」或「可能」。點一張就不帶它；上面可以切換只要確定的。",
+  },
+  {
+    target: () => $("#parse-bar"),
+    title: "帶走",
+    text: "選好的牌放進墨池的合成池，或送到疊印台一層層疊。",
+  },
+];
+
+export const STEPS = { mochi: MOCHI, fuse: FUSE, book: BOOK, album: ALBUM, parse: PARSE };

@@ -521,12 +521,17 @@ const SKY_EXTRA = new Set(["sky", "blue sky", "orange sky"]);
 const DAY_MARK = new Set([
   "day", "sunrise", "sunlight", "sunbeam", "dappled sunlight", "sunbathing", "blue sky", "orange sky",
   "sun", "shade", "tree shade",
+  // 2026-10-24 第四輪：早晨。以前不在這張表，預設 1500 張有十幾張早晨配月光、星空。
+  "morning",
 ]);
 const NIGHT_MARK = new Set(["night", "starry sky", "moonlight", "market stall", "crescent moon", "star (sky)"]);
 // 這些光源本身就交代了「天是暗的」：篝火、火把、燭光、油燈、街燈。
 // 它們不在 NIGHT_MARK 裡，因為 NIGHT_MARK 的成員彼此互斥（一張圖只能有一個
 // 夜的講法），而光源是另一個槽，可以和 night 並存 —— 只是不能和白天並存。
 const DARK_LIGHT = new Set([
+  // 2026-10-24 第四輪：紅月、星座本身就是夜裡才看得到的天，跟夜晚並存、不跟白天並存（放 NIGHT_MARK 會跟 night 互斥）。
+  "red moon",
+  "constellation",
   "city lights",
   "bonfire",
   "torch",
@@ -624,6 +629,13 @@ const OUTDOOR_LEFTOVER = new Set([
   "red sky",
   "sky focus",
   "aerial fireworks",
+  // 2026-10-24 第四輪：新的天空字、戶外景物、樹上的姿勢。不在這張表時，室內圖會配到積雨雲、枯樹、海浪。
+  "grey sky", "gray sky", "cumulonimbus cloud", "contrail", "red moon", "constellation",
+  "bare tree", "tree stump", "lily pad", "waves", "shallow water", "snowman",
+  "pavement", "road sign", "wooden fence", "tombstone", "flight deck",
+  "in tree", "sitting in tree", "against tree",
+  // 在地面上（Danbooru：戶外的地面）、在鞦韆上。以前 6240 張裡有 103 張配著 indoors。
+  "on ground", "on swing",
 ]);
 
 function usedMutexTags(used, lex, mutex) {
@@ -1140,7 +1152,10 @@ const FIGHT_PLACE = {
   "choke hold": HOLD_PLACE,
   "triangle choke": HOLD_PLACE,
 };
-const INDOOR_FURN = new Set(["on bed", "on chair", "office chair", "gaming chair", "swivel chair", "bunk bed", "on couch", "on desk", "wooden horse", "vacuum bed"]);
+// 戶外坐得上去的：地上、長椅、鞦韆。傢俱那一格在室外時只放這三個（長椅室內外都有）。
+const OUTDOOR_FURN = new Set(["on ground", "on bench", "on swing"]);
+// 2026-10-24 第四輪：在地板上、在桌面上是室內的。
+const INDOOR_FURN = new Set(["on bed", "on chair", "office chair", "gaming chair", "swivel chair", "bunk bed", "on couch", "on desk", "wooden horse", "vacuum bed", "on floor", "on table"]);
 const DRY_NO_WATER = new Set([
   "airplane interior",
   "cockpit",
@@ -3855,6 +3870,10 @@ const ODD_MOTIF = new Set([
   "metal skin", "fake screenshot", "fake phone screenshot", "viewfinder",
   // 2026-10-24：秒墮五張都畫成兩格前後漫畫（Grok 實測）。專案主看過圖要留，但只在釘了才出現。
   "instant loss",
+  // 2026-10-24 第四輪（Codex 實測、建議）：會改掉整張圖版面的字（畫框、出框、黑邊、插圖、3D 背景）
+  // 和無臉女性，只在釘了才出現。
+  "3d background", "black border", "white border", "outside border", "pillarboxed",
+  "zoom layer", "chibi inset", "reference inset", "faceless female",
 ]);
 // 只當父字用的動作：騎乘要有騎的東西（騎馬、騎車、騎掃帚帶出來）。自己被抽到時
 // 畫面沒有坐騎（以前 41 張裡 11 張）。釘它、必抽照收。
@@ -5984,7 +6003,7 @@ function drawOneImpl(lex, settings, pinned, userBanned, rand, seed, opts) {
       // 這一格從 pose 搬到 env 之後就漏掉了姿勢相容檢查，而通用的 fill("env")
       // 也不管室內外（基準線裡 24 張有傢俱的圖，8 張是室外、4 張配站姿）。
       if (item.mutex === "furniture") {
-        if (used.has("outdoors")) return false;
+        if (used.has("outdoors") && !OUTDOOR_FURN.has(item.tag)) return false;
         if (hasUsed((t) => UPRIGHT_BODY.has(t))) return false;
       }
       // 釘沙發／床時姿勢還沒填。standing → 傢俱已擋，反向沒擋，實測釘沙發
@@ -7100,7 +7119,9 @@ function drawOneImpl(lex, settings, pinned, userBanned, rand, seed, opts) {
         }
       : {
           softTiers: [(item) => eraSpecific(item, era) && !(sexEra && anchorPlaces.has(item.tag))],
-          weights: [sexEra && !noEraCloth ? 3 : 14, 1],
+          // 2026-10-24 第四輪：歷史時代、身上沒有時代衣服（多半是脫光）時，場地是唯一能交代年代的東西：14 → 22。
+          // 詞庫加了 468 個字之後古中國「完全沒訊號」又到 1.7%（上限 1.5%），那 50 張都是裸體配懸崖、房子這種中性場地。22 → 1.2%。
+          weights: [sexEra && !noEraCloth ? 3 : noEraCloth ? 22 : 14, 1],
           ...(relaxesPrivateSex() ? { capShare: 0.4 } : {}),
         },
   );
@@ -7190,6 +7211,10 @@ function drawOneImpl(lex, settings, pinned, userBanned, rand, seed, opts) {
   // 這正是那條守衛自己寫的病徵：「把一個『永遠成立』的字放進一個『有優先序』
   // 的格子，等於把那一格關掉」。拿掉偏好，六個字按各自的資格公平競爭。
   if (used.has("indoors") && rand() < 0.2) {
+    fillSlot("env", "furniture", () => false);
+  } else if (used.has("outdoors") && rand() < 0.1) {
+    // 2026-10-24 第四輪：戶外也有「坐在哪裡」——地上、長椅、鞦韆（OUTDOOR_FURN）。
+    // 以前這一格只在室內擲，那三張只抽得到室內版（實測 6240 張裡 103 張配著 indoors）。
     fillSlot("env", "furniture", () => false);
   }
   fillSlot("env", "day_night");

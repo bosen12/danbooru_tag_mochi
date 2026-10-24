@@ -173,13 +173,13 @@ html[lang="en"] .tseg span { font-size: 12px; letter-spacing: -0.02em; }
   html[lang="en"] .mast-controls { width: 100%; margin-left: 0; }
 }
 @media (max-width: 44rem) {
-  /* Three rows, like the Chinese masthead: name · films · language, the four
+  /* Three rows, like the Chinese masthead: name · films · language, the five
    * rooms, then rating and tools. */
   html[lang="en"] .mast-primary { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; }
   html[lang="en"] .wordmark { order: 0; flex: none; }
   html[lang="en"] .mast-links { order: 1; margin-left: auto; gap: 12px; }
   html[lang="en"] .language-picker { order: 2; margin-left: 0; }
-  html[lang="en"] .page-switch { order: 3; width: 100%; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  html[lang="en"] .page-switch { order: 3; width: 100%; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); }
   html[lang="en"] .page-switch a { padding-inline: 4px; justify-content: center; min-height: 34px; font-size: 12px; }
   /* The rating switch and tools fit one 363px row only with the base 4px gap. */
   html[lang="en"] .mast-controls { overflow: visible; column-gap: var(--space-2xs); }
@@ -200,14 +200,14 @@ html[lang="en"] .tseg span { font-size: 12px; letter-spacing: -0.02em; }
   html[lang="en"] .line::before { left: 5rem; }
 }
 /* Phones, both languages: the same three rows as the English masthead. Name,
- * films and language on the first row; the four rooms as an even second row
- * (each tab a full quarter, easy to hit with a thumb); rating and tools last. */
+ * films and language on the first row; the five rooms as an even second row
+ * (each tab a full fifth, easy to hit with a thumb); rating and tools last. */
 @media (max-width: 34rem) {
   .mast-primary { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; }
   .wordmark { order: 0; flex: none; }
   .mast-links { order: 1; margin-left: auto; gap: 12px; }
   .language-picker { order: 2; margin-left: 0; }
-  .page-switch { order: 3; width: 100%; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .page-switch { order: 3; width: 100%; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); }
   .page-switch a { padding-inline: 4px; justify-content: center; min-height: 34px; }
   /* The connection light is an 8px dot here, but as the last tool it wrapped onto
    * a row of its own on the Fuse Bed (one more tool), 16px taller. The rating row

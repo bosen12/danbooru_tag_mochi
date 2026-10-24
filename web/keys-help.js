@@ -64,9 +64,15 @@ const ROOMS = {
   album: [
     ["作品冊", [["Esc", "在找作品的框：清空"]]],
   ],
+  parse: [
+    ["解析池", [
+      ["Ctrl V", "貼上一張圖就開始解析"],
+      ["Enter", "帶去合成池"],
+    ]],
+  ],
 };
 
-const ROOM_ZH = { mochi: "墨池", fuse: "疊印台", book: "卡冊", album: "作品冊" };
+const ROOM_ZH = { mochi: "墨池", fuse: "疊印台", book: "卡冊", album: "作品冊", parse: "解析池" };
 
 function keys(text) {
   return el("span", { class: "keys-help-keys" }, text.split(" ").map((k) => (k === "～" ? el("span", { class: "keys-help-to" }, "～") : el("kbd", {}, k))));

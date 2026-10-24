@@ -221,8 +221,19 @@ class Lifecycle(unittest.TestCase):
         """GenJob gives up (nobody reattached) -> gen_via_ws finally drops; GenJob._run's own cleanup must not send again."""
         real = server.time.time
         base = real()
-        fast = lambda: base + (real() - base) * 200  # 30 s reattach window passes in ~0.15 s
         calls = []
+        # 30 s reattach window passes in ~0.15 s — but only after ComfyUI handed back the prompt id.
+        # Speeding up from the start raced on slow CI runners (Windows first): the job gave up before
+        # /prompt answered, so prompt_id stayed None (GitHub Actions red since 2026-10-21).
+        started = {}
+
+        def fast():
+            now = real()
+            if "at" not in started:
+                if not any(p == "/prompt" for _, p, _ in calls):
+                    return now
+                started["at"] = now
+            return started["at"] + (now - started["at"]) * 200
 
         class FakeWS:
             def __init__(self): self.sock = self

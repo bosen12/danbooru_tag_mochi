@@ -46,6 +46,7 @@ import card_decks
 import discord_routes
 import file_lock
 import gen_log
+import image_parse
 import lora_scan
 import recipes
 import setup_tasks
@@ -997,6 +998,69 @@ def pose_preview(payload: dict) -> dict:
     if not image:
         raise PoseError("骨架沒畫出來（Comfy 沒有回圖）")
     return {"image": image}
+
+
+# ---- 解析池（image_parse.py）：一張圖丟進 WD14 Tagger，讀回 Danbooru 字 ----
+_TAGGER_INFO = {"t": 0.0, "models": None}
+
+
+def tagger_models(fresh: bool = False) -> list[str]:
+    """ComfyUI 裝的 WD14 Tagger 認得的模型（沒裝是空的）。快取一分鐘：解析每一張都要先確認有沒有裝。"""
+    now = time.time()
+    if fresh or _TAGGER_INFO["models"] is None or now - _TAGGER_INFO["t"] > 60:
+        info = api("GET", "/object_info/" + urllib.parse.quote(image_parse.TAGGER, safe=""), timeout=8)
+        _TAGGER_INFO.update(t=now, models=image_parse.models_from(info if isinstance(info, dict) else {}))
+    return list(_TAGGER_INFO["models"] or [])
+
+
+def parse_options() -> dict:
+    """GET /api/parse：解析設定面板要的模型清單、預設值。ComfyUI 沒開回 ok: false。"""
+    try:
+        models = tagger_models(fresh=True)
+    except Exception as exc:
+        return {"ok": False, "error": f"連不到 ComfyUI：{exc}"[:200], "code": "comfy_down", "defaults": image_parse.DEFAULTS, "sure": image_parse.SURE}
+    return {"ok": True, "installed": bool(models), "models": models, "defaults": image_parse.DEFAULTS, "sure": image_parse.SURE}
+
+
+def parse_input_dir() -> Path | None:
+    hires = hires_input_dir()
+    return hires.parent / image_parse.SUBFOLDER if hires is not None else None
+
+
+def _wait_parse(prompt_id: str, timeout: float = 600) -> dict:
+    """解析只要幾秒：問得勤一點（wait_done 一秒問一次，等於平白多等半秒）。第一次用某個模型要下載，所以上限放寬。"""
+    t0 = time.time()
+    while time.time() - t0 < timeout:
+        hist = api("GET", f"/history/{prompt_id}", timeout=30)
+        if hist and prompt_id in hist:
+            return hist[prompt_id]
+        time.sleep(0.25)
+    raise image_parse.ParseError("解析太久沒回來（ComfyUI 可能還在下載模型，等一下再試）", "timeout")
+
+
+def _prune_parse_inputs(protect: set[str]) -> None:
+    if os.environ.get("NO_HIRES_PRUNE") or not comfy_is_local():
+        return
+    folder = parse_input_dir()
+    if folder is not None and folder.is_dir():
+        image_parse.prune_inputs(folder, protect=protect)
+
+
+def parse_image(payload: dict) -> dict:
+    """POST /api/parse：{"image": dataURL, "settings": {...}} → {"tags": [{"tag", "sure"}], ...}。"""
+    if not tagger_models():
+        # 剛裝好、還沒重開的 ComfyUI 快取裡沒有：再問一次才說沒裝。
+        if not tagger_models(fresh=True):
+            raise image_parse.ParseError("ComfyUI 沒有裝 WD14 Tagger：在 ComfyUI Manager 搜「WD14 Tagger」（pysssss）安裝、重開 ComfyUI", "no_tagger")
+    return image_parse.parse(
+        payload,
+        upload=lambda data, name, mime: comfy_upload_image(data, name, subfolder=image_parse.SUBFOLDER, mime=mime),
+        # front：插到佇列最前面。墨池正在連抽的話，等目前這張印完就輪到解析，不必排在十幾張後面。
+        queue=lambda wf: api("POST", "/prompt", {"prompt": wf, "front": True}, timeout=60)["prompt_id"],
+        wait=_wait_parse,
+        forget=lambda pid: api("POST", "/history", {"delete": [pid]}, timeout=8),
+        prune=_prune_parse_inputs,
+    )
 
 
 _MODEL_CACHE = {"t": 0.0, "data": {}}
@@ -5667,6 +5731,9 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/api/checkpoints":
             self._serve_checkpoints()
             return
+        if path == "/api/parse":
+            self._json(200, parse_options())
+            return
         if path == "/api/sampling":
             self._json(200, sampling_defaults())
             return
@@ -5750,6 +5817,17 @@ class Handler(BaseHTTPRequestHandler):
                 self._json(502, {"ok": False, "error": f"ComfyUI 那邊出錯：{exc}"[:300]})
                 return
             self._json(200, {"ok": True, **out})
+            return
+        # 解析池：一張圖丟進 WD14 Tagger（image_parse.py）。
+        if path == "/api/parse":
+            try:
+                self._json(200, {"ok": True, **parse_image(payload)})
+            except image_parse.ParseError as exc:
+                self._json(400, {"ok": False, "error": str(exc), "code": exc.code})
+            except ComfyRejected as exc:
+                self._json(502, {"ok": False, "error": f"ComfyUI 不收：{exc}"[:300], "code": "comfy_rejected"})
+            except Exception as exc:
+                self._json(502, {"ok": False, "error": f"連不到 ComfyUI：{exc}"[:300], "code": "comfy_down"})
             return
         # 出圖日誌的註記：成品牆單張拿掉（"discard"），按復原送 null 蓋掉。
         if path == "/api/genlog/mark":

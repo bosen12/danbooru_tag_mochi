@@ -80419,7 +80419,8 @@
       ],
       "layer": "garment",
       "era": [
-        "any"
+        "victorian",
+        "modern"
       ],
       "group": "feet",
       "sub": "feet",
@@ -80441,7 +80442,8 @@
       ],
       "layer": "garment",
       "era": [
-        "any"
+        "victorian",
+        "modern"
       ],
       "group": "feet",
       "sub": "feet",
@@ -80463,7 +80465,8 @@
       ],
       "layer": "garment",
       "era": [
-        "any"
+        "victorian",
+        "modern"
       ],
       "group": "feet",
       "sub": "feet",
@@ -80485,7 +80488,8 @@
       ],
       "layer": "garment",
       "era": [
-        "any"
+        "victorian",
+        "modern"
       ],
       "group": "feet",
       "sub": "feet",
@@ -80507,7 +80511,9 @@
       ],
       "layer": "garment",
       "era": [
-        "any"
+        "medieval",
+        "victorian",
+        "modern"
       ],
       "group": "feet",
       "sub": "feet",
@@ -80529,7 +80535,9 @@
       ],
       "layer": "garment",
       "era": [
-        "any"
+        "medieval",
+        "victorian",
+        "modern"
       ],
       "group": "feet",
       "sub": "feet",
@@ -80551,7 +80559,9 @@
       ],
       "layer": "garment",
       "era": [
-        "any"
+        "medieval",
+        "victorian",
+        "modern"
       ],
       "group": "feet",
       "sub": "feet",
@@ -80573,7 +80583,8 @@
       ],
       "layer": "garment",
       "era": [
-        "any"
+        "ancient_greece",
+        "modern"
       ],
       "group": "feet",
       "sub": "feet",

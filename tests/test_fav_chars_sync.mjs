@@ -21,11 +21,18 @@ export async function resolve(spec, ctx, next) {
 );
 
 const dir = existsSync(new URL("../web6/fav-chars.js", import.meta.url)) ? "../web6/" : "../web/";
-const tick = () => new Promise((r) => setTimeout(r, 0));
+// 等到「一段時間沒有請求」才算安靜：push 等 250ms 才送，伺服器回 fresh 時還會再送一次（再等 250ms）。
+// 以前固定等 300ms，CI 的機器慢一點，第二次送就跑到下一個測試裡去了（2026-10-24：GitHub Actions 每次都紅）。
+let inflight = 0;
+let lastActivity = 0;
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const settle = async () => {
-  for (let i = 0; i < 40; i++) await tick();
-  await new Promise((r) => setTimeout(r, 300)); // push 等 250ms 才送
-  for (let i = 0; i < 40; i++) await tick();
+  const start = Date.now();
+  lastActivity = Date.now();
+  while (Date.now() - start < 8000) {
+    await sleep(50);
+    if (inflight === 0 && Date.now() - lastActivity > 700) return;
+  }
 };
 
 /** 一台瀏覽器（localStorage）＋一個伺服器（file＝null 表示沒有檔案），照 card_decks.save_fav_chars 的規則回。 */
@@ -40,6 +47,16 @@ function world({ local, synced, file }) {
   // readyState loading：i18n.js 等 DOMContentLoaded 才開始翻譯（這裡不會來），不去碰不存在的畫面。
   globalThis.document = { hidden: false, readyState: "loading", addEventListener() {}, querySelector: () => null, getElementById: () => null };
   globalThis.fetch = async (url, opts = {}) => {
+    lastActivity = Date.now();
+    inflight++;
+    try {
+      return await answer(url, opts);
+    } finally {
+      inflight--;
+      lastActivity = Date.now();
+    }
+  };
+  const answer = async (url, opts) => {
     if (!String(url).startsWith("/api/fav-chars")) return { ok: false, json: async () => ({}) };
     if (!opts.method) return { ok: true, json: async () => (server.file ? { tags: server.file, saved: true, at: 1 } : { tags: [], saved: false, at: 0 }) };
     const p = JSON.parse(opts.body);

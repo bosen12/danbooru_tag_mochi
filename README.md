@@ -31,7 +31,7 @@ Mochi is the card interface of [danbooru_tag_random](https://github.com/bosen12/
 | ![Card Book: how often each card was used](.github/screenshots/card-book.jpg) | ![Intro film: the whole lexicon as a galaxy of cards](.github/screenshots/film-8.jpg) |
 
 
-## Four rooms
+## Five rooms
 
 | Room | What it does |
 |---|---|
@@ -39,6 +39,7 @@ Mochi is the card interface of [danbooru_tag_random](https://github.com/bosen12/
 | **Fuse Bed** `/fuse.html` | One card per ink layer. Pinned cards stack into six suit rows; grey shadows are the engine's additions. Four same-seed proofs redraw instantly, so you see what each card changes before you generate. |
 | **Card Book** `/book.html` | How often each card was used, its save and discard rates, and the images it appeared in. Achievements. |
 | **Gallery** `/album.html` | Saved images, the full generation history, and a report card for every checkpoint and LoRA. **Print this again** sends a work's cards, weights, era, seed, size, checkpoint and LoRA back to the Ink Pool; tap a card name to open it in the Card Book. |
+| **Parse Pool** `/parse.html` | Drop, paste or pick an image; ComfyUI's [WD14 Tagger](https://github.com/pysssss/ComfyUI-WD14-Tagger) reads its tags in a few seconds, and the ones in the vocabulary become cards, sorted by suit and marked *Sure* or *Likely*. Click a card to leave it out, switch to sure ones only, then take the rest to the Ink Pool or the Fuse Bed. Model, minimum confidence, character threshold and excluded tags live in **Parse settings**. |
 
 **Choose a workflow.** The Ink Pool randomly picks three starters from the same 30-story catalog as the Fuse Bed and has a visible size selector. Use **More starters** for another group; an empty workspace picks a new group when reopened or cleared, while ordinary redraws keep the current choices. The Fuse Bed shows four candidate prompts, with readable hair, clothing, pose and scene summaries; ≠ marks differences from the selected proof. Printing generates the image. On phones, the candidates appear before the card layers. Each workspace keeps its own cards and settings; use **Take cards** to transfer the selection and its weights explicitly.
 
@@ -86,8 +87,9 @@ Keep the server window open. After updating, reload the page with **Ctrl+F5**.
 | [ComfyUI LoRA Manager](https://github.com/willmiao/ComfyUI-Lora-Manager) (custom node) | small | The LoRA panel takes its list, preview images and Civitai trigger words from it, and the checkpoint panel its names and previews. Optional: the setup panel asks before installing it into `custom_nodes`, installing packages with ComfyUI's own Python, or adding the Details link patch. Choose Allow / Not now / Never ask; restart ComfyUI after installation | `NO_LORA_MANAGER_FETCH=1` |
 | Pose reference (OpenPose ControlNet + `comfyui_controlnet_aux`) | ~2.5 GB | Optional. The page asks first (install / not now / never); ComfyUI needs one restart afterwards | `NO_POSE_FETCH=1` or answer *A* |
 | Face fix (FaceDetailer: ComfyUI-Impact-Pack + Impact-Subpack, `face_yolov8m.pt`, SAM `sam_vit_b`) | ~425 MB | Optional. The page asks first; ComfyUI needs one restart afterwards. Adds **Face fix** next to Hires under each image; with SAM only the face shape is redrawn, so bangs and hair ornaments stay as they are | `NO_FACE_FETCH=1` or answer *never* |
+| Image parsing ([ComfyUI-WD14-Tagger](https://github.com/pysssss/ComfyUI-WD14-Tagger), [`wd-vit-tagger-v3`](https://huggingface.co/SmilingWolf/wd-vit-tagger-v3)) | ~380 MB | Optional. The page asks first; ComfyUI needs one restart if the node was missing. Powers the Parse Pool. If you already have the node, only the model is offered | `NO_TAGGER_FETCH=1` or answer *never* |
 
-**One launch does all of it**, on Windows, macOS and Linux alike. The server does the work in the background and a panel in the lower-left corner of the page shows each step, asks before optional LoRA installation/patching, pose setup, face fix and adult card baking, and offers **Restart ComfyUI** after something is installed into it (through ComfyUI-Manager; otherwise restart it yourself). If ComfyUI is not running yet, the steps that need it wait and continue as soon as you start it; there is no need to run `start.bat` again. The page opens straight away with placeholder cards; the panel tells you when to reload. Everything is logged in `data/setup.log`. People who already have everything never see the panel.
+**One launch does all of it**, on Windows, macOS and Linux alike. The server does the work in the background and a panel in the lower-left corner of the page shows each step, asks before optional LoRA installation/patching, pose setup, face fix, image parsing and adult card baking, and offers **Restart ComfyUI** after something is installed into it (through ComfyUI-Manager; otherwise restart it yourself). If ComfyUI is not running yet, the steps that need it wait and continue as soon as you start it; there is no need to run `start.bat` again. The page opens straight away with placeholder cards; the panel tells you when to reload. Everything is logged in `data/setup.log`. People who already have everything never see the panel.
 
 The latest release is v1.1 (v1.0 was the first public release). See [release notes](CHANGELOG.md) and the [verification record](docs/RELEASE_VERIFICATION.md) for tested environments and limitations.
 
@@ -138,7 +140,7 @@ web/                 front end (no build step; the browser loads ES modules dire
   engine.js          draw engine: rules, mutual exclusion, implications, ratings
   lexicon.json       tags, Chinese names, categories, exclusion groups (generated, see below)
   lexicon_parts/     lexicon sources: the tag lists lexicon.json is built from
-  index.html …       the four rooms
+  index.html …       the five rooms
   i18n.js, locales/  the English edition
   cards/             card art (downloaded or baked; not in git)
 scripts/             card art download and baking, upscale model, pose reference, face fix nodes,
@@ -212,7 +214,7 @@ Mochi code is distributed under **GNU GPLv3 only (`GPL-3.0-only`)**, see [LICENS
 
 示範影片（1 分鐘，接真的 ComfyUI 即時錄的，一般級別）：見上方英文段落的 ▶ 縮圖，或直接開 [mochi-demo.mp4](https://github.com/bosen12/danbooru_tag_mochi/raw/main/.github/mochi-demo.mp4)。
 
-## 四個房間
+## 五個房間
 
 | 房間 | 做什麼 |
 |---|---|
@@ -220,6 +222,7 @@ Mochi code is distributed under **GNU GPLv3 only (`GPL-3.0-only`)**, see [LICENS
 | **疊印台** `/fuse.html` | 一張牌一層墨：放的牌照花色疊進六列卡池，灰色的影子是引擎補的牌。四張同種子的試印即時重抽，看清楚加了這張之後引擎補了什麼，挑一張再付印。 |
 | **卡冊** `/book.html` | 每張牌用過幾次、收藏和撤下的比例、這張牌進過哪些圖。成就牆。 |
 | **作品冊** `/album.html` | 收藏的成品、每一張出圖的日誌、每個底模和 LoRA 的成績單；「照這張再印」把牌、份量、時代、種子、尺寸、底模、LoRA 一起帶回墨池；點牌名打開卡冊那張牌。 |
+| **解析池** `/parse.html` | 把圖拖進來、貼上或選一張，ComfyUI 的 [WD14 Tagger](https://github.com/pysssss/ComfyUI-WD14-Tagger) 幾秒內認出畫面裡的字，詞庫有的變成牌，照花色排好、標「確定」或「可能」。點一張就不帶它、可以只要確定的，挑好帶去合成池或疊印台。模型、最低信心、角色門檻、不要的字在「解析設定」裡調。 |
 
 **選擇操作方式**：墨池與疊印台共用三十組起手式，每次重新開頁或清空後隨機選三組，也可按「換一組」換掉；一般畫面重畫會保留當前選項。尺寸直接可選。疊印台先比較四組候選提示詞，髮色、服裝、姿勢與場景都有文字摘要，≠ 標出與已選試印不同的內容；按付印才會生成圖片。手機會先顯示候選，再往下看卡牌。兩個工作區的選牌與規則各自獨立，按「帶牌」才會明確交接選牌與權重。
 
@@ -258,8 +261,9 @@ cd danbooru_tag_mochi
 | [ComfyUI LoRA Manager](https://github.com/willmiao/ComfyUI-Lora-Manager)（custom node） | 不大 | LoRA 面板的清單、預覽圖、Civitai 觸發詞，底模面板的名稱和預覽圖都從它來。選用：準備面板先問「允許／這次不要／不要再問」，才裝進 `custom_nodes`、用 ComfyUI 自己的 Python 裝套件或補詳情連結；安裝完重開一次 ComfyUI | `NO_LORA_MANAGER_FETCH=1` |
 | 姿勢參考（OpenPose ControlNet＋`comfyui_controlnet_aux`） | 約 2.5 GB | 選用。網頁上先問（安裝／這次不要／不要再問），裝完要重開一次 ComfyUI | `NO_POSE_FETCH=1` 或回答 A |
 | 修臉（FaceDetailer：ComfyUI-Impact-Pack＋Impact-Subpack、`face_yolov8m.pt`、SAM `sam_vit_b`） | 約 425 MB | 選用。網頁上先問，裝完要重開一次 ComfyUI。成品下 Hires 旁邊多一顆「修臉」；有 SAM 只重畫臉的形狀，瀏海、髮飾不跟著變 | `NO_FACE_FETCH=1` 或回答「不要再問」 |
+| 圖片解析（[ComfyUI-WD14-Tagger](https://github.com/pysssss/ComfyUI-WD14-Tagger)、[`wd-vit-tagger-v3`](https://huggingface.co/SmilingWolf/wd-vit-tagger-v3)） | 約 380 MB | 選用。網頁上先問；原本沒有節點的話裝完要重開一次 ComfyUI。解析池用的。已經裝了節點的人只問要不要下載模型 | `NO_TAGGER_FETCH=1` 或回答「不要再問」 |
 
-**啟動一次就全部做完**（Windows、macOS、Linux 都一樣）：伺服器在背景做，網頁左下角的面板顯示每一步、詢問 LoRA 安裝／修補、姿勢參考、修臉與成人卡面烘焙，裝進 ComfyUI 的東西需要重開時給一顆「重開 ComfyUI」（透過 ComfyUI-Manager；沒有就自己重開）。ComfyUI 還沒開的話，要用到它的步驟會等，一開就接著做，不用再跑一次 `start.bat`。網頁照常先開（先是字的佔位牌），面板會告訴你什麼時候重新整理。過程記在 `data/setup.log`。東西都已經有的人完全看不到這個面板。
+**啟動一次就全部做完**（Windows、macOS、Linux 都一樣）：伺服器在背景做，網頁左下角的面板顯示每一步、詢問 LoRA 安裝／修補、姿勢參考、修臉、圖片解析與成人卡面烘焙，裝進 ComfyUI 的東西需要重開時給一顆「重開 ComfyUI」（透過 ComfyUI-Manager；沒有就自己重開）。ComfyUI 還沒開的話，要用到它的步驟會等，一開就接著做，不用再跑一次 `start.bat`。網頁照常先開（先是字的佔位牌），面板會告訴你什麼時候重新整理。過程記在 `data/setup.log`。東西都已經有的人完全看不到這個面板。
 
 最新版本是 v1.1（v1.0 是第一個公開版本）。已測環境和限制見 [發布紀錄](CHANGELOG.md) 與 [驗證紀錄](docs/RELEASE_VERIFICATION.md)。
 

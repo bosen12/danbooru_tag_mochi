@@ -15,6 +15,7 @@ const ANSWER = {
   lora: [["yes", "允許", true], ["no", "這次不要"], ["never", "不要再問"]],
   pose: [["yes", "安裝", true], ["no", "這次不要"], ["never", "不要再問"]],
   face: [["yes", "安裝", true], ["no", "這次不要"], ["never", "不要再問"]],
+  tagger: [["yes", "安裝", true], ["no", "這次不要"], ["never", "不要再問"]],
   bake: [["yes", "烘", true], ["no", "這次不要"]],
   bake_adult: [["yes", "烘", true], ["no", "這次不要"]],
   bake_chars: [["yes", "烘", true], ["no", "這次不要"], ["never", "不要再問"]],
@@ -103,7 +104,7 @@ function setCollapsed(v) {
 }
 
 // 跑很久的（烘幾百張卡面、下載 2.5 GB）可以停；已經做好的留著，下次啟動接著做或再問。
-const STOPPABLE = new Set(["bake", "bake_adult", "bake_chars", "pose", "face"]);
+const STOPPABLE = new Set(["bake", "bake_adult", "bake_chars", "pose", "face", "tagger"]);
 // 上面沒列到的新步驟（setup_tasks.py 加了、這裡忘了補）：照伺服器給的 answers 顯示，不能一顆鈕都沒有、答不了。
 const ANSWER_FALLBACK = { yes: ["yes", "安裝", true], no: ["no", "這次不要"], never: ["never", "不要再問"] };
 const answersOf = (it) => ANSWER[it.id] || (it.answers || []).map((a) => ANSWER_FALLBACK[a]).filter(Boolean);

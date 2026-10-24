@@ -123,8 +123,8 @@
         if (!vt) return;
         // 跳過轉場時 ready 會 reject；沒人接的話主控台每次換頁都多一行 AbortError。
         vt.ready.catch(() => {});
-        // 四個房間由左到右：墨池 0、疊印台 1、卡冊 2、作品冊 3。往右走的換版從右邊進來，往左反過來。
-        const room = (u) => (/fuse\.html$/.test(u) ? 1 : /book\.html$/.test(u) ? 2 : /album\.html$/.test(u) ? 3 : /\/(index\.html)?$/.test(u) ? 0 : -1);
+        // 五個房間由左到右：墨池 0、疊印台 1、卡冊 2、作品冊 3、解析池 4。往右走的換版從右邊進來，往左反過來。
+        const room = (u) => (/fuse\.html$/.test(u) ? 1 : /book\.html$/.test(u) ? 2 : /album\.html$/.test(u) ? 3 : /parse\.html$/.test(u) ? 4 : /\/(index\.html)?$/.test(u) ? 0 : -1);
         let from = "";
         try {
           from = new URL(navigation?.activation?.from?.url || document.referrer || "", location.href).pathname;
@@ -216,6 +216,7 @@
           <a href="fuse.html" title="一張牌一層墨：照花色疊進卡池，看引擎補了什麼再付印"><span class="page-switch-label">疊印台</span></a>
           <a href="book.html"><span class="page-switch-label">卡冊</span></a>
           <a href="album.html" aria-current="page" title="收藏的成品：大圖、用了哪些牌、帶回墨池再印"><span class="page-switch-ink" aria-hidden="true"></span><span class="page-switch-label">作品冊</span></a>
+          <a href="parse.html" title="丟一張圖進來：認出畫面裡的字變成牌，帶去合成池或疊印台"><span class="page-switch-label">解析池</span></a>
         </nav>
         <a class="mast-extra" href="intro.html" title="三分鐘的介紹影片（畫面、配樂即時產生）· Intro film">介紹影片</a>
         <a class="mast-extra" href="tutorial.html" title="墨池與疊印台的使用教學影片 · How-to film">教學</a>

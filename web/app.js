@@ -1553,7 +1553,7 @@ function zh(tag) {
  * 以前是靜靜地出現在池子裡，看不出是剛帶過來的。
  */
 function greetHandoff() {
-  const from = { book: "卡冊", fuse: "疊印台", album: "作品冊" }[S.handoffFrom];
+  const from = { book: "卡冊", fuse: "疊印台", album: "作品冊", parse: "解析池" }[S.handoffFrom];
   if (!from || !pool.size) return;
   if (handoffMerged) return void setTimeout(() => toast(`從${from}帶來的牌加進合成池了，共 ${pool.size} 張`), DUR.long);
   const cards = [...$("pool-well").querySelectorAll(".card")];

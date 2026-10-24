@@ -1,0 +1,291 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="utf-8" />
+    <script src="language.js"></script>
+    <script type="module" src="i18n.js"></script>
+    <script type="module" src="setup-panel.js"></script>
+    <!-- 墨池 ⇄ 疊印台 ⇄ 卡冊 換版（styles.css 的 @view-transition）：判斷方向（滾筒光、分頁底線用），從別頁過來就不播。
+         要在第一次畫面之前掛上，所以放在 head 最前面。 -->
+    <script>
+      // 開機中（詞庫、牌面還沒讀完）：頂欄底下一條掃光、空的牌格寫「正在讀詞庫」（styles.css）。
+      // 開機做完 settleMotion() 拿掉；讀不到詞庫的話 15 秒後自己收，不會一直轉。
+      document.documentElement.dataset.booting = "";
+      setTimeout(() => delete document.documentElement.dataset.booting, 15000);
+      // 直接開啟／重新整理：開版進場（motion.js playPageEntrance）要演的那幾塊，第一次畫面就先藏著（styles.css 的
+      // html[data-entering]）。不藏的話骨架先露一兩百毫秒，進場時又整塊消失再浮上來，像閃了一下。
+      // 頂欄不藏：開機的掃光在它底下。詞庫讀得慢、600ms 內進場還沒開始，就直接露出來、不演了。
+      if (performance.getEntriesByType("navigation")[0]?.type !== "back_forward") {
+        document.documentElement.dataset.entering = "";
+        setTimeout(() => {
+          if (!("entering" in document.documentElement.dataset)) return;
+          delete document.documentElement.dataset.entering;
+          document.documentElement.dataset.enterLate = "";
+        }, 600);
+      }
+      // 按下頂欄的另一個分頁：那一格先亮起來（styles.css 的 [data-going]）。新的一頁還沒畫好時，
+      // 換版先停在這一格的畫面上（data-vt-hold），按了要看得出有反應。從上一頁退回來時拿掉。
+      addEventListener("click", (e) => {
+        const a = e.target.closest?.(".page-switch a:not([aria-current])");
+        if (!a || e.defaultPrevented || e.button || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+        a.dataset.going = "";
+      });
+      addEventListener("pageshow", () => {
+        for (const a of document.querySelectorAll(".page-switch a[data-going]")) delete a.dataset.going;
+      });
+      // 頂欄右邊的工具（LoRA、模型、工作流程、Discord…）要等伺服器回話，才一顆顆插到最前面：
+      // 分級鈕被往左推好幾次（電腦上開頁時移了 500px），手機上多擠出一行、整頁往下掉。
+      // 頂欄一畫出來（</header> 後面那行呼叫這裡），就在工具前面墊一塊空白，寬度＝上次在這一頁、
+      // 同樣的視窗寬度和語言時工具放齊的寬度，減掉現在已經有的；按鈕插進來一顆，空白就縮一點，
+      // 分級鈕不動。工具這一排的高度也照上次留好。兩秒沒變化就拿掉，記下這次放齊的大小。
+      window.__mastSpace = () => {
+        const tools = document.getElementById("mast-tools");
+        if (!tools || typeof ResizeObserver !== "function") return;
+        const KEY = "mochi.mast.v1";
+        let lang = "";
+        let saved = {};
+        try {
+          lang = localStorage.getItem("mochi.language.v1") || "";
+          saved = JSON.parse(localStorage.getItem(KEY) || "{}") || {};
+        } catch {}
+        const id = (location.pathname.split("/").pop() || "index.html") + "|" + innerWidth + "|" + lang;
+        const want = Array.isArray(saved[id]) ? saved[id] : null;
+        const spacer = document.createElement("span");
+        spacer.className = "mast-spacer";
+        spacer.setAttribute("aria-hidden", "true");
+        const items = () => [...tools.children].filter((x) => x !== spacer && x.getBoundingClientRect().width);
+        const gap = () => parseFloat(getComputedStyle(tools).columnGap) || 0;
+        // 工具本身佔的寬（不算墊的那塊）：每一顆的寬加上中間的間距。
+        const used = () => {
+          const list = items();
+          return list.reduce((sum, x) => sum + x.getBoundingClientRect().width, 0) + gap() * Math.max(0, list.length - 1);
+        };
+        const fit = () => {
+          if (!want) return;
+          const room = want[0] - used() - gap();
+          const width = room > 0.5 ? Math.round(room * 10) / 10 + "px" : "";
+          if (spacer.style.width !== width) spacer.style.width = width;
+          if (spacer.hidden !== !width) spacer.hidden = !width;
+        };
+        if (want) {
+          tools.style.minHeight = want[1] + "px";
+          tools.prepend(spacer);
+          fit();
+        }
+        let quiet = 0;
+        let frame = 0;
+        let over = false;
+        // 按鈕插進來、字換了：當下（畫出來之前）就補。其他大小變化（字型換上之類）下一格再補 ——
+        // 在 ResizeObserver 裡直接改版面，主控台會報 ResizeObserver loop。
+        const sizes = new ResizeObserver(() => {
+          cancelAnimationFrame(frame);
+          frame = requestAnimationFrame(fit);
+          wait();
+        });
+        const kids = new MutationObserver((records) => {
+          if (records.every((r) => r.target === spacer)) return;
+          for (const x of tools.children) if (x !== spacer) sizes.observe(x);
+          fit();
+          wait();
+        });
+        const done = () => {
+          if (over) return;
+          over = true;
+          clearTimeout(quiet);
+          cancelAnimationFrame(frame);
+          sizes.disconnect();
+          kids.disconnect();
+          spacer.remove();
+          tools.style.minHeight = "";
+          const box = [Math.round(used()), Math.round(tools.getBoundingClientRect().height)];
+          if (!box[0]) return;
+          try {
+            const all = JSON.parse(localStorage.getItem(KEY) || "{}") || {};
+            delete all[id];
+            all[id] = box;
+            const keys = Object.keys(all);
+            for (const k of keys.slice(0, Math.max(0, keys.length - 24))) delete all[k];
+            localStorage.setItem(KEY, JSON.stringify(all));
+          } catch {}
+        };
+        const wait = () => {
+          clearTimeout(quiet);
+          quiet = setTimeout(done, 2000);
+        };
+        for (const x of tools.children) if (x !== spacer) sizes.observe(x);
+        kids.observe(tools, { childList: true, subtree: true, characterData: true, attributes: true });
+        // 最久等 6 秒：伺服器一直沒回，就照現在的樣子。
+        setTimeout(done, 6000);
+        wait();
+      };
+      addEventListener("pagereveal", (e) => {
+        const vt = e.viewTransition;
+        if (!vt) return;
+        // 跳過轉場時 ready 會 reject；沒人接的話主控台每次換頁都多一行 AbortError。
+        vt.ready.catch(() => {});
+        // 五個房間由左到右：墨池 0、疊印台 1、卡冊 2、作品冊 3、解析池 4。往右走的換版從右邊進來，往左反過來。
+        const room = (u) => (/fuse\.html$/.test(u) ? 1 : /book\.html$/.test(u) ? 2 : /album\.html$/.test(u) ? 3 : /parse\.html$/.test(u) ? 4 : /\/(index\.html)?$/.test(u) ? 0 : -1);
+        let from = "";
+        try {
+          from = new URL(navigation?.activation?.from?.url || document.referrer || "", location.href).pathname;
+        } catch {}
+        const was = room(from);
+        const here = room(location.pathname);
+        if (was < 0 || here < 0 || was === here) return vt.skipTransition();
+        document.documentElement.dataset.vt = here > was ? "fwd" : "back";
+        // 進場的錯開動畫（styles.css 的 html[data-vt-in]）比轉場本身長一點，牌也可能晚一步才發進來：
+        // 另外掛一個標記，一秒後才拿掉。
+        document.documentElement.dataset.vtIn = document.documentElement.dataset.vt;
+        // Remember the transition even when vocabulary arrives after its temporary CSS marker expires.
+        document.documentElement.dataset.vtPlayed = "true";
+        // 新的一版還沒畫好（詞庫、牌還在讀）：整段轉場先停在第一格，舊的一版留在畫面上（styles.css 的
+        // html[data-vt-hold]），畫好了才演（motion.js 的 settleMotion 呼叫 __vtRelease）。以前轉場照時間演完，
+        // 演的是空的一版，牌在後面一塊塊冒出來。背後預先開好的頁（prerender.js）早就畫好了，不用等。最多等 900ms。
+        const html = document.documentElement;
+        window.__vtRelease = () => {
+          if (!("vtHold" in html.dataset)) return;
+          delete html.dataset.vtHold;
+          setTimeout(() => delete html.dataset.vtIn, 1100);
+        };
+        if ("booting" in html.dataset) {
+          html.dataset.vtHold = "";
+          setTimeout(() => window.__vtRelease(), 900);
+        } else {
+          setTimeout(() => delete html.dataset.vtIn, 1100);
+        }
+        vt.finished.finally(() => delete document.documentElement.dataset.vt);
+        // 導覽的墨底從剛才那個標籤滑過來（三個分頁：找的是剛才那一頁的標籤，不是「另一個」）。
+        const ink = document.querySelector(".page-switch-ink");
+        const a = ink?.parentElement;
+        const other = a && [...a.parentElement.querySelectorAll("a")].find((x) => x !== a && room(new URL(x.href).pathname) === was);
+        if (ink && other) {
+          const ra = a.getBoundingClientRect();
+          const ro = other.getBoundingClientRect();
+          if (ra.width) {
+            ink.style.setProperty("--ink-dx", ro.left - ra.left + "px");
+            ink.style.setProperty("--ink-sx", String(ro.width / ra.width));
+            ink.classList.add("is-arriving");
+            ink.addEventListener("animationend", () => ink.classList.remove("is-arriving"), { once: true });
+          }
+        }
+      });
+    </script>
+    <!-- 預先開好另外三個房間（Edge／Chrome）：滑鼠停在頂欄的分頁上約 0.2 秒（或按下去那一下），
+         瀏覽器就在背後把那一頁整個開好，點下去直接換上、換版演的是畫好的一頁。Safari 不認得，照舊一般開頁。
+         背後開的時候不接著印、點進去之前存檔被改過就重新整理（prerender.js）。 -->
+    <script type="speculationrules">
+      { "prerender": [{ "where": { "selector_matches": ".page-switch a:not([aria-current])" }, "eagerness": "moderate" }] }
+    </script>
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#0f1217" />
+    <title>墨池 · 解析池</title>
+    <meta name="description" content="墨池的解析池：丟一張圖進來，WD14 Tagger 認出畫面裡的字，變成牌帶去合成池或疊印台。" />
+    <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+    <!-- 加到主畫面（iPhone：分享 → 加入主畫面）：像 App 一樣全螢幕打開，沒有網址列。
+         狀態列透明疊在頁面上，body 用 safe-area 讓出瀏海那一段（styles.css）。 -->
+    <link rel="manifest" href="manifest.json" />
+    <link rel="apple-touch-icon" href="icon-180.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="墨池" />
+    <!-- 墨池 ↔ 疊印台 的跨頁轉場：同意書放在最前面、直接寫在頁面裡。放在 styles.css 的話，
+         冷啟動時它排在 Google Fonts 後面才讀到，瀏覽器已經判定這頁沒同意，轉場就被跳過。 -->
+    <style>
+      @media (prefers-reduced-motion: no-preference) {
+        @view-transition {
+          navigation: auto;
+        }
+      }
+    </style>
+    <link rel="preload" href="lexicon.json" as="fetch" crossorigin />
+    <link rel="preload" href="cards/manifest.json" as="fetch" crossorigin />
+    <link rel="modulepreload" href="engine.js" />
+    <link rel="modulepreload" href="parse.js" />
+    <link rel="stylesheet" href="fonts.css" />
+    <link rel="stylesheet" href="card.css" />
+    <link rel="stylesheet" href="tokens.css" />
+    <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="parse.css" />
+    <link rel="stylesheet" href="locale.css" />
+  </head>
+  <body class="parse-page">
+    <header class="mast">
+      <div class="mast-primary">
+        <h1 class="wordmark">墨池</h1>
+        <nav class="page-switch" aria-label="墨池頁面">
+          <a href="./"><span class="page-switch-label">墨池</span></a>
+          <a href="fuse.html" title="一張牌一層墨：照花色疊進卡池，看引擎補了什麼再付印"><span class="page-switch-label">疊印台</span></a>
+          <a href="book.html" title="每張牌用過幾次：多到少、少到多，點開看它的來歷"><span class="page-switch-label">卡冊</span></a>
+          <a href="album.html" title="收藏的成品：大圖、用了哪些牌、帶回墨池再印"><span class="page-switch-label">作品冊</span></a>
+          <a href="parse.html" aria-current="page"><span class="page-switch-ink" aria-hidden="true"></span><span class="page-switch-label">解析池</span></a>
+        </nav>
+        <a class="mast-extra" href="intro.html" title="三分鐘的介紹影片（畫面、配樂即時產生）· Intro film">介紹影片</a>
+        <a class="mast-extra" href="tutorial.html" title="墨池與疊印台的使用教學影片 · How-to film">教學</a>
+      </div>
+      <div class="mast-controls">
+        <!-- 不限制：打開後所有牌都不受分級限制（rating-free.js）。放在 HTML 裡，頂欄一畫出來就在，不會晚一步把分級鈕往右推。 -->
+        <button class="rating-free" id="rating-free" type="button" role="switch" aria-checked="false" title="不限制：打開後所有牌都不受全年齡／敏感／色情限制"><span class="rating-free-knob" aria-hidden="true"></span><span class="rating-free-label">不限</span></button>
+        <div class="segmented" id="rating" data-kind="rating" role="radiogroup" aria-label="尺度分級"></div>
+        <div class="mast-tools" id="mast-tools">
+          <button class="ghost icon-btn" id="sound-btn" type="button" aria-pressed="true" aria-label="聲音：開" title="聲音：開" data-sfx="off"></button>
+          <div class="ping" id="ping" data-ok="" role="status" aria-live="polite"><i aria-hidden="true"></i><span>Comfy…</span></div>
+        </div>
+      </div>
+    </header>
+    <script>window.__mastSpace?.();</script>
+
+    <main class="parse" id="parse" aria-labelledby="parse-title">
+      <div class="parse-head">
+        <div class="parse-title">
+          <h2 id="parse-title">解析池</h2>
+          <p class="parse-sum" id="parse-sum" aria-live="polite">丟一張圖進來，認出畫面裡的字，變成牌。</p>
+        </div>
+        <button class="btn btn-small parse-gear pressable" id="parse-gear" type="button" aria-haspopup="dialog">解析設定</button>
+      </div>
+      <div class="parse-body" id="parse-body">
+        <!-- 底片：放圖的地方。拖進來、貼上（Ctrl+V）、點一下選圖都可以。解析中一道光從上掃到下。 -->
+        <section class="parse-plate" id="parse-plate" aria-label="要解析的圖">
+          <label class="parse-drop" id="parse-drop" for="parse-file">
+            <span class="parse-drop-ring" aria-hidden="true"></span>
+            <span class="parse-drop-mark" aria-hidden="true"></span>
+            <span class="parse-drop-title">把圖拖進來</span>
+            <span class="parse-drop-sub">或貼上（Ctrl+V）、點這裡選圖</span>
+          </label>
+          <input class="parse-file" id="parse-file" type="file" accept="image/png,image/jpeg,image/webp" />
+          <div class="parse-shot" id="parse-shot" hidden>
+            <div class="parse-frame" id="parse-frame">
+              <img class="parse-img" id="parse-img" alt="要解析的圖" />
+              <span class="parse-scan" aria-hidden="true"></span>
+              <span class="parse-grain" aria-hidden="true"></span>
+            </div>
+            <div class="parse-status" id="parse-status" role="status" aria-live="polite"></div>
+            <div class="parse-shot-tools">
+              <button class="btn btn-small pressable" id="parse-again" type="button" hidden>用新設定重新解析</button>
+              <label class="btn btn-small pressable parse-swap" for="parse-file">換一張圖</label>
+            </div>
+          </div>
+        </section>
+        <!-- 解析出來的牌：照花色排，每張標「確定」或「可能」。點一張就不帶這張。 -->
+        <section class="parse-out" id="parse-out" aria-label="解析出來的牌">
+          <div class="parse-tools" id="parse-tools" hidden>
+            <div class="segmented" id="parse-trust" role="radiogroup" aria-label="要哪些牌"></div>
+            <button class="chip-toggle pressable" id="parse-all" type="button">全選</button>
+          </div>
+          <div class="parse-groups" id="parse-groups"></div>
+          <div class="parse-extra" id="parse-extra"></div>
+          <p class="parse-empty" id="parse-empty">解析出來的牌會落在這裡：照花色排好，每張標「確定」或「可能」，點一下就不帶它。</p>
+        </section>
+      </div>
+      <!-- 帶走：選好的牌飛進按鈕，再換版過去。 -->
+      <div class="parse-bar" id="parse-bar" hidden>
+        <p class="parse-count" id="parse-count" aria-live="polite"></p>
+        <button class="btn pressable" id="parse-to-fuse" type="button">送到疊印台</button>
+        <button class="btn btn-primary pressable" id="parse-to-pool" type="button">帶去合成池</button>
+      </div>
+    </main>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <script type="module" src="parse.js"></script>
+  </body>
+</html>

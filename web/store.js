@@ -71,7 +71,8 @@ function write(key, value) {
 const HANDOFF_MS = 30 * 60 * 1000;
 
 /** Explicit, one-shot transfer; ordinary navigation still opens an empty bed. */
-export const handOffFuse = (tags, weights = {}) => write(KEY.fuseHandoff, { tags: [...tags], weights, at: Date.now() });
+/** from：從哪裡交過來（"parse"＝解析池；墨池不寫），疊印台接到時說一聲。 */
+export const handOffFuse = (tags, weights = {}, from = "") => write(KEY.fuseHandoff, { tags: [...tags], weights, at: Date.now(), ...(from ? { from } : {}) });
 export function takeFuse() {
   const note = read(KEY.fuseHandoff, null);
   // 背後預先開的頁（prerender.js）只讀不拿：沒點進去的話便條要留給真的打開的那一次。點進去才拿走。
@@ -84,7 +85,7 @@ export function takeFuse() {
   }
   const age = Date.now() - Number(note?.at);
   if (!note || !Array.isArray(note.tags) || !(age >= 0 && age < HANDOFF_MS)) return null;
-  return { tags: note.tags.filter(t => typeof t === "string"), weights: note.weights && typeof note.weights === "object" ? note.weights : {} };
+  return { tags: note.tags.filter(t => typeof t === "string"), weights: note.weights && typeof note.weights === "object" ? note.weights : {}, from: typeof note.from === "string" ? note.from : "" };
 }
 
 /** 疊印台把一版牌交給墨池：寫一張便條，墨池下次打開時拿走。 */

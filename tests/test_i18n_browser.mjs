@@ -43,6 +43,9 @@ const server = createServer(async (req, res) => {
       '/api/recipes': { ok: true, items: works }, '/api/decks': { ok: true, decks: [{ id: 'custom', name: '紅髮・我的牌組', tags: ['red hair', 'kimono'], weights: { 'red hair': 1.2 } }] },
       '/api/usage': { counts: {}, mine: {}, last: {} },
       '/api/discord/config': { ok: true, configured: false, enabled: false, mode: 'webhook' },
+      // 解析池：GET 是設定面板的模型清單，POST 是解析結果（同一份就好；不碰 ComfyUI）。
+      '/api/parse': { ok: true, installed: true, models: ['wd-vit-tagger-v3', 'wd-eva02-large-tagger-v3'], defaults: { model: 'wd-vit-tagger-v3', threshold: 0.35, characterThreshold: 0.85, exclude: '' }, sure: 0.7,
+        tags: ['1girl', 'solo', 'red_hair', 'kimono', 'outdoors', 'smile', 'looking_at_viewer', 'not_a_real_tag_xyz'].map((tag, i) => ({ tag, sure: i < 4 })), settings: { model: 'wd-vit-tagger-v3', threshold: 0.35, characterThreshold: 0.85, exclude: '' }, tiers: [0.35, 0.7] },
     }[url.pathname] || { ok: true, items: [] };
     res.setHeader('Content-Type', 'application/json'); res.end(JSON.stringify(data)); return;
   }
@@ -107,7 +110,7 @@ try {
     const context = await browser.newContext({ locale: 'en-US', viewport: { width, height: 960 }, reducedMotion: 'reduce' });
     await context.route('https://**/*', (r) => r.abort());
     await context.addInitScript(() => localStorage.setItem('mochi.settings.v1', JSON.stringify({ rating: 'general', n: 1 })));
-    for (const route of ['/', '/fuse.html', '/book.html', '/album.html']) {
+    for (const route of ['/', '/fuse.html', '/book.html', '/album.html', '/parse.html']) {
       const page = await context.newPage(), errors = [];
       page.on('pageerror', (e) => errors.push(e.message));
       await page.goto(origin + route + '?debug');
@@ -142,7 +145,21 @@ try {
         await page.selectOption('#language-select', 'en');
         await page.waitForFunction(() => document.documentElement.lang === 'en' && window.fuse?.bed?.pins.includes('red hair'));
       }
-      for (const selector of route === '/' ? ['#pool-decks', '#pool-paste', '#wf-pick-btn', '#lora-pick-btn', '#ckpt-pick-btn', '#dc-btn', '.pose-btn'] : route === '/fuse.html' ? ['#rules-btn', '#decks-btn'] : route === '/book.html' ? ['#book-ach', '#book-grid .card:first-child'] : ['.album-tile', '#album-tabs button:nth-child(2)', '#album-log .log-row', '#album-tabs button:nth-child(3)']) {
+      if (route === '/parse.html') {
+        // 放一張圖：解析結果（牌、確定／可能、詞庫沒有的字、帶走的膠囊）也要是英文。
+        await page.evaluate(async () => {
+          const c = document.createElement('canvas'); c.width = 64; c.height = 96;
+          const g = c.getContext('2d'); g.fillStyle = '#c55'; g.fillRect(0, 0, 64, 96);
+          const blob = await new Promise((r) => c.toBlob(r, 'image/png'));
+          const dt = new DataTransfer(); dt.items.add(new File([blob], 'x.png', { type: 'image/png' }));
+          const input = document.getElementById('parse-file'); input.files = dt.files; input.dispatchEvent(new Event('change'));
+        });
+        await page.waitForFunction(() => document.getElementById('parse-plate').dataset.state === 'done');
+        await page.locator('.parse-more summary').click();
+        await scan(page, name + '-parsed');
+        await page.screenshot({ path: resolve(out, name + '-parsed.png') });
+      }
+      for (const selector of route === '/' ? ['#pool-decks', '#pool-paste', '#wf-pick-btn', '#lora-pick-btn', '#ckpt-pick-btn', '#dc-btn', '.pose-btn'] : route === '/fuse.html' ? ['#rules-btn', '#decks-btn'] : route === '/book.html' ? ['#book-ach', '#book-grid .card:first-child'] : route === '/parse.html' ? ['#parse-gear', '#parse-trust [data-v="sure"]'] : ['.album-tile', '#album-tabs button:nth-child(2)', '#album-log .log-row', '#album-tabs button:nth-child(3)']) {
         const n = page.locator(selector).first();
         if (await n.count()) {
           await n.click(); await page.waitForTimeout(250); await scan(page, name + selector);
