@@ -1841,6 +1841,30 @@ body #wf-pick-btn.has {
   white-space: nowrap;
 }
 
+/* 手機（手指點）：頂欄的介紹影片／教學／導覽、底線字按鈕（換一組、全部、看提示詞…）、開關只有 19～22px 高，
+ * 常常點不到。能按到的範圍往外撐（padding），再用等量的負 margin 收回來：看起來、排版都不變。 */
+@media (pointer: coarse) {
+  .mast-extra {
+    padding: 12px 4px;
+    margin-block: -12px;
+    margin-inline: -4px;
+  }
+
+  .mast-extra + .mast-extra {
+    margin-left: calc(var(--space-xs) - 4px);
+  }
+
+  .link-btn {
+    padding: 10px 6px;
+    margin: -10px -6px;
+  }
+
+  .switch {
+    padding-block: 12px;
+    margin-block: -12px;
+  }
+}
+
 /* 開關：原生 checkbox 換成一條軌道。role=switch 在 JS 那邊加。 */
 .switch input {
   appearance: none;

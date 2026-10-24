@@ -1678,6 +1678,7 @@ Discord 設定（自動傳送{0}）|Discord settings (auto sharing {0})
 「{0}」在{1}看不到|“{0}” is hidden at {1}
 一共 {0} 張搜得到的被擋住；{1}以上才有，或打開分級左邊的「不限制」。|{0} matching cards are hidden; they appear at {1} and above, or turn on No limit next to the rating.
 {0}以上才有，或打開分級左邊的「不限制」。|Appears at {0} and above, or turn on No limit next to the rating.
+{0} 件作品在{1}看不到|{0} works are hidden at {1}
 種子固定 {0}|Seed fixed {0}
 {0} 張會一定進圖|{0} pinned cards
 合成池 {0} 張|{0} pinned cards

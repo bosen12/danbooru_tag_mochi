@@ -382,6 +382,26 @@ async function pickTab(v) {
 
 const visible = (w) => (RANK[w.rating] ?? 2) <= RANK[seeRating()];
 
+/**
+ * 作品都被分級擋住：以前只寫一行「看不到」，要自己想到去頂欄換。說清楚有幾件、要哪一級，給一鍵換（跟卡冊一樣）。
+ */
+function hiddenNote() {
+  const need = works.some((w) => (RANK[w.rating] ?? 2) <= RANK.sensitive) ? "sensitive" : "explicit";
+  const n = works.filter((w) => !visible(w)).length;
+  return el(
+    "div",
+    { class: "album-empty album-empty-rating" },
+    el("b", {}, `${n} 件作品在${RATING_LABEL[rating]}看不到`),
+    el("span", {}, `${RATING_LABEL[need]}以上才有，或打開分級左邊的「不限制」。`),
+    el(
+      "span",
+      { class: "album-empty-acts" },
+      el("button", { class: "btn btn-small", type: "button", onclick: () => $("rating")?.querySelector(`[data-v="${need}"]`)?.click() }, `切到${RATING_LABEL[need]}`),
+      el("button", { class: "btn btn-small btn-ghost", type: "button", onclick: () => $("rating-free")?.click() }, "打開不限制")
+    )
+  );
+}
+
 function render({ deal = false } = {}) {
   const grid = $("album-grid");
   const logBox = $("album-log");
@@ -442,7 +462,7 @@ function render({ deal = false } = {}) {
     );
     return;
   }
-  grid.replaceChildren(...(tiles.length || !works.length ? parts : [el("p", { class: "album-empty" }, query ? `找不到「${query}」` : `這一級分級看不到任何作品`)]));
+  grid.replaceChildren(...(tiles.length || !works.length ? parts : [query ? el("p", { class: "album-empty" }, `找不到「${query}」`) : hiddenNote()]));
   if (deal && !reducedMotion()) {
     // 分段的標題（江戶 3 件…）跟著發牌一起淡進來，不是先整排印好、作品才落下。
     for (const h of grid.querySelectorAll(":scope > .album-group > .log-day-head")) {

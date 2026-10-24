@@ -845,6 +845,9 @@ export function swapIn(node, key, { firstToo = false } = {}) {
  * 量的是 below 的位置；捲動容器裡也行（量畫面座標，前後都在同一個捲動位置）。
  */
 export function rowChange(row, below) {
+  // 開機中（詞庫還在讀、第一次畫）：不演，也不量。量就是逼瀏覽器先把整頁排一次（手機降速 4 倍約 0.12 秒），
+  // 第一格畫面時又要再排一次；開頁本來就有自己的進場（playPageEntrance）。
+  if ("booting" in document.documentElement.dataset) return { done() {} };
   const shown = (n) => !!n && !n.hidden && n.offsetHeight > 0;
   const was = shown(row);
   const top = below && below.isConnected ? below.getBoundingClientRect().top : null;
