@@ -147,7 +147,12 @@ function saveUi() {
 /** 加入日（web/tag_dates.json）貼到牌上，並把禁用角色補進卡冊。不進詞庫的抽牌清單。 */
 function attachDates(lib, dates) {
   const added = (dates && dates.added) || {};
-  for (const card of lib.cards) card.added = added[card.tag] || "";
+  // 加入時間記到分鐘（scripts/tag_dates.py）：addedAt 拿來排（同一天的照先後），added 只留日期給畫面用。
+  // 舊版的 tag_dates.json 只有日期，一樣能用。
+  for (const card of lib.cards) {
+    card.addedAt = added[card.tag] || "";
+    card.added = card.addedAt.slice(0, 10);
+  }
   for (const row of (dates && dates.banned) || []) {
     const tag = row && row.tag;
     if (!tag || lib.byTag.has(tag) || tag === "loli" || tag === "shota") continue;
@@ -162,7 +167,8 @@ function attachDates(lib, dates) {
       rating: "general",
       gate,
       eras: ["any"],
-      added: row.added || added[tag] || "",
+      addedAt: row.added || added[tag] || "",
+      added: (row.added || added[tag] || "").slice(0, 10),
       banned: true,
       reason: row.reason || "",
       item: {
@@ -872,8 +878,9 @@ function listNow() {
   if (isWar()) out.sort((a, b) => warScore(b.tag) - warScore(a.tag) || warOf(b.tag)[0] - warOf(a.tag)[0] || order.get(a.tag) - order.get(b.tag));
   // 沒有日期的排最後。同一天維持字盒順序（花色 → 細分類）。
   // 沒有日期的：詞庫剛加、還沒重跑 scripts/tag_dates.py 的字，其實是最新的。新到舊排最前面，舊到新排最後。
-  else if (ui.order === "new") out.sort((a, b) => (b.added || "9999-99-99").localeCompare(a.added || "9999-99-99") || order.get(a.tag) - order.get(b.tag));
-  else if (ui.order === "old") out.sort((a, b) => (a.added || "9999-99-99").localeCompare(b.added || "9999-99-99") || order.get(a.tag) - order.get(b.tag));
+  // 同一天的照加入的時間先後（一天可能進好幾批）。
+  else if (ui.order === "new") out.sort((a, b) => (b.addedAt || "9999-99-99").localeCompare(a.addedAt || "9999-99-99") || order.get(a.tag) - order.get(b.tag));
+  else if (ui.order === "old") out.sort((a, b) => (a.addedAt || "9999-99-99").localeCompare(b.addedAt || "9999-99-99") || order.get(a.tag) - order.get(b.tag));
   // 次數一樣時：多到少看誰最近用過，少到多照字盒的順序（花色 → 細分類）。
   else if (ui.order === "desc") out.sort((a, b) => countOf(b.tag) - countOf(a.tag) || lastOf(b.tag) - lastOf(a.tag) || order.get(a.tag) - order.get(b.tag));
   else out.sort((a, b) => countOf(a.tag) - countOf(b.tag) || order.get(a.tag) - order.get(b.tag));
