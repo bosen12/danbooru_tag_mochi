@@ -293,6 +293,14 @@ const ART_EXTRA = {
   // 2026-10-25：只寫 measuring 看不出在量什麼，卡面補一條捲尺。
   measuring: "tape measure, holding",
   "penis measuring": "ruler, holding ruler, tape measure",
+  // 2026-10-26 日常物品第一次烘：只寫字名畫不出來或畫成別的東西，補說明。
+  "sticky note": "yellow paper, paper, note, desk",
+  thread: "spool, sewing",
+  map: "paper, folded map, world map",
+  hammer: "claw hammer",
+  saw: "hand saw",
+  axe: "wood axe",
+  "makeup brush": "applying makeup",
   "column lineup": "mature female, multiple views, standing, full body, white background",
   "sideboob": "breasts, from side",
   "underboob": "breasts, from below",
@@ -467,8 +475,13 @@ const SCHOOL_CODED = new Set(["school uniform", "serafuku", "sailor dress", "sch
 const SCENE_WITH_PERSON = new Set(["furniture", "background", "effect"]);
 const ENV_WITH_PERSON = new Set(["silhouette"]);
 
+// 工具類單獨畫靜物，模型會畫成機械零件、電鋸、戰斧（2026-10-26 烘兩次都不對）：改畫一個成年人拿著它。
+const HELD_ART = new Set(["hammer", "screwdriver", "saw", "axe", "makeup brush"]);
+
 // 場景節裡的物件：用風景去畫會小到看不見，改畫靜物。
 export const STILL_LIFE = new Set([
+  // 2026-10-26：日常物品一批（merge_lexicon.extra_object_tags）。
+  "ruler", "tape measure", "notebook", "sketchbook", "eraser", "notepad", "sticky note", "envelope", "letter", "love letter", "map", "origami", "paper airplane", "wallet", "coin", "money", "dice", "chess piece", "gift box", "trophy", "padlock", "wand", "hourglass", "magnifying glass", "binoculars", "telescope", "megaphone", "briefcase", "calendar (object)", "watering can", "shovel", "hammer", "wrench", "screwdriver", "saw", "axe", "sewing needle", "thread", "yarn", "yarn ball", "comb", "hair brush", "hair dryer", "toothbrush", "makeup brush", "perfume bottle", "tissue", "thermometer", "first aid kit", "test tube", "remote control", "tablet pc", "computer keyboard", "computer mouse", "bento", "water bottle", "thermos",
   "incense burner", "incense", "folding fan", "hand fan", "scroll", "calligraphy", "guqin", "erhu",
   "teapot", "teacup", "folding screen", "lotus", "chrysanthemum", "silk", "beads", "spear", "polearm",
   "shield", "drum", "table", "amphora", "grapes", "wine glass", "lyre", "olive", "trident",
@@ -600,6 +613,8 @@ export function artPrompt(item, ctx = {}) {
     parts = ["no humans", "scenery", "landscape", "sky", "cloud"];
   } else if (item.tag === "solo focus") {
     parts = ["1girl", "solo focus", "adult", "crowd", "street", "upper body"];
+  } else if (HELD_ART.has(item.tag)) {
+    parts = ["1girl", "solo", "adult", `holding ${item.tag}`, item.tag, ...extra, "upper body", "simple background"];
   } else if (STILL_LIFE.has(item.tag)) {
     parts = ["no humans", "still life", item.tag, ...extra, "simple background"];
   } else if (item.section === "env" && !SCENE_WITH_PERSON.has(item.group) && !ENV_WITH_PERSON.has(item.tag)) {

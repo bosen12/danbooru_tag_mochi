@@ -5549,6 +5549,91 @@ def extra_measuring_tags() -> list[dict]:
     ]
 
 
+def extra_object_tags() -> list[dict]:
+    """日常物品（2026-10-26）：尺、捲尺，加上文具、工具、針線、梳妝、電器、飲食這些常見的小東西。
+
+    全部是 Danbooru 現役一般標籤（大多上千張）。拿在手上的佔 held_prop（一次只拿一樣），
+    擺著、貼著、戴著的不佔。電器、文具只在現代；梳子、鏟子、斧頭這類古今都有的不限時代。
+    implies 只接詞庫已有的字（禮物盒 → 禮物、毛線球 → 毛線、香水瓶／水壺 → 瓶子）。
+    卡面照筆、書的畫法走靜物（card-art.js 的 STILL_LIFE）。
+    """
+
+    def obj(tag, section, zh, mutex=None, era=None, implies=None):
+        return {
+            "tag": tag,
+            "section": section,
+            "gate": "any",
+            "heat": list(HEATS),
+            "mutex": mutex,
+            "bind": [],
+            "implies": list(implies or []),
+            "layer": "normal",
+            "era": list(era or ["any"]),
+            "needs": [],
+            "zh": zh,
+        }
+
+    return [
+        obj("ruler", "env", "尺", mutex="held_prop"),
+        obj("tape measure", "env", "捲尺", mutex="held_prop", era=["modern", "victorian"]),
+        obj("notebook", "env", "筆記本", mutex="held_prop", era=["modern"]),
+        obj("sketchbook", "env", "素描本", mutex="held_prop", era=["modern", "victorian"]),
+        obj("eraser", "env", "橡皮擦", mutex="held_prop", era=["modern"]),
+        obj("notepad", "env", "便條本", mutex="held_prop", era=["modern"]),
+        obj("sticky note", "env", "便利貼", era=["modern"]),
+        obj("envelope", "env", "信封", mutex="held_prop", era=["modern", "victorian"]),
+        obj("letter", "env", "信", mutex="held_prop"),
+        obj("love letter", "env", "情書", mutex="held_prop", era=["modern", "victorian"]),
+        obj("map", "env", "地圖", mutex="held_prop"),
+        obj("origami", "env", "摺紙", era=["modern", "edo"]),
+        obj("paper airplane", "env", "紙飛機", mutex="held_prop", era=["modern"]),
+        obj("wallet", "env", "錢包", mutex="held_prop", era=["modern"]),
+        obj("coin", "env", "硬幣"),
+        obj("money", "env", "鈔票", mutex="held_prop", era=["modern"]),
+        obj("dice", "env", "骰子"),
+        obj("chess piece", "env", "西洋棋子", era=["modern", "victorian", "medieval"]),
+        obj("gift box", "env", "禮物盒", mutex="held_prop", era=["modern", "victorian"], implies=["gift"]),
+        obj("trophy", "env", "獎盃", mutex="held_prop", era=["modern", "victorian"]),
+        obj("padlock", "env", "掛鎖", era=["modern", "victorian"]),
+        obj("wand", "env", "魔杖", mutex="held_prop"),
+        obj("hourglass", "env", "沙漏", era=["modern", "victorian", "medieval"]),
+        obj("magnifying glass", "env", "放大鏡", mutex="held_prop", era=["modern", "victorian"]),
+        obj("binoculars", "env", "雙筒望遠鏡", mutex="held_prop", era=["modern", "victorian"]),
+        obj("telescope", "env", "望遠鏡", era=["modern", "victorian", "edo"]),
+        obj("megaphone", "env", "大聲公", mutex="held_prop", era=["modern"]),
+        obj("briefcase", "env", "公事包", mutex="held_prop", era=["modern"]),
+        obj("calendar (object)", "env", "月曆", era=["modern"]),
+        obj("watering can", "env", "澆水壺", mutex="held_prop", era=["modern", "victorian"]),
+        obj("shovel", "env", "鏟子", mutex="held_prop"),
+        obj("hammer", "env", "鐵鎚", mutex="held_prop"),
+        obj("wrench", "env", "扳手", mutex="held_prop", era=["modern"]),
+        obj("screwdriver", "env", "螺絲起子", mutex="held_prop", era=["modern"]),
+        obj("saw", "env", "鋸子", mutex="held_prop"),
+        obj("axe", "env", "斧頭", mutex="held_prop"),
+        obj("sewing needle", "env", "縫衣針", mutex="held_prop"),
+        obj("thread", "env", "線"),
+        obj("yarn", "env", "毛線"),
+        obj("yarn ball", "env", "毛線球", implies=["yarn"]),
+        obj("comb", "env", "梳子", mutex="held_prop"),
+        obj("hair brush", "env", "髮梳", mutex="held_prop", era=["modern", "victorian"]),
+        obj("hair dryer", "env", "吹風機", mutex="held_prop", era=["modern"]),
+        obj("toothbrush", "env", "牙刷", mutex="held_prop", era=["modern"]),
+        obj("makeup brush", "env", "化妝刷", mutex="held_prop", era=["modern"]),
+        obj("perfume bottle", "env", "香水瓶", era=["modern", "victorian"], implies=["bottle"]),
+        obj("tissue", "env", "面紙", mutex="held_prop", era=["modern"]),
+        obj("thermometer", "env", "溫度計", mutex="held_prop", era=["modern"]),
+        obj("first aid kit", "env", "急救箱", era=["modern"]),
+        obj("test tube", "env", "試管", mutex="held_prop", era=["modern"]),
+        obj("remote control", "env", "遙控器", mutex="held_prop", era=["modern"]),
+        obj("tablet pc", "env", "平板電腦", mutex="held_prop", era=["modern"]),
+        obj("computer keyboard", "env", "電腦鍵盤", era=["modern"]),
+        obj("computer mouse", "env", "滑鼠", era=["modern"]),
+        obj("bento", "env", "便當", era=["modern"]),
+        obj("water bottle", "env", "隨身水瓶", era=["modern"], implies=["bottle"]),
+        obj("thermos", "env", "保溫瓶", era=["modern"]),
+    ]
+
+
 def extra_family_sex_tags() -> list[dict]:
     """姊妹丼、親子丼、家族群交、性愛指導（2026-10-25 專案主指定，專案主自己測過圖）。
 
@@ -6851,6 +6936,7 @@ def main() -> None:
     rows.extend(extra_gag_tags())
     rows.extend(extra_family_sex_tags())
     rows.extend(extra_measuring_tags())
+    rows.extend(extra_object_tags())
     rows.extend(extra_round4_scenes())
     rows.extend(extra_round4_clothes())
     rows.extend(extra_round4_other())

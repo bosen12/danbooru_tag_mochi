@@ -76775,6 +76775,1173 @@
       "zh": "量陰莖"
     },
     {
+      "tag": "ruler",
+      "section": "env",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "held_prop",
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "other",
+      "sub": "obj_hand",
+      "zh": "尺"
+    },
+    {
+      "tag": "tape measure",
+      "section": "env",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "held_prop",
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "modern",
+        "victorian"
+      ],
+      "group": "other",
+      "sub": "obj_hand",
+      "zh": "捲尺"
+    },
+    {
+      "tag": "notebook",
+      "section": "env",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "held_prop",
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "modern"
+      ],
+      "group": "other",
+      "sub": "obj_hand",
+      "zh": "筆記本"
+    },
+    {
+      "tag": "sketchbook",
+      "section": "env",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "held_prop",
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "modern",
+        "victorian"
+      ],
+      "group": "other",
+      "sub": "obj_hand",
+      "zh": "素描本"
+    },
+    {
+      "tag": "eraser",
+      "section": "env",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "held_prop",
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "modern"
+      ],
+      "group": "other",
+      "sub": "obj_hand",
+      "zh": "橡皮擦"
+    },
+    {
+      "tag": "notepad",
+      "section": "env",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "held_prop",
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "modern"
+      ],
+      "group": "other",
+      "sub": "obj_hand",
+      "zh": "便條本"
+    },
+    {
+      "tag": "sticky note",
+      "section": "env",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "modern"
+      ],
+      "group": "other",
+      "sub": "obj_hand",
+      "zh": "便利貼"
+    },
+    {
+      "tag": "envelope",
+      "section": "env",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "held_prop",
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "modern",
+        "victorian"
+      ],
+      "group": "other",
+      "sub": "obj_hand",
+      "zh": "信封"
+    },
+    {
+      "tag": "letter",
+      "section": "env",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "held_prop",
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "other",
+      "sub": "obj_hand",
+      "zh": "信"
+    },
+    {
+      "tag": "love letter",
+      "section": "env",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "held_prop",
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "modern",
+        "victorian"
+      ],
+      "group": "other",
+      "sub": "obj_hand",
+      "zh": "情書"
+    },
+    {
+      "tag": "map",
+      "section": "env",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "held_prop",
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "other",
+      "sub": "obj_hand",
+      "zh": "地圖"
+    },
+    {
+      "tag": "origami",
+      "section": "env",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "modern",
+        "edo"
+      ],
+      "group": "other",
+      "sub": "obj_hand",
+      "zh": "摺紙"
+    },
+    {
+      "tag": "paper airplane",
+      "section": "env",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "held_prop",
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "modern"
+      ],
+      "group": "other",
+      "sub": "obj_hand",
+      "zh": "紙飛機"
+    },
+    {
+      "tag": "wallet",
+      "section": "env",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "held_prop",
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "modern"
+      ],
+      "group": "other",
+      "sub": "obj_hand",
+      "zh": "錢包"
+    },
+    {
+      "tag": "coin",
+      "section": "env",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "other",
+      "sub": "obj_hand",
+      "zh": "硬幣"
+    },
+    {
+      "tag": "money",
+      "section": "env",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "held_prop",
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "modern"
+      ],
+      "group": "other",
+      "sub": "obj_hand",
+      "zh": "鈔票"
+    },
+    {
+      "tag": "dice",
+      "section": "env",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "other",
+      "sub": "obj_hand",
+      "zh": "骰子"
+    },
+    {
+      "tag": "chess piece",
+      "section": "env",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "modern",
+        "victorian",
+        "medieval"
+      ],
+      "group": "other",
+      "sub": "obj_hand",
+      "zh": "西洋棋子"
+    },
+    {
+      "tag": "gift box",
+      "section": "env",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "held_prop",
+      "bind": [],
+      "implies": [
+        "gift"
+      ],
+      "layer": "normal",
+      "era": [
+        "modern",
+        "victorian"
+      ],
+      "group": "other",
+      "sub": "obj_hand",
+      "zh": "禮物盒"
+    },
+    {
+      "tag": "trophy",
+      "section": "env",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "held_prop",
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "modern",
+        "victorian"
+      ],
+      "group": "other",
+      "sub": "obj_hand",
+      "zh": "獎盃"
+    },
+    {
+      "tag": "padlock",
+      "section": "env",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "modern",
+        "victorian"
+      ],
+      "group": "other",
+      "sub": "obj_hand",
+      "zh": "掛鎖"
+    },
+    {
+      "tag": "wand",
+      "section": "env",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "held_prop",
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "other",
+      "sub": "obj_hand",
+      "zh": "魔杖"
+    },
+    {
+      "tag": "hourglass",
+      "section": "env",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "modern",
+        "victorian",
+        "medieval"
+      ],
+      "group": "other",
+      "sub": "obj_classic",
+      "zh": "沙漏"
+    },
+    {
+      "tag": "magnifying glass",
+      "section": "env",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "held_prop",
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "modern",
+        "victorian"
+      ],
+      "group": "other",
+      "sub": "obj_hand",
+      "zh": "放大鏡"
+    },
+    {
+      "tag": "binoculars",
+      "section": "env",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "held_prop",
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "modern",
+        "victorian"
+      ],
+      "group": "other",
+      "sub": "obj_hand",
+      "zh": "雙筒望遠鏡"
+    },
+    {
+      "tag": "telescope",
+      "section": "env",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "modern",
+        "victorian",
+        "edo"
+      ],
+      "group": "other",
+      "sub": "obj_classic",
+      "zh": "望遠鏡"
+    },
+    {
+      "tag": "megaphone",
+      "section": "env",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "held_prop",
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "modern"
+      ],
+      "group": "other",
+      "sub": "obj_hand",
+      "zh": "大聲公"
+    },
+    {
+      "tag": "briefcase",
+      "section": "env",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "held_prop",
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "modern"
+      ],
+      "group": "other",
+      "sub": "obj_hand",
+      "zh": "公事包"
+    },
+    {
+      "tag": "calendar (object)",
+      "section": "env",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "modern"
+      ],
+      "group": "other",
+      "sub": "obj_furn",
+      "zh": "月曆"
+    },
+    {
+      "tag": "watering can",
+      "section": "env",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "held_prop",
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "modern",
+        "victorian"
+      ],
+      "group": "other",
+      "sub": "obj_hand",
+      "zh": "澆水壺"
+    },
+    {
+      "tag": "shovel",
+      "section": "env",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "held_prop",
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "other",
+      "sub": "obj_hand",
+      "zh": "鏟子"
+    },
+    {
+      "tag": "hammer",
+      "section": "env",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "held_prop",
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "other",
+      "sub": "obj_hand",
+      "zh": "鐵鎚"
+    },
+    {
+      "tag": "wrench",
+      "section": "env",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "held_prop",
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "modern"
+      ],
+      "group": "other",
+      "sub": "obj_hand",
+      "zh": "扳手"
+    },
+    {
+      "tag": "screwdriver",
+      "section": "env",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "held_prop",
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "modern"
+      ],
+      "group": "other",
+      "sub": "obj_hand",
+      "zh": "螺絲起子"
+    },
+    {
+      "tag": "saw",
+      "section": "env",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "held_prop",
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "other",
+      "sub": "obj_hand",
+      "zh": "鋸子"
+    },
+    {
+      "tag": "axe",
+      "section": "env",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "held_prop",
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "other",
+      "sub": "obj_hand",
+      "zh": "斧頭"
+    },
+    {
+      "tag": "sewing needle",
+      "section": "env",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "held_prop",
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "other",
+      "sub": "obj_hand",
+      "zh": "縫衣針"
+    },
+    {
+      "tag": "thread",
+      "section": "env",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "other",
+      "sub": "obj_hand",
+      "zh": "線"
+    },
+    {
+      "tag": "yarn",
+      "section": "env",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "other",
+      "sub": "obj_hand",
+      "zh": "毛線"
+    },
+    {
+      "tag": "yarn ball",
+      "section": "env",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [
+        "yarn"
+      ],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "other",
+      "sub": "obj_hand",
+      "zh": "毛線球"
+    },
+    {
+      "tag": "comb",
+      "section": "env",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "held_prop",
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "other",
+      "sub": "obj_hand",
+      "zh": "梳子"
+    },
+    {
+      "tag": "hair brush",
+      "section": "env",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "held_prop",
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "modern",
+        "victorian"
+      ],
+      "group": "other",
+      "sub": "obj_hand",
+      "zh": "髮梳"
+    },
+    {
+      "tag": "hair dryer",
+      "section": "env",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "held_prop",
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "modern"
+      ],
+      "group": "other",
+      "sub": "obj_hand",
+      "zh": "吹風機"
+    },
+    {
+      "tag": "toothbrush",
+      "section": "env",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "held_prop",
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "modern"
+      ],
+      "group": "other",
+      "sub": "obj_hand",
+      "zh": "牙刷"
+    },
+    {
+      "tag": "makeup brush",
+      "section": "env",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "held_prop",
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "modern"
+      ],
+      "group": "other",
+      "sub": "obj_hand",
+      "zh": "化妝刷"
+    },
+    {
+      "tag": "perfume bottle",
+      "section": "env",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [
+        "bottle"
+      ],
+      "layer": "normal",
+      "era": [
+        "modern",
+        "victorian"
+      ],
+      "group": "other",
+      "sub": "obj_hand",
+      "zh": "香水瓶"
+    },
+    {
+      "tag": "tissue",
+      "section": "env",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "held_prop",
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "modern"
+      ],
+      "group": "other",
+      "sub": "obj_hand",
+      "zh": "面紙"
+    },
+    {
+      "tag": "thermometer",
+      "section": "env",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "held_prop",
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "modern"
+      ],
+      "group": "other",
+      "sub": "obj_hand",
+      "zh": "溫度計"
+    },
+    {
+      "tag": "first aid kit",
+      "section": "env",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "modern"
+      ],
+      "group": "other",
+      "sub": "obj_hand",
+      "zh": "急救箱"
+    },
+    {
+      "tag": "test tube",
+      "section": "env",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "held_prop",
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "modern"
+      ],
+      "group": "other",
+      "sub": "obj_hand",
+      "zh": "試管"
+    },
+    {
+      "tag": "remote control",
+      "section": "env",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "held_prop",
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "modern"
+      ],
+      "group": "other",
+      "sub": "obj_tech",
+      "zh": "遙控器"
+    },
+    {
+      "tag": "tablet pc",
+      "section": "env",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "held_prop",
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "modern"
+      ],
+      "group": "other",
+      "sub": "obj_tech",
+      "zh": "平板電腦"
+    },
+    {
+      "tag": "computer keyboard",
+      "section": "env",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "modern"
+      ],
+      "group": "other",
+      "sub": "obj_tech",
+      "zh": "電腦鍵盤"
+    },
+    {
+      "tag": "computer mouse",
+      "section": "env",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "modern"
+      ],
+      "group": "other",
+      "sub": "obj_tech",
+      "zh": "滑鼠"
+    },
+    {
+      "tag": "bento",
+      "section": "env",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "modern"
+      ],
+      "group": "other",
+      "sub": "obj_food",
+      "zh": "便當"
+    },
+    {
+      "tag": "water bottle",
+      "section": "env",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [
+        "bottle"
+      ],
+      "layer": "normal",
+      "era": [
+        "modern"
+      ],
+      "group": "other",
+      "sub": "obj_food",
+      "zh": "隨身水瓶"
+    },
+    {
+      "tag": "thermos",
+      "section": "env",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "modern"
+      ],
+      "group": "other",
+      "sub": "obj_food",
+      "zh": "保溫瓶"
+    },
+    {
       "tag": "black flower",
       "section": "env",
       "gate": "any",

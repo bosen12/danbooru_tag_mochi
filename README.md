@@ -47,7 +47,7 @@ Mochi is the card interface of [danbooru_tag_random](https://github.com/bosen12/
 
 **Keep cards for later.** Favorites hold up to ten individual cards per workspace; the Card Book's box holds up to 24 cards to use next. Decks save a full selection and its weights for reuse. The Gallery distinguishes recipe-only works from images that failed to load, and offers a retry for the latter.
 
-**Characters.** 612 adult anime and game characters (Yor, Makima, Raiden Shogun, Levi…) are cards in their own suit, grouped by series under Anime and Games (One Piece, Demon Slayer…; Arknights, Genshin Impact…). Pin one or several, or turn on **Draw characters** in the Ink Pool rules to give people of the selected gender named characters (up to three, any series). Pinned characters remain even when their gender is switched off. **Same series only** keeps every drawn character in the pinned character's series, or picks one series that fits the cast when none is pinned. **Add series name** puts the series tag after each character. While a character is in the image the engine stops drawing hair color, hairstyle, eye color, body type and similar traits that would change who it is. Characters who are underage, school students, child-looking, real people or VTubers, non-human, or of unknown age are banned: they are not cards, pasted prompts drop them, and the server refuses any prompt that contains them.
+**Characters.** 679 adult anime and game characters (Yor, Makima, Raiden Shogun, Levi…) are cards in their own suit, grouped by series under Anime and Games (One Piece, Demon Slayer…; Arknights, Genshin Impact…). Pin one or several, or turn on **Draw characters** in the Ink Pool rules to give people of the selected gender named characters (up to three, any series). Pinned characters remain even when their gender is switched off. **Same series only** keeps every drawn character in the pinned character's series, or picks one series that fits the cast when none is pinned. **Add series name** puts the series tag after each character. While a character is in the image the engine stops drawing hair color, hairstyle, eye color, body type and similar traits that would change who it is. Characters who are underage, school students, child-looking, real people or VTubers, non-human, or of unknown age are banned: they are not cards, pasted prompts drop them, and the server refuses any prompt that contains them.
 
 The **Intro film** (`/intro.html`, 3 min) and the **Tutorial** (`/tutorial.html`, 4.5 min) are rendered live in the page with the real engine and cards. **Tour** in the top bar walks you through each room step by step.
 
@@ -79,8 +79,8 @@ Keep the server window open. After updating, reload the page with **Ctrl+F5**.
 
 | What | Size | How | Skip |
 |---|---|---|---|
-| Card art, all ages (2613 cards) | ~30 MB + ~105 MB | Downloaded from this repo's [release](https://github.com/bosen12/danbooru_tag_mochi/releases/tag/card-art-v9) in two parts: thumbnails first (the card library shows pictures after a couple of minutes, reload when the panel says so), then full-size images in the background. Checked with SHA-256, unpacked into `web/cards/`. Resumes if interrupted; never overwrites cards you baked yourself | `NO_CARD_FETCH=1` |
-| Character card art (612 anime and game characters) | — | Not published (copyrighted characters). Every start checks it: up to 20 missing are baked straight away, more than that (about 70 minutes the first time) and the page asks first (Bake / Not now / Never ask) | `.no-character-bake` file or answer *Never ask* |
+| Card art, all ages (3602 cards) | ~43 MB + ~143 MB | Downloaded from this repo's [release](https://github.com/bosen12/danbooru_tag_mochi/releases/tag/card-art-v11) in two parts: thumbnails first (the card library shows pictures after a couple of minutes, reload when the panel says so), then full-size images in the background. Checked with SHA-256, unpacked into `web/cards/`. Resumes if interrupted; never overwrites cards you baked yourself | `NO_CARD_FETCH=1` |
+| Character card art (679 anime and game characters) | — | Not published (copyrighted characters). Every start checks it: up to 20 missing are baked straight away, more than that (about 70 minutes the first time) and the page asks first (Bake / Not now / Never ask) | `.no-character-bake` file or answer *Never ask* |
 | Sensitive / explicit card art | — | Not published. Once the download is in, the page asks whether to bake them with your checkpoint (`scripts/bake_card_art.py`). Missing or outdated all-ages cards are baked without asking | `NO_CARD_BAKE=1` or a `.no-card-bake` file |
 | [Pillow](https://python-pillow.org/) | ~7 MB | Installed into the Python that runs `server.py` (or your user folder) so LoRA and checkpoint previews are shrunk to small WebP files: the checkpoint panel opens with about 1 MB instead of 20 MB. Without it everything still works and previews load at full size | `NO_PILLOW_INSTALL=1` |
 | Hires upscale model `RealESRGAN_x4plus_anime_6B` | ~18 MB | Saved to ComfyUI's `models/upscale_models` | `NO_UPSCALE_FETCH=1` |
@@ -167,7 +167,7 @@ Check new tags against Danbooru first with `node scripts/verify_danbooru_tags.mj
 - **"Port 8796 is already in use".** Mochi is probably already running: open <http://127.0.0.1:8796/>. To run a second copy, set `PORT` to another port first.
 - **The top bar keeps saying Comfy is offline.** Start ComfyUI; Mochi finds it on 8188 or ComfyUI Desktop's 8000 by itself and connects within seconds. If ComfyUI runs elsewhere (another port, another computer), click the Comfy indicator and enter its URL.
 - **A phone on the same Wi-Fi gets “not allowed”.** By default only this computer and Tailscale devices can connect. Use Tailscale (works away from home too), or restart Mochi with `ALLOW_NET` including your home network; the page on the phone shows the exact line to use.
-- **Cards show only text, no pictures.** First start is still downloading the card art. Thumbnails (about 30 MB) arrive first, full-size images (about 105 MB) follow; GitHub release downloads can be slow, and the panel shows how many minutes are left; the panel in the lower-left shows progress and tells you when to reload.
+- **Cards show only text, no pictures.** First start is still downloading the card art. Thumbnails (about 43 MB) arrive first, full-size images (about 143 MB) follow; GitHub release downloads can be slow, and the panel shows how many minutes are left; the panel in the lower-left shows progress and tells you when to reload.
 - **The LoRA panel has no previews or trigger words.** Allow the ComfyUI LoRA Manager install in the setup panel, then restart ComfyUI once.
 - **"Could not load the card library".** Open Mochi through `start.bat`, `start.sh` or `server.py`, not by opening the HTML file.
 - **Generation stops half-way.** Raise `client.streamIdleMs` for slow GPUs.
@@ -230,7 +230,7 @@ Mochi code is distributed under **GNU GPLv3 only (`GPL-3.0-only`)**, see [LICENS
 
 **保存牌**：偏好卡牌是每個工作區最多十張常用單張牌；卡冊的卡盒收集最多二十四張待用的牌；牌組保存整組選牌與權重，方便重複套用。作品冊會區分只有配方與圖片讀取失敗，後者可以重試。
 
-**角色**：612 個成年的動漫、遊戲角色（約兒、瑪奇瑪、雷電將軍、里維…）自己一個花色，分動漫、遊戲兩串，再照作品分格（航海王、鬼滅之刃…；明日方舟、原神…）。可以釘一個或好幾個，或在墨池的規則打開「抽角色」，只替「人物」選中的性別抽角色（最多三個，作品不挑）；手動釘的角色照留。「只抽同系列」打開時，抽的角色都跟釘的角色同一部作品；沒釘就先挑一部人數、性別湊得齊的。「加入系列名」會在角色後面接作品名。畫面裡有角色時，引擎不再抽髮色、髮型、瞳色、體型這些會改掉角色是誰的特徵。未成年、學生、外觀像兒童、真人或 VTuber、非人形、年齡查不到的角色一律禁用：不是牌、貼上提示詞會被拿掉、送去生圖伺服器也會擋。
+**角色**：679 個成年的動漫、遊戲角色（約兒、瑪奇瑪、雷電將軍、里維…）自己一個花色，分動漫、遊戲兩串，再照作品分格（航海王、鬼滅之刃…；明日方舟、原神…）。可以釘一個或好幾個，或在墨池的規則打開「抽角色」，只替「人物」選中的性別抽角色（最多三個，作品不挑）；手動釘的角色照留。「只抽同系列」打開時，抽的角色都跟釘的角色同一部作品；沒釘就先挑一部人數、性別湊得齊的。「加入系列名」會在角色後面接作品名。畫面裡有角色時，引擎不再抽髮色、髮型、瞳色、體型這些會改掉角色是誰的特徵。未成年、學生、外觀像兒童、真人或 VTuber、非人形、年齡查不到的角色一律禁用：不是牌、貼上提示詞會被拿掉、送去生圖伺服器也會擋。
 
 另外有兩支在頁面裡即時產生的影片：**介紹影片**（`/intro.html`，3 分鐘）和**使用教學**（`/tutorial.html`，4 分半）。頂欄的「導覽」會一步一步帶你操作。
 
@@ -253,8 +253,8 @@ cd danbooru_tag_mochi
 
 | 東西 | 大小 | 怎麼來 | 不想要 |
 |---|---|---|---|
-| 卡牌插畫（全年齡 2613 張） | 約 30 MB＋105 MB | 從本 repo 的 [Release](https://github.com/bosen12/danbooru_tag_mochi/releases/tag/card-art-v9) 分兩包下載：先抓縮圖（兩分鐘左右字盒就有圖，面板說可以就重新整理），大圖背景接著抓。驗 SHA-256、解到 `web/cards/`。斷了會接著抓；自己烘的圖不覆蓋 | `NO_CARD_FETCH=1` |
-| 角色卡面（612 個動漫、遊戲角色） | — | 不公開（版權角色）。每次啟動都檢查：缺 20 張以內直接烘；更多（第一次約 70 分鐘）網頁上先問（烘／這次不要／不要再問） | `.no-character-bake` 檔或回答「不要再問」 |
+| 卡牌插畫（全年齡 3602 張） | 約 43 MB＋143 MB | 從本 repo 的 [Release](https://github.com/bosen12/danbooru_tag_mochi/releases/tag/card-art-v11) 分兩包下載：先抓縮圖（兩分鐘左右字盒就有圖，面板說可以就重新整理），大圖背景接著抓。驗 SHA-256、解到 `web/cards/`。斷了會接著抓；自己烘的圖不覆蓋 | `NO_CARD_FETCH=1` |
+| 角色卡面（679 個動漫、遊戲角色） | — | 不公開（版權角色）。每次啟動都檢查：缺 20 張以內直接烘；更多（第一次約 70 分鐘）網頁上先問（烘／這次不要／不要再問） | `.no-character-bake` 檔或回答「不要再問」 |
 | 敏感／色情分級的卡面 | — | 不公開。卡面下載好之後，網頁上問你要不要用你的底模烘；全年齡卡缺的、過時的直接烘，不問 | `NO_CARD_BAKE=1` 或 `.no-card-bake` 檔 |
 | [Pillow](https://python-pillow.org/) | 約 7 MB | 裝進跑 `server.py` 的 Python（裝不進去就裝到使用者資料夾），LoRA、底模的預覽圖會縮成小的 WebP：底模面板一打開從約 20 MB 變成約 1 MB。沒裝也照樣能用，只是預覽圖給原圖 | `NO_PILLOW_INSTALL=1` |
 | Hires 放大模型 | 約 18 MB | 放進 ComfyUI 的 `models/upscale_models` | `NO_UPSCALE_FETCH=1` |
@@ -287,7 +287,7 @@ LoRA 面板的「詳情」在 ComfyUI 的 LoRA Manager 直接打開那一個 LoR
 - **「8796 已經有程式在用」**：多半是墨池已經開著，直接開 <http://127.0.0.1:8796/>。要同時開第二份，先設 `PORT=別的埠`。
 - **一直顯示 Comfy 未連上**：先開 ComfyUI；一般版 8188、ComfyUI Desktop 的 8000 墨池會自己找到，幾秒內接上。ComfyUI 在別的埠或別台電腦，就點頂欄的 Comfy 燈號填網址。
 - **同一個 Wi-Fi 的手機打開說「還不能連」**：預設只接受這台電腦和 Tailscale 裡的裝置。用 Tailscale（出門也能用），或設 `ALLOW_NET` 加上家用網段再啟動；手機上的說明頁會寫好要填的那一行。
-- **牌只有字、沒有圖**：第一次啟動還在下載卡面：縮圖（約 30 MB）先到、大圖（約 105 MB）接著抓；GitHub Release 下載常常很慢，面板會寫還要幾分鐘，左下角的面板有進度，好了會叫你重新整理。
+- **牌只有字、沒有圖**：第一次啟動還在下載卡面：縮圖（約 43 MB）先到、大圖（約 143 MB）接著抓；GitHub Release 下載常常很慢，面板會寫還要幾分鐘，左下角的面板有進度，好了會叫你重新整理。
 - **LoRA 面板沒有預覽圖和觸發詞**：在準備面板允許安裝 ComfyUI LoRA Manager，裝好重開 ComfyUI 一次。
 - **「讀不到詞庫」**：用 `start.bat`／`start.sh`／`server.py` 開，不要直接點 HTML。
 - **生圖到一半停掉**：把 `client.streamIdleMs` 調大。

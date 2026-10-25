@@ -1186,6 +1186,7 @@ SUBS = {
             "pavement", "road sign", "poster (object)", "trash can",
         ]),
         ("obj_furn", "景物・家具寢具", [
+            "calendar (object)",
             "table", "desk", "counter", "chair", "office chair", "swivel chair",
             "gaming chair", "bench", "wooden bench", "nightstand", "bookshelf", "locker",
             "kotatsu", "poker table", "pillow", "blanket", "bed sheet", "carpet", "curtains", "mirror",
@@ -1195,6 +1196,7 @@ SUBS = {
             "school desk", "school chair", "chalkboard", "book stack", "cabinet", "drawer", "flower pot", "picture frame", "potted plant", "rug", "shelf", "tablecloth", "wooden table", "window blinds", "faucet", "toilet", "folding chair", "lounge chair",
         ]),
         ("obj_classic", "景物・古風擺設", [
+            "hourglass", "telescope",
             "folding screen", "stone lantern", "paper lantern", "rock garden", "incense",
             "incense burner", "scroll", "calligraphy", "ofuda", "komainu", "jizou",
             "teapot", "teacup", "tea set", "silk", "beads", "amphora", "birdcage", "cage",
@@ -1219,6 +1221,7 @@ SUBS = {
             "crystal", "seashell", "shallow water", "starfish", "waves",
         ]),
         ("obj_food", "物品・飲食", [
+            "bento", "water bottle", "thermos",
             "cup", "mug", "bottle", "wine glass", "coffee", "bubble tea", "beer",
             "wine", "sake", "champagne", "rice bowl", "chopsticks", "onigiri", "sushi",
             "ramen", "curry", "pasta", "pizza", "taco", "bread", "mooncake", "cake",
@@ -1234,6 +1237,7 @@ SUBS = {
             "cooking pot", "drinking glass", "kettle",
         ]),
         ("obj_hand", "物品・手持小物", [
+            "ruler", "tape measure", "notebook", "sketchbook", "eraser", "notepad", "sticky note", "envelope", "letter", "love letter", "map", "origami", "paper airplane", "wallet", "coin", "money", "dice", "chess piece", "gift box", "trophy", "padlock", "wand", "magnifying glass", "binoculars", "megaphone", "briefcase", "watering can", "shovel", "hammer", "wrench", "screwdriver", "saw", "axe", "sewing needle", "thread", "yarn", "yarn ball", "comb", "hair brush", "hair dryer", "toothbrush", "makeup brush", "perfume bottle", "tissue", "thermometer", "first aid kit", "test tube",
             "book", "newspaper", "pen", "pencil", "quill", "calligraphy brush", "paintbrush",
             "phone", "cellphone", "smartphone", "selfie stick", "camera", "cigarette",
             "cigar", "smoking pipe", "kiseru", "folding fan", "hand fan", "uchiwa",
@@ -1248,6 +1252,7 @@ SUBS = {
             "unworn panties", "unworn bra",
         ]),
         ("obj_tech", "物品・電器機台", [
+            "remote control", "tablet pc", "computer keyboard", "computer mouse",
             "computer", "laptop", "monitor", "game controller", "arcade cabinet",
             "crane game", "purikura", "steering wheel", "microphone stand",
             "cable",
