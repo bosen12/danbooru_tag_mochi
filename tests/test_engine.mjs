@@ -2466,6 +2466,56 @@ function indoorOutdoorClash(have) {
   eq("1girl+1boy never leftover 3P", leftover3, 0);
 }
 
+// 2026-10-26 專案主回報：人物「不限」、合成池釘了 1girl，永遠只有一個女人，抽到性愛只能自慰。
+// 釘人數只鎖那個性別的人數；人數表看這一張抽到的尺度（勾走光＋性愛，抽到性愛也用性愛表）。
+{
+  const both = settings();
+  both.girl = true;
+  both.boy = true;
+  both.heats = ["flash", "sex"];
+  both.weights = { activity: 0, tease: 0, flash: 0.5, sex: 0.5 };
+  both.eras = ["modern"];
+  const pin1 = applyPin(lex, new Set(), new Set(), "1girl").pinned;
+  const girls = (h) => [...h].filter((t) => /^(\d\+?girls?|multiple girls)$/.test(t));
+  const hasBoy = (h) => [...h].some((t) => /^(\d\+?boys?|multiple boys)$/.test(t));
+  let wrongGirls = 0, withBoy = 0, sexN = 0, sexBoy = 0;
+  for (let i = 0; i < 200; i++) {
+    const d = drawOne(lex, both, pin1, new Set(), mulberry32(412000 + i), 412000 + i);
+    const h = tagsOf(d);
+    if (girls(h).join() !== "1girl") wrongGirls += 1;
+    if (hasBoy(h)) withBoy += 1;
+    if (d.heat === "sex") {
+      sexN += 1;
+      if (hasBoy(h)) sexBoy += 1;
+    }
+  }
+  eq("pinned 1girl keeps exactly one girl", wrongGirls, 0);
+  ok("pinned 1girl with both genders on still draws men", withBoy >= 80, `withBoy=${withBoy}/200`);
+  ok("pinned 1girl sex draws are mostly with a man", sexN > 40 && sexBoy >= sexN * 0.75, `sexBoy=${sexBoy}/${sexN}`);
+
+  const girlOnly = { ...both, boy: false };
+  let leak = 0;
+  for (let i = 0; i < 60; i++) if (hasBoy(tagsOf(drawOne(lex, girlOnly, pin1, new Set(), mulberry32(412300 + i), 412300 + i)))) leak += 1;
+  eq("pinned 1girl with girls only never adds a man", leak, 0);
+
+  const pinPair = applyPin(lex, pin1, new Set(), "1boy").pinned;
+  let pairWrong = 0;
+  for (let i = 0; i < 60; i++) {
+    const h = tagsOf(drawOne(lex, both, pinPair, new Set(), mulberry32(412400 + i), 412400 + i));
+    if (girls(h).join() !== "1girl" || [...h].filter((t) => /^(\d\+?boys?|multiple boys)$/.test(t)).join() !== "1boy") pairWrong += 1;
+  }
+  eq("pinned 1girl+1boy stays exactly one and one", pairWrong, 0);
+
+  let soloSex = 0, plainSex = 0;
+  for (let i = 0; i < 200; i++) {
+    const d = drawOne(lex, both, new Set(), new Set(), mulberry32(412500 + i), 412500 + i);
+    if (d.heat !== "sex") continue;
+    plainSex += 1;
+    if (d.people === 1) soloSex += 1;
+  }
+  ok("flash+sex: a sex draw uses the sex cast table (rarely solo)", plainSex > 40 && soloSex <= plainSex * 0.2, `solo=${soloSex}/${plainSex}`);
+}
+
 {
   const need = (tag) => lex.byTag.get(tag)?.needs || [];
   const item = (tag) => lex.byTag.get(tag);
@@ -9411,15 +9461,21 @@ function indoorOutdoorClash(have) {
 
   const on = { ...s, drawCharacter: true };
   const pin2g = applyPin(lex, new Set(), new Set(), "2girls").pinned;
+  // 2026-10-26：人物「不限」時釘 2girls 只鎖女生人數，男生照人數表抽（chooseCast）。
+  // 角色照畫面上的人數、性別抽：兩個女角色，加上補進來的男生各一個男角色。
   let rightCount = 0;
   let female = 0;
   for (let i = 0; i < 60; i++) {
     const d = drawOne(lex, on, pin2g, new Set(), mulberry32(931000 + i), 931000 + i);
     const cs = charsOf(d.positive);
-    if (cs.length === 2) rightCount += 1;
-    if (cs.every((t) => lex.byTag.get(t).gate === "female")) female += 1;
+    const tags = tagsOf(d);
+    const men = tags.has("2boys") ? 2 : tags.has("1boy") ? 1 : 0;
+    const fc = cs.filter((t) => lex.byTag.get(t).gate === "female").length;
+    const mc = cs.filter((t) => lex.byTag.get(t).gate === "male").length;
+    if (fc === 2 && mc === men) rightCount += 1;
+    if (fc === 2) female += 1;
   }
-  eq("角色：釘 2girls、抽角色打開：每張都是兩個角色", rightCount, 60);
+  eq("角色：釘 2girls、抽角色打開：兩個女角色，補進來的男生各一個男角色", rightCount, 60);
   eq("角色：兩個女生抽到的都是女角色", female, 60);
   const pinBoy = applyPin(lex, new Set(), new Set(), "1boy").pinned;
   const sBoy = { ...on, girl: false, boy: true };

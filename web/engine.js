@@ -3606,7 +3606,36 @@ function intersectOrUnion(lists) {
   return acc;
 }
 
-function chooseCast(lex, settings, pinned, banned, rand, ctx) {
+/**
+ * 這一張用哪一張人數表、兩個性別開不開。
+ *
+ * 性愛表看「這一張抽到的尺度」，不是「尺度只勾了性愛」：以前勾走光＋性愛時，抽到性愛照樣用一般表，
+ * 單女 39%，畫出來只剩自慰（2026-10-26 專案主回報「怎麼抽都是單人」）。
+ */
+function castTable(lex, settings, ctx, heat) {
+  let girl = settings.girl;
+  let boy = settings.boy;
+  if (ctx.needFemale || ctx.needYuri) girl = true;
+  if (ctx.needMale && !ctx.needYuri) boy = true;
+  if (ctx.needYuri) boy = false;
+  if (ctx.needYaoi) {
+    girl = false;
+    boy = true;
+  }
+  let table;
+  if (girl && boy) {
+    table = lex.data.castWeights.mixed;
+    // 這張表以前寫死在這裡，跟詞庫的 castWeights 各走各的 —— 補了詞庫那邊的
+    // 「一女兩男」之後，勾純性愛照樣抽不到兩男，因為走的是這張寫死的。
+    // 現在以詞庫為唯一來源，找不到才退回 mixed。
+    if (heat === "sex") table = lex.data.castWeights.sex || table;
+  } else if (boy && !girl) table = lex.data.castWeights.boy_only;
+  else if (girl && !boy) table = lex.data.castWeights.girl_only;
+  else table = lex.data.castWeights.mixed;
+  return { table, girl, boy };
+}
+
+function chooseCast(lex, settings, pinned, banned, rand, ctx, heat) {
   ctx = ctx || pinContext(lex, pinned);
   const povLock = pinned.has("pov") || pinned.has("pov crotch");
   const forced = [];
@@ -3615,7 +3644,29 @@ function chooseCast(lex, settings, pinned, banned, rand, ctx) {
   }
   let parts;
   if (forced.length) {
-    parts = [...forced];
+    // 釘人數只鎖那個性別的人數（1girl＝畫面裡一個女生，不是「沒有男生」）。
+    // 另一個性別人物設定有開、又沒釘它的人數：從人數表裡「這個性別人數剛好對得上」的那幾格抽，
+    // 釘 1girl＋不限，抽到性愛大多是一女一男。以前整組照釘的，男生一律不補（2026-10-26 專案主回報）。
+    // 只在人物設定本身是「不限」時才補另一個性別；選「女」或「男」時，釘的人數就是全部的人
+    // （人物選女、只釘 1boy，就只有他一個 —— test_mochi_engine 守著）。兩個性別都釘了也照舊。
+    const fem = forced.filter((t) => FEMALE_COUNT.has(t));
+    const mal = forced.filter((t) => MALE_COUNT.has(t));
+    const { table, girl, boy } = castTable(lex, settings, ctx, heat);
+    const anyone = settings.girl && settings.boy && girl && boy;
+    const open = anyone && ((fem.length && !mal.length) || (mal.length && !fem.length));
+    const same = (want, got) => want.length === got.length && want.every((t) => got.includes(t));
+    const usable = {};
+    if (open && !povLock) {
+      for (const [k, w] of Object.entries(table)) {
+        const bits = k.split(",").map((s) => s.trim());
+        if (bits.some((b) => banned.has(b))) continue;
+        if (fem.length && !same(fem, bits.filter((b) => FEMALE_COUNT.has(b)))) continue;
+        if (mal.length && !same(mal, bits.filter((b) => MALE_COUNT.has(b)))) continue;
+        usable[k] = w;
+      }
+    }
+    const key = Object.keys(usable).length ? pickWeighted(usable, rand) : null;
+    parts = key ? key.split(",").map((s) => s.trim()) : [...forced];
   } else if (povLock) {
     let girl = settings.girl;
     let boy = settings.boy;
@@ -3623,27 +3674,7 @@ function chooseCast(lex, settings, pinned, banned, rand, ctx) {
     if (boy && !girl) parts = ["1boy"];
     else parts = ["1girl"];
   } else {
-    let girl = settings.girl;
-    let boy = settings.boy;
-    if (ctx.needFemale || ctx.needYuri) girl = true;
-    if (ctx.needMale && !ctx.needYuri) boy = true;
-    if (ctx.needYuri) boy = false;
-    if (ctx.needYaoi) {
-      girl = false;
-      boy = true;
-    }
-    let table;
-    if (girl && boy) {
-      table = lex.data.castWeights.mixed;
-      if ((settings.heats || []).length === 1 && settings.heats[0] === "sex") {
-        // 這張表以前寫死在這裡，跟詞庫的 castWeights 各走各的 —— 補了詞庫那邊的
-        // 「一女兩男」之後，勾純性愛照樣抽不到兩男，因為走的是這張寫死的。
-        // 現在以詞庫為唯一來源，找不到才退回 mixed。
-        table = lex.data.castWeights.sex || table;
-      }
-    } else if (boy && !girl) table = lex.data.castWeights.boy_only;
-    else if (girl && !boy) table = lex.data.castWeights.girl_only;
-    else table = lex.data.castWeights.mixed;
+    const { table, girl, boy } = castTable(lex, settings, ctx, heat);
     const usable = {};
     for (const [k, w] of Object.entries(table)) {
       const bits = k.split(",").map((s) => s.trim());
@@ -4510,7 +4541,7 @@ function drawOneImpl(lex, settings, pinned, userBanned, rand, seed, opts) {
         return ok;
       }
     : innerCommit;
-  let cast = chooseCast(lex, settings, pinned, banned, rand, ctx);
+  let cast = chooseCast(lex, settings, pinned, banned, rand, ctx, heat);
   // 五人只在「兩邊性別都開、這一抽是性愛、沒有釘人數或特定多人」時，用另一條亂數
   // 低機率換掉卡司。不碰主 rand，沒升級的種子後面的衣服姿勢照舊。
   const countPinned = ["1girl", "2girls", "3girls", "4girls", "5girls", "6+girls", "1boy", "2boys", "3boys", "4boys", "6+boys"].some((t) =>
