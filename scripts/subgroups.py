@@ -239,7 +239,7 @@ SUBS = {
             "whisker markings", "body markings", "star facial mark", "flower tattoo", "shoulder tattoo", "chest tattoo",
         ]),
         ("bf_shape", "身體・女性身材", [
-            "petite", "tall female", "loli", "aged down", "oppai loli", "baby", "toned", "muscular female", "curvy", "narrow waist",
+            "petite", "tall female", "loli", "aged down", "oppai loli", "baby", "child", "toned", "muscular female", "curvy", "narrow waist",
             "wide hips", "thick thighs", "thigh gap", "long legs", "huge ass", "mature female",
             "old woman", "pregnant", "minigirl", "giantess", "quadruple amputee",
 
@@ -477,7 +477,7 @@ SUBS = {
             "hug", "bearhug", "head between thighs", "hug from behind", "cuddling", "clinging", "kiss", "holding hands",
             "interlocked fingers", "arms around neck", "hand on another's head",
             "hand on another's shoulder", "hand on another's face", "hand on another's cheek",
-            "kabedon", "sitting on lap", "sitting between legs", "lap pillow", "princess carry",
+            "kabedon", "sitting on lap", "sitting between legs", "lap pillow", "princess carry", "carrying person",
             "piggyback", "shoulder carry", "back-to-back", "sandwiched", "feeding",
             "washing back",
             "lifting person", "kissing neck",
@@ -681,7 +681,7 @@ SUBS = {
             "encasement", "food on body", "whipped cream", "chocolate on body",
             "cum on food", "nyotaimori", "peeing", "scat", "vore", "unbirthing", "digestion",
             "guro", "necrophilia",
-            "sex doll",
+            "sex doll", "penis measuring",
             "toddlercon",
         ]),
         ("act_daily", "活動・日常", [
@@ -694,7 +694,7 @@ SUBS = {
             "opening door",
 
             "waking up", "dressing", "playing with own hair", "unsheathing",
-            "carrying baby",
+            "carrying baby", "child carry", "measuring",
         ]),
         ("act_fun", "活動・娛樂表演", [
             "singing", "karaoke", "playing instrument", "playing guitar", "drawing (action)",

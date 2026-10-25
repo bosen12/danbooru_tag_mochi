@@ -607,10 +607,13 @@ _minor = [
     "toddlercon", "toddlersex", "mother and child", "father and child",
     "carrying baby", "kindergarten uniform", "tomoeda elementary school uniform",
     "children",
+    "child carry",
+    "child",
 ]
 _minor_prompt = "1girl, " + ", ".join(f"({t.replace(' ', '_')}:1.1)" for t in _minor)
-ok("十三個新封鎖字都擋得到（底線、權重括號），含 children", _bip(_minor_prompt) == _minor, str(_bip(_minor_prompt)))
+ok("十五個新封鎖字都擋得到（底線、權重括號），含 children、child", _bip(_minor_prompt) == _minor, str(_bip(_minor_prompt)))
 ok("babydoll 不會被 baby 誤擋", _bip("1girl, babydoll") == [])
+ok("carrying、carrying person、princess carry、piggyback 照舊能送", _bip("carrying, carrying person, princess carry, piggyback") == [])
 ok("mother and daughter、sisters、family 不是封鎖字", _bip("mother and daughter, sisters, family") == [])
 ok("school uniform、serafuku、gakuran 照舊能送", _bip("school uniform, serafuku, gakuran") == [])
 ok("能用的角色不擋（自己的括號留著）", _bip("((makima (chainsaw man))), yor briar") == [])

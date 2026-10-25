@@ -5896,7 +5896,8 @@ function indoorOutdoorClash(have) {
   // shower (place)，這條就紅了 —— 是這條的前提有例外沒寫，不是必抽變弱了。
   let eraGot = 0;
   let eraEligible = 0;
-  for (let i = 0; i < 40; i++) {
+  // 2026-10-26：測量、抱人、量陰莖進池，40 張裡有 6 張落到浴缸、淋浴、澡堂（都是真的浴場），只剩 34 張。放大到 60 張。
+  for (let i = 0; i < 60; i++) {
     const d = draw((s) => {
       s.eras = ["modern"];
       s.mustDraw = { "clothing:era": 1 };
@@ -5907,7 +5908,7 @@ function indoorOutdoorClash(have) {
     eraEligible += 1;
     if (groupCount(d, "clothing", "era") >= 1) eraGot += 1;
   }
-  ok("必抽時代服飾的取樣夠多", eraEligible >= 35, `eraEligible=${eraEligible}/40`);
+  ok("必抽時代服飾的取樣夠多", eraEligible >= 50, `eraEligible=${eraEligible}/60`);
   eq("must beats era", eraGot, eraEligible);
 
   // 對照組：沒設必抽時，現代場不該冒出古裝。

@@ -551,6 +551,8 @@ IMPLIES = {
     # 未成年防護。oppai loli 不帶 loli（平胸跟巨乳打架）。制服不帶 school uniform。
     "onee-shota": ["shota"],
     "carrying baby": ["baby"],
+    "carrying person": ["carrying"],
+    "child carry": ["carrying"],
     "pov": ["looking at viewer"],
     "pov crotch": ["looking at viewer"],
     "showering": ["shower (place)", "indoors"],
@@ -1655,7 +1657,7 @@ IMPLIES.update({
 
 def norm(item: dict) -> dict | None:
     tag = str(item.get("tag") or "").strip().lower().replace("_", " ")
-    if not tag or tag in BANNED:
+    if not tag or (tag in BANNED and not item.get("listed_block")):
         return None
     section = item.get("section") or "feature"
     if section not in SECTIONS:
@@ -2074,7 +2076,10 @@ def extra_minor_block_tags() -> list[dict]:
     """看起來未成年的字。詞庫有一筆，但是底線封鎖：不是牌、抽不到、釘不住。
 
     children 不在這裡。它在 BANNED，norm() 會整筆丟掉；HARD_BANNED 另外擋貼上與送出。
+    child 也在 BANNED，但專案主要它進詞庫（2026-10-25）：標 listed_block，norm() 才不丟。
+    BANNED 照留，改名工具、harvest 仍靠它擋含 child 的新名字。
     oppai loli 不 implies loli（loli 會帶出平胸）。兩件制服不 implies school uniform。
+    child carry 照 Danbooru implies carrying（封鎖字不會被抽，帶的字不影響）。
     """
 
     def one(tag, zh, section, gate="any", needs=(), mutex=None, implies=(), era=None, layer="normal"):
@@ -2111,6 +2116,8 @@ def extra_minor_block_tags() -> list[dict]:
             "tomoeda elementary school uniform", "友枝小學制服", "clothing",
             gate="female", needs=("female",), mutex="onepiece", era=("modern",), layer="garment",
         ),
+        one("child carry", "抱孩童", "pose", needs=("pair",), implies=("carrying",)),
+        {**one("child", "孩童", "feature"), "listed_block": True},
     ]
 
 
@@ -4052,6 +4059,8 @@ def extra_csv_round3() -> list[dict]:
         row("smartphone", env, "智慧型手機", mutex="held_prop", era=modern, implies=["cellphone"]),
         row("salute", pose, "敬禮"),
         row("princess carry", pose, "公主抱", needs=pair),
+        # 抱著另一個人（Danbooru implies carrying，17562 張）。2026-10-25 專案主拿出封鎖，當一般牌。
+        row("carrying person", pose, "抱人", needs=pair),
         row("pillow hug", pose, "抱枕頭", implies=["pillow"]),
         row("smelling", pose, "聞氣味"),
         row("piggyback", pose, "揹在背上", needs=pair),
@@ -5503,6 +5512,43 @@ def extra_gag_tags() -> list[dict]:
     ]
 
 
+def extra_measuring_tags() -> list[dict]:
+    """量東西、量陰莖（2026-10-25 專案主指定）。
+
+    Danbooru 都是一般標籤、沒有停用（measuring 1359 張、penis_measuring 1160 張），也都沒有 implications。
+    measuring 跟閱讀、料理一樣是日常活動，佔活動格。penis measuring 只開 sex，寫法照陰莖貼臉：
+    implies penis、要一男一女。
+    """
+    return [
+        {
+            "tag": "measuring",
+            "section": "pose",
+            "gate": "any",
+            "heat": ["tease", "flash", "sex"],
+            "mutex": "activity",
+            "bind": [],
+            "implies": [],
+            "layer": "normal",
+            "era": ["any"],
+            "needs": [],
+            "zh": "測量",
+        },
+        {
+            "tag": "penis measuring",
+            "section": "pose",
+            "gate": "any",
+            "heat": ["sex"],
+            "mutex": None,
+            "bind": [],
+            "implies": ["penis"],
+            "layer": "normal",
+            "era": ["any"],
+            "needs": ["male", "female"],
+            "zh": "量陰莖",
+        },
+    ]
+
+
 def extra_family_sex_tags() -> list[dict]:
     """姊妹丼、親子丼、家族群交、性愛指導（2026-10-25 專案主指定，專案主自己測過圖）。
 
@@ -6804,6 +6850,7 @@ def main() -> None:
     rows.extend(extra_ethnic_tags())
     rows.extend(extra_gag_tags())
     rows.extend(extra_family_sex_tags())
+    rows.extend(extra_measuring_tags())
     rows.extend(extra_round4_scenes())
     rows.extend(extra_round4_clothes())
     rows.extend(extra_round4_other())

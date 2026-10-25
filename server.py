@@ -2326,6 +2326,8 @@ _HARD_BANNED = {
     "kindergarten uniform",
     "tomoeda elementary school uniform",
     "children",
+    "child carry",
+    "child",
 }
 _CHAR_BAN: dict = {"mtime": None, "tags": frozenset()}
 

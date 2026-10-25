@@ -114,7 +114,7 @@ for (const rating of ['general', 'sensitive', 'explicit']) {
     const tags = shot.positive.split(', ').map(tag => tag.trim());
     assert.equal(tags.includes('black hair'), false, 'Banned cards do not return');
     for (const tag of tags) {
-      assert.equal(['loli', 'shota', 'teen', 'child', 'children', 'aged down', 'onee-shota', 'oppai loli', 'baby', 'kodomo doushi', 'toddlercon', 'toddlersex', 'mother and child', 'father and child', 'carrying baby', 'kindergarten uniform', 'tomoeda elementary school uniform'].includes(tag), false, 'Hard-banned tags do not enter prompts');
+      assert.equal(['loli', 'shota', 'teen', 'child', 'children', 'aged down', 'onee-shota', 'oppai loli', 'baby', 'kodomo doushi', 'toddlercon', 'toddlersex', 'mother and child', 'father and child', 'carrying baby', 'kindergarten uniform', 'tomoeda elementary school uniform', 'child carry'].includes(tag), false, 'Hard-banned tags do not enter prompts');
       const item = lex.byTag.get(tag);
       if (item) assert.equal(ratingBlocked(item, rating), false, `${tag} must obey ${rating} rating`);
     }

@@ -43167,6 +43167,31 @@
       "zh": "公主抱"
     },
     {
+      "tag": "carrying person",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [
+        "carrying"
+      ],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "tease",
+      "sub": "pose_two",
+      "needs": [
+        "pair"
+      ],
+      "zh": "抱人"
+    },
+    {
       "tag": "pillow hug",
       "section": "pose",
       "gate": "any",
@@ -73671,6 +73696,51 @@
       "zh": "友枝小學制服"
     },
     {
+      "tag": "child carry",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [
+        "carrying"
+      ],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "activity",
+      "sub": "act_daily",
+      "needs": [
+        "pair"
+      ],
+      "zh": "抱孩童"
+    },
+    {
+      "tag": "child",
+      "section": "feature",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "body_f",
+      "sub": "bf_shape",
+      "zh": "孩童"
+    },
+    {
       "tag": "anime coloring",
       "section": "quality",
       "gate": "any",
@@ -76659,6 +76729,50 @@
         "pair"
       ],
       "zh": "性愛指導"
+    },
+    {
+      "tag": "measuring",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "activity",
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "activity",
+      "sub": "act_daily",
+      "zh": "測量"
+    },
+    {
+      "tag": "penis measuring",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [
+        "penis"
+      ],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "sex",
+      "sub": "sex_fetish",
+      "needs": [
+        "male",
+        "female"
+      ],
+      "zh": "量陰莖"
     },
     {
       "tag": "black flower",

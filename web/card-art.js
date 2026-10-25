@@ -7,7 +7,7 @@
  */
 
 /** 永遠不做成卡、不畫插畫、抽牌時一律封鎖的字。不是設定，是底線。
- *  children 不在詞庫（merge 的 BANNED 會丟掉），貼上與送出仍靠這張表擋。 */
+ *  children 不在詞庫（merge 的 BANNED 會丟掉），貼上與送出仍靠這張表擋。child 在詞庫（listed_block）。 */
 export const HARD_BANNED = Object.freeze([
   "loli",
   "shota",
@@ -24,6 +24,8 @@ export const HARD_BANNED = Object.freeze([
   "kindergarten uniform",
   "tomoeda elementary school uniform",
   "children",
+  "child carry",
+  "child",
 ]);
 const HARD = new Set(HARD_BANNED);
 
@@ -288,6 +290,9 @@ const ART_EXTRA = {
   // 2026-10-24（建議池烤卡抽檢）：romper 跟一個小個子角色綁得很緊，只寫 adult 照樣畫成 Q 版小孩；
   // column lineup 只寫字畫成鐵欄後面的人影。補成熟、高挑，跟並排的幾個視角。
   romper: "mature female, tall, long legs",
+  // 2026-10-25：只寫 measuring 看不出在量什麼，卡面補一條捲尺。
+  measuring: "tape measure, holding",
+  "penis measuring": "ruler, holding ruler, tape measure",
   "column lineup": "mature female, multiple views, standing, full body, white background",
   "sideboob": "breasts, from side",
   "underboob": "breasts, from below",

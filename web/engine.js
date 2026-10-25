@@ -4361,6 +4361,8 @@ const NEVER_DRAW = new Set([
   "kindergarten uniform",
   "tomoeda elementary school uniform",
   "children",
+  "child carry",
+  "child",
 ]);
 
 /**
