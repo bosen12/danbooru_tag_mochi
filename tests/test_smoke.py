@@ -47,7 +47,7 @@ env["APP_CONFIG"] = str(stage / "config.json")
 env["APP_SETTINGS"] = str(stage / "data/settings.json")
 for key in ["NO_SETUP", "NO_CARD_FETCH", "NO_CARD_BAKE", "NO_LORA_MANAGER_FETCH", "NO_UPSCALE_FETCH", "NO_POSE_FETCH", "NO_FACE_FETCH", "NO_HIRES_PRUNE", "NO_OUTPUT_PRUNE"]:
     env[key] = "1"
-paths = ["/", "/fuse.html", "/book.html", "/album.html", "/intro.html", "/tutorial.html", "/lexicon.json", "/engine.js",
+paths = ["/", "/fuse.html", "/book.html", "/album.html", "/parse.html", "/arch.html", "/arch.js", "/intro.html", "/tutorial.html", "/lexicon.json", "/engine.js",
          "/api/ping", "/api/setup", "/api/decks", "/api/usage", "/api/recipes", "/api/genlog", "/api/genlog/stats", "/api/workflows", "/api/checkpoints", "/api/loras", "/api/face/status"]
 with (stage / "server.log").open("wb") as log:
     proc = subprocess.Popen([sys.executable, "-u", "server.py"], cwd=stage, env=env, stdout=log, stderr=subprocess.STDOUT,

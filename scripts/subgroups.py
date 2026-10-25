@@ -132,10 +132,7 @@ SUBS = {
         ("count_m", "人數・男", None),
         ("cast_mix", "人數・組成", [
             "solo", "solo focus", "male focus", "multiple girls", "multiple boys", "no humans",
-
-
-
-
+            "onee-shota", "mother and child", "father and child",
         ]),
         ("pairing", "配對", ["hetero", "yuri"]),
         # 角色一部作品一格（_character_rows，從 scripts/characters.json 算）：不逐條抄名字，
@@ -242,7 +239,7 @@ SUBS = {
             "whisker markings", "body markings", "star facial mark", "flower tattoo", "shoulder tattoo", "chest tattoo",
         ]),
         ("bf_shape", "身體・女性身材", [
-            "petite", "tall female", "loli", "toned", "muscular female", "curvy", "narrow waist",
+            "petite", "tall female", "loli", "aged down", "oppai loli", "baby", "toned", "muscular female", "curvy", "narrow waist",
             "wide hips", "thick thighs", "thigh gap", "long legs", "huge ass", "mature female",
             "old woman", "pregnant", "minigirl", "giantess", "quadruple amputee",
 
@@ -620,6 +617,7 @@ SUBS = {
             "threesome", "mmf threesome", "ffm threesome", "foursome", "fivesome",
             "shimaidon", "oyakodon (sex)", "group incest",
             "group sex", "orgy", "gangbang", "spitroast", "reverse spitroast",
+            "kodomo doushi", "toddlersex",
             "double penetration", "triple penetration", "double vaginal", "double anal",
             "surrounded by penises", "public use", "netorase",
             "grabbing multiple others' breasts", "cooperative breast sucking",
@@ -684,6 +682,7 @@ SUBS = {
             "cum on food", "nyotaimori", "peeing", "scat", "vore", "unbirthing", "digestion",
             "guro", "necrophilia",
             "sex doll",
+            "toddlercon",
         ]),
         ("act_daily", "活動・日常", [
             "eating", "drinking", "cooking", "cleaning", "shopping", "reading", "studying",
@@ -695,6 +694,7 @@ SUBS = {
             "opening door",
 
             "waking up", "dressing", "playing with own hair", "unsheathing",
+            "carrying baby",
         ]),
         ("act_fun", "活動・娛樂表演", [
             "singing", "karaoke", "playing instrument", "playing guitar", "drawing (action)",
@@ -769,6 +769,7 @@ SUBS = {
         ]),
         ("op_uniform", "連身・制服套裝", [
             "school uniform", "serafuku", "gakuran", "gym uniform", "track uniform",
+            "kindergarten uniform", "tomoeda elementary school uniform",
             "sportswear", "basketball uniform", "soccer uniform", "baseball uniform",
             "tennis uniform", "volleyball uniform", "cheerleader", "wrestler", "referee", "maid", "apron", "miko",
             "nun", "police uniform", "military uniform", "suit", "business suit", "pant suit",

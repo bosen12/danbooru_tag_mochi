@@ -3,6 +3,7 @@
 import { readFileSync } from "fs";
 import { dirname, join } from "path";
 import { fileURLToPath } from "url";
+import { HARD_BANNED } from "../web/card-art.js";
 import {
   applyBan,
   applyClear,
@@ -9337,7 +9338,7 @@ function indoorOutdoorClash(have) {
     if (tag === "monster boy" || tag === "vampire" || tag === "dragon boy") return true;
     return (lex.byTag.get(tag)?.implies || []).includes("monster boy") && have.has(tag);
   };
-  const bad = { loli: 0, shota: 0, wet: 0, swim: 0, bike: 0, dive: 0, float: 0, futon: 0, crop: 0, tusks: 0 };
+  const bad = { hard: 0, wet: 0, swim: 0, bike: 0, dive: 0, float: 0, futon: 0, crop: 0, tusks: 0 };
   let n = 0;
   for (const cast of ["girl", "boy", "both"]) {
     for (const heat of ["tease", "flash", "sex"]) {
@@ -9352,8 +9353,7 @@ function indoorOutdoorClash(have) {
         const seed = 880000 + n;
         const h = tagsOf(drawOne(lex, s, new Set(), new Set(), mulberry32(seed), seed));
         n += 1;
-        if (h.has("loli")) bad.loli += 1;
-        if (h.has("shota")) bad.shota += 1;
+        for (const tag of HARD_BANNED) if (h.has(tag)) bad.hard += 1;
         if (h.has("wet") && ![...h].some((t) => wetOk.has(t))) bad.wet += 1;
         if ((h.has("swimsuit") || h.has("bikini") || h.has("school swimsuit") || [...h].some((t) => t.includes("swimsuit") || t.includes("bikini"))) && h.has("snow")) bad.swim += 1;
         if (h.has("riding bicycle") && (h.has("walking") || h.has("running") || h.has("jumping"))) bad.bike += 1;
@@ -9365,23 +9365,37 @@ function indoorOutdoorClash(have) {
       }
     }
   }
-  for (const tag of ["loli", "shota"]) {
-    const pin = applyPin(lex, new Set(), new Set(), tag).pinned;
-    for (let i = 0; i < 40; i++) {
+  HARD_BANNED.forEach((tag, ti) => {
+    const pin = lex.byTag.has(tag) ? applyPin(lex, new Set(), new Set(), tag).pinned : new Set([tag]);
+    for (let i = 0; i < 20; i++) {
       const s = settings();
       s.girl = true;
       s.boy = true;
       s.heats = ["sex"];
       s.eras = ["modern"];
       s.rating = "explicit";
-      const seed = 890000 + (tag === "loli" ? 0 : 100) + i;
+      const seed = 890000 + ti * 20 + i;
       const h = tagsOf(drawOne(lex, s, pin, new Set(), mulberry32(seed), seed));
-      if (h.has("loli")) bad.loli += 1;
-      if (h.has("shota")) bad.shota += 1;
+      for (const banned of HARD_BANNED) if (h.has(banned)) bad.hard += 1;
     }
-  }
+  });
   eq(`品質規則九格各 40 張加釘選，怪組合是 0（${n} 張隨機）`, Object.values(bad).reduce((a, b) => a + b, 0), 0);
   if (Object.values(bad).some((v) => v)) console.error(`      ${JSON.stringify(bad)}`);
+  for (const tag of ["mother and daughter", "sisters", "family", "school uniform", "serafuku", "gakuran"]) {
+    const pin = applyPin(lex, new Set(), new Set(), tag).pinned;
+    const s = settings();
+    s.girl = true;
+    s.boy = tag === "gakuran";
+    s.heats = ["tease"];
+    s.eras = ["modern"];
+    s.rating = "explicit";
+    let miss = 0;
+    for (let i = 0; i < 12; i++) {
+      const h = tagsOf(drawOne(lex, s, pin, new Set(), mulberry32(891500 + i), 891500 + i));
+      if (!h.has(tag)) miss += 1;
+    }
+    eq(`釘 ${tag} 照樣出現`, miss, 0);
+  }
 }
 
 {

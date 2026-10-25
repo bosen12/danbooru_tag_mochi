@@ -1520,6 +1520,252 @@ Tagger 出錯（ComfyUI 的主控台有詳細原因）|The tagger failed (detail
 帶走|Take them
 選好的牌放進墨池的合成池，或送到疊印台一層層疊。|Add the chosen cards to the Ink Pool, or send them to the Fuse Bed to layer them.
 貼上一張圖就開始解析|Paste an image to start parsing
+墨池 · 原理|Mochi · How it works
+原理|How it works
+一張圖怎麼抽出來：分類、互斥、分級、擋未成年、整個程式的架構 · How it works|How a picture is drawn: categories, exclusions, ratings, blocking minors and the whole architecture
+墨池是怎麼運作的：從啟動、偵測模型、烘卡面，到抽牌、分類、互斥、分級、擋未成年，五個房間各做什麼，程式架構一張圖看懂。|How Mochi works: startup, model checks and card baking; drawing, categories, exclusions, ratings and blocking minors; what each of the five rooms does; and the whole architecture on one map.
+回到房間|Rooms
+章節|Chapters
+房間|Rooms
+從啟動開始|Startup
+架構一張圖|The map
+牌與詞庫|Cards and vocabulary
+抽一張|Draw one
+互斥與附帶|Exclusive and included
+分級、尺度、時代|Rating, content level, era
+怎麼擋未成年|Blocking minors
+五個房間|The five rooms
+生圖之後|After generating
+品質|Quality
+一張圖，是怎麼|How a picture gets
+抽出來的|drawn
+墨池是一副|Mochi is a deck of
+張的牌。每張牌是一個 Danbooru 標籤，配中文名和一張卡面。你放幾張，引擎照規則把其餘補完，排成一段提示詞，送進 ComfyUI 畫出來。|cards. Each card is one Danbooru tag with a name and its own art. You place a few, the engine fills in the rest by the rules, lines everything up as a prompt and sends it to ComfyUI to paint.
+不懂程式也看得懂：往下捲，每一章都可以點、可以試。|No coding needed: scroll down. Every chapter can be clicked and tried.
+從頭看|Start from the top
+雙擊|Double-click
+：它只做一件事，開一個小伺服器（|. It does one thing: starts a small server (
+），再打開瀏覽器。第一次要準備的東西，都由伺服器在背景做，網頁左下角的面板一項項顯示。|) and opens your browser. Everything first-time setup needs is done by the server in the background, shown step by step in the panel at the bottom left.
+卡面插畫|Card art
+從 GitHub Release 下載公開的全年齡卡面（先抓幾十 MB 的縮圖，原圖背景接著抓）。不用 ComfyUI。|Downloads the public General card art from GitHub Releases (a few dozen MB of thumbnails first; full images follow in the background). No ComfyUI needed.
+預覽縮圖（Pillow）|Preview thumbnails (Pillow)
+沒裝就裝：LoRA、底模的預覽圖縮成小檔，面板開得快。|Installed if missing: shrinks LoRA and base model previews so the panel opens fast.
+等 ComfyUI 開起來|Wait for ComfyUI
+還沒開的話，下面這些先等著；一開就接著做，不用再跑一次 bat。|If it isn't running yet, the steps below wait, then continue as soon as it starts. No need to run the launcher again.
+問過你才裝進 ComfyUI：LoRA 清單、預覽圖、觸發詞都從它來。|Installed into ComfyUI only after asking you. The LoRA list, previews and trigger words come from it.
+Hires 放大模型|Hires upscale model
+約 18 MB，放進 ComfyUI 的 upscale_models。|About 18 MB, placed in ComfyUI's upscale_models.
+OpenPose 節點＋模型（約 2.5 GB）：照一張圖的姿勢擺。|OpenPose nodes and models (about 2.5 GB): copy the pose from an image.
+修臉（FaceDetailer）|Face fix (FaceDetailer)
+只重畫臉的那顆按鈕要的節點、偵測模型、SAM（約 425 MB）。|The nodes, detection model and SAM for the face-only redraw button (about 425 MB).
+圖片解析（WD14 Tagger）|Image parsing (WD14 Tagger)
+解析池要的節點和 wd-vit-tagger-v3 模型（約 380 MB）。|The node and wd-vit-tagger-v3 model the Parse Pool needs (about 380 MB).
+缺的、提示詞改過的全年齡卡面，用你的 ComfyUI 直接畫。|General card art that is missing or whose prompt changed, painted by your own ComfyUI.
+敏感、色情、角色卡面|Sensitive, Explicit and character art
+不公開下載的那些：問一聲，要的話在你的電腦上烤。|The art that isn't offered for download: asks first, then bakes it on your computer if you want.
+自己做|Automatic
+先問你|Asks first
+等 ComfyUI|Waits for ComfyUI
+怎麼知道缺什麼？|How does it know what's missing?
+伺服器問 ComfyUI「你有哪些節點、哪些模型」（object_info），再看資料夾裡的檔案；都有的人完全看不到這個面板。|The server asks ComfyUI which nodes and models it has (object_info), then checks the files in its folders. If everything is there, you never see the panel.
+卡面怎麼烘？|How is card art baked?
+每張牌一段固定的提示詞：一定寫 adult、mature，負面詞擋 loli、child；同一個種子，誰烤都一樣。烤好存一張原圖、兩種縮圖，清單記著每張是用哪段提示詞烤的，提示詞一改就知道要重烤。|Each card has a fixed prompt that always says adult and mature, with loli and child in the negative prompt, and a fixed seed, so anyone gets the same result. Each bake saves a full image and two thumbnails, and a manifest records which prompt made each one, so a changed prompt means a rebake.
+抽牌在你的瀏覽器裡算，畫圖交給 ComfyUI，中間的伺服器負責轉送、存檔、記帳。點任何一塊看它在做什麼；下面的按鈕演一次「按下抽並生圖」資料怎麼走。|Cards are drawn in your browser and pictures are painted by ComfyUI; the server in between relays, saves and keeps count. Click any block to see what it does. The buttons below replay how the data moves.
+演一次：抽並生圖|Play: draw and generate
+演一次：詞庫怎麼做出來|Play: how the vocabulary is built
+你|You
+瀏覽器畫面|Browser
+你在瀏覽器裡點牌、按按鈕。電腦、手機都行（手機走 Tailscale 連回家裡這台）。|You click cards and buttons in a browser, on a computer or a phone (phones connect back home over Tailscale).
+墨池、疊印台、卡冊、作品冊、解析池。都是網頁，畫面、動畫、按鈕都在這裡。|Ink Pool, Fuse Bed, Card Book, Gallery and Parse Pool. They are web pages: every screen, animation and button lives here.
+抽牌引擎|Draw engine
+在你的瀏覽器裡跑：照規則把池子補完，排出提示詞。不用連網路就能算，所以抽牌是瞬間的。|Runs in your browser: completes the pool by the rules and lays out the prompt. It needs no network, so drawing is instant.
+規則表|Rule tables
+哪些字只在夜裡、哪些只在室內、哪個分級能用、誰跟誰不能同框、哪個動作要兩個人。引擎每抽一個字都問它。|Which tags only happen at night or indoors, which rating allows them, what can't share a picture, which actions need two people. The engine checks it for every tag.
+每張牌的資料：中文名、花色、細分類、互斥格、附帶誰、哪些時代、哪些尺度。由原料用腳本產生，不手改。|Data for every card: name, category, subcategory, exclusive slot, what it includes, eras and content levels. Scripts generate it from the sources; nobody edits it by hand.
+詞庫原料|Vocabulary sources
+一行一個字的原料、角色表、建議清單。合併、對 Danbooru 改名、補中文名，產生詞庫。|Source lists with one tag per line, the character table and suggestions. Merged, checked against Danbooru renames and given names to become the vocabulary.
+第一次準備|First-run setup
+伺服器開機時在背景檢查：卡面、Pillow、LoRA Manager、放大模型、姿勢、修臉、WD14，缺什麼補什麼、要問的先問。|Checked in the background when the server starts: card art, Pillow, LoRA Manager, upscale model, pose, face fix, WD14. It adds what's missing and asks first where it should.
+在你的電腦上跑的小伺服器：把提示詞套進工作流程送 ComfyUI、傳回進度和成品、存你的資料、送 Discord、解析圖片。|A small server on your computer: puts the prompt into a workflow for ComfyUI, relays progress and results, stores your data, posts to Discord and parses images.
+真正畫圖的地方。墨池不碰模型本身，只把工作流程交給它、等它畫完。|Where the pictures are actually painted. Mochi never touches the models; it hands over a workflow and waits for the result.
+底模、LoRA|Base models, LoRA
+ComfyUI 裡的模型。底模決定畫風；LoRA 加角色、服裝、風格。在墨池的面板裡挑。|Models inside ComfyUI. The base model sets the look; LoRAs add characters, outfits and styles. Pick them in Mochi's panel.
+你的資料|Your data
+使用次數、牌組、偏好角色、作品冊、出圖日誌、設定。所有裝置共用一份，搬家帶這個資料夾就好。|Usage counts, decks, favorite characters, gallery, history and settings. One copy is shared by all your devices; to move, take this folder.
+卡面|Card art
+每張牌的插畫。全年齡的從 GitHub 下載；其他的用你的 ComfyUI 烤（bake_card_art.py）。|The art on each card. General art downloads from GitHub; the rest is baked by your ComfyUI (bake_card_art.py).
+選用|Optional
+印好的圖照分級、角色、標籤分頻道送出去。不設就不送。|Finished pictures go to Discord channels by rating, character or tag. Nothing is sent unless you set it up.
+按下抽並生圖|Press Draw & generate
+池子交給引擎|The pool goes to the engine
+每個字問規則|Each tag checks the rules
+查詞庫|Look up the vocabulary
+排好提示詞|The prompt is ready
+送伺服器|Send to the server
+套進工作流程|Fill in the workflow
+載入底模、LoRA|Load the base model and LoRA
+邊畫邊傳預覽|Live previews while painting
+寫進日誌、記次數|Log it and count usage
+成品掛上牆|The result goes on the wall
+你看到圖|You see the picture
+（有設的話）送 Discord|Post to Discord (if set up)
+原料合併成詞庫|Sources merge into the vocabulary
+伺服器發給網頁|The server sends it to the pages
+第一次準備：缺卡面就烤|First run: bake missing art
+一張牌一張插畫|One picture per card
+牌面上看得到|Shown on the cards
+引擎照詞庫抽|The engine draws from the vocabulary
+牌分七種花色，每種花色再分細分類。點一種花色看裡面有什麼。所有數字都是現在這份詞庫即時算的。|Cards come in seven categories, each split into subcategories. Click one to look inside. Every number is computed live from the current vocabulary.
+張牌|cards
+個細分類|subcategories
+個互斥格|exclusive slots
+張會附帶別張|cards that include others
+詞庫是怎麼做出來的|How the vocabulary is built
+原料|Sources
+裡的原料、角色表、建議清單：一行一個字，寫它屬於哪裡、跟誰互斥、附帶什麼、哪些時代、哪些尺度。|source lists, the character table and suggestions: one tag per line, with its slot, exclusions, inclusions, eras and content levels.
+合併|Merge
+把原料併成一份，對 Danbooru 改名表，擋掉禁用字。|merges the sources into one file, applies Danbooru renames and drops banned tags.
+中文名|Chinese names
+補上每張的中文名。|adds each card's Chinese name.
+卡面工作表|Card art jobs
+算出每張牌的卡面提示詞；|works out each card's art prompt;
+照它烤。|bakes from it.
+互斥圖、加入日|Conflict map, dates added
+誰跟誰不能同框的總表；每張牌第一次進詞庫的時間（卡冊排序用）。|A table of what can't appear together, and when each card first joined (used to sort the Card Book).
+新字要先對 Danbooru（有沒有這個字、多少張圖），再用固定的五個種子試畫；畫不出來、畫錯、畫成小孩的不收。|New tags are checked on Danbooru first (does it exist, how many images), then test-rendered with five fixed seeds. Anything that won't render, renders wrong or looks like a child is rejected.
+這是真的引擎：挑幾張牌放進池子、選分級，按「抽一張」。每個字照它是怎麼來的上色，滑鼠停上去看理由。|This is the real engine. Put a few cards in the pool, choose a rating and press Draw one. Each tag is colored by where it came from; hover to see why.
+放進池子|Put in the pool
+你放的牌先進場|Your cards go in first
+池子裡的牌一定在，連它附帶的一起。|Cards in the pool always appear, along with what they include.
+分級、尺度|Rating and content level
+分級是上限；這一張抽一個尺度（活動、誘惑…）。|The rating is the ceiling; each picture draws one content level (Activity, Suggestive…).
+沒指定就隨機挑一個，整張照那個時代。|Picked at random unless you set one; the whole picture follows that era.
+幾個人、男女：決定哪些動作能用。|How many people, and who: this decides which actions are possible.
+補骨架、補細節|Frame first, then details
+髮長、瞳色、鏡頭、表情、場地、晝夜…每格補一張，再照「每段抽幾個」補細節。|Hair length, eye color, camera, expression, place, time of day… one card per slot, then details by the per-section counts.
+互斥、規則、修補|Exclusions, rules, repairs
+同一格只留一張；夜晚不配藍天、室內不配海浪；缺衣服就補一件。|One card per slot; no blue sky at night, no waves indoors; missing clothes get added.
+排成提示詞|Build the prompt
+人數在前、畫質在後，送 ComfyUI。|People first, quality tags last, then off to ComfyUI.
+修補|Repair
+畫質、評分詞|Quality and score tags
+這一張沒有字被拿掉。|Nothing was dropped this time.
+滑鼠停在字上看它從哪來。|Hover a tag to see where it came from.
+你封鎖的|You blocked it
+尺度不合|Wrong content level
+分級擋掉|Blocked by rating
+時代不合|Wrong era
+人數不合|Wrong number of people
+姿勢跟動作衝突|Pose conflicts with the action
+場地跟動作衝突|Place conflicts with the action
+運動跟場地不合|Sport doesn't fit the place
+衣服層次不對|Clothing layers clash
+內衣被蓋住|Underwear would be hidden
+缺前提|Missing prerequisite
+收尾整理|Final cleanup
+修補拿掉|Removed by repair
+被換掉|Replaced
+一張圖只會有一種髮色、一種瞳色、一種髮長：同一格的牌「互斥」，新放的會把舊的換下來。有些牌放進來會「附帶」別張：夏日洋裝一定是洋裝。這兩件事都可以在墨池的規則裡關掉。|A picture has one hair color, one eye color, one hair length: cards in the same slot are exclusive, and a new one replaces the old. Some cards include others: a sundress is always a dress. Both can be switched off in the Ink Pool's rules.
+互斥：點一個髮色放進池子|Exclusive: put a hair color in the pool
+附帶：放一張會帶別張的牌|Included: place a card that brings others
+互斥打開：同一格只留最新放的那張。|Exclusive is on: only the newest card in a slot stays.
+互斥關掉：同一格的牌都留著。|Exclusive is off: every card in a slot stays.
+池子裡有長髮。點紅髮，再點黑髮看看。|The pool has long hair. Click red hair, then black hair.
+點上面一張牌|Click a card above
+放回|Put back
+最大的幾個互斥格|The largest exclusive slots
+分級是上限：全年齡、敏感、色情，往上一級才多開一批牌。尺度是這一張要多露：活動、誘惑、走光、性愛。時代決定場景和衣服：江戶抽木屐、和服，現代抽球鞋、地鐵站。|Rating is the ceiling: General, Sensitive, Explicit, and each step up unlocks more cards. Content level is how much one picture shows: Activity, Suggestive, Exposure, Sexual. Era sets the places and clothes: Edo draws geta and kimono, Modern draws sneakers and subway stations.
+最安全的一級|The safest level
+全年齡：大部分的牌都在這一級。|General: most cards live here.
+穿著整齊，做事情：讀書、跑步、做菜。|Fully dressed, doing things: reading, running, cooking.
+撩人但不露點：泳裝、睡衣、姿勢。|Alluring without nudity: swimsuits, sleepwear, poses.
+衣服掀開、意外露出。只在敏感以上。|Clothes lifted, accidental exposure. Sensitive and up only.
+只在色情分級。要兩個人以上的動作，人數不夠就不抽。|Explicit only. Actions that need two or more people are skipped when there aren't enough.
+不是只靠一道牆：從詞庫到送出前，一共五層。任何一層擋到，那個字就到不了 ComfyUI。|Not one wall but five layers, from the vocabulary to the moment of sending. If any layer catches a tag, it never reaches ComfyUI.
+未成年角色|Underage characters
+不做成牌|Never a card
+loli、shota、baby 這類未成年相關的字：詞庫認得、但永遠不做成牌，抽不到、釘不住；從別處貼上的提示詞也不收（貼上會說「不收」）。|Minor-related tags such as loli, shota and baby are known to the vocabulary but never become cards: they can't be drawn or pinned, and pasted prompts can't bring them in (pasting says they were rejected).
+瞳色|Eye color
+胸部大小|Breast size
+連身服裝|One-pieces
+鞋類|Footwear
+腿上|Legwear
+頭部配件|Headwear
+手上|Hands
+首飾|Jewelry
+內衣上|Bras
+內衣下|Panties
+瀏海|Bangs
+腰|Waist
+手勢|Hand gestures
+性愛動作|Sex acts
+禁用角色|Blocked characters
+個角色查過年齡：未滿 18、學生、外觀像兒童、真人，一律不能抽。卡冊打開「含禁用」只列名字，不能用。|characters were checked for age: anyone under 18, students, childlike looks and real people can never be drawn. The Card Book's blocked list shows names only; they can't be used.
+新字要試畫|New tags are test-rendered
+每個新字用五個種子試畫，畫成小孩的不收。|Each new tag is rendered with five seeds; any that come out looking like a child are rejected.
+卡面提示詞|Card art prompts
+每張有人物的卡面都寫 adult、mature female／male，負面詞擋 loli、child、teenage；兩人以上的不畫成全家福。|Every card with people says adult and mature female/male, with loli, child and teenage in the negative prompt; groups are never painted as family portraits.
+送出前再查一次|Checked again before sending
+伺服器送 ComfyUI 之前把整段提示詞再對一次禁用表，有就整張不送。|Before anything goes to ComfyUI, the server checks the whole prompt against the block list again and refuses the picture on any match.
+頂欄的五個分頁，各管一件事。點一個看它能做什麼。|The five tabs at the top each do one job. Click one to see what it can do.
+抽牌、生圖的主房間。|The main room for drawing cards and generating pictures.
+一張牌一層墨，看清楚引擎補了什麼再印。|One card per layer of ink: see exactly what the engine added before printing.
+每張牌的來歷。|The history of every card.
+收藏的成品和每一次出圖。|Saved pictures and every generation.
+丟一張圖，讀出它的標籤變成牌。|Drop in an image and turn its tags into cards.
+七種花色翻牌，中英文都能搜；角色可以照作品分格。|Browse seven categories and search in Chinese or English; characters can be grouped by series.
+點牌或拖進來＝每張圖都一定有。可以調份量（0.8～1.4）；互斥、附帶兩個開關。|Click or drag a card in and every picture has it. Adjust its weight (0.8–1.4); switches for Exclusive and Included.
+偏好卡牌、牌組、貼上|Favorites, decks, paste
+常用的牌攤在底部；整組存成牌組；貼一段別處的提示詞，詞庫有的變成牌。|Favorite cards sit along the bottom; save a set as a deck; paste a prompt from elsewhere and known tags become cards.
+尺度、時代、人物、尺寸、姿勢參考；每段抽幾個、只補哪幾種；場景、職業、抽角色。|Content level, era, cast, size, pose reference; how many per section and which kinds to add; scenes, jobs, random characters.
+抽|Draw
+一次幾張、無限抽（可設張數停）、同一個人、只抽牌不生圖、固定種子。|How many at once, continuous drawing (with an optional stop count), same person, draw without generating, fixed seed.
+每張的牌攤開看；撤下、收藏、照這張再印；Hires 放大、修臉；選 LoRA、底模、工作流程。|See each picture's cards; remove, save or print again; Hires upscale and face fix; choose LoRA, base model and workflow.
+放的牌照花色疊進六列；灰色的影子是引擎補的。|Your cards stack into six rows by category; gray shadows are what the engine added.
+四張試印|Four proofs
+同一個種子抽四組提示詞，加一張牌四組一起重抽，差在哪一眼看出來。|Four prompts from the same seed; add a card and all four redraw, so the difference is plain to see.
+付印、晾紙|Print and hang
+挑一組付印；印好的掛在晾紙繩上。|Pick one to print; finished prints hang on the line.
+三十組常用的組合，一按就放好。|Thirty common combinations, placed in one click.
+自己的規則|Its own rules
+規則、偏好卡牌跟墨池分開；附帶開關在規則面板。|Rules and favorites are separate from the Ink Pool; the Included switch is in the rules panel.
+用過幾次|Usage counts
+多到少、少到多、新到舊（加入日）；只看用過的。|Most to least, least to most, newest first (by date added); used cards only.
+哪些牌常出好圖、哪些常被撤下（從出圖日誌算）。|Which cards often make keepers and which often get removed (from the history).
+一張牌的詳情|Card details
+你親手放幾次、引擎補幾次、用它做過的圖，帶去墨池。|How often you placed it, how often the engine added it, pictures that used it; take it to the Ink Pool.
+最多 24 張待用的牌，一次帶走。|Up to 24 cards set aside to take along together.
+成就、偏好角色、含禁用|Achievements, favorite characters, blocked
+收集進度；常用角色；禁用角色只列名字。|Collection progress; characters you use; blocked characters by name only.
+大圖、用了哪些牌；照時代、髮色、服裝、場景分輯，看相似的作品。|Large view and the cards used; browse by era, hair color, outfit or scene, and find similar pictures.
+牌、份量、時代、種子、尺寸、底模、LoRA 一起帶回墨池。|Cards, weights, era, seed, size, base model and LoRA all go back to the Ink Pool.
+印過的每一張（沒收藏的也在）：時間、花多久、從哪一頁印的。|Every picture printed, saved or not: when, how long it took, and from which room.
+模型成績單|Model report
+每個底模、LoRA 印了幾張、收藏幾張、撤下幾張。|For each base model and LoRA: how many printed, saved and removed.
+拖進來、貼上、選檔；網頁先縮小再送。|Drag, paste or choose a file; the page shrinks it before sending.
+ComfyUI 認出畫面裡的字；跑兩個門檻，分出「確定」和「可能」。|ComfyUI reads the tags in the picture at two thresholds, sorting them into Sure and Likely.
+對詞庫|Match the vocabulary
+詞庫有的變成牌、照花色排；沒有的列出來可以複製；不能用的字不收。|Known tags become cards sorted by category; unknown ones are listed to copy; disallowed tags are dropped.
+挑好的牌帶去合成池或疊印台；解析設定可以換模型、門檻、不要的字。|Take the chosen cards to Pinned cards or the Fuse Bed; parse settings change the model, thresholds and excluded tags.
+按下「抽並生圖」之後，一張圖會走過這幾站。|After you press Draw & generate, a picture passes through these stops.
+伺服器把提示詞套進工作流程（底模、LoRA、尺寸、種子），交給 ComfyUI。同時印好幾張會排隊。|The server fills the prompt into a workflow (base model, LoRA, size, seed) and hands it to ComfyUI. Several at once wait in line.
+邊畫邊看|Watch it paint
+ComfyUI 每一步的預覽即時傳回網頁；卡住、斷線會自己接回來，手機換頁也看得到進度。|ComfyUI's preview for every step streams back to the page. Stalls and dropped connections recover on their own, and a phone that switches pages still sees progress.
+成品掛上牆。每張都記著「你放的牌」和「引擎補的牌」，可以單張撤下、收藏、照這張再印。|The result goes on the wall. Each one remembers your cards and the engine's, and can be removed, saved or printed again.
+再加工|Touch-ups
+Hires 放大、修臉（只重畫臉）、換底模重印，都從成品下面的按鈕。|Hires upscale, face fix (redraws only the face) and printing again with another base model, from the buttons under each result.
+記帳|Bookkeeping
+每張圖寫進出圖日誌；用到的牌各加一次，卡冊就知道誰常出好圖。|Each picture goes into the history and every card used gets +1, so the Card Book knows which cards do well.
+送出去|Send it out
+設定了 Discord，就照分級、角色、標籤分頻道送過去。|With Discord set up, pictures go to channels by rating, character and tag.
+每改一次，整套測試跑一遍再推上去。|Every change runs the full test suite before it ships.
+段測試，同時跑約 16 分鐘：抽牌規則、互斥、分級、時代、伺服器、網頁畫面、英文版。|test stages, about 16 minutes in parallel: drawing rules, exclusions, ratings, eras, server, pages and the English version.
+張固定種子的抽牌指紋：引擎的抽法一變就知道。|fixed-seed draw fingerprints: any change in how the engine draws shows up.
+個 repo：墨池另外開源成 danbooru_tag_mochi，每次同步、在 Windows、Mac、Linux 上自動測。|repositories: Mochi is also open source as danbooru_tag_mochi, synced every time and tested automatically on Windows, Mac and Linux.
+看懂了，就去試一次。|Got it? Go try it.
+去墨池|Go to the Ink Pool
+看教學影片|Watch the tutorial
+讀不到詞庫：請用啟動檔開（start.bat），不要直接點 HTML。|Couldn't load the vocabulary. Open Mochi with the launcher (start.bat), not by double-clicking the HTML file.
 `;
 
 export const messages = Object.freeze(Object.fromEntries(copy.trim().split("\n").map((line) => {
@@ -2024,6 +2270,26 @@ LoRA {0} 空著——從中間挑一張|LoRA {0} is empty. Pick one from the gri
 Tagger 出錯：{0}|The tagger failed: {0!}
 連不到 ComfyUI：{0}|Cannot reach ComfyUI: {0!}
 ComfyUI 不收：{0}|ComfyUI rejected it: {0!}
+{0} → {1}|{0} → {1}
+{0} ← {1}|{0} ← {1}
+{0} 張、{1} 個細分類|{0} cards, {1} subcategories
+{0} 附帶的|Included by {0}
+引擎考慮過、又拿掉的 {0} 個字：{1}|The engine considered and dropped {0} tags: {1}
+尺度：{0}|Content level: {0}
+人數：{0}|People: {0}
+放了{0}：{1}跟它同一格（{2}），換下來了。|Placed {0}: {1} shares its slot ({2}) and was swapped out.
+互斥關著：{0}跟同一格的牌都留著，提示詞裡全部都寫。|Exclusive is off: {0} and the cards in its slot all stay, and all go into the prompt.
+放了{0}：跟池子裡的牌不同格，可以並存。|Placed {0}: it's in a different slot from the pool, so they coexist.
+拿掉了{0}，但附帶打開：抽的時候{1}會把它抽回來（虛線那張）。|Removed {0}, but Included is on: when drawing, {1} brings it back (the dashed one).
+拿掉了{0}，附帶關著：抽的時候不會抽回來。|Removed {0} with Included off: drawing won't bring it back.
+{0}放回來了。|{0} is back.
+放了{0}：它附帶{1}，一起放進來。|Placed {0}: it includes {1}, so they came in too.
+放了{0}：附帶的牌一起進來。按「拿掉」看附帶開關的差別。|Placed {0}: its included cards came too. Press Remove to see what the switch changes.
+比{0}多 {1} 張|{1} more than {0}
+{0}多開的牌（只列名字）：|Cards {0} adds (names only):
+現代專用的牌 {0} 張，例如：|{0} cards only for Modern, for example:
+{0}會出現、現代不會的牌 {1} 張，例如：|{1} cards that appear in {0} but not Modern, for example:
+打開{0}|Open {0}
 `;
 export const templates = parameterized.trim().split("\n").map((line) => {
   const split = line.indexOf("|");

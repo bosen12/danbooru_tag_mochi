@@ -602,6 +602,17 @@ ok("跳脫括號、底線、權重括號都認得出被 ban 的角色",
    _bip(r"1girl, anya \(spy x family\), smile") == ["anya (spy x family)"]
    and _bip("(anya_(spy_x_family):1.2)") == ["anya (spy x family)"], str(_bip("(anya_(spy_x_family):1.2)")))
 ok("loli、shota 照擋", _bip("1girl, loli, shota") == ["loli", "shota"])
+_minor = [
+    "aged down", "onee-shota", "oppai loli", "baby", "kodomo doushi",
+    "toddlercon", "toddlersex", "mother and child", "father and child",
+    "carrying baby", "kindergarten uniform", "tomoeda elementary school uniform",
+    "children",
+]
+_minor_prompt = "1girl, " + ", ".join(f"({t.replace(' ', '_')}:1.1)" for t in _minor)
+ok("十三個新封鎖字都擋得到（底線、權重括號），含 children", _bip(_minor_prompt) == _minor, str(_bip(_minor_prompt)))
+ok("babydoll 不會被 baby 誤擋", _bip("1girl, babydoll") == [])
+ok("mother and daughter、sisters、family 不是封鎖字", _bip("mother and daughter, sisters, family") == [])
+ok("school uniform、serafuku、gakuran 照舊能送", _bip("school uniform, serafuku, gakuran") == [])
 ok("能用的角色不擋（自己的括號留著）", _bip("((makima (chainsaw man))), yor briar") == [])
 try:
     server.prepare_workflow({"positive": "1girl, anya (spy x family)"})
@@ -1356,11 +1367,15 @@ try:
     ok("genlog paging: same-millisecond entries across a page break are not skipped", sorted(_seen) == ["a", "b", "c", "z"] and len(_seen) == 4, str(_seen))
 finally:
     _gl_page._load = _saved_load
-_blocked = {r: _srv_h.blocked_asset(r) for r in ("cards/loli.webp", "cards/thumb/shota.webp", "cards/mini/LOLI.webp", "cards/mini/160/shota-243bdc4095.webp", "cards/_hard_banned/a.webp", "cards\\shota.webp", "cards/lolita_fashion.webp", "cards/smile.webp", "engine.js")}
-ok("banned card art is never served (loli/shota, _hard_banned), lolita fashion still is",
-   all(_blocked[r] for r in list(_blocked)[:6]) and not any(_blocked[r] for r in list(_blocked)[6:]), str(_blocked))
+_blocked = {r: _srv_h.blocked_asset(r) for r in ("cards/loli.webp", "cards/thumb/shota.webp", "cards/mini/LOLI.webp", "cards/mini/160/shota-243bdc4095.webp", "cards/_hard_banned/a.webp", "cards\\shota.webp", "cards/baby.webp", "cards/mini/160/oppai_loli-abcd1234.webp", "cards/lolita_fashion.webp", "cards/smile.webp", "cards/babydoll.webp", "cards/school_uniform.webp", "engine.js")}
+ok("banned card art is never served (loli/shota/baby/oppai_loli, _hard_banned), lolita fashion and school uniform still are",
+   all(_blocked[r] for r in list(_blocked)[:8]) and not any(_blocked[r] for r in list(_blocked)[8:]), str(_blocked))
 ok("static_path refuses banned card art even if the file exists", _srv_h.static_path("cards/loli.webp") is None and _srv_h.static_path("cards/_hard_banned/loli.webp") is None)
-_slim = json.loads(_srv_h.slim_card_manifest(json.dumps({"loli": {"v": "a"}, "shota": {"v": "b"}, "lolita fashion": {"v": "c"}, "smile": {"v": "d", "prompt": "x"}}).encode()))
+for _tag in ["loli", "shota", *_minor]:
+    _file = _tag.replace(" ", "_")
+    for _rel in (f"cards/{_file}.webp", f"cards/thumb/{_file}.webp", f"cards/mini/160/{_file}-abcd1234.webp"):
+        ok(f"banned card path is blocked: {_rel}", _srv_h.blocked_asset(_rel))
+_slim = json.loads(_srv_h.slim_card_manifest(json.dumps({"loli": {"v": "a"}, "shota": {"v": "b"}, "children": {"v": "e"}, "oppai_loli": {"v": "f"}, "lolita fashion": {"v": "c"}, "smile": {"v": "d", "prompt": "x"}}).encode()))
 ok("served card manifest drops banned entries, keeps the rest", sorted(_slim) == ["lolita fashion", "smile"], str(_slim))
 import tempfile as _tf_si  # noqa: E402
 # resolve()：macOS 的 /var 其實是 /private/var、Windows CI 的暫存路徑是短檔名（RUNNER~1）；

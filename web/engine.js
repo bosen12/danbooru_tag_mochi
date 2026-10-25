@@ -4344,7 +4344,24 @@ function drawNoHumans(lex, settings, pinned, userBanned, rand, seed, opts) {
 }
 
 // 看起來未成年的字：任何路徑都不輸出（隨機、釘選、預設組都一樣）。
-const NEVER_DRAW = new Set(["loli", "shota"]);
+// 與 web/card-art.js 的 HARD_BANNED 同一份。children 不在詞庫，釘了字面也不給。
+const NEVER_DRAW = new Set([
+  "loli",
+  "shota",
+  "aged down",
+  "onee-shota",
+  "oppai loli",
+  "baby",
+  "kodomo doushi",
+  "toddlercon",
+  "toddlersex",
+  "mother and child",
+  "father and child",
+  "carrying baby",
+  "kindergarten uniform",
+  "tomoeda elementary school uniform",
+  "children",
+]);
 
 /**
  * 抽一張。時代「混合」（settings.eraMix）時，這一張抽的期間 eraOk 一律放行（不同時代的字可以一起出現），

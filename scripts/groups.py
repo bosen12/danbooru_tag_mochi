@@ -996,7 +996,7 @@ def assign_group(item: dict) -> str:
         # 要在「名字裡有 pubic／breast 就當身材」之前。淫紋是標記，不是體型。
         if tag in SKIN:
             return "skin"
-        if mx == "height" or tag in {"loli", "tall female", "petite"}:
+        if mx == "height" or tag in {"loli", "tall female", "petite", "aged down", "oppai loli", "baby"}:
             return "body_f"
         if mx == "height_m" or tag in {"shota", "tall male", "short male"}:
             return "body_m"
@@ -1056,6 +1056,11 @@ def assign_group(item: dict) -> str:
         return "other"
 
     if sec == "pose":
+        # 未成年防護：人數的放性愛，抱嬰兒放日常活動，不要掉進其他。
+        if tag in {"kodomo doushi", "toddlersex", "toddlercon"}:
+            return "sex"
+        if tag == "carrying baby":
+            return "activity"
         # 前景模糊、黑邊、透視、對稱是畫面處理，不佔鏡頭格，也不能掉進誘惑。
         # foreshortening 的互斥名也叫 perspective，那是另一個字，不要混在一起。
         # 畫面處理跟倒影焦點要能在鏡頭架上找到，但不佔鏡頭那一格。

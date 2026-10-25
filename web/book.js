@@ -14,6 +14,7 @@ import { cloneCard } from "./card-images.js";
  *     「帶去墨池」把它放進墨池的合成池（store.js 的交接便條）再換版過去。
  *   - 別的分頁抽完牌：這裡的數字跟著跳一下（storage 事件），排序不自己亂動，給一顆「重新排序」。
  */
+import { HARD_BANNED } from "./card-art.js";
 import { indexLexicon } from "./engine.js";
 import { ratingBlocked, RATING_LABEL } from "./rules/rating.js";
 import { mountRatingFree } from "./rating-free.js";
@@ -43,6 +44,7 @@ import { weightsOfPositive } from "./weights.js";
 guardPrerender("book");
 
 const sfx = getSfx();
+const HARD_BAN = new Set(HARD_BANNED);
 const $ = (id) => document.getElementById(id);
 const UI_KEY = "mochi.book.v1";
 // 只畫看得到的那幾排（2026-10-24）：以前一批批往下補、從不拿掉，捲到底一千多格、兩萬多個節點，
@@ -155,7 +157,7 @@ function attachDates(lib, dates) {
   }
   for (const row of (dates && dates.banned) || []) {
     const tag = row && row.tag;
-    if (!tag || lib.byTag.has(tag) || tag === "loli" || tag === "shota") continue;
+    if (!tag || lib.byTag.has(tag) || HARD_BAN.has(tag)) continue;
     const gate = row.gate === "female" || row.gate === "male" ? row.gate : "any";
     const card = {
       tag,

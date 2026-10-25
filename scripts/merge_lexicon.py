@@ -371,6 +371,8 @@ SUFFIX_COMPOUND_EXCEPTIONS = {
     "hat": ("unworn hat",),
     # 褲型袴是江戶的袴，不是現代長褲。帶出 pants 會在江戶時代對不上。
     "pants": ("hakama pants",),
+    # 友枝小學制服是封鎖字，後綴規則不要再帶出學生制服。
+    "school uniform": ("tomoeda elementary school uniform",),
 }
 
 SUFFIX_PARENT = (
@@ -546,6 +548,9 @@ IMPLIES = {
     "double bun": ["hair bun"],
     "loli": ["petite", "flat chest"],
     "shota": ["short male"],
+    # 未成年防護。oppai loli 不帶 loli（平胸跟巨乳打架）。制服不帶 school uniform。
+    "onee-shota": ["shota"],
+    "carrying baby": ["baby"],
     "pov": ["looking at viewer"],
     "pov crotch": ["looking at viewer"],
     "showering": ["shower (place)", "indoors"],
@@ -2062,6 +2067,50 @@ def extra_shota_tags() -> list[dict]:
             "needs": ["male"],
             "zh": "正太",
         },
+    ]
+
+
+def extra_minor_block_tags() -> list[dict]:
+    """看起來未成年的字。詞庫有一筆，但是底線封鎖：不是牌、抽不到、釘不住。
+
+    children 不在這裡。它在 BANNED，norm() 會整筆丟掉；HARD_BANNED 另外擋貼上與送出。
+    oppai loli 不 implies loli（loli 會帶出平胸）。兩件制服不 implies school uniform。
+    """
+
+    def one(tag, zh, section, gate="any", needs=(), mutex=None, implies=(), era=None, layer="normal"):
+        return {
+            "tag": tag,
+            "section": section,
+            "gate": gate,
+            "heat": list(HEATS),
+            "mutex": mutex,
+            "bind": [],
+            "implies": list(implies),
+            "layer": layer,
+            "era": list(era or ["any"]),
+            "needs": list(needs),
+            "zh": zh,
+        }
+
+    return [
+        one("aged down", "年下", "feature"),
+        one("onee-shota", "姊姊×正太", "subject", needs=("male", "female", "pair"), implies=("shota",)),
+        one("oppai loli", "巨乳蘿莉", "feature", gate="female", needs=("female",), mutex="height"),
+        one("baby", "嬰兒", "feature"),
+        one("kodomo doushi", "孩童之間", "pose", needs=("pair",)),
+        one("toddlercon", "幼童性相關", "pose"),
+        one("toddlersex", "幼童性交", "pose", needs=("pair",)),
+        one("mother and child", "母與幼子", "subject", gate="female", needs=("female", "pair")),
+        one("father and child", "父與幼子", "subject", gate="male", needs=("male", "pair")),
+        one("carrying baby", "抱嬰兒", "pose", implies=("baby",)),
+        one(
+            "kindergarten uniform", "幼稚園制服", "clothing",
+            mutex="onepiece", era=("modern",), layer="garment",
+        ),
+        one(
+            "tomoeda elementary school uniform", "友枝小學制服", "clothing",
+            gate="female", needs=("female",), mutex="onepiece", era=("modern",), layer="garment",
+        ),
     ]
 
 
@@ -6747,6 +6796,7 @@ def main() -> None:
     rows.extend(extra_pair_contact())
     rows.extend(extra_loli_tags())
     rows.extend(extra_shota_tags())
+    rows.extend(extra_minor_block_tags())
     rows.extend(extra_style_tags())
     rows.extend(extra_quality_boost_tags())
     rows.extend(extra_look_tags())

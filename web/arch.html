@@ -1,0 +1,306 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="utf-8" />
+    <script src="language.js"></script>
+    <script type="module" src="i18n.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#0f1217" />
+    <title>墨池 · 原理</title>
+    <meta name="description" content="墨池是怎麼運作的：從啟動、偵測模型、烘卡面，到抽牌、分類、互斥、分級、擋未成年，五個房間各做什麼，程式架構一張圖看懂。" />
+    <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+    <link rel="preload" href="lexicon.json" as="fetch" crossorigin />
+    <link rel="preload" href="cards/manifest.json" as="fetch" crossorigin />
+    <link rel="modulepreload" href="engine.js" />
+    <link rel="stylesheet" href="fonts.css" />
+    <link rel="stylesheet" href="card.css" />
+    <link rel="stylesheet" href="tokens.css" />
+    <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="arch.css" />
+    <link rel="stylesheet" href="locale.css" />
+  </head>
+  <body class="arch-page">
+    <!-- 頂端：字標、回各房間、目錄。語言選單由 i18n.js 掛進 .mast-primary。 -->
+    <header class="arch-top">
+      <div class="mast-primary arch-top-in">
+        <a class="wordmark arch-mark" href="./">墨池</a>
+        <span class="arch-top-title">原理</span>
+        <nav class="arch-rooms" aria-label="回到房間">
+          <a href="./">墨池</a>
+          <a href="fuse.html">疊印台</a>
+          <a href="book.html">卡冊</a>
+          <a href="album.html">作品冊</a>
+          <a href="parse.html">解析池</a>
+        </nav>
+      </div>
+      <div class="arch-progress" aria-hidden="true"><i id="arch-progress"></i></div>
+    </header>
+
+    <!-- 目錄：電腦上黏在左邊，捲到哪一章亮哪一格。 -->
+    <nav class="arch-toc" id="arch-toc" aria-label="章節">
+      <a href="#ch-start"><b>01</b><span>從啟動開始</span></a>
+      <a href="#ch-map"><b>02</b><span>架構一張圖</span></a>
+      <a href="#ch-deck"><b>03</b><span>牌與詞庫</span></a>
+      <a href="#ch-draw"><b>04</b><span>抽一張</span></a>
+      <a href="#ch-mutex"><b>05</b><span>互斥與附帶</span></a>
+      <a href="#ch-rating"><b>06</b><span>分級、尺度、時代</span></a>
+      <a href="#ch-safe"><b>07</b><span>怎麼擋未成年</span></a>
+      <a href="#ch-rooms"><b>08</b><span>五個房間</span></a>
+      <a href="#ch-gen"><b>09</b><span>生圖之後</span></a>
+      <a href="#ch-qa"><b>10</b><span>品質</span></a>
+    </nav>
+
+    <main class="arch" id="arch">
+      <!-- ================= 開場 ================= -->
+      <section class="arch-hero" aria-labelledby="hero-title">
+        <div class="hero-text">
+          <p class="kicker">墨池 · 原理</p>
+          <h1 id="hero-title">一張圖，是怎麼<em>抽出來的</em></h1>
+          <p class="lead">墨池是一副 <b class="num" data-stat="cards">—</b> 張的牌。每張牌是一個 Danbooru 標籤，配中文名和一張卡面。你放幾張，引擎照規則把其餘補完，排成一段提示詞，送進 ComfyUI 畫出來。</p>
+          <p class="lead dim">不懂程式也看得懂：往下捲，每一章都可以點、可以試。</p>
+          <a class="btn btn-primary hero-go" href="#ch-start">從頭看</a>
+        </div>
+        <div class="hero-art" aria-hidden="true">
+          <div class="hero-deck" id="hero-deck"></div>
+          <div class="hero-flow"><i></i><i></i><i></i></div>
+          <div class="hero-prompt" id="hero-prompt"></div>
+        </div>
+      </section>
+
+      <!-- ================= 01 從啟動開始 ================= -->
+      <section class="ch" id="ch-start" aria-labelledby="ch-start-t">
+        <header class="ch-head" data-reveal>
+          <p class="ch-num">01</p>
+          <h2 id="ch-start-t">從啟動開始</h2>
+          <p class="ch-lead">雙擊 <code>start.bat</code>：它只做一件事，開一個小伺服器（<code>server.py</code>），再打開瀏覽器。第一次要準備的東西，都由伺服器在背景做，網頁左下角的面板一項項顯示。</p>
+        </header>
+        <div class="boot" data-reveal>
+          <ol class="boot-steps" id="boot-steps">
+            <li data-kind="auto"><b>卡面插畫</b><span>從 GitHub Release 下載公開的全年齡卡面（先抓幾十 MB 的縮圖，原圖背景接著抓）。不用 ComfyUI。</span></li>
+            <li data-kind="auto"><b>預覽縮圖（Pillow）</b><span>沒裝就裝：LoRA、底模的預覽圖縮成小檔，面板開得快。</span></li>
+            <li data-kind="wait"><b>等 ComfyUI 開起來</b><span>還沒開的話，下面這些先等著；一開就接著做，不用再跑一次 bat。</span></li>
+            <li data-kind="ask"><b>LoRA Manager</b><span>問過你才裝進 ComfyUI：LoRA 清單、預覽圖、觸發詞都從它來。</span></li>
+            <li data-kind="auto"><b>Hires 放大模型</b><span>約 18 MB，放進 ComfyUI 的 upscale_models。</span></li>
+            <li data-kind="ask"><b>姿勢參考</b><span>OpenPose 節點＋模型（約 2.5 GB）：照一張圖的姿勢擺。</span></li>
+            <li data-kind="ask"><b>修臉（FaceDetailer）</b><span>只重畫臉的那顆按鈕要的節點、偵測模型、SAM（約 425 MB）。</span></li>
+            <li data-kind="ask"><b>圖片解析（WD14 Tagger）</b><span>解析池要的節點和 wd-vit-tagger-v3 模型（約 380 MB）。</span></li>
+            <li data-kind="auto"><b>烘焙卡面</b><span>缺的、提示詞改過的全年齡卡面，用你的 ComfyUI 直接畫。</span></li>
+            <li data-kind="ask"><b>敏感、色情、角色卡面</b><span>不公開下載的那些：問一聲，要的話在你的電腦上烤。</span></li>
+          </ol>
+          <div class="boot-side">
+            <div class="boot-legend">
+              <span data-kind="auto">自己做</span>
+              <span data-kind="ask">先問你</span>
+              <span data-kind="wait">等 ComfyUI</span>
+            </div>
+            <p class="note"><b>怎麼知道缺什麼？</b> 伺服器問 ComfyUI「你有哪些節點、哪些模型」（object_info），再看資料夾裡的檔案；都有的人完全看不到這個面板。</p>
+            <p class="note"><b>卡面怎麼烘？</b> 每張牌一段固定的提示詞：一定寫 adult、mature，負面詞擋 loli、child；同一個種子，誰烤都一樣。烤好存一張原圖、兩種縮圖，清單記著每張是用哪段提示詞烤的，提示詞一改就知道要重烤。</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= 02 架構一張圖 ================= -->
+      <section class="ch" id="ch-map" aria-labelledby="ch-map-t">
+        <header class="ch-head" data-reveal>
+          <p class="ch-num">02</p>
+          <h2 id="ch-map-t">架構一張圖</h2>
+          <p class="ch-lead">抽牌在你的瀏覽器裡算，畫圖交給 ComfyUI，中間的伺服器負責轉送、存檔、記帳。點任何一塊看它在做什麼；下面的按鈕演一次「按下抽並生圖」資料怎麼走。</p>
+        </header>
+        <div class="map" data-reveal>
+          <!-- 手機上太擠：整張圖可以左右滑。 -->
+          <div class="map-scroll">
+            <div class="map-stage" id="map-stage">
+              <svg class="map-lines" id="map-lines" viewBox="0 0 1000 560" preserveAspectRatio="none" aria-hidden="true"></svg>
+            </div>
+          </div>
+          <aside class="map-info" id="map-info" aria-live="polite"></aside>
+        </div>
+        <div class="map-acts" data-reveal>
+          <button class="btn btn-primary" id="map-play" type="button">演一次：抽並生圖</button>
+          <button class="btn" id="map-build" type="button">演一次：詞庫怎麼做出來</button>
+        </div>
+      </section>
+
+      <!-- ================= 03 牌與詞庫 ================= -->
+      <section class="ch" id="ch-deck" aria-labelledby="ch-deck-t">
+        <header class="ch-head" data-reveal>
+          <p class="ch-num">03</p>
+          <h2 id="ch-deck-t">牌與詞庫</h2>
+          <p class="ch-lead">牌分七種花色，每種花色再分細分類。點一種花色看裡面有什麼。所有數字都是現在這份詞庫即時算的。</p>
+        </header>
+        <div class="deck-stats" data-reveal>
+          <div><b class="num" data-stat="cards">—</b><span>張牌</span></div>
+          <div><b class="num" data-stat="groups">—</b><span>個細分類</span></div>
+          <div><b class="num" data-stat="mutex">—</b><span>個互斥格</span></div>
+          <div><b class="num" data-stat="implies">—</b><span>張會附帶別張</span></div>
+        </div>
+        <div class="suits" id="suits" role="tablist" aria-label="花色" data-reveal></div>
+        <div class="suit-view" id="suit-view" data-reveal></div>
+        <div class="pipe-build" data-reveal>
+          <h3>詞庫是怎麼做出來的</h3>
+          <ol class="build-steps">
+            <li><b>原料</b><span><code>web/lexicon_parts/</code> 裡的原料、角色表、建議清單：一行一個字，寫它屬於哪裡、跟誰互斥、附帶什麼、哪些時代、哪些尺度。</span></li>
+            <li><b>合併</b><span><code>merge_lexicon.py</code> 把原料併成一份，對 Danbooru 改名表，擋掉禁用字。</span></li>
+            <li><b>中文名</b><span><code>add_zh.py</code> 補上每張的中文名。</span></li>
+            <li><b>卡面工作表</b><span><code>card_art.mjs</code> 算出每張牌的卡面提示詞；<code>bake_card_art.py</code> 照它烤。</span></li>
+            <li><b>互斥圖、加入日</b><span>誰跟誰不能同框的總表；每張牌第一次進詞庫的時間（卡冊排序用）。</span></li>
+          </ol>
+          <p class="note">新字要先對 Danbooru（有沒有這個字、多少張圖），再用固定的五個種子試畫；畫不出來、畫錯、畫成小孩的不收。</p>
+        </div>
+      </section>
+
+      <!-- ================= 04 抽一張 ================= -->
+      <section class="ch" id="ch-draw" aria-labelledby="ch-draw-t">
+        <header class="ch-head" data-reveal>
+          <p class="ch-num">04</p>
+          <h2 id="ch-draw-t">抽一張</h2>
+          <p class="ch-lead">這是真的引擎：挑幾張牌放進池子、選分級，按「抽一張」。每個字照它是怎麼來的上色，滑鼠停上去看理由。</p>
+        </header>
+        <div class="draw" data-reveal>
+          <div class="draw-controls">
+            <div class="ctl">
+              <span class="ctl-label">放進池子</span>
+              <div class="chip-row" id="draw-pins"></div>
+            </div>
+            <div class="ctl">
+              <span class="ctl-label">分級</span>
+              <div class="segmented" id="draw-rating" role="radiogroup" aria-label="分級"></div>
+            </div>
+            <div class="ctl">
+              <span class="ctl-label">種子</span>
+              <span class="draw-seed" id="draw-seed">—</span>
+            </div>
+            <button class="btn btn-primary draw-go" id="draw-go" type="button">抽一張</button>
+          </div>
+          <ol class="draw-stages" id="draw-stages"></ol>
+          <div class="draw-out">
+            <div class="draw-legend" id="draw-legend"></div>
+            <div class="draw-tags" id="draw-tags" aria-live="polite"></div>
+            <p class="draw-why" id="draw-why"></p>
+            <p class="draw-rej" id="draw-rej"></p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= 05 互斥與附帶 ================= -->
+      <section class="ch" id="ch-mutex" aria-labelledby="ch-mutex-t">
+        <header class="ch-head" data-reveal>
+          <p class="ch-num">05</p>
+          <h2 id="ch-mutex-t">互斥與附帶</h2>
+          <p class="ch-lead">一張圖只會有一種髮色、一種瞳色、一種髮長：同一格的牌「互斥」，新放的會把舊的換下來。有些牌放進來會「附帶」別張：夏日洋裝一定是洋裝。這兩件事都可以在墨池的規則裡關掉。</p>
+        </header>
+        <div class="pair-demos" data-reveal>
+          <div class="demo" id="demo-mutex">
+            <h3>互斥：點一個髮色放進池子</h3>
+            <div class="chip-row" id="mutex-chips"></div>
+            <div class="mini-pool" id="mutex-pool" aria-live="polite"></div>
+            <label class="switch demo-switch"><input type="checkbox" role="switch" id="mutex-switch" checked />互斥</label>
+            <p class="note" id="mutex-note"></p>
+          </div>
+          <div class="demo" id="demo-imply">
+            <h3>附帶：放一張會帶別張的牌</h3>
+            <div class="chip-row" id="imply-chips"></div>
+            <div class="mini-pool" id="imply-pool" aria-live="polite"></div>
+            <label class="switch demo-switch"><input type="checkbox" role="switch" id="imply-switch" checked />附帶</label>
+            <p class="note" id="imply-note"></p>
+          </div>
+        </div>
+        <div class="mutex-top" id="mutex-top" data-reveal></div>
+      </section>
+
+      <!-- ================= 06 分級、尺度、時代 ================= -->
+      <section class="ch" id="ch-rating" aria-labelledby="ch-rating-t">
+        <header class="ch-head" data-reveal>
+          <p class="ch-num">06</p>
+          <h2 id="ch-rating-t">分級、尺度、時代</h2>
+          <p class="ch-lead">分級是上限：全年齡、敏感、色情，往上一級才多開一批牌。尺度是這一張要多露：活動、誘惑、走光、性愛。時代決定場景和衣服：江戶抽木屐、和服，現代抽球鞋、地鐵站。</p>
+        </header>
+        <div class="rating-demo" data-reveal>
+          <div class="rating-ladder" id="rating-ladder" role="radiogroup" aria-label="分級"></div>
+          <div class="rating-cards" id="rating-cards"></div>
+        </div>
+        <div class="heat-row" data-reveal>
+          <div><b>活動</b><span>穿著整齊，做事情：讀書、跑步、做菜。</span></div>
+          <div><b>誘惑</b><span>撩人但不露點：泳裝、睡衣、姿勢。</span></div>
+          <div><b>走光</b><span>衣服掀開、意外露出。只在敏感以上。</span></div>
+          <div><b>性愛</b><span>只在色情分級。要兩個人以上的動作，人數不夠就不抽。</span></div>
+        </div>
+        <div class="era-demo" data-reveal>
+          <div class="segmented" id="era-pick" role="radiogroup" aria-label="時代"></div>
+          <div class="era-cards" id="era-cards"></div>
+        </div>
+      </section>
+
+      <!-- ================= 07 怎麼擋未成年 ================= -->
+      <section class="ch" id="ch-safe" aria-labelledby="ch-safe-t">
+        <header class="ch-head" data-reveal>
+          <p class="ch-num">07</p>
+          <h2 id="ch-safe-t">怎麼擋未成年</h2>
+          <p class="ch-lead">不是只靠一道牆：從詞庫到送出前，一共五層。任何一層擋到，那個字就到不了 ComfyUI。</p>
+        </header>
+        <div class="shields" data-reveal>
+          <div class="shield-throw" aria-hidden="true"><span>loli</span><span>未成年角色</span><span>child</span></div>
+          <ol class="shield-list" id="shield-list">
+            <li><b>不做成牌</b><span>loli、shota、baby 這類未成年相關的字：詞庫認得、但永遠不做成牌，抽不到、釘不住；從別處貼上的提示詞也不收（貼上會說「不收」）。</span></li>
+            <li><b>禁用角色</b><span><b class="num" data-stat="banned">—</b> 個角色查過年齡：未滿 18、學生、外觀像兒童、真人，一律不能抽。卡冊打開「含禁用」只列名字，不能用。</span></li>
+            <li><b>新字要試畫</b><span>每個新字用五個種子試畫，畫成小孩的不收。</span></li>
+            <li><b>卡面提示詞</b><span>每張有人物的卡面都寫 adult、mature female／male，負面詞擋 loli、child、teenage；兩人以上的不畫成全家福。</span></li>
+            <li><b>送出前再查一次</b><span>伺服器送 ComfyUI 之前把整段提示詞再對一次禁用表，有就整張不送。</span></li>
+          </ol>
+        </div>
+      </section>
+
+      <!-- ================= 08 五個房間 ================= -->
+      <section class="ch" id="ch-rooms" aria-labelledby="ch-rooms-t">
+        <header class="ch-head" data-reveal>
+          <p class="ch-num">08</p>
+          <h2 id="ch-rooms-t">五個房間</h2>
+          <p class="ch-lead">頂欄的五個分頁，各管一件事。點一個看它能做什麼。</p>
+        </header>
+        <div class="rooms" data-reveal>
+          <div class="room-tabs" id="room-tabs" role="tablist" aria-label="房間"></div>
+          <div class="room-panel" id="room-panel" role="tabpanel"></div>
+        </div>
+      </section>
+
+      <!-- ================= 09 生圖之後 ================= -->
+      <section class="ch" id="ch-gen" aria-labelledby="ch-gen-t">
+        <header class="ch-head" data-reveal>
+          <p class="ch-num">09</p>
+          <h2 id="ch-gen-t">生圖之後</h2>
+          <p class="ch-lead">按下「抽並生圖」之後，一張圖會走過這幾站。</p>
+        </header>
+        <ol class="gen-flow" data-reveal>
+          <li><b>排隊</b><span>伺服器把提示詞套進工作流程（底模、LoRA、尺寸、種子），交給 ComfyUI。同時印好幾張會排隊。</span></li>
+          <li><b>邊畫邊看</b><span>ComfyUI 每一步的預覽即時傳回網頁；卡住、斷線會自己接回來，手機換頁也看得到進度。</span></li>
+          <li><b>印好了</b><span>成品掛上牆。每張都記著「你放的牌」和「引擎補的牌」，可以單張撤下、收藏、照這張再印。</span></li>
+          <li><b>再加工</b><span>Hires 放大、修臉（只重畫臉）、換底模重印，都從成品下面的按鈕。</span></li>
+          <li><b>記帳</b><span>每張圖寫進出圖日誌；用到的牌各加一次，卡冊就知道誰常出好圖。</span></li>
+          <li><b>送出去</b><span>設定了 Discord，就照分級、角色、標籤分頻道送過去。</span></li>
+        </ol>
+      </section>
+
+      <!-- ================= 10 品質 ================= -->
+      <section class="ch" id="ch-qa" aria-labelledby="ch-qa-t">
+        <header class="ch-head" data-reveal>
+          <p class="ch-num">10</p>
+          <h2 id="ch-qa-t">品質</h2>
+          <p class="ch-lead">每改一次，整套測試跑一遍再推上去。</p>
+        </header>
+        <div class="qa" data-reveal>
+          <div><b class="num">45</b><span>段測試，同時跑約 16 分鐘：抽牌規則、互斥、分級、時代、伺服器、網頁畫面、英文版。</span></div>
+          <div><b class="num">2400</b><span>張固定種子的抽牌指紋：引擎的抽法一變就知道。</span></div>
+          <div><b class="num">2</b><span>個 repo：墨池另外開源成 danbooru_tag_mochi，每次同步、在 Windows、Mac、Linux 上自動測。</span></div>
+        </div>
+        <div class="arch-end" data-reveal>
+          <p>看懂了，就去試一次。</p>
+          <a class="btn btn-primary" href="./">去墨池</a>
+          <a class="btn" href="tutorial.html">看教學影片</a>
+        </div>
+      </section>
+    </main>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <script type="module" src="arch.js"></script>
+  </body>
+</html>

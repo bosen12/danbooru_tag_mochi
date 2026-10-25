@@ -236,7 +236,7 @@ def slim_card_manifest(raw: bytes) -> bytes:
     out = {
         tag: ({k: v for k, v in entry.items() if k not in _MANIFEST_BUILD_ONLY} if isinstance(entry, dict) else entry)
         for tag, entry in data.items()
-        # 舊版留下來的封鎖字（loli、shota）不給：網頁連名字都拿不到（圖檔本身見 blocked_asset）。
+        # 底線封鎖的字不給：網頁連名字都拿不到（圖檔本身見 blocked_asset）。
         if str(tag).replace("_", " ").strip().lower() not in _HARD_BANNED
     }
     return json.dumps(out, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
@@ -464,16 +464,16 @@ _URL_ATTR_RE = re.compile(r'\b(src|href)="([^"]+)"', re.I)
 
 
 def blocked_asset(rel: str) -> bool:
-    """永遠不給的卡面：HARD_BANNED 的字（loli、shota），以及收它們的 _hard_banned 資料夾。
+    """永遠不給的卡面：HARD_BANNED 的字，以及收它們的 _hard_banned 資料夾。
     抽牌本來就不會出（card-art.js 的 isCard），但舊版裝過的人 web/cards 底下可能還留著檔，
-    知道網址就打得開 —— 這裡擋掉，不管檔案在不在。"""
+    知道網址就打得開 —— 這裡擋掉，不管檔案在不在。
+    檔名用底線（oppai_loli.webp），比對前換回空格。連字號後面是縮圖雜湊。"""
     parts = [x.lower() for x in str(rel).replace("\\", "/").split("/") if x]
     if "_hard_banned" in parts:
         return True
     if "cards" in parts and parts:
-        stem = parts[-1].rsplit(".", 1)[0]
-        # 小縮圖的檔名帶內容雜湊（mini/160/loli-6c172addb9.webp）：連字號前面那段也要擋。
-        return stem in _HARD_BANNED or stem.split("-", 1)[0] in _HARD_BANNED
+        stem = parts[-1].rsplit(".", 1)[0].replace("_", " ")
+        return stem in _HARD_BANNED or stem.rsplit("-", 1)[0] in _HARD_BANNED
     return False
 
 
@@ -2310,7 +2310,23 @@ def prepare_face(payload: dict, spec: dict, raw: bytes, width: int, height: int,
 
 # 不能用的字：未成年相關（web/card-art.js 的 HARD_BANNED），加上詞庫的 characterBan（未成年、學生、
 # 童顏、真人、非人形的角色）。畫面上已經擋了；這裡是最後一道：自己組請求、貼進工作流的也一樣不收。
-_HARD_BANNED = {"loli", "shota"}
+_HARD_BANNED = {
+    "loli",
+    "shota",
+    "aged down",
+    "onee-shota",
+    "oppai loli",
+    "baby",
+    "kodomo doushi",
+    "toddlercon",
+    "toddlersex",
+    "mother and child",
+    "father and child",
+    "carrying baby",
+    "kindergarten uniform",
+    "tomoeda elementary school uniform",
+    "children",
+}
 _CHAR_BAN: dict = {"mtime": None, "tags": frozenset()}
 
 

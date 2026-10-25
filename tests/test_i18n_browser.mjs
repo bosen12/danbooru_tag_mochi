@@ -198,6 +198,29 @@ try {
       assert.deepEqual(errors, [], route + ' page errors');
       await page.close();
     }
+    {
+      // 原理頁：每一章能點的都點一遍（花色、架構圖、抽一張、互斥、附帶、分級、時代、房間），每一步都掃漏翻的中文。
+      const page = await context.newPage(), errors = [];
+      page.on('pageerror', (e) => errors.push(e.message));
+      await page.goto(origin + '/arch.html');
+      await page.locator('#language-select').waitFor();
+      await page.locator('#draw-tags .dtag').first().waitFor();
+      const name = `${width}-arch`;
+      await scan(page, name);
+      await page.screenshot({ path: resolve(out, name + '.png'), fullPage: false });
+      const clicks = ['#suits .suit:nth-child(4)', '.map-node[data-id="server"]', '#map-play', '#draw-rating button:nth-child(3)', '#draw-pins button:nth-child(2)', '#draw-go',
+        '#mutex-chips button:nth-child(1)', '#mutex-chips button:nth-child(2)', '#mutex-switch', '#mutex-chips button:nth-child(3)', '#imply-pool .link-btn', '#imply-switch', '#imply-chips button:nth-child(2)',
+        '#rating-ladder .rung:nth-child(2)', '#rating-ladder .rung:nth-child(3)', '#era-pick button:nth-child(1)', '#room-tabs button:nth-child(2)', '#room-tabs button:nth-child(3)', '#room-tabs button:nth-child(4)', '#room-tabs button:nth-child(5)'];
+      for (const selector of clicks) {
+        const n = page.locator(selector).first();
+        if (!(await n.count())) continue;
+        await n.scrollIntoViewIfNeeded(); await n.click(); await page.waitForTimeout(150);
+        await scan(page, name + selector);
+      }
+      await page.locator('#draw-tags .dtag').first().hover(); await scan(page, name + '-why');
+      assert.deepEqual(errors, [], name + ' page errors');
+      await page.close();
+    }
     await context.close();
   }
   const context = await browser.newContext({ locale: 'zh-TW' });

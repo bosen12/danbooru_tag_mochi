@@ -6,8 +6,25 @@
  * 所以 node（烘焙腳本、測試）跟瀏覽器用的是同一份。
  */
 
-/** 永遠不做成卡、不畫插畫、抽牌時一律封鎖的字。不是設定，是底線。 */
-export const HARD_BANNED = Object.freeze(["loli", "shota"]);
+/** 永遠不做成卡、不畫插畫、抽牌時一律封鎖的字。不是設定，是底線。
+ *  children 不在詞庫（merge 的 BANNED 會丟掉），貼上與送出仍靠這張表擋。 */
+export const HARD_BANNED = Object.freeze([
+  "loli",
+  "shota",
+  "aged down",
+  "onee-shota",
+  "oppai loli",
+  "baby",
+  "kodomo doushi",
+  "toddlercon",
+  "toddlersex",
+  "mother and child",
+  "father and child",
+  "carrying baby",
+  "kindergarten uniform",
+  "tomoeda elementary school uniform",
+  "children",
+]);
 const HARD = new Set(HARD_BANNED);
 
 /**

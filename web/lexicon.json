@@ -73402,6 +73402,275 @@
       "zh": "正太"
     },
     {
+      "tag": "aged down",
+      "section": "feature",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "body_f",
+      "sub": "bf_shape",
+      "zh": "年下"
+    },
+    {
+      "tag": "onee-shota",
+      "section": "subject",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [
+        "shota"
+      ],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "extra",
+      "sub": "cast_mix",
+      "needs": [
+        "male",
+        "female",
+        "pair"
+      ],
+      "zh": "姊姊×正太"
+    },
+    {
+      "tag": "oppai loli",
+      "section": "feature",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "height",
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "body_f",
+      "sub": "bf_shape",
+      "needs": [
+        "female"
+      ],
+      "zh": "巨乳蘿莉"
+    },
+    {
+      "tag": "baby",
+      "section": "feature",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "body_f",
+      "sub": "bf_shape",
+      "zh": "嬰兒"
+    },
+    {
+      "tag": "kodomo doushi",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "sex",
+      "sub": "sex_group",
+      "needs": [
+        "pair"
+      ],
+      "zh": "孩童之間"
+    },
+    {
+      "tag": "toddlercon",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "sex",
+      "sub": "sex_fetish",
+      "zh": "幼童性相關"
+    },
+    {
+      "tag": "toddlersex",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "sex",
+      "sub": "sex_group",
+      "needs": [
+        "pair"
+      ],
+      "zh": "幼童性交"
+    },
+    {
+      "tag": "mother and child",
+      "section": "subject",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "extra",
+      "sub": "cast_mix",
+      "needs": [
+        "female",
+        "pair"
+      ],
+      "zh": "母與幼子"
+    },
+    {
+      "tag": "father and child",
+      "section": "subject",
+      "gate": "male",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "extra",
+      "sub": "cast_mix",
+      "needs": [
+        "male",
+        "pair"
+      ],
+      "zh": "父與幼子"
+    },
+    {
+      "tag": "carrying baby",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [
+        "baby"
+      ],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "activity",
+      "sub": "act_daily",
+      "zh": "抱嬰兒"
+    },
+    {
+      "tag": "kindergarten uniform",
+      "section": "clothing",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "onepiece",
+      "bind": [],
+      "implies": [],
+      "layer": "garment",
+      "era": [
+        "modern"
+      ],
+      "group": "onepiece",
+      "sub": "op_uniform",
+      "zh": "幼稚園制服"
+    },
+    {
+      "tag": "tomoeda elementary school uniform",
+      "section": "clothing",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "onepiece",
+      "bind": [],
+      "implies": [],
+      "layer": "garment",
+      "era": [
+        "modern"
+      ],
+      "group": "onepiece",
+      "sub": "op_uniform",
+      "needs": [
+        "female"
+      ],
+      "zh": "友枝小學制服"
+    },
+    {
       "tag": "anime coloring",
       "section": "quality",
       "gate": "any",

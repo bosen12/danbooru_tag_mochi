@@ -250,11 +250,12 @@ export function mountTour(room) {
     const b = el("button", { class: "mast-extra tour-btn", id: "tour-btn", type: "button", title: `一步一步帶你用${ROOM_ZH[room]}（文字導覽，配合畫面操作）` }, "導覽");
     b.addEventListener("click", () => startTour(room));
     learn.after(b);
-    // 介紹影片、教學、導覽包成一組：窄螢幕放不下時整組一起換行，不會只有「導覽」自己掉到下一行。
+    // 介紹影片、教學、導覽、原理包成一組：窄螢幕放不下時整組一起換行，不會只有「導覽」自己掉到下一行。
     const links = el("span", { class: "mast-links" });
     const intro = document.querySelector('.mast-extra[href="intro.html"]');
+    const arch = document.querySelector('.mast-extra[href="arch.html"]');
     (intro && intro.parentElement === learn.parentElement ? intro : learn).before(links);
-    links.append(...[intro, learn, b].filter((n) => n && n.parentElement === links.parentElement));
+    links.append(...[intro, learn, b, arch].filter((n) => n && n.parentElement === links.parentElement));
   }
   if (seen(room) || navigator.webdriver) return;
   // 第一次來：等頁面安定一下再冒出來，不跟開場動畫搶。
