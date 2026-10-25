@@ -104,6 +104,19 @@ try {
       assert.deepEqual(errors, [], route + ' initializes and seeks without downloaded card art');
       await page.close();
     }
+    {
+      // 原理頁也要在沒有卡面時打得開：範例牌改用純字的牌（2026-10-25 開源版 CI 抓到的）。
+      const page = await context.newPage(), errors = [];
+      page.on('pageerror', (e) => errors.push(e.stack || e.message));
+      await page.goto(origin + '/arch.html');
+      await page.locator('#draw-tags .dtag').first().waitFor();
+      for (const sel of ['#rating-ladder .rung:nth-child(1)', '#era-pick button:nth-child(1)', '#suits .suit:nth-child(3)']) await page.locator(sel).first().click();
+      assert.ok(await page.locator('#hero-deck .card').count() > 0, 'Arch hero deals text cards without card art');
+      assert.ok(await page.locator('#rating-cards .card').count() > 0, 'Arch rating samples fall back to text cards');
+      await scan(page, '/arch.html-no-card-art');
+      assert.deepEqual(errors, [], '/arch.html works without downloaded card art');
+      await page.close();
+    }
     await context.close();
   }
   for (const width of [320, 390, 1440]) {

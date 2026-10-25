@@ -24,6 +24,11 @@ let assets = null;
 const zh = (tag) => lib?.byTag.get(tag)?.zh || lex?.byTag.get(tag)?.zh || tag;
 const fmt = (n) => new Intl.NumberFormat().format(n);
 const motion = () => !reducedMotion();
+// 範例牌挑有插畫的；一張插畫都還沒有（剛裝好、卡面還沒下載）就用純字的牌，不要整段空掉或出錯。
+const preferArt = (list) => {
+  const drawn = list.filter((c) => assets.art(c.tag));
+  return drawn.length ? drawn : list;
+};
 
 /** 一張小牌（跟墨池同一種牌面）。 */
 function miniCard(tag, w = 64) {
@@ -107,7 +112,7 @@ function countUp(node, to) {
 function buildHero() {
   const deck = $("hero-deck");
   const prompt = $("hero-prompt");
-  const withArt = (suit) => lib.cards.filter((c) => c.suit === suit && c.rating === "general" && assets.art(c.tag));
+  const withArt = (suit) => preferArt(lib.cards.filter((c) => c.suit === suit && c.rating === "general" && !c.banned));
   const pools = CARD_SUITS.map(withArt).filter((p) => p.length);
   let round = 0;
   const deal = () => {
@@ -262,7 +267,7 @@ function buildSuits() {
     const subs = runs.flatMap((r) => r.items.map((i) => ({ ...i, fam: r.fam })));
     const counts = new Map();
     for (const c of cards) counts.set(c.group, (counts.get(c.group) || 0) + 1);
-    const shown = cards.filter((c) => c.rating === "general" && assets.art(c.tag));
+    const shown = preferArt(cards.filter((c) => c.rating === "general"));
     const rand = mulberry32(suit.length * 97 + cards.length);
     const sample = Array.from({ length: Math.min(8, shown.length) }, () => shown[Math.floor(rand() * shown.length)]).filter((c, i, a) => a.indexOf(c) === i);
     view.replaceChildren(
@@ -563,9 +568,9 @@ function buildRating() {
     );
     // 敏感、色情多開的那些只寫名字，不放卡面。
     if (cur === "general") {
-      const pool = at("general").filter((c) => assets.art(c.tag));
+      const pool = preferArt(at("general"));
       const rand = mulberry32(42);
-      const pick = [...new Set(Array.from({ length: 14 }, () => pool[Math.floor(rand() * pool.length)]))].slice(0, 8);
+      const pick = [...new Set(Array.from({ length: 14 }, () => pool[Math.floor(rand() * pool.length)]))].filter(Boolean).slice(0, 8);
       cardsBox.replaceChildren(el("p", { class: "dim" }, "全年齡：大部分的牌都在這一級。"), el("div", { class: "suit-cards" }, pick.map((c) => miniCard(c.tag, 64))));
     } else {
       const prev = cur === "sensitive" ? "general" : "sensitive";
@@ -587,9 +592,10 @@ function buildEras() {
     pick.replaceChildren(
       ...ERAS.map((e) => el("button", { type: "button", role: "radio", "aria-checked": cur === e ? "true" : "false", onclick: () => ((cur = e), paint()) }, ERA_ZH[e] || e))
     );
-    const own = lib.cards.filter((c) => !c.banned && c.rating === "general" && c.eras.includes(cur) && !c.eras.includes("any") && (cur === "modern" || !c.eras.includes("modern")) && assets.art(c.tag));
+    const own = lib.cards.filter((c) => !c.banned && c.rating === "general" && c.eras.includes(cur) && !c.eras.includes("any") && (cur === "modern" || !c.eras.includes("modern")));
     const rand = mulberry32(cur.length * 31);
-    const sample = [...new Set(Array.from({ length: 12 }, () => own[Math.floor(rand() * own.length)]))].filter(Boolean).slice(0, 8);
+    const pool = preferArt(own);
+    const sample = [...new Set(Array.from({ length: 12 }, () => pool[Math.floor(rand() * pool.length)]))].filter(Boolean).slice(0, 8);
     const label = cur === "modern" ? `現代專用的牌 ${fmt(own.length)} 張，例如：` : `${ERA_ZH[cur] || cur}會出現、現代不會的牌 ${fmt(own.length)} 張，例如：`;
     box.replaceChildren(el("p", { class: "dim" }, label), el("div", { class: "suit-cards" }, sample.map((c) => miniCard(c.tag, 64))));
     if (motion()) [...box.querySelectorAll(".card")].forEach((n, i) => n.animate([{ opacity: 0, transform: "rotate(-6deg) translateY(10px)" }, { opacity: 1, transform: "none" }], { duration: DUR.long, delay: i * 40, easing: css(CURVE.settle), fill: "backwards" }));
