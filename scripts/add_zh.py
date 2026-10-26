@@ -5,7 +5,10 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from grok_20261026_tags import ZH_CLOTHING
+from clothing_tags import ZH_CLOTHING
+from env_tags import ZH_ENV
+from pose_tags import ZH_POSE
+from quality_tags import ZH_QUALITY
 
 ROOT = Path(__file__).resolve().parents[1]
 LEX = ROOT / "web" / "lexicon.json"
@@ -1351,6 +1354,9 @@ ITEMS = {
     "cardigan": "開襟衫",
 }
 ZH.update(ZH_CLOTHING)
+ZH.update(ZH_ENV)
+ZH.update(ZH_POSE)
+ZH.update(ZH_QUALITY)
 
 
 def auto_zh(tag: str) -> str | None:

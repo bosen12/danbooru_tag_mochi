@@ -118,6 +118,8 @@ let ratingFreePaint = null;
 let list = [];
 // 牌的節點留著重用：換排序時同一張牌是同一個節點，才滑得過去，圖也不必重載。
 const cells = new Map();
+// 卡面用自訂提示詞的牌（/api/card-art/custom）：格子上標「自訂」。
+let customArt = new Set();
 const ui = S.typedLike({ suit: "all", group: "", query: "", order: "desc", usedOnly: false, showBanned: false, charGender: "" }, readUi());
 // 搜尋字跟著這個分頁走（store.js 的 saveTab／loadTab，跟合成池同一套）：去墨池放一張牌再回來，剛才找的字還在，
 // 「回到剛才看的地方」（spotSig 裡有搜尋字）也對得上。重新整理照舊是空的；離開太久（半小時）不帶回來。
@@ -298,6 +300,15 @@ async function boot() {
   });
   $("book-ach").addEventListener("click", openAch);
   renderAch();
+  // 哪些牌的卡面用自訂提示詞：回來再補標，不擋第一屏。
+  fetch("/api/card-art/custom", { cache: "no-store" })
+    .then((r) => (r.ok ? r.json() : null))
+    .then((j) => {
+      if (!Array.isArray(j?.tags) || !j.tags.length) return;
+      customArt = new Set(j.tags);
+      repaintLive();
+    })
+    .catch(() => {});
   // 滑鼠停在牌上：跟墨池、疊印台同一張浮空放大卡，多一行用過幾次。
   attachPeek($("book-grid"), ".card[data-tag]", peekInfo);
   attachTilt($("book-grid"));
@@ -997,6 +1008,7 @@ function paintCell(cell, card, rank) {
   } else old?.remove();
   if (card.banned) setCardFlag(cell.querySelector(".card"), { kind: "ban", text: "禁用" });
   else paintBoxMark(cell, card.tag);
+  paintCustom(cell, card.tag);
   const [w, fav, drop] = warOf(card.tag);
   const addedNote = card.added ? `，${card.added} 加入` : "";
   cell
@@ -1453,6 +1465,7 @@ function openCard(card, srcNode) {
   const all = rankIn(card, pool);
   const inSuit = rankIn(card, pool.filter((x) => x.suit === card.suit));
   const art = card.banned ? null : assets.art(card.tag);
+  const detailImg = art ? el("img", { src: art, alt: card.zh }) : null;
   const big = el("b", { class: "book-big-n" }, c ? "0" : "—");
   const stats = el(
     "dl",
@@ -1478,7 +1491,7 @@ function openCard(card, srcNode) {
     el(
       "div",
       { class: "detail book-detail" },
-      art ? el("div", { class: "detail-art" }, el("img", { src: art, alt: card.zh })) : cardNode(card, assets, { tagName: "div" }),
+      detailImg ? el("div", { class: "detail-art" }, detailImg) : cardNode(card, assets, { tagName: "div" }),
       el(
         "div",
         {},
@@ -1530,11 +1543,176 @@ function openCard(card, srcNode) {
           },
           inBox(card.tag) ? "從卡盒拿出來" : "放進卡盒"
         ),
+        el("button", { class: "btn btn-ghost", type: "button", title: "看、改這張牌卡面的正負面提示詞；改了就重烤", onclick: () => openCardPrompt(card, detailImg) }, "提示詞"),
       ],
     }
   );
   flyToDetail(srcNode, sheet.sheet || document.querySelector(".overlay:last-of-type .sheet"));
   if (c) countUp(big, c);
+}
+
+/* ---------- 卡面提示詞（card_art_custom.py、/api/card-art/*） ---------- */
+
+const cleanPrompt = (s) =>
+  String(s || "")
+    .split(",")
+    .map((x) => x.trim())
+    .filter(Boolean)
+    .join(", ");
+
+const BAKE_TEXT = {
+  saved: "存下了。下次烘焙卡面時（開墨池的第一次準備）會照這段提示詞烤。",
+  queued: "排隊中…別的卡面正在烤，輪到它就烤。",
+  baking: "烤卡面中…大約 6 秒。",
+  done: "烤好了，卡面換成新的。",
+  comfy_down: "ComfyUI 沒開，先存著；下次開墨池時會照這段提示詞烤。",
+  failed: "烤失敗了，提示詞有存下來，可以再按一次存下並重烤。",
+};
+
+/** 卡面換新：重新讀卡面清單，這一格重做，畫面上的牌跟著換。回傳新的大圖網址。 */
+async function refreshArt(tag) {
+  const m = await fetch(`cards/manifest.json?r=${Date.now()}`, { cache: "no-store" })
+    .then((r) => (r.ok ? r.json() : null))
+    .catch(() => null);
+  if (!m) return null;
+  assets = createAssets(m);
+  cells.delete(tag);
+  render({ animate: false });
+  return assets.art(tag);
+}
+
+/** 一張牌的卡面提示詞：看現在的正負面提示詞，按「修改」改，存下就馬上重烤；也可以恢復預設。 */
+async function openCardPrompt(card, detailImg) {
+  sfx.tap?.();
+  let info;
+  try {
+    const r = await fetch(`/api/card-art/prompt?${new URLSearchParams({ tag: card.tag })}`, { cache: "no-store" });
+    if (r.status === 404) return toast("這張牌沒有卡面（純字牌），沒有提示詞可以改。");
+    if (!r.ok) throw new Error(String(r.status));
+    info = await r.json();
+  } catch (err) {
+    return toast(`提示詞讀不到：${friendlyError(err)}`);
+  }
+  const pos = el("textarea", { class: "art-prompt-text", rows: 6, readonly: true, spellcheck: false, "aria-label": "正面提示詞" });
+  const neg = el("textarea", { class: "art-prompt-text", rows: 3, readonly: true, spellcheck: false, "aria-label": "負面提示詞" });
+  const from = el("span", { class: "art-prompt-from" });
+  const state = el("p", { class: "art-prompt-state", role: "status", "aria-live": "polite" });
+  const preview = el("img", { class: "art-prompt-preview", alt: "", src: assets.art(card.tag) || "" });
+  const current = () => info.custom || info.default;
+  const fill = () => {
+    pos.value = current().positive;
+    neg.value = current().negative;
+    from.textContent = info.custom ? "自訂" : "預設";
+    from.dataset.custom = info.custom ? "true" : "false";
+  };
+  const changed = () => cleanPrompt(pos.value) !== cleanPrompt(current().positive) || cleanPrompt(neg.value) !== cleanPrompt(current().negative);
+  const edit = el("button", { class: "btn", type: "button" }, "修改");
+  const save = el("button", { class: "btn btn-primary", type: "button", disabled: true }, "存下並重烤");
+  const reset = el("button", { class: "btn btn-ghost", type: "button", hidden: !info.custom }, "恢復預設");
+  const lock = (on) => {
+    pos.readOnly = neg.readOnly = on;
+    edit.hidden = !on;
+  };
+  const markCustom = () => {
+    if (info.custom) customArt.add(card.tag);
+    else customArt.delete(card.tag);
+    const cell = cells.get(card.tag);
+    if (cell) paintCustom(cell, card.tag);
+  };
+  let polling = 0;
+  const follow = async () => {
+    const mine = ++polling;
+    for (;;) {
+      const st = info.bake?.state;
+      state.dataset.state = st || "";
+      state.textContent = st ? BAKE_TEXT[st] || "" : "";
+      if (st !== "queued" && st !== "baking") break;
+      await new Promise((r) => setTimeout(r, 1500));
+      if (mine !== polling || !sheet.sheet?.isConnected) return;
+      try {
+        const r = await fetch(`/api/card-art/prompt?${new URLSearchParams({ tag: card.tag })}`, { cache: "no-store" });
+        if (r.ok) info = await r.json();
+      } catch {
+        // 伺服器一時連不到：下一輪再問
+      }
+    }
+    if (info.bake?.state === "done") {
+      const src = await refreshArt(card.tag);
+      if (src) {
+        preview.src = src;
+        if (detailImg) detailImg.src = src;
+      }
+    }
+    save.disabled = !changed();
+    reset.disabled = false;
+  };
+  const submit = async (url, body) => {
+    save.disabled = reset.disabled = true;
+    state.dataset.state = "queued";
+    state.textContent = "存下了，送去烤…";
+    let j = {};
+    let ok = false;
+    try {
+      const r = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+      j = await r.json().catch(() => ({}));
+      ok = r.ok;
+    } catch (err) {
+      j = { error: friendlyError(err) };
+    }
+    if (!ok) {
+      state.dataset.state = "failed";
+      state.textContent = j.error || "存不了";
+      refuse(save);
+      save.disabled = !changed();
+      reset.disabled = false;
+      return;
+    }
+    info = j;
+    fill();
+    lock(true);
+    reset.hidden = !info.custom;
+    markCustom();
+    sfx.tap?.();
+    follow();
+  };
+  edit.addEventListener("click", () => {
+    lock(false);
+    pos.focus();
+  });
+  for (const box of [pos, neg]) box.addEventListener("input", () => (save.disabled = !changed()));
+  save.addEventListener("click", () => submit("/api/card-art/prompt", { tag: card.tag, positive: pos.value, negative: neg.value }));
+  reset.addEventListener("click", () => submit("/api/card-art/reset", { tag: card.tag }));
+  fill();
+  const sheet = openSheet(
+    `卡面提示詞・${card.zh}`,
+    el(
+      "div",
+      { class: "art-prompt" },
+      el("div", { class: "art-prompt-side" }, preview, el("p", { class: "art-prompt-rating" }, RATING_LABEL[info.rating] || "")),
+      el(
+        "div",
+        { class: "art-prompt-main" },
+        el("p", { class: "art-prompt-head" }, "現在用的是", from, "提示詞"),
+        el("label", { class: "art-prompt-label" }, "正面"),
+        pos,
+        el("label", { class: "art-prompt-label" }, "負面"),
+        neg,
+        el("p", { class: "art-prompt-guard" }, `烤的時候負面詞一定會接上 ${info.guard.join(", ")}，避免畫成未成年的樣子；正面不能寫封鎖字。`),
+        state
+      )
+    ),
+    { foot: [edit, save, reset] }
+  );
+  // 上次存的還在烤：打開就接著看進度。
+  if (info.bake && ["queued", "baking"].includes(info.bake.state)) follow();
+}
+
+/** 格子右下角的「自訂」：卡面用的是自訂提示詞。 */
+function paintCustom(cell, tag) {
+  const mark = cell.querySelector(".book-custom");
+  if (customArt.has(tag)) {
+    if (!mark) cell.querySelector(".book-meta")?.append(el("span", { class: "book-custom", title: "卡面用的是自訂提示詞" }, "自訂"));
+  } else mark?.remove();
 }
 
 /* ---------- 成就牆（achievements.js） ---------- */
@@ -1594,18 +1772,22 @@ function localWorks(card) {
   ].sort((a, b) => b.at - a.at);
 }
 
-function workTile(x, i) {
+function workTile(x, i, onGone) {
   const src = x.albumThumb || viewSrc(x.image);
   const img = el("img", {
     src,
     alt: "",
     loading: "lazy",
     decoding: "async",
-    onerror: (e) => {
-      // ComfyUI 那邊把原圖刪了（又沒收藏）：留一格說明，不要破圖。
-      const t = e.currentTarget.parentElement;
-      t.classList.add("is-gone");
-      e.currentTarget.replaceWith(el("span", { class: "book-work-gone" }, "原圖不在了"));
+    onerror: async (e) => {
+      // ComfyUI 那邊把原圖刪了（又沒收藏）：這一格整個拿掉，張數也不算它（2026-10-26 專案主：自己清掉）。
+      // 只認 404（伺服器說原圖不在了）；ComfyUI 沒開是 502，那時候圖都還在，不能整排清掉。
+      const tile = e.currentTarget.closest(".book-work");
+      const r = await fetch(src, { cache: "no-store" }).catch(() => null);
+      r?.body?.cancel().catch(() => {});
+      if (r?.status !== 404) return;
+      tile?.remove();
+      onGone?.(x);
     },
   });
   return el(
@@ -1635,17 +1817,32 @@ function worksOf(card) {
   let items = [];
   let total = 0;
   let fromLog = 0;
+  // 原圖已經不在的（讀圖失敗）：不顯示、不算張數。
+  const gone = new Set();
+  let shown = 0;
+  let extraN = 0;
 
+  const showCount = () => {
+    const n = Math.max(shown, total + extraN - gone.size);
+    count.textContent = shown || n ? `${n} 張圖${total > fromLog ? `・先看 ${shown} 張` : ""}` : "";
+    grid.hidden = !shown;
+    note.hidden = !!shown;
+  };
+  const onGone = (x) => {
+    gone.add(x.image);
+    shown = grid.children.length;
+    showCount();
+  };
   const paint = () => {
     // 日誌那邊有的就不重複放（同一張圖的網址一樣）；日誌以前的接在後面。
     const seen = new Set(items.map((x) => x.image));
     const extra = local.filter((x) => !seen.has(x.image));
-    const all = [...items, ...extra];
-    count.textContent = all.length || total ? `${total + extra.length} 張圖${total > fromLog ? `・先看 ${all.length} 張` : ""}` : "";
-    grid.replaceChildren(...all.map(workTile));
-    grid.hidden = !all.length;
-    note.hidden = !!all.length;
+    const all = [...items, ...extra].filter((x) => !gone.has(x.image));
+    extraN = extra.length;
+    grid.replaceChildren(...all.map((x, i) => workTile(x, i, onGone)));
+    shown = all.length;
     note.textContent = "還沒有用到它的成品。從現在起印的每一張都會記下來，這裡就看得到。";
+    showCount();
     more.hidden = fromLog >= total;
   };
 

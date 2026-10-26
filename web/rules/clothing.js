@@ -94,7 +94,14 @@ export function clothingWearsKey(clothingTag, key) {
   const tag = String(clothingTag || "").toLowerCase();
   if (!tag || tag.startsWith("no ")) return false;
   // 泳裝在衣服底下。這句自己不是那件泳裝，也不能拿來證明身上有衣服。
-  if (tag === "swimsuit under clothes") return false;
+  // 2026-10-26 衣服一批的「衣服下穿比基尼／緊身衣／連身衣」是同一句型。
+  // 拿它們當身上有那件衣服，夏日洋裝會配上 bikini bottom aside。
+  if (
+    tag === "swimsuit under clothes" ||
+    tag === "bikini under clothes" ||
+    tag === "leotard under clothes" ||
+    tag === "bodysuit under clothes"
+  ) return false;
   const aliases = KEY_WEAR[key] || [key];
   const toks = new Set(tagTokens(tag));
   return aliases.some((w) => {

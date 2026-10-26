@@ -43,6 +43,9 @@ const server = createServer(async (req, res) => {
       '/api/recipes': { ok: true, items: works }, '/api/decks': { ok: true, decks: [{ id: 'custom', name: '紅髮・我的牌組', tags: ['red hair', 'kimono'], weights: { 'red hair': 1.2 } }] },
       '/api/usage': { counts: {}, mine: {}, last: {} },
       '/api/discord/config': { ok: true, configured: false, enabled: false, mode: 'webhook' },
+      // 卡冊的「提示詞」視窗（卡面自訂提示詞）：讀得到預設、標一張自訂的，不真的烘。
+      '/api/card-art/custom': { ok: true, tags: ['red hair'] },
+      '/api/card-art/prompt': { ok: true, tag: 'red hair', rating: 'general', kind: 'card', default: { positive: '1girl, solo, adult, red hair, portrait, simple background, sfw, general, masterpiece, best quality', negative: 'loli, shota, child, aged down, teenage, kid, toddler' }, custom: { positive: '1girl, solo, adult, red hair, braid', negative: 'blurry', at: 1 }, guard: ['loli', 'shota', 'child', 'aged down', 'teenage', 'kid', 'toddler'], baked: null, bake: { state: 'done', v: 'abc' } },
       // 解析池：GET 是設定面板的模型清單，POST 是解析結果（同一份就好；不碰 ComfyUI）。
       '/api/parse': { ok: true, installed: true, models: ['wd-vit-tagger-v3', 'wd-eva02-large-tagger-v3'], defaults: { model: 'wd-vit-tagger-v3', threshold: 0.35, characterThreshold: 0.85, exclude: '' }, sure: 0.7,
         tags: ['1girl', 'solo', 'red_hair', 'kimono', 'outdoors', 'smile', 'looking_at_viewer', 'not_a_real_tag_xyz'].map((tag, i) => ({ tag, sure: i < 4 })), settings: { model: 'wd-vit-tagger-v3', threshold: 0.35, characterThreshold: 0.85, exclude: '' }, tiers: [0.35, 0.7] },
@@ -176,6 +179,14 @@ try {
         const n = page.locator(selector).first();
         if (await n.count()) {
           await n.click(); await page.waitForTimeout(250); await scan(page, name + selector);
+          if (selector === '#book-grid .card:first-child') {
+            // 詳情腳下的「提示詞」：打開卡面提示詞視窗，按修改看編輯狀態。
+            await page.locator('.overlay:last-of-type .sheet button', { hasText: 'Prompt' }).last().click();
+            await page.locator('.art-prompt').waitFor();
+            await page.locator('.overlay:last-of-type .sheet button', { hasText: 'Edit' }).click();
+            await page.waitForTimeout(200); await scan(page, name + '-art-prompt');
+            await page.keyboard.press('Escape'); await page.waitForTimeout(180);
+          }
           if (selector === '.album-tile') assert.equal(await page.locator('.sheet h2').textContent(), works[0].name, 'User image names must remain unchanged');
           if (selector === '.pose-btn') {
             await page.getByRole('button', { name: 'Open pose editor', exact: true }).click();

@@ -8,8 +8,11 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from groups import GROUP_ORDER, GROUP_ZH, assign_group
-from grok_20261026_tags import NARROW as GROK_NARROW
-from grok_20261026_tags import UMBRELLA_EXTRA, extra_grok_clothing
+from clothing_tags import NARROW as CLOTHING_NARROW
+from clothing_tags import UMBRELLA_EXTRA, extra_clothing_tags
+from env_tags import NARROW as ENV_NARROW, extra_env_tags
+from pose_tags import NARROW as POSE_NARROW, extra_pose_tags
+from quality_tags import NARROW as QUALITY_NARROW, extra_quality_tags
 from subgroups import CHARACTER_SUB_EN, SUB_ORDER, SUB_ZH, assign_sub, character_sub_id, check_subs
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -364,7 +367,8 @@ ERA_OF = {
 # sports_bra —— 運動內衣在他們的分類裡不是 bra。我們自己補出來的 -> bra 會讓
 # 「black sports bra, sports bra, bra」這種三連出現，而那個 bra 是訓練集裡沒有的。
 SUFFIX_COMPOUND_EXCEPTIONS = {
-    "bra": ("sports bra",),
+    # 運動胸罩是另一種胸罩。發育期胸罩是封鎖字，不要帶出一般胸罩。
+    "bra": ("sports bra", "training bra"),
     # 水手領是領口形狀，不是項圈。後綴規則會把它收成 collar。
     "collar": ("sailor collar", "frilled collar", "high collar", "fur collar"),
     # 大衣只有現代。毛皮大衣要在維多利亞也能抽，再帶出 coat 會整筆被拒。
@@ -1507,7 +1511,10 @@ NARROW_HEAT = {
     'cupless bra': ['flash', 'sex'],
 }
 # 2026-10-26 衣服一批裡，熱度不能被服裝通則攤開的字。
-NARROW_HEAT.update(GROK_NARROW)
+NARROW_HEAT.update(CLOTHING_NARROW)
+NARROW_HEAT.update(ENV_NARROW)
+NARROW_HEAT.update(POSE_NARROW)
+NARROW_HEAT.update(QUALITY_NARROW)
 UMBRELLA.update(UMBRELLA_EXTRA)
 
 
@@ -6968,7 +6975,10 @@ def main() -> None:
     rows.extend(extra_round4_other())
     rows.extend(extra_suggestion_1500())
     rows.extend(extra_character_tags())
-    rows.extend(extra_grok_clothing())
+    rows.extend(extra_clothing_tags())
+    rows.extend(extra_env_tags())
+    rows.extend(extra_pose_tags())
+    rows.extend(extra_quality_tags())
 
     old_zh: dict[str, str] = {}
     if OUT.exists():

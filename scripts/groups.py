@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
-from grok_20261026_tags import GROUP_OF as GROK_CLOTHING_GROUPS
+from clothing_tags import GROUP_OF as CLOTHING_GROUPS
+from env_tags import GROUP_OF as ENV_GROUPS
+from pose_tags import GROUP_OF as POSE_GROUPS
+from quality_tags import GROUP_OF as QUALITY_GROUPS
 
 GROUP_ORDER = {
     "quality": ["fixed", "style", "boost"],
@@ -918,8 +921,14 @@ ROUND_1500_GROUPS = {
 
 def assign_group(item: dict) -> str:
     # 2026-10-26 衣服一批。名字裡的「armor」「kimono」會被時代規則改組，這裡以分類結果為準。
-    if item.get("tag") in GROK_CLOTHING_GROUPS:
-        return GROK_CLOTHING_GROUPS[item["tag"]]
+    if item.get("tag") in CLOTHING_GROUPS:
+        return CLOTHING_GROUPS[item["tag"]]
+    if item.get("tag") in ENV_GROUPS:
+        return ENV_GROUPS[item["tag"]]
+    if item.get("tag") in POSE_GROUPS:
+        return POSE_GROUPS[item["tag"]]
+    if item.get("tag") in QUALITY_GROUPS:
+        return QUALITY_GROUPS[item["tag"]]
     if item.get("tag") in ROUND_1500_GROUPS:
         return ROUND_1500_GROUPS[item["tag"]]
     if item.get("tag") in ROUND4_BATCH1_GROUPS:

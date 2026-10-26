@@ -67,6 +67,20 @@ EXPECTED = 3602  # 這一版全年齡的張數
 JOBS = ROOT / "scripts" / "card_jobs.json"
 
 
+def load_jobs():
+    """卡面清單（card_jobs.json），換上卡冊「提示詞」視窗的自訂提示詞（card_art_custom.py）：
+    改過的牌照自訂的比對，才不會被當成「舊版」又抓公開包回來。讀不到回 None。"""
+    jobs = json.loads(JOBS.read_text(encoding="utf-8"))
+    jobs = jobs if isinstance(jobs, list) else jobs.get("jobs", [])
+    try:
+        sys.path.insert(0, str(ROOT))
+        import card_art_custom
+        card_art_custom.apply(jobs)
+    except Exception:  # noqa: BLE001 —— 自訂檔壞了照預設比對，不能讓第一次準備整個停掉
+        pass
+    return jobs
+
+
 def stale_jobs(wanted) -> list:
     """本機 manifest 裡，全年齡卡的提示詞跟卡面清單（card_jobs.json）對不上的那些。"""
     try:
@@ -111,8 +125,7 @@ def have_enough() -> bool:
     if MARKER.exists():
         return True
     try:
-        jobs = json.loads(JOBS.read_text(encoding="utf-8"))
-        jobs = jobs if isinstance(jobs, list) else jobs.get("jobs", [])
+        jobs = load_jobs()
     except (OSError, ValueError):
         jobs = None
     if jobs:
@@ -152,8 +165,7 @@ def missing_report() -> tuple[int, int, list[str]]:
     """缺什麼：(沒有圖的張數, 圖在但是舊版的張數, 幾個例子的 tag)。照 have_enough() 同一套判斷，
     給 --check 印出來（第一次準備的面板寫「缺幾張、例如哪些」）。讀不到卡面清單就回 (0, 0, [])。"""
     try:
-        jobs = json.loads(JOBS.read_text(encoding="utf-8"))
-        jobs = jobs if isinstance(jobs, list) else jobs.get("jobs", [])
+        jobs = load_jobs()
     except (OSError, ValueError):
         return 0, 0, []
     wanted = [j for j in jobs if isinstance(j, dict) and j.get("rating", "general") == "general"

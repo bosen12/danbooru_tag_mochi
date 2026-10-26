@@ -38,6 +38,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 import server  # noqa: E402
+import card_art_custom  # noqa: E402
 sys.path.insert(0, str(ROOT / "scripts"))
 import card_thumbnails  # noqa: E402
 
@@ -71,11 +72,12 @@ def card_job_list() -> list[dict]:
 
 
 def card_jobs() -> list[dict]:
+    # 卡冊「提示詞」視窗改過的牌照自訂的烘（card_art_custom.py）；負面詞一定接上擋未成年的那串。
     return [
         {"key": j["tag"], "file": j["file"], "positive": j["positive"], "negative": j.get("negative", ""),
          "rating": j["rating"], "kind": j.get("kind", "card"), "width": CARD_W, "height": CARD_H,
          "thumb": (THUMB_W, THUMB_H), "seed": SEED, "small": True}
-        for j in card_job_list()
+        for j in card_art_custom.apply(card_job_list())
     ]
 
 

@@ -21,6 +21,9 @@ _env_os.environ["GEN_LOG_PATH"] = str(Path(_env_tmp.mkdtemp()) / "gen_log.jsonl"
 # 使用者在網頁上選的偏好路徑、底模（data/settings.json）不能影響測試，也不能被測試改到。
 _env_os.environ["APP_SETTINGS"] = str(Path(_env_tmp.mkdtemp()) / "settings.json")
 # 預覽縮圖的快取（data/thumb-cache）不能被測試寫進去。
+# 卡面自訂提示詞（data/card_art_custom.json）不能被測試寫進去，也不能真的烘卡。
+_env_os.environ["CARD_ART_CUSTOM_PATH"] = str(Path(_env_tmp.mkdtemp()) / "card_art_custom.json")
+_env_os.environ["NO_CARD_BAKE"] = "1"
 _env_os.environ["THUMB_CACHE_DIR"] = str(Path(_env_tmp.mkdtemp()) / "thumb-cache")
 from server import (  # noqa: E402
     CKPT,
@@ -612,6 +615,16 @@ _minor = [
     "nanamori school uniform",
     "sakugawa school uniform",
     "nanairogaoka middle school uniform",
+    "raimon",
+    "pacifier",
+    "diaper",
+    "bib",
+    "onesie",
+    "training bra",
+    "age progression",
+    "age comparison",
+    "parent and child",
+    "father and son",
     "children",
     "child carry",
     "child",
@@ -621,6 +634,7 @@ ok("十五個新封鎖字都擋得到（底線、權重括號），含 children�
 ok("babydoll 不會被 baby 誤擋", _bip("1girl, babydoll") == [])
 ok("carrying、carrying person、princess carry、piggyback 照舊能送", _bip("carrying, carrying person, princess carry, piggyback") == [])
 ok("mother and daughter、sisters、family 不是封鎖字", _bip("mother and daughter, sisters, family") == [])
+ok("child's drawing、miniboy、mini person、brother and sister、teacher and student 不是封鎖字", _bip("child's drawing, miniboy, mini person, brother and sister, teacher and student") == [])
 ok("school uniform、serafuku、gakuran 照舊能送", _bip("school uniform, serafuku, gakuran") == [])
 ok("能用的角色不擋（自己的括號留著）", _bip("((makima (chainsaw man))), yor briar") == [])
 try:
@@ -2338,6 +2352,46 @@ try:
     ok("recover: ComfyUI 連不上回 unknown（網頁等一下再問）", server.recover_gen("gone0000001", "pid-run-001")["state"] == "unknown")
 finally:
     server.gen_log.all_items, server.api = _saved_rec
+
+# ---------- 卡面自訂提示詞（卡冊的「提示詞」視窗，2026-10-26） ----------
+import card_art_custom as _cac  # noqa: E402
+
+_job_tag = next(iter(server.card_job_defaults()), "")
+ok("卡面自訂：預設提示詞讀 card_jobs.json", bool(_job_tag) and server.card_art_prompt_info(_job_tag)["default"]["positive"])
+try:
+    server.card_art_prompt_info("no such card at all")
+    ok("卡面自訂：沒有卡面的牌回 KeyError（404）", False)
+except KeyError:
+    ok("卡面自訂：沒有卡面的牌回 KeyError（404）", True)
+try:
+    server.save_card_prompt({"tag": _job_tag, "positive": "1girl, (loli:1.2), smile", "negative": ""})
+    ok("卡面自訂：正面有封鎖字（含權重括號）擋下", False)
+except server.PromptBlocked:
+    ok("卡面自訂：正面有封鎖字（含權重括號）擋下", True)
+ok("卡面自訂：被擋的沒有存", _job_tag not in _cac.load())
+_saved = server.save_card_prompt({"tag": _job_tag, "positive": " 1girl ,  adult , red sweater ,", "negative": "blurry"})
+ok("卡面自訂：存下（逗號、空白整理過）", _saved["custom"] and _saved["custom"]["positive"] == "1girl, adult, red sweater", str(_saved["custom"]))
+ok("卡面自訂：NO_CARD_BAKE 只記下、不烘", _saved["bake"]["state"] == "saved")
+_jobs = _cac.apply([{"tag": _job_tag, "positive": "x", "negative": ""}])
+ok("卡面自訂：烘卡清單換成自訂的正面", _jobs[0]["positive"] == "1girl, adult, red sweater" and _jobs[0]["custom"])
+ok("卡面自訂：負面一定接上擋未成年的那串", all(t in _jobs[0]["negative"].split(", ") for t in _cac.AGE_GUARD) and _jobs[0]["negative"].startswith("blurry"))
+ok("卡面自訂：負面已經有的不重複接", _cac.guard_negative("loli, child, blurry").count("loli") == 1)
+_default = server.card_art_prompt_info(_job_tag)["default"]
+_same = server.save_card_prompt({"tag": _job_tag, "positive": _default["positive"], "negative": _default["negative"]})
+ok("卡面自訂：存成跟預設一樣就是恢復預設", _same["custom"] is None and _job_tag not in _cac.load())
+server.save_card_prompt({"tag": _job_tag, "positive": "1girl, adult, blue sweater", "negative": ""})
+ok("卡面自訂：恢復預設刪掉自訂", server.reset_card_prompt(_job_tag)["custom"] is None and not _cac.load())
+try:
+    server.save_card_prompt({"tag": _job_tag, "positive": "  ,  ", "negative": ""})
+    ok("卡面自訂：正面空的不收", False)
+except _cac.CustomError:
+    ok("卡面自訂：正面空的不收", True)
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import fetch_card_art as _fca  # noqa: E402
+_cac.save(_job_tag, "1girl, adult, green sweater", "")
+ok("卡面自訂：第一次準備的卡面檢查照自訂的比對（不會當成舊版再抓公開包）",
+   any(j.get("tag") == _job_tag and j.get("positive") == "1girl, adult, green sweater" for j in _fca.load_jobs()))
+_cac.remove(_job_tag)
 
 if failed:
     print(f"\n{failed} failed")

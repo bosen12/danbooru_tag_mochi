@@ -22,6 +22,10 @@ const server = createServer(async (req, res) => {
   const url = new URL(req.url, 'http://localhost');
   if (url.pathname === '/fixture.html') return res.end('<!doctype html><html lang="zh-Hant"><head><link rel="stylesheet" href="styles.css"></head><body><button id="opener">Open</button><div id="toast" class="toast" role="status"></div></body></html>');
   if (url.pathname === '/flight.svg') { heldImages.push(success => { res.setHeader('Content-Type', 'image/svg+xml'); res.end(svg); }); return; }
+  // 卡冊「用它做過的圖」：work.svg 讀得到；gone.svg 是原圖不在（404，要清掉）；down.svg 是 ComfyUI 沒開（502，要留著）。
+  if (url.pathname === '/api/genlog/files/work.svg') { res.setHeader('Content-Type', 'image/svg+xml'); return res.end(svg); }
+  if (url.pathname === '/api/genlog/files/gone.svg') return res.writeHead(404).end();
+  if (url.pathname === '/api/genlog/files/down.svg') return res.writeHead(502).end();
   if (url.pathname.startsWith('/api/recipes/files/')) {
     const send = (success) => { if (success) { res.setHeader('Content-Type', 'image/svg+xml'); res.end(svg); } else res.writeHead(404).end(); };
     if (url.searchParams.has('retry')) { if (imageMode === 'hold') heldImages.push(send); else send(imageMode === 'success'); } else send(false);
@@ -49,7 +53,7 @@ const server = createServer(async (req, res) => {
     return;
   }
   if (url.pathname.startsWith('/api/')) {
-    json(res, ({ '/api/ping': { ok: true }, '/api/usage': { counts: {}, mine: {}, last: {} }, '/api/recipes': { items: [work] }, '/api/gen/active': { jobs: [] }, '/api/genlog/bytag': { items: [{ id: 'g1', at: Date.now(), positive: work.positive, image: '/api/recipes/files/fixture.svg', width: 100, height: 140, origin: 'mochi', mine: ['red hair'] }] }, '/api/genlog/stats': { cards: {}, models: [] } })[url.pathname] || { ok: true, items: [] }); return;
+    json(res, ({ '/api/ping': { ok: true }, '/api/usage': { counts: {}, mine: {}, last: {} }, '/api/recipes': { items: [work] }, '/api/gen/active': { jobs: [] }, '/api/genlog/bytag': { total: 3, items: ['work', 'gone', 'down'].map((f, i) => ({ id: 'g' + i, at: Date.now() - i, positive: work.positive, image: '/api/genlog/files/' + f + '.svg', width: 100, height: 140, origin: 'mochi', mine: ['red hair'] })) }, '/api/genlog/stats': { cards: {}, models: [] } })[url.pathname] || { ok: true, items: [] }); return;
   }
   let name = decodeURIComponent(url.pathname).slice(1) || 'index.html', file = resolve(root, frontend, name);
   if (!existsSync(file)) file = resolve(root, 'web', name);
@@ -92,6 +96,13 @@ try {
     await book(page); await page.locator('.box-close').click(); await page.locator('.book-cell .card').first().click();
     await page.locator('.book-work').first().click(); await quota(page); await page.getByRole('button', { name: /這張的 .* 張牌帶回墨池/ }).click();
     await handoffStayed(page, '/book.html'); assert.equal(await page.locator('.book-work-full').count(), 1);
+  });
+  await test('book works hide only images the server says are gone', async page => {
+    await book(page); await page.locator('.box-close').click(); await page.locator('.book-cell .card').first().click();
+    await page.waitForFunction(() => document.querySelectorAll('.book-work').length === 2);
+    await page.waitForTimeout(300);
+    assert.deepEqual(await page.locator('.book-work img').evaluateAll(a => a.map(i => i.getAttribute('src').split('/').pop())), ['work.svg', 'down.svg'], '404 is removed; 502 (ComfyUI off) stays');
+    assert.match(await page.locator('.book-works-head').textContent(), /2 張圖/);
   });
   await test('album handoff preserves details on failure', async page => { await page.goto(origin + '/album.html'); await page.locator('.album-tile').click(); await quota(page); await page.getByRole('button', { name: '照這張再印', exact: true }).click(); await handoffStayed(page, '/album.html'); assert.equal(await page.locator('.album-detail').count(), 1); });
   await test('Escape restores box focus and external focus is preserved', async page => { await book(page); await page.keyboard.press('Escape'); assert.equal(await page.evaluate(() => document.activeElement.id), 'box-pill'); await page.locator('#box-pill').click(); await page.evaluate(() => document.querySelector('#book-q').focus()); await page.keyboard.press('Escape'); assert.equal(await page.evaluate(() => document.activeElement.id), 'book-q'); });

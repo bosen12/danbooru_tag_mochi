@@ -1306,8 +1306,8 @@ SUBS = {
 
 
 def _attach_grok_clothing() -> None:
-    """2026-10-26 第一批衣服。每個字的細分類在 grok_20261026_tags.SUB_OF。"""
-    from grok_20261026_tags import SUB_OF
+    """2026-10-26 第一批衣服。每個字的細分類在 clothing_tags.SUB_OF。"""
+    from clothing_tags import SUB_OF
 
     buckets: dict[str, list[str]] = {}
     for tag, sid in SUB_OF.items():
@@ -1323,6 +1323,70 @@ def _attach_grok_clothing() -> None:
 
 
 _attach_grok_clothing()
+
+
+def _attach_grok_env() -> None:
+    """2026-10-26 第二批環境。每個字的細分類在 env_tags.SUB_OF。"""
+    from env_tags import SUB_OF
+
+    buckets: dict[str, list[str]] = {}
+    for tag, sid in SUB_OF.items():
+        buckets.setdefault(sid, []).append(tag)
+    for row in SUBS["env"]:
+        sid, _zh, tags = row
+        if tags is None:
+            buckets.pop(sid, None)
+            continue
+        tags.extend(sorted(buckets.pop(sid, [])))
+    if buckets:
+        raise SystemExit("環境細分類沒有這一格：" + ", ".join(sorted(buckets)))
+
+
+_attach_grok_env()
+
+
+def _attach_grok_pose() -> None:
+    """2026-10-26 第三批姿勢、特徵，以及被 bot 分錯段的環境和衣服。"""
+    from pose_tags import ROWS
+
+    buckets: dict[str, dict[str, list[str]]] = {}
+    for row in ROWS:
+        buckets.setdefault(row["section"], {}).setdefault(row["sub"], []).append(row["tag"])
+    for sec, by_sid in buckets.items():
+        known = {sid: tags for sid, _zh, tags in SUBS[sec]}
+        missing = [sid for sid in by_sid if sid not in known]
+        if missing:
+            raise SystemExit(sec + " 細分類沒有這一格：" + ", ".join(sorted(missing)))
+        for sid, tags in by_sid.items():
+            dest = known[sid]
+            # 身體、視線沒拆開，清單是 None。group 同名就夠，不寫進清單。
+            if dest is None:
+                continue
+            dest.extend(sorted(tags))
+
+
+_attach_grok_pose()
+
+def _attach_grok_quality() -> None:
+    """2026-10-26 第四批品質、54.csv。細分類都用既有的格子。"""
+    from quality_tags import ROWS
+
+    buckets: dict[str, dict[str, list[str]]] = {}
+    for row in ROWS:
+        buckets.setdefault(row["section"], {}).setdefault(row["sub"], []).append(row["tag"])
+    for sec, by_sid in buckets.items():
+        known = {sid: tags for sid, _zh, tags in SUBS[sec]}
+        missing = [sid for sid in by_sid if sid not in known]
+        if missing:
+            raise SystemExit(sec + " 細分類沒有這一格：" + ", ".join(sorted(missing)))
+        for sid, tags in by_sid.items():
+            dest = known[sid]
+            if dest is None:
+                continue
+            dest.extend(sorted(tags))
+
+
+_attach_grok_quality()
 
 SUB_ORDER = {sec: [sid for sid, _, _ in rows] for sec, rows in SUBS.items()}
 SUB_ZH = {sid: zh for rows in SUBS.values() for sid, zh, _ in rows}

@@ -1911,6 +1911,9 @@ function indoorOutdoorClash(have) {
   eq("undressing fits a hoodie", actionFitsClothes("undressing", ["hoodie"]), 2);
   eq("dress pull does not fit a hoodie", actionFitsClothes("dress pull", ["hoodie"]), 0);
   eq("dress pull fits sundress", actionFitsClothes("dress pull", ["sundress"]), 2);
+  eq("bikini under clothes does not license a bikini action", actionFitsClothes("bikini bottom aside", ["sundress", "bikini under clothes"]), 0);
+  eq("leotard under clothes does not license a leotard action", actionFitsClothes("leotard pull", ["leotard under clothes"]), 0);
+  eq("a real bikini still licenses bikini bottom aside", actionFitsClothes("bikini bottom aside", ["bikini"]), 2);
   eq("pants pull does not fit cheerleader", actionFitsClothes("pants pull", ["cheerleader"]), 0);
   eq("pants pull fits jeans", actionFitsClothes("pants pull", ["jeans"]), 2);
   eq("pants pull fits yoga pants", actionFitsClothes("pants pull", ["yoga pants"]), 2);
@@ -5754,7 +5757,9 @@ function indoorOutdoorClash(have) {
     // 2026-10-26：57 個日常物品進環境池，亂數位移。這張換成駕駛艙、長椅。仍是 1girl solo，沒有男生或人類陰莖。
     // 2026-10-26 第三次：衣服 1402 張進池，花紋前綴降權。駕駛艙、長椅、產卵留著，衣服換成襯衫、丹寧短褲、王子服。仍是 1girl solo，沒有男生或人類陰莖。
     // 2026-10-26 第四次：衣服狀態不再把那件衣服穿回去。這張換成夢可愛、踢腿、飛機。仍是 1girl solo，沒有男生或人類陰莖。
-    "1girl, solo, very short hair, yellow eyes, aqua hair, blunt bangs, small breasts, long legs, thick thighs, body blush, blouse, denim shorts, denim, shorts, kneehighs, yume kawaii, cable knit, masturbation through clothes, kicking, other focus, peeking, :q, anal prolapse, prolapse, polka dot background, dim lighting, spoken musical note, aircraft, rug, winter, nsfw, explicit, masterpiece, best quality, amazing quality");
+    // 2026-10-26 第六次：姿勢、特徵、主題 628 張進池（raimon 封鎖）。仍是 1girl solo，沒有男生或人類陰莖。
+    // 2026-10-26 第七次：品質與 54.csv 共 110 張進池（9 個未成年保護字封鎖；noose、self-harm 不收）。仍是 1girl solo，沒有男生或人類陰莖。
+    "1girl, solo, very short hair, yellow eyes, aqua hair, glowing hair, medium breasts, navel, bun cover, yellow tail, tail, teeth, bodypaint, fingering, sitting backwards, aiming at viewer, staring, >:), upper teeth only, bathhouse, bath, indoors, twilight, dim lighting, wolf, nsfw, explicit, masterpiece, best quality, amazing quality");
   ok("drawOne exposes shadow diagnostics", Array.isArray(shadowIntegrationDraw.shadowViolations));
 
   const eatProneShadow = validateSupportShadow({
@@ -5921,7 +5926,9 @@ function indoorOutdoorClash(have) {
   let sawShort = 0;
   // 2026-10-09：胸部互動讓誘惑池變大，前 60 張都抽滿 3 個。短少還在，最早出現在 seed 90180。
   // 2026-10-09 第二次：第三、四輪又多了擁抱和手勢，短少提前到 seed 90123。窗口維持 160。
-  for (let i = 0; i < 160; i++) {
+  // 2026-10-26：姿勢一批把誘惑池加大。同一組種子 160 張短少是 0；放到 2000 張有 7 次，
+  // 第一個在 i=252（seed 90352）。窗口放到 600。斷言仍是至少一次，回報仍要跟抽到的數量一致。
+  for (let i = 0; i < 600; i++) {
     const d = draw((s) => {
       s.mustDraw = { "pose:tease": 3 };
     }, 90100 + i);
@@ -5929,7 +5936,7 @@ function indoorOutdoorClash(have) {
     if (got < 3) sawShort += 1;
     if (d.mustReport[0].got === got) honestWhenShort += 1;
   }
-  eq("must report never lies", honestWhenShort, 160);
+  eq("must report never lies", honestWhenShort, 600);
   ok("sex acts really can crowd out a must pose", sawShort > 0, `sawShort=${sawShort}`);
 
   // 互斥絕不破：髮色槽再怎麼必抽也只能有一個。
@@ -6666,6 +6673,8 @@ function indoorOutdoorClash(have) {
   // 過渡時段和夜側可以共存，而且兩個方向都要通（換順序結果相同）。
   // 2026-10-09 第二次：第三、四輪 38 個字進池，釘 dusk 要到 seed 307 才抽到 market stall。
   // 正向搜尋放到 600。嚴格白天／夜側的互斥仍只看前 300 張。
+  // 2026-10-26 環境一批：釘 dusk 的前 600 張沒有 market stall。同一組種子 4000 張有 17 次，
+  // 第一個在 821（約 0.4%）。這一對放到 2500。斷言仍是至少一次。其他對照仍是 600。
   for (const [pin, want] of [
     ["market stall", "sunset"],
     ["market stall", "dusk"],
@@ -6676,9 +6685,10 @@ function indoorOutdoorClash(have) {
     ["sunset", "starry sky"],
     ["dusk", "market stall"],
   ]) {
-    const seed = seenWith(pin, want, "weird", 600);
+    const n = pin === "dusk" && want === "market stall" ? 2500 : 600;
+    const seed = seenWith(pin, want, "weird", n);
     ok(`twilight: 釘「${pin}」抽得到「${want}」`, seed > 0,
-      `weird / counts.env=10 / 全熱度，seed 1..600 一次都沒出現`);
+      `weird / counts.env=10 / 全熱度，seed 1..${n} 一次都沒出現`);
   }
 
   // 嚴格白天 ↔ 嚴格夜側仍然對稱互斥，暮光的改動不能鬆到這裡。
@@ -6926,9 +6936,10 @@ function indoorOutdoorClash(have) {
     ["tennis court", "tennis racket"],
   ]) {
     // 排球沒有自己的活動字，活動格常常先抽成網球、羽球、桌球，球就進不了場。
-    // 剩下的窗口裡它跟兩百多個環境字搶名額。400 張只中 2 次，200 張會空過。
-    // 斷言仍是「至少一次」：學校體育館沒有把排球誤殺。
-    const nDraw = gear === "volleyball (object)" ? 1000 : 200;
+    // 剩下的窗口裡它跟環境字搶名額。400 張只中 2 次，後來放到 1000。
+    // 2026-10-26 環境一批：環境池 1053 → 1919，1000 張是 0 次。同一組種子量到 4000 張有 4 次
+    // （第一個在 2582，約 0.1%）。斷言仍是「至少一次」。放到 8000，預期約 8 次，避免視窗剛好錯過。
+    const nDraw = gear === "volleyball (object)" ? 8000 : 200;
     const n = hits("normal", [place], gear, nDraw);
     ok(`gear/place 共享相容：釘「${place}」抽得到「${gear}」`, n > 0, `${n}/${nDraw}`);
   }

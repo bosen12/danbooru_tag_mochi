@@ -43,6 +43,7 @@ if str(ROOT) not in sys.path:
 
 import card_usage
 import card_decks
+import card_art_custom
 import discord_routes
 import file_lock
 import gen_log
@@ -2331,6 +2332,16 @@ _HARD_BANNED = {
     "nanamori school uniform",
     "sakugawa school uniform",
     "nanairogaoka middle school uniform",
+    "raimon",
+    "pacifier",
+    "diaper",
+    "bib",
+    "onesie",
+    "training bra",
+    "age progression",
+    "age comparison",
+    "parent and child",
+    "father and son",
     "children",
     "child carry",
     "child",
@@ -2372,6 +2383,138 @@ def banned_in_prompt(positive: str) -> list[str]:
         if t and (t in _HARD_BANNED or t in banned) and t not in out:
             out.append(t)
     return out
+
+
+# ---------- 卡面的自訂提示詞（卡冊的「提示詞」視窗，card_art_custom.py） ----------
+# 預設提示詞讀 scripts/card_jobs.json（node 產的卡面清單，開源版也有）。改了就照自訂的馬上烘這一張：
+# 背景一條佇列、一次一張，跑 bake_card_art.py --only <tag> --force（別的烘焙佔著 .baking 就等）。
+_CARD_JOBS: dict = {"mtime": None, "jobs": {}}
+_ART_BAKE: dict = {"lock": threading.Lock(), "queue": [], "state": {}, "worker": None}
+
+
+def card_job_defaults() -> dict:
+    path = ROOT / "scripts" / "card_jobs.json"
+    try:
+        mtime = path.stat().st_mtime
+    except OSError:
+        return {}
+    if _CARD_JOBS["mtime"] != mtime:
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+            data = data if isinstance(data, list) else data.get("jobs", [])
+            _CARD_JOBS["jobs"] = {j["tag"]: j for j in data if isinstance(j, dict) and isinstance(j.get("tag"), str)}
+        except (OSError, ValueError):
+            _CARD_JOBS["jobs"] = {}
+        _CARD_JOBS["mtime"] = mtime
+    return _CARD_JOBS["jobs"]
+
+
+def _card_manifest_entry(tag: str):
+    try:
+        manifest = json.loads((SHARED / "cards" / "manifest.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    entry = manifest.get(tag) if isinstance(manifest, dict) else None
+    return entry if isinstance(entry, dict) else None
+
+
+def card_art_prompt_info(tag: str) -> dict:
+    """一張牌的卡面提示詞：預設、自訂、現在的卡面是用哪段烘的、烘焙進度。沒有卡面的牌丟 KeyError。"""
+    job = card_job_defaults().get(tag)
+    if not job:
+        raise KeyError(tag)
+    custom = card_art_custom.load().get(tag)
+    entry = _card_manifest_entry(tag)
+    with _ART_BAKE["lock"]:
+        bake = dict(_ART_BAKE["state"][tag]) if tag in _ART_BAKE["state"] else None
+    return {
+        "tag": tag,
+        "rating": job.get("rating", "general"),
+        "kind": job.get("kind", "card"),
+        "default": {"positive": job.get("positive", ""), "negative": job.get("negative", "")},
+        "custom": {"positive": custom["positive"], "negative": custom["negative"], "at": custom.get("at")} if custom else None,
+        "guard": list(card_art_custom.AGE_GUARD),
+        "baked": {"positive": entry.get("positive"), "v": entry.get("v")} if entry else None,
+        "bake": bake,
+    }
+
+
+def queue_card_bake(tag: str) -> dict:
+    """排進背景佇列烘這一張。NO_CARD_BAKE（測試、不要烘的人）只記下來，下次烘焙時照自訂的烘。"""
+    now = int(time.time() * 1000)
+    with _ART_BAKE["lock"]:
+        if os.environ.get("NO_CARD_BAKE"):
+            _ART_BAKE["state"][tag] = {"state": "saved", "at": now}
+            return dict(_ART_BAKE["state"][tag])
+        _ART_BAKE["state"][tag] = {"state": "queued", "at": now}
+        if tag not in _ART_BAKE["queue"]:
+            _ART_BAKE["queue"].append(tag)
+        worker = _ART_BAKE["worker"]
+        if worker is None or not worker.is_alive():
+            _ART_BAKE["worker"] = threading.Thread(target=_card_bake_worker, name="card-art-bake", daemon=True)
+            _ART_BAKE["worker"].start()
+        return dict(_ART_BAKE["state"][tag])
+
+
+def _card_bake_worker() -> None:
+    while True:
+        with _ART_BAKE["lock"]:
+            if not _ART_BAKE["queue"]:
+                _ART_BAKE["worker"] = None
+                return
+            tag = _ART_BAKE["queue"].pop(0)
+            _ART_BAKE["state"][tag] = {"state": "baking", "at": int(time.time() * 1000)}
+        kind = (card_job_defaults().get(tag) or {}).get("kind", "card")
+        cmd = [sys.executable, str(ROOT / "scripts" / "bake_card_art.py"), "--only", tag, "--force", "--kind", kind]
+        rc, out = 1, ""
+        for _ in range(90):
+            try:
+                p = subprocess.run(cmd, cwd=str(ROOT), capture_output=True, text=True, encoding="utf-8", errors="replace",
+                                   timeout=900, env={**os.environ, "PYTHONUTF8": "1"})
+                rc, out = p.returncode, (p.stdout or "") + (p.stderr or "")
+            except (OSError, subprocess.TimeoutExpired) as exc:
+                rc, out = 1, str(exc)
+            if rc != 12:  # 12：別的烘焙正佔著 .baking，等一下再試
+                break
+            time.sleep(10)
+        entry = _card_manifest_entry(tag)
+        if rc == 0:
+            state = {"state": "done", "v": entry.get("v") if entry else None}
+        elif "not reachable" in out:
+            state = {"state": "comfy_down"}
+        else:
+            state = {"state": "failed", "error": out.strip()[-300:]}
+        state["at"] = int(time.time() * 1000)
+        with _ART_BAKE["lock"]:
+            _ART_BAKE["state"][tag] = state
+
+
+def save_card_prompt(payload: dict) -> dict:
+    """存自訂提示詞（跟預設一樣就當恢復預設），排進烘焙。封鎖字丟 PromptBlocked。"""
+    tag = str(payload.get("tag") or "")
+    job = card_job_defaults().get(tag)
+    if not job:
+        raise KeyError(tag)
+    positive = card_art_custom.clean(payload.get("positive"))
+    negative = card_art_custom.clean(payload.get("negative"))
+    blocked = banned_in_prompt(positive)
+    if blocked:
+        raise PromptBlocked("正面提示詞裡有不能用的字（未成年、禁用角色）：" + "、".join(blocked))
+    same = positive == card_art_custom.clean(job.get("positive")) and negative == card_art_custom.clean(job.get("negative"))
+    if same:
+        card_art_custom.remove(tag)
+    else:
+        card_art_custom.save(tag, positive, negative)
+    queue_card_bake(tag)
+    return card_art_prompt_info(tag)
+
+
+def reset_card_prompt(tag: str) -> dict:
+    if not card_job_defaults().get(tag):
+        raise KeyError(tag)
+    card_art_custom.remove(tag)
+    queue_card_bake(tag)
+    return card_art_prompt_info(tag)
 
 
 class PromptBlocked(ValueError):
@@ -5710,6 +5853,17 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/api/genlog/stats":
             self._json(200, {"ok": True, **genlog_stats()})
             return
+        # 卡冊「提示詞」視窗：哪些牌改過、一張牌的預設／自訂提示詞與烘焙進度。
+        if path == "/api/card-art/custom":
+            self._json(200, {"ok": True, "tags": sorted(card_art_custom.load())})
+            return
+        if path == "/api/card-art/prompt":
+            qs = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
+            try:
+                self._json(200, {"ok": True, **card_art_prompt_info((qs.get("tag") or [""])[0])})
+            except KeyError:
+                self._json(404, {"ok": False, "error": "這張牌沒有卡面", "code": "no_art"})
+            return
         if path == "/api/genlog":
             qs = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
             try:
@@ -5861,6 +6015,20 @@ class Handler(BaseHTTPRequestHandler):
                 self._json(400, {"ok": False, "error": str(exc), "code": "invalid"})
                 return
             self._json(200, {"ok": True})
+            return
+        if path in ("/api/card-art/prompt", "/api/card-art/reset"):
+            try:
+                out = save_card_prompt(payload) if path == "/api/card-art/prompt" else reset_card_prompt(str(payload.get("tag") or ""))
+            except KeyError:
+                self._json(404, {"ok": False, "error": "這張牌沒有卡面", "code": "no_art"})
+                return
+            except PromptBlocked as exc:
+                self._json(400, {"ok": False, "error": str(exc), "code": "blocked"})
+                return
+            except card_art_custom.CustomError as exc:
+                self._json(400, {"ok": False, "error": str(exc), "code": "invalid"})
+                return
+            self._json(200, {"ok": True, **out})
             return
         if path == "/api/fav-chars":
             try:

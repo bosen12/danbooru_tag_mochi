@@ -1545,3 +1545,136 @@ html[data-mast="peek"] .book-mini {
     transition: none;
   }
 }
+
+/* ---------- 卡面提示詞（卡冊詳情的「提示詞」） ---------- */
+
+/* 格子左上角：卡面用的是自訂提示詞。放在牌外面的角落，不跟「盒中」「禁用」的章搶位置。 */
+.book-custom {
+  position: absolute;
+  top: -4px;
+  left: -4px;
+  z-index: 2;
+  padding: 0 5px;
+  border: 1px solid color-mix(in oklch, var(--color-accent) 60%, transparent);
+  border-radius: 999px;
+  background: var(--color-paper);
+  color: var(--color-accent-text);
+  font-size: 10px;
+  line-height: 1.5;
+  pointer-events: none;
+}
+
+.art-prompt {
+  display: grid;
+  grid-template-columns: 168px minmax(0, 1fr);
+  gap: var(--space-md);
+  align-items: start;
+}
+
+.art-prompt-side {
+  display: grid;
+  gap: var(--space-xs);
+  justify-items: center;
+}
+
+.art-prompt-preview {
+  width: 100%;
+  aspect-ratio: 832 / 1216;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+  background: var(--color-paper-2);
+}
+
+.art-prompt-rating {
+  margin: 0;
+  color: var(--color-muted);
+  font-size: var(--text-xs);
+}
+
+.art-prompt-main {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.art-prompt-head {
+  margin: 0 0 4px;
+  color: var(--color-ink-2);
+  font-size: var(--text-sm);
+}
+
+.art-prompt-from {
+  margin: 0 4px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--color-paper-3);
+  color: var(--color-ink);
+  font-weight: 600;
+}
+
+.art-prompt-from[data-custom="true"] {
+  background: color-mix(in oklch, var(--color-accent) 22%, transparent);
+  color: var(--color-accent-text);
+}
+
+.art-prompt-label {
+  margin-top: 4px;
+  color: var(--color-muted);
+  font-size: var(--text-xs);
+}
+
+.art-prompt-text {
+  width: 100%;
+  resize: vertical;
+  padding: var(--space-xs) var(--space-sm);
+  border: 1px solid var(--color-rule-2);
+  border-radius: var(--radius-sm);
+  background: var(--color-paper-2);
+  color: var(--color-ink);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  line-height: 1.6;
+}
+
+.art-prompt-text[readonly] {
+  color: var(--color-ink-2);
+  background: transparent;
+}
+
+.art-prompt-text:not([readonly]):focus {
+  border-color: var(--color-accent);
+  outline: none;
+}
+
+.art-prompt-guard {
+  margin: 4px 0 0;
+  color: var(--color-muted);
+  font-size: var(--text-2xs);
+  line-height: 1.6;
+}
+
+.art-prompt-state {
+  min-height: 1.6em;
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--color-ink-2);
+}
+
+.art-prompt-state[data-state="done"] {
+  color: var(--color-good);
+}
+
+.art-prompt-state[data-state="failed"],
+.art-prompt-state[data-state="comfy_down"] {
+  color: var(--color-warn);
+}
+
+@media (max-width: 640px) {
+  .art-prompt {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .art-prompt-preview {
+    width: 140px;
+  }
+}

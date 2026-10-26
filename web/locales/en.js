@@ -1520,6 +1520,25 @@ Tagger 出錯（ComfyUI 的主控台有詳細原因）|The tagger failed (detail
 帶走|Take them
 選好的牌放進墨池的合成池，或送到疊印台一層層疊。|Add the chosen cards to the Ink Pool, or send them to the Fuse Bed to layer them.
 貼上一張圖就開始解析|Paste an image to start parsing
+自訂|Custom
+修改|Edit
+正面|Positive
+負面|Negative
+正面提示詞|Positive prompt
+負面提示詞|Negative prompt
+現在用的是|Using the
+存下並重烤|Save and rebake
+存不了|Couldn't save
+存下了，送去烤…|Saved, sending to bake…
+看、改這張牌卡面的正負面提示詞；改了就重烤|View or edit this card's art prompts; edits rebake the art
+這張牌沒有卡面（純字牌），沒有提示詞可以改。|This card has no art (text-only card), so there is no prompt to edit.
+卡面用的是自訂提示詞|Card art uses a custom prompt
+存下了。下次烘焙卡面時（開墨池的第一次準備）會照這段提示詞烤。|Saved. The next card-art bake (Mochi's first-run setup) will use this prompt.
+排隊中…別的卡面正在烤，輪到它就烤。|Queued… another card is baking; this one is next.
+烤卡面中…大約 6 秒。|Baking the card art… about 6 seconds.
+烤好了，卡面換成新的。|Done. The card art has been replaced.
+ComfyUI 沒開，先存著；下次開墨池時會照這段提示詞烤。|ComfyUI isn't running. Saved for now; it will bake with this prompt next time Mochi starts.
+烤失敗了，提示詞有存下來，可以再按一次存下並重烤。|Baking failed. The prompt is saved; press Save and rebake to try again.
 墨池 · 原理|Mochi · How it works
 原理|How it works
 一張圖怎麼抽出來：分類、互斥、分級、擋未成年、整個程式的架構 · How it works|How a picture is drawn: categories, exclusions, ratings, blocking minors and the whole architecture
@@ -2290,6 +2309,9 @@ ComfyUI 不收：{0}|ComfyUI rejected it: {0!}
 現代專用的牌 {0} 張，例如：|{0} cards only for Modern, for example:
 {0}會出現、現代不會的牌 {1} 張，例如：|{1} cards that appear in {0} but not Modern, for example:
 打開{0}|Open {0}
+卡面提示詞・{0}|Card art prompt · {0}
+提示詞讀不到：{0}|Couldn't load the prompt: {0!}
+烤的時候負面詞一定會接上 {0}，避免畫成未成年的樣子；正面不能寫封鎖字。|Baking always adds {0!} to the negative prompt so nothing is drawn as a minor. Blocked words can't go in the positive prompt.
 `;
 export const templates = parameterized.trim().split("\n").map((line) => {
   const split = line.indexOf("|");
