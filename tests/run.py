@@ -52,12 +52,14 @@ if not node:
     sys.exit("Node.js 20+ is required to run the development tests")
 stage = Path(tempfile.mkdtemp(prefix="mochi-checks-"))
 env = {**os.environ, "PYTHONUTF8": "1", "APP_CONFIG": str(stage / "config.json"), "APP_SETTINGS": str(stage / "settings.json")}
+# 整支抽幾千張的引擎測試：詞庫 8179 字之後，GitHub 的 Windows 機器跑引擎 release 超過 600 秒。
+SLOW = {"test_engine_shards.mjs", "test_engine_release.mjs"}
 failed = []
 for target, source in checks:
     file = ROOT / ("tests" if standalone else "scripts") / (target if standalone else source)
     command = [node if file.suffix == ".mjs" else sys.executable, str(file)]
     try:
-        result = subprocess.run(command, cwd=ROOT, env=env, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=1800 if target == "test_engine_shards.mjs" else 600)
+        result = subprocess.run(command, cwd=ROOT, env=env, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=1800 if target in SLOW else 600)
         print(("PASS " if result.returncode == 0 else "FAIL ") + target, flush=True)
         if result.returncode:
             failed.append(target)
