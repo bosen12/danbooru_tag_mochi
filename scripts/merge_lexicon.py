@@ -8,6 +8,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from groups import GROUP_ORDER, GROUP_ZH, assign_group
+from grok_20261026_tags import NARROW as GROK_NARROW
+from grok_20261026_tags import UMBRELLA_EXTRA, extra_grok_clothing
 from subgroups import CHARACTER_SUB_EN, SUB_ORDER, SUB_ZH, assign_sub, character_sub_id, check_subs
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -366,13 +368,34 @@ SUFFIX_COMPOUND_EXCEPTIONS = {
     # 水手領是領口形狀，不是項圈。後綴規則會把它收成 collar。
     "collar": ("sailor collar", "frilled collar", "high collar", "fur collar"),
     # 大衣只有現代。毛皮大衣要在維多利亞也能抽，再帶出 coat 會整筆被拒。
-    "coat": ("fur coat",),
-    # 摘下來放在旁邊，不是頭上的帽子。
+    # 脫下來放在旁邊的大衣不是身上的大衣。
+    "coat": ("fur coat", "unworn coat"),
+    # 摘下來放在旁邊，不是身上正穿的那一件。後綴規則會把「未穿戴的洋裝」收成洋裝，
+    # 連身格就被佔走，上衣加外套補不出下著。
     "hat": ("unworn hat",),
+    "shirt": ("unworn shirt",),
+    "dress": ("unworn dress",),
+    "skirt": ("unworn skirt",),
+    "jacket": ("unworn jacket", "jacket around waist"),
+    "swimsuit": ("unworn swimsuit",),
+    "socks": ("unworn socks",),
+    "gloves": ("unworn gloves",),
+    # 掛在腰上、褪到一隻腳，是那件衣服的狀態，不是再穿一件。
+    "shorts": ("shorts around one leg",),
+    "sweater": ("sweater around waist",),
+    "cardigan": ("cardigan around waist",),
     # 褲型袴是江戶的袴，不是現代長褲。帶出 pants 會在江戶時代對不上。
     "pants": ("hakama pants",),
-    # 友枝小學制服是封鎖字，後綴規則不要再帶出學生制服。
-    "school uniform": ("tomoeda elementary school uniform",),
+    # 小學、國中制服是封鎖字，後綴規則不要再帶出學生制服。
+    "school uniform": (
+        "tomoeda elementary school uniform",
+        "tokyo-3 middle school uniform",
+        "mitakihara school uniform",
+        "tokiwadai school uniform",
+        "nanamori school uniform",
+        "sakugawa school uniform",
+        "nanairogaoka middle school uniform",
+    ),
 }
 
 SUFFIX_PARENT = (
@@ -1483,6 +1506,9 @@ NARROW_HEAT = {
     # 沒有罩杯，乳頭露出。服裝通則會攤成三檔。
     'cupless bra': ['flash', 'sex'],
 }
+# 2026-10-26 衣服一批裡，熱度不能被服裝通則攤開的字。
+NARROW_HEAT.update(GROK_NARROW)
+UMBRELLA.update(UMBRELLA_EXTRA)
 
 
 def widen_heat(tag: str, section: str, mutex, layer: str, heat: list[str]) -> list[str]:
@@ -6942,6 +6968,7 @@ def main() -> None:
     rows.extend(extra_round4_other())
     rows.extend(extra_suggestion_1500())
     rows.extend(extra_character_tags())
+    rows.extend(extra_grok_clothing())
 
     old_zh: dict[str, str] = {}
     if OUT.exists():

@@ -18,6 +18,7 @@ ROOT = Path(__file__).resolve().parents[1]
 # 跟 sync_mochi.py 的 LEXICON_FILES 同一份：重做詞庫要的全部腳本與原料。
 SOURCES = [
     "merge_lexicon.py", "groups.py", "subgroups.py", "suggestion_tags.py", "more_tags.py", "focus_tags.py", "add_zh.py",
+    "grok_20261026_tags.py",
     "characters.json", "character_series.json", "alt_names.json",
 ]
 

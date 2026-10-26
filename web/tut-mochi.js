@@ -137,7 +137,7 @@ export function buildMochiScreen(S, ctx) {
   m.ui.groupBox = box(O, "tb", -767, -190, 370, 34, "");
   m.ui.groupBox.style.display = "none";
 
-  m.ui.libEmpty = box(O, "tb", -767, -150, 370, 60, "字盒裡沒有「kimono」。可能被分級、性別或時代收起來了。");
+  m.ui.libEmpty = box(O, "tb", -767, -150, 370, 60, "字盒裡沒有「yukata」。可能被分級、性別或時代收起來了。");
   m.ui.libEmpty.style.cssText += ";font:500 15px/1.5 var(--font-body);color:var(--color-muted);opacity:0";
 
   /* ---------- 合成池（在 M：會跟著頁面捲） ---------- */

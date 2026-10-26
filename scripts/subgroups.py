@@ -1305,6 +1305,25 @@ SUBS = {
 }
 
 
+def _attach_grok_clothing() -> None:
+    """2026-10-26 第一批衣服。每個字的細分類在 grok_20261026_tags.SUB_OF。"""
+    from grok_20261026_tags import SUB_OF
+
+    buckets: dict[str, list[str]] = {}
+    for tag, sid in SUB_OF.items():
+        buckets.setdefault(sid, []).append(tag)
+    for row in SUBS["clothing"]:
+        sid, _zh, tags = row
+        if tags is None:
+            buckets.pop(sid, None)
+            continue
+        tags.extend(sorted(buckets.pop(sid, [])))
+    if buckets:
+        raise SystemExit("衣服細分類沒有這一格：" + ", ".join(sorted(buckets)))
+
+
+_attach_grok_clothing()
+
 SUB_ORDER = {sec: [sid for sid, _, _ in rows] for sec, rows in SUBS.items()}
 SUB_ZH = {sid: zh for rows in SUBS.values() for sid, zh, _ in rows}
 

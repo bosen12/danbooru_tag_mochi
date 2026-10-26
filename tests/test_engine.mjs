@@ -5374,11 +5374,12 @@ function indoorOutdoorClash(have) {
   ok("pinned weightlifting can stand", liftStand > 0, `stand=${liftStand}/40`);
   const pinSport = applyPin(lex, new Set(), new Set(), "playing sports").pinned;
   let sportStand = 0;
-  for (let i = 0; i < 40; i++) {
+  // 2026-10-26：衣服池變大後原來 40 顆種子站著是 0。200 顆裡站著還在，跟 exercising 同一種放大。
+  for (let i = 0; i < 200; i++) {
     const h = tagsOf(drawOne(lex, s, pinSport, new Set(), mulberry32(441240 + i), 441240 + i));
     if (h.has("standing")) sportStand += 1;
   }
-  ok("pinned playing sports can stand", sportStand > 0, `stand=${sportStand}/40`);
+  ok("pinned playing sports can stand", sportStand > 0, `stand=${sportStand}/200`);
   const pinDrink = applyPin(lex, new Set(), new Set(), "drinking").pinned;
   let iza = 0;
   for (let i = 0; i < 80; i++) {
@@ -5751,7 +5752,9 @@ function indoorOutdoorClash(have) {
     // 2026-10-24 第四輪：468 張新卡進池（Codex），Opus 驗收補上早晨／夜晚、室內外規則與戶外傢俱格，整張換過。仍是 1girl solo，沒有男生或人類陰莖。
     // 2026-10-24 Grok 建議池 558 張進池（Opus 驗收），整張換過。仍是 1girl solo，沒有男生或人類陰莖。
     // 2026-10-26：57 個日常物品進環境池，亂數位移。這張換成駕駛艙、長椅。仍是 1girl solo，沒有男生或人類陰莖。
-    "1girl, solo, very short hair, yellow eyes, aqua hair, blunt bangs, small breasts, long legs, thick thighs, body blush, miko, panties around one leg, garter belt, frilled apron, striped bra, bra, female masturbation, bowlegged pose, upside-down, looking around, laughing, egg laying, cockpit, indoors, on bench, day, dappled sunlight, spilling, nsfw, explicit, masterpiece, best quality, amazing quality");
+    // 2026-10-26 第三次：衣服 1402 張進池，花紋前綴降權。駕駛艙、長椅、產卵留著，衣服換成襯衫、丹寧短褲、王子服。仍是 1girl solo，沒有男生或人類陰莖。
+    // 2026-10-26 第四次：衣服狀態不再把那件衣服穿回去。這張換成夢可愛、踢腿、飛機。仍是 1girl solo，沒有男生或人類陰莖。
+    "1girl, solo, very short hair, yellow eyes, aqua hair, blunt bangs, small breasts, long legs, thick thighs, body blush, blouse, denim shorts, denim, shorts, kneehighs, yume kawaii, cable knit, masturbation through clothes, kicking, other focus, peeking, :q, anal prolapse, prolapse, polka dot background, dim lighting, spoken musical note, aircraft, rug, winter, nsfw, explicit, masterpiece, best quality, amazing quality");
   ok("drawOne exposes shadow diagnostics", Array.isArray(shadowIntegrationDraw.shadowViolations));
 
   const eatProneShadow = validateSupportShadow({

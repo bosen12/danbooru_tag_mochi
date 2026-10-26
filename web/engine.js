@@ -218,6 +218,9 @@ const underwearOnlyClash = (item) =>
 // 泳衣底下不穿內衣。比基尼配運動內褲是穿兩層。
 const isSwimGarment = (item) =>
   !!item && item.section === "clothing" && item.layer === "garment" &&
+  // 脫下來放在旁邊的泳衣不是身上那件。unworn swimsuit 含 swimsuit，
+  // 會被當成泳衣，把「只穿內衣」的內衣擋掉，那個字接著被清掉。
+  !item.tag.startsWith("unworn ") &&
   (item.tag.includes("bikini") || item.tag.includes("swimsuit"));
 // 坐著或跪著做不了的活動。清單從 sports.js 算出來，不手抄，免得加新運動時失同步。
 // 例外寫在 SEATED_OK_SPORT：跪射是合理的姿勢；騎車和游泳本來就有自己的姿勢規則。
@@ -3875,9 +3878,18 @@ const COLOR_WORD = new Set([
   "gray",
 ]);
 
+// 2026-10-26：條紋、格子、破損、印花是顏色款的同一種。它們是那件衣服的變化，
+// 不是另一套時代主衣。新的一批裡有九十多個這種字，若跟時代主衣一起拿權重 40，
+// 現代圖的主衣會被花紋款佔滿。
+const VARIANT_WORD = new Set([
+  "striped", "plaid", "frilled", "torn", "checkered", "ribbed", "print",
+  "pinstripe", "argyle", "pleated", "see-through", "two-tone", "fur-trimmed",
+  "lace-trimmed", "multicolored", "vertical-striped", "polka",
+]);
+
 function isColorVariant(item) {
   const parts = String(item.tag || "").split(" ");
-  return parts.length >= 2 && COLOR_WORD.has(parts[0]);
+  return parts.length >= 2 && (COLOR_WORD.has(parts[0]) || VARIANT_WORD.has(parts[0]));
 }
 
 // 長相的自由格（固定格之外、補到「每段抽幾個」的那幾張）抽什麼。
@@ -3922,6 +3934,102 @@ const ODD_MOTIF = new Set([
   // 2026-10-24：設定圖、轉面、並排、拼貼會改掉整張版面；複製人、動物化會改掉畫裡的人。
   // 正常模式只在釘了才出現。四格、兩格、三格、單格、無對白漫畫沒過圖測，不收。
   "reference sheet", "turnaround", "column lineup", "collage",
+  // 2026-10-26 衣服一批：作品專屬、meta、政治符號。正常場景不自己補。
+  "a certain high school uniform",
+  "alice (alice in wonderland) (cosplay)",
+  "amesuku gyaru",
+  "anzio military uniform",
+  "anzio school uniform",
+  "aria company uniform",
+  "ashford academy school uniform",
+  "asticassia school uniform",
+  "bc freedom military uniform",
+  "champion's tunic (zelda)",
+  "crime prevention buzzer",
+  "demon slayer uniform",
+  "duel academy uniform (yu-gi-oh! gx)",
+  "dynamax band",
+  "eden academy school uniform",
+  "fleur de lapin uniform",
+  "fourth east high school uniform",
+  "garreg mach monastery uniform",
+  "gekkoukan high school uniform",
+  "gem uniform (houseki no kuni)",
+  "griffin & kryuger military uniform",
+  "hakurei reimu (cosplay)",
+  "hanasakigawa school uniform",
+  "haneoka school uniform",
+  "hasu no sora school uniform",
+  "hatsune miku (cosplay)",
+  "hikarizaka private high school uniform",
+  "hogwarts school uniform",
+  "icho private high school uniform",
+  "jujutsu tech uniform",
+  "kamiyama high school uniform (hyouka)",
+  "kamiyama high school uniform (project sekai)",
+  "keizoku military uniform",
+  "kibito high school uniform",
+  "kirin (armor)",
+  "kita high school uniform",
+  "kitauji high school uniform",
+  "kiyosumi school uniform",
+  "kourindou tengu costume",
+  "kuromorimine military uniform",
+  "kuromorimine school uniform",
+  "little busters! school uniform",
+  "luna nova school uniform",
+  "lycoris uniform",
+  "mash kyrielight (dangerous beast) (cosplay)",
+  "meiji schoolgirl uniform",
+  "millennium cheerleader outfit (blue archive)",
+  "miyamasuzaka girls' academy school uniform",
+  "naoetsu high school uniform",
+  "naranja academy school uniform",
+  "nijigasaki school uniform",
+  "ooarai military uniform",
+  "ooarai school uniform",
+  "oohashi high school uniform",
+  "otonokizaka school uniform",
+  "paradis military uniform",
+  "power suit",
+  "power suit (metroid)",
+  "pravda school uniform",
+  "rabbit house uniform",
+  "rider belt",
+  "rudder footwear",
+  "ryouou school uniform",
+  "sailor senshi uniform",
+  "saiyan armor",
+  "sakuragaoka high school uniform",
+  "saunders military uniform",
+  "self-cosplay",
+  "shimakaze (kancolle) (cosplay)",
+  "shinda sekai sensen uniform",
+  "shuka high school uniform",
+  "shuuchiin academy school uniform",
+  "shuujin academy school uniform",
+  "sobu high school uniform",
+  "sophist's robe (ff14)",
+  "st. gloriana's military uniform",
+  "st. gloriana's school uniform",
+  "super crown",
+  "taimanin suit",
+  "team rocket uniform",
+  "tokisadame school uniform",
+  "tracen school uniform",
+  "tracen swimsuit",
+  "tracen training uniform",
+  "u.a. school uniform",
+  "uranohoshi school uniform",
+  "uva academy school uniform",
+  "varia suit",
+  "vocaloid append",
+  "wagnaria uniform",
+  "yasogami school uniform",
+  "youtou high school uniform",
+  "yuigaoka school uniform",
+  "yurigaoka girls academy school uniform",
+  "zero suit",
   "clone", "animalization",
 ]);
 // 只當父字用的動作：騎乘要有騎的東西（騎馬、騎車、騎掃帚帶出來）。自己被抽到時
@@ -4391,6 +4499,12 @@ const NEVER_DRAW = new Set([
   "carrying baby",
   "kindergarten uniform",
   "tomoeda elementary school uniform",
+  "tokyo-3 middle school uniform",
+  "mitakihara school uniform",
+  "tokiwadai school uniform",
+  "nanamori school uniform",
+  "sakugawa school uniform",
+  "nanairogaoka middle school uniform",
   "children",
   "child carry",
   "child",

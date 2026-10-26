@@ -129,6 +129,14 @@ const FLASH_UNDRESS_RE =
 
 // 這些不是暴露，是明講的性 —— 不管穿多少都只能在 explicit。
 const EXPLICIT_ONLY_EXTRA = new Set([
+  // 2026-10-26 衣服一批：名字對不到露點規則，但本身就是性物或露點。
+  "lube",
+  "used tissue",
+  "dilation tape",
+  "clitoral piercing",
+  "anal tail",
+  "crotch cutout",
+  "breastless clothes",
   // 2026-09-15 逐字對 Danbooru 的實際 rating 分布查過之後補的。
   // 判準是「相對全站基準的倍率」而不是原始百分比 —— 全站有 20.2% 的圖是 q+e，
   // 所以一個字帶著 20% 成人圖只代表它很普通。第一版直接看百分比，

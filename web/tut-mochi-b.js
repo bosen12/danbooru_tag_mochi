@@ -131,33 +131,33 @@ export function buildMochiPartB(P) {
     who.set(tW2, 0);
     tipAt(m, "人物：女、男、不限", "", 280, -150, tW1 + 0.3, tW2, { up: false });
 
-    // 搜尋 kimono：這個時代才找得到；放進池會把不同時代的牌（太陽裙…）換下來
+    // 搜尋 yukata（浴衣；A 段在現代搜不到的那個）：這個時代才找得到；放進池會把不同時代的牌（太陽裙…）換下來
     const tS = at(34, 3.4);
     clickAt(tS, { x: -580, y: -297 }, { dur: 0.6 });
     search.focusAt(tS, at(36, 3));
     search.clear(tS + 0.02);
     const tType = at(35, 0.4);
-    const q = "kimono";
+    const q = "yukata";
     const done = search.type(tType, q, 0.14);
     search.keyTimes().filter((x) => x >= tType && x <= done + 0.01).forEach((x) => S.cue({ t: x, kind: "key", gain: 0.1 }));
     const list = viewList({ q, era: "edo" });
-    if (list[0]?.tag !== "kimono") throw new Error(`江戶的字盒搜尋 kimono 第一張應該是 kimono：${list.slice(0, 3).map((k) => k.tag)}`);
+    if (list[0]?.tag !== "yukata") throw new Error(`江戶的字盒搜尋 yukata 第一張應該是 yukata：${list.slice(0, 3).map((k) => k.tag)}`);
     lib.view("q5", { q, era: "edo" }, done + 0.05, { tags: list.map((k) => k.tag), total: list.length });
-    lib.enter.push({ tag: "kimono", view: "q5", t0: done + 0.3, t1: at(35, 2.4) });
+    lib.enter.push({ tag: "yukata", view: "q5", t0: done + 0.3, t1: at(35, 2.4) });
     const tEnter = at(35, 2);
     keycaps([{ label: "Enter", t: tEnter, wide: true, tag: "放進池" }]);
     S.cue({ t: tEnter, kind: "key", gain: 0.22 });
-    const from = lib.slot("q5", "kimono");
+    const from = lib.slot("q5", "yukata");
     const tLand = tEnter + B * 1.05;
-    const r = sim.pin("kimono");
-    const span = pool.add("kimono", tLand, { mode: "fly", tClick: tEnter, tLand, from, lift: 110 });
+    const r = sim.pin("yukata");
+    const span = pool.add("yukata", tLand, { mode: "fly", tClick: tEnter, tLand, from, lift: 110 });
     r.removed.forEach((x) => pool.remove(x, tLand + 0.03, { mode: "lift" }));
     r.added.forEach((x, i) => {
       const s = pool.add(x, tLand + 0.42 + i * 0.16, { mode: "pop" });
-      s.carriedBy = "kimono";
+      s.carriedBy = "yukata";
       S.cue({ t: tLand + 0.42 + i * 0.16, kind: "pop", gain: 0.1, f: 420 + i * 90 });
     });
-    if (!r.removed.length) throw new Error("kimono 放進池，應該把別的時代的牌換下來（太陽裙之類）");
+    if (!r.removed.length) throw new Error("yukata 放進池，應該把別的時代的牌換下來（太陽裙之類）");
     S.cue({ t: tLand, kind: "stamp", gain: 0.26 }, { t: tLand + 0.03, kind: "unwind", gain: 0.07, dur: 0.5 });
     search.select(tEnter + 0.05);
     post.push(() => {
@@ -167,7 +167,7 @@ export function buildMochiPartB(P) {
       fx.ring({ x: p.x, y: p.y, t0: tLand, color: cc, r0: 40, r1: 130, w: 5 });
       fx.sparks({ x: p.x, y: p.y, t0: tLand, n: 10, r: 70, color: cc, seed: 13 });
     });
-    noteAt(m, tLand + 0.2, at(36, 3.6), replaceNote("kimono", r.removed), { kind: "swap" });
+    noteAt(m, tLand + 0.2, at(36, 3.6), replaceNote("yukata", r.removed), { kind: "swap" });
     step(2, "*時代*不同的牌放不到一起：新的來，舊的先拿下", "Cards from different eras don't mix", at(33, 0), at(36, 3));
     text.say("這是規則在幫你擋掉會壞掉的組合", "Rules keep impossible combinations out", at(36, 0.3), at(36, 3.6));
   }

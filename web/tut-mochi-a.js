@@ -317,12 +317,13 @@ export function buildMochiScene(ctx) {
         fx.ring({ x: p.x, y: p.y, t0: tLand, color: cc, r0: 40, r1: 130, w: 5 });
         fx.sparks({ x: p.x, y: p.y, t0: tLand, n: 10, r: 70, color: cc, seed: 9 });
       });
-      // 下一個：打「kimono」— 現代的字盒裡沒有和服（時代不對），字盒會說一聲
+      // 下一個：打「yukata」— 現代的字盒裡沒有浴衣（時代不對），字盒會說一聲。
+      // 2026-10-26 以前打的是 kimono；現代的「和服裙」（kimono skirt）也含 kimono，搜得到，改用浴衣。
       const tType2 = b(19, 0);
-      const q2 = "kimono";
+      const q2 = "yukata";
       const done2 = search.type(tType2, q2, 0.16);
       search.keyTimes().filter((x) => x >= tType2).forEach((x) => S.cue({ t: x, kind: "key", gain: 0.1 }));
-      if (viewList({ q: q2 }).length) throw new Error("現代的字盒裡不該找得到 kimono（教學要示範「找不到」）");
+      if (viewList({ q: q2 }).length) throw new Error("現代的字盒裡不該找得到 yukata（教學要示範「找不到」）");
       lib.view("q2", { q: q2 }, done2 + 0.05, { tags: [], total: 0, empty: true });
       search.refuse(done2 + 0.08);
       S.cue({ t: done2 + 0.08, kind: "clash", gain: 0.06 });
