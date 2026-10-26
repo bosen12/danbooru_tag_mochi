@@ -10357,7 +10357,7 @@
       ],
       "group": "onepiece",
       "sub": "op_uniform",
-      "zh": "學生制服（男）"
+      "zh": "立領學生服"
     },
     {
       "tag": "maid",
@@ -10561,7 +10561,7 @@
       ],
       "group": "top",
       "sub": "top_shirt",
-      "zh": "襯衫（女）"
+      "zh": "女用襯衫"
     },
     {
       "tag": "tank top",
@@ -12545,7 +12545,7 @@
       ],
       "group": "place",
       "sub": "pl_school",
-      "zh": "更衣室（置物櫃）"
+      "zh": "置物櫃更衣室"
     },
     {
       "tag": "train",
@@ -40815,7 +40815,7 @@
       "needs": [
         "female"
       ],
-      "zh": "女王（王室）"
+      "zh": "女王陛下"
     },
     {
       "tag": "cashier",
@@ -54538,7 +54538,7 @@
       "group": "other",
       "sub": "nonhuman",
       "kind": "horse",
-      "zh": "馬尾（尾巴）"
+      "zh": "馬尾巴"
     },
     {
       "tag": "demon tail",
@@ -80106,7 +80106,7 @@
       ],
       "group": "other",
       "sub": "obj_tech",
-      "zh": "煙囪（船/火車/工廠）"
+      "zh": "大煙囪"
     },
     {
       "tag": "watercraft",
@@ -81103,7 +81103,7 @@
       ],
       "group": "camera",
       "sub": "cam_fx",
-      "zh": "出框（超出邊框）"
+      "zh": "超出邊框"
     },
     {
       "tag": "white border",
@@ -83510,7 +83510,7 @@
       ],
       "group": "underwear",
       "sub": "uw_bottom",
-      "zh": "丁字褲（T 字內褲）"
+      "zh": "T字內褲"
     },
     {
       "tag": "bow bra",
@@ -83800,7 +83800,7 @@
       ],
       "group": "acc",
       "sub": "acc_face",
-      "zh": "耳罩（保暖）"
+      "zh": "保暖耳罩"
     },
     {
       "tag": "faceless female",
@@ -86177,7 +86177,7 @@
       ],
       "group": "tease",
       "sub": "pose_act",
-      "zh": "撫摸（動物）"
+      "zh": "撫摸動物"
     },
     {
       "tag": "soaking feet",
@@ -86865,7 +86865,7 @@
       ],
       "group": "face",
       "sub": "face_mouth",
-      "zh": "嘟嘴（索吻）"
+      "zh": "噘嘴索吻"
     },
     {
       "tag": "looking at animal",
@@ -87796,7 +87796,7 @@
       ],
       "group": "race",
       "sub": "race_kemono",
-      "zh": "獸人（女性）"
+      "zh": "女獸人"
     },
     {
       "tag": "furry male",
@@ -87816,7 +87816,7 @@
       ],
       "group": "race",
       "sub": "race_kemono",
-      "zh": "獸人（男性）"
+      "zh": "男獸人"
     },
     {
       "tag": "long hair between eyes",
@@ -89450,7 +89450,7 @@
       ],
       "group": "race",
       "sub": "race_fantasy",
-      "zh": "半人馬型（taur）"
+      "zh": "人身獸軀"
     },
     {
       "tag": "drying",
@@ -89761,7 +89761,7 @@
       ],
       "group": "body",
       "sub": "body",
-      "zh": "側坐（側鞍）"
+      "zh": "側鞍坐"
     },
     {
       "tag": "legs folded",
@@ -93486,7 +93486,7 @@
       ],
       "group": "style",
       "sub": "style_tech",
-      "zh": "塗鴉（お絵描き）"
+      "zh": "隨手塗鴉"
     },
     {
       "tag": "blue theme",
@@ -93741,7 +93741,7 @@
       ],
       "group": "acc",
       "sub": "acc_head",
-      "zh": "鴨舌帽（平頂帽）"
+      "zh": "平頂帽"
     },
     {
       "tag": "fedora",
@@ -117751,7 +117751,7 @@
       ],
       "group": "acc",
       "sub": "acc_head",
-      "zh": "頭巾（headscarf）"
+      "zh": "包頭巾"
     },
     {
       "tag": "leg ribbon",
@@ -118034,7 +118034,7 @@
       ],
       "group": "acc",
       "sub": "acc_neck",
-      "zh": "頸環（硬式）"
+      "zh": "硬式頸環"
     },
     {
       "tag": "spiked bracelet",
@@ -118599,7 +118599,7 @@
       ],
       "group": "acc",
       "sub": "acc_hand",
-      "zh": "臂環(袖箍)"
+      "zh": "上臂袖箍"
     },
     {
       "tag": "white neckerchief",
@@ -119647,7 +119647,7 @@
       ],
       "group": "acc",
       "sub": "acc_hand",
-      "zh": "臂帶（皮帶）"
+      "zh": "臂皮帶"
     },
     {
       "tag": "fur-trimmed headwear",
@@ -120641,7 +120641,7 @@
       ],
       "group": "acc",
       "sub": "acc_hand",
-      "zh": "紅色腰帶(綢帶)"
+      "zh": "紅色飾帶"
     },
     {
       "tag": "rectangular eyewear",
@@ -122499,7 +122499,7 @@
       ],
       "group": "acc",
       "sub": "acc_face",
-      "zh": "半框眼鏡（over-rim eyewear）"
+      "zh": "上框眼鏡"
     },
     {
       "tag": "brown ribbon",
@@ -123375,7 +123375,7 @@
       ],
       "group": "acc",
       "sub": "acc_hand",
-      "zh": "藍色腰帶(綢帶)"
+      "zh": "藍色飾帶"
     },
     {
       "tag": "no eyewear",
@@ -123438,7 +123438,7 @@
       ],
       "group": "acc",
       "sub": "acc_hand",
-      "zh": "白色腰帶(綢帶)"
+      "zh": "白色飾帶"
     },
     {
       "tag": "red bandana",
@@ -123526,7 +123526,7 @@
       ],
       "group": "acc",
       "sub": "acc_jewel",
-      "zh": "鼻環（nose piercing）"
+      "zh": "鼻穿孔"
     },
     {
       "tag": "insignia",
@@ -125475,7 +125475,7 @@
       ],
       "group": "acc",
       "sub": "acc_hand",
-      "zh": "黃色腰帶(綢帶)"
+      "zh": "黃色飾帶"
     },
     {
       "tag": "animal bag",
@@ -126261,7 +126261,7 @@
       ],
       "group": "acc",
       "sub": "acc_hand",
-      "zh": "護腕（wrist guards）"
+      "zh": "護腕套"
     },
     {
       "tag": "neck flower",
@@ -127542,7 +127542,7 @@
       ],
       "group": "acc",
       "sub": "acc_hand",
-      "zh": "紫色腰帶(綢帶)"
+      "zh": "紫色飾帶"
     },
     {
       "tag": "white hood",
@@ -127737,7 +127737,7 @@
       ],
       "group": "acc",
       "sub": "acc_neck",
-      "zh": "橘色領巾(ascot)"
+      "zh": "橘色阿斯科領巾"
     },
     {
       "tag": "hauchiwa",
@@ -127797,7 +127797,7 @@
       ],
       "group": "acc",
       "sub": "acc_carry",
-      "zh": "頭巾帽(coif)"
+      "zh": "中世紀頭巾帽"
     },
     {
       "tag": "frilled ascot",
@@ -128148,7 +128148,7 @@
       ],
       "group": "acc",
       "sub": "acc_neck",
-      "zh": "粉紅色領巾(ascot)"
+      "zh": "粉紅色阿斯科領巾"
     },
     {
       "tag": "diving mask on head",
@@ -128725,7 +128725,7 @@
       ],
       "group": "acc",
       "sub": "acc_neck",
-      "zh": "紫色領巾(ascot)"
+      "zh": "紫色阿斯科領巾"
     },
     {
       "tag": "anchor necklace",
@@ -128919,7 +128919,7 @@
       ],
       "group": "acc",
       "sub": "acc_carry",
-      "zh": "購物袋（grocery bag）"
+      "zh": "雜貨袋"
     },
     {
       "tag": "smokestack hair ornament",
@@ -130420,7 +130420,7 @@
       ],
       "group": "acc",
       "sub": "acc_bind",
-      "zh": "臂環（arm cuffs）"
+      "zh": "臂鐲"
     },
     {
       "tag": "black armband",
@@ -130924,7 +130924,7 @@
       ],
       "group": "acc",
       "sub": "acc_hand",
-      "zh": "粉紅色腰帶(綢帶)"
+      "zh": "粉紅色飾帶"
     },
     {
       "tag": "kabuto (helmet)",
@@ -132222,7 +132222,7 @@
       ],
       "group": "bottom",
       "sub": "bot_pants",
-      "zh": "吊帶短褲（overall shorts）"
+      "zh": "連身吊帶短褲"
     },
     {
       "tag": "fur-trimmed shorts",
@@ -133439,7 +133439,7 @@
       ],
       "group": "fabric",
       "sub": "fab_detail",
-      "zh": "外套披肩（coat on shoulders）"
+      "zh": "大衣披肩"
     },
     {
       "tag": "heart cutout",
@@ -136337,7 +136337,7 @@
       ],
       "group": "feet",
       "sub": "feet",
-      "zh": "溜冰鞋（ice skates）"
+      "zh": "冰刀鞋"
     },
     {
       "tag": "animal slippers",
@@ -139682,7 +139682,7 @@
       ],
       "group": "onepiece",
       "sub": "op_swim",
-      "zh": "荷葉邊比基尼（ruffle bikini）"
+      "zh": "褶邊比基尼"
     },
     {
       "tag": "hasu no sora school uniform",
@@ -140636,7 +140636,7 @@
       ],
       "group": "onepiece",
       "sub": "op_uniform",
-      "zh": "潛水衣（diving suit）"
+      "zh": "潛水裝"
     },
     {
       "tag": "embellished costume",
@@ -142013,7 +142013,7 @@
       ],
       "group": "onepiece",
       "sub": "op_uniform",
-      "zh": "動力裝甲（power suit）"
+      "zh": "動力外骨骼"
     },
     {
       "tag": "uva academy school uniform",
@@ -142100,7 +142100,7 @@
       ],
       "group": "onepiece",
       "sub": "op_uniform",
-      "zh": "神山高中制服（冰菓）"
+      "zh": "冰菓神山制服"
     },
     {
       "tag": "two-sided dress",
@@ -142516,7 +142516,7 @@
       ],
       "group": "onepiece",
       "sub": "op_uniform",
-      "zh": "神山高中制服（世界計畫）"
+      "zh": "世界計畫神山制服"
     },
     {
       "tag": "coat dress",
@@ -143036,7 +143036,7 @@
       ],
       "group": "onepiece",
       "sub": "op_uniform",
-      "zh": "貓裝（cat costume）"
+      "zh": "貓咪裝"
     },
     {
       "tag": "sophist's robe (ff14)",
@@ -144270,7 +144270,7 @@
       ],
       "group": "outer",
       "sub": "outer",
-      "zh": "長大衣（overcoat）"
+      "zh": "厚大衣"
     },
     {
       "tag": "yellow cape",
@@ -144961,7 +144961,7 @@
       ],
       "group": "outer",
       "sub": "outer",
-      "zh": "罩袍（surcoat）"
+      "zh": "騎士罩袍"
     },
     {
       "tag": "red cardigan",
@@ -145107,7 +145107,7 @@
       ],
       "group": "top",
       "sub": "top_tank",
-      "zh": "藍色背心(外搭)"
+      "zh": "藍色外搭背心"
     },
     {
       "tag": "o-ring top",
@@ -145149,7 +145149,7 @@
       ],
       "group": "top",
       "sub": "top_tank",
-      "zh": "綠色背心(外搭)"
+      "zh": "綠色外搭背心"
     },
     {
       "tag": "plaid vest",
@@ -145281,7 +145281,7 @@
       ],
       "group": "top",
       "sub": "top_tank",
-      "zh": "灰色背心(外搭)"
+      "zh": "灰色外搭背心"
     },
     {
       "tag": "white vest",
@@ -145392,7 +145392,7 @@
       ],
       "group": "top",
       "sub": "top_tank",
-      "zh": "黃色背心(外搭)"
+      "zh": "黃色外搭背心"
     },
     {
       "tag": "bulletproof vest",
@@ -145851,7 +145851,7 @@
       ],
       "group": "top",
       "sub": "top_tank",
-      "zh": "藍色背心(tank top)"
+      "zh": "藍色無袖背心"
     },
     {
       "tag": "loose shirt",
@@ -145895,7 +145895,7 @@
       ],
       "group": "top",
       "sub": "top_tank",
-      "zh": "灰色背心(tank top)"
+      "zh": "灰色無袖背心"
     },
     {
       "tag": "frilled camisole",
@@ -145961,7 +145961,7 @@
       ],
       "group": "top",
       "sub": "top_tank",
-      "zh": "黃色背心(tank top)"
+      "zh": "黃色無袖背心"
     },
     {
       "tag": "racerback",
@@ -146003,7 +146003,7 @@
       ],
       "group": "top",
       "sub": "top_tank",
-      "zh": "綠色背心(tank top)"
+      "zh": "綠色無袖背心"
     },
     {
       "tag": "polka dot shirt",
@@ -151184,7 +151184,7 @@
       ],
       "group": "other",
       "sub": "obj_food",
-      "zh": "鮮奶油（cream）"
+      "zh": "淡奶油"
     },
     {
       "tag": "candy apple",
@@ -151427,7 +151427,7 @@
       ],
       "group": "other",
       "sub": "obj_food",
-      "zh": "冰塊（方塊）"
+      "zh": "方冰塊"
     },
     {
       "tag": "omelet",
@@ -151714,7 +151714,7 @@
       ],
       "group": "other",
       "sub": "obj_food",
-      "zh": "蛋（食物）"
+      "zh": "蛋料理"
     },
     {
       "tag": "lemon slice",
@@ -151816,7 +151816,7 @@
       ],
       "group": "other",
       "sub": "obj_food",
-      "zh": "洋芋片（薯片）"
+      "zh": "薯片"
     },
     {
       "tag": "fried egg",
@@ -153709,7 +153709,7 @@
       ],
       "group": "other",
       "sub": "obj_food",
-      "zh": "棉花糖(marshmallow)"
+      "zh": "棉花軟糖"
     },
     {
       "tag": "whiskey",
@@ -154514,7 +154514,7 @@
       ],
       "group": "other",
       "sub": "obj_sport",
-      "zh": "羽子板(打羽毛毽)"
+      "zh": "打羽子板"
     },
     {
       "tag": "bishop (chess)",
@@ -155519,7 +155519,7 @@
       ],
       "group": "other",
       "sub": "obj_hand",
-      "zh": "精靈球（一般）"
+      "zh": "紅白精靈球"
     },
     {
       "tag": "anchor symbol",
@@ -156041,7 +156041,7 @@
       ],
       "group": "other",
       "sub": "obj_hand",
-      "zh": "畫作（角色正畫的）"
+      "zh": "素描作品"
     },
     {
       "tag": "flip phone",
@@ -156164,7 +156164,7 @@
       ],
       "group": "other",
       "sub": "obj_hand",
-      "zh": "畫作（物件）"
+      "zh": "繪畫作品"
     },
     {
       "tag": "lightning bolt symbol",
@@ -156789,7 +156789,7 @@
       ],
       "group": "other",
       "sub": "obj_hand",
-      "zh": "人偶（操偶）"
+      "zh": "提線木偶"
     },
     {
       "tag": "japari symbol",
@@ -157915,7 +157915,7 @@
       ],
       "group": "other",
       "sub": "obj_fest",
-      "zh": "新年快樂（あけおめ）"
+      "zh": "新年賀詞"
     },
     {
       "tag": "venus symbol",
@@ -159022,7 +159022,7 @@
       ],
       "group": "other",
       "sub": "obj_hand",
-      "zh": "風車（玩具）"
+      "zh": "紙風車"
     },
     {
       "tag": "machine",
@@ -159567,7 +159567,7 @@
       ],
       "group": "effect",
       "sub": "fx_glow",
-      "zh": "變身（henshin）"
+      "zh": "變身姿勢"
     },
     {
       "tag": "kaiju",
@@ -160271,7 +160271,7 @@
       ],
       "group": "other",
       "sub": "obj_theme",
-      "zh": "沒戴眼罩(eyepatch)"
+      "zh": "未戴單眼罩"
     },
     {
       "tag": "tools",
@@ -164388,7 +164388,7 @@
       ],
       "group": "other",
       "sub": "obj_weapon",
-      "zh": "刀鞘（knife sheath）"
+      "zh": "小刀鞘"
     },
     {
       "tag": "gunblade",
@@ -164919,7 +164919,7 @@
       "needs": [
         "male"
       ],
-      "zh": "假鬍子（fake facial hair）"
+      "zh": "假鬍鬚"
     },
     {
       "tag": "sparse chest hair",
@@ -166161,7 +166161,7 @@
       ],
       "group": "other",
       "sub": "nonhuman",
-      "zh": "鬍鬚（動物）"
+      "zh": "動物鬍鬚"
     },
     {
       "tag": "v-fin",
@@ -166309,7 +166309,7 @@
       ],
       "group": "other",
       "sub": "nonhuman",
-      "zh": "機械耳（天線）"
+      "zh": "天線耳"
     },
     {
       "tag": "ears down",
@@ -167433,7 +167433,7 @@
       ],
       "group": "other",
       "sub": "nonhuman",
-      "zh": "義肢（腿）"
+      "zh": "義腿"
     },
     {
       "tag": "hair on horn",
@@ -167493,7 +167493,7 @@
       ],
       "group": "other",
       "sub": "nonhuman",
-      "zh": "機械耳（仿生）"
+      "zh": "仿生機械耳"
     },
     {
       "tag": "snow leopard ears",
@@ -169476,7 +169476,7 @@
       ],
       "group": "activity",
       "sub": "act_daily",
-      "zh": "整理頭髮（hairdressing）"
+      "zh": "幫人梳頭"
     },
     {
       "tag": "drinking straw in mouth",
@@ -170229,7 +170229,7 @@
       ],
       "group": "body",
       "sub": "body",
-      "zh": "跌倒（fallen down）"
+      "zh": "跌坐在地"
     },
     {
       "tag": "hanging",
@@ -170725,7 +170725,7 @@
       ],
       "group": "face",
       "sub": "face_eyes",
-      "zh": "眨眼(>_o)"
+      "zh": "眨眼顏文字"
     },
     {
       "tag": "smiley face",
@@ -175917,7 +175917,7 @@
       ],
       "group": "tease",
       "sub": "pose_sign",
-      "zh": "搖滾手勢(\\n/)"
+      "zh": "兩指搖滾手勢"
     },
     {
       "tag": "holding drumsticks",
@@ -177161,7 +177161,7 @@
       ],
       "group": "other",
       "sub": "persona",
-      "zh": "性轉（原為無性別）"
+      "zh": "無性別轉性"
     },
     {
       "tag": "decepticon",

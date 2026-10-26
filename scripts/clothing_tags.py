@@ -1170,7 +1170,7 @@ ROWS = [
   },
   {
     "tag": "headscarf",
-    "zh": "頭巾（headscarf）",
+    "zh": "包頭巾",
     "section": "clothing",
     "gate": "any",
     "heat": [
@@ -1453,7 +1453,7 @@ ROWS = [
   },
   {
     "tag": "neck ring",
-    "zh": "頸環（硬式）",
+    "zh": "硬式頸環",
     "section": "clothing",
     "gate": "any",
     "heat": [
@@ -2017,7 +2017,7 @@ ROWS = [
   },
   {
     "tag": "arm garter",
-    "zh": "臂環(袖箍)",
+    "zh": "上臂袖箍",
     "section": "clothing",
     "gate": "any",
     "heat": [
@@ -3062,7 +3062,7 @@ ROWS = [
   },
   {
     "tag": "arm belt",
-    "zh": "臂帶（皮帶）",
+    "zh": "臂皮帶",
     "section": "clothing",
     "gate": "any",
     "heat": [
@@ -4055,7 +4055,7 @@ ROWS = [
   },
   {
     "tag": "red sash",
-    "zh": "紅色腰帶(綢帶)",
+    "zh": "紅色飾帶",
     "section": "clothing",
     "gate": "any",
     "heat": [
@@ -5916,7 +5916,7 @@ ROWS = [
   },
   {
     "tag": "over-rim eyewear",
-    "zh": "半框眼鏡（over-rim eyewear）",
+    "zh": "上框眼鏡",
     "section": "clothing",
     "gate": "any",
     "heat": [
@@ -6789,7 +6789,7 @@ ROWS = [
   },
   {
     "tag": "blue sash",
-    "zh": "藍色腰帶(綢帶)",
+    "zh": "藍色飾帶",
     "section": "clothing",
     "gate": "any",
     "heat": [
@@ -6852,7 +6852,7 @@ ROWS = [
   },
   {
     "tag": "white sash",
-    "zh": "白色腰帶(綢帶)",
+    "zh": "白色飾帶",
     "section": "clothing",
     "gate": "any",
     "heat": [
@@ -6941,7 +6941,7 @@ ROWS = [
   },
   {
     "tag": "nose piercing",
-    "zh": "鼻環（nose piercing）",
+    "zh": "鼻穿孔",
     "section": "clothing",
     "gate": "any",
     "heat": [
@@ -8889,7 +8889,7 @@ ROWS = [
   },
   {
     "tag": "yellow sash",
-    "zh": "黃色腰帶(綢帶)",
+    "zh": "黃色飾帶",
     "section": "clothing",
     "gate": "any",
     "heat": [
@@ -9678,7 +9678,7 @@ ROWS = [
   },
   {
     "tag": "wrist guards",
-    "zh": "護腕（wrist guards）",
+    "zh": "護腕套",
     "section": "clothing",
     "gate": "any",
     "heat": [
@@ -10956,7 +10956,7 @@ ROWS = [
   },
   {
     "tag": "purple sash",
-    "zh": "紫色腰帶(綢帶)",
+    "zh": "紫色飾帶",
     "section": "clothing",
     "gate": "any",
     "heat": [
@@ -11152,7 +11152,7 @@ ROWS = [
   },
   {
     "tag": "orange ascot",
-    "zh": "橘色領巾(ascot)",
+    "zh": "橘色阿斯科領巾",
     "section": "clothing",
     "gate": "any",
     "heat": [
@@ -11214,7 +11214,7 @@ ROWS = [
   },
   {
     "tag": "coif",
-    "zh": "頭巾帽(coif)",
+    "zh": "中世紀頭巾帽",
     "section": "clothing",
     "gate": "any",
     "heat": [
@@ -11563,7 +11563,7 @@ ROWS = [
   },
   {
     "tag": "pink ascot",
-    "zh": "粉紅色領巾(ascot)",
+    "zh": "粉紅色阿斯科領巾",
     "section": "clothing",
     "gate": "any",
     "heat": [
@@ -12140,7 +12140,7 @@ ROWS = [
   },
   {
     "tag": "purple ascot",
-    "zh": "紫色領巾(ascot)",
+    "zh": "紫色阿斯科領巾",
     "section": "clothing",
     "gate": "any",
     "heat": [
@@ -12334,7 +12334,7 @@ ROWS = [
   },
   {
     "tag": "grocery bag",
-    "zh": "購物袋（grocery bag）",
+    "zh": "雜貨袋",
     "section": "clothing",
     "gate": "any",
     "heat": [
@@ -13835,7 +13835,7 @@ ROWS = [
   },
   {
     "tag": "arm cuffs",
-    "zh": "臂環（arm cuffs）",
+    "zh": "臂鐲",
     "section": "clothing",
     "gate": "any",
     "heat": [
@@ -14338,7 +14338,7 @@ ROWS = [
   },
   {
     "tag": "pink sash",
-    "zh": "粉紅色腰帶(綢帶)",
+    "zh": "粉紅色飾帶",
     "section": "clothing",
     "gate": "any",
     "heat": [
@@ -15634,7 +15634,7 @@ ROWS = [
   },
   {
     "tag": "overall shorts",
-    "zh": "吊帶短褲（overall shorts）",
+    "zh": "連身吊帶短褲",
     "section": "clothing",
     "gate": "female",
     "heat": [
@@ -16827,7 +16827,7 @@ ROWS = [
   },
   {
     "tag": "coat on shoulders",
-    "zh": "外套披肩（coat on shoulders）",
+    "zh": "大衣披肩",
     "section": "clothing",
     "gate": "any",
     "heat": [
@@ -19715,7 +19715,7 @@ ROWS = [
   },
   {
     "tag": "ice skates",
-    "zh": "溜冰鞋（ice skates）",
+    "zh": "冰刀鞋",
     "section": "clothing",
     "gate": "any",
     "heat": [
@@ -23056,7 +23056,7 @@ ROWS = [
   },
   {
     "tag": "ruffle bikini",
-    "zh": "荷葉邊比基尼（ruffle bikini）",
+    "zh": "褶邊比基尼",
     "section": "clothing",
     "gate": "female",
     "heat": [
@@ -24008,7 +24008,7 @@ ROWS = [
   },
   {
     "tag": "diving suit",
-    "zh": "潛水衣（diving suit）",
+    "zh": "潛水裝",
     "section": "clothing",
     "gate": "any",
     "heat": [
@@ -25381,7 +25381,7 @@ ROWS = [
   },
   {
     "tag": "power suit",
-    "zh": "動力裝甲（power suit）",
+    "zh": "動力外骨骼",
     "section": "clothing",
     "gate": "any",
     "heat": [
@@ -25468,7 +25468,7 @@ ROWS = [
   },
   {
     "tag": "kamiyama high school uniform (hyouka)",
-    "zh": "神山高中制服（冰菓）",
+    "zh": "冰菓神山制服",
     "section": "clothing",
     "gate": "any",
     "heat": [
@@ -25883,7 +25883,7 @@ ROWS = [
   },
   {
     "tag": "kamiyama high school uniform (project sekai)",
-    "zh": "神山高中制服（世界計畫）",
+    "zh": "世界計畫神山制服",
     "section": "clothing",
     "gate": "any",
     "heat": [
@@ -26403,7 +26403,7 @@ ROWS = [
   },
   {
     "tag": "cat costume",
-    "zh": "貓裝（cat costume）",
+    "zh": "貓咪裝",
     "section": "clothing",
     "gate": "any",
     "heat": [
@@ -27646,7 +27646,7 @@ ROWS = [
   },
   {
     "tag": "overcoat",
-    "zh": "長大衣（overcoat）",
+    "zh": "厚大衣",
     "section": "clothing",
     "gate": "any",
     "heat": [
@@ -28344,7 +28344,7 @@ ROWS = [
   },
   {
     "tag": "surcoat",
-    "zh": "罩袍（surcoat）",
+    "zh": "騎士罩袍",
     "section": "clothing",
     "gate": "any",
     "heat": [
@@ -28490,7 +28490,7 @@ ROWS = [
   },
   {
     "tag": "blue vest",
-    "zh": "藍色背心(外搭)",
+    "zh": "藍色外搭背心",
     "section": "clothing",
     "gate": "any",
     "heat": [
@@ -28532,7 +28532,7 @@ ROWS = [
   },
   {
     "tag": "green vest",
-    "zh": "綠色背心(外搭)",
+    "zh": "綠色外搭背心",
     "section": "clothing",
     "gate": "any",
     "heat": [
@@ -28664,7 +28664,7 @@ ROWS = [
   },
   {
     "tag": "grey vest",
-    "zh": "灰色背心(外搭)",
+    "zh": "灰色外搭背心",
     "section": "clothing",
     "gate": "any",
     "heat": [
@@ -28775,7 +28775,7 @@ ROWS = [
   },
   {
     "tag": "yellow vest",
-    "zh": "黃色背心(外搭)",
+    "zh": "黃色外搭背心",
     "section": "clothing",
     "gate": "any",
     "heat": [
@@ -29236,7 +29236,7 @@ ROWS = [
   },
   {
     "tag": "blue tank top",
-    "zh": "藍色背心(tank top)",
+    "zh": "藍色無袖背心",
     "section": "clothing",
     "gate": "any",
     "heat": [
@@ -29280,7 +29280,7 @@ ROWS = [
   },
   {
     "tag": "grey tank top",
-    "zh": "灰色背心(tank top)",
+    "zh": "灰色無袖背心",
     "section": "clothing",
     "gate": "any",
     "heat": [
@@ -29346,7 +29346,7 @@ ROWS = [
   },
   {
     "tag": "yellow tank top",
-    "zh": "黃色背心(tank top)",
+    "zh": "黃色無袖背心",
     "section": "clothing",
     "gate": "any",
     "heat": [
@@ -29388,7 +29388,7 @@ ROWS = [
   },
   {
     "tag": "green tank top",
-    "zh": "綠色背心(tank top)",
+    "zh": "綠色無袖背心",
     "section": "clothing",
     "gate": "any",
     "heat": [
@@ -33248,7 +33248,7 @@ ZH_CLOTHING = {
   "hat feather": "帽上羽毛",
   "asymmetrical gloves": "不對稱手套",
   "tilted headwear": "歪戴的帽子",
-  "headscarf": "頭巾（headscarf）",
+  "headscarf": "包頭巾",
   "leg ribbon": "腿上緞帶",
   "crescent hair ornament": "月牙髮飾",
   "rabbit hair ornament": "兔子髮飾",
@@ -33261,7 +33261,7 @@ ZH_CLOTHING = {
   "leaf hair ornament": "葉子髮飾",
   "belt pouch": "腰帶小包",
   "crescent hat ornament": "月牙帽飾",
-  "neck ring": "頸環（硬式）",
+  "neck ring": "硬式頸環",
   "spiked bracelet": "尖刺手環",
   "charm (object)": "吊飾",
   "frilled hairband": "荷葉邊髮箍",
@@ -33287,7 +33287,7 @@ ZH_CLOTHING = {
   "mini top hat": "迷你禮帽",
   "arm ribbon": "手臂緞帶",
   "cube hair ornament": "方塊髮飾",
-  "arm garter": "臂環(袖箍)",
+  "arm garter": "上臂袖箍",
   "white neckerchief": "白色領巾",
   "grey hat": "灰色帽子",
   "pink hairband": "粉紅色髮箍",
@@ -33335,7 +33335,7 @@ ZH_CLOTHING = {
   "studs": "鉚釘",
   "black ascot": "黑色領巾(ascot)",
   "fur hat": "毛皮帽",
-  "arm belt": "臂帶（皮帶）",
+  "arm belt": "臂皮帶",
   "fur-trimmed headwear": "毛皮滾邊頭飾／頭戴物",
   "yellow hat": "黃色帽子",
   "striped scarf": "條紋圍巾",
@@ -33381,7 +33381,7 @@ ZH_CLOTHING = {
   "pirate hat": "海盜帽",
   "cat ear headphones": "貓耳耳機",
   "green halo": "綠色光環",
-  "red sash": "紅色腰帶(綢帶)",
+  "red sash": "紅色飾帶",
   "rectangular eyewear": "長方形眼鏡",
   "carrot hair ornament": "紅蘿蔔髮飾",
   "backwards hat": "反戴帽子",
@@ -33467,7 +33467,7 @@ ZH_CLOTHING = {
   "shoulder boards": "肩章板",
   "frilled ribbon": "荷葉邊緞帶",
   "purple scarf": "紫色圍巾",
-  "over-rim eyewear": "半框眼鏡（over-rim eyewear）",
+  "over-rim eyewear": "上框眼鏡",
   "brown ribbon": "棕色緞帶",
   "ankle ribbon": "腳踝緞帶",
   "purple umbrella": "紫色傘",
@@ -33508,14 +33508,14 @@ ZH_CLOTHING = {
   "green neckerchief": "綠色領巾",
   "torpedo tubes": "魚雷發射管",
   "star halo": "星星光環",
-  "blue sash": "藍色腰帶(綢帶)",
+  "blue sash": "藍色飾帶",
   "no eyewear": "沒戴眼鏡",
   "o-ring thigh strap": "O環大腿帶",
-  "white sash": "白色腰帶(綢帶)",
+  "white sash": "白色飾帶",
   "red bandana": "紅色頭巾",
   "character hair ornament": "角色造型髮飾",
   "green choker": "綠色項圈式頸飾",
-  "nose piercing": "鼻環（nose piercing）",
+  "nose piercing": "鼻穿孔",
   "insignia": "徽記",
   "animal ear headwear": "動物耳頭飾",
   "yellow belt": "黃色腰帶",
@@ -33606,7 +33606,7 @@ ZH_CLOTHING = {
   "leather belt": "皮革腰帶",
   "skull earrings": "骷髏耳環",
   "tricorne": "三角帽",
-  "yellow sash": "黃色腰帶(綢帶)",
+  "yellow sash": "黃色飾帶",
   "animal bag": "動物包包",
   "blue collar": "藍色項圈／衣領",
   "multiple piercings": "多重穿孔",
@@ -33643,7 +33643,7 @@ ZH_CLOTHING = {
   "striped headwear": "條紋頭飾／頭戴物",
   "skull mask": "骷髏面具",
   "ankle strap": "腳踝綁帶",
-  "wrist guards": "護腕（wrist guards）",
+  "wrist guards": "護腕套",
   "neck flower": "頸部花飾",
   "green-framed eyewear": "綠框眼鏡",
   "unworn gloves": "未穿戴的手套",
@@ -33703,7 +33703,7 @@ ZH_CLOTHING = {
   "no gloves": "沒戴手套",
   "star brooch": "星星胸針",
   "snorkel": "呼吸管",
-  "purple sash": "紫色腰帶(綢帶)",
+  "purple sash": "紫色飾帶",
   "white hood": "白色兜帽",
   "noh mask": "能劇面具",
   "food-themed earrings": "食物主題耳環",
@@ -33712,10 +33712,10 @@ ZH_CLOTHING = {
   "lapel pin": "翻領別針",
   "plume": "羽飾",
   "ninja mask": "忍者面罩",
-  "orange ascot": "橘色領巾(ascot)",
+  "orange ascot": "橘色阿斯科領巾",
   "hauchiwa": "羽團扇",
   "condom belt": "保險套腰帶",
-  "coif": "頭巾帽(coif)",
+  "coif": "中世紀頭巾帽",
   "frilled ascot": "荷葉邊領巾(ascot)",
   "torn scarf": "破損的圍巾",
   "sleeve ribbon": "袖子緞帶",
@@ -33731,7 +33731,7 @@ ZH_CLOTHING = {
   "motorcycle helmet": "機車安全帽",
   "arched crown": "拱形王冠",
   "nejiri hachimaki": "扭轉頭巾(捻り鉢巻)",
-  "pink ascot": "粉紅色領巾(ascot)",
+  "pink ascot": "粉紅色阿斯科領巾",
   "diving mask on head": "潛水鏡推到頭上",
   "papakha": "高加索毛帽(papakha)",
   "grey hairband": "灰色髮箍",
@@ -33758,7 +33758,7 @@ ZH_CLOTHING = {
   "crystal earrings": "水晶耳環",
   "no mask": "沒戴面具",
   "heart collar": "愛心項圈",
-  "purple ascot": "紫色領巾(ascot)",
+  "purple ascot": "紫色阿斯科領巾",
   "anchor necklace": "船錨項鍊",
   "black umbrella": "黑色傘",
   "multicolored hat": "多色帽子",
@@ -33767,7 +33767,7 @@ ZH_CLOTHING = {
   "footwear ribbon": "鞋上緞帶",
   "bandolier": "斜背彈帶",
   "brown choker": "棕色項圈式頸飾",
-  "grocery bag": "購物袋（grocery bag）",
+  "grocery bag": "雜貨袋",
   "smokestack hair ornament": "煙囪髮飾",
   "egg hair ornament": "蛋造型髮飾",
   "aviator sunglasses": "飛行員太陽眼鏡",
@@ -33837,7 +33837,7 @@ ZH_CLOTHING = {
   "half mask": "半臉面具",
   "shell necklace": "貝殼項鍊",
   "heart pendant": "愛心墜飾",
-  "arm cuffs": "臂環（arm cuffs）",
+  "arm cuffs": "臂鐲",
   "black armband": "黑色臂章／臂環",
   "heart-shaped buckle": "愛心扣環",
   "black hood": "黑色兜帽",
@@ -33860,7 +33860,7 @@ ZH_CLOTHING = {
   "skull ornament": "骷髏飾品",
   "biting glove": "咬手套",
   "rabbit hat": "兔子帽",
-  "pink sash": "粉紅色腰帶(綢帶)",
+  "pink sash": "粉紅色飾帶",
   "kabuto (helmet)": "兜(日本武士頭盔)",
   "melting halo": "融化的光環",
   "skirt bow": "裙上蝴蝶結",
@@ -33920,7 +33920,7 @@ ZH_CLOTHING = {
   "harem pants": "阿拉丁褲",
   "torn jeans": "破損的牛仔褲",
   "lace-trimmed skirt": "蕾絲滾邊裙子",
-  "overall shorts": "吊帶短褲（overall shorts）",
+  "overall shorts": "連身吊帶短褲",
   "fur-trimmed shorts": "毛皮滾邊短褲",
   "camouflage pants": "迷彩褲",
   "kimono skirt": "和服裙",
@@ -33975,7 +33975,7 @@ ZH_CLOTHING = {
   "clothes around waist": "衣服綁在腰間",
   "v-neck": "V領",
   "see-through sleeves": "透視袖子",
-  "coat on shoulders": "外套披肩（coat on shoulders）",
+  "coat on shoulders": "大衣披肩",
   "heart cutout": "愛心鏤空",
   "unworn skirt": "未穿戴的裙子",
   "low neckline": "低領口",
@@ -34112,7 +34112,7 @@ ZH_CLOTHING = {
   "cowboy boots": "牛仔靴",
   "single boot": "單邊單隻靴子",
   "cross-laced shoes": "交叉綁帶鞋子",
-  "ice skates": "溜冰鞋（ice skates）",
+  "ice skates": "冰刀鞋",
   "animal slippers": "動物拖鞋",
   "crocs": "洞洞鞋",
   "barefoot sandals (jewelry)": "赤足涼鞋(足飾)",
@@ -34266,7 +34266,7 @@ ZH_CLOTHING = {
   "gem uniform (houseki no kuni)": "寶石制服（寶石之國）",
   "gold bikini": "金色比基尼",
   "impossible bodysuit": "極度緊繃的連身緊身衣",
-  "ruffle bikini": "荷葉邊比基尼（ruffle bikini）",
+  "ruffle bikini": "褶邊比基尼",
   "hasu no sora school uniform": "蓮之空女學院制服",
   "zero suit": "零式裝甲",
   "backless leotard": "露背緊身連衣褲(leotard)",
@@ -34310,7 +34310,7 @@ ZH_CLOTHING = {
   "rabbit house uniform": "兔子屋制服（點兵點將）",
   "blue robe": "藍色長袍",
   "reindeer costume": "馴鹿裝",
-  "diving suit": "潛水衣（diving suit）",
+  "diving suit": "潛水裝",
   "embellished costume": "華麗改造服",
   "grey bodysuit": "灰色連身緊身衣",
   "red apron": "紅色圍裙",
@@ -34374,11 +34374,11 @@ ZH_CLOTHING = {
   "shuujin academy school uniform": "修央學園制服",
   "wagnaria uniform": "華格納利亞制服",
   "nanairogaoka middle school uniform": "七色之丘中學制服",
-  "power suit": "動力裝甲（power suit）",
+  "power suit": "動力外骨骼",
   "uva academy school uniform": "UVA 學園制服",
   "aria company uniform": "水星領航員制服",
   "tight dress": "緊身洋裝",
-  "kamiyama high school uniform (hyouka)": "神山高中制服（冰菓）",
+  "kamiyama high school uniform (hyouka)": "冰菓神山制服",
   "two-sided dress": "雙面洋裝",
   "vertical-striped bikini": "直條紋比基尼",
   "hooded bodysuit": "連帽連身緊身衣",
@@ -34397,7 +34397,7 @@ ZH_CLOTHING = {
   "grey leotard": "灰色緊身連衣褲(leotard)",
   "taimanin suit": "對魔忍緊身衣",
   "grey serafuku": "灰色水手服",
-  "kamiyama high school uniform (project sekai)": "神山高中制服（世界計畫）",
+  "kamiyama high school uniform (project sekai)": "世界計畫神山制服",
   "coat dress": "大衣式洋裝",
   "bc freedom military uniform": "BC自由學園軍服",
   "bear costume": "熊裝",
@@ -34421,7 +34421,7 @@ ZH_CLOTHING = {
   "checkered dress": "棋盤格紋洋裝",
   "tokisadame school uniform": "時定高中制服",
   "anzio military uniform": "安齊奧軍服",
-  "cat costume": "貓裝（cat costume）",
+  "cat costume": "貓咪裝",
   "sophist's robe (ff14)": "詭辯者長袍（FF14）",
   "varia suit": "變異服（銀河戰士）",
   "orange leotard": "橘色緊身連衣褲(leotard)",
@@ -34476,7 +34476,7 @@ ZH_CLOTHING = {
   "no jacket": "沒穿外套",
   "pink capelet": "粉紅色短披肩",
   "sleeveless coat": "無袖大衣",
-  "overcoat": "長大衣（overcoat）",
+  "overcoat": "厚大衣",
   "yellow cape": "黃色披風",
   "torn jacket": "破損的夾克",
   "off-shoulder jacket": "露肩夾克",
@@ -34507,27 +34507,27 @@ ZH_CLOTHING = {
   "orange cape": "橘色披風",
   "down jacket": "羽絨外套",
   "parka": "派克大衣",
-  "surcoat": "罩袍（surcoat）",
+  "surcoat": "騎士罩袍",
   "red cardigan": "紅色開襟針織衫",
   "front-tie top": "前綁上衣",
   "front-tie bikini top": "前綁比基尼上衣",
   "criss-cross halter": "交叉掛頸式",
   "red vest": "紅色背心(外搭)",
   "bandeau": "抹胸帶",
-  "blue vest": "藍色背心(外搭)",
+  "blue vest": "藍色外搭背心",
   "o-ring top": "O環上衣",
-  "green vest": "綠色背心(外搭)",
+  "green vest": "綠色外搭背心",
   "plaid vest": "格紋背心(外搭)",
   "brown vest": "棕色背心(外搭)",
   "open vest": "敞開的背心(外搭)",
   "chest sarashi": "胸前白布(sarashi)",
   "yellow sweater": "黃色毛衣",
-  "grey vest": "灰色背心(外搭)",
+  "grey vest": "灰色外搭背心",
   "white vest": "白色背心(外搭)",
   "purple vest": "紫色背心(外搭)",
   "brown sweater vest": "棕色毛衣背心",
   "purple sweater": "紫色毛衣",
-  "yellow vest": "黃色背心(外搭)",
+  "yellow vest": "黃色外搭背心",
   "bulletproof vest": "防彈背心",
   "open-chest sweater": "開胸毛衣",
   "fishnet top": "網狀上衣",
@@ -34548,14 +34548,14 @@ ZH_CLOTHING = {
   "orange sweater": "橘色毛衣",
   "short-sleeved sweater": "短袖毛衣",
   "blue tunic": "藍色長版上衣(tunic)",
-  "blue tank top": "藍色背心(tank top)",
+  "blue tank top": "藍色無袖背心",
   "loose shirt": "寬鬆襯衫",
-  "grey tank top": "灰色背心(tank top)",
+  "grey tank top": "灰色無袖背心",
   "frilled camisole": "荷葉邊細肩帶背心",
   "green tunic": "綠色長版上衣(tunic)",
-  "yellow tank top": "黃色背心(tank top)",
+  "yellow tank top": "黃色無袖背心",
   "racerback": "工字背(競速背)",
-  "green tank top": "綠色背心(tank top)",
+  "green tank top": "綠色無袖背心",
   "polka dot shirt": "圓點襯衫",
   "black tube top": "黑色平口上衣",
   "checkered shirt": "棋盤格紋襯衫",
