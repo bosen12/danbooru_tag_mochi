@@ -453,7 +453,7 @@ ZH = {
     "indian style": "盤腿坐",
     "indoors": "室內",
     "irrumatio": "強制口交",
-    "jack-o' challenge": "Jack-O 挑戰姿勢",
+    "jack-o' challenge": "傑克O挑戰姿勢",
     "jacket": "夾克",
     "japanese armor": "和風鎧甲",
     "japanese clothes": "和服類",

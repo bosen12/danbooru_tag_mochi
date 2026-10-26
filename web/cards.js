@@ -438,9 +438,21 @@ export function createAssets(manifest) {
   };
 }
 
+// 中文名尾巴的括號英文（白色髮圈(scrunchie)、頭巾（headscarf））：只是為了跟同名的字分開，
+// 直排書脊一個字母佔一格，擠掉中文。書脊只畫前面的中文；詳情、搜尋照舊用全名。
+// 英文版不剪：畫面是拿全名去查英文的，剪掉會查到同名的另一個字。
+const SPINE_TAIL = /\s*[（(][^（()）\p{Script=Han}]+[)）]$/u;
+export function spineName(zh) {
+  const name = String(zh || "");
+  if (english) return name;
+  const short = name.replace(SPINE_TAIL, "");
+  return /\p{Script=Han}/u.test(short) ? short : name;
+}
+
 /** 一張牌。左邊是直排書脊（花色、字名、分級），疊起來也讀得到。 */
 export function cardNode(card, assets, { tagName = "button", flag, src } = {}) {
-  const len = [...card.zh].length;
+  const spine = spineName(card.zh);
+  const len = [...spine].length;
   const art = assets.art(card.tag);
   const suit = CARD_SUIT_INFO[card.suit];
   const node = el(
@@ -456,7 +468,7 @@ export function cardNode(card, assets, { tagName = "button", flag, src } = {}) {
       "span",
       { class: "card-spine", "aria-hidden": "true" },
       el("span", { class: "card-suit" }, suit.glyph),
-      el("span", { class: "card-name", dataset: { len: String(Math.min(len, 8)) } }, card.zh),
+      el("span", { class: "card-name", dataset: { len: String(Math.min(len, 8)) } }, spine),
       card.rating !== "general" ? el("span", { class: "card-rate", dataset: { r: card.rating } }, card.rating === "explicit" ? "色" : "敏") : null,
       card.seal ? el("span", { class: "card-seal", title: card.groupZh }, card.seal) : null
     ),

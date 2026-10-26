@@ -8802,7 +8802,7 @@ ROWS = [
     },
     {
         "tag": "virtual youtuber",
-        "zh": "虛擬 YouTuber",
+        "zh": "虛擬主播",
         "section": "feature",
         "gate": "any",
         "heat": ["tease", "flash", "sex"],
@@ -10825,6 +10825,6 @@ ZH_POSE = {
     "zeon": "吉翁",
     "sailor senshi": "水手戰士",
     "kessoku band": "結束樂隊",
-    "virtual youtuber": "虛擬 YouTuber",
+    "virtual youtuber": "虛擬主播",
 }
 

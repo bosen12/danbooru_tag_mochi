@@ -23363,7 +23363,7 @@ ROWS = [
   },
   {
     "tag": "little busters! school uniform",
-    "zh": "Little Busters! 學校制服",
+    "zh": "校園剋星制服",
     "section": "clothing",
     "gate": "any",
     "heat": [
@@ -23926,7 +23926,7 @@ ROWS = [
   },
   {
     "tag": "vocaloid append",
-    "zh": "Vocaloid Append",
+    "zh": "歌姬 Append 服",
     "section": "clothing",
     "gate": "any",
     "heat": [
@@ -25425,7 +25425,7 @@ ROWS = [
   },
   {
     "tag": "aria company uniform",
-    "zh": "ARIA Company 制服",
+    "zh": "水星領航員制服",
     "section": "clothing",
     "gate": "any",
     "heat": [
@@ -26082,7 +26082,7 @@ ROWS = [
   },
   {
     "tag": "fleur de lapin uniform",
-    "zh": "Fleur de Lapin 制服",
+    "zh": "點兔花茶店制服",
     "section": "clothing",
     "gate": "any",
     "heat": [
@@ -34280,7 +34280,7 @@ ZH_CLOTHING = {
   "see-through leotard": "透視緊身連衣褲(leotard)",
   "st. gloriana's school uniform": "聖葛洛莉安娜女學院制服",
   "millennium cheerleader outfit (blue archive)": "千年啦啦隊服（蔚藍檔案）",
-  "little busters! school uniform": "Little Busters! 學校制服",
+  "little busters! school uniform": "校園剋星制服",
   "impossible leotard": "極度緊繃的緊身連衣褲",
   "turtleneck leotard": "高領緊身衣(leotard)",
   "lycoris uniform": "莉可麗絲制服",
@@ -34306,7 +34306,7 @@ ZH_CLOTHING = {
   "two-tone bodysuit": "雙色連身緊身衣",
   "green bodysuit": "綠色連身緊身衣",
   "gradient dress": "漸層洋裝",
-  "vocaloid append": "Vocaloid Append",
+  "vocaloid append": "歌姬 Append 服",
   "rabbit house uniform": "兔子屋制服（點兵點將）",
   "blue robe": "藍色長袍",
   "reindeer costume": "馴鹿裝",
@@ -34376,7 +34376,7 @@ ZH_CLOTHING = {
   "nanairogaoka middle school uniform": "七色之丘中學制服",
   "power suit": "動力裝甲（power suit）",
   "uva academy school uniform": "UVA 學園制服",
-  "aria company uniform": "ARIA Company 制服",
+  "aria company uniform": "水星領航員制服",
   "tight dress": "緊身洋裝",
   "kamiyama high school uniform (hyouka)": "神山高中制服（冰菓）",
   "two-sided dress": "雙面洋裝",
@@ -34406,7 +34406,7 @@ ZH_CLOTHING = {
   "luna nova school uniform": "露娜諾瓦魔法學院制服",
   "grey suit": "灰色西裝",
   "miyamasuzaka girls' academy school uniform": "宮益坂女學院制服",
-  "fleur de lapin uniform": "Fleur de Lapin 制服",
+  "fleur de lapin uniform": "點兔花茶店制服",
   "print leotard": "印花緊身衣",
   "strapless one-piece swimsuit": "無肩帶連身泳衣",
   "youtou high school uniform": "陽東高中制服",

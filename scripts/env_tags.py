@@ -1984,7 +1984,7 @@ ROWS = [
     },
     {
         "tag": "e.g.o (project moon)",
-        "zh": "E.G.O（Project Moon）",
+        "zh": "腦葉公司 E.G.O",
         "section": "env",
         "gate": "any",
         "heat": ["tease", "flash", "sex"],
@@ -14025,7 +14025,7 @@ ZH_ENV = {
     "paint": "顏料",
     "broken glass": "碎玻璃",
     "reflective liquid": "反光液面",
-    "e.g.o (project moon)": "E.G.O（Project Moon）",
+    "e.g.o (project moon)": "腦葉公司 E.G.O",
     "liquid": "液體",
     "footprints": "腳印",
     "blood stain": "血跡",
