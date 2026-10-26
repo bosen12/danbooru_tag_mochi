@@ -588,7 +588,8 @@ ComfyUI 的輸出資料夾裡找不到這張，可能被刪掉了。|This file i
 撤下了一張|Image discarded
 收掉了一張取消的|Cleared a cancelled image
 收掉了 {0} 張取消的|Cleared {0} cancelled images
-這張還在印，先按「停」|This image is generating. Press Stop first.
+這張正在印，先按「停」|This image is generating. Press Stop first.
+另一個墨池分頁在印這張，到那邊撤下|Another Mochi tab is printing this one. Remove it from that tab.
 這張正在 Hires，先在圖上按「停」|This image is being upscaled. Press Stop on the image first.
 這張正在 Hires，圖上可以停|Upscaling · Press Stop on the image to cancel.
 換回原圖了|Original restored

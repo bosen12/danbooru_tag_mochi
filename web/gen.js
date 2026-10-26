@@ -386,6 +386,11 @@ export function createGenerator(hooks) {
     drop(ids) {
       for (let i = queue.length - 1; i >= 0; i--) if (ids.has(queue[i].id)) queue.splice(i, 1);
     },
+    /** 這張在不在這邊的印表機裡："current"（正在送、正在畫）、"queued"（還沒送出去）、null（不在）。 */
+    holds(shot) {
+      if (current && current.shot === shot) return "current";
+      return queue.includes(shot) ? "queued" : null;
+    },
     /** 只停這一張：還在排隊就拿出來，正在畫就砍（帶 prompt_id）。 */
     cancelOne(shot) {
       const at = queue.indexOf(shot);

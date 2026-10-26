@@ -59,6 +59,15 @@ export function buildLibrary(data, { ratingBlocked }) {
       CARD_SUITS.indexOf(c.suit) * 100000 + (subRank.get(c.item.section + ":" + c.group) ?? 99999);
     cards.sort((a, b) => rank(a) - rank(b));
   }
+  // 書脊的名字：剪掉尾巴的括號說明，但剪完會跟別的字同名的（獸人（女性）／獸人（男性）、頭巾／頭巾（headscarf））保留全名。
+  const names = new Map();
+  const bump = (n) => names.set(n, (names.get(n) || 0) + 1);
+  for (const item of data.tags) if (item.zh) bump(item.zh);
+  for (const item of data.tags) if (item.zh && spineName(item.zh) !== item.zh) bump(spineName(item.zh));
+  for (const card of cards) {
+    const short = spineName(card.zh);
+    card.spine = short !== card.zh && names.get(short) > 1 ? card.zh : short;
+  }
   return { cards, byTag };
 }
 
@@ -438,10 +447,10 @@ export function createAssets(manifest) {
   };
 }
 
-// 中文名尾巴的括號英文（白色髮圈(scrunchie)、頭巾（headscarf））：只是為了跟同名的字分開，
-// 直排書脊一個字母佔一格，擠掉中文。書脊只畫前面的中文；詳情、搜尋照舊用全名。
+// 中文名尾巴的括號說明（白色髮圈(scrunchie)、新式學校泳衣(新スク)、學生制服（男））：多半只是為了跟同名的字分開，
+// 直排書脊一個字一格，擠掉前面的中文。書脊只畫前面的；詳情、搜尋照舊用全名（撞名的保留全名，見 buildLibrary）。
 // 英文版不剪：畫面是拿全名去查英文的，剪掉會查到同名的另一個字。
-const SPINE_TAIL = /\s*[（(][^（()）\p{Script=Han}]+[)）]$/u;
+const SPINE_TAIL = /\s*[（(][^（()）]+[)）]$/u;
 export function spineName(zh) {
   const name = String(zh || "");
   if (english) return name;
@@ -451,7 +460,7 @@ export function spineName(zh) {
 
 /** 一張牌。左邊是直排書脊（花色、字名、分級），疊起來也讀得到。 */
 export function cardNode(card, assets, { tagName = "button", flag, src } = {}) {
-  const spine = spineName(card.zh);
+  const spine = card.spine ?? spineName(card.zh);
   const len = [...spine].length;
   const art = assets.art(card.tag);
   const suit = CARD_SUIT_INFO[card.suit];

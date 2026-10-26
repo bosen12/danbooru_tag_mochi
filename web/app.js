@@ -284,6 +284,7 @@ async function boot() {
   // 只有一個墨池分頁接（tab-sync.js 的 whenPrinter）：另一個分頁也開著的話，排著的那幾張由它印，這邊只看。
   // 它關掉才輪到這邊：那時存檔可能已經印掉了，重讀一次還在排的才接。
   whenActive(() => whenPrinter("mochi", (first) => {
+    printerHere = true;
     let resumeNow = resumable;
     let waitNow = waiting;
     if (!first) {
@@ -2068,6 +2069,8 @@ function explainBlockedHeat(h, btn, rating) {
 const tabNote = tabTitle();
 // 頂欄的 Discord 鈕和送圖（init 裡掛上）。
 let discord = null;
+// 這個分頁是不是負責印的那個（tab-sync.js 的 whenPrinter）：另一個墨池分頁也開著時，排著的由它印，這邊只看。
+let printerHere = false;
 
 const generator = createGenerator({
   origin: "mochi",
@@ -3554,9 +3557,22 @@ function swapText(swap) {
 }
 
 function removeShot(shot) {
-  if (shot.status === "running" || shot.status === "queued") {
-    toast("這張還在印，先按「停」");
+  // 正在送、正在畫的那張要先按停（ComfyUI 那邊要砍掉）。還在排、沒送出去的直接從佇列拿掉就好。
+  // 寫著排隊中、印表機裡卻沒有它的（切到卡冊再回來之類的漏網的）：沒人會再印它，也直接撤下。
+  const held = generator.holds(shot);
+  const pending = shot.status === "running" || shot.status === "queued";
+  if (held === "current") {
+    toast("這張正在印，先按「停」");
     return;
+  }
+  if (pending && !held && !printerHere) {
+    toast("另一個墨池分頁在印這張，到那邊撤下");
+    return;
+  }
+  if (held === "queued") generator.drop(new Set([shot.id]));
+  if (pending) {
+    shot.status = "cancelled";
+    shot.note = "取消了";
   }
   if (hiresBusy(shot)) {
     toast(faceBusy(shot) ? "這張正在修臉，先在圖上按「停」" : "這張正在 Hires，先在圖上按「停」");
@@ -3572,7 +3588,7 @@ function removeShot(shot) {
   renderGoFloat();
   // 印好的那張單獨撤下：出圖日誌記一筆「不要」（牌的戰績用）。
   if (shot.status === "done") markGenLog(shot.job, "discard");
-  toast("撤下了一張", { action: { label: "復原", key: "Z", run: () => restoreShot(shot, at) } });
+  toast("撤下了一張", { action: { label: "復原", key: "Z", run: () => restoreShot(shot, at, pending) } });
 }
 
 /*
@@ -3616,7 +3632,8 @@ function sweepCancelled() {
   });
 }
 
-function restoreShot(shot, at) {
+/** 復原撤下的那張。requeue：撤下時還在排著，放回去也接著印（排到最後面）。 */
+function restoreShot(shot, at, requeue = false) {
   if (shots.some((s) => s.id === shot.id)) return;
   if (shot.status === "done") markGenLog(shot.job, null);
   const i = Math.max(0, Math.min(at, shots.length));
@@ -3627,6 +3644,7 @@ function restoreShot(shot, at) {
   flip(wall, () => (next ? next.before(node) : wall.append(node)));
   enter(node);
   syncWallEmpty(true);
+  if (requeue) generator.enqueue(shot);
   S.saveShots(shots);
   renderGoFloat();
 }
