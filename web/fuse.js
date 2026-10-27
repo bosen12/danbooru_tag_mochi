@@ -4206,7 +4206,6 @@ function buildHand() {
     // 出牌：從托盤上那張的位置飛上版。
     onPlay: (t) => place(t, hand.nodeOf(t)),
     onChange: syncHand,
-    onFull: () => toast(`偏好卡牌最多 ${hand.max} 張，先拿掉一張再加`),
     onRemoved: (t, undo) => toast(`「${zh(t)}」拿出偏好卡牌`, { action: { label: "復原", run: undo } }),
     decorate: (node, t) => drag.attach(node, { tag: t, from: "hand" }),
   });

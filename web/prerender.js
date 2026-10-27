@@ -21,7 +21,7 @@ const KEYS = {
     local: ["mochi.fuse.handoff.v1", "mochi.bans.v1", "mochi.fuse.settings.v1", "mochi.settings.v1", "mochi.fuse.tab.v1", "mochi.fuse.hand.v1", "mochi.fav.chars.v1"],
     session: ["mochi.tab.fuse.v1"],
   },
-  book: { local: ["mochi.settings.v1", "mochi.bans.v1", "mochi.book.v1", "mochi.book.box.v1", "mochi.fav.chars.v1"], session: [] },
+  book: { local: ["mochi.settings.v1", "mochi.bans.v1", "mochi.book.v1", "mochi.hand.v1", "mochi.pool.handoff.v1", "mochi.fav.chars.v1"], session: [] },
   album: { local: ["mochi.settings.v1", "mochi.album.group.v1"], session: [] },
   // 解析池：設定、分級；剛才解析的那一張存在這個分頁（sessionStorage）。
   parse: { local: ["mochi.settings.v1", "mochi.parse.v1"], session: ["mochi.parse.tab.v1"] },

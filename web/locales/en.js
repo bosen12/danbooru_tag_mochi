@@ -39,8 +39,6 @@ const copy = String.raw`
 正在重新讀取圖片…|Reloading image…
 這件作品只存了配方。把牌帶回墨池，就能重新生成圖片。|This work contains a recipe only. Take its cards to Ink Pool to generate an image.
 牌組保存整組選牌與權重，之後可以重新套用；偏好卡牌則是每個工作區常用的單張牌。|Decks save a full selection and its weights for reuse. Favorites hold individual cards for each workspace.
-常用單張牌，最多十張；每個工作區各自保存。|Up to ten favorite cards, saved separately for each workspace.
-卡盒用來收集待用的牌，最多二十四張。想重複使用整組，請存成牌組。|The card box holds up to 24 cards to use next. Save a deck to reuse a whole selection.
 送到 Discord|Share to Discord
 尚未設定。貼上 webhook 網址再按存設定。|Not configured. Paste a webhook URL and save.
 連接方式|Connection
@@ -136,7 +134,6 @@ tag（最多 5 個）|Tags (up to 5)
 張數還太少，不排名|Not enough images to rank
 （收藏過）|(saved)
 （撤下過）|(discarded)
-把它拿出卡盒|Remove from card box
 字|C
 開著|on
 關著|off
@@ -648,7 +645,6 @@ POS 複製好了|Prompt copied
 真人／VTuber|Real person / VTuber
 非人形|Not a person
 年齡查不到或沒把握|Age unknown
-這張是禁用角色，不能帶去墨池，也不能放進卡盒。|This character is blocked. It stays out of Ink Pool and the card box.
 打開「含禁用」才看得到。|Turn on Include blocked to see them.
 排序|Sort
 只看用過的|Used only
@@ -695,18 +691,13 @@ POS 複製好了|Prompt copied
 收藏於|Saved on
 從作品冊拿掉|Remove from gallery
 再按一次：連存的圖一起刪|Press again to delete the saved image too
-從卡盒拿出來|Remove from card box
-放進卡盒|Add to card box
 日誌裡還沒有用它印好的圖|No generated images with this card in history yet.
 還沒有用到它的成品。從現在起印的每一張都會記下來，這裡就看得到。|No images with this card yet. New generations will appear here.
 用它做過的圖|Images using this card
 再多看一些|Load more
 撤下過|Previously discarded
-把卡盒存成牌組，或把牌組放進卡盒|Save the card box as a deck, or load a deck into it
-收起卡盒|Close card box
 按牌右下角的「＋」，把想用的牌放進來，再一起放進墨池。|Use + on a card to add it here, then send the whole box to Ink Pool.
 全部放進墨池合成池|Send all to Ink Pool
-卡盒（B）|Card box (B)
 重新排序|Re-sort
 原圖 ↔ Hires|Original ↔ Hires
 分隔線：左邊原圖、右邊 Hires|Comparison divider · Original on left, Hires on right
@@ -794,7 +785,6 @@ Hires 中|Upscaling
 挑好了（Esc）|Done (Esc)
 點字盒裡的牌加進來，再點一次拿掉|Click a library card to add it; click again to remove.
 偏好卡牌都在卡池裡了，從卡池拿下來就回到這裡。|All favorites are pinned. Remove a card from the layers to return it here.
-點字盒裡的牌加進來，最多十張。|Click library cards to add up to 10 favorites.
 把字盒的牌拖到這裡，或按「＋ 挑牌」。|Drag cards here or press + Browse cards.
 放大並重畫細節（快速／深度）|Upscale and refine details · Fast or Detailed
 在原圖上放大，再重畫一次細節。快，構圖不動。|Upscale the original and refine details. Fast, with the composition preserved.
@@ -1267,7 +1257,6 @@ ComfyUI 沒有回報 checkpoint|ComfyUI returned no checkpoints.
 撤回（Ctrl Z 也可以）|Undo · Ctrl+Z also works
 卡池的牌|Layer cards
 拿下來|Remove
-打開、收起卡盒|Open or close card box
 在找牌的框：打開第一張|In search: open the first matching card
 在找牌的框：清空|In search: clear query
 在找作品的框：清空|In gallery search: clear query
@@ -1353,8 +1342,6 @@ ComfyUI 沒有回報 checkpoint|ComfyUI returned no checkpoints.
 卡冊是你的牌的紀錄：每張牌用過幾次、印出來好不好、收集了多少。|Explore how often you use each card, how it performs and your collection progress.
 按花色篩選。花色圖章外圈那一圈，是這個花色點亮（用過）了幾成。|Filter by category. Each ring shows the proportion of cards you've used.
 多到少、少到多、新到舊、舊到新；「出好圖」「常撤下」看哪些牌常出好圖、哪些常被你撤下（要先印一陣子才排得出來）。「含禁用」把不能用的角色也列出來。|Sort by usage, by the date a card was added, or by save and discard rates. Generate some images first to build a useful ranking. Include blocked lists characters that cannot be drawn.
-用過幾次、戰績、用它做過的圖都在這裡；可以帶去墨池，或放進卡盒。|See usage, performance and images for this card. Send it to Ink Pool or collect it in your card box.
-邊逛邊把牌收進卡盒（牌上的 ＋），收好一次帶去墨池，或存成牌組。|Use + to collect cards in the box. Send them to Ink Pool together, or save them as a deck.
 作品＝你收藏的；日誌＝印過的每一張（沒收藏的也查得到）；模型＝每個底模、LoRA 的成績。|Saved contains your favorites. History tracks every generation. Models compares checkpoints and LoRA.
 依時代、髮色、服裝、場景把作品分段。點一件作品看大圖、用了哪些牌、相似的作品，也能把牌帶回墨池。|Group images by era, hair, outfit or scene. Open an image to inspect its cards, find similar images or reuse its recipe.
 日誌記著印過的每一張：時間、從哪一頁送的、花多久、有沒有收藏。|History records every generation: time, source page, duration and whether you saved it.
@@ -1786,6 +1773,25 @@ Hires 放大、修臉（只重畫臉）、換底模重印，都從成品下面�
 去墨池|Go to the Ink Pool
 看教學影片|Watch the tutorial
 讀不到詞庫：請用啟動檔開（start.bat），不要直接點 HTML。|Couldn't load the vocabulary. Open Mochi with the launcher (start.bat), not by double-clicking the HTML file.
+長期常用的單張牌，不限張數。|Long-term favorite cards, as many as you like.
+點字盒裡的牌加進來。|Click library cards to add them.
+點卡冊裡的牌加進來。|Click cards in the book to add them.
+點卡冊裡的牌加進來，再點一次拿掉|Click cards in the book to add them; click again to remove
+這張是禁用角色，不能帶去墨池，也不能加進偏好卡牌。|This character is blocked. It can't go to Ink Pool or into your favorite cards.
+送墨池|Sent
+禁用角色不能加進偏好卡牌|Blocked characters can't be added to favorite cards
+加進偏好卡牌（再按一次拿掉）|Add to favorite cards (press again to remove)
+送去墨池合成池，留在卡冊繼續挑（再按一次拿回來）|Send to the Ink Pool mix and keep browsing (press again to take it back)
+長期常用的牌放進偏好卡牌（墨池底下那排）|Keep long-term favorites in your favorite cards (the row at the bottom of Ink Pool)
+從偏好卡牌拿掉|Remove from favorite cards
+打開、收起偏好卡牌|Open or close favorite cards
+用過幾次、戰績、用它做過的圖都在這裡；可以帶去墨池，或加進偏好卡牌。|See usage, performance and images for this card. Send it to Ink Pool or add it to your favorite cards.
+偏好卡牌、送去墨池|Favorite cards and sending to Ink Pool
+牌上的 ＋ 把牌送去墨池合成池，人留在這裡繼續挑。展開底下的偏好卡牌時，點牌就收進長期常用的那一排（跟墨池同一份）。|+ on a card sends it to the Ink Pool mix while you keep browsing. With favorite cards open below, clicking a card adds it to that long-term row (shared with Ink Pool).
+＋ 送去墨池、偏好卡牌|+ to Ink Pool, favorite cards
+＋ 送牌去墨池合成池，留在卡冊繼續挑；展開偏好卡牌時點牌收進托盤（跟墨池同一份）。|+ sends a card to the Ink Pool mix while you stay in the book; with favorite cards open, clicking a card adds it to the tray (shared with Ink Pool).
+把偏好卡牌存成牌組，或把牌組換成偏好卡牌|Save favorite cards as a deck, or load a deck as favorite cards
+貼一段提示詞，詞庫有的變成偏好卡牌|Paste a prompt; cards in the lexicon become favorite cards
 `;
 
 export const messages = Object.freeze(Object.fromEntries(copy.trim().split("\n").map((line) => {
@@ -1864,7 +1870,6 @@ Hires {0}×{1}（原圖 {2}×{3}）|Upscale {0}×{1} (original {2}×{3})
 {0}的成品{1}，{2}，點一下放大|{0} result {1} · {2} · Click to enlarge
 先看 {0} 張|Showing {0} images
 {0}的成品|{0} result
-{0}放進卡盒了（{1} 張）|{0} · Added {1} cards to the card box
 開啟 Hires 對比：原圖 {0}×{1}，Hires {2}×{3}|Compare original {0}×{1} with upscale {2}×{3}
 {0}×{1} → {2}×{3}・點開左右拉動比較|{0}×{1} → {2}×{3} · Click to compare with a slider
 原圖 {0}×{1}|Original {0}×{1}
@@ -1975,10 +1980,7 @@ Discord 設定（自動傳送{0}）|Discord settings (auto sharing {0})
 「{0}」放回合成池了|Put “{0}” back in the pool
 「{0}」從廢字簍撿回來了|Took “{0}” back out of Blocked cards
 把「{0}」拿出合成池|Unpin “{0}”
-把「{0}」放進卡盒|Add “{0}” to card box
-把「{0}」拿出卡盒|Remove “{0}” from card box
 偏好卡牌最多 {0} 張，先拿掉一張再加|Favorites holds up to {0} cards. Remove one first.
-卡盒最多 {0} 張，先放進墨池或拿掉幾張|Card box holds up to {0} cards. Send it to Ink Pool or remove some cards.
 卡盒：{0} 張，點開看|Card box · {0} cards · Click to open
 卡盒 {0}/{1}|Card box {0}/{1}
 回到卡池（{0} 張）|Back to layers ({0} cards)
@@ -2313,6 +2315,14 @@ ComfyUI 不收：{0}|ComfyUI rejected it: {0!}
 卡面提示詞・{0}|Card art prompt · {0}
 提示詞讀不到：{0}|Couldn't load the prompt: {0!}
 烤的時候負面詞一定會接上 {0}，避免畫成未成年的樣子；正面不能寫封鎖字。|Baking always adds {0!} to the negative prompt so nothing is drawn as a minor. Blocked words can't go in the positive prompt.
+從偏好卡牌拿掉：{0}|Remove from favorite cards: {0}
+加進偏好卡牌：{0}|Add to favorite cards: {0}
+不送了，拿回來：{0}|Take back from Ink Pool: {0}
+送去墨池合成池：{0}|Send to the Ink Pool mix: {0}
+{0} 張送去墨池合成池了：回墨池就在池裡|{0} cards sent to the Ink Pool mix: they'll be in the pool when you go back
+「{0}」已經送去墨池了|“{0}” is already on its way to Ink Pool
+卡盒改成偏好卡牌了：原本卡盒裡的 {0} 張已經放進偏好卡牌|The card box is now favorite cards: its {0} cards were moved into favorite cards
+{0}放進偏好卡牌了（{1} 張）|{0} · Now {1} favorite cards
 `;
 export const templates = parameterized.trim().split("\n").map((line) => {
   const split = line.indexOf("|");

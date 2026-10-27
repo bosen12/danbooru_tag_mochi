@@ -56,6 +56,7 @@ import { mountScreensaver } from "./screensaver.js";
 import { mountGenStatus } from "./gen-status.js";
 import { currentPose, poseButton } from "./pose.js";
 import { openDecks } from "./decks.js";
+import { handTools } from "./hand-tools.js";
 import { openPaste, listenPaste } from "./paste-prompt.js";
 import { paintWeight, wireWeightInput, weightRow, weightPositive } from "./weights.js";
 import { favButton } from "./album-save.js";
@@ -1024,9 +1025,14 @@ function buildHand() {
       hand.mark($("lib-grid"));
       updatePickerFoot();
     },
-    onFull: () => toast(`偏好卡牌最多 ${hand.max} 張，先拿掉一張再加`),
     onRemoved: (t, undo) => toast(`「${lib.byTag.get(t)?.zh || t}」拿出偏好卡牌`, { action: { label: "復原", key: "Z", run: undo } }),
     decorate: (node, t) => drag.attach(node, { tag: t, from: "hand" }),
+    // 牌組、貼上（hand-tools.js；跟卡冊同一套）。
+    tools: handTools({ hand: () => hand, data: () => data, isCard: (t) => lib.byTag.has(t) && !bans.has(t), zh }),
+  });
+  // 卡冊也改同一份偏好卡牌（mochi.hand.v1）：那邊開在另一個分頁時，這邊照存檔重讀。
+  addEventListener("storage", (e) => {
+    if (e.key === "mochi.hand.v1") hand.reload();
   });
 }
 

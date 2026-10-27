@@ -592,12 +592,13 @@
   }
 }
 
-/* ================= 卡盒 =================
- * 右下角一顆膠囊（最後放進去的三張疊成一小疊＋張數），點開往上長出一塊面板。
- * 牌格右下角的「＋」：滑鼠移上去才出現（觸控一直都在），放進盒子之後變「✓」、牌上蓋「盒中」。 */
+/* ================= 牌格的「＋」 =================
+ * 偏好卡牌收著：送去墨池合成池；展開著：加進偏好卡牌（book.js 的 plus）。
+ * 滑鼠移上去才出現（觸控一直都在），按下去變「✓」；送去墨池的牌上蓋「送墨池」。
+ * 偏好卡牌的托盤在底下（hand.js）：最後一排牌底下墊它的高度（card.css 的 --fav-h）。 */
 
-.book {
-  /* 盒子固定在右下角：最後一排牌底下留出它的高度，不被蓋住。 */
+/* web7 的卡盒固定在右下角：最後一排牌底下留出它的高度（web6 有偏好卡牌托盤，墊的是 --fav-h）。 */
+body:not([data-fav-hand]) .book {
   padding-bottom: calc(var(--space-2xl) + 64px);
 }
 
@@ -712,16 +713,56 @@
   transition-duration: var(--dur-micro);
 }
 
+.card-flag[data-kind="send"],
 .card-flag[data-kind="box"] {
   color: var(--color-pool-2);
 }
 
-/* 飛往盒子的影子：牌的複製，飛行由 motion.js 的 flight 逐格畫。 */
+/* 飛往頂欄「墨池」的影子：牌的複製，飛行由 motion.js 的 flight 逐格畫。 */
 .box-ghost {
   box-shadow: var(--shadow-lift);
 }
 
-/* ---------- 盒子（右下角） ---------- */
+/* ---------- 頂欄「墨池」分頁上的「+3」：送去墨池合成池的張數 ---------- */
+
+.page-switch a .send-badge {
+  position: absolute;
+  top: -6px;
+  right: -8px;
+  min-width: 1.6em;
+  padding: 1px 5px;
+  border-radius: 999px;
+  background: var(--color-pool-2);
+  color: var(--color-paper);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.5;
+  text-align: center;
+  box-shadow: 0 0 0 2px var(--color-paper);
+  pointer-events: none;
+}
+
+/* 偏好卡牌展開（挑牌）：卡冊整格描一圈、點牌是收進托盤；前三名的名次章在右上角，「手」排到它下面。 */
+body[data-hand-edit="true"] #book-grid {
+  outline: 2px dashed color-mix(in oklch, var(--color-accent) 60%, transparent);
+  outline-offset: 6px;
+  border-radius: 8px;
+}
+
+body[data-hand-edit="true"] #book-grid .book-cell:not([data-banned="true"]) .card {
+  cursor: copy;
+}
+
+body[data-hand-edit="true"] #book-grid .card[data-in-hand="true"] {
+  cursor: pointer;
+}
+
+.book-cell .card:has(.book-rank)[data-in-hand="true"]::before {
+  top: 30px;
+}
+
+/* ---------- web7 的卡盒（右下角；web6 已改成偏好卡牌＋送去墨池，見上面） ---------- */
 
 .box-dock {
   position: fixed;

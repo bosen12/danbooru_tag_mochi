@@ -555,7 +555,7 @@ button.card:active {
 }
 
 /* 收起來的那 300ms：外框在縮，裡面的東西還要看得到（被外框切掉、牌一張張沉下去）。 */
-.fav-hand.is-collapsing[data-open] :is(.fav-body, .fav-hint, .fav-pick) {
+.fav-hand.is-collapsing[data-open] :is(.fav-body, .fav-hint, .fav-pick, .fav-tool) {
   display: revert;
 }
 
@@ -575,7 +575,7 @@ button.card:active {
   font-size: 0.9375rem;
 }
 
-.fav-hand[data-open="false"] :is(.fav-body, .fav-hint, .fav-pick) {
+.fav-hand[data-open="false"] :is(.fav-body, .fav-hint, .fav-pick, .fav-tool) {
   display: none;
 }
 
@@ -716,6 +716,41 @@ body[data-dragging="true"] .fav-hand[data-open="false"][data-over="true"] {
   border-color: var(--color-accent);
   background: var(--color-accent);
   color: var(--color-accent-ink, #fff);
+}
+
+/* 標頭右邊的小按鈕（牌組、貼上）：比「＋ 挑牌」淡一階。 */
+.fav-tool {
+  flex: none;
+  padding: 4px 10px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: none;
+  color: var(--color-ink-2);
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: border-color var(--dur-micro) var(--ease-out), color var(--dur-micro) var(--ease-out);
+}
+
+.fav-tool:hover {
+  border-color: var(--color-rule);
+  color: var(--color-ink);
+}
+
+.fav-hint + .fav-tool {
+  margin-left: auto;
+}
+
+/* 張數多到疊也看不清：平平一排、左右捲（hand.js 的 scrolls）。上面多留一點，指到的那張浮起來、× 不會被切掉。 */
+.fav-hand[data-scroll="true"] .fav-body {
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-top: 22px;
+  margin-top: -8px;
+  scrollbar-width: thin;
+  overscroll-behavior-x: contain;
 }
 
 /* 牌的上面留一點空：指到的那張浮起來不會被切掉。 */

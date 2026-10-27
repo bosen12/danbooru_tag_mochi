@@ -2,7 +2,7 @@
  * 牌組：取名存起來的一組牌。存在伺服器（/api/decks，card_decks.py），手機、電腦共用一份。
  * 只存牌，不存規則：套用時尺度、時代、人物照當下的設定。
  *
- * 墨池（合成池）、疊印台（卡池）、卡冊（卡盒）共用同一張「牌組」面板（openDecks）：
+ * 墨池（合成池、偏好卡牌）、疊印台（卡池）、卡冊（偏好卡牌）共用同一張「牌組」面板（openDecks）：
  * 上面一列把「目前的牌」取名存起來，底下是存過的牌組，一組一列：套用、刪除（可復原）。
  */
 import { el, openSheet, toast, friendlyError } from "./ui.js";
@@ -62,13 +62,13 @@ export function suggestName(tags, zh) {
 
 /**
  * 打開牌組面板。
- *   where：「合成池」「卡池」「卡盒」—— 面板上的字跟著換。
+ *   where：「合成池」「卡池」「偏好卡牌」—— 面板上的字跟著換。
  *   current()：目前的牌（存成牌組用）；空的時候只能套用。
  *   has(tag)：這張牌現在還在詞庫裡（詞庫改過，舊牌組裡可能有已經拿掉的字）。
  *   zh(tag)：牌的中文名。
  *   apply(deck)：套用一組。面板先收起來再呼叫，套用的動畫才看得到。
  *   paste()：「貼上提示詞變成牌」（paste-prompt.js）；有給才出現那一顆。
- *   weightsNow()：目前調過的份量（weights.js），存牌組時一起存；卡盒沒有份量就不給。
+ *   weightsNow()：目前調過的份量（weights.js），存牌組時一起存；偏好卡牌沒有份量就不給。
  */
 export function openDecks({ where, current, has, zh, apply, paste, weightsNow = () => ({}) }) {
   const now = current().filter(has);

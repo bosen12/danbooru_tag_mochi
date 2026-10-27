@@ -93,6 +93,22 @@ export function takeFuse() {
 /** recipe：作品冊、日誌的「照這張再印」多帶的那一份（時代、種子、底模、LoRA），見 recipeOf。 */
 export const handOffPool = (tags, from = "", weights = {}, recipe = null) =>
   write(KEY.handoff, { tags: [...tags], at: Date.now(), from, weights, ...(recipe ? { recipe } : {}) });
+/** 卡冊的「＋」：看便條裡現在有哪幾張（不拿走）。不是 from 寫的、過期了就是空的。 */
+export function peekPoolHandoff(from) {
+  const note = read(KEY.handoff, null);
+  if (!note || !Array.isArray(note.tags) || note.from !== from || !(Date.now() - note.at < HANDOFF_MS)) return [];
+  return note.tags.filter((t) => typeof t === "string");
+}
+/** 卡冊的「＋」全部拿回來：便條撕掉。 */
+export function clearPoolHandoff() {
+  try {
+    localStorage.removeItem(KEY.handoff);
+  } catch {
+    /* 刪不了就算了 */
+  }
+}
+/** 交接便條的 localStorage 鑰匙（卡冊看別的分頁有沒有把它拿走）。 */
+export const POOL_HANDOFF_KEY = KEY.handoff;
 /** 上一次 takePool() 拿到的便條是從哪裡來的（沒有便條就是空字串）。 */
 export let handoffFrom = "";
 /** 上一次 takePool() 拿到的便條裡各張牌的份量（作品冊、疊印台交過來的）。 */

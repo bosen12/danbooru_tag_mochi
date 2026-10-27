@@ -18,15 +18,15 @@ import { HARD_BANNED } from "./card-art.js";
 import { indexLexicon } from "./engine.js";
 import { ratingBlocked, RATING_LABEL } from "./rules/rating.js";
 import { mountRatingFree } from "./rating-free.js";
-import { buildLibrary, sizeCards, groupChips, genderChips, chipRun, seriesRun, createAssets, cardNode, cardFacts, setCardFlag, eagerArt, cardMatches, searchCards, searchNote, matchRank, CARD_SUIT_INFO, CARD_SUITS } from "./cards.js";
+import { buildLibrary, sizeCards, groupChips, genderChips, chipRun, seriesRun, createAssets, cardNode, cardFacts, setCardFlag, cardMatches, searchCards, searchNote, matchRank, CARD_SUIT_INFO, CARD_SUITS } from "./cards.js";
 import { el, openSheet, toast, syncChoices, bootFailed, friendlyError, isNetError } from "./ui.js";
 import { zoomFromThumb } from "./zoom.js";
 import { mountKeysHelp } from "./keys-help.js";
 import { mountTour } from "./tour.js";
 import { mountScreensaver } from "./screensaver.js";
 import { mountGenStatus } from "./gen-status.js";
-import { openDecks } from "./decks.js";
-import { openPaste } from "./paste-prompt.js";
+import { createHand } from "./hand.js";
+import { handTools } from "./hand-tools.js";
 import { measure, evaluate, announce, openWall } from "./achievements.js";
 import { initMotion, settleMotion, seat, refuse, flight, reducedMotion, swapIn, rowChange, CURVE, DUR, css } from "./motion.js";
 import { viewSrc } from "./gen.js";
@@ -57,7 +57,7 @@ const AHEAD = 1.5;
 const BUDGET_MS = 6;
 // 做好的格子最多留幾個：捲很遠之後最久沒看到的放掉，記憶體不會一直長。
 const CACHE_MAX = 900;
-// 電腦（滑鼠）：卡盒「＋」、愛心等滑鼠移過去才做（每格少四五個節點）；觸控一直看得到，照舊一開始就做。
+// 電腦（滑鼠）：「＋」、愛心等滑鼠移過去才做（每格少四五個節點）；觸控一直看得到，照舊一開始就做。
 const HOVER = matchMedia("(hover: hover) and (pointer: fine)");
 const ORDER_ZH = { desc: "多到少", asc: "少到多", good: "出好圖", bad: "常撤下", new: "新到舊", old: "舊到新" };
 const ORDER_MARK = { desc: "↓", asc: "↑", good: "★", bad: "✕", new: "↓", old: "↑" };
@@ -254,7 +254,7 @@ async function boot() {
   }
 
   watchMast();
-  buildBox();
+  buildHand();
   renderRating();
   ratingFreePaint = mountRatingFree({
     get: () => free,
@@ -920,7 +920,7 @@ function cellOf(card) {
   const meta = el("span", { class: "book-meta" }, n, el("span", { class: "book-unit" }), el("span", { class: "book-when" }));
   cell = el("div", { class: "book-cell", role: "listitem", dataset: { tag: card.tag } }, node, meta);
   cell._card = card;
-  // 禁用角色沒有卡盒、也沒有愛心：不能帶去抽。電腦上等滑鼠移過去才做（wireGrid）。
+  // 禁用角色沒有「＋」、也沒有愛心：不能帶去抽。電腦上等滑鼠移過去才做（wireGrid）。
   if (!card.banned) {
     if (HOVER.matches) cell._lazyButtons = true;
     else addButtons(cell, card);
@@ -940,12 +940,12 @@ function cellOf(card) {
   return cell;
 }
 
-/** 卡盒「＋」、角色的愛心。 */
+/** 「＋」（偏好卡牌／送去墨池）、角色的愛心。 */
 function addButtons(cell, card) {
   cell._lazyButtons = false;
-  cell.append(boxAddButton(card));
+  cell.append(plusButton(card));
   if (card.suit === "chara") cell.append(favAddButton(card));
-  paintBoxMark(cell, card.tag);
+  paintMark(cell, card.tag);
 }
 
 /** 網格上的事件：點牌開詳情；滑鼠移到（或 Tab 到）一格才做那一格的按鈕。 */
@@ -955,6 +955,8 @@ function wireGrid() {
     const node = e.target.closest?.(".book-cell > .card");
     const cell = node?.parentElement;
     if (!cell?._card || !grid.contains(cell)) return;
+    // 偏好卡牌展開著：點牌是挑牌（飛進托盤），不開詳情。
+    if (picking()) return pickHand(cell._card, node);
     openCard(cell._card, node);
   });
   const arm = (e) => {
@@ -1007,7 +1009,7 @@ function paintCell(cell, card, rank) {
     }
   } else old?.remove();
   if (card.banned) setCardFlag(cell.querySelector(".card"), { kind: "ban", text: "禁用" });
-  else paintBoxMark(cell, card.tag);
+  else paintMark(cell, card.tag);
   paintCustom(cell, card.tag);
   const [w, fav, drop] = warOf(card.tag);
   const addedNote = card.added ? `，${card.added} 加入` : "";
@@ -1507,7 +1509,7 @@ function openCard(card, srcNode) {
         ),
         stats,
         el("dl", {}, cardFacts(card, lexNow(), data).map(([k, v]) => [el("dt", {}, k), el("dd", {}, v)])),
-        card.banned ? el("p", { class: "book-ban-note" }, "這張是禁用角色，不能帶去墨池，也不能放進卡盒。") : null
+        card.banned ? el("p", { class: "book-ban-note" }, "這張是禁用角色，不能帶去墨池，也不能加進偏好卡牌。") : null
       ),
       worksOf(card)
     ),
@@ -1536,12 +1538,15 @@ function openCard(card, srcNode) {
           {
             class: "btn",
             type: "button",
+            title: "長期常用的牌放進偏好卡牌（墨池底下那排）",
             onclick: (e) => {
-              toggleBox(card, srcNode);
-              e.currentTarget.textContent = inBox(card.tag) ? "從卡盒拿出來" : "放進卡盒";
+              const had = hand.has(card.tag);
+              if (had) hand.remove(card.tag, { quiet: true });
+              else hand.add(card.tag, srcNode?.getBoundingClientRect() || null);
+              e.currentTarget.textContent = hand.has(card.tag) ? "從偏好卡牌拿掉" : "加進偏好卡牌";
             },
           },
-          inBox(card.tag) ? "從卡盒拿出來" : "放進卡盒"
+          hand.has(card.tag) ? "從偏好卡牌拿掉" : "加進偏好卡牌"
         ),
         el("button", { class: "btn btn-ghost", type: "button", title: "看、改這張牌卡面的正負面提示詞；改了就重烤", onclick: () => openCardPrompt(card, detailImg) }, "提示詞"),
       ],
@@ -1988,37 +1993,24 @@ function flyToDetail(src, sheetEl) {
   setTimeout(land, 700);
 }
 
-/* ================= 卡盒：從卡冊挑好幾張，一起放進墨池 =================
- * 右下角一個盒子。牌右下角的「＋」（或詳情裡的「放進卡盒」）把牌放進來：影子沿弧線飛進盒子、
- * 盒子彈一下、數字跳一下；牌上蓋「盒中」章，「＋」變成「✓」，再按一次拿出來。
- * 點開盒子：從右下角長出一塊面板，牌依序落下，× 拿掉時旁邊的牌滑過來補位。
- * 「全部放進墨池合成池」：牌依序往上飛走，交接便條（store.js）寫好就換版到墨池，牌已經在池子裡。
- * 存在這個瀏覽器（mochi.book.box.v1），最多 BOX_MAX 張。 */
+/* ================= 偏好卡牌、送去墨池 =================
+ * 卡冊底下是墨池的偏好卡牌（hand.js，同一份 mochi.hand.v1；長期常用的牌，不限張數）。
+ *   托盤展開：點卡冊的牌（或牌上的「＋」）就飛進托盤，再點一次拿出來 —— 跟墨池字盒的挑牌一樣；
+ *     要看詳情先收起托盤。
+ *   托盤收著：牌上的「＋」把牌送去墨池合成池（這次要用的）：寫進交接便條（store.js 的 handOffPool，
+ *     from "book"），人留在卡冊繼續挑；頂欄「墨池」分頁上掛「+3」，回到墨池時牌已經加進剛才那一池。
+ *     再按一次「＋」拿回來。托盤上的牌點一下也是送去墨池。
+ * 以前的卡盒（mochi.book.box.v1）：第一次打開新版時併進偏好卡牌。 */
 
-const BOX_KEY = "mochi.book.box.v1";
-const BOX_MAX = 24;
-const BOX_ICON =
-  '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M3 9l9-5 9 5-9 5z"/><path d="M3 9v8l9 5 9-5V9"/><path d="M12 14v8"/></svg>';
-let box = readBox();
-let boxOpen = false;
+const HAND_KEY = "mochi.hand.v1";
+const OLD_BOX_KEY = "mochi.book.box.v1";
+let hand = null;
+// 送去墨池的牌：交接便條裡那一份（別的分頁拿走、過期了就重讀）。
+let sending = S.peekPoolHandoff("book");
 
-function readBox() {
-  try {
-    const v = JSON.parse(localStorage.getItem(BOX_KEY) || "[]");
-    return Array.isArray(v) ? v.filter((t) => typeof t === "string").slice(0, BOX_MAX) : [];
-  } catch {
-    return [];
-  }
-}
-function saveBox() {
-  try {
-    localStorage.setItem(BOX_KEY, JSON.stringify(box));
-  } catch {
-    /* 存不了就算了 */
-  }
-}
-
-const inBox = (tag) => box.includes(tag);
+/** 托盤展開＝在挑偏好卡牌。 */
+const picking = () => !!hand?.open;
+const inSend = (tag) => sending.includes(tag);
 
 /* ---------- 偏好角色（fav-chars.js；墨池、疊印台同一份名單） ---------- */
 
@@ -2061,371 +2053,204 @@ favChars.onChange(() => {
   }
 });
 
-function boxAddButton(card) {
-  const b = el("button", { class: "box-add", type: "button", "aria-pressed": "false", "aria-label": `把「${card.zh}」放進卡盒` });
+/** 牌格右下角的「＋」：托盤開著＝加進偏好卡牌，收著＝送去墨池。 */
+function plusButton(card) {
+  const b = el("button", { class: "box-add", type: "button", "aria-pressed": "false" });
   b.addEventListener("click", (e) => {
     e.stopPropagation();
-    toggleBox(card, cells.get(card.tag)?.querySelector(".card"));
+    plus(card, cells.get(card.tag)?.querySelector(".card"));
   });
   return b;
 }
 
-/** 牌格上的狀態：「＋」或「✓」（book.css 用兩條線畫，aria-pressed 一換就變形過去）、牌上的「盒中」章。 */
-function paintBoxMark(cell, tag) {
-  const on = inBox(tag);
+function plus(card, node) {
+  if (card.banned) return;
+  if (picking()) return pickHand(card, node);
+  toggleSend(card, node);
+}
+
+/** 挑偏好卡牌：牌從格子飛進托盤；已經在就拿出來。 */
+function pickHand(card, node) {
+  if (card.banned) {
+    toast("禁用角色不能加進偏好卡牌");
+    return refuse(node);
+  }
+  const r = node?.getBoundingClientRect();
+  hand.toggle(card.tag, r && r.width ? r : null);
+}
+
+/** 格子上的狀態：「＋」或「✓」（看的是現在那一份：托盤開著是偏好卡牌、收著是送去墨池）、「送墨池」章、「手」。 */
+function paintMark(cell, tag) {
+  const zh = lib.byTag.get(tag)?.zh || tag;
+  const toHand = picking();
+  const sent = inSend(tag);
+  const on = toHand ? !!hand?.has(tag) : sent;
   const b = cell.querySelector(".box-add");
   if (b) {
     b.setAttribute("aria-pressed", on ? "true" : "false");
-    b.setAttribute("aria-label", `${on ? "把它拿出卡盒" : "放進卡盒"}：${lib.byTag.get(tag)?.zh || tag}`);
+    b.setAttribute("aria-label", toHand ? `${on ? "從偏好卡牌拿掉" : "加進偏好卡牌"}：${zh}` : `${on ? "不送了，拿回來" : "送去墨池合成池"}：${zh}`);
+    b.title = toHand ? "加進偏好卡牌（再按一次拿掉）" : "送去墨池合成池，留在卡冊繼續挑（再按一次拿回來）";
   }
-  cell.dataset.boxed = on ? "true" : "false";
-  setCardFlag(cell.querySelector(".card"), on ? { kind: "box", text: "盒中" } : null);
+  cell.dataset.sent = sent ? "true" : "false";
+  const node = cell.querySelector(".card");
+  setCardFlag(node, sent ? { kind: "send", text: "送墨池" } : null);
+  if (hand?.has(tag)) node.dataset.inHand = "true";
+  else delete node.dataset.inHand;
 }
 
-function toggleBox(card, fromNode) {
-  if (card.banned) return;
-  if (inBox(card.tag)) {
-    box = box.filter((t) => t !== card.tag);
-    saveBox();
-    afterBoxChange({ removed: card.tag });
-    return;
-  }
-  if (box.length >= BOX_MAX) {
-    refuse($("box-pill"));
-    toast(`卡盒最多 ${BOX_MAX} 張，先放進墨池或拿掉幾張`);
-    return;
-  }
-  box.push(card.tag);
-  saveBox();
-  sfx.tap?.();
-  flyIntoBox(fromNode);
-  afterBoxChange({ added: card.tag });
+function repaintMarks() {
+  for (const [tag, cell] of cells) if (!lib.byTag.get(tag)?.banned) paintMark(cell, tag);
 }
 
-function afterBoxChange({ added = null, removed = null } = {}) {
-  const cell = cells.get(added || removed);
-  if (cell) paintBoxMark(cell, added || removed);
-  renderBoxPill({ bump: !!added && reducedMotion(), drop: !!removed });
-  if (boxOpen) renderBoxPanel({ added, removed });
-}
-
-/** 牌的影子沿弧線飛進盒子（motion.js 的 flight：追著落點、途中微轉、落地縮小淡掉），落地時盒子彈一下。 */
-function flyIntoBox(fromNode) {
-  const pill = $("box-pill");
-  if (!fromNode || reducedMotion()) return bumpPill();
-  const r = fromNode.getBoundingClientRect();
-  if (!r.width || r.bottom < 0 || r.top > innerHeight) return bumpPill();
-  const ghost = cloneCard(fromNode);
-  ghost.classList.add("box-ghost");
-  ghost.querySelector(".book-rank")?.remove();
-  document.body.append(ghost);
-  flight(ghost, { left: r.left, top: r.top, width: r.width, height: r.height }, () => pill.querySelector(".box-stack") || pill, {
-    endScale: 0.3,
-    endOpacity: 0.35,
-    arc: 70,
-    tilt: -8,
-    zIndex: 120,
-    onLand: () => bumpPill(),
-  });
-}
-
-function bumpPill() {
-  const pill = $("box-pill");
-  if (!pill || reducedMotion()) return;
-  pill.animate(
-    [{ transform: "none" }, { transform: "translateY(-5px) scale(1.08)" }, { transform: "none" }],
-    { duration: DUR.medium, easing: css(CURVE.settle) }
-  );
-}
-
-function renderBoxPill({ drop = false } = {}) {
-  const pill = $("box-pill");
-  const count = pill.querySelector(".box-count");
-  const old = count.textContent;
-  count.textContent = String(box.length);
-  pill.dataset.empty = box.length ? "false" : "true";
-  pill.setAttribute("aria-label", `卡盒：${box.length} 張，點開看`);
-  // 最後放進去的三張疊成一小疊（只有插畫，沒有字）。
-  const stack = pill.querySelector(".box-stack");
-  stack.replaceChildren(
-    ...box.slice(-3).map((t, i, a) => {
-      // 26px 寬的小疊：借格子上已經載好的那張縮圖（currentSrc），不另外拉整張原圖。
-      const shown = cells.get(t)?.querySelector(".card-art img");
-      const art = (shown && shown.currentSrc) || assets.art(t);
-      const card = lib.byTag.get(t);
-      return el(
-        "i",
-        { style: `--k: ${a.length - 1 - i}; --suit: var(--suit-${card?.suit || "cast"})` },
-        art ? el("img", { src: art, alt: "", decoding: "async" }) : el("b", {}, [...(card?.zh || "字")][0])
-      );
-    })
-  );
-  if (old !== count.textContent && !reducedMotion()) {
-    count.animate(
-      [{ transform: `translateY(${drop ? "-" : ""}6px)`, opacity: 0 }, { transform: "none", opacity: 1 }],
-      { duration: DUR.short, easing: css(CURVE.out) }
-    );
-  }
-  if (drop && !reducedMotion()) {
-    pill.animate([{ transform: "none" }, { transform: "scale(0.95)" }, { transform: "none" }], { duration: DUR.short, easing: css(CURVE.out) });
-  }
-}
-
-function setBoxOpen(on) {
-  if (boxOpen === on) return;
-  boxOpen = on;
-  const panel = $("box-panel");
-  const pill = $("box-pill");
-  pill.setAttribute("aria-expanded", on ? "true" : "false");
-  if (on) {
-    panel.hidden = false;
-    renderBoxPanel({ deal: true });
-    if (!reducedMotion()) {
-      // 從盒子的位置長出來：右下角為原點，縮放加淡入，接著牌一張張落下。
-      panel.animate(
-        [{ opacity: 0, transform: "translateY(12px) scale(0.92)" }, { opacity: 1, transform: "none" }],
-        { duration: DUR.medium, easing: css(CURVE.out) }
-      );
-    }
-    panel.querySelector(".box-close")?.focus({ preventScroll: true });
-  } else {
-    // 鍵盤從盒內收起時回到開關；從盒外操作時保留原本的焦點。
-    if (panel.contains(document.activeElement)) pill.focus({ preventScroll: true });
-    const done = () => {
-      if (!boxOpen) panel.hidden = true;
-    };
-    if (reducedMotion()) return done();
-    const a = panel.animate(
-      [{ opacity: 1, transform: "none" }, { opacity: 0, transform: "translateY(10px) scale(0.95)" }],
-      { duration: DUR.short, easing: css(CURVE.exit) }
-    );
-    a.onfinish = done;
-    setTimeout(done, DUR.short + 60);
-  }
-}
-
-function renderBoxPanel({ deal = false, added = null, removed = null } = {}) {
-  const panel = $("box-panel");
-  const grid = panel.querySelector(".box-grid");
-  panel.querySelector(".box-title").textContent = `卡盒 ${box.length}/${BOX_MAX}`;
-  const go = panel.querySelector(".box-go");
-  go.disabled = !box.length;
-  go.querySelector(".count").textContent = box.length ? `×${box.length}` : "";
-  panel.querySelector(".box-clear").disabled = !box.length;
-  panel.querySelector(".box-empty").hidden = box.length > 0;
-  const make = (t) => {
-    const card = lib.byTag.get(t);
-    // 立刻載圖：字盒那套 lazy 在面板剛長出來時還沒輪到，牌面會空白一下。
-    const node = eagerArt(cardNode(card, assets, { tagName: "div" }));
-    const x = el("button", { class: "box-x", type: "button", "aria-label": `把「${card.zh}」拿出卡盒` }, "×");
-    x.addEventListener("click", () => removeFromPanel(t));
-    return el("div", { class: "box-slot", dataset: { tag: t } }, node, x);
-  };
-  if (removed) {
-    const slot = grid.querySelector(`.box-slot[data-tag="${CSS.escape(removed)}"]`);
-    if (slot) leaveAndFlip(grid, slot);
-    return;
-  }
-  if (added && !deal) {
-    const slot = make(added);
-    grid.append(slot);
-    if (!reducedMotion()) slot.animate([{ opacity: 0, transform: "translateY(-10px) scale(0.9)" }, { opacity: 1, transform: "none" }], { duration: DUR.medium, easing: css(CURVE.settle) });
-    return;
-  }
-  grid.replaceChildren(...box.filter((t) => lib.byTag.has(t)).map(make));
-  if (deal && !reducedMotion()) {
-    [...grid.children].forEach((s, i) =>
-      s.animate(
-        [{ opacity: 0, transform: "translateY(14px) rotate(-3deg) scale(0.94)" }, { opacity: 1, transform: "none" }],
-        { duration: DUR.medium, delay: DUR.micro + Math.min(i, 12) * 28, easing: css(CURVE.out), fill: "backwards" }
-      )
-    );
-  }
-}
-
-function leaveAndFlip(grid, slot) {
-  const rest = [...grid.children].filter((s) => s !== slot);
-  const before = new Map(rest.map((s) => [s, s.getBoundingClientRect()]));
-  const finish = () => {
-    slot.remove();
-    if (reducedMotion()) return;
-    for (const s of rest) {
-      const a = before.get(s);
-      const b = s.getBoundingClientRect();
-      if (Math.abs(a.left - b.left) + Math.abs(a.top - b.top) < 1) continue;
-      s.animate([{ transform: `translate(${a.left - b.left}px, ${a.top - b.top}px)` }, { transform: "none" }], { duration: DUR.medium, easing: css(CURVE.out) });
-    }
-  };
-  if (reducedMotion()) return finish();
-  const a = slot.animate([{ opacity: 1, transform: "none" }, { opacity: 0, transform: "scale(0.85)" }], { duration: DUR.short, easing: css(CURVE.exit), fill: "forwards" });
-  a.onfinish = finish;
-  setTimeout(() => slot.isConnected && finish(), DUR.short + 80);
-}
-
-function removeFromPanel(tag) {
-  box = box.filter((t) => t !== tag);
-  saveBox();
-  afterBoxChange({ removed: tag });
-  if (!box.length) $("box-panel").querySelector(".box-close")?.focus({ preventScroll: true });
-}
-
-/** 卡盒的牌組：盒子裡的牌存成一組，或把一組牌放進盒子（換掉盒子裡的，可以復原）。 */
-function openBoxDecks() {
-  const zh = (t) => lib.byTag.get(t)?.zh || t;
-  openDecks({
-    where: "卡盒",
-    current: () => [...box],
-    has: (t) => lib.byTag.has(t),
-    zh,
-    apply: deckToBox,
-    // 貼上提示詞變成牌：換成或加進卡盒（卡盒不管互斥，照貼上的順序放）。
-    paste: () =>
-      openPaste({
-        where: "卡盒",
-        lexTags: data.tags.map((t) => t.tag),
-        banned: data.characterBan || [],
-        isCard: (t) => lib.byTag.has(t),
-        zh,
-        apply: (tags, { replace }) => deckToBox({ name: "貼上的提示詞", tags: replace ? tags : [...box, ...tags.filter((t) => !box.includes(t))] }),
-      }),
-  });
-}
-
-function deckToBox(deck) {
-  const was = [...box];
-  const put = (tags) => {
-    const touched = new Set([...box, ...tags]);
-    box = tags;
-    saveBox();
-    for (const t of touched) {
-      const cell = cells.get(t);
-      if (cell) paintBoxMark(cell, t);
-    }
-    renderBoxPill();
-    bumpPill();
-    if (!boxOpen) setBoxOpen(true);
-    renderBoxPanel({ deal: true });
-  };
-  const tags = deck.tags.filter((t) => lib.byTag.has(t)).slice(0, BOX_MAX);
-  put(tags);
-  toast(`${deck.name === "貼上的提示詞" ? "貼上的提示詞" : `牌組「${deck.name}」`}放進卡盒了（${tags.length} 張）`, { action: { label: "復原", run: () => put(was) } });
-}
-
-function clearBox() {
-  if (!box.length) return;
-  const was = [...box];
-  box = [];
-  saveBox();
-  for (const t of was) {
-    const cell = cells.get(t);
-    if (cell) paintBoxMark(cell, t);
-  }
-  renderBoxPill({ drop: true });
-  const grid = $("box-panel").querySelector(".box-grid");
-  const slots = [...grid.children];
-  if (!reducedMotion()) {
-    slots.forEach((s, i) =>
-      s.animate([{ opacity: 1, transform: "none" }, { opacity: 0, transform: "translateY(10px) scale(0.9)" }], { duration: DUR.short, delay: i * 16, easing: css(CURVE.exit), fill: "forwards" })
-    );
-  }
-  setTimeout(() => renderBoxPanel(), reducedMotion() ? 0 : DUR.short + slots.length * 16);
-  toast(`卡盒清空了（${was.length} 張）`, {
-    action: {
-      label: "復原",
-      run: () => {
-        box = was;
-        saveBox();
-        for (const t of was) {
-          const cell = cells.get(t);
-          if (cell) paintBoxMark(cell, t);
-        }
-        renderBoxPill();
-        bumpPill();
-        if (boxOpen) renderBoxPanel({ deal: true });
-      },
-    },
-  });
-}
-
-/** 全部放進墨池：牌依序往上飛走，交接便條寫好，換版過去（牌已經在合成池裡）。 */
-function boxToMochi() {
-  if (!box.length) return refuse($("box-panel").querySelector(".box-go"));
-  if (!S.handOffPool(box, "book")) {
-    refuse($("box-panel").querySelector(".box-go"));
+/** 送去墨池（或拿回來）：便條整份重寫；全部拿回來就撕掉。 */
+function toggleSend(card, node) {
+  const was = sending;
+  const adding = !inSend(card.tag);
+  sending = adding ? [...sending, card.tag] : sending.filter((t) => t !== card.tag);
+  const ok = sending.length ? S.handOffPool(sending, "book") : (S.clearPoolHandoff(), true);
+  if (!ok) {
+    sending = was;
+    refuse(node);
     return toast("無法交接選牌，請檢查瀏覽器儲存空間。");
   }
-  const n = box.length;
-  box = [];
-  saveBox();
-  sfx.deal?.(Math.min(6, n + 1));
-  const slots = [...$("box-panel").querySelectorAll(".box-slot")];
-  if (reducedMotion() || !slots.length) return void (location.href = "./");
-  slots.forEach((s, i) =>
-    s.animate(
-      [{ opacity: 1, transform: "none" }, { opacity: 0, transform: "translateY(-60px) rotate(4deg) scale(0.9)" }],
-      { duration: DUR.long, delay: Math.min(i, 10) * 35, easing: css(CURVE.in), fill: "forwards" }
-    )
-  );
-  setTimeout(() => (location.href = "./"), DUR.long + Math.min(slots.length, 10) * 35 - 120);
+  const cell = cells.get(card.tag);
+  if (cell) paintMark(cell, card.tag);
+  if (adding) {
+    sfx.tap?.();
+    flyToMochi(node);
+  } else renderSendBadge();
 }
 
-function buildBox() {
-  const dock = el(
-    "div",
-    { class: "box-dock", id: "box-dock" },
-    el(
-      "section",
-      { class: "box-panel", id: "box-panel", hidden: true, role: "dialog", "aria-label": "卡盒" },
-      el(
-        "div",
-        { class: "box-panel-head" },
-        el("b", { class: "box-title" }, "卡盒"),
-        el("button", { class: "btn btn-small btn-ghost box-decks", type: "button", title: "把卡盒存成牌組，或把牌組放進卡盒", onclick: openBoxDecks }, "牌組"),
-        el("button", { class: "btn btn-small btn-ghost box-clear", type: "button", onclick: clearBox }, "清空"),
-        el("button", { class: "box-close", type: "button", "aria-label": "收起卡盒", onclick: () => setBoxOpen(false) }, "×")
-      ),
-      el("p", { class: "box-empty" }, "按牌右下角的「＋」，把想用的牌放進來，再一起放進墨池。"),
-      el("p", { class: "workspace-purpose" }, "卡盒用來收集待用的牌，最多二十四張。想重複使用整組，請存成牌組。"),
-      el("div", { class: "box-grid" }),
-      el(
-        "div",
-        { class: "box-panel-foot" },
-        el("button", { class: "btn btn-primary box-go", type: "button", onclick: boxToMochi }, "全部放進墨池合成池", el("span", { class: "count" }, ""))
-      )
-    ),
-    el(
-      "button",
-      { class: "box-pill pressable", id: "box-pill", type: "button", "aria-expanded": "false", "aria-controls": "box-panel", "aria-keyshortcuts": "B", title: "卡盒（B）", onclick: () => setBoxOpen(!boxOpen) },
-      el("span", { class: "box-stack", "aria-hidden": "true" }),
-      el("span", { class: "box-icon", html: BOX_ICON }),
-      el("span", { class: "box-label" }, "卡盒"),
-      el("b", { class: "box-count" }, "0")
-    )
-  );
-  document.body.append(dock);
-  box = box.filter((t) => lib.byTag.has(t));
-  renderBoxPill();
+/** 頂欄「墨池」分頁：送過去的張數「+3」。 */
+function mochiTab() {
+  return document.querySelector('.page-switch a[href="./"]');
+}
+function renderSendBadge({ bump = false } = {}) {
+  const a = mochiTab();
+  if (!a) return;
+  let badge = a.querySelector(".send-badge");
+  if (!sending.length) {
+    badge?.remove();
+    a.removeAttribute("title");
+    return;
+  }
+  if (!badge) a.append((badge = el("b", { class: "send-badge" })));
+  badge.textContent = `+${sending.length}`;
+  a.title = `${sending.length} 張送去墨池合成池了：回墨池就在池裡`;
+  if (bump && !reducedMotion()) {
+    badge.animate([{ transform: "none" }, { transform: "translateY(-3px) scale(1.25)" }, { transform: "none" }], { duration: DUR.medium, easing: css(CURVE.settle) });
+  }
+}
+
+/** 牌的影子沿弧線飛到頂欄的「墨池」，落地時數字跳一下。 */
+function flyToMochi(fromNode, rect = null) {
+  const a = mochiTab();
+  const r = rect || fromNode?.getBoundingClientRect();
+  const visible = r && r.width && r.bottom > 0 && r.top < innerHeight;
+  if (!a || !visible || reducedMotion()) return renderSendBadge({ bump: true });
+  const ghost = cloneCard(fromNode || hand.nodeOf(sending[sending.length - 1]) || cellOf(lib.byTag.get(sending[sending.length - 1])).querySelector(".card"));
+  ghost.classList.add("box-ghost");
+  ghost.classList.remove("fav-card");
+  ghost.querySelector(".book-rank")?.remove();
+  document.body.append(ghost);
+  flight(ghost, { left: r.left, top: r.top, width: r.width, height: r.height }, () => a.querySelector(".send-badge") || a, {
+    endScale: 0.22,
+    endOpacity: 0.3,
+    arc: 90,
+    tilt: -8,
+    zIndex: 120,
+    onLand: () => renderSendBadge({ bump: true }),
+  });
+}
+
+/** 偏好卡牌（hand.js）：墨池同一份。卡冊不量自己的牌（noSample），托盤的牌跟墨池那邊一樣大。 */
+function buildHand() {
+  mergeOldBox();
+  hand = createHand({
+    key: HAND_KEY,
+    where: "卡冊",
+    openPicks: true,
+    keepTab: true,
+    // 開不開卡冊自己記（墨池的托盤常開著）；第一次來收著：「＋」是送去墨池。
+    openKey: "mochi.book.hand.open",
+    startOpen: false,
+    makeNode: (t) => cardNode(lib.byTag.get(t), assets),
+    inPool: () => false,
+    known: (t) => lib.byTag.has(t) && !lib.byTag.get(t).banned,
+    blocked: (t) => (!free && lib.byTag.get(t) && blocked(lib.byTag.get(t), rating) ? "分級擋掉" : null),
+    // 托盤上的牌點一下：這次要用 —— 送去墨池合成池（已經送了就不重複）。
+    onPlay: (t, r) => {
+      const card = lib.byTag.get(t);
+      if (!card) return;
+      if (inSend(t)) {
+        renderSendBadge({ bump: true });
+        return toast(`「${card.zh}」已經送去墨池了`);
+      }
+      const node = hand.nodeOf(t);
+      toggleSend(card, null);
+      if (node && r) flyToMochi(node, r);
+    },
+    onChange: () => {
+      if (!hand) return;
+      document.body.dataset.handEdit = picking() ? "true" : "false";
+      hand.mark($("book-grid"));
+      repaintMarks();
+    },
+    onRemoved: (t, undo) => toast(`「${lib.byTag.get(t)?.zh || t}」拿出偏好卡牌`, { action: { label: "復原", key: "Z", run: undo } }),
+    tools: handTools({ hand: () => hand, data: () => data, isCard: (t) => lib.byTag.has(t) && !lib.byTag.get(t).banned, zh: (t) => lib.byTag.get(t)?.zh || t }),
+  });
+  document.body.dataset.handEdit = picking() ? "true" : "false";
+  renderSendBadge();
   addEventListener("keydown", (e) => {
-    if (e.key === "Escape" && boxOpen && !document.querySelector(".overlay")) setBoxOpen(false);
-    // B：開關卡盒（在找字的框裡打字時不算）。
+    // B：開關偏好卡牌（在找字的框裡打字時不算）。以前是卡盒。
     const typing = /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement?.tagName || "");
     if ((e.key === "b" || e.key === "B") && !typing && !e.ctrlKey && !e.metaKey && !e.altKey && !document.querySelector(".overlay")) {
       e.preventDefault();
-      setBoxOpen(!boxOpen);
+      hand.toggleOpen();
     }
+    if (e.key === "Escape" && picking() && !document.querySelector(".overlay")) hand.setOpen(false);
   });
-  // 點盒子外面就收起來（點牌上的「＋」不算：邊挑邊看盒子是正常用法）。
-  document.addEventListener("pointerdown", (e) => {
-    if (boxOpen && !e.target.closest("#box-dock, .box-add, .overlay, .toast")) setBoxOpen(false);
-  });
-  // 別的分頁也開著卡冊：盒子內容跟著同步。
+  // 墨池（或另一個卡冊分頁）改了偏好卡牌、拿走了便條：照存檔重讀。
   addEventListener("storage", (e) => {
-    if (e.key !== BOX_KEY) return;
-    box = readBox().filter((t) => lib.byTag.has(t));
-    for (const [t, cell] of cells) paintBoxMark(cell, t);
-    renderBoxPill();
-    if (boxOpen) renderBoxPanel();
+    if (e.key === HAND_KEY) hand.reload();
+    if (e.key === S.POOL_HANDOFF_KEY) refreshSending();
   });
+  // 便條會過期、會被墨池拿走：回到這一頁時重讀一次。
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden) refreshSending();
+  });
+}
+
+function refreshSending() {
+  const now = S.peekPoolHandoff("book");
+  if (now.join("\n") === sending.join("\n")) return;
+  sending = now;
+  repaintMarks();
+  renderSendBadge();
+}
+
+/** 以前的卡盒：併進偏好卡牌（重複的不加），卡盒撕掉。只做一次。 */
+function mergeOldBox() {
+  let old = [];
+  try {
+    old = JSON.parse(localStorage.getItem(OLD_BOX_KEY) || "[]");
+  } catch {
+    old = [];
+  }
+  if (!Array.isArray(old)) old = [];
+  old = old.filter((t) => typeof t === "string" && lib.byTag.has(t) && !lib.byTag.get(t).banned);
+  try {
+    if (old.length) {
+      const now = JSON.parse(localStorage.getItem(HAND_KEY) || "[]");
+      const mine = Array.isArray(now) ? now.filter((t) => typeof t === "string") : [];
+      const add = old.filter((t) => !mine.includes(t));
+      localStorage.setItem(HAND_KEY, JSON.stringify([...mine, ...add]));
+      if (add.length) setTimeout(() => toast(`卡盒改成偏好卡牌了：原本卡盒裡的 ${add.length} 張已經放進偏好卡牌`), 600);
+    }
+    localStorage.removeItem(OLD_BOX_KEY);
+  } catch {
+    /* 存不了就下次再併 */
+  }
 }
 
 /* ================= 別的分頁、別的裝置抽完牌 ================= */

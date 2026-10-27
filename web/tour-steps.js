@@ -207,13 +207,13 @@ const BOOK = [
     dim: false,
     wait: () => !anyOverlay(),
     title: "牌的詳情",
-    text: "用過幾次、戰績、用它做過的圖都在這裡；可以帶去墨池，或放進卡盒。",
+    text: "用過幾次、戰績、用它做過的圖都在這裡；可以帶去墨池，或加進偏好卡牌。",
     todo: "看完按右上的 ✕ 關掉。",
   },
   {
-    target: () => $("#box-pill"),
-    title: "卡盒",
-    text: "邊逛邊把牌收進卡盒（牌上的 ＋），收好一次帶去墨池，或存成牌組。",
+    target: () => document.querySelector(".fav-hand .fav-tab"),
+    title: "偏好卡牌、送去墨池",
+    text: "牌上的 ＋ 把牌送去墨池合成池，人留在這裡繼續挑。展開底下的偏好卡牌時，點牌就收進長期常用的那一排（跟墨池同一份）。",
   },
   {
     target: () => $("#book-ach"),

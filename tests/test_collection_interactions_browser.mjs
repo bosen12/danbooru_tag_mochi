@@ -71,7 +71,8 @@ async function test(name, run, reducedMotion = 'reduce') {
   const context = await browser.newContext({ locale: 'zh-TW', reducedMotion, viewport: { width: 1280, height: 1000 } });
   await context.route('https://**/*', r => r.abort());
   await context.addInitScript(() => {
-    localStorage.setItem('mochi.book.box.v1', JSON.stringify(['red hair']));
+    // 2026-10-27：卡冊的卡盒改成偏好卡牌（墨池同一份）＋牌上的「＋」送去墨池。
+    localStorage.setItem('mochi.hand.v1', JSON.stringify(['red hair']));
     for (const room of ['book', 'album']) localStorage.setItem(`mochi.tour.${room}.v1`, '1');
     window.imageAnimations = 0;
     const animate = Element.prototype.animate;
@@ -81,7 +82,7 @@ async function test(name, run, reducedMotion = 'reduce') {
   try { await run(page); console.log('PASS', name); } catch (e) { failures.push(`${name}: ${e.message}`); console.error('FAIL', name, e.message); }
   finally { heldProcessing.splice(0).forEach(f => f()); heldGets.splice(0).forEach(f => f()); heldWrites.splice(0).forEach(f => f()); heldImages.splice(0).forEach(f => f(false)); await context.close(); }
 }
-async function book(page) { await page.goto(origin + '/book.html'); await page.locator('.book-cell').first().waitFor(); await page.locator('#box-pill').click(); }
+async function book(page) { await page.goto(origin + '/book.html'); await page.locator('.book-cell').first().waitFor(); }
 async function quota(page) { await page.evaluate(() => { const original = Storage.prototype.setItem; Storage.prototype.setItem = function (k, v) { if (k.includes('handoff')) throw new DOMException('Full', 'QuotaExceededError'); return original.call(this, k, v); }; }); }
 async function handoffStayed(page, path) { await page.waitForTimeout(600); assert.equal(new URL(page.url()).pathname, path, 'failed handoff retains the source page'); assert.match(await page.locator('.toast').last().textContent(), /無法交接選牌/); }
 async function deckPanel(page, seed = false) {
@@ -90,22 +91,22 @@ async function deckPanel(page, seed = false) {
   await page.evaluate(() => deckModule.openDecks({ where: '卡盒', current: () => ['red hair'], has: () => true, zh: t => t, apply: () => {} }));
 }
 try {
-  await test('card box preserves cards when handoff storage fails', async page => { await book(page); await quota(page); await page.locator('.box-go').click(); await handoffStayed(page, '/book.html'); assert.deepEqual(await page.evaluate(() => JSON.parse(localStorage.getItem('mochi.book.box.v1'))), ['red hair']); assert.equal(await page.locator('.box-slot').count(), 1); });
-  await test('single card handoff stays in card details on failure', async page => { await book(page); await page.locator('.box-close').click(); await page.locator('.book-cell .card').first().click(); await quota(page); await page.getByRole('button', { name: '帶去墨池合成池', exact: true }).click(); await handoffStayed(page, '/book.html'); assert.equal(await page.locator('.book-detail').count(), 1); });
+  await test('plus send stays unsent when handoff storage fails', async page => { await book(page); await quota(page); const cell = page.locator('.book-cell:not(.is-skel)').first(); await cell.hover(); await cell.locator('.box-add').click(); await handoffStayed(page, '/book.html'); assert.equal(await page.evaluate(() => localStorage.getItem('mochi.pool.handoff.v1')), null); assert.equal(await cell.locator('.box-add').getAttribute('aria-pressed'), 'false'); assert.equal(await page.locator('.page-switch .send-badge').count(), 0); assert.deepEqual(await page.evaluate(() => JSON.parse(localStorage.getItem('mochi.hand.v1'))), ['red hair']); });
+  await test('single card handoff stays in card details on failure', async page => { await book(page); await page.locator('.book-cell .card').first().click(); await quota(page); await page.getByRole('button', { name: '帶去墨池合成池', exact: true }).click(); await handoffStayed(page, '/book.html'); assert.equal(await page.locator('.book-detail').count(), 1); });
   await test('book work handoff preserves the open work on failure', async page => {
-    await book(page); await page.locator('.box-close').click(); await page.locator('.book-cell .card').first().click();
+    await book(page); await page.locator('.book-cell .card').first().click();
     await page.locator('.book-work').first().click(); await quota(page); await page.getByRole('button', { name: /這張的 .* 張牌帶回墨池/ }).click();
     await handoffStayed(page, '/book.html'); assert.equal(await page.locator('.book-work-full').count(), 1);
   });
   await test('book works hide only images the server says are gone', async page => {
-    await book(page); await page.locator('.box-close').click(); await page.locator('.book-cell .card').first().click();
+    await book(page); await page.locator('.book-cell .card').first().click();
     await page.waitForFunction(() => document.querySelectorAll('.book-work').length === 2);
     await page.waitForTimeout(300);
     assert.deepEqual(await page.locator('.book-work img').evaluateAll(a => a.map(i => i.getAttribute('src').split('/').pop())), ['work.svg', 'down.svg'], '404 is removed; 502 (ComfyUI off) stays');
     assert.match(await page.locator('.book-works-head').textContent(), /2 張圖/);
   });
   await test('album handoff preserves details on failure', async page => { await page.goto(origin + '/album.html'); await page.locator('.album-tile').click(); await quota(page); await page.getByRole('button', { name: '照這張再印', exact: true }).click(); await handoffStayed(page, '/album.html'); assert.equal(await page.locator('.album-detail').count(), 1); });
-  await test('Escape restores box focus and external focus is preserved', async page => { await book(page); await page.keyboard.press('Escape'); assert.equal(await page.evaluate(() => document.activeElement.id), 'box-pill'); await page.locator('#box-pill').click(); await page.evaluate(() => document.querySelector('#book-q').focus()); await page.keyboard.press('Escape'); assert.equal(await page.evaluate(() => document.activeElement.id), 'book-q'); });
+  await test('Escape closes the picking tray and external focus is preserved', async page => { await book(page); await page.locator('.fav-hand .fav-tab').click(); assert.equal(await page.locator('.fav-hand').getAttribute('data-open'), 'true'); await page.evaluate(() => document.querySelector('#book-q').focus()); await page.keyboard.press('Escape'); assert.equal(await page.locator('.fav-hand').getAttribute('data-open'), 'false'); assert.equal(await page.evaluate(() => document.activeElement.id), 'book-q'); });
   await test('initial slow deck load resolves same-name update before saving', async page => { holdGets = true; await deckPanel(page); await waitFor(() => heldGets.length > 0); await page.locator('.deck-name').fill('Same'); await page.locator('.deck-save').dispatchEvent('submit'); await page.waitForTimeout(80); assert.equal(writes.length, 0, 'save must wait until existing names are known'); holdGets = false; heldGets.splice(0).forEach(f => f()); await waitFor(() => writes.length === 1); assert.equal(writes[0].id, 'old'); });
   await test('late GET cannot overwrite a saved deck in cache or open panel', async page => { await page.goto(origin + '/fixture.html'); await page.evaluate(async () => { window.deckModule = await import('./decks.js'); await deckModule.loadDecks(); }); await page.evaluate(() => deckModule.openDecks({ where: '卡盒', current: () => ['red hair'], has: () => true, zh: t => t, apply: () => {} })); await page.waitForTimeout(80); holdGets = true; await page.evaluate(() => { window.staleRead = deckModule.loadDecks(); }); await waitFor(() => heldGets.length > 0); await page.locator('.deck-name').fill('New'); holdWrites = true; await page.locator('.deck-save').dispatchEvent('submit'); await page.locator('.deck-save').dispatchEvent('submit'); await waitFor(() => writes.length > 0); await page.waitForTimeout(100); assert.equal(writes.length, 1, 'pending submit sends one POST'); heldWrites.splice(0).forEach(f => f()); await page.locator('.deck-title').filter({ hasText: 'New' }).waitFor(); heldGets.splice(0).forEach(f => f()); await page.waitForTimeout(120); assert.equal(await page.locator('.deck-title').filter({ hasText: 'New' }).count(), 1, 'late GET keeps saved panel row'); assert.equal(await page.evaluate(() => deckModule.cachedDecks().some(d => d.name === 'New')), true); });
   await test('late GET cannot resurrect deleted deck and pending delete sends once', async page => { await page.goto(origin + '/fixture.html'); await page.evaluate(async () => { window.deckModule = await import('./decks.js'); await deckModule.loadDecks(); }); holdGets = true; await page.evaluate(() => deckModule.openDecks({ where: '卡盒', current: () => ['red hair'], has: () => true, zh: t => t, apply: () => {} })); await waitFor(() => heldGets.length > 0); holdWrites = true; await page.locator('.deck-del').dispatchEvent('click'); await page.locator('.deck-del').dispatchEvent('click'); await waitFor(() => writes.length > 0); await page.waitForTimeout(100); assert.equal(writes.length, 1); heldWrites.splice(0).forEach(f => f()); await page.locator('.deck-row').waitFor({ state: 'detached' }); heldGets.splice(0).forEach(f => f()); await page.waitForTimeout(120); assert.equal(await page.locator('.deck-row').count(), 0); assert.equal(await page.evaluate(() => deckModule.cachedDecks().length), 0); });
@@ -147,7 +148,7 @@ try {
     assert.equal(await page.evaluate(() => deckModule.cachedDecks().some(d => d.id === 'good')), true);
   });
   for (const target of ['detail', 'box']) await test('late card art reveals in ' + target + ' flight clone', async page => {
-    await book(page); await page.locator('.box-close').click();
+    await book(page);
     await page.evaluate(() => {
       const card = document.querySelector('.book-cell .card'); card.querySelector('.card-art')?.remove();
       const art = document.createElement('span'); art.className = 'card-art'; art.innerHTML = '<img src="/flight.svg" srcset="/flight.svg 1x" alt="">'; card.append(art);

@@ -1,9 +1,10 @@
 /**
- * 偏好卡牌（手牌）：墨池、疊印台共用。每個房間自己一份（key 不同），最多十張。
+ * 偏好卡牌（手牌）：墨池、疊印台、卡冊共用。墨池和卡冊同一份，疊印台自己一份（key 不同）；不限張數。
  *
  * 樣子：視窗底部一條托盤，牌就是左邊字盒那一張 —— 同一個元件、量字盒上那張的寬度和字級，
  * 看起來一模一樣。整張攤開排成一道很淺的弧；指到的那張浮起來。擺不下才疊，疊的時候指到的
- * 那張兩旁讓開。托盤可以收起來，只剩一顆「偏好卡牌 7/10」的小標籤。
+ * 那張兩旁讓開；多到疊也看不清（每張露不到一半）就改成平平一排、左右捲動（滾輪也能捲）。
+ * 托盤可以收起來，只剩一顆「偏好卡牌 7」的小標籤。
  * 已經在卡池裡的不擺：手牌十張、卡池已經有其中三張，托盤只擺七張；那張從卡池拿下來，
  * 它飛回托盤（不是回字盒）。托盤佔多高寫在 --fav-h，房間的捲動區底下墊這麼多，不會被蓋住。
  *
@@ -23,6 +24,11 @@
  *   blocked(t)     這張牌現在出不了的原因（例如「分級擋掉」），沒有就 null：托盤上那張蓋章、變淡
  *   onRemoved(t, undo)  用手拿掉了一張（×、Delete、選單）：房間跳一個帶「復原」的提示，undo() 放回原位
  *   decorate(n,t)  托盤上的牌做好之後給房間掛東西（拖曳）
+ *   where          說明文字裡的「字盒」（卡冊傳「卡冊」）
+ *   openPicks      托盤開著就是在挑牌（卡冊）：不另外擺「＋ 挑牌」鈕，提示照挑牌的寫
+ *   tools          標頭右邊多擺的小按鈕 [{ label, title, onClick }]（牌組、貼上）
+ *   keepTab        沒有牌也留著收起來的標籤（卡冊沒有工具列上的「偏好卡牌」鈕，標籤就是入口）
+ *   openKey        托盤開著沒的存檔（卡冊跟墨池同一份牌，但開不開各記各的：卡冊展開＝在挑牌，一開頁就收著）
  */
 import { flight, CURVE, DUR, css } from "./motion.js";
 import { cloneCard } from "./card-images.js";
@@ -44,7 +50,7 @@ addEventListener("resize", () => (vw = innerWidth), { passive: true });
 
 export function createHand({
   key,
-  max = 10,
+  max = Infinity,
   makeNode,
   sample = noSample,
   inPool,
@@ -55,10 +61,16 @@ export function createHand({
   onRemoved = () => {},
   blocked = () => null,
   decorate = () => {},
+  where = "字盒",
+  openPicks = false,
+  tools = [],
+  keepTab = false,
+  openKey = key + ".open",
+  startOpen = null,
 }) {
   let tags = read(key, []).filter(known).slice(0, max);
-  // 第一次來、手牌是空的：托盤不出來，等按了「偏好卡牌」或加了第一張。
-  let open = read(key + ".open", tags.length > 0) === true;
+  // 第一次來、手牌是空的：托盤不出來，等按了「偏好卡牌」或加了第一張（keepTab：收成標籤）。
+  let open = read(openKey, startOpen ?? tags.length > 0) === true;
   let editing = false;
   let hot = -1;
   // 拖牌經過托盤：在要插進去的地方空出一格（at：第幾格；skip：拖的就是托盤上的這張，它先讓出位置）。
@@ -86,7 +98,17 @@ export function createHand({
   const pick = document.createElement("button");
   pick.type = "button";
   pick.className = "fav-pick";
-  head.append(tab, hint, pick);
+  head.append(tab, hint);
+  for (const t of tools) {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "fav-tool";
+    b.textContent = t.label;
+    if (t.title) b.title = t.title;
+    b.addEventListener("click", () => t.onClick());
+    head.append(b);
+  }
+  if (!openPicks) head.append(pick);
   const body = document.createElement("div");
   body.className = "fav-body";
   const fan = document.createElement("div");
@@ -97,6 +119,16 @@ export function createHand({
   empty.className = "fav-emptytext";
   body.append(fan);
   el.append(head, body);
+  // 捲動的托盤：滾輪往下＝往右（滑鼠沒有橫向滾輪）。觸控板本來就能橫著滑，不攔。
+  body.addEventListener(
+    "wheel",
+    (e) => {
+      if (el.dataset.scroll !== "true" || Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return;
+      e.preventDefault();
+      body.scrollLeft += e.deltaY;
+    },
+    { passive: false }
+  );
   document.body.append(el);
   // The tray's owner publishes page state once; card mutations need no body :has lookup.
   document.body.dataset.favHand = "true";
@@ -214,13 +246,42 @@ export function createHand({
     return size;
   }
 
-  /** 擺得下就整齊排開（間距 GAP），擺不下就疊（step 變小）。 */
+  /**
+   * 擺得下就整齊排開（間距 GAP），擺不下就疊（step 變小）。疊到每張露不到一半（scrolls）就不疊了：
+   * 平平一排、照原本的間距排開，托盤左右捲。
+   */
+  const scrolls = (n, w, room) => n > 1 && (room - w) / (n - 1) < (w + GAP) * 0.5;
   function geometry(n, i, w, room) {
-    const step = n > 1 ? Math.min(w + GAP, (room - w) / (n - 1)) : 0;
+    const flat = scrolls(n, w, room);
+    const step = n > 1 ? (flat ? w + GAP : Math.min(w + GAP, (room - w) / (n - 1))) : 0;
     const off = i - (n - 1) / 2;
+    if (flat) return { x: off * step, y: 0, r: 0, step };
     // 很淺的弧：兩端微微往下、往外轉。張數越多每張轉得越少，整排不會歪成扇子。
     const tilt = n > 1 ? Math.min(1.2, 6 / (n - 1)) : 0;
     return { x: off * step, y: off * off * 0.9, r: off * tilt, step };
+  }
+
+  /** 捲動的托盤：扇子撐成整排那麼寬（牌從正中間往兩旁排，所以左右各留半張）。 */
+  function setScroll(m, w, room) {
+    const flat = scrolls(m, w, room);
+    if ((el.dataset.scroll === "true") !== flat) el.dataset.scroll = flat ? "true" : "false";
+    const want = flat ? `${Math.ceil(m * (w + GAP) - GAP + 24)}px` : "";
+    if (fan.style.width !== want) fan.style.width = want;
+  }
+
+  /** 捲動的托盤：把這張捲到看得到（加進來、飛回來的那張）。 */
+  function reveal0(tag, smooth = true) {
+    if (el.dataset.scroll !== "true") return;
+    const s = slots.get(tag);
+    if (!s?.isConnected) return;
+    const card = s.querySelector(".fav-card");
+    const br = body.getBoundingClientRect();
+    const cr = card.getBoundingClientRect();
+    const pad = 24;
+    let d = 0;
+    if (cr.left < br.left + pad) d = cr.left - br.left - pad;
+    else if (cr.right > br.right - pad) d = cr.right - br.right + pad;
+    if (d) body.scrollBy({ left: d, behavior: smooth && !reduced() ? "smooth" : "auto" });
   }
 
   function position(slot, i, n, w, room, animate, hot) {
@@ -320,15 +381,17 @@ export function createHand({
     return s;
   }
 
+  const picking = () => editing || (openPicks && open);
+  const pickText = `點${where}裡的牌加進來，再點一次拿掉`;
   function paintHead() {
     const placed = tags.length - shownTags().length;
-    tab.innerHTML = `${ICON}<span class="fav-title">偏好卡牌</span><b class="fav-count">${tags.length}/${max}</b>${CHEVRON}`;
+    tab.innerHTML = `${ICON}<span class="fav-title">偏好卡牌</span><b class="fav-count">${Number.isFinite(max) ? `${tags.length}/${max}` : tags.length}</b>${CHEVRON}`;
     tab.setAttribute("aria-expanded", open ? "true" : "false");
     tab.title = open ? "收起偏好卡牌" : "打開偏好卡牌";
     pick.textContent = editing ? "完成" : "＋ 挑牌";
     pick.setAttribute("aria-pressed", editing ? "true" : "false");
-    pick.title = editing ? "挑好了（Esc）" : "點字盒裡的牌加進來，再點一次拿掉";
-    hint.textContent = editing ? "點字盒裡的牌加進來，再點一次拿掉" : placed ? `${placed} 張在卡池裡` : "常用單張牌，最多十張；每個工作區各自保存。";
+    pick.title = editing ? "挑好了（Esc）" : pickText;
+    hint.textContent = picking() ? pickText : placed ? `${placed} 張在卡池裡` : "長期常用的單張牌，不限張數。";
   }
 
   /** 只重排位置（指到別張、視窗變寬窄），不動節點。 */
@@ -339,6 +402,7 @@ export function createHand({
     const m = gap ? list.length + 1 : list.length;
     const room = roomFor(m);
     setWant(m);
+    setScroll(m, w, room);
     for (const k of kids) k.classList.toggle("is-out", !!gap && k.dataset.tag === gap.skip);
     list.forEach((k, j) => position(k, gap && j >= gap.at ? j + 1 : j, m, w, room, animate, gap ? -1 : hot));
   }
@@ -366,7 +430,7 @@ export function createHand({
     if (m < 2) return 0;
     const w = size.shown || size.w;
     const room = roomFor(m);
-    const step = Math.min(w + GAP, (room - w) / (m - 1));
+    const step = scrolls(m, w, room) ? w + GAP : Math.min(w + GAP, (room - w) / (m - 1));
     const r = fan.getBoundingClientRect();
     const cx = r.left + r.width / 2;
     return Math.max(0, Math.min(m - 1, Math.round((x - cx) / step + (m - 1) / 2)));
@@ -460,8 +524,8 @@ export function createHand({
     if (!n) {
       empty.textContent = tags.length
         ? "偏好卡牌都在卡池裡了，從卡池拿下來就回到這裡。"
-        : editing
-          ? "點字盒裡的牌加進來，最多十張。"
+        : picking()
+          ? `點${where}裡的牌加進來。`
           : "把字盒的牌拖到這裡，或按「＋ 挑牌」。";
       if (!empty.isConnected) fan.append(empty);
     } else empty.remove();
@@ -481,9 +545,9 @@ export function createHand({
       card.title = why ? `${why}：現在的設定抽不到它` : "點一下放進卡池";
     }
     el.dataset.open = open ? "true" : "false";
-    el.dataset.editing = editing ? "true" : "false";
+    el.dataset.editing = picking() ? "true" : "false";
     el.dataset.count = String(n);
-    el.dataset.hidden = !tags.length && !editing && !open ? "true" : "false";
+    el.dataset.hidden = !keepTab && !tags.length && !editing && !open ? "true" : "false";
     const visibleOpen = open && el.dataset.hidden !== "true" ? "true" : "false";
     if (document.body.dataset.favHandOpen !== visibleOpen) document.body.dataset.favHandOpen = visibleOpen;
     paintHead();
@@ -496,7 +560,7 @@ export function createHand({
   function setOpen(v) {
     const was = open;
     open = !!v;
-    write(key + ".open", open);
+    write(openKey, open);
     if (!open && editing) {
       editing = false;
       document.body.dataset.handEdit = "false";
@@ -680,6 +744,7 @@ export function createHand({
     write(key, tags);
     layout(true);
     if (quiet) snap(tag);
+    else reveal0(tag);
     onChange();
     const s = slots.get(tag);
     if (s?.isConnected && !reduced() && !quiet) {
@@ -754,6 +819,7 @@ export function createHand({
     tags.splice(Math.min(at, tags.length), 0, tag);
     write(key, tags);
     layout(true);
+    reveal0(tag);
     onChange();
     const c = slots.get(tag)?.querySelector(".fav-card");
     if (c?.isConnected && !reduced()) c.animate([{ translate: "0 22px", opacity: 0 }, { translate: "0 0", opacity: 1 }], { duration: DUR.medium, easing: css(CURVE.out) });
@@ -764,7 +830,7 @@ export function createHand({
     const opening = editing && !open;
     if (opening) {
       open = true;
-      write(key + ".open", true);
+      write(openKey, true);
     }
     document.body.dataset.handEdit = editing ? "true" : "false";
     hot = -1;
@@ -943,6 +1009,25 @@ export function createHand({
     receive,
     launchFrom,
     mark,
+    /** 換掉整份（牌組、貼上的提示詞）。回傳換之前那份，給「復原」用。 */
+    replace(list) {
+      const was = [...tags];
+      tags = [...new Set(list)].filter(known).slice(0, max);
+      write(key, tags);
+      for (const t of [...slots.keys()]) if (!tags.includes(t)) slots.delete(t);
+      if (!open) setOpen(true);
+      layout(true);
+      riseCards(0);
+      onChange();
+      return was;
+    },
+    /** 別的分頁改了同一份（墨池、卡冊開在不同分頁）：照存檔重讀。 */
+    reload() {
+      tags = read(key, []).filter(known).slice(0, max);
+      for (const t of [...slots.keys()]) if (!tags.includes(t)) slots.delete(t);
+      layout(false);
+      onChange();
+    },
     /** 托盤上那張牌（收起來、沒擺出來就 null）：房間拿它當飛回來的落點。 */
     nodeOf: (t) => (open && slots.get(t)?.isConnected ? slots.get(t).querySelector(".fav-card") : null),
   };
