@@ -61,7 +61,7 @@ import { openPaste, listenPaste } from "./paste-prompt.js";
 import { paintWeight, wireWeightInput, weightRow, weightPositive } from "./weights.js";
 import { favButton } from "./album-save.js";
 import { createDrag, inkRing } from "./drag.js";
-import { initMotion, settleMotion, replayDeal, flip, flipBy, leave, enter, confirmButton, gatherHome, flight, seat, refuse, reducedMotion, swapIn, rowChange, CURVE, DUR, css } from "./motion.js";
+import { initMotion, settleMotion, replayDeal, flip, flipBy, leave, enter, confirmButton, gatherHome, flight, seat, refuse, reducedMotion, swapIn, rowChange, CURVE, DUR, css, cropFlipStart, cropFlipEnd } from "./motion.js";
 import { cloneCard } from "./card-images.js";
 import { createHand } from "./hand.js";
 import { createTrashPanel } from "./trash-panel.js";
@@ -4049,13 +4049,9 @@ function flyToDetail(src, sheetEl) {
   Object.assign(f.style, { position: "fixed", left: to.left + "px", top: to.top + "px", width: to.width + "px", height: to.height + "px", margin: "0", zIndex: "200", pointerEvents: "none", overflow: "hidden", borderRadius: "6px", transformOrigin: "0 0", willChange: "transform" });
   document.body.append(f);
   dst.style.visibility = "hidden";
-  const sx = from.width / to.width;
-  const sy = from.height / to.height;
+  // 等比縮放＋裁切框打開（motion.js cropFlipStart）：長寬各縮各的會把多人的圖擠扁再彈開。
   const anim = f.animate(
-    [
-      { transform: `translate(${(from.left - to.left).toFixed(1)}px, ${(from.top - to.top).toFixed(1)}px) scale(${sx.toFixed(4)}, ${sy.toFixed(4)})` },
-      { transform: "none" },
-    ],
+    [cropFlipStart(from, to, src.querySelector(".card-art img")), cropFlipEnd],
     { duration: DUR.long, easing: css(CURVE.out), fill: "forwards" }
   );
   const land = () => {

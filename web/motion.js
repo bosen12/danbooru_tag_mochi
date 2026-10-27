@@ -951,3 +951,34 @@ export function confirmButton(btn, done = "已複製", ms = 1400) {
     btn.classList.remove("is-confirmed");
   }, ms);
 }
+
+/** object-position 換成 0～1 的比例（50% 22% → [0.5, 0.22]）；讀不懂的當置中。 */
+function objectPos(img) {
+  const word = { left: 0, top: 0, center: 0.5, right: 1, bottom: 1 };
+  const parts = (img ? getComputedStyle(img).objectPosition : "").split(/\s+/);
+  return [0, 1].map((i) => {
+    const v = parts[i] || "";
+    if (v in word) return word[v];
+    return v.endsWith("%") ? Math.min(1, Math.max(0, parseFloat(v) / 100)) : 0.5;
+  });
+}
+
+/**
+ * 牌飛進詳情大圖（FLIP）的起點 keyframe。格子裡的牌只露出插畫中間一段（object-fit: cover），
+ * 詳情是整張圖：長、寬各縮各的會把整張擠扁再彈開，人多的圖（6人以上女性、3個女性）看起來像在抖。
+ * 這裡等比縮放，再用 clip-path 只露出格子裡看得到的那段；落地時裁切框打開成整張。
+ * img 是格子裡那張插畫，照它的 object-position 決定裁哪邊。終點用 cropFlipEnd。
+ */
+export function cropFlipStart(from, to, img = null) {
+  const s = Math.max(from.width / to.width, from.height / to.height);
+  const ex = Math.max(0, to.width - from.width / s);
+  const ey = Math.max(0, to.height - from.height / s);
+  const [px, py] = objectPos(img);
+  const l = ex * px;
+  const t = ey * py;
+  return {
+    transform: `translate(${(from.left - to.left - l * s).toFixed(1)}px, ${(from.top - to.top - t * s).toFixed(1)}px) scale(${s.toFixed(4)})`,
+    clipPath: `inset(${t.toFixed(1)}px ${(ex - l).toFixed(1)}px ${(ey - t).toFixed(1)}px ${l.toFixed(1)}px round ${(6 / s).toFixed(1)}px)`,
+  };
+}
+export const cropFlipEnd = { transform: "none", clipPath: "inset(0px 0px 0px 0px round 6px)" };

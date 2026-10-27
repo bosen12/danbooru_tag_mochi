@@ -28,7 +28,7 @@ import { mountGenStatus } from "./gen-status.js";
 import { createHand } from "./hand.js";
 import { handTools } from "./hand-tools.js";
 import { measure, evaluate, announce, openWall } from "./achievements.js";
-import { initMotion, settleMotion, seat, refuse, flight, reducedMotion, swapIn, rowChange, CURVE, DUR, css } from "./motion.js";
+import { initMotion, settleMotion, seat, refuse, flight, reducedMotion, swapIn, rowChange, CURVE, DUR, css, cropFlipStart, cropFlipEnd } from "./motion.js";
 import { viewSrc } from "./gen.js";
 import { pingLoop } from "./ping.js";
 import { getSfx } from "./sfx.js";
@@ -1978,11 +1978,9 @@ function flyToDetail(src, sheetEl) {
   Object.assign(f.style, { position: "fixed", left: to.left + "px", top: to.top + "px", width: to.width + "px", height: to.height + "px", margin: "0", zIndex: "200", pointerEvents: "none", overflow: "hidden", borderRadius: "6px", transformOrigin: "0 0", willChange: "transform" });
   document.body.append(f);
   dst.style.visibility = "hidden";
+  // 等比縮放＋裁切框打開（motion.js cropFlipStart）：長寬各縮各的會把多人的圖擠扁再彈開。
   const anim = f.animate(
-    [
-      { transform: `translate(${(from.left - to.left).toFixed(1)}px, ${(from.top - to.top).toFixed(1)}px) scale(${(from.width / to.width).toFixed(4)}, ${(from.height / to.height).toFixed(4)})` },
-      { transform: "none" },
-    ],
+    [cropFlipStart(from, to, src.querySelector(".card-art img")), cropFlipEnd],
     { duration: DUR.long, easing: css(CURVE.out), fill: "forwards" }
   );
   const land = () => {
