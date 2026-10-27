@@ -417,6 +417,23 @@
 
 /* ---------- 詳情：用它做過的圖 ---------- */
 
+/* 「用它做過的圖」是打開之後才讀進來的：置中的視窗一長高就整個往上跳（實測 605 → 792px，跳 94px）。
+ * 卡冊詳情改成從上方固定的位置打開，後來的內容只往下長；手機的底部視窗一開始就是滿高，長在裡面。 */
+.overlay:has(.book-detail) {
+  align-items: start;
+  padding-top: max(var(--space-md), 6dvh);
+}
+
+@media (max-width: 40rem) {
+  .overlay:has(.book-detail) {
+    align-items: end;
+    padding-top: var(--space-lg);
+  }
+  .sheet:has(.book-detail) {
+    height: 100%;
+  }
+}
+
 .book-detail .book-works {
   grid-column: 1 / -1;
 }
