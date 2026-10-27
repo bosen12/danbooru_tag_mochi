@@ -16,6 +16,9 @@ Questions, prints to share, card requests: **[join the Mochi Discord](https://di
 The interface is in English or Traditional Chinese. It follows your browser language, and the globe menu in the top bar switches it. ComfyUI always receives the canonical English tags.
 
 > **Adult content.** This tool can generate adult images. The rating switch starts at *General*. The lexicon and negative prompt block `loli`, `shota`, `teen`, `child` and similar tags; those cards are never drawn or illustrated.
+>
+> **Sexual imagery of minors is prohibited.** Do not use this software to generate sexual or sexualized images of anyone under 18, or of characters who are or look like minors, fictional ones included. The built-in blocks are a minimum safeguard, not a permission; removing or bypassing them to make such images is misuse.
+>
 > The server runs on your own machine and only accepts loopback and Tailscale connections by default.
 
 Mochi is the card interface of [danbooru_tag_random](https://github.com/bosen12/danbooru_tag_random), released on its own.
@@ -215,6 +218,9 @@ Mochi code is distributed under **GNU GPLv3 only (`GPL-3.0-only`)**, see [LICENS
 畫面是中文或英文（依瀏覽器語言自動選，頂欄地球選單可切換）；真正送給 ComfyUI 的永遠是英文 tag。
 
 > **成人向。** 這個工具可以產生成人內容，頂欄的分級預設是「全年齡」。詞庫與負向提示詞會擋 `loli`、`shota`、`teen`、`child` 等字，這些牌永遠不會畫也不會抽。
+>
+> **禁止生成未成年人的性影像。** 不得用本軟體產生未滿 18 歲者、或是未成年／外觀像未成年的角色（包括虛構角色）的性或性暗示影像。內建的封鎖只是最低限度的防護，不代表沒被擋的就可以；為了產生這類影像而移除或繞過防護，就是濫用。
+>
 > 伺服器只在你自己的機器上跑，預設只接受本機與 Tailscale 的連線。
 
 墨池是 [danbooru_tag_random](https://github.com/bosen12/danbooru_tag_random)（排字匣）的卡牌介面，獨立出來發布。
