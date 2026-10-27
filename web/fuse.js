@@ -4216,7 +4216,8 @@ function syncHand() {
   if (!hand) return;
   const btn = $("hand-btn");
   btn.setAttribute("aria-pressed", hand.open ? "true" : "false");
-  $("hand-count").textContent = `${hand.count}/${hand.max}`;
+  // 不限張數就只寫張數。
+  $("hand-count").textContent = Number.isFinite(hand.max) ? `${hand.count}/${hand.max}` : String(hand.count);
   hand.mark($("case-grid"));
 }
 

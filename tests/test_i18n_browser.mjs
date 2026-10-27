@@ -120,6 +120,16 @@ try {
       assert.deepEqual(errors, [], '/arch.html works without downloaded card art');
       await page.close();
     }
+    {
+      // 介紹頁也要在沒有卡面時打得開：扇形改用純字的牌。
+      const page = await context.newPage(), errors = [];
+      page.on('pageerror', (e) => errors.push(e.stack || e.message));
+      await page.goto(origin + '/about.html');
+      await page.locator('#hero-fan .card').first().waitFor();
+      await scan(page, '/about.html-no-card-art');
+      assert.deepEqual(errors, [], '/about.html works without downloaded card art');
+      await page.close();
+    }
     await context.close();
   }
   for (const width of [320, 390, 1440]) {
@@ -196,6 +206,10 @@ try {
           await page.keyboard.press('Escape'); await page.waitForTimeout(180);
         }
       }
+      // 頂欄「社群」：加入 Discord 的小視窗（2026-10-27）。
+      await page.locator('#community-btn').click();
+      await page.locator('.community-sheet').waitFor(); await page.waitForTimeout(200); await scan(page, name + '-community');
+      await page.keyboard.press('Escape'); await page.waitForTimeout(180);
       await page.locator('#tour-btn').click();
       await page.waitForTimeout(200); await scan(page, name + '-tour');
       await page.keyboard.press('Escape');
@@ -242,6 +256,22 @@ try {
         await scan(page, name + selector);
       }
       await page.locator('#draw-tags .dtag').first().hover(); await scan(page, name + '-why');
+      assert.deepEqual(errors, [], name + ' page errors');
+      await page.close();
+    }
+    {
+      // 介紹頁（2026-10-27）：牌發好、每一段捲過一遍（浮上來），掃漏翻的中文和橫向捲動。
+      const page = await context.newPage(), errors = [];
+      page.on('pageerror', (e) => errors.push(e.message));
+      await page.goto(origin + '/about.html');
+      await page.locator('#hero-fan .card').first().waitFor();
+      const name = `${width}-about`;
+      await scan(page, name);
+      for (const id of ['rooms', 'community', 'start']) {
+        await page.locator('#' + id).scrollIntoViewIfNeeded(); await page.waitForTimeout(150);
+        await scan(page, `${name}-${id}`);
+      }
+      assert.ok(await page.locator('#discord-go a[href^="https://discord.gg/"]').count() === 1, 'About page links the Discord invite');
       assert.deepEqual(errors, [], name + ' page errors');
       await page.close();
     }

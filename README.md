@@ -3,12 +3,15 @@
 # Mochi · a card workbench for Danbooru-tag image generation
 
 [![test](https://github.com/bosen12/danbooru_tag_mochi/actions/workflows/test.yml/badge.svg)](https://github.com/bosen12/danbooru_tag_mochi/actions/workflows/test.yml)
+[![Discord](https://img.shields.io/badge/Discord-join%20the%20server-5865F2?logo=discord&logoColor=white)](https://discord.gg/UtDK9w3Hw)
 
 Created by [bosen12](https://github.com/bosen12) · Code: GPLv3
 
 English · [繁體中文](#繁體中文)
 
 Danbooru tags as illustrated cards. Pin a few cards, let the engine draw the rest by its rules, and send the composition to your local ComfyUI (WAI / Illustrious SDXL).
+
+Questions, prints to share, card requests: **[join the Mochi Discord](https://discord.gg/UtDK9w3Hw)**.
 
 The interface is in English or Traditional Chinese. It follows your browser language, and the globe menu in the top bar switches it. ComfyUI always receives the canonical English tags.
 
@@ -49,7 +52,7 @@ Mochi is the card interface of [danbooru_tag_random](https://github.com/bosen12/
 
 **Characters.** 679 adult anime and game characters (Yor, Makima, Raiden Shogun, Levi…) are cards in their own suit, grouped by series under Anime and Games (One Piece, Demon Slayer…; Arknights, Genshin Impact…). Pin one or several, or turn on **Draw characters** in the Ink Pool rules to give people of the selected gender named characters (up to three, any series). Pinned characters remain even when their gender is switched off. **Same series only** keeps every drawn character in the pinned character's series, or picks one series that fits the cast when none is pinned. **Add series name** puts the series tag after each character. While a character is in the image the engine stops drawing hair color, hairstyle, eye color, body type and similar traits that would change who it is. Characters who are underage, school students, child-looking, real people or VTubers, non-human, or of unknown age are banned: they are not cards, pasted prompts drop them, and the server refuses any prompt that contains them.
 
-The **Intro film** (`/intro.html`, 3 min) and the **Tutorial** (`/tutorial.html`, 4.5 min) are rendered live in the page with the real engine and cards. **Tour** in the top bar walks you through each room step by step.
+The **Intro film** (`/intro.html`, 3 min) and the **Tutorial** (`/tutorial.html`, 4.5 min) are rendered live in the page with the real engine and cards. **Tour** in the top bar walks you through each room step by step. **How it works** (`/arch.html`) explains the engine, rules and architecture with live examples, and **About** (`/about.html`) is a one-page introduction with the Discord and GitHub links. **Community** in the top bar opens the Discord invite; the first visit asks once whether you want to join.
 
 ## Requirements
 
@@ -185,6 +188,10 @@ Core engine, setup decisions, asset handling, server behavior and clean-copy HTT
 
 Language detection, English translation, user content left untranslated, and selections kept across a language switch. ComfyUI is not needed.
 
+## Community
+
+The [Mochi Discord server](https://discord.gg/UtDK9w3Hw) is the place to share prints, ask how something works, report bugs and request cards, rules or features. New versions and card art packs are announced there first. Bug reports and pull requests are also welcome on [GitHub](https://github.com/bosen12/danbooru_tag_mochi/issues).
+
 ## Contributing
 
 Issues and pull requests are welcome. Run `python tests/run.py` and keep the CI green. See [CONTRIBUTING.md](CONTRIBUTING.md) for browser checks and contribution details. Most of the code here is synced from the [danbooru_tag_random](https://github.com/bosen12/danbooru_tag_random) workspace, so a merged change is carried over there by the maintainer; you do not need to do anything for that. For new interface text, add the English line to `web/locales/en.js`.
@@ -199,9 +206,11 @@ Mochi code is distributed under **GNU GPLv3 only (`GPL-3.0-only`)**, see [LICENS
 
 # 墨池 Mochi · Danbooru 卡牌生圖工作臺
 
-原作者：[bosen12](https://github.com/bosen12) · 程式授權：GPLv3
+原作者：[bosen12](https://github.com/bosen12) · 程式授權：GPLv3 · [加入 Discord 伺服器](https://discord.gg/UtDK9w3Hw)
 
 把 Danbooru 標籤做成一張張有插畫的牌：挑幾張放進合成池，引擎依規則抽牌補齊，整組送進本機的 ComfyUI（WAI / Illustrious SDXL）生圖。
+
+有問題、想分享作品、許願新牌：**[加入墨池的 Discord](https://discord.gg/UtDK9w3Hw)**。
 
 畫面是中文或英文（依瀏覽器語言自動選，頂欄地球選單可切換）；真正送給 ComfyUI 的永遠是英文 tag。
 
@@ -232,7 +241,7 @@ Mochi code is distributed under **GNU GPLv3 only (`GPL-3.0-only`)**, see [LICENS
 
 **角色**：679 個成年的動漫、遊戲角色（約兒、瑪奇瑪、雷電將軍、里維…）自己一個花色，分動漫、遊戲兩串，再照作品分格（航海王、鬼滅之刃…；明日方舟、原神…）。可以釘一個或好幾個，或在墨池的規則打開「抽角色」，只替「人物」選中的性別抽角色（最多三個，作品不挑）；手動釘的角色照留。「只抽同系列」打開時，抽的角色都跟釘的角色同一部作品；沒釘就先挑一部人數、性別湊得齊的。「加入系列名」會在角色後面接作品名。畫面裡有角色時，引擎不再抽髮色、髮型、瞳色、體型這些會改掉角色是誰的特徵。未成年、學生、外觀像兒童、真人或 VTuber、非人形、年齡查不到的角色一律禁用：不是牌、貼上提示詞會被拿掉、送去生圖伺服器也會擋。
 
-另外有兩支在頁面裡即時產生的影片：**介紹影片**（`/intro.html`，3 分鐘）和**使用教學**（`/tutorial.html`，4 分半）。頂欄的「導覽」會一步一步帶你操作。
+另外有兩支在頁面裡即時產生的影片：**介紹影片**（`/intro.html`，3 分鐘）和**使用教學**（`/tutorial.html`，4 分半）。頂欄的「導覽」會一步一步帶你操作。**原理**（`/arch.html`）用真的引擎示範抽牌、規則和整個架構；**介紹頁**（`/about.html`）是一頁看完的介紹，附 Discord 和 GitHub 連結。頂欄的「社群」打開 Discord 邀請；第一次來會問一次要不要加入。
 
 ## 你需要先有什麼
 
@@ -305,6 +314,10 @@ python scripts/bake_card_art.py   # 只烘缺的卡面
 ```
 
 新字先用 `node scripts/verify_danbooru_tags.mjs <tag…>` 到 Danbooru 驗過。`tests/test_lexicon_rebuild.py` 會在暫存資料夾從這些原料重做一次，跟 `web/lexicon.json` 對不上就失敗。`python scripts/export_lexicon_xlsx.py`（要先 `pip install openpyxl`）會產出一張查找用的 `danbooru_lexicon.xlsx`。
+
+## 社群
+
+[墨池的 Discord 伺服器](https://discord.gg/UtDK9w3Hw)：分享作品、問用法、回報問題、許願想要的牌、規則或功能都在這裡，新版和卡面包也會先在那裡公告。在 [GitHub](https://github.com/bosen12/danbooru_tag_mochi/issues) 回報問題、送 PR 也很歡迎。
 
 ## 參與開發
 

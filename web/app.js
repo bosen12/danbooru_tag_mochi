@@ -619,7 +619,7 @@ function updatePickerFoot() {
   // 人以為在挑牌，其實一路在封鎖。
   const mode = hand?.editing ? "hand" : trashPanel?.isOpen ? "trash" : "";
   const text =
-    mode === "hand" ? `點牌＝加進偏好卡牌 ${hand.count}/${hand.max}`
+    mode === "hand" ? `點牌＝加進偏好卡牌 ${handCount()}`
     : mode === "trash" ? `點牌＝丟進廢字簍（${bans.size}）`
     : count ? `合成池 ${count} 張` : "合成池還是空的";
   n.parentElement.dataset.mode = mode;
@@ -2244,9 +2244,15 @@ function syncHandBtn() {
   }
   const pressed = hand?.open ? "true" : "false";
   if (btn.getAttribute("aria-pressed") !== pressed) btn.setAttribute("aria-pressed", pressed);
-  const count = `${hand ? hand.count : 0}/${hand ? hand.max : 10}`;
+  const count = handCount();
   const b = $("hand-count");
   if (b && b.textContent !== count) b.textContent = count;
+}
+
+// 偏好卡牌幾張：不限張數（2026-10-27 起）就只寫張數，有上限才寫「幾／幾」。
+function handCount() {
+  if (!hand) return "0";
+  return Number.isFinite(hand.max) ? `${hand.count}/${hand.max}` : String(hand.count);
 }
 
 function renderGoStatus() {

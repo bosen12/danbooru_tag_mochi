@@ -21,6 +21,13 @@ const poolCards = () => count("#pool-well .card");
 const plateCards = () => count("#registers .plate-card");
 const pickedTrial = () => $('#trials [aria-checked="true"]')?.textContent || "";
 
+// 每個房間結尾前一步：頂欄的「社群」（community.js），加入 Discord 伺服器。
+const COMMUNITY = {
+  target: () => $("#community-btn"),
+  title: "加入社群",
+  text: "頂欄的「社群」：加入墨池的 Discord 伺服器，分享作品、問用法、回報問題、許願新牌都在那裡；原始碼在 GitHub。",
+};
+
 const MOCHI = [
   {
     title: "歡迎來到墨池",
@@ -96,6 +103,7 @@ const MOCHI = [
     title: "其他房間",
     text: "疊印台：一層層疊牌，先看四張試印再付印。卡冊：每張牌用過幾次、成就。作品冊：收藏的、印過的每一張。每個房間都有自己的導覽。",
   },
+  COMMUNITY,
   {
     title: "準備好了",
     text: "挑幾張牌、按「抽並生圖」試試看吧！之後想再看一次，按頂欄的「導覽」。",
@@ -175,6 +183,7 @@ const FUSE = [
     title: "規則",
     text: "尺寸、畫面裡有誰、時代、尺度、姿勢參考都在這顆鈕裡。",
   },
+  COMMUNITY,
   {
     title: "準備好了",
     text: "疊幾張牌、挑一個試印、按「付印」試試看吧！之後想再看一次，按頂欄的「導覽」。",
@@ -220,6 +229,7 @@ const BOOK = [
     title: "成就牆",
     text: "每個花色的收集進度和成就。只看不擋：沒解鎖的牌照樣能用。",
   },
+  COMMUNITY,
   {
     title: "就是這樣",
     text: "之後想再看一次，按頂欄的「導覽」。",
@@ -258,6 +268,7 @@ const ALBUM = [
     title: "篩選",
     text: "只看收藏的、撤下的、印壞的、Hires。點一列看配方，可以補收藏、把牌帶回墨池。",
   },
+  COMMUNITY,
   {
     title: "就是這樣",
     text: "之後想再看一次，按頂欄的「導覽」。",
@@ -288,7 +299,7 @@ const PARSE = [
     target: () => $("#parse-bar"),
     title: "帶走",
     text: "選好的牌放進墨池的合成池，或送到疊印台一層層疊。",
-  },
+  },  COMMUNITY,
 ];
 
 export const STEPS = { mochi: MOCHI, fuse: FUSE, book: BOOK, album: ALBUM, parse: PARSE };

@@ -1,7 +1,22 @@
 # Release notes
 
-## Unreleased
+## v1.2 — 2026-10-27
 
+Changes since [v1.1](https://github.com/bosen12/danbooru_tag_mochi/releases/tag/v1.1) (2026-10-10).
+
+- Community: a [Mochi Discord server](https://discord.gg/UtDK9w3Hw). **Community** in the top bar opens the invite; the first visit asks once (then the tour offer appears). Each room's tour and the tutorial film's ending point to it. New **About** page (`/about.html`): a one-page introduction with live cards, the five rooms, three steps to start, and the Discord and GitHub links.
+- Favorite cards show a plain count now that there is no limit (it read “0/Infinity”).
+- Card Book: the card box became favorite cards (shared with the Ink Pool, unlimited); **+** sends a card straight to the Ink Pool mix while you keep browsing. The card detail no longer jumps when its works load.
+- Ink Pool: queued prints that have not been sent can be removed straight away. Card spines drop trailing glosses, and 80 clashing Chinese names were renamed.
+- Vocabulary: 8,179 tags / 8,147 cards (from 2,708), including 1,396 clothing tags, environments, pose features, everyday objects, wrestling, audiences and more; dates in the Card Book for every new card. Card art packs v6 through v11 (v11: 3,602 all-ages cards, thumbnails first).
+- Characters: 679 adult characters in their own suit, grouped by series, with Draw characters, Same series only, Add series name, gender filters and an unlimited favorite characters list. More minor-related tags (child, child carry and 13 others) are blocked like loli.
+- Parse Pool (`/parse.html`): the WD14 Tagger turns an image's tags into cards.
+- Face fix (FaceDetailer, SAM when available) next to Hires, with redo and undo, and adjustable details in the workflow panel.
+- Discord channel routing by rating, character, series and tag.
+- How it works (`/arch.html`): the engine, rules and architecture with live examples.
+- Era gains Random; rating gains a No limit switch; Included and Exclusive placement switches; images per row on the result wall; ComfyUI output cleanup keeps the latest 200 images.
+- Reliability: no double prints across tabs, generation timeouts, Discord retries, resume after a server restart, a crash-safe generation log capped at 5,000 entries.
+- Speed and motion: faster room switching with prerendering, no layout jumps, motion for every interaction, a faster Card Book on phones, draws in a background worker, a smooth image zoom and a screensaver film.
 - Characters: 612 adult anime and game characters as a new **Characters** suit, grouped into Anime and Games and then by series (76 series). Pin several at once, or turn on **Draw characters** (one per person by gender, up to three), **Same series only** and **Add series name**. With a character in the image the engine stops drawing hair, eye, body and species traits. 1,874 characters (underage, students, child-looking, real people / VTubers, non-human, unknown age) are banned: not cards, dropped from pasted prompts, and refused by the server.
 - 182 of those characters were added on 2026-10-11 (Fate servants, Genshin adults, capital ships, JoJo adults, and others). The other 546 additions stay banned under the same rules.
 - Character card art is not published (copyrighted). Each start checks it; up to 20 missing are baked straight away, more than that and the setup panel asks first (Bake / Not now / Never ask).

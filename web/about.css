@@ -1,0 +1,813 @@
+/* ================= 介紹頁（about.html） =================
+ * 一頁往下捲的宣傳頁：開場一手扇形的真牌浮在墨池上（漣漪一圈圈擴散、滑鼠帶一點視差），
+ * 底下一行提示詞跟著換；接著五個房間、為什麼、社群（Discord、GitHub）、三步開始。
+ * 顏色、字體都用 tokens.css 的；Discord 的藍紫只用在加入的那顆鈕和標誌上。 */
+
+.about-page {
+  --discord: oklch(58% 0.21 274);
+  --discord-2: oklch(52% 0.2 274);
+  --discord-soft: oklch(58% 0.21 274 / 0.16);
+  background:
+    radial-gradient(1100px 620px at 78% -8%, color-mix(in oklch, var(--color-accent) 11%, transparent), transparent 70%),
+    radial-gradient(900px 560px at -12% 26%, var(--color-pool-soft), transparent 70%),
+    radial-gradient(800px 500px at 110% 70%, var(--discord-soft), transparent 70%),
+    var(--color-paper);
+  color: var(--color-ink);
+}
+
+/* ---------- 頂端 ---------- */
+
+.ab-top {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  background: color-mix(in oklch, var(--color-paper) 88%, transparent);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--color-rule-2);
+}
+
+.ab-top-in {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-xs) var(--space-lg);
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: var(--space-xs) var(--space-md);
+}
+
+.ab-mark {
+  color: var(--color-ink);
+  text-decoration: none;
+}
+
+.ab-nav {
+  display: flex;
+  gap: var(--space-md);
+  font-size: var(--text-sm);
+}
+
+.ab-nav a {
+  color: var(--color-muted);
+  text-decoration: none;
+  transition: color var(--dur-micro) var(--ease-out);
+}
+
+.ab-nav a:hover {
+  color: var(--color-ink);
+}
+
+.ab-top-cta {
+  display: flex;
+  gap: var(--space-xs);
+  margin-left: auto;
+}
+
+/* ---------- 共用 ---------- */
+
+.ab {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 var(--space-md);
+}
+
+.btn.ab-big {
+  min-height: 48px;
+  padding: var(--space-sm) var(--space-lg);
+  font-size: var(--text-md);
+}
+
+.num {
+  font-family: var(--font-display);
+  font-variant-numeric: tabular-nums;
+}
+
+[data-reveal] {
+  opacity: 0;
+  translate: 0 24px;
+  transition:
+    opacity var(--dur-story) var(--ease-out),
+    translate var(--dur-story) var(--ease-out);
+}
+
+[data-reveal].is-in {
+  opacity: 1;
+  translate: none;
+}
+
+/* ---------- 開場 ---------- */
+
+.ab-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+  align-items: center;
+  gap: var(--space-2xl);
+  min-height: min(84dvh, 760px);
+  padding: var(--space-2xl) 0;
+}
+
+.ab-kicker {
+  margin: 0 0 var(--space-md);
+  color: var(--color-accent-text);
+  font-size: var(--text-sm);
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  animation: ab-rise var(--dur-story) var(--ease-out) backwards;
+}
+
+.ab-hero h1 {
+  margin: 0 0 var(--space-lg);
+  font-family: var(--font-heading);
+  font-size: clamp(2.1rem, 4.6vw, 4.4rem);
+  font-weight: 900;
+  line-height: 1.14;
+  letter-spacing: 0.01em;
+  animation: ab-rise var(--dur-story) var(--ease-out) 80ms backwards;
+}
+
+/* 一行一句，不在句子中間斷開（手機上字自己縮）。 */
+.ab-hero h1 span {
+  white-space: nowrap;
+}
+
+/* 英文版：「into」跟「a deck of cards」是兩段字，中間補一格空白。 */
+html[lang="en"] .ab-hero h1 em {
+  margin-left: 0.28em;
+}
+
+/* 「一副牌」：朱色，底下一抹墨。 */
+.ab-hero h1 em {
+  position: relative;
+  font-style: normal;
+  color: var(--color-accent-text);
+}
+
+.ab-hero h1 em::after {
+  content: "";
+  position: absolute;
+  left: -0.08em;
+  right: -0.08em;
+  bottom: 0.04em;
+  height: 0.16em;
+  border-radius: 999px;
+  background: color-mix(in oklch, var(--color-accent) 55%, transparent);
+  transform-origin: left center;
+  animation: ab-stroke var(--dur-develop) var(--ease-out) 500ms backwards;
+}
+
+.ab-lead {
+  max-width: 34em;
+  margin: 0 0 var(--space-sm);
+  color: var(--color-ink-2);
+  font-size: var(--text-lg);
+  line-height: 1.7;
+  animation: ab-rise var(--dur-story) var(--ease-out) 160ms backwards;
+}
+
+.ab-lead b {
+  color: var(--color-ink);
+}
+
+.ab-dim {
+  color: var(--color-muted);
+  font-size: var(--text-md);
+}
+
+.ab-cta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+  margin: var(--space-xl) 0 var(--space-md);
+  animation: ab-rise var(--dur-story) var(--ease-out) 240ms backwards;
+}
+
+.ab-note {
+  margin: 0;
+  color: var(--color-muted);
+  font-size: var(--text-sm);
+}
+
+/* Discord 的鈕（顏色在 styles.css 的社群那段）：這一頁上多一圈藍紫的光。 */
+.ab .btn-primary.community-join {
+  box-shadow: 0 10px 30px -10px oklch(50% 0.22 274 / 0.7);
+}
+
+.ab-hero-art {
+  --mx: 0;
+  --my: 0;
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-height: 460px;
+}
+
+/* 墨池：一圈圈漣漪從牌底下擴散出去。 */
+.ab-ripples {
+  position: absolute;
+  left: 50%;
+  top: 62%;
+  width: 520px;
+  height: 180px;
+  translate: calc(-50% + var(--mx) * -18px) calc(-50% + var(--my) * -10px);
+  transition: translate var(--dur-long) var(--ease-out);
+  pointer-events: none;
+}
+
+.ab-ripples::before {
+  content: "";
+  position: absolute;
+  inset: 10% 8%;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, color-mix(in oklch, var(--color-pool) 32%, transparent), transparent);
+  filter: blur(8px);
+}
+
+.ab-ripples i {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 1.5px solid color-mix(in oklch, var(--color-pool) 70%, transparent);
+  opacity: 0;
+  animation: ab-ripple calc(var(--dur-develop) * 4) var(--ease-out) infinite;
+}
+
+.ab-ripples i:nth-child(2) {
+  animation-delay: var(--dur-develop);
+}
+
+.ab-ripples i:nth-child(3) {
+  animation-delay: calc(var(--dur-develop) * 2);
+}
+
+.ab-ripples i:nth-child(4) {
+  animation-delay: calc(var(--dur-develop) * 3);
+}
+
+@keyframes ab-ripple {
+  0% {
+    transform: scale(0.18);
+    opacity: 0;
+  }
+  12% {
+    opacity: 0.9;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 0;
+  }
+}
+
+/* 一手七張牌，扇形攤開，整手慢慢地呼吸（上下浮）。 */
+.ab-fan {
+  position: relative;
+  width: 100%;
+  height: 300px;
+  translate: calc(var(--mx) * 22px) calc(var(--my) * 14px);
+  transition:
+    translate var(--dur-long) var(--ease-out),
+    opacity var(--dur-long) var(--ease-exit);
+  animation: ab-breathe calc(var(--dur-story) * 8) var(--ease-in-out) infinite;
+}
+
+.ab-fan.is-leaving {
+  opacity: 0;
+}
+
+.ab-fan-card {
+  --spread: calc(var(--i) - (var(--n) - 1) / 2);
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  margin-left: calc(var(--card-w) / -2);
+  /* 牌的插畫在右邊、書脊在左邊：左邊的牌疊在上面，蓋住的是右鄰的書脊，每張的插畫都看得到。 */
+  z-index: calc(var(--n) - var(--i));
+  transform-origin: 50% 140%;
+  transform: rotate(calc(var(--spread) * 13deg)) translateY(calc(abs(var(--spread)) * 10px));
+  box-shadow:
+    0 1px 0 var(--color-shine) inset,
+    0 22px 40px -16px var(--color-shade),
+    0 0 0 1px oklch(0% 0 0 / 0.2);
+  animation: ab-deal var(--dur-story) var(--ease-settle) backwards;
+  animation-delay: calc(var(--i) * 75ms);
+}
+
+/* 滑過一張：抬起來、轉正一點。 */
+@media (hover: hover) and (pointer: fine) {
+  .ab-fan-card:hover {
+    transform: rotate(calc(var(--spread) * 13deg)) translateY(calc(abs(var(--spread)) * 10px - 28px)) scale(1.06);
+    z-index: 20;
+  }
+}
+
+/* 這一手牌排成的提示詞：一個字一個字浮出來。 */
+.ab-prompt {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px;
+  max-width: 460px;
+  margin-top: var(--space-xl);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  transition: opacity var(--dur-long) var(--ease-exit);
+}
+
+.ab-prompt.is-leaving {
+  opacity: 0;
+}
+
+.ab-tag {
+  padding: 3px 8px;
+  border: 1px solid color-mix(in oklch, var(--suit, var(--color-rule)) 60%, transparent);
+  border-radius: 999px;
+  background: color-mix(in oklch, var(--suit, var(--color-paper-3)) 14%, var(--color-paper-2));
+  color: var(--color-ink-2);
+  animation: ab-rise var(--dur-long) var(--ease-out) backwards;
+  animation-delay: calc(500ms + var(--i) * 90ms);
+}
+
+.ab-tag[data-suit="cast"] { --suit: var(--suit-cast); }
+.ab-tag[data-suit="chara"] { --suit: var(--suit-chara); }
+.ab-tag[data-suit="look"] { --suit: var(--suit-look); }
+.ab-tag[data-suit="wear"] { --suit: var(--suit-wear); }
+.ab-tag[data-suit="pose"] { --suit: var(--suit-pose); }
+.ab-tag[data-suit="scene"] { --suit: var(--suit-scene); }
+.ab-tag[data-suit="style"] { --suit: var(--suit-style); }
+
+.ab-tag.is-tail {
+  border-style: dashed;
+  color: var(--color-muted);
+}
+
+@keyframes ab-deal {
+  from {
+    opacity: 0;
+    transform: translateY(120px) rotate(0deg) scale(0.7);
+  }
+}
+
+@keyframes ab-breathe {
+  50% {
+    margin-top: -14px;
+  }
+}
+
+@keyframes ab-rise {
+  from {
+    opacity: 0;
+    translate: 0 14px;
+  }
+}
+
+@keyframes ab-stroke {
+  from {
+    transform: scaleX(0);
+  }
+}
+
+/* ---------- 數字 ---------- */
+
+.ab-stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin: 0 0 var(--space-2xl);
+  border-block: 1px solid var(--color-rule-2);
+}
+
+.ab-stats > div {
+  display: grid;
+  gap: 2px;
+  padding: var(--space-lg) var(--space-md);
+  text-align: center;
+}
+
+.ab-stats > div + div {
+  border-left: 1px solid var(--color-rule-2);
+}
+
+.ab-stats b {
+  font-size: clamp(1.8rem, 3.6vw, 2.6rem);
+  font-weight: 800;
+  line-height: 1.1;
+}
+
+.ab-stats span {
+  color: var(--color-muted);
+  font-size: var(--text-sm);
+}
+
+/* ---------- 各段 ---------- */
+
+.ab-sec {
+  padding: var(--space-2xl) 0;
+  scroll-margin-top: 64px;
+}
+
+.ab-head {
+  margin-bottom: var(--space-xl);
+}
+
+.ab-num {
+  margin: 0;
+  color: var(--color-accent-text);
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+}
+
+.ab-head h2 {
+  margin: var(--space-2xs) 0 var(--space-xs);
+  font-family: var(--font-heading);
+  font-size: clamp(1.8rem, 3.4vw, 2.6rem);
+  font-weight: 900;
+}
+
+.ab-sub {
+  margin: 0;
+  max-width: 40em;
+  color: var(--color-ink-2);
+}
+
+/* 五個房間：每格上面三張小牌疊著，滑過時攤開。 */
+.ab-rooms {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: var(--space-md);
+}
+
+/* 放不下五格：墨池（主房間）佔一整排，其他兩兩一排。 */
+@media (max-width: 64rem) {
+  .ab-rooms {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .ab-room:first-child {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 30rem) {
+  .ab-rooms {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.ab-room {
+  display: grid;
+  align-content: start;
+  gap: var(--space-xs);
+  padding: var(--space-md);
+  border: 1px solid var(--color-rule-2);
+  border-radius: var(--radius-md);
+  background: color-mix(in oklch, var(--color-paper-2) 86%, transparent);
+  color: var(--color-ink-2);
+  font-size: var(--text-sm);
+  text-decoration: none;
+  transition:
+    opacity var(--dur-story) var(--ease-out),
+    translate var(--dur-story) var(--ease-out),
+    border-color var(--dur-short) var(--ease-out),
+    background-color var(--dur-short) var(--ease-out);
+}
+
+.ab-room:nth-child(2) { transition-delay: 60ms; }
+.ab-room:nth-child(3) { transition-delay: 120ms; }
+.ab-room:nth-child(4) { transition-delay: 180ms; }
+.ab-room:nth-child(5) { transition-delay: 240ms; }
+
+.ab-room b {
+  color: var(--color-ink);
+  font-family: var(--font-heading);
+  font-size: var(--text-xl);
+}
+
+.ab-room-art {
+  position: relative;
+  height: 112px;
+  margin-bottom: var(--space-xs);
+}
+
+.ab-room-art .card {
+  position: absolute;
+  left: calc(50% - 32px);
+  bottom: 0;
+  transform-origin: 50% 120%;
+  transform: rotate(calc((var(--i) - 1) * 8deg));
+  transition: transform var(--dur-long) var(--ease-settle);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .ab-room:hover {
+    border-color: var(--color-rule);
+    background: var(--color-paper-2);
+  }
+  .ab-room:hover .ab-room-art .card {
+    transform: rotate(calc((var(--i) - 1) * 16deg)) translateX(calc((var(--i) - 1) * 18px)) translateY(-6px);
+  }
+}
+
+.ab-room:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+/* 為什麼 */
+.ab-why {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-md);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ab-why li {
+  display: grid;
+  gap: var(--space-xs);
+  padding: var(--space-lg);
+  border-left: 3px solid var(--color-accent);
+  border-radius: 0 var(--radius-md) var(--radius-md) 0;
+  background: color-mix(in oklch, var(--color-paper-2) 80%, transparent);
+  color: var(--color-ink-2);
+}
+
+.ab-why li:nth-child(2) { border-left-color: var(--color-pool); }
+.ab-why li:nth-child(3) { border-left-color: var(--suit-scene); }
+.ab-why li:nth-child(4) { border-left-color: var(--discord); }
+
+.ab-why b {
+  color: var(--color-ink);
+  font-size: var(--text-lg);
+}
+
+/* ---------- 社群 ---------- */
+
+.ab-community {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+  gap: var(--space-lg);
+  align-items: stretch;
+}
+
+.ab-discord,
+.ab-github {
+  position: relative;
+  display: grid;
+  align-content: start;
+  gap: var(--space-md);
+  padding: var(--space-xl);
+  border-radius: calc(var(--radius-md) * 1.4);
+  overflow: hidden;
+}
+
+.ab-discord {
+  border: 1px solid oklch(58% 0.21 274 / 0.45);
+  background:
+    radial-gradient(600px 300px at 100% 0%, oklch(58% 0.21 274 / 0.32), transparent 70%),
+    radial-gradient(400px 260px at 0% 100%, color-mix(in oklch, var(--color-pool) 18%, transparent), transparent 70%),
+    var(--color-paper-2);
+  box-shadow: 0 30px 80px -40px oklch(45% 0.22 274 / 0.8);
+}
+
+.ab-github {
+  border: 1px solid var(--color-rule-2);
+  background: var(--color-paper-2);
+  color: var(--color-ink-2);
+}
+
+.ab-discord h3,
+.ab-github h3 {
+  margin: 0;
+  color: var(--color-ink);
+  font-family: var(--font-heading);
+  font-size: var(--text-2xl);
+}
+
+.ab-badge {
+  margin: 0;
+}
+
+.ab-discord-go .btn {
+  width: 100%;
+}
+
+.ab-tip {
+  margin: 0;
+  color: var(--color-muted);
+  font-size: var(--text-sm);
+}
+
+.ab-gh-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.ab-gh-head .community-icon {
+  width: 36px;
+  height: 36px;
+  color: var(--color-ink);
+}
+
+.ab-github p {
+  margin: 0;
+}
+
+.ab-repo {
+  padding: var(--space-sm) var(--space-md);
+  border: 1px dashed var(--color-rule);
+  border-radius: var(--radius-sm);
+  background: var(--color-paper);
+  color: var(--color-ink);
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  overflow-wrap: anywhere;
+}
+
+.ab-gh-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+}
+
+/* ---------- 三步開始 ---------- */
+
+.ab-steps {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-md);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: step;
+}
+
+.ab-steps li {
+  position: relative;
+  display: grid;
+  align-content: start;
+  gap: var(--space-xs);
+  padding: var(--space-xl) var(--space-lg) var(--space-lg);
+  border: 1px solid var(--color-rule-2);
+  border-radius: var(--radius-md);
+  background: color-mix(in oklch, var(--color-paper-2) 86%, transparent);
+  color: var(--color-ink-2);
+  counter-increment: step;
+}
+
+/* 步驟號碼：一枚朱色的印。 */
+.ab-steps li::before {
+  content: counter(step);
+  position: absolute;
+  top: calc(var(--space-md) * -1);
+  left: var(--space-lg);
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-xs);
+  background: var(--color-accent-2);
+  color: var(--color-accent-ink);
+  font-family: var(--font-mono);
+  font-weight: 700;
+  rotate: -4deg;
+  box-shadow: 0 6px 14px -6px var(--color-shade);
+}
+
+.ab-steps b {
+  color: var(--color-ink);
+  font-size: var(--text-lg);
+}
+
+.ab-steps code {
+  display: block;
+  padding: var(--space-xs) var(--space-sm);
+  border-radius: var(--radius-sm);
+  background: var(--color-paper);
+  color: var(--color-ink);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  overflow-wrap: anywhere;
+}
+
+.ab-end {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+  margin-top: var(--space-xl);
+}
+
+/* ---------- 頁尾 ---------- */
+
+.ab-foot {
+  margin-top: var(--space-2xl);
+  padding: var(--space-xl) var(--space-md) calc(var(--space-xl) + env(safe-area-inset-bottom));
+  border-top: 1px solid var(--color-rule-2);
+  color: var(--color-muted);
+  font-size: var(--text-sm);
+  text-align: center;
+}
+
+.ab-foot p {
+  margin: 0 0 var(--space-xs);
+}
+
+.ab-foot-links {
+  display: flex;
+  justify-content: center;
+  gap: var(--space-md);
+}
+
+.ab-foot a {
+  color: var(--color-ink-2);
+}
+
+/* 讀不到詞庫：沒有牌的地方收起來。 */
+.no-cards .ab-hero-art,
+.no-cards .ab-room-art {
+  display: none;
+}
+
+/* ---------- 窄螢幕 ---------- */
+
+@media (max-width: 52rem) {
+  .ab-hero {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-lg);
+    min-height: 0;
+    padding-top: var(--space-xl);
+  }
+  .ab-hero-art {
+    order: -1;
+    min-height: 300px;
+  }
+  .ab-fan {
+    height: 210px;
+  }
+  .ab-fan-card {
+    --card-w: 82px !important;
+  }
+  .ab-ripples {
+    width: 360px;
+    height: 130px;
+  }
+  .ab-community,
+  .ab-steps {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .ab-steps {
+    gap: var(--space-xl);
+  }
+}
+
+@media (max-width: 40rem) {
+  .ab-nav {
+    display: none;
+  }
+  .ab-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .ab-stats > div:nth-child(3) {
+    border-left: 0;
+  }
+  .ab-stats > div:nth-child(n + 3) {
+    border-top: 1px solid var(--color-rule-2);
+  }
+  .ab-why {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .ab-discord,
+  .ab-github {
+    padding: var(--space-lg);
+  }
+  .ab-cta .btn {
+    flex: 1 1 auto;
+  }
+  .ab-fan-card {
+    --card-w: 66px !important;
+  }
+  .ab-fan {
+    height: 170px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ab-fan,
+  .ab-ripples i,
+  .ab-fan-card,
+  .ab-tag,
+  .ab-kicker,
+  .ab-hero h1,
+  .ab-hero h1 em::after,
+  .ab-lead,
+  .ab-cta {
+    animation: none;
+  }
+  .ab-ripples i {
+    opacity: 0.35;
+    transform: scale(0.7);
+  }
+  [data-reveal],
+  .ab-room {
+    transition: none;
+  }
+}

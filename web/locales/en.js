@@ -736,8 +736,8 @@ POS 複製好了|Prompt copied
 規則（尺寸、人物、時代、尺度、每段補幾張）|Rules: size, cast, era, content level and card counts
 字盒裡的牌：點一下放進卡池，再點一下拿下來|Library cards · Click to add or remove
 字盒裡的牌：點一下放進合成池，拖進廢字簍封鎖|Library cards · Click to pin, drag to blocked cards to exclude
-偏好卡牌：挑最多十張常用的牌，攤在視窗底部，點一下就放上版|Keep up to 10 favorite cards in the tray. Click to add to layers.
-偏好卡牌：挑最多十張常用的牌，攤在視窗底部，點一下就放進合成池|Keep up to 10 favorite cards in the tray. Click to pin.
+偏好卡牌：常用的牌收在視窗底部，點一下就放上版|Favorite cards wait in the tray. Click one to add it to layers.
+偏好卡牌：常用的牌收在視窗底部，點一下就放進合成池|Favorite cards wait in the tray. Click one to pin it.
 把卡池存成牌組，或套用存過的牌組|Save or load a deck of cards
 把合成池存成牌組，或套用存過的牌組|Save or load a deck of pinned cards
 合成池：放進來的字每張圖都一定有|Pinned cards · Included in every image
@@ -1792,6 +1792,78 @@ Hires 放大、修臉（只重畫臉）、換底模重印，都從成品下面�
 ＋ 送牌去墨池合成池，留在卡冊繼續挑；展開偏好卡牌時點牌收進托盤（跟墨池同一份）。|+ sends a card to the Ink Pool mix while you stay in the book; with favorite cards open, clicking a card adds it to the tray (shared with Ink Pool).
 把偏好卡牌存成牌組，或把牌組換成偏好卡牌|Save favorite cards as a deck, or load a deck as favorite cards
 貼一段提示詞，詞庫有的變成偏好卡牌|Paste a prompt; cards in the lexicon become favorite cards
+社群|Community
+加入墨池的 Discord 伺服器、GitHub|Join the Ink Pool Discord server, or visit GitHub
+加入墨池的 Discord？|Join the Ink Pool Discord?
+墨池有一個 Discord 伺服器，要不要一起來？|Ink Pool has a Discord server. Want to join us?
+墨池的 Discord 伺服器，歡迎加入。|The Ink Pool Discord server. Come say hi.
+分享你印的圖、看別人怎麼配牌|Share your prints and see how others pick cards
+問用法、回報問題，有人會回|Ask questions or report bugs, and someone will answer
+許願想要的牌、規則、功能|Request cards, rules and features
+新版、新卡面第一時間公告|Hear about new versions and card art first
+原始碼在 GitHub：|Source code on GitHub:
+之後想加入：按頂欄的「社群」。|To join later, press Community in the header.
+看看墨池的介紹頁 →|See the Ink Pool intro page →
+之後再說|Maybe later
+加入 Discord|Join Discord
+複製連結|Copy link
+邀請連結複製好了|Invite link copied
+複製不了：請手動選取網址|Could not copy. Select the link by hand.
+加入社群|Join the community
+頂欄的「社群」：加入墨池的 Discord 伺服器，分享作品、問用法、回報問題、許願新牌都在那裡；原始碼在 GitHub。|Community in the header opens the Ink Pool Discord server. Share prints, ask questions, report bugs and request cards there. The source code is on GitHub.
+介紹|About
+墨池：把 Danbooru 標籤變成一副有插畫的牌，挑幾張，引擎照規則補齊，送進你自己的 ComfyUI 畫。免費、開源，有 Discord 社群。|Ink Pool turns Danbooru tags into an illustrated deck. Pick a few cards, let the engine fill in the rest and render with your own ComfyUI. Free, open source, with a Discord community.
+這一頁|On this page
+開始用|Get started
+免費|Free
+開源|Open source
+在你自己的電腦上跑|Runs on your own computer
+把 Danbooru 標籤|Turn Danbooru tags
+變成|into
+一副牌|a deck of cards
+挑幾張你想要的牌，其他的交給引擎照規則補齊，排成一段提示詞，送進你自己的 ComfyUI 畫出來。|Pick a few cards you want. The engine fills in the rest by its rules, writes the prompt and sends it to your own ComfyUI.
+張牌，每張都有中文名和一張插畫。|cards, each with a name and its own illustration.
+手機也能用|Works on phones too
+墨池的數字|Ink Pool in numbers
+個角色|characters
+個房間|rooms
+開源，免費|Open source and free
+每個房間做一件事，牌可以在房間之間帶來帶去。|Each room does one job, and cards travel between rooms.
+放幾張牌，按一下「抽並生圖」：引擎補齊其餘的牌，送 ComfyUI 畫。成品掛在牆上，可以收藏、放大、修臉、照這張再印。|Pin a few cards and press Draw & generate. The engine fills in the rest and ComfyUI renders it. Prints hang on the wall, ready to save, upscale, fix faces or print again.
+一張牌一層墨，照花色疊進卡池。先看四張試印的提示詞，挑一張再付印。|One card, one layer of ink, stacked by suit. Compare four proof prompts, pick one, then print.
+每張牌用過幾次、出過哪些好圖；收集進度和成就，喜歡的牌收進偏好卡牌。|How often each card was used and which prints it made. Collection progress, achievements, and a tray for your favorite cards.
+收藏的、印過的每一張：大圖、用了哪些牌、哪個模型，一鍵帶回墨池再印。|Every saved and printed image, with its cards and model. Send any of them back to Ink Pool in one click.
+丟一張圖進來，認出畫面裡的標籤，詞庫有的變成牌，帶去合成池或疊印台。|Drop in an image. Tags found in it become cards you can take to the pool or Fuse Bed.
+不是亂抽|Not just random
+引擎每抽一個字，都先問過規則。|Every tag the engine draws is checked against the rules first.
+懂畫面|It understands the picture
+一張圖只有一種髮色；雙馬尾帶出髮飾；夜景不配陽光；室內不下雨。互斥、附帶、時代、白天黑夜都有規則。|One hair color per image. Twintails bring hair ties. No sunlight at night, no rain indoors. Conflicts, dependencies, eras and time of day all have rules.
+分級分得清|Clear ratings
+全年齡、敏感、色情三段，再配尺度。跟未成年有關的字一律擋掉，不會抽到、也送不出去。|General, Sensitive and Explicit, plus content levels. Anything related to minors is blocked: never drawn and never sent.
+你的電腦、你的模型|Your computer, your models
+連你自己的 ComfyUI：底模、LoRA、放大、修臉、姿勢參考都在面板裡挑。資料只存在你的電腦上。|It drives your own ComfyUI. Choose checkpoints, LoRAs, upscaling, face fixes and pose references in the panels. Your data stays on your computer.
+手機也能印|Print from your phone
+走 Tailscale 連回家裡那台，躺在床上挑牌，電腦在書桌上畫。|Connect to your home PC over Tailscale. Pick cards from bed while the desktop renders.
+一起來玩|Come hang out
+有問題、有好圖、有想要的牌，都歡迎來。|Questions, great prints, card requests: all welcome.
+加入 Discord 伺服器|Join the Discord server
+在墨池裡也找得到：頂欄的「社群」。|Inside Ink Pool, it is under Community in the header.
+GitHub 開源|Open source on GitHub
+程式碼用 GPLv3 授權，誰都可以看、可以改。更新紀錄、卡面包也都在這裡。|The code is GPLv3, so anyone can read and change it. Release notes and card art packs live here too.
+看原始碼|View source
+下載最新版|Download the latest
+回報問題|Report a bug
+三步開始|Three steps to start
+第一次準備的東西（卡面、模型）伺服器會在背景補，網頁上一項項看得到。|First-run downloads such as card art and models happen in the background, and the page shows each one.
+裝好 ComfyUI|Install ComfyUI
+墨池不碰模型本身，只把工作流程交給 ComfyUI 畫。底模推薦 WAI-Illustrious。|Ink Pool never touches the models. It hands workflows to ComfyUI. WAI-Illustrious is the recommended checkpoint.
+下載墨池|Download Ink Pool
+在 GitHub 按 Code → Download ZIP，或用 git：|On GitHub, press Code → Download ZIP, or use git:
+雙擊 start.bat|Double-click start.bat
+它開一個小伺服器、打開瀏覽器。第一次來會問你要不要加入 Discord，再帶你走一遍導覽。|It starts a small server and opens your browser. On the first visit it asks whether you want to join Discord, then offers a tour.
+打開墨池|Open Ink Pool
+看介紹影片|Watch the intro film
+卡面、字型、第三方程式庫各自授權|Card art, fonts and third-party libraries keep their own licenses
 `;
 
 export const messages = Object.freeze(Object.fromEntries(copy.trim().split("\n").map((line) => {
@@ -1959,6 +2031,7 @@ Discord 設定（自動傳送{0}）|Discord settings (auto sharing {0})
 {0} 張會一定進圖|{0} pinned cards
 合成池 {0} 張|{0} pinned cards
 點牌＝加進偏好卡牌 {0}/{1}|Tap a card = add to Favorite cards {0}/{1}
+點牌＝加進偏好卡牌 {0}|Tap a card = add to Favorite cards {0}
 點牌＝丟進廢字簍（{0}）|Tap a card = block it ({0} blocked)
 池裡 {0} 張|{0} pinned cards
 卡池 {0} 張|{0} pinned cards

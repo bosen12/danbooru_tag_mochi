@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="utf-8" />
+    <script src="language.js"></script>
+    <script type="module" src="i18n.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#0f1217" />
+    <title>墨池 · 介紹</title>
+    <meta name="description" content="墨池：把 Danbooru 標籤變成一副有插畫的牌，挑幾張，引擎照規則補齊，送進你自己的 ComfyUI 畫。免費、開源，有 Discord 社群。" />
+    <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+    <link rel="preload" href="lexicon.json" as="fetch" crossorigin />
+    <link rel="preload" href="cards/manifest.json" as="fetch" crossorigin />
+    <link rel="stylesheet" href="fonts.css" />
+    <link rel="stylesheet" href="card.css" />
+    <link rel="stylesheet" href="tokens.css" />
+    <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="about.css" />
+    <link rel="stylesheet" href="locale.css" />
+  </head>
+  <body class="about-page">
+    <!-- 頂端：字標、跳到各段、加入 Discord。語言選單由 i18n.js 掛進 .mast-primary。 -->
+    <header class="ab-top">
+      <div class="mast-primary ab-top-in">
+        <a class="wordmark ab-mark" href="./">墨池</a>
+        <nav class="ab-nav" aria-label="這一頁">
+          <a href="#rooms">五個房間</a>
+          <a href="#community">社群</a>
+          <a href="#start">開始用</a>
+        </nav>
+        <span class="ab-top-cta" id="top-cta"></span>
+      </div>
+    </header>
+
+    <main class="ab" id="about">
+      <!-- ================= 開場 ================= -->
+      <section class="ab-hero" aria-labelledby="ab-title">
+        <div class="ab-hero-text">
+          <p class="ab-kicker">免費 · 開源 · 在你自己的電腦上跑</p>
+          <h1 id="ab-title"><span>把 Danbooru 標籤</span><br /><span>變成<em>一副牌</em></span></h1>
+          <p class="ab-lead">挑幾張你想要的牌，其他的交給引擎照規則補齊，排成一段提示詞，送進你自己的 ComfyUI 畫出來。</p>
+          <p class="ab-lead ab-dim"><b class="num" data-stat="cards">—</b> <span>張牌，每張都有中文名和一張插畫。</span></p>
+          <div class="ab-cta" id="hero-cta"></div>
+          <p class="ab-note"><span data-no-i18n>繁體中文 / English</span> · <span>Windows / Mac / Linux</span> · <span>手機也能用</span></p>
+        </div>
+        <div class="ab-hero-art" id="hero-art" aria-hidden="true">
+          <div class="ab-ripples"><i></i><i></i><i></i><i></i></div>
+          <div class="ab-fan" id="hero-fan"></div>
+          <div class="ab-prompt" id="hero-prompt"></div>
+        </div>
+      </section>
+
+      <!-- ================= 數字 ================= -->
+      <section class="ab-stats" aria-label="墨池的數字" data-reveal>
+        <div><b class="num" data-stat="cards">—</b><span>張牌</span></div>
+        <div><b class="num" data-stat="chars">—</b><span>個角色</span></div>
+        <div><b class="num">5</b><span>個房間</span></div>
+        <div><b class="num">GPLv3</b><span>開源，免費</span></div>
+      </section>
+
+      <!-- ================= 五個房間 ================= -->
+      <section class="ab-sec" id="rooms" aria-labelledby="rooms-t">
+        <header class="ab-head" data-reveal>
+          <p class="ab-num">01</p>
+          <h2 id="rooms-t">五個房間</h2>
+          <p class="ab-sub">每個房間做一件事，牌可以在房間之間帶來帶去。</p>
+        </header>
+        <div class="ab-rooms" id="room-list">
+          <a class="ab-room" href="./" data-room="mochi" data-reveal>
+            <span class="ab-room-art" data-suits="look wear scene"></span>
+            <b>墨池</b>
+            <span>放幾張牌，按一下「抽並生圖」：引擎補齊其餘的牌，送 ComfyUI 畫。成品掛在牆上，可以收藏、放大、修臉、照這張再印。</span>
+          </a>
+          <a class="ab-room" href="fuse.html" data-room="fuse" data-reveal>
+            <span class="ab-room-art" data-suits="chara pose style"></span>
+            <b>疊印台</b>
+            <span>一張牌一層墨，照花色疊進卡池。先看四張試印的提示詞，挑一張再付印。</span>
+          </a>
+          <a class="ab-room" href="book.html" data-room="book" data-reveal>
+            <span class="ab-room-art" data-suits="wear look cast"></span>
+            <b>卡冊</b>
+            <span>每張牌用過幾次、出過哪些好圖；收集進度和成就，喜歡的牌收進偏好卡牌。</span>
+          </a>
+          <a class="ab-room" href="album.html" data-room="album" data-reveal>
+            <span class="ab-room-art" data-suits="scene style pose"></span>
+            <b>作品冊</b>
+            <span>收藏的、印過的每一張：大圖、用了哪些牌、哪個模型，一鍵帶回墨池再印。</span>
+          </a>
+          <a class="ab-room" href="parse.html" data-room="parse" data-reveal>
+            <span class="ab-room-art" data-suits="look scene wear"></span>
+            <b>解析池</b>
+            <span>丟一張圖進來，認出畫面裡的標籤，詞庫有的變成牌，帶去合成池或疊印台。</span>
+          </a>
+        </div>
+      </section>
+
+      <!-- ================= 為什麼 ================= -->
+      <section class="ab-sec" aria-labelledby="why-t">
+        <header class="ab-head" data-reveal>
+          <p class="ab-num">02</p>
+          <h2 id="why-t">不是亂抽</h2>
+          <p class="ab-sub">引擎每抽一個字，都先問過規則。</p>
+        </header>
+        <ul class="ab-why">
+          <li data-reveal><b>懂畫面</b><span>一張圖只有一種髮色；雙馬尾帶出髮飾；夜景不配陽光；室內不下雨。互斥、附帶、時代、白天黑夜都有規則。</span></li>
+          <li data-reveal><b>分級分得清</b><span>全年齡、敏感、色情三段，再配尺度。跟未成年有關的字一律擋掉，不會抽到、也送不出去。</span></li>
+          <li data-reveal><b>你的電腦、你的模型</b><span>連你自己的 ComfyUI：底模、LoRA、放大、修臉、姿勢參考都在面板裡挑。資料只存在你的電腦上。</span></li>
+          <li data-reveal><b>手機也能印</b><span>走 Tailscale 連回家裡那台，躺在床上挑牌，電腦在書桌上畫。</span></li>
+        </ul>
+      </section>
+
+      <!-- ================= 社群 ================= -->
+      <section class="ab-sec" id="community" aria-labelledby="community-t">
+        <header class="ab-head" data-reveal>
+          <p class="ab-num">03</p>
+          <h2 id="community-t">一起來玩</h2>
+          <p class="ab-sub">有問題、有好圖、有想要的牌，都歡迎來。</p>
+        </header>
+        <div class="ab-community">
+          <div class="ab-discord" data-reveal>
+            <div class="community-badge ab-badge" aria-hidden="true"><i></i><i></i><i></i><span class="community-badge-mark" id="discord-mark"></span></div>
+            <h3>加入 Discord 伺服器</h3>
+            <ul class="community-perks">
+              <li>分享你印的圖、看別人怎麼配牌</li>
+              <li>問用法、回報問題，有人會回</li>
+              <li>許願想要的牌、規則、功能</li>
+              <li>新版、新卡面第一時間公告</li>
+            </ul>
+            <div id="discord-invite"></div>
+            <div class="ab-discord-go" id="discord-go"></div>
+            <p class="ab-tip">在墨池裡也找得到：頂欄的「社群」。</p>
+          </div>
+          <div class="ab-github" data-reveal>
+            <div class="ab-gh-head"><span id="gh-mark"></span><h3>GitHub 開源</h3></div>
+            <p>程式碼用 GPLv3 授權，誰都可以看、可以改。更新紀錄、卡面包也都在這裡。</p>
+            <p class="ab-repo" id="gh-repo" data-no-i18n></p>
+            <div class="ab-gh-links" id="gh-links"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= 開始用 ================= -->
+      <section class="ab-sec" id="start" aria-labelledby="start-t">
+        <header class="ab-head" data-reveal>
+          <p class="ab-num">04</p>
+          <h2 id="start-t">三步開始</h2>
+          <p class="ab-sub">第一次準備的東西（卡面、模型）伺服器會在背景補，網頁上一項項看得到。</p>
+        </header>
+        <ol class="ab-steps">
+          <li data-reveal><b>裝好 ComfyUI</b><span>墨池不碰模型本身，只把工作流程交給 ComfyUI 畫。底模推薦 WAI-Illustrious。</span></li>
+          <li data-reveal><b>下載墨池</b><span>在 GitHub 按 Code → Download ZIP，或用 git：</span><code id="clone-cmd" data-no-i18n></code></li>
+          <li data-reveal><b>雙擊 start.bat</b><span>它開一個小伺服器、打開瀏覽器。第一次來會問你要不要加入 Discord，再帶你走一遍導覽。</span></li>
+        </ol>
+        <div class="ab-end" data-reveal>
+          <a class="btn btn-primary" href="./">打開墨池</a>
+          <a class="btn" href="intro.html">看介紹影片</a>
+          <a class="btn" href="tutorial.html">看教學影片</a>
+          <a class="btn" href="arch.html">原理</a>
+        </div>
+      </section>
+    </main>
+
+    <footer class="ab-foot">
+      <p><b>墨池</b> Mochi · GPL-3.0 · <span>卡面、字型、第三方程式庫各自授權</span></p>
+      <p class="ab-foot-links" id="foot-links"></p>
+    </footer>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <script type="module" src="about.js"></script>
+  </body>
+</html>

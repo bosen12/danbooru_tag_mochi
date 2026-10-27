@@ -11,6 +11,7 @@
 import { el, anyOverlay } from "./ui.js";
 import { STEPS, ROOM_ZH } from "./tour-steps.js";
 import { DUR, CURVE, css, reducedMotion } from "./motion.js";
+import { askCommunityOnce, communityButton } from "./community.js";
 
 const SEEN_KEY = (room) => `mochi.tour.${room}.v1`;
 const PAD = 8;
@@ -255,29 +256,35 @@ export function mountTour(room) {
     const intro = document.querySelector('.mast-extra[href="intro.html"]');
     const arch = document.querySelector('.mast-extra[href="arch.html"]');
     (intro && intro.parentElement === learn.parentElement ? intro : learn).before(links);
-    links.append(...[intro, learn, b, arch].filter((n) => n && n.parentElement === links.parentElement));
+    links.append(...[intro, learn, b, arch].filter((n) => n && n.parentElement === links.parentElement), communityButton());
   }
-  if (seen(room) || navigator.webdriver) return;
-  // 第一次來：等頁面安定一下再冒出來，不跟開場動畫搶。
-  setTimeout(() => {
+  if (navigator.webdriver) return;
+  // 第一次來：等頁面安定一下再冒出來，不跟開場動畫搶。第一次來墨池先問要不要加入 Discord，關掉才輪到導覽。
+  setTimeout(async () => {
+    await askCommunityOnce();
     if (seen(room) || active || document.getElementById("tour-offer")) return;
-    const close = () => {
-      markSeen(room);
-      if (reducedMotion()) return offer.remove();
-      offer.style.pointerEvents = "none";
-      offer.animate([{ opacity: 1, transform: "none" }, { opacity: 0, transform: "translateY(8px)" }], { duration: DUR.short, easing: css(CURVE.exit), fill: "forwards" }).finished.then(() => offer.remove(), () => offer.remove());
-    };
-    const offer = el(
-      "div",
-      { class: "tour-offer", id: "tour-offer", role: "dialog", "aria-label": "新手導覽" },
-      el("p", {}, el("b", {}, `第一次來${ROOM_ZH[room]}？`), el("span", {}, "一步一步帶你走一遍，邊看邊操作，大約一分鐘。")),
-      el(
-        "div",
-        { class: "tour-offer-foot" },
-        el("button", { class: "btn btn-small btn-primary", type: "button", onclick: () => startTour(room) }, "開始導覽"),
-        el("button", { class: "btn btn-small", type: "button", onclick: close }, "不用了")
-      )
-    );
-    document.body.append(offer);
+    offerTour(room);
   }, 1400);
+}
+
+/** 第一次來這個房間的邀請卡（角落）。 */
+function offerTour(room) {
+  const close = () => {
+    markSeen(room);
+    if (reducedMotion()) return offer.remove();
+    offer.style.pointerEvents = "none";
+    offer.animate([{ opacity: 1, transform: "none" }, { opacity: 0, transform: "translateY(8px)" }], { duration: DUR.short, easing: css(CURVE.exit), fill: "forwards" }).finished.then(() => offer.remove(), () => offer.remove());
+  };
+  const offer = el(
+    "div",
+    { class: "tour-offer", id: "tour-offer", role: "dialog", "aria-label": "新手導覽" },
+    el("p", {}, el("b", {}, `第一次來${ROOM_ZH[room]}？`), el("span", {}, "一步一步帶你走一遍，邊看邊操作，大約一分鐘。")),
+    el(
+      "div",
+      { class: "tour-offer-foot" },
+      el("button", { class: "btn btn-small btn-primary", type: "button", onclick: () => startTour(room) }, "開始導覽"),
+      el("button", { class: "btn btn-small", type: "button", onclick: close }, "不用了")
+    )
+  );
+  document.body.append(offer);
 }

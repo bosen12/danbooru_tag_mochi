@@ -7736,3 +7736,216 @@ html:not([lang="en"]) :is(.wordmark, .panel-head h2, #wall-title, #pool-title, #
   white-space: pre-wrap;
   color: var(--color-muted);
 }
+
+/* ---------- 社群（community.js）：頂欄「社群」、加入 Discord 的小視窗 ----------
+ * Discord 的藍紫只用在標誌、加入鈕和頂欄那一點；其他照墨池的紙和墨。 */
+.community-btn {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--color-muted);
+  font: inherit;
+  font-size: var(--text-xs);
+  text-decoration: underline;
+  text-decoration-color: var(--color-rule);
+  text-underline-offset: var(--space-2xs);
+  white-space: nowrap;
+  cursor: pointer;
+  transition: color var(--dur-micro) var(--ease-out), scale var(--dur-short) var(--ease-settle);
+}
+/* 一顆藍紫的小點：社群在這裡。 */
+.community-btn::before {
+  content: "";
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-right: 4px;
+  border-radius: 50%;
+  background: oklch(62% 0.2 274);
+  box-shadow: 0 0 0 3px oklch(62% 0.2 274 / 0.18);
+  vertical-align: 0.12em;
+}
+.community-btn:hover {
+  color: var(--color-ink);
+}
+.community-btn:active {
+  scale: 0.96;
+  transition-duration: var(--dur-micro);
+}
+.community-sheet {
+  width: min(100%, 31rem);
+}
+.community {
+  display: grid;
+  gap: var(--space-md);
+}
+.community-icon {
+  display: inline-grid;
+  width: 1.15em;
+  height: 1.15em;
+  flex: none;
+}
+.community-icon svg {
+  width: 100%;
+  height: 100%;
+}
+/* 標誌：一圈圈漣漪從藍紫的圓往外擴（墨滴進池子）。 */
+.community-badge {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 104px;
+  height: 104px;
+  margin: 0 auto;
+}
+.community-badge i {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 1.5px solid oklch(66% 0.17 274 / 0.6);
+  opacity: 0;
+  animation: community-ripple calc(var(--dur-breath) * 2) var(--ease-out) infinite;
+}
+.community-badge i:nth-child(2) {
+  animation-delay: calc(var(--dur-breath) * 2 / 3);
+}
+.community-badge i:nth-child(3) {
+  animation-delay: calc(var(--dur-breath) * 4 / 3);
+}
+@keyframes community-ripple {
+  0% {
+    transform: scale(0.55);
+    opacity: 0;
+  }
+  15% {
+    opacity: 0.9;
+  }
+  100% {
+    transform: scale(1.25);
+    opacity: 0;
+  }
+}
+.community-badge-mark {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 66px;
+  height: 66px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 28%, oklch(72% 0.16 274), oklch(52% 0.22 274));
+  color: oklch(99% 0 0);
+  box-shadow: 0 0 0 6px oklch(58% 0.21 274 / 0.14), 0 14px 30px -8px oklch(40% 0.2 274 / 0.65);
+  animation: community-pop var(--dur-story) var(--ease-settle) backwards;
+}
+.community-badge-mark svg {
+  width: 36px;
+  height: 36px;
+}
+@keyframes community-pop {
+  from {
+    transform: scale(0.4) rotate(-12deg);
+    opacity: 0;
+  }
+}
+.community-lead {
+  margin: 0;
+  text-align: center;
+  font-size: var(--text-lg);
+  font-weight: 700;
+}
+.community-perks {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-xs) var(--space-md);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--color-ink-2);
+  font-size: var(--text-sm);
+}
+.community-perks li {
+  position: relative;
+  padding-left: 14px;
+}
+.community-perks li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.6em;
+  width: 6px;
+  height: 6px;
+  border-radius: 1px;
+  background: var(--color-accent);
+  rotate: 45deg;
+}
+.community-invite {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-xs) var(--space-xs) var(--space-xs) var(--space-md);
+  border: 1px dashed var(--color-rule);
+  border-radius: var(--radius-sm);
+  background: var(--color-paper);
+}
+.community-url {
+  flex: 1;
+  min-width: 0;
+  color: var(--color-ink);
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+.community-gh,
+.community-later {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2xs);
+  margin: 0;
+  color: var(--color-muted);
+  font-size: var(--text-sm);
+}
+.community-gh a {
+  color: var(--color-ink-2);
+  font-family: var(--font-mono);
+}
+.community-later {
+  font-size: var(--text-xs);
+}
+.community-about {
+  justify-self: start;
+  color: var(--color-pool);
+  font-size: var(--text-sm);
+}
+a.btn {
+  text-decoration: none;
+}
+.btn-primary.community-join {
+  --btn-bg: oklch(58% 0.21 274);
+  --btn-ink: oklch(99% 0 0);
+  --btn-edge: oklch(66% 0.18 274);
+}
+@media (hover: hover) and (pointer: fine) {
+  .btn-primary.community-join:hover {
+    --btn-bg: oklch(62% 0.21 274);
+  }
+}
+@media (max-width: 40rem) {
+  .community-perks {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .community-btn {
+    transition: none;
+  }
+  .community-badge i,
+  .community-badge-mark {
+    animation: none;
+  }
+  .community-badge i:first-child {
+    opacity: 0.4;
+    transform: scale(0.85);
+  }
+}

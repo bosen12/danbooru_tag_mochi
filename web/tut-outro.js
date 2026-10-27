@@ -48,6 +48,8 @@ export function buildOutro(ctx) {
   S.cue({ t: b(120, 0.5), kind: "stamp", gain: 0.24 }, { t: b(120, 2), kind: "stamp", gain: 0.26 }, { t: b(121, 0), kind: "stamp", gain: 0.3 });
   text.slam({ zh: "現在，換你了", en: "YOUR TURN", sub: "*墨池* · *疊印台*　放一張牌試試", y: 470, inAt: b(122, 0.5), outAt: b(125, 3) });
   S.cue({ t: b(122, 0.5), kind: "stamp", gain: 0.36 }, { t: b(122, 0.6), kind: "sparkle", gain: 0.12 });
+  // 片尾：有問題、有好圖，去 Discord（頂欄「社群」就是它）。
+  text.say("有問題、想分享作品：頂欄「社群」→ *加入 Discord*　discord.gg/UtDK9w3Hw", "Questions or prints to share? Header → Community → *Join Discord*　discord.gg/UtDK9w3Hw", b(123, 0), b(125, 3));
   // 收尾淡出
   const fade = mk("div", "fade-black", S.hud);
   S.act([b(125, 0), 1e9], (t) => {
