@@ -248,9 +248,11 @@ export function createHand({
 
   /**
    * 擺得下就整齊排開（間距 GAP），擺不下就疊（step 變小）。疊到每張露不到一半（scrolls）就不疊了：
-   * 平平一排、照原本的間距排開，托盤左右捲。
+   * 平平一排、照原本的間距排開，托盤左右捲。超過 SCROLL_AT 張一點都不疊（擺不下就捲）：
+   * 牌多了疊成一片，每張只露一條邊，認不出來。
    */
-  const scrolls = (n, w, room) => n > 1 && (room - w) / (n - 1) < (w + GAP) * 0.5;
+  const SCROLL_AT = 15;
+  const scrolls = (n, w, room) => n > 1 && (room - w) / (n - 1) < (w + GAP) * (n > SCROLL_AT ? 1 : 0.5);
   function geometry(n, i, w, room) {
     const flat = scrolls(n, w, room);
     const step = n > 1 ? (flat ? w + GAP : Math.min(w + GAP, (room - w) / (n - 1))) : 0;
