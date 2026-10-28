@@ -50,6 +50,7 @@ if "--browser" in sys.argv:
     checks.append(("test_discord_routes_browser.mjs", "test_web6_discord_routes_browser.mjs"))
     checks.append(("test_custom_cards_browser.mjs", "test_web6_custom_cards_browser.mjs"))
     checks.append(("test_pwa_browser.mjs", "test_web6_pwa_browser.mjs"))
+    checks.append(("test_theme_browser.mjs", "test_web6_theme_browser.mjs"))
 node = shutil.which("node")
 if not node:
     sys.exit("Node.js 20+ is required to run the development tests")

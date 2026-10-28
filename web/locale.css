@@ -38,6 +38,29 @@ html[lang="en"] .language-picker::after { content: "EN"; }
  * source. A system symbol face prevents a hidden dialog fetching a web shard. */
 #dc-modal .tg-close { font-family: system-ui, sans-serif; }
 .gate-inner > .language-picker { margin: 20px auto 0; }
+/* 外觀（theme.js）：語言地球左邊一顆，同一種做法 —— 只畫圖示，透明的原生下拉選單蓋在上面。
+ * 圖示的半月照現在的選擇轉：深色左半實心、淺色右半實心、跟系統斜一點。 */
+.theme-picker {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  min-width: 32px;
+  min-height: 32px;
+  margin-left: auto;
+  border: 1px solid var(--color-rule-2);
+  border-radius: 6px;
+  background: var(--color-paper-2);
+  color: var(--color-ink-2);
+}
+.theme-picker + .language-picker { margin-left: 6px; }
+.theme-picker select { position: absolute; inset: 0; width: 100%; opacity: 0; cursor: pointer; }
+.theme-picker:focus-within { outline: 2px solid var(--color-focus); outline-offset: 2px; }
+.theme-picker:hover { color: var(--color-ink); }
+.theme-picker svg { transition: rotate var(--dur-medium) var(--ease-settle); }
+.theme-picker[data-pref="light"] svg { rotate: 180deg; }
+.theme-picker[data-pref="auto"] svg { rotate: 45deg; }
 .mast-primary { flex-wrap: wrap; }
 
 html[lang="en"] {
@@ -178,7 +201,7 @@ html[lang="en"] .tseg span { font-size: 12px; letter-spacing: -0.02em; }
   html[lang="en"] .mast-primary { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; }
   html[lang="en"] .wordmark { order: 0; flex: none; }
   html[lang="en"] .mast-links { order: 1; margin-left: auto; gap: 12px; }
-  html[lang="en"] .language-picker { order: 2; margin-left: 0; }
+  html[lang="en"] :is(.theme-picker, .language-picker) { order: 2; margin-left: 0; }
   html[lang="en"] .page-switch { order: 3; width: 100%; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); }
   html[lang="en"] .page-switch a { padding-inline: 4px; justify-content: center; min-height: 34px; font-size: 12px; }
   /* The rating switch and tools fit one 363px row only with the base 4px gap. */
@@ -206,7 +229,7 @@ html[lang="en"] .tseg span { font-size: 12px; letter-spacing: -0.02em; }
   .mast-primary { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; }
   .wordmark { order: 0; flex: none; }
   .mast-links { order: 1; margin-left: auto; gap: 12px; }
-  .language-picker { order: 2; margin-left: 0; }
+  :is(.theme-picker, .language-picker) { order: 2; margin-left: 0; }
   .page-switch { order: 3; width: 100%; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); }
   .page-switch a { padding-inline: 4px; justify-content: center; min-height: 34px; }
   /* The connection light is an 8px dot here, but as the last tool it wrapped onto
@@ -270,3 +293,9 @@ html[lang="en"] .rating-free-label { position: absolute; width: 1px; height: 1px
 /* Films: labels that show a tag with its Chinese name underneath (or the reverse) would
  * print the same English words twice; the English edition keeps one line. */
 html[lang="en"] :is(.k-flash, .w.chip, .w.rel-label) small { display: none; }
+
+/* 第一排擠不下時（theme.js 的 fit()）：放在工具列聲音鈕後面，長得跟旁邊的工具鈕一樣（.ghost.icon-btn 給框、底色、高度）。 */
+.mast-tools .theme-picker:where(.is-tool) { margin-left: 0; min-width: 36px; }
+/* 再擠不下：地球旁邊縮成沒有框的小圖示。 */
+.theme-picker.is-compact { min-width: 24px; border-color: transparent; background: none; }
+.theme-picker.is-compact + .language-picker { margin-left: 0; }

@@ -87,6 +87,8 @@ Keep the server window open. After updating, reload the page with **Ctrl+F5**.
 
 **Install as an app.** In Chrome or Edge, **Install app** appears in the top bar (or use the install icon in the address bar): Mochi gets its own window and a desktop / Start menu icon, with shortcuts to each room. On a phone, add it to the home screen (Safari: Share → Add to Home Screen; over Tailscale use `tailscale serve` so the page is HTTPS). The server still has to be running.
 
+**Light or dark.** Mochi is dark by default. The half-moon button next to the language globe switches to **Light** (cream paper, ink text) or **System** (follows your OS). The choice is remembered across rooms and tabs. On a phone the button sits in the tool row.
+
 ### Prepared on first start
 
 | What | Size | How | Skip |
@@ -275,6 +277,8 @@ cd danbooru_tag_mochi
 3. **按「抽並生圖」。** 什麼都沒釘也行：引擎會把每一格都抽好，第一張圖不必先設定任何東西。底模在你用頂欄的模型按鈕選之前，墨池會從 ComfyUI 的清單挑一個 Illustrious／SDXL 的。頂欄的「導覽」會一步一步帶你走每個房間。
 
 **安裝成 App**：Chrome、Edge 的頂欄會出現「安裝成 App」（或按網址列的安裝圖示），裝好後墨池有自己的視窗、桌面和開始選單的圖示，右鍵圖示可以直接開各個房間。手機可以加到主畫面（Safari：分享 → 加入主畫面；走 Tailscale 時用 `tailscale serve` 讓網頁是 HTTPS）。伺服器照樣要開著。
+
+**淺色模式**：預設深色。頂欄語言地球旁邊的半月按鈕可以換成「淺色」（米白的紙、墨色的字）或「跟系統」（照作業系統的淺／深）。選了會記住，各房間、各分頁都一樣。手機上這顆在工具列。
 
 ### 第一次啟動會準備的東西
 

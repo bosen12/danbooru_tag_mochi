@@ -29,6 +29,15 @@
   --pool-card: clamp(4.4rem, 5vw, 5.5rem);
 }
 
+/* 淺色（theme.js）：卡池那塊印台從墨黑換成比紙深一階的米灰，格線、晾紙繩、夾子跟著淡一階。試印的紙本來就是米白，不換。 */
+:root[data-theme="light"] {
+  --press-bed: oklch(91% 0.013 82);
+  --press-line: oklch(81% 0.015 80);
+  --mark: oklch(50% 0.015 250);
+  --string: oklch(52% 0.03 70);
+  --peg: oklch(58% 0.07 70);
+}
+
 body.fuse {
   background: var(--color-paper);
 }

@@ -1,5 +1,9 @@
 # Release notes
 
+## Unreleased
+
+- **Light mode**: the half-moon button next to the language globe switches between **Dark** (default), **Light** (cream paper, ink text) and **System**. It applies before the first paint (no dark flash), is remembered across rooms and tabs, and changes every open tab. Cards keep their cream stock in both. Where the top bar is too full (phones, a few in-between widths), the button moves next to the sound button in the tool row instead of pushing the globe onto a new line. The intro and tutorial films stay dark.
+
 ## v1.3.1 — 2026-10-28
 
 Changes since [v1.3](https://github.com/bosen12/danbooru_tag_mochi/releases/tag/v1.3).

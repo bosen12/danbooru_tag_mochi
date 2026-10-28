@@ -110,3 +110,64 @@
   --shadow-card: 0 1px 0 var(--color-shine) inset, 0 6px 14px var(--color-shade);
   --shadow-lift: 0 1px 0 var(--color-shine) inset, 0 18px 30px var(--color-shade);
 }
+
+/* ---------- 淺色（theme.js 設 <html data-theme="light">）：宣紙與墨 ----------
+ * 紙是偏暖的米白，字是墨黑；朱色、花色都壓深一階，當字用時在淺紙上也有 4.5:1 以上。
+ * 牌本身（--color-stock 那張米色卡紙）不換：牌是放在紙上的東西，淺色、深色看起來是同一副牌。 */
+:root[data-theme="light"] {
+  --color-paper: oklch(96.5% 0.009 85);
+  --color-paper-2: oklch(93.6% 0.011 84);
+  --color-paper-3: oklch(90.2% 0.013 82);
+  --color-paper-4: oklch(86.2% 0.015 80);
+  --color-scrim: oklch(24% 0.015 250 / 0.42);
+
+  --color-ink: oklch(21% 0.016 250);
+  --color-ink-2: oklch(34% 0.016 250);
+  --color-muted: oklch(47% 0.014 250);
+  --color-rule: oklch(79% 0.014 80);
+  --color-rule-2: oklch(86% 0.012 80);
+
+  --color-accent: oklch(56% 0.19 33);
+  --color-accent-2: oklch(50% 0.18 32);
+  --color-accent-3: oklch(44% 0.16 31);
+  --color-accent-ink: oklch(98.5% 0.008 80);
+  --color-accent-text: oklch(50% 0.18 33);
+  --color-pool: oklch(52% 0.1 225);
+  --color-pool-2: oklch(42% 0.09 228);
+  --color-pool-soft: oklch(52% 0.1 225 / 0.12);
+  --color-good: oklch(50% 0.13 150);
+  --color-warn: oklch(54% 0.13 62);
+  --color-focus: oklch(54% 0.15 230);
+  --color-shine: oklch(100% 0 0 / 0.7);
+  --color-shade: oklch(32% 0.03 250 / 0.2);
+
+  --suit-cast: oklch(55% 0.09 250);
+  --suit-chara: oklch(53% 0.09 205);
+  --suit-look: oklch(54% 0.14 8);
+  --suit-wear: oklch(51% 0.13 305);
+  --suit-pose: oklch(50% 0.1 165);
+  --suit-scene: oklch(57% 0.12 68);
+  --suit-style: oklch(52% 0.11 115);
+  --suit-custom: oklch(57% 0.13 55);
+
+  /* 滑鼠停在牌上浮出的放大卡（web/card-peek.js）：外框換成淺紙，牌面照舊 */
+  --peek-panel: oklch(98.5% 0.006 85);
+  --peek-line: var(--color-rule);
+  --peek-ink: var(--color-ink);
+  --peek-ink2: var(--color-ink-2);
+  --peek-muted: var(--color-muted);
+  --peek-shadow: 0 20px 44px oklch(30% 0.03 250 / 0.24);
+}
+
+/* 切換外觀的那一下：整頁的底色、字色、框線淡過去（theme.js 加 0.45 秒的 class），不是一格跳。 */
+html.theme-shifting,
+html.theme-shifting *,
+html.theme-shifting *::before,
+html.theme-shifting *::after {
+  transition:
+    background-color var(--dur-long) var(--ease-in-out),
+    color var(--dur-long) var(--ease-in-out),
+    border-color var(--dur-long) var(--ease-in-out),
+    fill var(--dur-long) var(--ease-in-out),
+    stroke var(--dur-long) var(--ease-in-out) !important;
+}

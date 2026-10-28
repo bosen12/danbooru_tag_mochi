@@ -15,7 +15,7 @@ const CSS = `
 .card-peek{position:fixed;z-index:180;width:248px;pointer-events:none;opacity:0;transform:translateY(6px) scale(.96);
 transition:opacity var(--dur-micro,120ms) var(--ease-out,cubic-bezier(.16,1,.3,1)),transform var(--dur-short,220ms) var(--ease-out,cubic-bezier(.16,1,.3,1));
 border-radius:14px;background:var(--peek-panel,oklch(21% .016 250));border:1px solid var(--peek-line,oklch(34% .016 250));
-box-shadow:0 22px 50px oklch(6% .01 250/.6);padding:10px;color:var(--peek-ink,oklch(94% .012 90));
+box-shadow:var(--peek-shadow,0 22px 50px oklch(6% .01 250/.6));padding:10px;color:var(--peek-ink,oklch(94% .012 90));
 font-family:var(--peek-body,"Noto Sans TC","Microsoft JhengHei",sans-serif)}
 .card-peek[data-show="true"]{opacity:1;transform:none}
 .card-peek[data-side="right"]{transform-origin:left center;transform:translateX(-10px) scale(.92)}

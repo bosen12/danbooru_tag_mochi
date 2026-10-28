@@ -1906,6 +1906,11 @@ body #wf-pick-btn.has {
   background: var(--color-ink);
 }
 
+/* 淺色：墨色的圓鈕在藍軌上太重，打開時換成白紙圓鈕 */
+:root[data-theme="light"] .switch input:checked::before {
+  background: var(--color-paper);
+}
+
 .switch:has(input:checked) {
   color: var(--color-ink);
 }

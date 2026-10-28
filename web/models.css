@@ -1086,3 +1086,26 @@ body .lora-tarot-face .ph {
     font-size: 16px;
   }
 }
+
+/* ---------- 淺色（theme.js）：底模／LoRA／工作流面板 ----------
+ * 面板本身照 tokens 換；這裡只改寫死成深色的幾塊（側欄、右欄、取樣那一排、滑過的底、錯誤紅、陰影）。
+ * LoRA 抽卡（.lora-tarot）是全螢幕的聚光燈，淺色照舊暗著。 */
+:root[data-theme="light"] body :is(.lora-modal, .lora-preview-tip, .tw-tip, .lora-toast, .lora-tarot, .comfy-pop) {
+  --err: oklch(50% 0.17 28);
+  --shadow: 0 30px 80px oklch(30% 0.03 250 / 0.22), 0 2px 10px oklch(30% 0.03 250 / 0.12);
+}
+:root[data-theme="light"] body .lora-modal-inner.lg {
+  background: linear-gradient(180deg, var(--color-paper-3), var(--color-paper-2) 18%);
+}
+:root[data-theme="light"] .lg-rail,
+:root[data-theme="light"] body .lg-side.lm-right,
+:root[data-theme="light"] body .lg-wf .wf-sampling {
+  background: oklch(88% 0.013 82 / 0.55);
+}
+:root[data-theme="light"] body .lg-wf .wf-sampling {
+  border-top-color: var(--color-rule-2);
+}
+:root[data-theme="light"] body .lg-rail .lm-cat:hover,
+:root[data-theme="light"] body .lg-wf .wf-list .lora-row:hover {
+  background: oklch(0% 0 0 / 0.05);
+}
