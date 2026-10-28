@@ -1,6 +1,7 @@
 /**
  * 自製牌的編輯面板（卡冊）。兩種模式改同一張牌：
- *   挑牌：小字盒（搜尋、花色），點一張加進來；
+ *   挑牌：跟墨池的字盒同一套 —— 花色、細分類（角色頁有性別、系列）、搜尋（cards.js 的 searchCards）、
+ *         滑鼠停著浮出放大卡（card-peek.js）、Enter 加第一張；點一張加進來，再點一次拿掉；
  *   貼提示詞：整串貼進來，邊打邊拆成詞庫的牌和詞庫外的字（custom-cards.js 的 parsePrompt）。
  * 右邊是這張牌的內容（照段落、權重 − ＋、問題標在籤上）、兩段提示詞（填入、卡面）、卡面預覽。
  *
@@ -8,7 +9,11 @@
  */
 import { el, openSheet, toast } from "./ui.js";
 import { suggestName } from "./decks.js";
-import { cardNode, searchCards, CARD_SUIT_INFO } from "./cards.js";
+import { cardNode, searchCards, searchNote, cardMatches, groupChips, chipRun, genderChips, seriesRun, setEnterTarget, sizeCards, cardFacts, CARD_SUIT_INFO } from "./cards.js";
+import { searchMiss } from "./lib-hint.js";
+import { attachPeek, hidePeek } from "./card-peek.js";
+import { attachTilt } from "./card-tilt.js";
+import { ratingBlocked } from "./rules/rating.js";
 import { refuse, enter } from "./motion.js";
 import { t as tr } from "./i18n.js";
 import {
@@ -25,9 +30,10 @@ const round1 = (w) => Math.round(w * 10) / 10;
 /**
  * 打開編輯面板。
  *   card：要改的那張（沒有＝新的）。start：新的時候先填好的內容 {name, rating, members, extra}（成品、牌組、分享碼帶來的）。
- *   lib／lex／assets：這一頁的牌庫、詞庫索引、卡面。renamed：詞庫的舊名→新名。onSaved(card)：存好以後。
+ *   lib／lex／assets：這一頁的牌庫、詞庫索引、卡面。data：詞庫原檔（放大卡的說明用）。renamed：詞庫的舊名→新名。
+ *   onSaved(card)：存好以後。
  */
-export function openCustomEditor({ card = null, start = null, lib, lex, assets, renamed = {}, onSaved }) {
+export function openCustomEditor({ card = null, start = null, lib, lex, assets, data = null, renamed = {}, onSaved }) {
   const src = card || start || {};
   const st = {
     id: card?.id || "",
@@ -71,22 +77,58 @@ export function openCustomEditor({ card = null, start = null, lib, lex, assets, 
     modeBox.append(b);
   }
 
-  /* ---------- 左欄：挑牌、貼提示詞 ---------- */
-  const q = el("input", { type: "search", class: "cce-q", placeholder: "找牌：紅髮、kimono…", autocomplete: "off", "aria-label": "找牌" });
-  let suit = "cast";
-  const suitRow = el("div", { class: "cce-suits", role: "group", "aria-label": "花色" });
-  for (const s of SUIT_ORDER) {
-    const b = el("button", { class: "group-chip pressable", type: "button", style: `--suit: var(--suit-${s})`, dataset: { suit: s } }, el("b", { class: "chip-seal", "aria-hidden": "true" }, CARD_SUIT_INFO[s].glyph), CARD_SUIT_INFO[s].zh);
+  /* ---------- 左欄：挑牌（字盒）、貼提示詞 ---------- */
+  // 字盒的牌：詞庫的牌，禁用角色、封鎖的字不列。跟字盒一樣照分級收：照這張自製牌選的分級
+  // （選全年齡就只列全年齡的牌；貼提示詞不受影響，貼了高一級的牌分級自己往上調）。
+  const pool = lib.cards.filter((c) => c.suit !== "custom" && !c.banned && !isBannedWord(c.tag));
+  const blockedMemo = new Map();
+  const ratingOk = (c) => {
+    const key = c.tag + "|" + st.rating;
+    if (!blockedMemo.has(key)) blockedMemo.set(key, !ratingBlocked(c.item, st.rating));
+    return blockedMemo.get(key);
+  };
+  const pick = { suit: "all", group: "", gender: "" };
+  const q = el("input", { type: "search", class: "cce-q", placeholder: "找牌：紅髮、kimono…（Enter 加第一張）", autocomplete: "off", "aria-label": "找牌" });
+  const suitRow = el("div", { class: "cce-suits suit-tabs", role: "group", "aria-label": "花色" });
+  for (const s of ["all", ...SUIT_ORDER]) {
+    const b = s === "all"
+      ? el("button", { class: "suit-tab pressable", type: "button", dataset: { suit: s } }, "全部")
+      : el("button", { class: "suit-tab pressable", type: "button", style: `--suit: var(--suit-${s})`, dataset: { suit: s } }, el("b", { class: "suit-glyph", "aria-hidden": "true" }, CARD_SUIT_INFO[s].glyph), CARD_SUIT_INFO[s].zh);
     b.addEventListener("click", () => {
-      suit = s;
-      q.value = "";
-      paintPick();
+      if (pick.suit === s) return;
+      pick.suit = s;
+      pick.group = "";
+      paintPick({ top: true });
     });
     suitRow.append(b);
   }
-  const grid = el("div", { class: "cce-grid", role: "list" });
-  const pickPane = el("div", { class: "cce-pick" }, q, suitRow, grid);
-  q.addEventListener("input", () => paintPick());
+  const chipRow = el("div", { class: "cce-groups group-chips", role: "group", "aria-label": "分類" });
+  const grid = el("div", { class: "cce-grid lib-grid", id: "cce-grid", role: "list" });
+  const sentinel = el("div", { class: "cce-more", "aria-hidden": "true" });
+  const gridBox = el("div", { class: "cce-grid-box" }, grid, sentinel);
+  const pickPane = el("div", { class: "cce-pick" }, q, suitRow, chipRow, gridBox);
+  let shown = [];
+  let rendered = 0;
+  const BATCH = 96;
+  q.addEventListener("input", () => paintPick({ top: true }));
+  q.addEventListener("keydown", (e) => {
+    if (e.key !== "Enter" || e.isComposing) return;
+    e.preventDefault();
+    const first = grid.querySelector(".card[data-tag]");
+    if (first) toggleMember(first.dataset.tag, first);
+  });
+  // 捲到底補下一批（字盒整盒列得出來，不是只給前幾十張）。
+  const more = new IntersectionObserver((es) => es.some((x) => x.isIntersecting) && moreCards(), { root: gridBox, rootMargin: "300px" });
+  more.observe(sentinel);
+  sizeCards(grid);
+  // 滑鼠停在牌上：跟字盒同一張浮空放大卡。
+  attachPeek(grid, ".card[data-tag]", (node) => {
+    const c = lib.byTag.get(node.dataset.tag);
+    if (!c) return null;
+    const facts = data ? cardFacts(c, lex, data).filter(([k]) => k !== "分級").slice(0, 4) : [];
+    return { zh: c.zh, tag: c.tag, glyph: CARD_SUIT_INFO[c.suit].glyph, seal: c.seal, sealTitle: c.groupZh, suitColor: `var(--suit-${c.suit})`, art: assets.art(c.tag), rating: c.rating, facts };
+  });
+  attachTilt(grid);
 
   const paste = el("textarea", { class: "cce-paste", rows: "9", spellcheck: "false", placeholder: "貼上一整串提示詞，用逗號分開：1girl, beach, (huge breasts:1.2), sparkle eyelashes", "aria-label": "貼提示詞" });
   const pasteNote = el("p", { class: "cce-hint" }, "詞庫有的變成牌，對不到的放進「詞庫外」；權重括號 (tag:1.2) 會讀進來。");
@@ -148,6 +190,8 @@ export function openCustomEditor({ card = null, start = null, lib, lex, assets, 
     onClose: () => {
       clearTimeout(pollTimer);
       clearTimeout(pasteTimer);
+      more.disconnect();
+      hidePeek?.();
       // 沒存就關：暫存的預覽丟掉。存了的已經轉正，不用丟。
       if (!saved && draft) dropPreview(draft);
     },
@@ -182,30 +226,140 @@ export function openCustomEditor({ card = null, start = null, lib, lex, assets, 
           if (st.rating === r) return;
           st.rating = r;
           changed();
+          // 字盒照分級收牌：換了就重篩（選高一級看得到更多牌）。
+          paintPick();
         });
         return b;
       })
     );
   }
 
-  function paintPick() {
+  const genderOk = (c) => pick.suit !== "chara" || !pick.gender || c.gate === pick.gender;
+
+  /** 字盒：花色 → 細分類 → 搜尋，跟墨池的 renderLibrary 同一個順序、同一套搜尋。 */
+  function paintPick({ top = false } = {}) {
     if (mode !== "pick") return;
-    for (const b of suitRow.children) b.setAttribute("aria-pressed", !q.value.trim() && b.dataset.suit === suit ? "true" : "false");
-    const pool = lib.cards.filter((c) => c.suit !== "custom" && !c.banned && !isBannedWord(c.tag));
-    const text = q.value.trim();
-    const list = (text ? searchCards(pool, text.toLowerCase()).list : pool.filter((c) => c.suit === suit)).slice(0, 60);
+    for (const b of suitRow.children) b.setAttribute("aria-pressed", b.dataset.suit === pick.suit ? "true" : "false");
+    const inSuit = pool.filter((c) => (pick.suit === "all" || c.suit === pick.suit) && genderOk(c) && ratingOk(c));
+    paintGroups(inSuit);
+    const inGroup = inSuit.filter((c) => !pick.group || c.group === pick.group);
+    const text = q.value.trim().toLowerCase();
+    let found = text ? searchCards(inGroup, text) : { list: inGroup, mode: "all" };
+    // 整盒找得到、只是被花色或分類篩掉：說在哪一格、給「看全部」（不要用猜的蓋過去）。
+    if (found.mode !== "all" && pool.some((c) => cardMatches(c, text))) found = { list: [], mode: "none" };
+    searchNote(grid, found, q.value);
+    shown = found.list;
+    rendered = 0;
+    hidePeek?.();
+    grid.replaceChildren();
+    if (top) gridBox.scrollTop = 0;
+    if (!shown.length) {
+      grid.append(text ? pickMiss(text) : el("p", { class: "cce-hint" }, "這一格沒有牌。"));
+      setEnterTarget(grid, false);
+      return;
+    }
+    moreCards();
+    setEnterTarget(grid, !!text);
+  }
+
+  /** 細分類籤：選了花色才出現；角色頁前面有「性別」、作品收成「系列」一串（可收合）。 */
+  function paintGroups(inSuit) {
+    if (pick.suit === "all") {
+      chipRow.hidden = true;
+      chipRow.replaceChildren();
+      return;
+    }
+    const runs = groupChips(inSuit);
+    if (pick.group && !runs.some((r) => r.items.some((i) => i.g === pick.group))) pick.group = "";
+    chipRow.hidden = pick.suit !== "chara" && runs.reduce((n, r) => n + r.items.length, 0) < 2;
+    const pickGroup = (g) => {
+      if (pick.group === g) return;
+      pick.group = g;
+      paintPick({ top: true });
+    };
+    const chip = (i, inRun) =>
+      el(
+        "button",
+        { class: "group-chip pressable", type: "button", "aria-pressed": pick.group === i.g ? "true" : "false", "aria-label": i.short === i.zh ? null : i.zh, onclick: () => pickGroup(i.g) },
+        i.seal && !inRun ? el("b", { class: "chip-seal", "aria-hidden": "true" }, i.seal) : null,
+        i.short
+      );
+    const all = [
+      el("button", { class: "group-chip pressable", type: "button", "aria-pressed": pick.group === "" ? "true" : "false", onclick: () => pickGroup("") }, "全部"),
+      ...runs.map((r) => (r.fam ? chipRun(r, r.items.map((i) => chip(i, true)), { fold: pick.suit === "chara", picked: pick.group }) : chip(r.items[0], false))),
+    ];
+    const pickGender = (g) => {
+      if (pick.gender === g) return;
+      pick.gender = g;
+      paintPick({ top: true });
+    };
+    chipRow.replaceChildren(...(pick.suit === "chara" ? [genderChips(pick.gender, pickGender), seriesRun(all)] : all));
+  }
+
+  /** 下一批牌（一次 BATCH 張）。 */
+  function moreCards() {
+    if (rendered >= shown.length) return;
     const have = new Set(st.members.map((m) => m.tag));
-    grid.replaceChildren(
-      ...list.map((c) => {
+    const next = shown.slice(rendered, rendered + BATCH);
+    rendered += next.length;
+    grid.append(
+      ...next.map((c) => {
         const node = cardNode(c, assets);
-        node.classList.toggle("is-in", have.has(c.tag));
-        node.setAttribute("aria-pressed", have.has(c.tag) ? "true" : "false");
-        node.title = have.has(c.tag) ? `${c.zh}：已經在這張牌裡（再點一下拿掉）` : `${c.zh}：加進這張牌`;
+        markCard(node, have.has(c.tag), c);
         node.addEventListener("click", () => toggleMember(c.tag, node));
-        return el("div", { class: "cce-cell", role: "listitem" }, node);
+        return node;
       })
     );
-    if (!list.length) grid.append(el("p", { class: "cce-hint" }, text ? "找不到。打的字詞庫沒有的話，可以切到「貼提示詞」直接打進來。" : "這個花色沒有牌。"));
+  }
+
+  function markCard(node, on, c = lib.byTag.get(node.dataset.tag)) {
+    node.classList.toggle("is-in", on);
+    node.setAttribute("aria-pressed", on ? "true" : "false");
+    node.title = on ? `${c.zh}：已經在這張牌裡（再點一下拿掉）` : `${c.zh}：加進這張牌`;
+  }
+
+  /** 牌加進來、拿出去：只改勾，不整格重畫（捲到哪就留在哪）。 */
+  function markIn() {
+    const have = new Set(st.members.map((m) => m.tag));
+    for (const node of grid.querySelectorAll(".card[data-tag]")) markCard(node, have.has(node.dataset.tag));
+  }
+
+  /** 搜不到：被花色、分類篩掉就說在哪一格；字盒真的沒有，就給一顆「當詞庫外的字加進來」。 */
+  function pickMiss(text) {
+    const shownBy = (c) => (pick.suit === "all" || c.suit === pick.suit) && (!pick.group || c.group === pick.group) && genderOk(c);
+    const unlock = (c) => RATINGS.find((r) => !ratingBlocked(c.item, r)) || "explicit";
+    const box = searchMiss({
+      cards: pool,
+      q: text,
+      query: q.value.trim(),
+      className: "cce-hint",
+      reasons: [
+        // 跟字盒一樣：被分級收起來的說要在哪一級才看得到，按鈕直接把這張自製牌的分級調上去。
+        { hides: (c) => !ratingOk(c), text: (c) => `「${c.zh}」要在「${RATING_NAME[unlock(c)]}」才看得到`, label: (c) => `切到${RATING_NAME[unlock(c)]}`, run: (c) => ((st.rating = unlock(c)), changed(), paintPick({ top: true })) },
+        { hides: (c) => !shownBy(c), text: (c) => `「${c.zh}」在「${CARD_SUIT_INFO[c.suit]?.zh || c.suit}」裡`, label: () => "看全部", run: () => ((pick.suit = "all"), (pick.group = ""), (pick.gender = ""), paintPick({ top: true })) },
+      ],
+    });
+    if (pool.some((c) => cardMatches(c, text))) return box;
+    const word = q.value.trim();
+    return el(
+      "div",
+      { class: "cce-miss" },
+      box,
+      isBannedWord(word)
+        ? el("p", { class: "cce-banned" }, `「${word}」不能用（未成年、禁用角色）`)
+        : el("button", { class: "btn btn-small", type: "button", onclick: () => addExtra(word) }, `把「${word}」當詞庫外的字加進來`)
+    );
+  }
+
+  function addExtra(word) {
+    const text = word.replace(/,/g, " ").replace(/\s+/g, " ").trim().toLowerCase();
+    if (!text) return;
+    if (st.extra.length >= MAX_EXTRA) return toast(tr(`詞庫外的字最多 ${MAX_EXTRA} 個`));
+    if (!st.extra.some((x) => x.text === text)) st.extra.push({ text, w: 1 });
+    q.value = "";
+    changed();
+    paintPick();
+    enter(content.querySelector(`[data-text="${CSS.escape(text)}"]`));
   }
 
   function toggleMember(tag, node) {
@@ -220,7 +374,7 @@ export function openCustomEditor({ card = null, start = null, lib, lex, assets, 
       st.members = bySuit(st.members, lib);
     }
     changed();
-    paintPick();
+    markIn();
     if (at < 0) enter(content.querySelector(`[data-tag="${CSS.escape(tag)}"]`));
   }
 
@@ -293,7 +447,7 @@ export function openCustomEditor({ card = null, start = null, lib, lex, assets, 
                 { class: "cce-chip" + (notes.length ? " has-note" : ""), dataset: { tag: m.tag } },
                 el("span", { class: "cce-chip-name" }, el("b", {}, zh(m.tag)), el("small", { dataset: { noI18n: "" } }, m.tag)),
                 weightCtl(() => m.w, (w) => (m.w = w), zh(m.tag)),
-                el("button", { type: "button", class: "cce-x", "aria-label": `拿掉「${zh(m.tag)}」`, onclick: () => (st.members = st.members.filter((x) => x !== m), changed(), paintPick()) }, "×"),
+                el("button", { type: "button", class: "cce-x", "aria-label": `拿掉「${zh(m.tag)}」`, onclick: () => (st.members = st.members.filter((x) => x !== m), changed(), markIn()) }, "×"),
                 // 每一條提醒自己一個元素：英文版逐條翻（i18n 整句比對）。
                 notes.map((n) => el("span", { class: "cce-note" }, n))
               );

@@ -50,7 +50,8 @@
 
 .cce-main {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
+  /* 左邊是字盒（一直在挑牌），給寬一點。 */
+  grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
   gap: var(--space-lg);
   align-items: start;
   min-width: 0;
@@ -62,8 +63,6 @@
   display: grid;
   gap: var(--space-sm);
   min-width: 0;
-  position: sticky;
-  top: 0;
 }
 
 .cce-pick,
@@ -88,22 +87,26 @@
   font: inherit;
 }
 
+/* 字盒（跟墨池同一套花色籤、細分類籤）：花色一排可以橫捲，細分類照字盒換行。 */
 .cce-suits {
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-2xs);
 }
 
-.cce-suits .chip-seal {
-  color: var(--suit);
+.cce-groups {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2xs) var(--space-xs);
 }
 
-.cce-grid {
-  --card-w: 72px;
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));
-  gap: var(--space-xs);
-  max-height: min(52vh, 30rem);
+.cce-groups[hidden] {
+  display: none;
+}
+
+/* 牌格：外面那層捲（捲到底補下一批），牌跟字盒一樣大小。 */
+.cce-grid-box {
+  height: min(62vh, 40rem);
   overflow: auto;
   padding: var(--space-2xs);
   border-radius: var(--radius-sm);
@@ -111,19 +114,46 @@
   overscroll-behavior: contain;
 }
 
-.cce-cell .card {
+.cce-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(78px, 1fr));
+  gap: var(--space-xs);
+  align-content: start;
+}
+
+.cce-grid > .card {
   --card-w: 100%;
   width: 100%;
-  font-size: 9px;
   transition: opacity var(--dur-micro) var(--ease-out), transform var(--dur-short) var(--ease-settle);
 }
 
+.cce-more {
+  height: 1px;
+}
+
+.cce-grid-box .search-note {
+  margin: 0 0 var(--space-xs);
+  color: var(--color-muted);
+  font-size: var(--text-xs);
+}
+
+.cce-miss {
+  display: grid;
+  gap: var(--space-xs);
+  justify-items: start;
+  grid-column: 1 / -1;
+}
+
+.cce-grid > .cce-hint {
+  grid-column: 1 / -1;
+}
+
 /* 已經在這張牌裡的：淡一點、右上角一個勾。 */
-.cce-cell .card.is-in {
+.cce-grid > .card.is-in {
   opacity: 0.45;
 }
 
-.cce-cell .card.is-in::after {
+.cce-grid > .card.is-in::after {
   content: "✓";
   position: absolute;
   top: 4px;
@@ -471,12 +501,38 @@
     grid-template-columns: minmax(0, 1fr);
   }
 
-  .cce-left {
-    position: static;
+  .cce-grid-box {
+    height: 52vh;
+  }
+
+  /* 花色、細分類各一排、左右滑：服裝的細分類換行會佔掉整個螢幕，牌被擠到看不見。 */
+  .cce-suits,
+  .cce-groups {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+    padding-bottom: 2px;
+  }
+
+  .cce-suits::-webkit-scrollbar,
+  .cce-groups::-webkit-scrollbar {
+    display: none;
+  }
+
+  .cce-suits > *,
+  .cce-groups > *,
+  .cce-groups .chip-run > * {
+    flex: none;
+  }
+
+  .cce-groups .chip-run {
+    flex: none;
+    flex-wrap: nowrap;
   }
 
   .cce-grid {
-    max-height: 40vh;
+    grid-template-columns: repeat(auto-fill, minmax(76px, 1fr));
   }
 
   .cce-face {
@@ -494,7 +550,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .cce-cell .card,
+  .cce-grid > .card,
   .cce-wbtn,
   .cce-x {
     transition: none;

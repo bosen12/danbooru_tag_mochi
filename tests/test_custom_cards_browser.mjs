@@ -100,6 +100,61 @@ try {
     await ctx.close();
   }
 
+  // ---------- 卡冊：編輯器的字盒（花色、細分類、搜尋、分級、放大卡）跟墨池的字盒同一套 ----------
+  {
+    const { page, ctx, errors } = await open('book.html', { settings: { rating: 'general', n: 1 } });
+    await page.waitForSelector('.book-cell[data-tag="1girl"]');
+    await pickSuitTab(page, '#book-suits .suit-tab:last-child');
+    await page.click('.group-chip.cc-new');
+    await page.waitForSelector('.cce-grid > .card');
+    const cards = () => page.evaluate(() => document.querySelectorAll('.cce-grid > .card').length);
+    const first = await cards();
+    await page.evaluate(() => { const b = document.querySelector('.cce-grid-box'); b.scrollTop = b.scrollHeight; });
+    await page.waitForFunction((n) => document.querySelectorAll('.cce-grid > .card').length > n, first);
+    // 細分類：選了花色才出現，跟字盒一樣有「全部」和細分類籤。
+    await page.click('.cce-suits .suit-tab[data-suit="look"]');
+    const chips = await page.evaluate(() => [...document.querySelectorAll('.cce-groups .group-chip')].map((b) => b.textContent.trim()));
+    assert.equal(chips[0], '全部');
+    assert.ok(chips.length > 5, 'appearance has sub-category chips: ' + chips.join(','));
+    await page.click('.cce-suits .suit-tab[data-suit="chara"]');
+    assert.ok(await page.locator('.cce-groups .chip-gender').count(), 'characters get the gender chips');
+    // 搜尋：完全相符排第一、Enter 加第一張；點牌只改勾，捲動位置不跳。
+    await page.click('.cce-suits .suit-tab[data-suit="all"]');
+    await page.fill('.cce-q', '紅髮');
+    assert.equal(await page.evaluate(() => document.querySelector('.cce-grid .is-enter-target')?.dataset.tag), 'red hair');
+    await page.keyboard.press('Enter');
+    await page.waitForSelector('.cce-chip[data-tag="red hair"]');
+    assert.ok(await page.$eval('.cce-grid > .card[data-tag="red hair"]', (n) => n.classList.contains('is-in')));
+    await page.fill('.cce-q', '');
+    await page.evaluate(() => { document.querySelector('.cce-grid-box').scrollTop = 500; });
+    const tag = await page.evaluate(() => { const top = document.querySelector('.cce-grid-box').getBoundingClientRect().top; return [...document.querySelectorAll('.cce-grid > .card')].find((n) => n.getBoundingClientRect().top > top + 20).dataset.tag; });
+    await page.click(`.cce-grid > .card[data-tag="${tag}"]`);
+    assert.equal(await page.evaluate(() => document.querySelector('.cce-grid-box').scrollTop), 500, 'picking a card keeps the scroll position');
+    // 分級：全年齡看不到色情的牌；搜得到就說要在哪一級，按鈕把這張的分級調上去。
+    await page.fill('.cce-q', 'nude');
+    await page.waitForSelector('.cce-grid .lib-hint');
+    assert.match(await page.textContent('.cce-grid .lib-hint'), /才看得到/);
+    await page.click('.cce-grid .lib-hint .btn');
+    await page.waitForSelector('.cce-grid > .card[data-tag="nude"]');
+    assert.equal(await page.getAttribute('.cce-rating button[aria-checked="true"]', 'data-v'), 'explicit');
+    // 被花色篩掉：說在哪一格、給「看全部」。
+    await page.click('.cce-suits .suit-tab[data-suit="scene"]');
+    await page.fill('.cce-q', 'kimono');
+    assert.match(await page.textContent('.cce-grid'), /在「服裝」裡/);
+    // 字盒沒有的字：一鍵當詞庫外的字加進來。
+    await page.fill('.cce-q', 'sparkle eyelashes');
+    await page.click('.cce-miss .btn');
+    await page.waitForSelector('.cce-chip.is-extra[data-text="sparkle eyelashes"]');
+    // 滑鼠停著：浮出跟字盒同一張放大卡。
+    await page.click('.cce-suits .suit-tab[data-suit="look"]');
+    const box = await page.locator('.cce-grid > .card').first().boundingBox();
+    await page.mouse.move(box.x + 4, box.y + 4);
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2, { steps: 4 });
+    await page.waitForFunction(() => document.getElementById('card-peek')?.dataset.show === 'true', null, { timeout: 3000 });
+    assert.deepEqual(errors, []);
+    await ctx.close();
+  }
+
   // ---------- 卡冊：貼提示詞、拆牌、存檔 ----------
   let customTag = '';
   {

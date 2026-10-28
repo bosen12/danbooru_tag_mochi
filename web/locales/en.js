@@ -1868,6 +1868,9 @@ GitHub 開源|Open source on GitHub
 卡面、字型、第三方程式庫各自授權|Card art, fonts and third-party libraries keep their own licenses
 自製|Custom
 存檔|Save
+找牌：紅髮、kimono…（Enter 加第一張）|Find cards: red hair, kimono… (Enter adds the first)
+這一格沒有牌。|No cards here.
+分類|Categories
 或做成一張自製牌（可以調權重、加詞庫沒有的字）|Or make it a custom card (weights, words outside the lexicon)
 帶去墨池|Take to Ink Pool
 新增自製牌|New custom card
@@ -2494,6 +2497,9 @@ ComfyUI 不收：{0}|ComfyUI rejected it: {0!}
 有不能用的字（未成年、禁用角色）：{0}|Contains words that aren’t allowed (minors, banned characters): {0!}
 卡面提示詞裡有不能用的字（未成年、禁用角色）：{0}|The card art prompt contains words that aren’t allowed (minors, banned characters): {0!}
 一張自製牌最多 {0} 張牌|A custom card holds at most {0} cards
+把「{0}」當詞庫外的字加進來|Add “{0!}” as a word outside the lexicon
+「{0}」不能用（未成年、禁用角色）|“{0!}” isn’t allowed (minors, banned characters)
+詞庫外的字最多 {0} 個|At most {0} words outside the lexicon
 `;
 export const templates = parameterized.trim().split("\n").map((line) => {
   const split = line.indexOf("|");

@@ -1491,6 +1491,7 @@ function openEditor(card, start) {
     lib,
     lex: lexNow(),
     assets,
+    data,
     renamed: data.renamed || {},
     onSaved: (c) => {
       // 做好多半是要馬上用：提示上給「帶去墨池」（放進合成池、切過去）。
