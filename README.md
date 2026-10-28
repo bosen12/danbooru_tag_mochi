@@ -70,6 +70,8 @@ The **Intro film** (`/intro.html`, 3 min) and the **Tutorial** (`/tutorial.html`
 
 ## Getting started
 
+**Windows, no Python needed:** download `Mochi-…-windows-portable.zip` from the [latest release](https://github.com/bosen12/danbooru_tag_mochi/releases/latest), unzip it anywhere, and double-click `start.bat` (Python is inside). Then continue from step 1 below. Or get the code with git:
+
 ```bash
 git clone https://github.com/bosen12/danbooru_tag_mochi.git
 cd danbooru_tag_mochi
@@ -260,6 +262,8 @@ Mochi code is distributed under **GNU GPLv3 only (`GPL-3.0-only`)**, see [LICENS
 Python 3.9 以上（只用標準函式庫；第一次啟動會裝 Pillow 做預覽縮圖，沒裝也能用）、ComfyUI（自動找 `127.0.0.1:8188`，或 ComfyUI Desktop 的 `8000`）、SDXL checkpoint（建議 WAI / Illustrious）、近三年的 Chrome / Edge / Firefox / Safari。
 
 ## 上手
+
+**Windows、不想裝 Python：** 到[最新的 Release](https://github.com/bosen12/danbooru_tag_mochi/releases/latest) 下載 `Mochi-…-windows-portable.zip`，解壓到任何地方，雙擊 `start.bat`（裡面附了 Python），接著從下面第 1 步開始。或是用 git 抓程式：
 
 ```bash
 git clone https://github.com/bosen12/danbooru_tag_mochi.git

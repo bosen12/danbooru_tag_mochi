@@ -1,5 +1,18 @@
 # Release notes
 
+## v1.3 — 2026-10-28
+
+Changes since [v1.2](https://github.com/bosen12/danbooru_tag_mochi/releases/tag/v1.2) (2026-10-27).
+
+- **Windows portable package**: `Mochi-v1.3-windows-portable.zip` on the release page bundles the official embeddable Python 3.12 and Pillow. Unzip it and double-click `start.bat`; no Python install needed. `start.bat` uses `python\python.exe` when it is next to it. `scripts/build_portable.py` builds the zip and smoke-tests the server with the bundled Python.
+- **Install as an app (PWA)**: in Chrome or Edge, **Install app** appears in the top bar; Mochi gets its own window, a desktop / Start menu icon and shortcuts to each room. The manifest no longer locks portrait.
+- **Custom cards**: a new **Custom** suit in the Card Book. Bundle cards (with weights) plus words the lexicon doesn't have into one card. Pick from a full card case (suits, sub-categories, search, hover preview, filtered by the card's rating) or paste a prompt that is split into lexicon cards and words not in the lexicon. The rating can't be lower than the cards inside. **Fill** is what gets generated; **Card art** only bakes the picture (built automatically, editable), with a preview baked from your seed that replaces the art only when you save. In the Ink Pool a custom card is one slot that the engine treats as the cards inside (split it into separate cards any time); the Fuse Bed places its cards one by one. Make one from an image, a Gallery work or a deck, and share it with a `mochi-card:` code. Words about minors and banned characters are refused when pasted, saved or baked. Saved in `data/custom_cards.json`.
+- **New Discord channel from an image** lists every card in that image to pick from (tags are capped at five).
+- Favorite cards stop overlapping past 15 cards and scroll sideways instead.
+- A card flying into its detail keeps its proportions (wide group art no longer squashes and springs back).
+- Fuse Bed: character cards now show on the Cast row; they were placed but invisible.
+- README states that generating sexual imagery of minors is prohibited.
+
 ## v1.2 — 2026-10-27
 
 Changes since [v1.1](https://github.com/bosen12/danbooru_tag_mochi/releases/tag/v1.1) (2026-10-10).
