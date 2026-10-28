@@ -1,5 +1,14 @@
 # Release notes
 
+## v1.3.1 — 2026-10-28
+
+Changes since [v1.3](https://github.com/bosen12/danbooru_tag_mochi/releases/tag/v1.3).
+
+- **Install app** in the top bar is now a plain text link like **Community** (a small download arrow in front), not a boxed button.
+- The install reminder appears **once**: the first time the browser says Mochi can be installed, a small card in the lower-left corner asks (after the Community prompt and the tour invitation are done). Either answer, it never asks again; the top-bar link stays until you install.
+- The tour gains an **Install app** step after **Join the community**, pointing at that link.
+- Once installed, or when opened from the app window, the link, the reminder and the tour step no longer appear (the browser stops offering installation).
+
 ## v1.3 — 2026-10-28
 
 Changes since [v1.2](https://github.com/bosen12/danbooru_tag_mochi/releases/tag/v1.2) (2026-10-27).
