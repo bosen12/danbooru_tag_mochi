@@ -134,13 +134,13 @@ def smoke(stage: Path) -> None:
         shutil.rmtree(data, ignore_errors=True)
 
 
-def pack(stage: Path, zip_path: Path) -> None:
+def pack(stage: Path, files: list[Path], zip_path: Path) -> None:
+    """只收 files（試跑之前的清單）：伺服器試跑時建的 .secrets/*.lock、data/、__pycache__ 都不進包。"""
     zip_path.parent.mkdir(parents=True, exist_ok=True)
     tmp = zip_path.with_suffix(".zip.part")
     with zipfile.ZipFile(tmp, "w", zipfile.ZIP_DEFLATED, compresslevel=9) as zf:
-        for f in sorted(stage.rglob("*")):
-            if f.is_file() and "__pycache__" not in f.parts:
-                zf.write(f, Path(stage.name) / f.relative_to(stage))
+        for f in files:
+            zf.write(f, Path(stage.name) / f.relative_to(stage))
     os.replace(tmp, zip_path)
 
 
@@ -163,11 +163,12 @@ def main() -> int:
             git_files(repo, stage)
         py_dir = add_python(stage, args.python)
         add_pillow(py_dir, args.python)
+        files = sorted(f for f in stage.rglob("*") if f.is_file() and "__pycache__" not in f.parts)
         if not args.no_smoke and os.name == "nt":
             smoke(stage)
         out = Path(args.out).resolve() if args.out else repo.parent / "mochi-portable"
         zip_path = out / f"Mochi-{ver}-windows-portable.zip"
-        pack(stage, zip_path)
+        pack(stage, files, zip_path)
     digest = hashlib.sha256(zip_path.read_bytes()).hexdigest()
     log(f"done  {zip_path}  {zip_path.stat().st_size / 1e6:.1f} MB  sha256 {digest}")
     return 0
