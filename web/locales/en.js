@@ -1868,6 +1868,9 @@ GitHub 開源|Open source on GitHub
 卡面、字型、第三方程式庫各自授權|Card art, fonts and third-party libraries keep their own licenses
 自製|Custom
 存檔|Save
+把墨池裝成 App？|Install Mochi as an app?
+有自己的視窗和桌面圖示，不用每次開瀏覽器。之後也可以按頂欄的「安裝成 App」。|It gets its own window and desktop icon, no browser needed. You can also use “Install app” in the top bar later.
+頂欄的「安裝成 App」：裝好後墨池有自己的視窗、桌面和開始選單的圖示，右鍵圖示可以直接開各個房間；伺服器照樣要開著。|“Install app” in the top bar: Mochi gets its own window and a desktop / Start menu icon; right-click the icon to open any room. The server still needs to be running.
 安裝成 App|Install app
 裝成一個應用程式：有自己的視窗、桌面圖示，不用每次開瀏覽器|Install as an app: its own window and desktop icon, no browser needed
 裝好了：以後從桌面或開始選單的「墨池」打開，有自己的視窗。|Installed: open “Mochi” from your desktop or Start menu for its own window.

@@ -7774,6 +7774,38 @@ html:not([lang="en"]) :is(.wordmark, .panel-head h2, #wall-title, #pool-title, #
 .community-btn:hover {
   color: var(--color-ink);
 }
+
+/* 安裝成 App（install-app.js）：跟「社群」同一種字連結，前面一個小小的下載箭頭。 */
+.install-app-btn {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 3px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--color-muted);
+  font: inherit;
+  font-size: var(--text-xs);
+  white-space: nowrap;
+  cursor: pointer;
+  transition: color var(--dur-micro) var(--ease-out), scale var(--dur-short) var(--ease-settle);
+}
+.install-app-btn > span {
+  text-decoration: underline;
+  text-decoration-color: var(--color-rule);
+  text-underline-offset: var(--space-2xs);
+}
+.install-app-btn > svg {
+  align-self: center;
+  color: var(--color-accent-text, var(--color-accent));
+}
+.install-app-btn:hover {
+  color: var(--color-ink);
+}
+.install-app-btn:active {
+  scale: 0.96;
+  transition-duration: var(--dur-micro);
+}
 .community-btn:active {
   scale: 0.96;
   transition-duration: var(--dur-micro);
@@ -7943,7 +7975,8 @@ a.btn {
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .community-btn {
+  .community-btn,
+  .install-app-btn {
     transition: none;
   }
   .community-badge i,

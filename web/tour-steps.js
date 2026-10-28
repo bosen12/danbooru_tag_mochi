@@ -28,6 +28,14 @@ const COMMUNITY = {
   text: "頂欄的「社群」：加入墨池的 Discord 伺服器，分享作品、問用法、回報問題、許願新牌都在那裡；原始碼在 GitHub。",
 };
 
+// 安裝成 App（install-app.js）：瀏覽器說可以裝才有那個連結；裝好了、或用 App 視窗開的就沒有，
+// 找不到目標的步驟導覽會自己略過，所以裝好之後不會再教。
+const INSTALL = {
+  target: () => $("#install-app-btn"),
+  title: "安裝成 App",
+  text: "頂欄的「安裝成 App」：裝好後墨池有自己的視窗、桌面和開始選單的圖示，右鍵圖示可以直接開各個房間；伺服器照樣要開著。",
+};
+
 const MOCHI = [
   {
     title: "歡迎來到墨池",
@@ -104,6 +112,7 @@ const MOCHI = [
     text: "疊印台：一層層疊牌，先看四張試印再付印。卡冊：每張牌用過幾次、成就。作品冊：收藏的、印過的每一張。每個房間都有自己的導覽。",
   },
   COMMUNITY,
+  INSTALL,
   {
     title: "準備好了",
     text: "挑幾張牌、按「抽並生圖」試試看吧！之後想再看一次，按頂欄的「導覽」。",
@@ -184,6 +193,7 @@ const FUSE = [
     text: "尺寸、畫面裡有誰、時代、尺度、姿勢參考都在這顆鈕裡。",
   },
   COMMUNITY,
+  INSTALL,
   {
     title: "準備好了",
     text: "疊幾張牌、挑一個試印、按「付印」試試看吧！之後想再看一次，按頂欄的「導覽」。",
@@ -230,6 +240,7 @@ const BOOK = [
     text: "每個花色的收集進度和成就。只看不擋：沒解鎖的牌照樣能用。",
   },
   COMMUNITY,
+  INSTALL,
   {
     title: "就是這樣",
     text: "之後想再看一次，按頂欄的「導覽」。",
@@ -269,6 +280,7 @@ const ALBUM = [
     text: "只看收藏的、撤下的、印壞的、Hires。點一列看配方，可以補收藏、把牌帶回墨池。",
   },
   COMMUNITY,
+  INSTALL,
   {
     title: "就是這樣",
     text: "之後想再看一次，按頂欄的「導覽」。",
@@ -300,6 +312,7 @@ const PARSE = [
     title: "帶走",
     text: "選好的牌放進墨池的合成池，或送到疊印台一層層疊。",
   },  COMMUNITY,
+  INSTALL,
 ];
 
 export const STEPS = { mochi: MOCHI, fuse: FUSE, book: BOOK, album: ALBUM, parse: PARSE };

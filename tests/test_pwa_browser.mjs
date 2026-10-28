@@ -89,6 +89,47 @@ try {
     return !!document.querySelector('.install-app-btn');
   });
   assert.equal(shownInApp, false, 'no install button inside the installed app');
+  await page.close();
+
+  // 只提醒一次：社群問過、導覽邀請收了之後，左下角浮一張小卡；按「不用了」之後重開頁不再出現。
+  // 導覽有「安裝成 App」那一步（連結在才教）。自動測試平常不跳提醒（webdriver），這裡假裝不是。
+  const remind = await ctx.newPage();
+  await remind.addInitScript(() => {
+    Object.defineProperty(navigator, 'webdriver', { get: () => false });
+    localStorage.setItem('mochi.community.asked.v1', '1');
+    localStorage.setItem('mochi.tour.mochi.v1', '1');
+    // 每次開頁都會跑這段：只有第一次清掉「問過了」，重開頁要看得到已經問過。
+    if (!sessionStorage.getItem('pwa-test-reset')) {
+      sessionStorage.setItem('pwa-test-reset', '1');
+      localStorage.removeItem('mochi.install.asked.v1');
+    }
+    addEventListener('load', () => setTimeout(() => {
+      const e = new Event('beforeinstallprompt', { cancelable: true });
+      e.prompt = () => {};
+      e.userChoice = Promise.resolve({ outcome: 'dismissed' });
+      dispatchEvent(e);
+    }, 300));
+  });
+  await remind.goto(origin + '/');
+  await remind.waitForSelector('#install-offer', { timeout: 15000 });
+  await remind.click('#install-offer .btn:not(.btn-primary)');
+  await remind.evaluate(() => localStorage.getItem('mochi.install.asked.v1')).then((v) => assert.equal(v, '1'));
+  await remind.goto(origin + '/');
+  await remind.evaluate(() => { const e = new Event('beforeinstallprompt', { cancelable: true }); e.prompt = () => {}; e.userChoice = Promise.resolve({ outcome: 'dismissed' }); dispatchEvent(e); });
+  await remind.waitForSelector('#install-app-btn');
+  await remind.waitForTimeout(4500);
+  assert.equal(await remind.locator('#install-offer').count(), 0, 'the reminder is shown only once');
+  await remind.click('button:has-text("導覽")');
+  let title = '';
+  for (let i = 0; i < 40 && !title.includes('安裝成 App'); i++) {
+    await remind.waitForTimeout(200);
+    title = (await remind.textContent('.tour-title').catch(() => '')) || '';
+    if (title.includes('安裝成 App')) break;
+    const skip = remind.locator('.tour-skip:visible');
+    if (await skip.count()) await skip.click(); else await remind.click('.tour-foot .btn-primary');
+  }
+  assert.match(title, /安裝成 App/, 'the tour teaches installing while the link is there');
+  await remind.close();
   console.log('PWA (manifest, installability, install button): passed');
 } finally {
   await ctx.close();
