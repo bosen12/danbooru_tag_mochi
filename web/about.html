@@ -9,6 +9,8 @@
     <title>墨池 · 介紹</title>
     <meta name="description" content="墨池：把 Danbooru 標籤變成一副有插畫的牌，挑幾張，引擎照規則補齊，送進你自己的 ComfyUI 畫。免費、開源，有 Discord 社群。" />
     <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+    <link rel="manifest" href="manifest.json" />
+    <link rel="apple-touch-icon" href="icon-180.png" />
     <link rel="preload" href="lexicon.json" as="fetch" crossorigin />
     <link rel="preload" href="cards/manifest.json" as="fetch" crossorigin />
     <link rel="stylesheet" href="fonts.css" />
@@ -166,6 +168,7 @@
     </footer>
 
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <script type="module" src="install-app.js"></script>
     <script type="module" src="about.js"></script>
   </body>
 </html>

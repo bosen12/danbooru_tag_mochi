@@ -1,14 +1,18 @@
 {
-  "name": "墨池",
+  "id": "./",
+  "name": "墨池 Mochi",
   "short_name": "墨池",
-  "description": "排字匣的卡牌版：挑牌、抽牌、送 ComfyUI 生圖。",
+  "description": "把 Danbooru 標籤變成一副有插畫的牌：挑幾張，引擎照規則補齊，送進你自己的 ComfyUI 畫。",
   "lang": "zh-Hant",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
-  "orientation": "portrait",
   "background_color": "#0f1217",
   "theme_color": "#0f1217",
+  "categories": [
+    "graphics",
+    "productivity"
+  ],
   "icons": [
     {
       "src": "icon-192.png",
@@ -30,15 +34,47 @@
   "shortcuts": [
     {
       "name": "疊印台",
-      "url": "fuse.html"
+      "short_name": "疊印台",
+      "url": "fuse.html",
+      "icons": [
+        {
+          "src": "icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
     },
     {
       "name": "卡冊",
-      "url": "book.html"
+      "short_name": "卡冊",
+      "url": "book.html",
+      "icons": [
+        {
+          "src": "icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
     },
     {
       "name": "作品冊",
-      "url": "album.html"
+      "short_name": "作品冊",
+      "url": "album.html",
+      "icons": [
+        {
+          "src": "icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "解析池",
+      "short_name": "解析池",
+      "url": "parse.html",
+      "icons": [
+        {
+          "src": "icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
     }
   ]
 }

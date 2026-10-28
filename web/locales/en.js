@@ -1868,6 +1868,9 @@ GitHub 開源|Open source on GitHub
 卡面、字型、第三方程式庫各自授權|Card art, fonts and third-party libraries keep their own licenses
 自製|Custom
 存檔|Save
+安裝成 App|Install app
+裝成一個應用程式：有自己的視窗、桌面圖示，不用每次開瀏覽器|Install as an app: its own window and desktop icon, no browser needed
+裝好了：以後從桌面或開始選單的「墨池」打開，有自己的視窗。|Installed: open “Mochi” from your desktop or Start menu for its own window.
 權重|Weight
 種子要是數字（最多 15 位數，留空＝隨機）|The seed must be a number of up to 15 digits (empty = random)
 種子太大了（最多 15 位數）|The seed is too large (at most 15 digits)

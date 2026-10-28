@@ -5,8 +5,12 @@ if not defined PORT set "PORT=8796"
 if not defined HOST set "HOST=0.0.0.0"
 set "PYTHONUTF8=1"
 set "PY="
-python -c "import sys; raise SystemExit(sys.version_info < (3, 9))" >nul 2>&1
-if not errorlevel 1 set "PY=python"
+rem Windows portable zip: a bundled Python sits next to this file (python\python.exe). Use it first.
+if exist "python\python.exe" set "PY=python\python.exe"
+if not defined PY (
+  python -c "import sys; raise SystemExit(sys.version_info < (3, 9))" >nul 2>&1
+  if not errorlevel 1 set "PY=python"
+)
 if not defined PY (
   py -3 -c "import sys; raise SystemExit(sys.version_info < (3, 9))" >nul 2>&1
   if not errorlevel 1 set "PY=py -3"
