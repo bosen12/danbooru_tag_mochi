@@ -54,6 +54,9 @@
 .card[data-suit="style"] {
   --suit: var(--suit-style);
 }
+.card[data-suit="custom"] {
+  --suit: var(--suit-custom);
+}
 
 .card-spine {
   display: flex;

@@ -44,18 +44,22 @@ export function mountDiscordRoutes({ lib, zh }) {
   });
 }
 
-/** 成品詳情「用這張開 Discord 頻道」：打開面板、編輯畫面帶入這張的角色（照提示詞順序，最多 3 個）和分級。 */
+/**
+ * 成品詳情「用這張開 Discord 頻道」：打開面板、編輯畫面帶入這張的角色（照提示詞順序，最多 3 個）和分級。
+ * 這張用到的每一張牌都列在角色、tag 兩欄底下（「這張圖的牌」），點一下加進條件 —— tag 最多 5 個，
+ * 一張圖二十幾個字不可能全塞，由使用者挑。
+ */
 export function openRouteFromShot(shot) {
   const lib = getLib();
-  const chars = [];
+  const all = [];
   for (const part of String(shot?.positive || "").split(",")) {
     const tag = cleanTag(part);
-    const card = lib?.byTag.get(tag);
-    if (card && card.suit === "chara" && !chars.includes(tag)) chars.push(tag);
-    if (chars.length >= MAX.cast) break;
+    if (lib?.byTag.has(tag) && !all.includes(tag)) all.push(tag);
   }
+  const chars = all.filter((tag) => lib.byTag.get(tag).suit === "chara").slice(0, MAX.cast);
   editing = blank();
   editing.chars = chars;
+  editing.shotTags = all;
   if (RATINGS.some(([r]) => r === shot?.rating)) editing.ratings = new Set([shot.rating]);
   editing.name = chars.length ? nameOf(chars[0]) : "";
   openDiscordSettings();
@@ -98,7 +102,8 @@ const seriesOfChar = (tag) => {
 /* ---------------- 資料 ---------------- */
 
 function blank() {
-  return { id: "", name: "", webhookTail: "", ratings: new Set(), chars: [], series: [], charMode: "any", tags: [], tagMode: "any", compact: true, enabled: true };
+  // shotTags：從成品開的時候，那張用到的牌（只給挑選用，不存）。
+  return { id: "", name: "", webhookTail: "", ratings: new Set(), chars: [], series: [], charMode: "any", tags: [], tagMode: "any", compact: true, enabled: true, shotTags: [] };
 }
 
 function fromRoute(r) {
@@ -571,10 +576,15 @@ function castPicker(onChange) {
     if (it.kind === "series") e.series = e.series.filter((x) => x !== it.key);
     else e.chars = e.chars.filter((x) => x !== it.key);
   };
-  // 下面一排：已選角色的系列（「＋《間諜家家酒》」直接改收整個系列），再來是偏好角色。
+  // 下面一排：從成品開的，那張圖還沒選的角色；已選角色的系列（「＋《間諜家家酒》」直接改收整個系列）；偏好角色。
   const extra = () => {
     const lib = getLib();
     const out = [];
+    const fromShot = (e.shotTags || []).filter((tag) => lib?.byTag.get(tag)?.suit === "chara" && !e.chars.includes(tag));
+    if (fromShot.length) {
+      out.push({ title: t("這張圖的角色") });
+      for (const tag of fromShot) out.push({ kind: "char", key: tag, label: nameOf(tag) });
+    }
     const suggest = [...new Set(e.chars.map(seriesOfChar).filter((s) => s && !e.series.includes(s)))];
     if (suggest.length) {
       out.push({ title: t("也收整個系列") });
@@ -602,7 +612,13 @@ function tagPicker(onChange) {
   };
   const add = (h) => e.tags.length < MAX.tags && !e.tags.includes(h.key) && e.tags.push(h.key);
   const drop = (it) => (e.tags = e.tags.filter((x) => x !== it.key));
-  const box = searchBox({ label: "tag", max: MAX.tags, placeholder: "找 tag：泳裝、swimsuit…", items, hits, add, drop, modeKey: "tagMode", onChange });
+  // 從成品開的：那張圖用到的牌（角色以外）照提示詞順序排在下面，點一下加進來。
+  const extra = () => {
+    const lib = getLib();
+    const fromShot = (e.shotTags || []).filter((tag) => lib?.byTag.get(tag)?.suit !== "chara" && !e.tags.includes(tag));
+    return fromShot.length ? [{ title: t("這張圖的牌") }, ...fromShot.map((tag) => ({ kind: "tag", key: tag, label: nameOf(tag) }))] : [];
+  };
+  const box = searchBox({ label: "tag", max: MAX.tags, placeholder: "找 tag：泳裝、swimsuit…", items, hits, add, drop, modeKey: "tagMode", extra, onChange });
   return el("div", { class: "tg-field dcr-pick", dataset: { pick: "tags" } }, el("span", {}, "tag（最多 5 個）"), box.node);
 }
 

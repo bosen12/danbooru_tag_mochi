@@ -6322,6 +6322,12 @@ html[data-booting] :is(#lib-grid, #case-grid, #book-grid):empty::before {
   display: flex;
   gap: var(--space-xs);
 }
+/* 「或做成一張自製牌」：次要的路，小一號、跟存檔那排隔開一點。 */
+.deck-to-custom {
+  margin-top: var(--space-xs);
+  font-size: var(--text-xs);
+  color: var(--color-ink-2);
+}
 .deck-name {
   flex: 1;
   min-width: 0;

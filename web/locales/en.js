@@ -55,6 +55,8 @@ Webhook 網址|Webhook URL
 存設定|Save settings
 送一則測試|Send test post
 也收整個系列|Whole series too
+這張圖的角色|Characters in this image
+這張圖的牌|Cards in this image
 整個系列|Whole series
 找角色或系列：約兒、yor、間諜家家酒…|Find a character or series: Yor, Spy x Family…
 角色或系列（合起來最多 3 個）|Characters or series (up to 3 in total)
@@ -1864,6 +1866,73 @@ GitHub 開源|Open source on GitHub
 打開墨池|Open Ink Pool
 看介紹影片|Watch the intro film
 卡面、字型、第三方程式庫各自授權|Card art, fonts and third-party libraries keep their own licenses
+自製|Custom
+存檔|Save
+或做成一張自製牌（可以調權重、加詞庫沒有的字）|Or make it a custom card (weights, words outside the lexicon)
+帶去墨池|Take to Ink Pool
+新增自製牌|New custom card
+貼上分享碼|Paste share code
+還沒有自製牌|No custom cards yet
+把常用的幾張牌（可以調權重）加上詞庫沒有的字，包成一張自己的牌；墨池、疊印台放進去就是那幾張。|Bundle cards you use together (with weights) plus words the lexicon lacks into one card of your own. Put it in the Ink Pool or Fuse Press and you get those cards.
+名字，例如：法琳海邊|Name, e.g. Falin at the beach
+名字|Name
+編輯方式|Editing mode
+貼提示詞|Paste prompt
+貼上一整串提示詞，用逗號分開：1girl, beach, (huge breasts:1.2), sparkle eyelashes|Paste a whole prompt, comma-separated: 1girl, beach, (huge breasts:1.2), sparkle eyelashes
+詞庫有的變成牌，對不到的放進「詞庫外」；權重括號 (tag:1.2) 會讀進來。|Words in the lexicon become cards; the rest go under “Not in lexicon”. Weights like (tag:1.2) are kept.
+卡面種子|Card art seed
+烤卡面預覽|Bake art preview
+重烤|Bake again
+從填入重新產生|Rebuild from Fill
+填入|Fill
+送去生圖的|What gets generated
+只拿來烤這張牌的插畫|Only used to bake this card’s art
+放牌進來|Add cards
+這張牌|This card
+找不到。打的字詞庫沒有的話，可以切到「貼提示詞」直接打進來。|Nothing found. If the word isn’t in the lexicon, switch to “Paste prompt” and type it there.
+這個花色沒有牌。|No cards in this suit.
+一張自製牌最多 20 張牌|A custom card holds at most 20 cards
+詞庫外|Not in lexicon
+詞庫外：引擎不會檢查|Not in lexicon: the engine won’t check it
+貼上提示詞，這裡就會列出拆好的牌。|Paste a prompt and the cards it contains show up here.
+從左邊點牌加進來，或切到「貼提示詞」。|Pick cards on the left, or switch to “Paste prompt”.
+詞庫外的字沒辦法確認分級：請自己確定它真的是全年齡。|Words outside the lexicon can’t be rated: make sure they really are all-ages.
+手動改過|Edited
+自動|Auto
+卡面跟填入不一樣了：要的話按「從填入重新產生」，改完重烤一次。|Card art no longer matches Fill: press “Rebuild from Fill” if you want, then bake again.
+還沒有卡面|No card art yet
+至少要有一張牌或一個字|Add at least one card or word
+卡面還在烤|Card art is still baking
+種子要是數字（留空＝隨機）|The seed must be a number (empty = random)
+烤好了：這是預覽，按「存檔」才會換上。|Baked: this is a preview; it replaces the art when you press Save.
+ComfyUI 沒開：先用拼貼卡面，之後再回來烤。|ComfyUI isn’t running: the card uses a collage for now; bake later.
+烤失敗了：|Baking failed:
+複製不了：請自己選起來複製|Couldn’t copy: select it and copy it yourself
+把分享碼貼在這裡（mochi-card: 開頭）|Paste the share code here (starts with mochi-card:)
+墨池、疊印台放進去，就是裡面這幾張牌（照樣補其他段、照樣檢查互斥）；詞庫外的字接在提示詞裡。|In the Ink Pool or Fuse Press this card is the cards inside (other sections still fill, conflicts still apply); words outside the lexicon are added to the prompt.
+複製分享碼|Copy share code
+一行文字，貼到 Discord 給別人；對方在卡冊「自製」按「貼上分享碼」就拿到同一張|One line of text to post on Discord; others press “Paste share code” under Custom in the Card Book to get the same card
+分享碼複製好了：貼給別人，對方在卡冊「自製」按「貼上分享碼」|Share code copied: send it, and they press “Paste share code” under Custom in the Card Book
+複製這段分享碼|Copy this share code
+不是自製牌的分享碼（要是 mochi-card: 開頭）|Not a custom card share code (it starts with mochi-card:)
+分享碼壞掉了，請整段重新複製|The share code is broken; copy the whole thing again
+去卡冊編輯|Edit in Card Book
+拆開|Split
+裡面的牌留在池子裡，變成一張張的牌|The cards inside stay in the pool as separate cards
+裡面|Inside
+放進合成池就是裡面這幾張牌：照樣補其他段、照樣檢查互斥；詞庫外的字接在提示詞裡。|In the mix this card is the cards inside: other sections still fill, conflicts still apply; words outside the lexicon are added to the prompt.
+做成自製牌|Make custom card
+把這張用到的牌包成一張自製牌（到卡冊編輯）|Bundle this image’s cards into a custom card (edit it in the Card Book)
+把這件用到的牌包成一張自製牌（到卡冊編輯）|Bundle this work’s cards into a custom card (edit it in the Card Book)
+把這組牌包成一張自製牌（到卡冊編輯）|Bundle this deck into a custom card (edit it in the Card Book)
+存成自製牌|Save as custom card
+無法交接，請檢查瀏覽器儲存空間。|Couldn’t hand off; check the browser’s storage.
+自製牌要有名字|A custom card needs a name
+卡面提示詞是空的|The card art prompt is empty
+找不到這張自製牌|Custom card not found
+自製牌最多 300 張，先刪掉一些|You can have at most 300 custom cards; delete some first
+詞庫外的字太多了（最多 12 個、300 字）|Too many words outside the lexicon (at most 12, 300 characters)
+分級要是全年齡、敏感或色情|Rating must be all-ages, sensitive or explicit
 `;
 
 export const messages = Object.freeze(Object.fromEntries(copy.trim().split("\n").map((line) => {
@@ -2396,6 +2465,35 @@ ComfyUI 不收：{0}|ComfyUI rejected it: {0!}
 「{0}」已經送去墨池了|“{0}” is already on its way to Ink Pool
 卡盒改成偏好卡牌了：原本卡盒裡的 {0} 張已經放進偏好卡牌|The card box is now favorite cards: its {0} cards were moved into favorite cards
 {0}放進偏好卡牌了（{1} 張）|{0} · Now {1} favorite cards
+編輯「{0}」|Edit “{0!}”
+裡面有{0}級的牌，不能標{1}|It contains a {0} card, so it can’t be marked {1}
+{0}：已經在這張牌裡（再點一下拿掉）|{0}: already in this card (click to remove)
+{0}：加進這張牌|{0}: add to this card
+「{0}」已經會帶出它|“{0}” already brings it in
+跟「{0}」同一格，只會留一個|Same slot as “{0}”: only one is kept
+{0}權重減 0.1|{0} weight −0.1
+{0}權重加 0.1|{0} weight +0.1
+拿掉「{0}」|Remove “{0}”
+是不是「{0}」（{1}）？|Did you mean “{0}” ({1!})?
+擋掉了：{0}（未成年、禁用角色不能用）|Blocked: {0!} (minors and banned characters aren’t allowed)
+{0} 張牌|{0} cards
+{0} 張牌・詞庫外 {1} 個|{0} cards · {1} not in lexicon
+卡面提示詞有不能用的字：{0}|The card art prompt has words that aren’t allowed: {0!}
+擋掉了 {0} 個不能用的字|Blocked {0} words that aren’t allowed
+「{0}」存好了|“{0!}” saved
+「{0}」做好了：墨池、疊印台的字盒「自製」裡找得到|“{0!}” is ready: find it under Custom in the Ink Pool and Fuse Press
+自製・{0}・{1} 張牌|Custom · {0} · {1} cards
+自製・{0}・{1} 張牌・詞庫外 {2} 個|Custom · {0} · {1} cards · {2} not in lexicon
+「{0}」刪掉了|“{0!}” deleted
+自製牌「{0}」：{1}|Custom card “{0!}”: {1}
+「{0}」又合回一張了|“{0!}” is one card again
+拆開了：詞庫外的字（{0}）不會再接進提示詞|Split: the words outside the lexicon ({0!}) are no longer added to the prompt
+「{0}」裡的牌都已經在卡池上了|The cards in “{0!}” are already on the pool
+自製牌「{0}」放上卡池：{1}被換下（同一格只留一張）|Custom card “{0!}” placed: {1} replaced (one card per slot)
+分級不能低於裡面的牌（最低：{0}）|The rating can’t be lower than the cards inside (at least {0})
+有不能用的字（未成年、禁用角色）：{0}|Contains words that aren’t allowed (minors, banned characters): {0!}
+卡面提示詞裡有不能用的字（未成年、禁用角色）：{0}|The card art prompt contains words that aren’t allowed (minors, banned characters): {0!}
+一張自製牌最多 {0} 張牌|A custom card holds at most {0} cards
 `;
 export const templates = parameterized.trim().split("\n").map((line) => {
   const split = line.indexOf("|");

@@ -50,6 +50,8 @@
   --suit-pose: oklch(68% 0.09 165);
   --suit-scene: oklch(72% 0.1 72);
   --suit-style: oklch(74% 0.09 115);
+  /* 自製牌（卡冊的「自製」花色）：銅金，跟七種詞庫花色都分得開。 */
+  --suit-custom: oklch(76% 0.11 55);
 
   --font-display: "Chiron Hei HK", "PingFang TC", "Microsoft JhengHei", sans-serif;
   /* 內文也用本機的 Chiron Hei HK（同一個檔、可變粗細 200–900）：以前內文向 Google 要 Noto Sans TC，每頁十幾個請求。 */

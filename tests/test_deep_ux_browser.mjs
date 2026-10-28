@@ -133,7 +133,7 @@ try {
     assert.equal(await foot.locator(':scope > .btn-primary').innerText(), '照這張再印');
     await foot.locator('.foot-more-btn').click();
     const items = await page.locator('.foot-more-menu > *').evaluateAll((n) => n.map((x) => x.textContent.trim()));
-    assert.deepEqual(items, ['只帶你選的牌', '複製 POS', '開原圖', '從作品冊拿掉']);
+    assert.deepEqual(items, ['只帶你選的牌', '做成自製牌', '複製 POS', '開原圖', '從作品冊拿掉']);
     await shot(page, 'album-detail-phone-more.png');
     const del = page.locator('.foot-more-menu .album-del');
     await del.click();

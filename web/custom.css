@@ -1,0 +1,546 @@
+/* 自製牌的編輯面板（custom-editor.js）。桌機左右兩欄：左邊放牌進來，右邊是這張牌；手機上下疊。 */
+
+/* 桌機才放寬：手機上照彈窗原本的樣子（從底部拉上來、整個寬度）。 */
+@media (min-width: 52.01rem) {
+  .sheet.cce-sheet {
+    width: min(72rem, calc(100vw - 2 * var(--space-lg)));
+  }
+}
+
+.cce {
+  display: grid;
+  gap: var(--space-md);
+  min-width: 0;
+}
+
+.cce-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.cce-name {
+  flex: 1 1 14rem;
+  min-width: 0;
+  min-height: 40px;
+  padding: 0 var(--space-sm);
+  border: 1px solid var(--color-rule-2);
+  border-radius: var(--radius-sm);
+  background: var(--color-paper-2);
+  color: var(--color-ink);
+  font: inherit;
+  font-size: var(--text-md);
+  font-weight: 700;
+}
+
+.cce-name:focus-visible,
+.cce-q:focus-visible,
+.cce-paste:focus-visible,
+.cce-face-in:focus-visible,
+.cce-seed:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 1px;
+}
+
+.cce-rating button:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.cce-main {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
+  gap: var(--space-lg);
+  align-items: start;
+  min-width: 0;
+}
+
+/* ---------- 左欄 ---------- */
+
+.cce-left {
+  display: grid;
+  gap: var(--space-sm);
+  min-width: 0;
+  position: sticky;
+  top: 0;
+}
+
+.cce-pick,
+.cce-paste-pane {
+  display: grid;
+  gap: var(--space-sm);
+  min-width: 0;
+}
+
+.cce-pick[hidden],
+.cce-paste-pane[hidden] {
+  display: none;
+}
+
+.cce-q {
+  min-height: 38px;
+  padding: 0 var(--space-sm);
+  border: 1px solid var(--color-rule-2);
+  border-radius: var(--radius-sm);
+  background: var(--color-paper-2);
+  color: var(--color-ink);
+  font: inherit;
+}
+
+.cce-suits {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2xs);
+}
+
+.cce-suits .chip-seal {
+  color: var(--suit);
+}
+
+.cce-grid {
+  --card-w: 72px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));
+  gap: var(--space-xs);
+  max-height: min(52vh, 30rem);
+  overflow: auto;
+  padding: var(--space-2xs);
+  border-radius: var(--radius-sm);
+  background: var(--color-paper-2);
+  overscroll-behavior: contain;
+}
+
+.cce-cell .card {
+  --card-w: 100%;
+  width: 100%;
+  font-size: 9px;
+  transition: opacity var(--dur-micro) var(--ease-out), transform var(--dur-short) var(--ease-settle);
+}
+
+/* 已經在這張牌裡的：淡一點、右上角一個勾。 */
+.cce-cell .card.is-in {
+  opacity: 0.45;
+}
+
+.cce-cell .card.is-in::after {
+  content: "✓";
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--color-accent);
+  color: var(--color-accent-ink, #fff);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.cce-paste,
+.cce-face-in {
+  width: 100%;
+  min-width: 0;
+  padding: var(--space-sm);
+  border: 1px solid var(--color-rule-2);
+  border-radius: var(--radius-sm);
+  background: var(--color-paper-2);
+  color: var(--color-ink);
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  line-height: 1.55;
+  resize: vertical;
+}
+
+.cce-hint {
+  margin: 0;
+  color: var(--color-muted);
+  font-size: var(--text-xs);
+}
+
+/* ---------- 右欄 ---------- */
+
+.cce-right {
+  display: grid;
+  gap: var(--space-md);
+  min-width: 0;
+}
+
+.cce-face {
+  display: grid;
+  grid-template-columns: 9rem minmax(0, 1fr);
+  gap: var(--space-md);
+  align-items: end;
+}
+
+.cce-face-pic {
+  position: relative;
+  aspect-ratio: 480 / 702;
+  overflow: hidden;
+  border-radius: var(--radius-md);
+  background: var(--color-paper-3);
+  box-shadow: inset 0 0 0 2px color-mix(in oklch, var(--suit-custom) 55%, transparent);
+}
+
+.cce-face-pic > img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.cce-face-pic[data-kind="preview"] {
+  box-shadow: inset 0 0 0 2px var(--color-accent), 0 10px 24px -12px var(--color-shade);
+}
+
+.cce-face-empty {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: var(--color-muted);
+  font-size: var(--text-xs);
+}
+
+/* 還沒烤的卡面：成員牌的插畫疊成一把扇子。 */
+.cce-fan {
+  position: absolute;
+  inset: 0;
+}
+
+.cce-fan > img {
+  position: absolute;
+  left: 50%;
+  bottom: 6%;
+  width: 62%;
+  aspect-ratio: 480 / 702;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+  box-shadow: 0 6px 14px -6px var(--color-shade);
+  transform-origin: 50% 110%;
+  transform: translateX(-50%) rotate(calc((var(--i) - (var(--n) - 1) / 2) * 11deg));
+}
+
+.cce-face-ctl {
+  display: grid;
+  gap: var(--space-xs);
+  justify-items: start;
+}
+
+.cce-seed-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  width: 100%;
+  min-width: 0;
+  font-size: var(--text-sm);
+  color: var(--color-ink-2);
+}
+
+.cce-seed-row > span {
+  flex: none;
+  white-space: nowrap;
+}
+
+.cce-seed {
+  flex: 0 1 12rem;
+  width: 12rem;
+  min-width: 0;
+  max-width: 100%;
+  min-height: 32px;
+  padding: 0 var(--space-xs);
+  border: 1px solid var(--color-rule-2);
+  border-radius: var(--radius-sm);
+  background: var(--color-paper-2);
+  color: var(--color-ink);
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+}
+
+.cce-bake-msg {
+  margin: 0;
+  min-height: 1.3em;
+  color: var(--color-ink-2);
+  font-size: var(--text-xs);
+}
+
+.cce-content {
+  display: grid;
+  gap: var(--space-sm);
+}
+
+.cce-count {
+  color: var(--color-muted);
+  font-size: var(--text-xs);
+}
+
+.cce-group {
+  display: grid;
+  grid-template-columns: 3.5rem minmax(0, 1fr);
+  gap: var(--space-xs);
+  align-items: start;
+}
+
+.cce-group-name {
+  padding-top: 6px;
+  color: var(--suit, var(--color-muted));
+  font-size: var(--text-xs);
+  font-weight: 700;
+}
+
+.cce-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2xs);
+  min-width: 0;
+}
+
+.cce-chip {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px var(--space-xs);
+  max-width: 100%;
+  padding: 3px 4px 3px var(--space-xs);
+  border: 1px solid color-mix(in oklch, var(--suit, var(--color-rule-2)) 45%, var(--color-rule-2));
+  border-radius: var(--radius-sm);
+  background: var(--color-paper-2);
+}
+
+.cce-chip.has-note {
+  border-color: var(--color-warn);
+}
+
+.cce-chip.is-extra {
+  border-style: dashed;
+  border-color: var(--color-rule);
+}
+
+.cce-chip-name {
+  display: grid;
+  line-height: 1.15;
+  min-width: 0;
+}
+
+.cce-chip-name b {
+  font-size: var(--text-sm);
+}
+
+.cce-chip-name small {
+  color: var(--color-muted);
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  overflow-wrap: anywhere;
+}
+
+.cce-wctl {
+  display: inline-flex;
+  align-items: center;
+  border-radius: var(--radius-xs);
+  background: var(--color-paper-3);
+}
+
+.cce-wbtn,
+.cce-x {
+  min-width: 26px;
+  min-height: 26px;
+  border: 0;
+  border-radius: var(--radius-xs);
+  background: transparent;
+  color: var(--color-ink-2);
+  font: inherit;
+  cursor: pointer;
+  transition: background-color var(--dur-micro) var(--ease-out), color var(--dur-micro) var(--ease-out);
+}
+
+.cce-wbtn:hover,
+.cce-x:hover {
+  background: var(--color-paper-4);
+  color: var(--color-ink);
+}
+
+.cce-w {
+  min-width: 2.2em;
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+}
+
+.cce-note {
+  flex-basis: 100%;
+  color: var(--color-warn);
+  font-size: var(--text-2xs);
+}
+
+.cce-sug {
+  flex-basis: 100%;
+  justify-self: start;
+  font-size: var(--text-2xs);
+  text-align: start;
+}
+
+.cce-banned,
+.cce-warn {
+  margin: 0;
+  color: var(--color-warn);
+  font-size: var(--text-xs);
+}
+
+.cce-banned {
+  color: var(--color-accent-text, var(--color-accent));
+}
+
+.cce-warn:empty {
+  display: none;
+}
+
+.cce-empty {
+  padding: var(--space-md);
+  border: 1px dashed var(--color-rule);
+  border-radius: var(--radius-sm);
+  text-align: center;
+}
+
+.cce-prompts {
+  display: grid;
+  gap: var(--space-sm);
+}
+
+.cce-prompt {
+  display: grid;
+  gap: var(--space-2xs);
+}
+
+.cce-prompt-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-xs);
+  font-size: var(--text-sm);
+}
+
+.cce-prompt-head > span {
+  color: var(--color-muted);
+  font-size: var(--text-xs);
+}
+
+.cce-prompt-head .btn {
+  margin-left: auto;
+}
+
+.cce-prompt-head .cce-face-state {
+  margin-left: auto;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--color-paper-3);
+  color: var(--color-ink-2);
+}
+
+.cce-face-state[data-manual="true"] {
+  background: color-mix(in oklch, var(--color-warn) 25%, var(--color-paper-3));
+  color: var(--color-ink);
+}
+
+.cce-face-state + .btn {
+  margin-left: 0;
+}
+
+.cce-fill {
+  display: block;
+  padding: var(--space-xs) var(--space-sm);
+  border-radius: var(--radius-sm);
+  background: var(--color-paper-2);
+  color: var(--color-ink-2);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+}
+
+.cce-msg {
+  margin-right: auto;
+  color: var(--color-muted);
+  font-size: var(--text-xs);
+}
+
+/* ---------- 手機：上下疊 ---------- */
+
+@media (max-width: 52rem) {
+  .cce-main {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .cce-left {
+    position: static;
+  }
+
+  .cce-grid {
+    max-height: 40vh;
+  }
+
+  .cce-face {
+    grid-template-columns: 6.5rem minmax(0, 1fr);
+  }
+
+  /* 貼提示詞的框別吃掉半個螢幕：拆好的牌在下面，要看得到。 */
+  .cce-paste {
+    height: 7.5rem;
+  }
+
+  .cce-face-ctl {
+    min-width: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cce-cell .card,
+  .cce-wbtn,
+  .cce-x {
+    transition: none;
+  }
+}
+
+/* ---------- 卡冊：自製牌的詳情 ---------- */
+
+.cc-members {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2xs);
+  margin: var(--space-sm) 0;
+}
+
+.cc-member {
+  padding: 2px var(--space-xs);
+  border: 1px solid color-mix(in oklch, var(--suit, var(--color-rule-2)) 50%, var(--color-rule-2));
+  border-radius: var(--radius-xs);
+  background: var(--color-paper-2);
+  font-size: var(--text-sm);
+}
+
+.cc-member small {
+  color: var(--color-muted);
+  font-family: var(--font-mono);
+}
+
+.cc-member.is-extra {
+  border-style: dashed;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+}
+
+.cc-fill {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  overflow-wrap: anywhere;
+}
+
+.cc-how {
+  margin: var(--space-sm) 0 0;
+  color: var(--color-muted);
+  font-size: var(--text-xs);
+}
+
+.cc-new b {
+  color: var(--suit-custom);
+}

@@ -70,6 +70,9 @@ import { pingLoop } from "./ping.js";
 import { genSeed, mountSeedControl, seedUseButton, useSeed } from "./seed-control.js";
 import { attachPeek, hidePeek } from "./card-peek.js";
 import { attachTilt } from "./card-tilt.js";
+import { loadCustom, addCustomToLib, withCustomArt, onCustomChange, setCharacterBan, isCustomTag, customOf, customList, extraText, handOffCustom, startFromPrompt, fillText, RATING_NAME } from "./custom-cards.js";
+// 牌庫裡現在放的是哪一份自製牌清單（onCustomChanged 用來判斷有沒有換）。
+let customShown = null;
 import { createHires, openHiresPicker, openFacePicker, paintHiresVeil, hiresBusy, faceBusy, faceDepth, HIRES_MODES } from "./hires.js";
 import * as S from "./store.js";
 import { recordUses } from "./usage.js";
@@ -128,7 +131,9 @@ const LOOP_MAX_CHOICES = [0, 10, 20, 50, 100, 200];
 const ui = S.typedLike({ suit: "all", group: "", query: "", eraOnly: true, charGender: "", collapsed: matchMedia("(max-width: 63.99rem)").matches, wallCols: "auto", loopMax: 0 }, S.loadUi());
 if (!LOOP_MAX_CHOICES.includes(ui.loopMax)) ui.loopMax = 0;
 // 存檔裡的花色不是現在有的（改版、壞掉）：回到「全部」，不然字盒整盒是空的。
-if (ui.suit !== "all" && !CARD_SUITS.includes(ui.suit)) ui.suit = "all";
+// 「自製」不在共用的 CARD_SUITS 裡（只有 web6 有）：字盒自己多一格（有自製牌才出現）。
+const MOCHI_SUITS = [...CARD_SUITS, "custom"];
+if (ui.suit !== "all" && !MOCHI_SUITS.includes(ui.suit)) ui.suit = "all";
 // 成品牆每排幾張：自動（照寬度，每張至少約 19rem）或固定 3～6 張（視窗太窄時自己少幾欄，每張不小於 140px）。
 const WALL_COLS = ["auto", "3", "4", "5", "6"];
 const $ = (id) => document.getElementById(id);
@@ -155,6 +160,8 @@ async function boot() {
   mountScreensaver();
   mountGenStatus("mochi");
   const lexUrl = document.querySelector('link[rel="preload"][href^="lexicon.json"]')?.href || "lexicon.json";
+  // 自製牌（custom-cards.js）跟詞庫一起抓。
+  const customP = loadCustom();
   try {
     const [lexicon, manifest] = await Promise.all([
       fetch(lexUrl).then((r) => r.json()),
@@ -165,7 +172,11 @@ async function boot() {
     warmDrawWorker(new URL(lexUrl, location.href).href);
     lex = indexLexicon(data);
     lib = buildLibrary(data, { ratingBlocked });
-    assets = createAssets(manifest);
+    setCharacterBan(data.characterBan);
+    // 自製牌不擋開頁：已經讀到的先放進牌庫，還沒回來的到了再補（見下面 onCustomChange）。
+    addCustomToLib(lib);
+    customShown = customList();
+    assets = withCustomArt(createAssets(manifest));
   } catch (err) {
     // 連線問題（手機網路斷一下、伺服器沒開）：說「連不到主機」、給重試；不是叫人用 start.bat 開。
     if (isNetError(err)) return bootFailed(err);
@@ -177,9 +188,10 @@ async function boot() {
   settings = sanitizeSettings(stored || { rating: "general" }, data);
   // 池子不存：重新整理就是空的。從別的房間回來（同一個分頁）拿回剛才那一池（store.js 的 loadTab）。
   // 交接過來的：疊印台、作品冊帶的是一整組，換成那一組；卡冊帶的是幾張單牌，加進剛才那一池。
-  const handoff = S.takePool().filter((t) => lib.byTag.has(t));
+  // 自製牌可能還沒讀回來（不擋開頁）：先留著，讀回來再補成員（onCustomChanged）。
+  const handoff = S.takePool().filter((t) => lib.byTag.has(t) || isCustomTag(t));
   const before = S.loadTab(S.TAB_POOL);
-  const kept = before && Array.isArray(before.tags) ? before.tags.filter((t) => lib.byTag.has(t)) : [];
+  const kept = before && Array.isArray(before.tags) ? before.tags.filter((t) => lib.byTag.has(t) || isCustomTag(t)) : [];
   if (handoff.length && S.handoffFrom === "book" && kept.length) {
     let pinned = new Set(kept);
     let banned = new Set(S.loadBans().filter((t) => lib.byTag.has(t)));
@@ -196,6 +208,23 @@ async function boot() {
   } else {
     pool = new Set(kept);
     weights = new Map(Object.entries(before?.weights || {}).filter(([t, w]) => pool.has(t) && w !== 1));
+  }
+  // 卡冊送來、偏好卡牌、上次留著的自製牌：裡面的牌補釘上（交接只帶自製牌本身那個名字）。
+  ensureCustomMembers();
+  // 開頁時自製牌還沒讀回來：回來了照「換了」處理（牌庫補上、池子裡的補成員、重畫）。
+  customP.then(onCustomChanged);
+  onCustomChange(onCustomChanged);
+  function onCustomChanged(list = customList()) {
+    // 同一份只處理一次（開頁那次讀回來，通知和 customP 都會叫到）。
+    if (list === customShown) return;
+    customShown = list;
+    addCustomToLib(lib, list);
+    // 刪掉的自製牌：池子裡那一格拿掉（它帶進來的牌留著，照一般的牌畫）。
+    for (const t of [...pool]) if (isCustomTag(t) && !lib.byTag.has(t)) pool.delete(t);
+    ensureCustomMembers();
+    renderLibraryChrome();
+    renderLibrary();
+    commitPins();
   }
   // 照這張再印：時代跟著那張（抽到「混合」的就是混合），種子固定成那一顆。底模、LoRA 不自己換（greetRecipe 問）。
   handoffRecipe = handoff.length ? S.handoffRecipe : null;
@@ -382,7 +411,7 @@ function renderLibraryChrome() {
   const tabs = $("suit-tabs");
   syncChoices(tabs, "aria-pressed",
     el("button", { class: "suit-tab pressable", type: "button", "aria-pressed": ui.suit === "all" ? "true" : "false", onclick: (e) => pickSuit("all", e.currentTarget) }, "全部"),
-    ...CARD_SUITS.map((s) =>
+    ...MOCHI_SUITS.filter((s) => s !== "custom" || ui.suit === "custom" || lib.cards.some((c) => c.suit === "custom")).map((s) =>
       el(
         "button",
         { class: "suit-tab pressable", type: "button", style: `--suit: var(--suit-${s})`, "aria-pressed": ui.suit === s ? "true" : "false", onclick: (e) => pickSuit(s, e.currentTarget) },
@@ -1228,6 +1257,7 @@ function pinOpts(extra = {}) {
 
 function pin(tag) {
   if (HARD_BANNED.includes(tag)) return;
+  if (isCustomTag(tag)) return pinCustom(tag);
   haptic(8);
   const before = new Set(pool);
   const next = applyPin(lex, pool, bans, tag, pinOpts());
@@ -1256,6 +1286,138 @@ function pin(tag) {
   if (gone.length) announce(poolNote.text);
   // 手機的挑牌抽屜開著時，池子底下那行被抽屜蓋住：同一句也浮成提示（疊印台也是這樣）。
   if (gone.length && pickerOpen) toast(poolNote.text);
+}
+
+/* ---------- 自製牌（custom-cards.js） ----------
+ * 引擎眼中自製牌就是好幾張牌：放進來時逐張照規則釘上（互斥、附帶、時代都照常），權重跟著；
+ * 自製牌本身那個名字也留在池子裡，畫成一格（成員收在裡面）、抽的時候拿掉，詞庫外的字接在提示詞裡。 */
+
+/** 池子裡每張被自製牌帶進來的牌 → 是哪張自製牌（先放的算）。 */
+function customOwners() {
+  const owner = new Map();
+  for (const t of pool) {
+    if (!isCustomTag(t)) continue;
+    for (const m of customOf(t)?.members || []) if (pool.has(m.tag) && !owner.has(m.tag)) owner.set(m.tag, t);
+  }
+  return owner;
+}
+
+/** 池子裡的自製牌：成員沒釘上的補釘（交接過來、重新整理回來的只帶名字）。 */
+function ensureCustomMembers() {
+  for (const t of [...pool]) {
+    if (!isCustomTag(t)) continue;
+    const c = customOf(t);
+    if (!c) continue;
+    for (const m of c.members) {
+      if (pool.has(m.tag) || !lib.byTag.has(m.tag) || HARD_BANNED.includes(m.tag)) continue;
+      ({ pinned: pool, userBanned: bans } = applyPin(lex, pool, bans, m.tag, pinOpts()));
+      if (m.w !== 1 && !weights.has(m.tag)) weights.set(m.tag, m.w);
+    }
+  }
+}
+
+function pinCustom(tag) {
+  const c = customOf(tag);
+  if (!c) return;
+  haptic(8);
+  const before = new Set(pool);
+  let next = new Set(pool);
+  let nextBans = new Set(bans);
+  for (const m of c.members) {
+    if (!lib.byTag.has(m.tag) || HARD_BANNED.includes(m.tag)) continue;
+    ({ pinned: next, userBanned: nextBans } = applyPin(lex, next, nextBans, m.tag, pinOpts()));
+  }
+  next.add(tag);
+  pool = next;
+  bans = nextBans;
+  for (const m of c.members) if (pool.has(m.tag) && m.w !== 1) weights.set(m.tag, m.w);
+  const gone = [...before].filter((t) => !pool.has(t));
+  for (const t of gone) if (weights.has(t)) parkedWeights.set(t, weights.get(t));
+  const leaving = gone.map(poolNode).filter(Boolean).map((n) => ({ node: n, rect: n.getBoundingClientRect() }));
+  poolNote = gone.length ? replaceNote(c.members[0]?.tag || tag, gone) : null;
+  setTimeout(() => sfx.stamp(), LAND_SFX_MS);
+  if (gone.length) setTimeout(() => sfx.lift(), 90);
+  commitPins(tag);
+  leaving.forEach((l, i) => liftOut(l, i * 60));
+  if (gone.length) announce(poolNote.text);
+  if (gone.length && pickerOpen) toast(poolNote.text);
+}
+
+/** 池子裡自製牌的詞庫外字（接進提示詞）。 */
+function poolExtras() {
+  return [...pool].filter(isCustomTag).map((t) => customOf(t)).filter(Boolean).map(extraText).filter(Boolean).join(", ");
+}
+
+/** 池子裡的一格自製牌：右下角標裡面有幾張；裡面有牌跟別的牌相剋時，整格標相剋。 */
+function customSlot(t, owner, clashing, fresh) {
+  const card = lib.byTag.get(t);
+  const inside = [...owner].filter(([, o]) => o === t).map(([m]) => m);
+  const blocked = ratingBlocked(card.item, ratingOf(settings));
+  const node = eagerArt(cardNode(card, assets, { flag: blocked ? { kind: "ban", text: "分級擋掉" } : null, src: `${inside.length} 張` }));
+  if (t === fresh) node.classList.add("dropped");
+  if (inside.some((m) => clashing.has(m))) node.classList.add("is-clash");
+  node.title = `自製牌「${card.zh}」：${inside.map(zh).join("、")}${card.custom.extra.length ? `＋詞庫外 ${card.custom.extra.length} 個` : ""}`;
+  node.addEventListener("click", () => showCard(t, "pool"));
+  drag.attach(node, { tag: t, from: "pool" });
+  return el(
+    "div",
+    { class: "pool-slot is-custom", style: poolInbound.has(t) ? "visibility: hidden" : undefined },
+    node,
+    el("button", { class: "pool-x pressable", type: "button", "aria-label": `把「${card.zh}」拿出合成池`, onclick: () => unpin(t) }, "×")
+  );
+}
+
+/** 成品的牌 → 卡冊的「新增自製牌」：你選的在前（帶份量），再接抽到的，品質詞、分級尾巴不要。 */
+function customFromShot(s) {
+  const w = s.weights || {};
+  const mine = (s.mine || []).map((t) => (w[t] && w[t] !== 1 ? `(${t}:${w[t]})` : t));
+  const start = startFromPrompt([...mine, ...(s.drawn || []).map((d) => d.tag)].join(", "), { lib, renamed: data.renamed || {}, rating: s.rating || "general" });
+  if (!handOffCustom(start)) toast("無法交接，請檢查瀏覽器儲存空間。");
+}
+
+/** 自製牌拆開：自製牌那一格拿掉，裡面的牌留在池子裡變成一般的牌（詞庫外的字就不再接進去）。 */
+function splitCustom(tag) {
+  const c = customOf(tag);
+  if (!pool.has(tag)) return;
+  const undoTo = stepBefore();
+  pool.delete(tag);
+  commitPins();
+  rememberStep(`「${c?.name || zh(tag)}」又合回一張了`, undoTo);
+  if (c?.extra.length) toast(`拆開了：詞庫外的字（${c.extra.map((x) => x.text).join("、")}）不會再接進提示詞`);
+}
+
+/** 自製牌的詳情（墨池）：裡面有什麼、拆開、拿出合成池或放進去、去卡冊編輯。 */
+function showCustomCard(tag, from) {
+  const card = lib.byTag.get(tag);
+  const c = card.custom;
+  const art = assets.art(tag);
+  const inPool = pool.has(tag);
+  const sheet = openSheet(
+    c.name,
+    el(
+      "div",
+      { class: "detail" },
+      art ? el("div", { class: "detail-art" }, el("img", { src: art, alt: c.name })) : cardNode(card, assets, { tagName: "div" }),
+      el(
+        "div",
+        {},
+        el("p", { class: "tag-en" }, `自製・${RATING_NAME[c.rating]}・${c.members.length} 張牌${c.extra.length ? `・詞庫外 ${c.extra.length} 個` : ""}`),
+        el("dl", {}, el("dt", {}, "裡面"), el("dd", {}, c.members.map((m) => zh(m.tag) + (m.w !== 1 ? ` ×${m.w}` : "")).join("、") || "—"), c.extra.length ? [el("dt", {}, "詞庫外"), el("dd", { dataset: { noI18n: "" } }, c.extra.map((x) => x.text).join(", "))] : null, el("dt", {}, "填入"), el("dd", { class: "cc-fill", dataset: { noI18n: "" } }, fillText(c))),
+        el("p", { class: "cc-how" }, "放進合成池就是裡面這幾張牌：照樣補其他段、照樣檢查互斥；詞庫外的字接在提示詞裡。")
+      )
+    ),
+    {
+      translateTitle: false,
+      foot: [
+        el("a", { class: "btn btn-ghost", href: `book.html#card=${encodeURIComponent(tag)}` }, "去卡冊編輯"),
+        inPool ? el("button", { class: "btn", type: "button", title: "裡面的牌留在池子裡，變成一張張的牌", onclick: () => (sheet.close(), splitCustom(tag)) }, "拆開") : null,
+        inPool
+          ? el("button", { class: "btn btn-pool", type: "button", onclick: () => (sheet.close(), unpin(tag)) }, "拿出合成池")
+          : el("button", { class: "btn btn-primary", type: "button", onclick: () => (sheet.close(), pin(tag)) }, "放進合成池"),
+      ],
+    }
+  );
+  void from;
 }
 
 /** 被時代擠掉的牌：時代改成「混合」、放回池子，兩張都留（漢服配摩天樓）。 */
@@ -1441,6 +1603,11 @@ function undoLastStep() {
 function unpin(tag, { viaDrag = false } = {}) {
   const undoTo = stepBefore();
   const before = new Set(pool);
+  if (isCustomTag(tag)) {
+    // 自製牌：它帶進來的牌一起拿掉（池子裡別張自製牌也有的留著）。
+    const owner = customOwners();
+    for (const m of customOf(tag)?.members || []) if (owner.get(m.tag) === tag) pool.delete(m.tag);
+  }
   pool.delete(tag);
   for (const b of lex.byTag.get(tag)?.bind || []) pool.delete(b);
   const gone = [...before].filter((t) => !pool.has(t) && !(viaDrag && t === tag));
@@ -1458,6 +1625,8 @@ function unpin(tag, { viaDrag = false } = {}) {
 /** 丟進廢字簍。viaDrag：拖進去的那張 drag.js 已經演過被吸進去，這裡不重演。 */
 function ban(tag, { viaDrag = false, from = null } = {}) {
   if (!lib.byTag.has(tag)) return;
+  // 自製牌是好幾張牌：整張丟進廢字簍沒有意義，當成拿出合成池。
+  if (isCustomTag(tag)) return pool.has(tag) ? unpin(tag) : undefined;
   // 用按鈕或 Delete 封鎖的：牌從它現在的位置（池裡或字盒裡；從詳情按的就從那張大圖）轉著縮進廢字簍。
   const src = viaDrag ? null : from || ((n) => n && { node: n, rect: n.getBoundingClientRect() })(poolNode(tag) || libCardNode(tag));
   // 面板開著：牌飛進面板裡（落在它的位置、原尺寸），不是縮進右下角的簍子。
@@ -1710,8 +1879,11 @@ function fadeOutPoolEmpty(well) {
 function renderPool(fresh) {
   updatePickerFoot();
   const well = $("pool-well");
-  const tags = [...pool].filter((t) => lib.byTag.has(t));
-  settleText($("pool-count"), tags.length ? `${tags.length} 張會一定進圖` : "");
+  // 自製牌：牌本身畫成一格，它帶進來的牌收在裡面（引擎那頭照樣是一張張的牌，關係也照全部的牌算）。
+  const owner = customOwners();
+  const allTags = [...pool].filter((t) => lib.byTag.has(t) && !isCustomTag(t));
+  const tags = [...pool].filter((t) => lib.byTag.has(t) && !owner.has(t));
+  settleText($("pool-count"), allTags.length ? `${allTags.length} 張會一定進圖` : "");
   shownInPlace($("pool-clear"), tags.length);
   shownInPlace($("pool-to-fuse"), tags.length);
   if (!tags.length) {
@@ -1750,15 +1922,15 @@ function renderPool(fresh) {
   // 牌跟牌的關係（跟疊印台同一套 relationsOf）：誰帶誰進來、哪兩張放不到一起、活動配場地。
   // 以前池子是一排互不相干的牌：白背景帶進來的素色背景看不出是跟著來的；白背景配星空這種
   // 成立不了的組合也不吭聲，引擎悄悄摘掉一張，人只會覺得「我明明放了」。
-  const inPool = new Set(tags);
+  const inPool = new Set(allTags);
   const carriedBy = {};
-  for (const t of tags) {
+  for (const t of allTags) {
     const it = lex.byTag.get(t);
     for (const d of [...(it?.implies || []), ...(it?.bind || [])]) {
       if (d !== t && inPool.has(d) && !carriedBy[d]) carriedBy[d] = t;
     }
   }
-  const rels = relationsOf({ pins: tags, carried: carriedBy }, { lex, contradictions, actPlace: ACT_PLACE });
+  const rels = relationsOf({ pins: allTags, carried: carriedBy }, { lex, contradictions, actPlace: ACT_PLACE });
   const related = new Map();
   const clashing = new Set();
   const clashPairs = [];
@@ -1778,6 +1950,7 @@ function renderPool(fresh) {
   const ghostEmpty = fadeOutPoolEmpty(well);
   well.replaceChildren(
     ...tags.map((t) => {
+      if (isCustomTag(t)) return customSlot(t, owner, clashing, fresh);
       const card = lib.byTag.get(t);
       const blocked = ratingBlocked(card.item, ratingOf(settings));
       const node = eagerArt(cardNode(card, assets, { flag: blocked ? { kind: "ban", text: "分級擋掉" } : null, src: carriedBy[t] ? "附帶" : null }));
@@ -2418,13 +2591,13 @@ function drawBatch(gen, { auto = false } = {}) {
   const intent = {
     auto,
     settings: structuredClone(settings),
-    pool: new Set(pool),
+    pool: new Set([...pool].filter((t) => !isCustomTag(t))),
     bans: new Set([...bans, ...HARD_BANNED]),
     fixedSeed,
     shot: {
       width: settings.width, height: settings.height, rating: settings.rating,
       loras: structuredClone(currentLorasPayload()), ckpt: currentCkpt(), workflowId: currentWorkflowId(),
-      sampling: currentSampling(), pose: currentPose(), trigger: currentTriggerText(),
+      sampling: currentSampling(), pose: currentPose(), trigger: joinTriggerParts([currentTriggerText(), poolExtras()]),
       // 按下去那一刻合成池的份量：這一輪的每一張都用這一份。
       weights: Object.fromEntries(weights),
     },
@@ -3772,6 +3945,8 @@ function showShot(shot, { focus } = {}) {
       s.image ? el("a", { class: "btn btn-small", href: s.image, target: "_blank", rel: "noopener" }, "開原圖") : null,
       // 分頻道（discord-routes.js）：帶入這張的角色、分級，貼上 webhook 就好。詳情先關，兩層彈窗不要一起搶鍵盤。
       el("button", { class: "btn btn-small", type: "button", onclick: () => (sheet.close(), openRouteFromShot(s)) }, "用這張開 Discord 頻道"),
+      // 自製牌：這張的牌（你選的在前，帶份量）換到卡冊的編輯面板，挑掉不要的再存。
+      el("button", { class: "btn btn-small", type: "button", title: "把這張用到的牌包成一張自製牌（到卡冊編輯）", onclick: () => customFromShot(s) }, "做成自製牌"),
       // 撤下：關掉詳情、從牆上拿掉（提示上照樣有「復原」）。
       el("button", { class: "btn btn-small btn-ghost", type: "button", onclick: () => (sheet.close(), removeShot(current)) }, "撤下"),
     ]);
@@ -3952,6 +4127,7 @@ function showShot(shot, { focus } = {}) {
 function showCard(tag, from, { shot = null } = {}) {
   const card = lib.byTag.get(tag);
   if (!card) return;
+  if (card.custom) return showCustomCard(tag, from);
   // 成品詳情裡點一張抽到的牌：主鈕是「換掉這張重抽」（其他牌釘住、這張排除、同一顆種子抽一次）。
   const swapShot = from === "shot" && shot && shot.drawn.some((d) => d.tag === tag) ? shot : null;
   const srcNode = from === "pool" ? poolNode(tag) : from === "library" ? libCardNode(tag) : null;

@@ -34,6 +34,8 @@ import { pingLoop } from "./ping.js";
 import { getSfx } from "./sfx.js";
 import { attachPeek } from "./card-peek.js";
 import { attachTilt } from "./card-tilt.js";
+import { loadCustom, addCustomToLib, withCustomArt, onCustomChange, setCharacterBan, customOf, deleteCustom, saveCustom, shareCode, readShareCode, startFromPrompt, takeCustomStart, fillText, RATING_NAME } from "./custom-cards.js";
+import { openCustomEditor } from "./custom-editor.js";
 import { createDrag } from "./drag.js";
 import { favChars, paintFavChar, favZone, dropToFav, flyToFav, heartIcon } from "./fav-chars.js";
 import * as S from "./store.js";
@@ -130,7 +132,9 @@ const QUERY_TAB = "mochi.book.query.v1";
 }
 addEventListener("pagehide", () => S.saveTab(QUERY_TAB, { q: ui.query, at: Date.now() }));
 // 存檔裡的花色不是現在有的（改版、壞掉）：回到「全部」，不然卡冊整片是空的。
-if (ui.suit !== "all" && !CARD_SUITS.includes(ui.suit)) ui.suit = "all";
+// 「自製」不在共用的 CARD_SUITS 裡（只有 web6 有）：卡冊自己多一格。
+const BOOK_SUITS = [...CARD_SUITS, "custom"];
+if (ui.suit !== "all" && !BOOK_SUITS.includes(ui.suit)) ui.suit = "all";
 
 function readUi() {
   try {
@@ -216,6 +220,8 @@ async function boot() {
   // 現在就要用到的（照日期排、含禁用）才等它，不然要整格重畫一次。
   const datesP = fetch(document.querySelector('link[rel="preload"][href^="tag_dates.json"]')?.href || "tag_dates.json").then((r) => (r.ok ? r.json() : {})).catch(() => ({}));
   let datesLate = false;
+  // 自製牌（custom-cards.js）跟詞庫一起抓。
+  const customP = loadCustom();
   try {
     const [lexicon, manifest] = await Promise.all([
       fetch(document.querySelector('link[rel="preload"][href^="lexicon.json"]')?.href || "lexicon.json").then((r) => r.json()),
@@ -223,9 +229,11 @@ async function boot() {
     ]);
     data = lexicon;
     lib = buildLibrary(data, { ratingBlocked });
+    setCharacterBan(data.characterBan);
+    addCustomToLib(lib, await customP);
     if (isDate() || ui.showBanned) attachDates(lib, await datesP);
     else datesLate = true;
-    assets = createAssets(manifest);
+    assets = withCustomArt(createAssets(manifest));
   } catch (err) {
     // 連線問題（手機網路斷一下、伺服器沒開）：說「連不到主機」、給重試；不是叫人用 start.bat 開。
     if (isNetError(err)) return bootFailed(err);
@@ -316,13 +324,28 @@ async function boot() {
   settleMotion();
   // 開好了：左右相鄰的房間在背後先開好，換過去不用再等開頁（prerender.js）。
   whenActive(prerenderNeighbors);
+  // 自製牌存了、刪了（這一頁或別的分頁）：牌庫換新、重畫。
+  onCustomChange(() => {
+    addCustomToLib(lib);
+    for (const tag of [...cells.keys()]) if (tag.startsWith("custom:")) cells.delete(tag);
+    renderSuits();
+    render({ animate: false });
+    renderSummary();
+    hand?.update?.();
+  });
   // 作品冊、成品上點牌名過來（book.html#card=red%20hair）：直接打開那張牌的詳情。
   openFromHash();
   addEventListener("hashchange", openFromHash);
 }
 
-/** 網址帶 #card=<tag>：打開那張牌的詳情（作品冊的牌名籤點過來的）。打開後把 #card 拿掉，重新整理不會又開。 */
+/** 網址帶 #card=<tag>：打開那張牌的詳情（作品冊的牌名籤點過來的）。打開後把 #card 拿掉，重新整理不會又開。
+ *  #custom-new：墨池、疊印台的成品、牌組、作品冊按「做成自製牌」過來 —— 帶著便條打開新增自製牌。 */
 function openFromHash() {
+  if (location.hash === "#custom-new") {
+    history.replaceState(null, "", location.pathname + location.search);
+    if (ui.suit !== "custom") pickSuit("custom");
+    return openEditor(null, takeCustomStart());
+  }
   const m = /^#card=(.+)$/.exec(location.hash);
   if (!m) return;
   let tag = "";
@@ -467,7 +490,7 @@ function renderSuits() {
   const totalIn = (s) => pool.filter((c) => c.suit === s).length || 1;
   tabs.replaceChildren(
     el("button", { class: "suit-tab pressable", type: "button", "aria-pressed": ui.suit === "all" ? "true" : "false", onclick: (e) => pickSuit("all", e.currentTarget) }, "全部"),
-    ...CARD_SUITS.map((s) =>
+    ...BOOK_SUITS.map((s) =>
       el(
         "button",
         {
@@ -549,6 +572,14 @@ function renderGroups() {
     b.replaceChildren();
   }
   if (ui.suit === "all") return rowMove.done();
+  if (ui.suit === "custom") {
+    sticky.hidden = false;
+    sticky.replaceChildren(
+      el("button", { class: "group-chip pressable cc-new", type: "button", onclick: () => openEditor(null, null) }, el("b", { "aria-hidden": "true" }, "＋"), " 新增自製牌"),
+      el("button", { class: "group-chip pressable", type: "button", onclick: pasteShare }, "貼上分享碼")
+    );
+    return rowMove.done();
+  }
   const runs = groupChips(lib.cards.filter((c) => c.suit === ui.suit && visibleCard(c) && genderOk(c)));
   if (ui.group && !runs.some((r) => r.items.some((i) => i.g === ui.group))) ui.group = "";
   const count = runs.reduce((n, r) => n + r.items.length, 0);
@@ -849,6 +880,8 @@ const drawable = (card) => !card.banned && !blocked(card, seeRating());
 
 function visibleCard(card) {
   if (card.banned) return ui.showBanned;
+  // 自己做的牌一律看得到（超過現在分級的蓋「分級擋掉」，見 paintCell）：做好卻找不到，像沒存到。
+  if (card.suit === "custom") return true;
   return !blocked(card, seeRating());
 }
 
@@ -1010,6 +1043,8 @@ function paintCell(cell, card, rank) {
   } else old?.remove();
   if (card.banned) setCardFlag(cell.querySelector(".card"), { kind: "ban", text: "禁用" });
   else paintMark(cell, card.tag);
+  // 自製牌一律列出來（visibleCard）：超過現在分級的蓋章，墨池那邊也抽不到。
+  if (card.suit === "custom" && blocked(card, seeRating())) setCardFlag(cell.querySelector(".card"), { kind: "ban", text: "分級擋掉" });
   paintCustom(cell, card.tag);
   const [w, fav, drop] = warOf(card.tag);
   const addedNote = card.added ? `，${card.added} 加入` : "";
@@ -1305,6 +1340,15 @@ function rankAt(card, i) {
 }
 
 function emptyNote() {
+  if (ui.suit === "custom" && !lib.cards.some((c) => c.suit === "custom")) {
+    return el(
+      "div",
+      { class: "book-empty" },
+      el("b", {}, "還沒有自製牌"),
+      el("span", {}, "把常用的幾張牌（可以調權重）加上詞庫沒有的字，包成一張自己的牌；墨池、疊印台放進去就是那幾張。"),
+      el("div", { class: "book-empty-acts" }, el("button", { class: "btn btn-small btn-primary", type: "button", onclick: () => openEditor(null, null) }, "新增自製牌"), el("button", { class: "btn btn-small", type: "button", onclick: pasteShare }, "貼上分享碼"))
+    );
+  }
   if (isWar()) {
     const total = war?.total || 0;
     return el(
@@ -1437,6 +1481,133 @@ function peekInfo(node) {
   };
 }
 
+/* ================= 自製牌 ================= */
+
+/** 打開編輯面板。card：要改的那張（null＝新的）；start：先填好的內容（成品、牌組、分享碼帶來的）。 */
+function openEditor(card, start) {
+  openCustomEditor({
+    card,
+    start,
+    lib,
+    lex: lexNow(),
+    assets,
+    renamed: data.renamed || {},
+    onSaved: (c) => {
+      // 做好多半是要馬上用：提示上給「帶去墨池」（放進合成池、切過去）。
+      const tag = "custom:" + c.id;
+      const go = () => (S.handOffPool([tag], "book") ? (location.href = "./") : toast("無法交接選牌，請檢查瀏覽器儲存空間。"));
+      toast(card ? `「${c.name}」存好了` : `「${c.name}」做好了：墨池、疊印台的字盒「自製」裡找得到`, { action: { label: "帶去墨池", run: go } });
+      if (ui.suit !== "custom") pickSuit("custom");
+    },
+  });
+}
+
+/** 貼上分享碼：讀剪貼簿（讀不到就請人貼進來），過詞庫和封鎖，打開編輯面板給人看過再存。 */
+async function pasteShare() {
+  let text = "";
+  try {
+    text = await navigator.clipboard.readText();
+  } catch {}
+  if (!/mochi-card:/.test(text)) text = prompt(t("把分享碼貼在這裡（mochi-card: 開頭）")) || "";
+  if (!text.trim()) return;
+  let got;
+  try {
+    got = readShareCode(text);
+  } catch (err) {
+    return toast(String(err.message || err));
+  }
+  // 分享碼裡的牌照樣走一次拆提示詞：詞庫沒有的變成詞庫外、封鎖的拿掉。
+  const start = startFromPrompt([...got.members.map((m) => (m.w !== 1 ? `(${m.tag}:${m.w})` : m.tag)), ...got.extra.map((x) => (x.w !== 1 ? `(${x.text}:${x.w})` : x.text))].join(", "), { lib, renamed: data.renamed || {}, rating: got.rating, name: got.name });
+  openEditor(null, start);
+}
+
+/** 自製牌的詳情：卡面、裡面的牌、送去生圖的那段；編輯、複製分享碼、刪除（可復原）。 */
+function openCustomCard(card, srcNode) {
+  sfx.tap?.();
+  const c = card.custom;
+  const art = assets.art(card.tag);
+  const zh = (tag) => lib.byTag.get(tag)?.zh || tag;
+  const members = el(
+    "div",
+    { class: "cc-members" },
+    c.members.map((m) => {
+      const mc = lib.byTag.get(m.tag);
+      return el("span", { class: "cc-member", style: mc ? `--suit: var(--suit-${mc.suit})` : "" }, zh(m.tag), m.w !== 1 ? el("small", {}, ` ×${m.w}`) : null);
+    }),
+    c.extra.map((x) => el("span", { class: "cc-member is-extra", dataset: { noI18n: "" } }, x.text, x.w !== 1 ? el("small", {}, ` ×${x.w}`) : null))
+  );
+  const sheet = openSheet(
+    c.name,
+    el(
+      "div",
+      { class: "detail book-detail" },
+      art ? el("div", { class: "detail-art" }, el("img", { src: art, alt: c.name })) : cardNode(card, assets, { tagName: "div" }),
+      el(
+        "div",
+        {},
+        el("p", { class: "tag-en" }, `自製・${RATING_NAME[c.rating]}・${c.members.length} 張牌${c.extra.length ? `・詞庫外 ${c.extra.length} 個` : ""}`),
+        members,
+        el("dl", {}, el("dt", {}, "填入"), el("dd", { class: "cc-fill", dataset: { noI18n: "" } }, fillText(c)), c.face?.seed != null ? [el("dt", {}, "卡面種子"), el("dd", {}, String(c.face.seed))] : null),
+        el("p", { class: "cc-how" }, "墨池、疊印台放進去，就是裡面這幾張牌（照樣補其他段、照樣檢查互斥）；詞庫外的字接在提示詞裡。")
+      )
+    ),
+    {
+      translateTitle: false,
+      foot: [
+        el(
+          "button",
+          {
+            class: "btn btn-ghost",
+            type: "button",
+            onclick: async () => {
+              const gone = await deleteCustom(c.id).catch((err) => (toast(String(err.message || err)), null));
+              if (!gone) return;
+              sheet.close();
+              if (hand?.has(card.tag)) hand.remove(card.tag, { quiet: true });
+              toast(`「${c.name}」刪掉了`, { action: { label: "復原", key: "Z", run: () => saveCustom(gone).catch((err) => toast(String(err.message || err))) } });
+            },
+          },
+          "刪除"
+        ),
+        el(
+          "button",
+          {
+            class: "btn",
+            type: "button",
+            title: "一行文字，貼到 Discord 給別人；對方在卡冊「自製」按「貼上分享碼」就拿到同一張",
+            onclick: async () => {
+              try {
+                await navigator.clipboard.writeText(shareCode(c));
+                toast("分享碼複製好了：貼給別人，對方在卡冊「自製」按「貼上分享碼」");
+              } catch {
+                prompt(t("複製這段分享碼"), shareCode(c));
+              }
+            },
+          },
+          "複製分享碼"
+        ),
+        el(
+          "button",
+          {
+            class: "btn",
+            type: "button",
+            title: "長期常用的牌放進偏好卡牌（墨池底下那排）",
+            onclick: (e) => {
+              const had = hand.has(card.tag);
+              if (had) hand.remove(card.tag, { quiet: true });
+              else hand.add(card.tag, srcNode?.getBoundingClientRect() || null);
+              e.currentTarget.textContent = hand.has(card.tag) ? "從偏好卡牌拿掉" : "加進偏好卡牌";
+            },
+          },
+          hand?.has(card.tag) ? "從偏好卡牌拿掉" : "加進偏好卡牌"
+        ),
+        el("button", { class: "btn btn-primary", type: "button", onclick: () => (sheet.close(), openEditor(customOf(card.tag) || c, null)) }, "編輯"),
+      ],
+    }
+  );
+  flyToDetail(srcNode, sheet.sheet || document.querySelector(".overlay:last-of-type .sheet"));
+}
+
 /* ================= 單張牌的詳情 ================= */
 
 function rankIn(card, cards) {
@@ -1459,6 +1630,7 @@ function ago(ms) {
 }
 
 function openCard(card, srcNode) {
+  if (card.custom) return openCustomCard(card, srcNode);
   // 翻開一張牌：跟墨池開詳情同一個聲音。
   sfx.tap?.();
   const c = countOf(card.tag);

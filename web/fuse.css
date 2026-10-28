@@ -528,6 +528,7 @@ body.fuse {
 
 .case-tab[data-suit="cast"] .tab-dot { background: var(--suit-cast); }
 .case-tab[data-suit="chara"] .tab-dot { background: var(--suit-chara); }
+.case-tab[data-suit="custom"] .tab-dot { background: var(--suit-custom); }
 .case-tab[data-suit="look"] .tab-dot { background: var(--suit-look); }
 .case-tab[data-suit="wear"] .tab-dot { background: var(--suit-wear); }
 .case-tab[data-suit="pose"] .tab-dot { background: var(--suit-pose); }

@@ -34,6 +34,7 @@ import { createLog, LOG_FILTERS, cardHref } from "./album-log.js";
 import { createModels } from "./album-models.js";
 import { GROUPINGS, groupWorks, similarWorks } from "./album-groups.js";
 import { footMore } from "./foot-more.js";
+import { handOffCustom, startFromPrompt } from "./custom-cards.js";
 
 // 背後預先開好的這一頁（prerender.js）：點進去之前這個房間讀的存檔被別頁改過，就重新整理。
 guardPrerender("album");
@@ -43,6 +44,8 @@ const $ = (id) => document.getElementById(id);
 const RANK = { general: 0, sensitive: 1, explicit: 2 };
 
 let lib = null;
+// 詞庫的舊名→新名（做成自製牌時拆提示詞用）。
+let renamed = {};
 let works = [];
 let rating = "general";
 // 分級「不限制」（rating-free.js，跟墨池同一份設定）：開著每件作品都看得到。
@@ -112,6 +115,7 @@ async function boot() {
   try {
     const data = await fetch(document.querySelector('link[rel="preload"][href^="lexicon.json"]')?.href || "lexicon.json").then((r) => r.json());
     lib = buildLibrary(data, { ratingBlocked });
+    renamed = data.renamed || {};
   } catch (err) {
     // 連線問題（手機網路斷一下、伺服器沒開）：說「連不到主機」、給重試；不是叫人用 start.bat 開。
     if (isNetError(err)) return bootFailed(err);
@@ -584,6 +588,14 @@ function chips(tags, kind, weights = {}) {
   );
 }
 
+/** 作品的牌 → 卡冊的「新增自製牌」：你選的在前（帶份量），再接引擎補的；品質詞、分級尾巴不要。 */
+function customFromWork(w, mine, rest) {
+  const ws = weightsOfPositive(w.positive);
+  const tags = [...mine, ...rest].map((t) => (ws[t] && ws[t] !== 1 ? `(${t}:${ws[t]})` : t));
+  const start = startFromPrompt(tags.join(", "), { lib, renamed, rating: w.rating || "general", name: String(w.name || "").slice(0, 24) });
+  if (!handOffCustom(start)) toast("無法交接，請檢查瀏覽器儲存空間。");
+}
+
 /**
  * 牌交給墨池。recipe（照這張再印）：時代、種子、底模、LoRA 一起帶過去（store.js 的 recipeOf），
  * 墨池收到後套好牌和時代、固定種子，底模、LoRA 問一聲要不要換。
@@ -716,6 +728,10 @@ function openWork(w) {
         : all.length
           ? el("button", { class: "btn btn-small", type: "button", onclick: (e) => toMochi(all, `全部 ${all.length} 張`, w, e.currentTarget) }, "只帶牌")
           : null,
+      // 自製牌：這件的牌（你選的在前，帶份量）換到卡冊的「新增自製牌」，挑掉不要的再存。
+      all.length
+        ? el("button", { class: "btn btn-small", type: "button", title: "把這件用到的牌包成一張自製牌（到卡冊編輯）", onclick: () => customFromWork(w, mine, rest) }, "做成自製牌")
+        : null,
       el(
         "button",
         {

@@ -41,7 +41,7 @@ import { searchMiss } from "./lib-hint.js";
 import { watchGone, sweepGone } from "./gone.js";
 import { HEATS, toggleHeat } from "./heats.js";
 import { heatBlockedByRating } from "./scene-policy.js";
-import { initLoraPicker, currentLorasPayload, currentTriggerText, currentCkpt, handleLoraKeys } from "./lora.js";
+import { initLoraPicker, currentLorasPayload, currentTriggerText, currentCkpt, handleLoraKeys, joinTriggerParts } from "./lora.js";
 import { initWorkflow, currentWorkflowId, currentSampling, wfHandleKeys } from "./workflow.js";
 import { HARD_BANNED, applyArtSources } from "./card-art.js";
 import { buildLibrary, sizeCards, groupChips, genderChips, chipRun, seriesRun, groupNow, cardMatches, searchCards, searchNote, createAssets, cardNode, cardFacts, setEnterTarget, eagerArt, CARD_SUIT_INFO, CARD_SUITS, RATING_ZH, ERA_ZH } from "./cards.js";
@@ -64,6 +64,7 @@ import { createGenerator, comfyOnline, viewSrc, tabTitle, markGenLog } from "./g
 import { pingLoop } from "./ping.js";
 import { attachPeek, hidePeek, showPeek } from "./card-peek.js";
 import { attachTilt } from "./card-tilt.js";
+import { loadCustom, addCustomToLib, withCustomArt, onCustomChange, setCharacterBan, isCustomTag, customOf, extraText, handOffCustom, startFromPrompt } from "./custom-cards.js";
 import { createHires, openHiresPicker, openFacePicker, paintHiresVeil, hiresBusy, faceBusy, faceDepth } from "./hires.js";
 import * as S from "./store.js";
 import { recordUses, tagsOfPositive } from "./usage.js";
@@ -180,6 +181,8 @@ function writeJ(key, value) {
 
 const cardOf = (tag) => lib.byTag.get(tag);
 const suitOf = (tag) => cardOf(tag)?.suit || null;
+// 牌在版上的哪一層：角色牌跟人數牌同一層（「人物」）。版只有六層，以前角色牌放上去照樣進提示詞，版上卻看不到。
+const regOf = (tag) => (suitOf(tag) === "chara" ? "cast" : suitOf(tag));
 const zh = (tag) => cardOf(tag)?.zh || lex.byTag.get(tag)?.zh || tag;
 const cssEsc = (s) => (window.CSS && CSS.escape ? CSS.escape(s) : s.replace(/"/g, '\\"'));
 
@@ -218,6 +221,8 @@ async function boot() {
     renderPrintBar();
   });
   const lexUrl = document.querySelector('link[rel="preload"][href^="lexicon.json"]')?.href || "lexicon.json";
+  // 自製牌（custom-cards.js）跟詞庫一起抓。
+  const customP = loadCustom();
   try {
     const [lexicon, man] = await Promise.all([
       fetch(lexUrl).then((r) => r.json()),
@@ -229,7 +234,16 @@ async function boot() {
     warmDrawWorker(new URL(lexUrl, location.href).href);
     lex = indexLexicon(data);
     lib = buildLibrary(data, { ratingBlocked });
-    assets = createAssets(man || {});
+    setCharacterBan(data.characterBan);
+    addCustomToLib(lib, await customP);
+    assets = withCustomArt(createAssets(man || {}));
+    // 自製牌存了、刪了（卡冊、別的分頁）：字盒換新。
+    onCustomChange(() => {
+      addCustomToLib(lib);
+      renderCaseTabs();
+      renderCase();
+      renderTrials?.();
+    });
   } catch (err) {
     // 連線問題（手機網路斷一下、伺服器沒開）：說「連不到主機」、給重試；不是叫人用 start.bat 開。
     if (isNetError(err)) return bootFailed(err);
@@ -656,7 +670,7 @@ function commit(next, label, events = []) {
   plateNotice = null;
   for (const e of events) {
     if (e.kind !== "replace") continue;
-    const suit = suitOf(e.out);
+    const suit = regOf(e.out);
     rowNotes[suit] = {
       text:
         e.why === "people"
@@ -682,6 +696,7 @@ function commit(next, label, events = []) {
  */
 function place(tag, sourceEl, { viaDrag = false } = {}) {
   if (!lib.byTag.has(tag)) return;
+  if (isCustomTag(tag)) return placeCustom(tag, sourceEl);
   if (bed.pins.includes(tag)) return;
   const from = sourceEl && sourceEl.isConnected ? sourceEl.getBoundingClientRect() : null;
   const { bed: next, events } = placeCard(bed, tag, deps());
@@ -693,7 +708,7 @@ function place(tag, sourceEl, { viaDrag = false } = {}) {
   const carried = events.filter((e) => e.kind === "carry").map((e) => e.tag);
   const popCarried = (lag) => carried.forEach((t, i) => popIn(t, lag + i * 90));
   const stampDown = () => {
-    inkRow(suitOf(tag));
+    inkRow(regOf(tag));
     sfx.stamp();
     carried.forEach((_, i) => sfx.carry(i));
     haptic(8);
@@ -744,6 +759,72 @@ function place(tag, sourceEl, { viaDrag = false } = {}) {
   announce(bits.join("，"));
   replacedNote(tag, events);
   return result;
+}
+
+/* ---------- 自製牌（custom-cards.js） ----------
+ * 引擎眼中自製牌就是好幾張牌：放上卡池時裡面的牌逐張照規則放（互斥、附帶、時代照常），權重跟著。
+ * 卡池（fuse-bed.js）只認一張張的牌，所以「放過哪些自製牌」另外記在這個分頁（sessionStorage）：
+ * 它還有牌在卡池上，詞庫外的字就接進試印的提示詞。 */
+const FUSE_CUSTOMS = "mochi.fuse.customs.v1";
+function placedCustoms() {
+  try {
+    const v = JSON.parse(sessionStorage.getItem(FUSE_CUSTOMS) || "[]");
+    return Array.isArray(v) ? v.filter(isCustomTag) : [];
+  } catch {
+    return [];
+  }
+}
+function rememberCustom(tag) {
+  try {
+    sessionStorage.setItem(FUSE_CUSTOMS, JSON.stringify([...new Set([...placedCustoms(), tag])].slice(-20)));
+  } catch {}
+}
+/** 卡池上還有牌的自製牌，它們的詞庫外字（接在觸發字那段，插在人數後面）。 */
+function bedExtras() {
+  return placedCustoms()
+    .map(customOf)
+    .filter((c) => c && c.extra.length && c.members.some((m) => bed.pins.includes(m.tag)))
+    .map(extraText)
+    .join(", ");
+}
+
+function placeCustom(tag, sourceEl) {
+  const c = customOf(tag);
+  if (!c) return;
+  let next = bed;
+  const events = [];
+  for (const m of c.members) {
+    if (!lib.byTag.has(m.tag) || next.pins.includes(m.tag)) continue;
+    const r = placeCard(next, m.tag, deps());
+    next = r.bed;
+    events.push(...r.events);
+  }
+  const w = { ...(next.weights || {}) };
+  for (const m of c.members) if (next.pins.includes(m.tag) && m.w !== 1) w[m.tag] = m.w;
+  if (Object.keys(w).length) next = { ...next, weights: w };
+  rememberCustom(tag);
+  if (!events.length) {
+    renderTrials?.();
+    return toast(`「${c.name}」裡的牌都已經在卡池上了`);
+  }
+  const leaving = events.filter((e) => e.kind === "replace").map((e) => plateNode(e.out)).filter(Boolean).map(snapshot);
+  for (const e of events) if (e.kind === "replace" && hand?.has(e.out)) hand.arriveAt(e.out, 1200);
+  commit(next, `放上自製牌「${c.name}」`, events);
+  leaving.forEach((snap) => flyHome(snap));
+  const placed = events.filter((e) => e.kind !== "replace").map((e) => e.tag).filter(Boolean);
+  placed.forEach((t, i) => popIn(t, 80 + i * 60));
+  sfx.stamp();
+  haptic(8);
+  void sourceEl;
+  const out = events.filter((e) => e.kind === "replace");
+  announce(`放上自製牌「${c.name}」：${c.members.length} 張牌${out.length ? `，換下${out.map((e) => `「${zh(e.out)}」`).join("")}` : ""}`);
+  if (out.length) toast(`自製牌「${c.name}」放上卡池：${out.map((e) => `「${zh(e.out)}」`).join("")}被換下（同一格只留一張）`);
+}
+
+/** 成品的牌 → 卡冊的「新增自製牌」。品質詞、分級尾巴不要。 */
+function customFromPrint(p) {
+  const start = startFromPrompt(p.positive || "", { lib, renamed: data.renamed || {}, rating: p.rating || "general" });
+  if (!handOffCustom(start)) toast("無法交接，請檢查瀏覽器儲存空間。");
 }
 
 /**
@@ -817,7 +898,7 @@ function startWith(starter, btn = null, { fresh = false, kind = "起手" } = {})
     if (from && !reduced()) flyIn(t, from, { delay: DUR.micro + i * (DUR.micro / 2) });
     else popIn(t, i * 120);
   });
-  starter.tags.forEach((t, i) => setTimeout(() => (inkRow(suitOf(t)), sfx.stamp()), i * 120));
+  starter.tags.forEach((t, i) => setTimeout(() => (inkRow(regOf(t)), sfx.stamp()), i * 120));
   announce(`${kind}：${starter.name}，疊上${starter.tags.map((t) => `「${zh(t)}」`).join("")}`);
 }
 
@@ -1740,11 +1821,11 @@ function paintTrialFacesFor(sig) {
 
 /** 一張試印裡引擎補的、最看得出差別的幾張：先挑你沒放的那幾套，每套一張。 */
 function trialHighlights(t) {
-  const filled = new Set(bed.pins.map(suitOf));
+  const filled = new Set(bed.pins.map(regOf));
   const order = ["look", "wear", "pose", "scene", "cast", "style"].sort((a, b) => filled.has(a) - filled.has(b));
   const out = [];
   for (const suit of order) {
-    const hit = t.extra.find((x) => suitOf(x) === suit && assets.art(x) && !out.includes(x));
+    const hit = t.extra.find((x) => regOf(x) === suit && assets.art(x) && !out.includes(x));
     if (hit) out.push(hit);
     if (out.length >= 4) break;
   }
@@ -1789,8 +1870,8 @@ function planPool(t, empty) {
     Math.max(160, box.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight) - (wide ? 5 : 3.2) * rem);
   const rows = REGISTERS.map((suit) => ({
     suit,
-    mine: bed.pins.filter((x) => suitOf(x) === suit).length,
-    ghosts: t ? t.extra.filter((x) => suitOf(x) === suit).length : 0,
+    mine: bed.pins.filter((x) => regOf(x) === suit).length,
+    ghosts: t ? t.extra.filter((x) => regOf(x) === suit).length : 0,
     note: !!rowNotes[suit],
   }));
   const headH = poolFit.headH || 2.2 * rem;
@@ -1974,9 +2055,9 @@ function renderPlate(events = []) {
   renderPlateNotice();
   const plan = planPool(t, empty);
   const rows = REGISTERS.map((suit) => {
-    const mine = bed.pins.filter((x) => suitOf(x) === suit);
+    const mine = bed.pins.filter((x) => regOf(x) === suit);
     // 空白的版不列引擎的影子：還沒有東西可以對照，只會讓人以為版上已經有牌。
-    const ghosts = !empty && t ? t.extra.filter((x) => suitOf(x) === suit) : [];
+    const ghosts = !empty && t ? t.extra.filter((x) => regOf(x) === suit) : [];
     const cap = plan.caps[suit] ?? ghosts.length;
     const open = expanded.has(suit);
     const shown = open ? ghosts : ghosts.slice(0, cap);
@@ -2311,7 +2392,7 @@ function refreshInk() {
 
 /** 試印送出去的提示詞：版上調過份量的牌寫成 (tag:1.2)，觸發詞照舊插在人物後面。付印、看 POS、複製都用這一個。 */
 function trialPositive(t) {
-  return insertTriggerAfterCast(weightPositive(t.positive, bed.weights), currentTriggerText());
+  return insertTriggerAfterCast(weightPositive(t.positive, bed.weights), joinTriggerParts([currentTriggerText(), bedExtras()]));
 }
 
 /**
@@ -3452,6 +3533,8 @@ function openPrint(p, from) {
     p.status === "done" && p.image && !p._gone ? el("button", { class: "btn btn-small", type: "button", title: "找到臉、只重畫臉（FaceDetailer）", onclick: () => fromLine(openFace) }, "修臉") : null,
     // 分頻道（discord-routes.js）：帶入這張的角色、分級。詳情先關，兩層彈窗不要一起搶鍵盤。
     p._gone ? null : el("button", { class: "btn btn-small", type: "button", onclick: () => (sheet.close(), openRouteFromShot(p)) }, "用這張開 Discord 頻道"),
+    // 自製牌：這張的牌換到卡冊的編輯面板，挑掉不要的再存。
+    p._gone ? null : el("button", { class: "btn btn-small", type: "button", title: "把這張用到的牌包成一張自製牌（到卡冊編輯）", onclick: () => customFromPrint(p) }, "做成自製牌"),
     p.image && !p._gone ? el("a", { class: "btn btn-small", href: p.image, target: "_blank", rel: "noopener" }, "開原圖") : null,
     el(
       "button",
@@ -3537,6 +3620,8 @@ function renderCaseTabs() {
     ["all", "全部", null],
     ["match", "相配", null],
     ...CARD_SUITS.map((s) => [s, CARD_SUIT_INFO[s].zh, s]),
+    // 自製牌（卡冊做的）：有才出現。
+    ...(caseTab === "custom" || lib.cards.some((c) => c.suit === "custom") ? [["custom", CARD_SUIT_INFO.custom.zh, "custom"]] : []),
   ];
   syncChoices(box, "aria-pressed",
     ...tabs.map(([id, label, suit]) =>
@@ -3637,6 +3722,7 @@ function renderCaseGroups(inSuit) {
   const rowMove = rowChange(box, $("case-grid"));
   const suitTab = CARD_SUITS.includes(caseTab);
   const runs = suitTab ? groupChips(inSuit) : [];
+  // 「自製」沒有小分類（caseTab === "custom" 時 suitTab 是 false，下面照舊收起來）。
   if (caseGroup && !runs.some((r) => r.items.some((i) => i.g === caseGroup))) caseGroup = "";
   // 角色頁一律留著：性別籤在這一排，篩到沒牌時也要能切回來。
   box.hidden = caseTab !== "chara" && runs.reduce((n, r) => n + r.items.length, 0) < 2;
@@ -3948,7 +4034,7 @@ const drag = createDrag({
     dropRow?.classList.remove("is-drop-target");
     dropRow = null;
     if (zone !== "plate") return;
-    dropRow = $("registers").querySelector(`.register[data-suit="${suitOf(p.tag)}"]`);
+    dropRow = $("registers").querySelector(`.register[data-suit="${regOf(p.tag)}"]`);
     dropRow?.classList.add("is-drop-target");
   },
   // 手機長按原地放開：沒有滑鼠懸停，用同一張放大卡給它看（點任何地方收起）。

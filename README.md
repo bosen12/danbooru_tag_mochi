@@ -43,7 +43,7 @@ Mochi is the card interface of [danbooru_tag_random](https://github.com/bosen12/
 |---|---|
 | **Ink Pool** `/` | Browse the card library by suit (Cast, Characters, Appearance, Clothing, Pose, Scene, Style), or search in English or Chinese. Pinned cards appear in every image; the engine fills the remaining slots. Rules set content level, era, characters, pose reference and size. Batch, continuous and draw-only modes. |
 | **Fuse Bed** `/fuse.html` | One card per ink layer. Pinned cards stack into six suit rows; grey shadows are the engine's additions. Four same-seed proofs redraw instantly, so you see what each card changes before you generate. |
-| **Card Book** `/book.html` | How often each card was used, its save and discard rates, and the images it appeared in. Achievements. |
+| **Card Book** `/book.html` | How often each card was used, its save and discard rates, and the images it appeared in. Achievements. Make your own **custom cards**. |
 | **Gallery** `/album.html` | Saved images, the full generation history, and a report card for every checkpoint and LoRA. **Print this again** sends a work's cards, weights, era, seed, size, checkpoint and LoRA back to the Ink Pool; tap a card name to open it in the Card Book. |
 | **Parse Pool** `/parse.html` | Drop, paste or pick an image; ComfyUI's [WD14 Tagger](https://github.com/pysssss/ComfyUI-WD14-Tagger) reads its tags in a few seconds, and the ones in the vocabulary become cards, sorted by suit and marked *Sure* or *Likely*. Click a card to leave it out, switch to sure ones only, then take the rest to the Ink Pool or the Fuse Bed. Model, minimum confidence, character threshold and excluded tags live in **Parse settings**. |
 
@@ -52,6 +52,8 @@ Mochi is the card interface of [danbooru_tag_random](https://github.com/bosen12/
 **Choose supplemental kinds.** At counts 1–4 for appearance, clothing and pose, or 1–3 for scene, choose the kinds to supplement. Each kind receives at most one random card; required dependencies may add related tags. Higher counts retain free drawing. **More kinds** includes species, makeup, nudity, garment state, sex, exposure, weather, props and lens effects. Selecting a content level permits candidates; it does not override your chosen kinds. Pinned cards, required draws and their necessary dependencies stay, subject to compatibility rules.
 
 **Keep cards for later.** Favorite cards are your long-term row of individual cards, as many as you like (Ink Pool and the Card Book share one set; Overprint keeps its own). In the Card Book, + sends a card straight to the Ink Pool mix while you keep browsing; with favorite cards open, clicking a card adds it to the row. Decks save a full selection and its weights for reuse. The Gallery distinguishes recipe-only works from images that failed to load, and offers a retry for the latter.
+
+**Custom cards.** Bundle cards you use together, with weights, plus words the lexicon doesn't have, into one card of your own: **Custom** (last suit in the Card Book) → **New custom card**, or **Make custom card** on an Ink Pool / Fuse Bed image or a Gallery work, or **Save as custom card** in the Decks panel. Pick cards from a small card case, or **Paste prompt** and Mochi splits it into lexicon cards and words *not in lexicon* (weights like `(tag:1.2)` are kept; near spellings get a “did you mean…”). The rating can't be lower than the cards inside. **Fill** is what gets generated; **Card art** is only for baking the card's picture (built automatically, editable). **Bake art preview** uses your seed or a random one, and the preview only replaces the art when you save. In the Ink Pool and the Fuse Bed the engine treats a custom card as the cards inside — other sections still fill and conflicts still apply — and words outside the lexicon are added after the cast. It never gets drawn at random. **Copy share code** gives one `mochi-card:` line to post on Discord; **Paste share code** in the Card Book imports it. Words about minors and banned characters are refused when pasted, saved or baked.
 
 **Characters.** 679 adult anime and game characters (Yor, Makima, Raiden Shogun, Levi…) are cards in their own suit, grouped by series under Anime and Games (One Piece, Demon Slayer…; Arknights, Genshin Impact…). Pin one or several, or turn on **Draw characters** in the Ink Pool rules to give people of the selected gender named characters (up to three, any series). Pinned characters remain even when their gender is switched off. **Same series only** keeps every drawn character in the pinned character's series, or picks one series that fits the cast when none is pinned. **Add series name** puts the series tag after each character. While a character is in the image the engine stops drawing hair color, hairstyle, eye color, body type and similar traits that would change who it is. Characters who are underage, school students, child-looking, real people or VTubers, non-human, or of unknown age are banned: they are not cards, pasted prompts drop them, and the server refuses any prompt that contains them.
 
@@ -135,7 +137,7 @@ ComfyUI LoRA Manager is a separate project (GPLv3). It is installed into your ow
 
 ## Your data
 
-Everything you create stays in `data/` (git-ignored): card usage, decks, the gallery, the generation history, imported workflows and a webp cache of results. To move to another machine, copy `data/` and `config.json`.
+Everything you create stays in `data/` (git-ignored): card usage, decks, custom cards (`data/custom_cards.json`, their art in `data/custom_cards/`), the gallery, the generation history, imported workflows and a webp cache of results. To move to another machine, copy `data/` and `config.json`.
 
 ## Layout
 
@@ -235,7 +237,7 @@ Mochi code is distributed under **GNU GPLv3 only (`GPL-3.0-only`)**, see [LICENS
 |---|---|
 | **墨池** `/` | 左邊字盒依花色（人數、角色、長相、服裝、姿勢、場景、風格）翻牌，中英文都能搜。點牌或拖進**合成池**＝每張圖都一定有；剩下的格子由引擎抽牌補齊。底下的規則管尺度、時代、畫面裡有誰、姿勢參考、尺寸。可以一次抽幾張、無限抽、只抽牌不生圖。 |
 | **疊印台** `/fuse.html` | 一張牌一層墨：放的牌照花色疊進六列卡池，灰色的影子是引擎補的牌。四張同種子的試印即時重抽，看清楚加了這張之後引擎補了什麼，挑一張再付印。 |
-| **卡冊** `/book.html` | 每張牌用過幾次、收藏和撤下的比例、這張牌進過哪些圖。成就牆。 |
+| **卡冊** `/book.html` | 每張牌用過幾次、收藏和撤下的比例、這張牌進過哪些圖。成就牆。做自己的**自製牌**。 |
 | **作品冊** `/album.html` | 收藏的成品、每一張出圖的日誌、每個底模和 LoRA 的成績單；「照這張再印」把牌、份量、時代、種子、尺寸、底模、LoRA 一起帶回墨池；點牌名打開卡冊那張牌。 |
 | **解析池** `/parse.html` | 把圖拖進來、貼上或選一張，ComfyUI 的 [WD14 Tagger](https://github.com/pysssss/ComfyUI-WD14-Tagger) 幾秒內認出畫面裡的字，詞庫有的變成牌，照花色排好、標「確定」或「可能」。點一張就不帶它、可以只要確定的，挑好帶去合成池或疊印台。模型、最低信心、角色門檻、不要的字在「解析設定」裡調。 |
 
@@ -244,6 +246,8 @@ Mochi code is distributed under **GNU GPLv3 only (`GPL-3.0-only`)**, see [LICENS
 **選擇補抽種類**：長相、服裝、姿勢設 1–4，場景設 1–3 時，可指定補抽種類，每種最多一張隨機牌，必要附帶可能增加相關標籤；更高數字沿用自由補抽。「更多種類」可選種族、妝容、裸身、衣服狀態、性愛、走光、天氣、道具與鏡頭效果。尺度只決定候選是否允許，不會越過選格；釘選、指定必抽及必要附帶照樣保留，仍須符合相容規則。
 
 **保存牌**：偏好卡牌是長期常用的單張牌，不限張數（墨池、卡冊同一份，疊印台另一份）；卡冊牌上的「＋」直接把牌送去墨池合成池、人留在卡冊繼續挑，展開偏好卡牌時點牌就收進那一排；牌組保存整組選牌與權重，方便重複套用。作品冊會區分只有配方與圖片讀取失敗，後者可以重試。
+
+**自製牌**：把常用的幾張牌（可以調權重）加上詞庫沒有的字，包成一張自己的牌。卡冊花色最後一格「自製」→「新增自製牌」，或從墨池、疊印台成品、作品冊的「做成自製牌」，牌組面板的「存成自製牌」帶著內容過來。可以從小字盒「挑牌」，也可以「貼提示詞」：詞庫有的自動變成牌、對不到的放進「詞庫外」（`(tag:1.2)` 的權重會讀進來，拼法很像的會問「是不是…」）。分級不能低於裡面的牌。「填入」是真的送去生圖的，「卡面」只拿來烤這張牌的插畫（自動產生、可以改）。「烤卡面預覽」照你填的種子（或隨機）烤一張，按存檔才換上。墨池、疊印台裡，引擎把它當成裡面那幾張牌（照樣補其他段、照樣檢查互斥），詞庫外的字接在人數後面；引擎隨機抽牌不會抽到它。「複製分享碼」是一行 `mochi-card:` 開頭的文字，貼到 Discord；卡冊的「貼上分享碼」就能匯入。未成年相關的字、禁用角色在貼上、存檔、烤卡面時都會擋。
 
 **角色**：679 個成年的動漫、遊戲角色（約兒、瑪奇瑪、雷電將軍、里維…）自己一個花色，分動漫、遊戲兩串，再照作品分格（航海王、鬼滅之刃…；明日方舟、原神…）。可以釘一個或好幾個，或在墨池的規則打開「抽角色」，只替「人物」選中的性別抽角色（最多三個，作品不挑）；手動釘的角色照留。「只抽同系列」打開時，抽的角色都跟釘的角色同一部作品；沒釘就先挑一部人數、性別湊得齊的。「加入系列名」會在角色後面接作品名。畫面裡有角色時，引擎不再抽髮色、髮型、瞳色、體型這些會改掉角色是誰的特徵。未成年、學生、外觀像兒童、真人或 VTuber、非人形、年齡查不到的角色一律禁用：不是牌、貼上提示詞會被拿掉、送去生圖伺服器也會擋。
 

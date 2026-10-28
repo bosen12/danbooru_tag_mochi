@@ -7,6 +7,7 @@
  */
 import { el, openSheet, toast, friendlyError } from "./ui.js";
 import { enter, leave, refuse, reducedMotion, DUR, CURVE, css } from "./motion.js";
+import { handOffCustom } from "./custom-cards.js";
 
 let cache = null;
 let revision = 0;
@@ -87,7 +88,22 @@ export function openDecks({ where, current, has, zh, apply, paste, weightsNow = 
         "form",
         { class: "deck-save" },
         el("p", { class: "deck-save-lead" }, `把${where}裡的 ${now.length} 張存成一組：`),
-        el("div", { class: "deck-save-row" }, name, saveBtn)
+        el("div", { class: "deck-save-row" }, name, saveBtn),
+        // 想要能調權重、加詞庫沒有的字、一張牌帶著走的：直接到卡冊做成自製牌（名字、份量一起帶過去）。
+        el(
+          "button",
+          {
+            class: "link-btn deck-to-custom pressable",
+            type: "button",
+            onclick: () => {
+              close();
+              const w = weightsNow();
+              const tags = now.filter((t) => !t.startsWith("custom:"));
+              handOffCustom({ name: (name.value.trim() || suggestName(tags, zh)).slice(0, 24), rating: "general", members: tags.map((t) => ({ tag: t, w: w[t] || 1 })), extra: [] }) || toast("無法交接，請檢查瀏覽器儲存空間。");
+            },
+          },
+          "或做成一張自製牌（可以調權重、加詞庫沒有的字）"
+        )
       )
     : el("p", { class: "deck-note deck-save-empty" }, `${where}是空的：先放幾張牌，就能存成一組。`);
   let decks = cache || [];
@@ -147,6 +163,21 @@ export function openDecks({ where, current, has, zh, apply, paste, weightsNow = 
             },
           },
           "套用"
+        ),
+        // 自製牌（卡冊）：這組牌連份量帶到「新增自製牌」，分級照裡面的牌自己往上調。
+        el(
+          "button",
+          {
+            class: "link-btn pressable",
+            type: "button",
+            disabled: !tags.length || undefined,
+            title: "把這組牌包成一張自製牌（到卡冊編輯）",
+            onclick: () => {
+              close();
+              handOffCustom({ name: d.name.slice(0, 24), rating: "general", members: tags.map((t) => ({ tag: t, w: d.weights?.[t] || 1 })), extra: [] }) || toast("無法交接，請檢查瀏覽器儲存空間。");
+            },
+          },
+          "存成自製牌"
         ),
         el(
           "button",

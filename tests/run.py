@@ -26,6 +26,7 @@ checks = [
     ("test_fetch_tagger.py", "test_fetch_tagger.py"),
     ("test_server.py", "test_server.py"),
     ("test_discord_routes.py", "test_discord_routes.py"),
+    ("test_custom_cards.py", "test_custom_cards.py"),
     ("test_era_mix_rating_free.mjs", "test_era_mix_rating_free.mjs"),
     ("test_tab_sync.mjs", "test_tab_sync.mjs"),
     ("test_card_search.mjs", "test_card_search.mjs"),
@@ -47,6 +48,7 @@ if "--browser" in sys.argv:
     checks.append(("test_collection_interactions_browser.mjs", "test_web6_collection_interactions_browser.mjs"))
     checks.append(("test_deep_ux_browser.mjs", "test_web6_deep_ux_browser.mjs"))
     checks.append(("test_discord_routes_browser.mjs", "test_web6_discord_routes_browser.mjs"))
+    checks.append(("test_custom_cards_browser.mjs", "test_web6_custom_cards_browser.mjs"))
 node = shutil.which("node")
 if not node:
     sys.exit("Node.js 20+ is required to run the development tests")

@@ -44,6 +44,7 @@ if str(ROOT) not in sys.path:
 import card_usage
 import card_decks
 import card_art_custom
+import custom_cards
 import discord_routes
 import file_lock
 import gen_log
@@ -2519,6 +2520,131 @@ def reset_card_prompt(tag: str) -> dict:
 
 class PromptBlocked(ValueError):
     """提示詞裡有不能用的字。訊息直接給畫面看。"""
+
+
+# ---------- 自製牌的卡面預覽（custom_cards.py） ----------
+# 卡冊編輯自製牌時按「烤卡面預覽」：照卡面提示詞、種子烤一張 480×702（外加 200×292 縮圖）到 drafts/，
+# 按存檔才搬成正式卡面（custom_cards._promote），沒存就刪。一個預覽代號只留最新一張。
+# CUSTOM_CARD_FAKE_BAKE=1（測試）：不找 ComfyUI，拿一張現成的卡面當成烤好的。
+_CUSTOM_BAKE: dict = {"lock": threading.Lock(), "state": {}}
+
+
+def custom_preview(payload: dict) -> dict:
+    payload = payload or {}
+    positive = " ".join(str(payload.get("positive") or "").split())[:custom_cards.MAX_FACE]
+    if not positive:
+        raise custom_cards.CustomError("卡面提示詞是空的")
+    blocked = banned_in_prompt(positive)
+    if blocked:
+        raise PromptBlocked("卡面提示詞裡有不能用的字（未成年、禁用角色）：" + "、".join(blocked))
+    rating = str(payload.get("rating") or "general")
+    if rating not in custom_cards.RATINGS:
+        rating = "general"
+    seed = payload.get("seed")
+    if not isinstance(seed, int) or isinstance(seed, bool) or seed < 0:
+        seed = random.randint(0, SEED_MAX)
+    seed = int(seed) & SEED_MAX
+    draft = str(payload.get("draft") or "") or custom_cards.new_draft()
+    custom_cards.draft_paths(draft)  # 代號不對丟 CustomError
+    tags = [t.strip().lower() for t in positive.split(",")]
+    negative = "" if "no humans" in tags else ", ".join(t for t in card_art_custom.AGE_GUARD if t not in tags)
+    job = {"positive": positive, "negative": negative, "rating": rating, "seed": seed}
+    with _CUSTOM_BAKE["lock"]:
+        state = {"state": "baking", "seed": seed, "at": int(time.time() * 1000), "job": job}
+        _CUSTOM_BAKE["state"][draft] = state
+    threading.Thread(target=_custom_bake_run, args=(draft, job), name=f"custom-bake-{draft}", daemon=True).start()
+    return {"draft": draft, **_public_bake(state)}
+
+
+def _public_bake(state: dict) -> dict:
+    return {k: v for k, v in state.items() if k != "job"}
+
+
+def custom_preview_state(draft: str) -> dict:
+    with _CUSTOM_BAKE["lock"]:
+        state = _CUSTOM_BAKE["state"].get(draft)
+    if state is None:
+        full, _ = custom_cards.draft_paths(draft)
+        return {"draft": draft, "state": "done" if full.is_file() else "none"}
+    return {"draft": draft, **_public_bake(state)}
+
+
+def custom_preview_drop(draft: str) -> bool:
+    with _CUSTOM_BAKE["lock"]:
+        _CUSTOM_BAKE["state"].pop(draft, None)
+    return custom_cards.drop_draft(draft)
+
+
+def _custom_bake_run(draft: str, job: dict) -> None:
+    full, thumb = custom_cards.draft_paths(draft)
+    try:
+        if os.environ.get("CUSTOM_CARD_FAKE_BAKE"):
+            src = next((p for p in sorted((SHARED / "cards").glob("*.webp"))), None)
+            if src is None:
+                raise RuntimeError("沒有現成的卡面可以假裝")
+            data = src.read_bytes()
+            small = (SHARED / "cards" / "thumb" / src.name).read_bytes() if (SHARED / "cards" / "thumb" / src.name).is_file() else data
+            time.sleep(0.3)
+        else:
+            data, small = _custom_bake_comfy(job)
+        full.parent.mkdir(parents=True, exist_ok=True)
+        # 重烤蓋掉上一張：同一個代號只留最新一張。先寫暫存再換名，網頁不會讀到寫一半的檔。
+        for path, body in ((full, data), (thumb, small)):
+            tmp = path.with_suffix(".tmp")
+            tmp.write_bytes(body)
+            os.replace(tmp, path)
+        state = {"state": "done", "seed": job["seed"], "v": hashlib.sha1(data).hexdigest()[:10]}
+    except (urllib.error.URLError, ConnectionError, TimeoutError, OSError) as exc:
+        state = {"state": "comfy_down", "seed": job["seed"], "error": str(exc)[:200]}
+    except Exception as exc:  # noqa: BLE001 —— 烤不出來就告訴畫面，不讓執行緒默默死掉
+        state = {"state": "failed", "seed": job["seed"], "error": str(exc)[:300]}
+    state["at"] = int(time.time() * 1000)
+    with _CUSTOM_BAKE["lock"]:
+        # 烤的途中按了取消（drop）：狀態已經拿掉，烤好的檔也不要留。
+        if draft not in _CUSTOM_BAKE["state"]:
+            custom_cards.drop_draft(draft)
+            return
+        # 烤的途中又按了一次（換種子重烤）：只認最後那次。
+        if _CUSTOM_BAKE["state"][draft].get("seed") != job["seed"] and _CUSTOM_BAKE["state"][draft].get("state") == "baking":
+            return
+        _CUSTOM_BAKE["state"][draft] = state
+
+
+def _custom_bake_comfy(job: dict) -> tuple[bytes, bytes]:
+    """照 scripts/bake_card_art.py 的卡面做法烤一張：832×1216 生圖、縮成 480×702 和 200×292 的 webp。"""
+    try:
+        names = [str(n).replace("/", "\\") for n in models_from_comfy("checkpoints")]
+    except Exception:  # noqa: BLE001
+        names = []
+    ckpt = pick_default_ckpt(names) if names else None
+    wf = build_workflow(job["positive"], 832, 1216, job["seed"], ckpt=ckpt or CKPT, rating=job["rating"])
+    if job.get("negative"):
+        wf["37"]["inputs"]["text"] = wf["37"]["inputs"]["text"] + ", " + job["negative"]
+    wf.pop("200", None)
+    for out_node, scale_node, (w, h), prefix, quality in (
+        ("202", "201", (480, 702), "custom_cards/draft", 84),
+        ("204", "203", (200, 292), "custom_cards/draft_thumb", 82),
+    ):
+        wf[scale_node] = {"class_type": "ImageScale", "inputs": {"image": ["85", 0], "upscale_method": "lanczos", "width": w, "height": h, "crop": "disabled"}}
+        wf[out_node] = {"class_type": "SaveAnimatedWEBP", "inputs": {"images": [scale_node, 0], "filename_prefix": prefix, "fps": 1.0,
+                                                                     "lossless": False, "quality": quality, "method": "default"}}
+    prompt_id = api("POST", "/prompt", {"prompt": wf}, timeout=60)["prompt_id"]
+    hist = wait_done(prompt_id, timeout=600)
+
+    def fetch(node: str) -> bytes:
+        for img in (hist.get("outputs", {}).get(node, {}) or {}).get("images") or []:
+            q = comfy_view_query(img.get("filename") or "", img.get("subfolder") or "", img.get("type") or "output")
+            if q:
+                with urllib.request.urlopen(comfy_base() + "/view?" + q, timeout=60) as r:
+                    return r.read()
+        raise RuntimeError("ComfyUI 沒有產出卡面")
+
+    full = fetch("202")
+    try:
+        small = fetch("204")
+    except Exception:  # noqa: BLE001 —— 縮圖沒拿到就用原圖
+        small = full
+    return full, small
 
 
 def prepare_workflow(payload: dict):
@@ -5213,6 +5339,36 @@ class Handler(BaseHTTPRequestHandler):
                 miss["workflow"] = True
         return miss
 
+    def _serve_custom_get(self, rest: str) -> None:
+        parts = rest.split("/")
+        try:
+            if len(parts) == 2 and parts[0] == "art":
+                stored = custom_cards.art_path(urllib.parse.unquote(parts[1]))
+                if stored is None:
+                    self._json(404, {"ok": False, "error": "not found"})
+                    return
+                # 檔名帶內容雜湊（重烤換新檔名）：可以整年快取。
+                self._bytes(200, stored.read_bytes(), "image/webp", {"Cache-Control": "public, max-age=31536000, immutable"})
+                return
+            if len(parts) == 2 and parts[0] == "preview":
+                self._json(200, {"ok": True, **custom_preview_state(parts[1])}, cache_control="no-store")
+                return
+            if len(parts) == 2 and parts[0] == "draft":
+                name = parts[1]
+                thumb = name.endswith(".thumb.webp")
+                draft = name[: -len(".thumb.webp")] if thumb else name[: -len(".webp")] if name.endswith(".webp") else ""
+                full, small = custom_cards.draft_paths(draft)
+                f = small if thumb and small.is_file() else full
+                if not f.is_file():
+                    self._json(404, {"ok": False, "error": "not found"})
+                    return
+                self._bytes(200, f.read_bytes(), "image/webp", {"Cache-Control": "no-store"})
+                return
+        except custom_cards.CustomError as exc:
+            self._json(400, {"ok": False, "error": str(exc), "code": "invalid"})
+            return
+        self._json(404, {"ok": False, "error": "not found"})
+
     def _serve_recipe_get(self, path: str) -> None:
         if path == "/api/recipes":
             self._json(200, {"ok": True, "items": recipes.list_recipes()})
@@ -5833,6 +5989,13 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/api/decks":
             self._json(200, {"ok": True, "decks": card_decks.load()})
             return
+        # 自製牌（custom_cards.py）：清單、正式卡面檔、預覽進度、預覽圖。
+        if path == "/api/custom-cards":
+            self._json(200, {"ok": True, "cards": custom_cards.load()}, cache_control="no-store")
+            return
+        if path.startswith("/api/custom-cards/"):
+            self._serve_custom_get(path[len("/api/custom-cards/"):])
+            return
         # 偏好角色：所有裝置共用一份（card_decks.py）。
         if path == "/api/fav-chars":
             self._json(200, {"ok": True, **card_decks.load_fav_chars()}, cache_control="no-store")
@@ -6042,6 +6205,20 @@ class Handler(BaseHTTPRequestHandler):
             except card_decks.DeckError as exc:
                 self._json(400, {"ok": False, "error": str(exc), "code": "invalid"})
             return
+        if path in ("/api/custom-cards", "/api/custom-cards/preview"):
+            try:
+                if path == "/api/custom-cards":
+                    out = custom_cards.save(payload, banned=banned_in_prompt)
+                else:
+                    out = custom_preview(payload)
+            except PromptBlocked as exc:
+                self._json(400, {"ok": False, "error": str(exc), "code": "blocked"})
+                return
+            except custom_cards.CustomError as exc:
+                self._json(400, {"ok": False, "error": str(exc), "code": "invalid"})
+                return
+            self._json(200, {"ok": True, **out})
+            return
         if path == "/api/workflows":
             self._serve_workflow_save(payload)
             return
@@ -6167,6 +6344,18 @@ class Handler(BaseHTTPRequestHandler):
             try:
                 self._json(200, {"ok": True, **card_decks.delete(urllib.parse.unquote(path[len("/api/decks/"):]))})
             except card_decks.DeckError as exc:
+                self._json(404, {"ok": False, "error": str(exc), "code": "missing"})
+            return
+        if path.startswith("/api/custom-cards/preview/"):
+            try:
+                self._json(200, {"ok": True, "dropped": custom_preview_drop(path[len("/api/custom-cards/preview/"):])})
+            except custom_cards.CustomError as exc:
+                self._json(400, {"ok": False, "error": str(exc), "code": "invalid"})
+            return
+        if path.startswith("/api/custom-cards/"):
+            try:
+                self._json(200, {"ok": True, **custom_cards.delete(urllib.parse.unquote(path[len("/api/custom-cards/"):]))})
+            except custom_cards.CustomError as exc:
                 self._json(404, {"ok": False, "error": str(exc), "code": "missing"})
             return
         pid = self._workflow_pid(path)
@@ -6462,6 +6651,15 @@ def main() -> None:
                 print(f"output   ComfyUI 的 output/danbooru_case 只留最近 {OUTPUT_KEEP} 張：{n} 張舊的移到資源回收筒（config.json 的 output.keep 可改，0 不清）")
                 print(f"         Kept the latest {OUTPUT_KEEP} images in output/danbooru_case; moved {n} older ones to the Recycle Bin (output.keep in config.json, 0 = never)")
         threading.Thread(target=_startup_prune, daemon=True, name="output-prune").start()
+    # 自製牌：沒存就關掉分頁、當機留下的預覽，和刪掉超過一天的卡面檔。啟動時清一次，之後每小時。
+    def _custom_prune_loop():
+        while True:
+            try:
+                custom_cards.prune()
+            except Exception as exc:  # noqa: BLE001
+                print(f"[自製牌] 清暫存失敗：{exc}", flush=True)
+            time.sleep(3600)
+    threading.Thread(target=_custom_prune_loop, daemon=True, name="custom-card-prune").start()
     open_browser(port)
     httpd.serve_forever()
 
