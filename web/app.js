@@ -1299,6 +1299,11 @@ function customOwners() {
     if (!isCustomTag(t)) continue;
     for (const m of customOf(t)?.members || []) if (pool.has(m.tag) && !owner.has(m.tag)) owner.set(m.tag, t);
   }
+  // 成員帶進來的牌（和服帶出和服類）也收在那一格：它們是跟著自製牌來的，不該在池子裡另外冒一張。
+  for (const [m, t] of [...owner]) {
+    const it = lex.byTag.get(m);
+    for (const d of [...(it?.implies || []), ...(it?.bind || [])]) if (pool.has(d) && !owner.has(d)) owner.set(d, t);
+  }
   return owner;
 }
 
@@ -1380,8 +1385,29 @@ function splitCustom(tag) {
   const c = customOf(tag);
   if (!pool.has(tag)) return;
   const undoTo = stepBefore();
+  const from = poolNode(tag)?.getBoundingClientRect();
+  const inside = [...customOwners()].filter(([, o]) => o === tag).map(([m]) => m);
   pool.delete(tag);
   commitPins();
+  // 裡面的牌從自製牌那一格散開，一張接一張落到自己的位置（像把一疊牌攤開）。
+  if (from && !reducedMotion()) {
+    inside.forEach((t, i) => {
+      const n = poolNode(t);
+      if (!n) return;
+      const to = n.getBoundingClientRect();
+      if (!to.width) return;
+      const dx = from.left + from.width / 2 - (to.left + to.width / 2);
+      const dy = from.top + from.height / 2 - (to.top + to.height / 2);
+      n.animate(
+        [
+          { transform: `translate(${dx.toFixed(1)}px, ${dy.toFixed(1)}px) scale(0.85) rotate(${(i % 2 ? 6 : -6)}deg)`, opacity: 0.2 },
+          { transform: "none", opacity: 1 },
+        ],
+        { duration: DUR.long, delay: i * 45, easing: css(CURVE.settle), fill: "backwards" }
+      );
+    });
+    sfx.deal?.(Math.min(inside.length, 8));
+  }
   rememberStep(`「${c?.name || zh(tag)}」又合回一張了`, undoTo);
   if (c?.extra.length) toast(`拆開了：詞庫外的字（${c.extra.map((x) => x.text).join("、")}）不會再接進提示詞`);
 }
@@ -1605,8 +1631,7 @@ function unpin(tag, { viaDrag = false } = {}) {
   const before = new Set(pool);
   if (isCustomTag(tag)) {
     // 自製牌：它帶進來的牌一起拿掉（池子裡別張自製牌也有的留著）。
-    const owner = customOwners();
-    for (const m of customOf(tag)?.members || []) if (owner.get(m.tag) === tag) pool.delete(m.tag);
+    for (const [m, o] of customOwners()) if (o === tag) pool.delete(m);
   }
   pool.delete(tag);
   for (const b of lex.byTag.get(tag)?.bind || []) pool.delete(b);

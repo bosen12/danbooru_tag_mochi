@@ -1465,7 +1465,7 @@ function peekInfo(node) {
   if (!card) return null;
   const c = countOf(card.tag);
   const facts = cardFacts(card, lexNow(), data).filter(([k]) => k !== "分級");
-  facts.unshift(["加入", card.added || "沒有日期"]);
+  if (!card.custom) facts.unshift(["加入", card.added || "沒有日期"]);
   if (card.banned) facts.unshift(["禁用", banReason(card)]);
   facts.unshift(["用過", c ? `${fmt(c)} 次・最近 ${ago(lastOf(card.tag))}` : "還沒用過"]);
   return {
@@ -1499,8 +1499,27 @@ function openEditor(card, start) {
       const go = () => (S.handOffPool([tag], "book") ? (location.href = "./") : toast("無法交接選牌，請檢查瀏覽器儲存空間。"));
       toast(card ? `「${c.name}」存好了` : `「${c.name}」做好了：墨池、疊印台的字盒「自製」裡找得到`, { action: { label: "帶去墨池", run: go } });
       if (ui.suit !== "custom") pickSuit("custom");
+      // 面板收起來之後，那張牌在格子裡「蓋」下去（捲到看得到的地方）。
+      setTimeout(() => stampCard(tag), reducedMotion() ? 0 : DUR.medium);
     },
   });
+}
+
+/** 一張牌在卡冊格子裡蓋章落下：從上面一點、稍大、斜一點壓下來，回彈一下，蓋章聲。 */
+function stampCard(tag) {
+  const node = $("book-grid").querySelector(`.card[data-tag="${CSS.escape(tag)}"]`);
+  if (!node) return;
+  node.scrollIntoView({ block: "nearest", behavior: reducedMotion() ? "auto" : "smooth" });
+  sfx.stamp?.();
+  if (reducedMotion()) return;
+  node.animate(
+    [
+      { transform: "translateY(-18px) scale(1.16) rotate(-5deg)", opacity: 0, filter: "drop-shadow(0 18px 18px var(--color-shade))" },
+      { transform: "translateY(2px) scale(0.97) rotate(0.6deg)", opacity: 1, filter: "drop-shadow(0 2px 3px var(--color-shade))", offset: 0.62 },
+      { transform: "none", opacity: 1, filter: "none" },
+    ],
+    { duration: DUR.xl, easing: css(CURVE.settle) }
+  );
 }
 
 /** 貼上分享碼：讀剪貼簿（讀不到就請人貼進來），過詞庫和封鎖，打開編輯面板給人看過再存。 */

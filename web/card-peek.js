@@ -109,7 +109,8 @@ function render(info) {
     art.append(h("span", "card-peek-glyph", [...(info.zh || "字")][0]));
   }
   face.append(spine, art);
-  const nodes = [face, h("p", "card-peek-en", info.tag)];
+  // 自製牌（web6 卡冊做的）的 tag 是內部代號 custom:c_xxxx，寫「自製牌」就好。
+  const nodes = [face, h("p", "card-peek-en", String(info.tag || "").startsWith("custom:") ? "自製牌" : info.tag)];
   if (info.facts && info.facts.length) {
     const facts = h("div", "card-peek-facts");
     for (const [k, v] of info.facts) {

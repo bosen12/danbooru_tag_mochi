@@ -98,6 +98,7 @@ ok("預覽轉正：卡面檔名是 id-雜湊.webp", art.startswith(r["card"]["id
 ok("預覽檔搬走了", not full.exists() and not thumb.exists())
 ok("正式卡面和縮圖都在", custom_cards.art_path(art) is not None and (custom_cards.ART_DIR / art.replace(".webp", ".thumb.webp")).is_file())
 ok("種子存下來了", r["card"]["face"]["seed"] == 1383)
+ok("種子超過 2^53（網頁存不準）就不收", save(face={"positive": "1girl", "seed": 2**60})["card"]["face"]["seed"] is None)
 cid = r["card"]["id"]
 
 draft2 = custom_cards.new_draft()

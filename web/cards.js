@@ -570,6 +570,16 @@ export function setCardFlag(node, flag) {
 
 /** 卡牌的說明（提示框、詳情共用）。 */
 export function cardFacts(card, lex, data) {
+  // 自製牌（custom-cards.js）：沒有花色細分類、時代、同一格這些 —— 說裡面是哪幾張牌、詞庫外的字、分級。
+  if (card.custom) {
+    const c = card.custom;
+    const names = c.members.map((m) => (lex.byTag.get(m.tag)?.zh || m.tag) + (m.w !== 1 ? ` ×${m.w}` : ""));
+    return [
+      ["裡面", names.length ? `${names.length} 張：${names.join("、")}` : "—"],
+      ...(c.extra.length ? [["詞庫外", c.extra.map((x) => x.text).join(", ")]] : []),
+      ["分級", RATING_ZH[card.rating]],
+    ];
+  }
   const facts = [];
   // 細分類名常以花色開頭（人數・女）：不要疊成「人數・人數・女」。
   const suitZh = CARD_SUIT_INFO[card.suit].zh;

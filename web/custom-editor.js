@@ -14,7 +14,9 @@ import { searchMiss } from "./lib-hint.js";
 import { attachPeek, hidePeek } from "./card-peek.js";
 import { attachTilt } from "./card-tilt.js";
 import { ratingBlocked } from "./rules/rating.js";
-import { refuse, enter } from "./motion.js";
+import { refuse, enter, leave, flight, flipBy, reducedMotion, DUR, CURVE, css } from "./motion.js";
+import { cloneCard } from "./card-images.js";
+import { getSfx } from "./sfx.js";
 import { t as tr } from "./i18n.js";
 import {
   parsePrompt, fillText, autoFace, ratingFloor, ratingAtLeast, bySuit, isBannedWord, isCustomTag,
@@ -26,6 +28,8 @@ const RATINGS = ["general", "sensitive", "explicit"];
 const W_MIN = 0.5;
 const W_MAX = 1.5;
 const round1 = (w) => Math.round(w * 10) / 10;
+const sfx = getSfx();
+const chipKey = (n) => n.dataset.tag || n.dataset.text;
 
 /**
  * 打開編輯面板。
@@ -58,6 +62,8 @@ export function openCustomEditor({ card = null, start = null, lib, lex, assets, 
   let bake = null;
   let pollTimer = 0;
   let saved = false;
+  // 內容畫過一次了沒（第一次畫不演淡入）。
+  let painted = false;
 
   /* ---------- 頂列：名字、分級、模式 ---------- */
   const nameIn = el("input", { type: "text", class: "cce-name", maxlength: "24", placeholder: "名字，例如：法琳海邊", autocomplete: "off", "aria-label": "名字" });
@@ -217,7 +223,11 @@ export function openCustomEditor({ card = null, start = null, lib, lex, assets, 
 
   function paintRating() {
     const floor = ratingFloor(st.members, lib);
-    if (!ratingAtLeast(st.rating, floor)) st.rating = floor;
+    if (!ratingAtLeast(st.rating, floor)) {
+      st.rating = floor;
+      // 放了一張分級比較高的牌，分級自己往上調了：那排亮一下，不要悄悄變。
+      if (painted && !reducedMotion()) ratingBox.animate([{ boxShadow: "0 0 0 0 var(--color-accent)" }, { boxShadow: "0 0 0 6px transparent" }], { duration: DUR.story, easing: css(CURVE.out) });
+    }
     ratingBox.replaceChildren(
       ...RATINGS.map((r) => {
         const ok = ratingAtLeast(r, floor);
@@ -260,6 +270,13 @@ export function openCustomEditor({ card = null, start = null, lib, lex, assets, 
     }
     moreCards();
     setEnterTarget(grid, !!text);
+    if (top && !reducedMotion()) {
+      [...grid.querySelectorAll(".card")].slice(0, 18).forEach((c, i) => {
+        c.style.setProperty("--i", String(i));
+        c.classList.add("dealt");
+        setTimeout(() => c.classList.remove("dealt"), 900);
+      });
+    }
   }
 
   /** 細分類籤：選了花色才出現；角色頁前面有「性別」、作品收成「系列」一串（可收合）。 */
@@ -359,23 +376,67 @@ export function openCustomEditor({ card = null, start = null, lib, lex, assets, 
     q.value = "";
     changed();
     paintPick();
-    enter(content.querySelector(`[data-text="${CSS.escape(text)}"]`));
+    sfx.stamp?.();
   }
 
   function toggleMember(tag, node) {
     const at = st.members.findIndex((m) => m.tag === tag);
-    if (at >= 0) st.members.splice(at, 1);
-    else {
-      if (st.members.length >= MAX_MEMBERS) {
-        refuse(node);
-        return toast(tr(`一張自製牌最多 ${MAX_MEMBERS} 張牌`));
-      }
-      st.members.push({ tag, w: 1 });
-      st.members = bySuit(st.members, lib);
+    if (at >= 0) {
+      // 再點一次拿掉：右邊那張籤縮著淡出，其他籤滑過去補位。
+      const chip = content.querySelector(`.cce-chip[data-tag="${CSS.escape(tag)}"]`);
+      sfx.lift?.();
+      return leave(chip, () => {
+        st.members = st.members.filter((m) => m.tag !== tag);
+        changed();
+        markIn();
+      });
     }
-    changed();
+    if (st.members.length >= MAX_MEMBERS) {
+      refuse(node);
+      return toast(tr(`一張自製牌最多 ${MAX_MEMBERS} 張牌`));
+    }
+    const from = node?.isConnected ? node.getBoundingClientRect() : null;
+    st.members.push({ tag, w: 1 });
+    st.members = bySuit(st.members, lib);
+    changed({ arriving: from ? tag : "" });
     markIn();
-    if (at < 0) enter(content.querySelector(`[data-tag="${CSS.escape(tag)}"]`));
+    flyToChip(node, from, tag);
+  }
+
+  /** 牌從字盒那一格飛到右邊它那張籤（籤先藏著，落地才亮、彈一下、蓋章聲）。 */
+  function flyToChip(node, from, tag) {
+    const chip = content.querySelector(`.cce-chip[data-tag="${CSS.escape(tag)}"]`);
+    if (!chip) return;
+    if (!from || !from.width || reducedMotion()) {
+      chip.style.visibility = "";
+      return popChip(chip);
+    }
+    const ghost = cloneCard(node);
+    ghost.classList.remove("is-in", "is-enter-target");
+    ghost.querySelector(".enter-chip")?.remove();
+    flight(ghost, from, () => chip, {
+      endScale: 0.42,
+      endOpacity: 0,
+      arc: 46,
+      tilt: -6,
+      onLand: () => {
+        chip.style.visibility = "";
+        popChip(chip);
+        sfx.stamp?.();
+      },
+    });
+  }
+
+  function popChip(chip) {
+    if (!chip || reducedMotion()) return;
+    chip.animate(
+      [
+        { transform: "translateY(4px) scale(0.86)", opacity: 0 },
+        { transform: "translateY(-1px) scale(1.04)", opacity: 1, offset: 0.62 },
+        { transform: "none", opacity: 1 },
+      ],
+      { duration: DUR.medium, easing: css(CURVE.settle) }
+    );
   }
 
   function applyPaste() {
@@ -408,21 +469,24 @@ export function openCustomEditor({ card = null, start = null, lib, lex, assets, 
   const zh = (tag) => lib.byTag.get(tag)?.zh || tag;
 
   function weightCtl(get, set, label) {
-    const val = el("output", { class: "cce-w" }, fmtW(get()));
-    const step = (d) => {
+    const val = el("output", { class: "cce-w", dataset: { w: get() > 1 ? "up" : get() < 1 ? "down" : "" } }, fmtW(get()));
+    const step = (d, btn) => {
       const w = round1(Math.min(W_MAX, Math.max(W_MIN, get() + d)));
-      if (w === get()) return;
+      if (w === get()) return refuse(btn);
       set(w);
       val.textContent = fmtW(w);
+      val.dataset.w = w > 1 ? "up" : w < 1 ? "down" : "";
+      if (!reducedMotion()) val.animate([{ transform: `translateY(${d > 0 ? 5 : -5}px) scale(1.25)`, opacity: 0.4 }, { transform: "none", opacity: 1 }], { duration: DUR.short, easing: css(CURVE.settle) });
+      sfx.tap?.();
       paintFill();
       if (!st.face.manual) syncFace();
     };
     return el(
       "span",
       { class: "cce-wctl" },
-      el("button", { type: "button", class: "cce-wbtn", "aria-label": `${label}權重減 0.1`, onclick: () => step(-0.1) }, "−"),
+      el("button", { type: "button", class: "cce-wbtn", "aria-label": `${label}權重減 0.1`, onclick: (e) => step(-0.1, e.currentTarget) }, "−"),
       val,
-      el("button", { type: "button", class: "cce-wbtn", "aria-label": `${label}權重加 0.1`, onclick: () => step(0.1) }, "＋")
+      el("button", { type: "button", class: "cce-wbtn", "aria-label": `${label}權重加 0.1`, onclick: (e) => step(0.1, e.currentTarget) }, "＋")
     );
   }
   const fmtW = (w) => (Math.round(w * 10) / 10).toFixed(1);
@@ -447,7 +511,7 @@ export function openCustomEditor({ card = null, start = null, lib, lex, assets, 
                 { class: "cce-chip" + (notes.length ? " has-note" : ""), dataset: { tag: m.tag } },
                 el("span", { class: "cce-chip-name" }, el("b", {}, zh(m.tag)), el("small", { dataset: { noI18n: "" } }, m.tag)),
                 weightCtl(() => m.w, (w) => (m.w = w), zh(m.tag)),
-                el("button", { type: "button", class: "cce-x", "aria-label": `拿掉「${zh(m.tag)}」`, onclick: () => (st.members = st.members.filter((x) => x !== m), changed(), markIn()) }, "×"),
+                el("button", { type: "button", class: "cce-x", "aria-label": `拿掉「${zh(m.tag)}」`, onclick: (e) => (sfx.lift?.(), leave(e.currentTarget.closest(".cce-chip"), () => ((st.members = st.members.filter((x) => x !== m)), changed(), markIn()))) }, "×"),
                 // 每一條提醒自己一個元素：英文版逐條翻（i18n 整句比對）。
                 notes.map((n) => el("span", { class: "cce-note" }, n))
               );
@@ -472,7 +536,7 @@ export function openCustomEditor({ card = null, start = null, lib, lex, assets, 
                 { class: "cce-chip is-extra", dataset: { text: x.text } },
                 el("span", { class: "cce-chip-name" }, el("b", { dataset: { noI18n: "" } }, x.text), el("small", {}, "詞庫外：引擎不會檢查")),
                 weightCtl(() => x.w, (w) => (x.w = w), x.text),
-                el("button", { type: "button", class: "cce-x", "aria-label": `拿掉「${x.text}」`, onclick: () => (st.extra = st.extra.filter((y) => y !== x), changed()) }, "×"),
+                el("button", { type: "button", class: "cce-x", "aria-label": `拿掉「${x.text}」`, onclick: (e) => (sfx.lift?.(), leave(e.currentTarget.closest(".cce-chip"), () => ((st.extra = st.extra.filter((y) => y !== x)), changed()))) }, "×"),
                 sug && !st.members.some((m) => m.tag === sug)
                   ? el("button", { type: "button", class: "cce-sug link-btn", onclick: () => useSuggestion(x, sug) }, `是不是「${zh(sug)}」（${sug}）？`)
                   : null
@@ -526,12 +590,23 @@ export function openCustomEditor({ card = null, start = null, lib, lex, assets, 
       return;
     }
     const arts = st.members.map((m) => m.tag).filter((t) => assets.art(t)).slice(0, 4);
+    const fanKey = arts.join("|");
+    if (facePic.dataset.kind === "collage" && facePic.dataset.fan === fanKey) return;
+    const had = new Set((facePic.dataset.fan || "").split("|"));
+    facePic.dataset.fan = fanKey;
     facePic.dataset.kind = "collage";
     facePic.replaceChildren(
       arts.length
         ? el("div", { class: "cce-fan", style: `--n: ${arts.length}` }, arts.map((t, i) => el("img", { src: assets.art(t), alt: "", decoding: "async", style: `--i: ${i}` })))
         : el("span", { class: "cce-face-empty" }, "還沒有卡面")
     );
+    // 新進扇子的那張：從下面插進來。
+    if (painted && !reducedMotion()) {
+      facePic.querySelectorAll(".cce-fan > img").forEach((img, i) => {
+        if (had.has(arts[i])) return;
+        img.animate([{ translate: "0 40%", opacity: 0 }, { translate: "0 0", opacity: 1 }], { duration: DUR.long, easing: css(CURVE.settle) });
+      });
+    }
   }
 
   function paintFoot() {
@@ -540,14 +615,30 @@ export function openCustomEditor({ card = null, start = null, lib, lex, assets, 
     msg.textContent = tr(why);
   }
 
-  function changed({ keepPaste = false } = {}) {
+  function changed({ keepPaste = false, arriving = "" } = {}) {
     if (nameAuto) {
       const tags = st.members.map((m) => m.tag);
       st.name = tags.length ? suggestName(tags, zh).slice(0, 24) : st.extra[0]?.text.slice(0, 24) || "";
       nameIn.value = st.name;
     }
     paintRating();
-    paintContent();
+    const before = new Set([...content.querySelectorAll(".cce-chip")].map(chipKey));
+    // 籤整塊重畫：同一張從舊位置滑到新位置（加一張排進中間時，後面的讓位，不是一格跳）。
+    flipBy(content, ".cce-chip", chipKey, () => paintContent());
+    const fresh = [...content.querySelectorAll(".cce-chip")].filter((n) => !before.has(chipKey(n)));
+    if (arriving) {
+      const chip = content.querySelector(`.cce-chip[data-tag="${CSS.escape(arriving)}"]`);
+      if (chip) chip.style.visibility = "hidden";
+    }
+    // 貼提示詞一次拆出好幾張：一張接一張淡進來（第一次畫、飛來的那張不演）。
+    if (painted && !reducedMotion()) {
+      fresh
+        .filter((n) => chipKey(n) !== arriving)
+        .forEach((n, i) =>
+          n.animate([{ transform: "translateY(6px) scale(0.94)", opacity: 0 }, { transform: "none", opacity: 1 }], { duration: DUR.medium, delay: Math.min(i, 12) * 34, easing: css(CURVE.out), fill: "backwards" })
+        );
+    }
+    painted = true;
     paintFill();
     if (!st.face.manual) syncFace();
     else paintFace();
@@ -558,13 +649,14 @@ export function openCustomEditor({ card = null, start = null, lib, lex, assets, 
   /* ---------- 卡面預覽 ---------- */
   async function startBake() {
     const raw = seedIn.value.trim();
-    if (raw && !/^\d{1,18}$/.test(raw)) {
+    if (raw && !/^\d{1,15}$/.test(raw)) {
       refuse(seedIn);
-      return toast(tr("種子要是數字（留空＝隨機）"));
+      return toast(tr("種子要是數字（最多 15 位數，留空＝隨機）"));
     }
     const seed = raw ? Number(raw) : undefined;
     bakeBtn.disabled = true;
     bake = { state: "baking" };
+    facePic.classList.add("is-baking");
     bakeMsg.textContent = tr("烤卡面中…大約 6 秒。");
     paintFoot();
     try {
@@ -574,6 +666,7 @@ export function openCustomEditor({ card = null, start = null, lib, lex, assets, 
       poll();
     } catch (err) {
       bake = { state: "failed" };
+      facePic.classList.remove("is-baking");
       bakeBtn.disabled = false;
       bakeMsg.textContent = String(err.message || err);
       paintFoot();
@@ -591,6 +684,7 @@ export function openCustomEditor({ card = null, start = null, lib, lex, assets, 
       }
       if (r.state === "baking") return poll();
       bake = r;
+      facePic.classList.remove("is-baking");
       bakeBtn.disabled = false;
       bakeBtn.textContent = tr("重烤");
       if (r.state === "done") {
@@ -598,11 +692,30 @@ export function openCustomEditor({ card = null, start = null, lib, lex, assets, 
         st.face.seed = r.seed;
         bakeMsg.textContent = tr("烤好了：這是預覽，按「存檔」才會換上。");
         paintFacePic();
-        enter(facePic.firstElementChild);
-      } else if (r.state === "comfy_down") bakeMsg.textContent = tr("ComfyUI 沒開：先用拼貼卡面，之後再回來烤。");
-      else bakeMsg.textContent = tr("烤失敗了：") + (r.error || "");
+        develop(facePic.querySelector("img"));
+        sfx.done?.();
+      } else {
+        // 沒烤成：卡面搖一下頭。
+        refuse(facePic);
+        bakeMsg.textContent = r.state === "comfy_down" ? tr("ComfyUI 沒開：先用拼貼卡面，之後再回來烤。") : tr("烤失敗了：") + (r.error || "");
+      }
       paintFoot();
     }, 700);
+  }
+
+  /** 預覽烤好：像相紙顯影 —— 從模糊、淡、亮沉到清楚，圖稍微往下落定（圖讀進來才開始）。 */
+  function develop(img) {
+    if (!img || reducedMotion()) return;
+    const run = () =>
+      img.animate(
+        [
+          { filter: "blur(10px) saturate(0.15) brightness(1.35)", transform: "scale(1.06)", opacity: 0.2 },
+          { filter: "blur(2px) saturate(0.7) brightness(1.08)", transform: "scale(1.015)", opacity: 0.9, offset: 0.45 },
+          { filter: "none", transform: "none", opacity: 1 },
+        ],
+        { duration: DUR.develop, easing: css(CURVE.out) }
+      );
+    img.complete ? run() : img.addEventListener("load", run, { once: true });
   }
 
   /* ---------- 存檔 ---------- */
@@ -612,7 +725,7 @@ export function openCustomEditor({ card = null, start = null, lib, lex, assets, 
     saveBtn.disabled = true;
     msg.textContent = tr("存檔中…");
     const raw = seedIn.value.trim();
-    const seed = /^\d{1,18}$/.test(raw) ? Number(raw) : st.face.seed;
+    const seed = /^\d{1,15}$/.test(raw) ? Number(raw) : st.face.seed;
     const payload = {
       ...(st.id ? { id: st.id, createdAt: st.createdAt } : {}),
       name: st.name.trim(),

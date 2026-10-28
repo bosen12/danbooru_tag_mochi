@@ -56,6 +56,30 @@
 }
 .card[data-suit="custom"] {
   --suit: var(--suit-custom);
+  /* 自製牌是好幾張牌包成一張：後面露兩層紙邊，一眼看得出是一疊。 */
+  box-shadow:
+    3px -3px 0 -1px color-mix(in oklch, var(--suit-custom) 45%, var(--color-paper-3)),
+    6px -6px 0 -2px color-mix(in oklch, var(--suit-custom) 25%, var(--color-paper-2)),
+    var(--shadow-card);
+}
+
+/* 剛放進合成池：那疊紙從收著攤開。 */
+.pool-slot.is-custom .card.dropped {
+  animation:
+    drop-in var(--dur-short) var(--ease-out) both,
+    custom-fan var(--dur-long) var(--ease-settle) both;
+}
+
+@keyframes custom-fan {
+  from {
+    box-shadow: 0 0 0 -1px transparent, 0 0 0 -2px transparent, var(--shadow-card);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pool-slot.is-custom .card.dropped {
+    animation: none;
+  }
 }
 
 .card-spine {

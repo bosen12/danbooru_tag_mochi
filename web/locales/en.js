@@ -1868,6 +1868,9 @@ GitHub 開源|Open source on GitHub
 卡面、字型、第三方程式庫各自授權|Card art, fonts and third-party libraries keep their own licenses
 自製|Custom
 存檔|Save
+種子要是數字（最多 15 位數，留空＝隨機）|The seed must be a number of up to 15 digits (empty = random)
+種子太大了（最多 15 位數）|The seed is too large (at most 15 digits)
+自製牌|Custom card
 找牌：紅髮、kimono…（Enter 加第一張）|Find cards: red hair, kimono… (Enter adds the first)
 這一格沒有牌。|No cards here.
 分類|Categories
@@ -2500,6 +2503,7 @@ ComfyUI 不收：{0}|ComfyUI rejected it: {0!}
 把「{0}」當詞庫外的字加進來|Add “{0!}” as a word outside the lexicon
 「{0}」不能用（未成年、禁用角色）|“{0!}” isn’t allowed (minors, banned characters)
 詞庫外的字最多 {0} 個|At most {0} words outside the lexicon
+{0} 張：{1}|{0} cards: {1}
 `;
 export const templates = parameterized.trim().split("\n").map((line) => {
   const split = line.indexOf("|");

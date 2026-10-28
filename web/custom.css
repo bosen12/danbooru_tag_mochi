@@ -220,6 +220,38 @@
   object-fit: cover;
 }
 
+/* 烤卡面中：一道光斜斜掃過，整張微微呼吸（像紙在顯影盤裡）。 */
+.cce-face-pic.is-baking::after {
+  content: "";
+  position: absolute;
+  inset: -20%;
+  background: linear-gradient(105deg, transparent 38%, color-mix(in oklch, var(--color-shine) 90%, transparent) 50%, transparent 62%);
+  animation: cce-sheen var(--dur-breath) var(--ease-in-out, ease-in-out) infinite;
+  pointer-events: none;
+}
+
+.cce-face-pic.is-baking {
+  animation: cce-breathe var(--dur-breath) ease-in-out infinite alternate;
+}
+
+@keyframes cce-sheen {
+  from {
+    transform: translateX(-60%);
+  }
+  to {
+    transform: translateX(60%);
+  }
+}
+
+@keyframes cce-breathe {
+  from {
+    box-shadow: inset 0 0 0 2px color-mix(in oklch, var(--suit-custom) 55%, transparent);
+  }
+  to {
+    box-shadow: inset 0 0 0 2px var(--suit-custom), 0 0 18px -4px var(--suit-custom);
+  }
+}
+
 .cce-face-pic[data-kind="preview"] {
   box-shadow: inset 0 0 0 2px var(--color-accent), 0 10px 24px -12px var(--color-shade);
 }
@@ -395,6 +427,17 @@
   text-align: center;
   font-family: var(--font-mono);
   font-size: var(--text-xs);
+  transition: color var(--dur-short) var(--ease-out);
+}
+
+/* 調過的權重看得出來：加重偏朱、減輕偏灰。 */
+.cce-w[data-w="up"] {
+  color: var(--color-accent-text, var(--color-accent));
+  font-weight: 700;
+}
+
+.cce-w[data-w="down"] {
+  color: var(--color-muted);
 }
 
 .cce-note {
@@ -550,6 +593,11 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .cce-face-pic.is-baking,
+  .cce-face-pic.is-baking::after {
+    animation: none;
+  }
+
   .cce-grid > .card,
   .cce-wbtn,
   .cce-x {

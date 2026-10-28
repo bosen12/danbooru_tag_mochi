@@ -164,7 +164,8 @@ def _clean(payload: dict, banned) -> dict:
     face_in = payload.get("face") if isinstance(payload.get("face"), dict) else {}
     face_pos = " ".join(str(face_in.get("positive") or "").split())[:MAX_FACE]
     seed = face_in.get("seed")
-    seed = int(seed) & 0xFFFFFFFFFFFFFFFF if isinstance(seed, int) and not isinstance(seed, bool) and seed >= 0 else None
+    # 種子要能原樣回到網頁（JavaScript 整數只到 2^53）：超過的不收。
+    seed = int(seed) if isinstance(seed, int) and not isinstance(seed, bool) and 0 <= seed <= 2**53 - 1 else None
     card = {"name": name, "rating": rating, "members": members, "extra": extra,
             "face": {"positive": face_pos, "manual": bool(face_in.get("manual")), "seed": seed}}
     hit = banned(fill_text(card)) + banned(face_pos)

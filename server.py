@@ -2540,10 +2540,13 @@ def custom_preview(payload: dict) -> dict:
     rating = str(payload.get("rating") or "general")
     if rating not in custom_cards.RATINGS:
         rating = "general"
+    # 種子要能原樣存回網頁：JavaScript 的整數只到 2^53，超過會被四捨五入（存下來的種子就烤不出同一張）。
+    # 隨機的照卡面烘焙的範圍（32 位元）；自己填的不能超過 2^53-1。
     seed = payload.get("seed")
     if not isinstance(seed, int) or isinstance(seed, bool) or seed < 0:
-        seed = random.randint(0, SEED_MAX)
-    seed = int(seed) & SEED_MAX
+        seed = random.randint(0, 2**32 - 1)
+    if seed > 2**53 - 1:
+        raise custom_cards.CustomError("種子太大了（最多 15 位數）")
     draft = str(payload.get("draft") or "") or custom_cards.new_draft()
     custom_cards.draft_paths(draft)  # 代號不對丟 CustomError
     tags = [t.strip().lower() for t in positive.split(",")]
