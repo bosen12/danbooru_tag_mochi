@@ -578,13 +578,9 @@ body #wf-pick-btn.has {
     clip-path: none;
   }
 }
-/* 中文也照英文版的做法收底模：1500 以下名稱短一點，1300 以下只留疊層圖示（全名在滑鼠提示）。 */
-@media (max-width: 1500px) {
-  html:not([lang="en"]) .mast-tools #ckpt-pick-btn .gen-pick-label {
-    max-width: 4.5em;
-  }
-}
-@media (max-width: 1300px) {
+/* 中文也照英文版的做法收底模：1680 以下只留疊層圖示（全名在滑鼠提示）。以前 1300～1500 留 4.5em，
+ * 只看得到檔名頭五六個字（「wailllu…」），認不出是哪個，卻讓疊印台在 1366、1440、1536 擠成兩排。 */
+@media (max-width: 1680px) {
   html:not([lang="en"]) .mast-tools #ckpt-pick-btn .gen-pick-label {
     position: absolute;
     width: 1px;
@@ -1597,7 +1593,8 @@ body #wf-pick-btn.has {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  justify-content: center;
+  /* 跟上面的說明、「或者從這裡起手」同一條左邊線（置中的話三顆按鈕會縮在中間，跟字對不齊） */
+  justify-content: flex-start;
   gap: 0.5rem;
   margin-top: 0.5rem;
 }
@@ -7069,11 +7066,23 @@ html[data-booting] :is(#lib-grid, #case-grid, #book-grid):empty::before {
   }
 }
 
-/* 頂欄多了「導覽」和語言選單：筆電寬度（1500 以下）底模名稱少顯示幾個字（全名在滑鼠提示）、
- * 連結間距小一點，讓疊印台（工具最多）在 1366、1440 寬照舊一排。8em 時 1366 差 21px。 */
-@media (max-width: 1500px) {
+/* 頂欄多了「導覽」和語言選單：2100 以下底模名稱少顯示幾個字（全名在滑鼠提示）、
+ * 連結間距小一點，讓疊印台（工具最多）在 1366、1440 寬照舊一排。8em 時 1366 差 21px。
+ * 以前到 1500 為止：1501～1920 這段反而全部展開（燈號字、「中文」、8em），頂欄長了 130～230px 擠成兩排。 */
+@media (max-width: 2100px) {
   .mast-tools .ghost .gen-pick-label {
     max-width: 6.5em;
+  }
+  /* 只有圖示的工具鈕（規則、螢幕保護、Discord、聲音…）左右各 16px 太鬆：一顆 50px 寬，內容只有 16px 的圖。
+   * 收成 8px（36px 寬，點擊範圍照樣夠）省下的位子讓外觀切換也擠得進同一排。 */
+  .mast-tools .ghost.icon-btn {
+    padding-inline: var(--space-xs);
+  }
+}
+/* 筆電：五個房間的分頁左右 12 → 8px（字還是有呼吸），頂欄一排放得下。 */
+@media (max-width: 1680px) {
+  .page-switch a {
+    padding-inline: var(--space-xs);
   }
   .mast-extra + .mast-extra {
     margin-left: 6px;

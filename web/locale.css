@@ -54,7 +54,7 @@ html[lang="en"] .language-picker::after { content: "EN"; }
   background: var(--color-paper-2);
   color: var(--color-ink-2);
 }
-.theme-picker + .language-picker { margin-left: 6px; }
+.theme-picker + .language-picker { margin-left: 0; }
 .theme-picker select { position: absolute; inset: 0; width: 100%; opacity: 0; cursor: pointer; }
 .theme-picker:focus-within { outline: 2px solid var(--color-focus); outline-offset: 2px; }
 .theme-picker:hover { color: var(--color-ink); }

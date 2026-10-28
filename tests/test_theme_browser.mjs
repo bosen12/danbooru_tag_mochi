@@ -87,13 +87,16 @@ try {
 
     // 切淺色：馬上換、記住、meta theme-color 跟著換。
     await page.selectOption('#theme-select', 'light');
+    // 有 View Transitions 時新顏色從按鈕暈開：換色在轉場的回呼裡（下一格），暈完拿掉 theme-inking。
+    await page.waitForFunction(() => document.documentElement.dataset.theme === 'light', null, { timeout: 3000 });
+    await page.waitForFunction(() => !document.documentElement.classList.contains('theme-inking'), null, { timeout: 3000 });
     const switched = await page.evaluate(() => ({
       theme: document.documentElement.dataset.theme,
       saved: localStorage.getItem('mochi.theme.v1'),
       scheme: document.documentElement.style.colorScheme,
       meta: document.querySelector('meta[name="theme-color"]')?.content ?? null,
     }));
-    assert.equal(switched.theme, 'light', `${path}: switches at once`);
+    assert.equal(switched.theme, 'light', `${path}: switches`);
     assert.equal(switched.saved, 'light', `${path}: remembers the choice`);
     assert.equal(switched.scheme, 'light', `${path}: native controls follow`);
     if (switched.meta !== null) assert.equal(switched.meta, '#f4f1ea', `${path}: window bar colour follows`);
@@ -136,6 +139,7 @@ try {
     await page.goto(`${origin}/`);
     await page.waitForSelector('#theme-select', { state: 'attached' });
     await page.selectOption('#theme-select', 'auto');
+    await page.waitForFunction(() => document.documentElement.dataset.theme === 'light', null, { timeout: 3000 }).catch(() => {});
     assert.equal(await page.evaluate(() => document.documentElement.dataset.theme), 'light', 'auto follows a light system');
     await page.emulateMedia({ colorScheme: 'dark' });
     await page.waitForFunction(() => document.documentElement.dataset.theme === 'dark', null, { timeout: 5000 });
@@ -166,7 +170,44 @@ try {
     assert.ok(r.visible && r.slot !== 'none', `${lang} ${width}: picker visible (${r.slot})`);
     assert.ok(r.grew <= 1, `${lang} ${width}: masthead no taller with the picker (${r.slot}, +${r.grew}px)`);
     await page.selectOption('#theme-select', 'light');
+    await page.waitForFunction(() => document.documentElement.dataset.theme === 'light', null, { timeout: 3000 }).catch(() => {});
     assert.equal(await page.evaluate(() => document.documentElement.dataset.theme), 'light', `${lang} ${width}: switches from its phone spot`);
+    await page.close();
+  }
+
+  // 換外觀從按鈕暈開：轉場期間只有 root 一層（換頁轉場取的名字收掉），新畫面的遮罩圓心在按鈕上。
+  {
+    const page = await ctx.newPage();
+    await page.addInitScript(() => localStorage.setItem('mochi.theme.v1', 'dark'));
+    await page.goto(`${origin}/`);
+    await page.waitForSelector('#theme-select', { state: 'attached' });
+    await page.waitForTimeout(1200);
+    await page.evaluate(() => {
+      window.__ink = null;
+      const grab = () => {
+        const a = document.getAnimations().find((x) => x.effect?.pseudoElement === '::view-transition-new(root)' && x.effect.getKeyframes().some((k) => '--theme-ink-r' in k));
+        if (!a) return requestAnimationFrame(grab);
+        a.pause();
+        const box = document.querySelector('.theme-picker').getBoundingClientRect();
+        const root = document.documentElement;
+        window.__ink = {
+          named: [...document.querySelectorAll('body, body *')].filter((e) => getComputedStyle(e).viewTransitionName !== 'none').length,
+          dx: Math.abs(parseFloat(root.style.getPropertyValue('--ink-x')) - (box.left + box.width / 2)),
+          dy: Math.abs(parseFloat(root.style.getPropertyValue('--ink-y')) - (box.top + box.height / 2)),
+          // 瀏覽器自己給 root 的 group 一個位置動畫（大小沒變，看不出來）；要擋的是新舊畫面的淡入淡出、各命名層
+          others: document.getAnimations().filter((x) => /::view-transition-(old|new)|::view-transition-group\((?!root)/.test(x.effect?.pseudoElement || '') && x !== a).map((x) => x.effect.pseudoElement + ':' + x.animationName).join(' ') || 0,
+        };
+        a.play();
+      };
+      requestAnimationFrame(grab);
+    });
+    await page.selectOption('#theme-select', 'light');
+    await page.waitForFunction(() => window.__ink, null, { timeout: 5000 });
+    const ink = await page.evaluate(() => window.__ink);
+    assert.equal(ink.named, 0, 'theme switch folds every named layer into root');
+    assert.ok(ink.dx < 2 && ink.dy < 2, `ink starts at the picker (${ink.dx}, ${ink.dy})`);
+    assert.equal(ink.others, 0, 'no other view-transition layers animate');
+    await page.waitForFunction(() => !document.documentElement.classList.contains('theme-inking') && document.documentElement.dataset.theme === 'light', null, { timeout: 3000 });
     await page.close();
   }
 
@@ -181,7 +222,7 @@ try {
     await page.close();
   }
   await ctx.close();
-  console.log('theme (default dark, picker, persistence, before paint, tabs, system, English): passed');
+  console.log('theme (default dark, picker, persistence, before paint, tabs, system, ink reveal, phone spot, English): passed');
 } finally {
   await browser.close();
   server.close();

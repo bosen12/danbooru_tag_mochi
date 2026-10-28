@@ -3,6 +3,9 @@
 ## Unreleased
 
 - **Light mode**: the half-moon button next to the language globe switches between **Dark** (default), **Light** (cream paper, ink text) and **System**. It applies before the first paint (no dark flash), is remembered across rooms and tabs, and changes every open tab. Cards keep their cream stock in both. Where the top bar is too full (phones, a few in-between widths), the button moves next to the sound button in the tool row instead of pushing the globe onto a new line. The intro and tutorial films stay dark.
+- Switching appearance spreads from the button like ink on paper: the new colours open out in a soft-edged circle (View Transitions in Chrome, Edge and Safari 18; a cross-fade elsewhere; instant with reduced motion).
+- Chinese top bar fits on one row again from 1366 px up to 2560 px on every room (it was two rows on the Ink Pool and Fuse Bed at 1366–1440 and everywhere at 1501–1920): icon-only tools are 36 px wide instead of 50, room tabs a little tighter, and the checkpoint shows just its icon below 1680 px (full name on hover).
+- Starter buttons in the empty Ink Pool line up with the text above instead of sitting centred.
 
 ## v1.3.1 — 2026-10-28
 
