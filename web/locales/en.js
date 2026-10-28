@@ -1868,6 +1868,7 @@ GitHub 開源|Open source on GitHub
 卡面、字型、第三方程式庫各自授權|Card art, fonts and third-party libraries keep their own licenses
 自製|Custom
 存檔|Save
+權重|Weight
 種子要是數字（最多 15 位數，留空＝隨機）|The seed must be a number of up to 15 digits (empty = random)
 種子太大了（最多 15 位數）|The seed is too large (at most 15 digits)
 自製牌|Custom card

@@ -128,12 +128,7 @@ export function openCustomEditor({ card = null, start = null, lib, lex, assets, 
   more.observe(sentinel);
   sizeCards(grid);
   // 滑鼠停在牌上：跟字盒同一張浮空放大卡。
-  attachPeek(grid, ".card[data-tag]", (node) => {
-    const c = lib.byTag.get(node.dataset.tag);
-    if (!c) return null;
-    const facts = data ? cardFacts(c, lex, data).filter(([k]) => k !== "分級").slice(0, 4) : [];
-    return { zh: c.zh, tag: c.tag, glyph: CARD_SUIT_INFO[c.suit].glyph, seal: c.seal, sealTitle: c.groupZh, suitColor: `var(--suit-${c.suit})`, art: assets.art(c.tag), rating: c.rating, facts };
-  });
+  attachPeek(grid, ".card[data-tag]", (node) => peekInfo(node.dataset.tag));
   attachTilt(grid);
 
   const paste = el("textarea", { class: "cce-paste", rows: "9", spellcheck: "false", placeholder: "貼上一整串提示詞，用逗號分開：1girl, beach, (huge breasts:1.2), sparkle eyelashes", "aria-label": "貼提示詞" });
@@ -155,6 +150,11 @@ export function openCustomEditor({ card = null, start = null, lib, lex, assets, 
   const faceBox = el("div", { class: "cce-face" }, facePic, el("div", { class: "cce-face-ctl" }, el("label", { class: "cce-seed-row" }, el("span", {}, "種子"), seedIn), bakeBtn, bakeMsg));
 
   const content = el("div", { class: "cce-content", "aria-live": "polite" });
+  // 右邊的成員籤（調權重那一排）：滑鼠停著一樣浮出那張牌，多一行現在的權重。詞庫外的字沒有牌，不浮。
+  attachPeek(content, ".cce-chip[data-tag]", (node) => {
+    const m = st.members.find((x) => x.tag === node.dataset.tag);
+    return peekInfo(node.dataset.tag, m && m.w !== 1 ? [["權重", fmtW(m.w)]] : []);
+  });
   const fillLine = el("code", { class: "cce-fill", dataset: { noI18n: "" } });
   const copyBtn = el("button", { class: "btn btn-small btn-ghost", type: "button", onclick: () => copy(fillText(st)) }, "複製");
   const faceIn = el("textarea", { class: "cce-face-in", rows: "4", spellcheck: "false", "aria-label": "卡面提示詞" });
@@ -242,6 +242,14 @@ export function openCustomEditor({ card = null, start = null, lib, lex, assets, 
         return b;
       })
     );
+  }
+
+  /** 放大卡的內容（字盒那一格、右邊的成員籤共用）。lead：排在最前面的幾行。 */
+  function peekInfo(tag, lead = []) {
+    const c = lib.byTag.get(tag);
+    if (!c) return null;
+    const facts = data ? cardFacts(c, lex, data).filter(([k]) => k !== "分級") : [];
+    return { zh: c.zh, tag: c.tag, glyph: CARD_SUIT_INFO[c.suit].glyph, seal: c.seal, sealTitle: c.groupZh, suitColor: `var(--suit-${c.suit})`, art: assets.art(c.tag), rating: c.rating, facts: [...lead, ...facts].slice(0, 4) };
   }
 
   const genderOk = (c) => pick.suit !== "chara" || !pick.gender || c.gate === pick.gender;

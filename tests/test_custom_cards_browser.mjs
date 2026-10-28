@@ -151,6 +151,19 @@ try {
     await page.mouse.move(box.x + 4, box.y + 4);
     await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2, { steps: 4 });
     await page.waitForFunction(() => document.getElementById('card-peek')?.dataset.show === 'true', null, { timeout: 3000 });
+    // 右邊的成員籤也浮放大卡，多一行現在的權重。
+    await page.mouse.move(5, 5);
+    await page.waitForFunction(() => document.getElementById('card-peek')?.dataset.show !== 'true');
+    await page.click('.cce-chip[data-tag="red hair"] .cce-wbtn >> nth=1');
+    await page.click('.cce-chip[data-tag="red hair"] .cce-wbtn >> nth=1');
+    // 按過的那張要移開再停回來才浮（放大卡的規則：按下去的不擋路）。
+    await page.mouse.move(5, 5, { steps: 3 });
+    await page.waitForTimeout(200);
+    const chipBox = await page.locator('.cce-chip[data-tag="red hair"] .cce-chip-name').boundingBox();
+    await page.mouse.move(chipBox.x + 2, chipBox.y + 2);
+    await page.mouse.move(chipBox.x + chipBox.width / 2, chipBox.y + chipBox.height / 2, { steps: 4 });
+    await page.waitForFunction(() => document.getElementById('card-peek')?.dataset.show === 'true', null, { timeout: 3000 });
+    assert.match(await page.textContent('#card-peek'), /red hair[\s\S]*權重\s*1\.2/);
     assert.deepEqual(errors, []);
     await ctx.close();
   }
