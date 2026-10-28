@@ -83,6 +83,8 @@ cd danbooru_tag_mochi
 
 Keep the server window open. After updating, reload the page with **Ctrl+F5**.
 
+**Install as an app.** In Chrome or Edge, **Install app** appears in the top bar (or use the install icon in the address bar): Mochi gets its own window and a desktop / Start menu icon, with shortcuts to each room. On a phone, add it to the home screen (Safari: Share → Add to Home Screen; over Tailscale use `tailscale serve` so the page is HTTPS). The server still has to be running.
+
 ### Prepared on first start
 
 | What | Size | How | Skip |
@@ -267,6 +269,8 @@ cd danbooru_tag_mochi
 1. **先把 ComfyUI 開起來**（一般版 8188 或 ComfyUI Desktop 的 8000 都會自動找到；在別的位址就點頂欄的 Comfy 燈號填網址）。
 2. **開墨池。** Windows 雙擊 `start.bat`（沒裝 Python 會直接打開下載頁）；macOS / Linux 跑 `./start.sh`，或 `python3 server.py` 再開 <http://127.0.0.1:8796>。
 3. **按「抽並生圖」。** 什麼都沒釘也行：引擎會把每一格都抽好，第一張圖不必先設定任何東西。底模在你用頂欄的模型按鈕選之前，墨池會從 ComfyUI 的清單挑一個 Illustrious／SDXL 的。頂欄的「導覽」會一步一步帶你走每個房間。
+
+**安裝成 App**：Chrome、Edge 的頂欄會出現「安裝成 App」（或按網址列的安裝圖示），裝好後墨池有自己的視窗、桌面和開始選單的圖示，右鍵圖示可以直接開各個房間。手機可以加到主畫面（Safari：分享 → 加入主畫面；走 Tailscale 時用 `tailscale serve` 讓網頁是 HTTPS）。伺服器照樣要開著。
 
 ### 第一次啟動會準備的東西
 
