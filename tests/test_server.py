@@ -1909,6 +1909,27 @@ _bt = _gl.by_tag("kimono", _fi)
 ok("bytag: 用到這張牌、印好的才算（Hires、印壞的不算）", _bt["total"] == 2 and {r["id"] for r in _bt["items"]} == {"s1", "s2"}, str(_bt))
 ok("bytag: 收藏過的排第一、帶作品冊的縮圖；撤下的排最後", _bt["items"][0]["id"] == "s1" and _bt["items"][0]["fav"] == "w1" and _bt["items"][0]["albumThumb"].endswith("w1.webp") and _bt["items"][-1]["mark"] == "discard")
 ok("bytag: 分頁", _gl.by_tag("kimono", _fi, limit=1, offset=1)["items"][0]["id"] == "s2" and _gl.by_tag("", _fi)["total"] == 0)
+_dead = _gl.by_tag("kimono", _fi, alive=lambda src: False)
+ok("bytag: 原圖已被清掉的不列、不算張數；收藏過的照列（作品冊有自己的一份）", _dead["total"] == 1 and _dead["items"][0]["id"] == "s1", str(_dead))
+ok("bytag: 查不到 output（alive=None）就不過濾", _gl.by_tag("kimono", _fi, alive=None)["total"] == 2)
+_oa_dir = Path(tempfile.mkdtemp())
+(_oa_dir / "danbooru_case").mkdir()
+(_oa_dir / "danbooru_case" / "here.png").write_bytes(b"x")
+_saved_oa = (server.comfy_output_dir, dict(server._OUTPUT_DIR_CACHE))
+try:
+    server.comfy_output_dir = lambda: _oa_dir
+    server._OUTPUT_DIR_CACHE.update(at=0.0, dir=None)
+    _alive = server.output_alive()
+    ok("output_alive: 在 output 裡的算在、被清掉的不算、別的來源與跳出資料夾的不判（算在）",
+       _alive("/api/image?filename=here.png&subfolder=danbooru_case&type=output") and not _alive("/api/image?filename=gone.png&subfolder=danbooru_case&type=output")
+       and _alive("/api/recipes/files/w1.webp") and _alive("/api/image?filename=x.png&subfolder=..&type=output") and _alive("/api/image?filename=x.png&type=temp"))
+    server.comfy_output_dir = lambda: None
+    server._OUTPUT_DIR_CACHE.update(at=0.0, dir=None)
+    ok("output_alive: 不知道 output 在哪（Comfy 在別台、沒開）回 None，不過濾", server.output_alive() is None)
+finally:
+    server.comfy_output_dir = _saved_oa[0]
+    server._OUTPUT_DIR_CACHE.clear()
+    server._OUTPUT_DIR_CACHE.update(_saved_oa[1])
 ok("stats: 提示詞拆字跟 usage.js 一樣", _gl.tags_of("(smile:1.2), 1girl,1girl ,  (a (b):0.9)") == ["smile", "1girl", "a (b)"])
 _gl.LOG_PATH = _saved_log
 

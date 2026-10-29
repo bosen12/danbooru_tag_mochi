@@ -13,7 +13,7 @@ import { ratingBlocked, RATING_LABEL } from "./rules/rating.js";
 import { heatBlockedByRating } from "./scene-policy.js";
 import { buildLibrary, createAssets, cardNode, groupChips, CARD_SUIT_INFO, CARD_SUITS, ERA_ZH } from "./cards.js";
 import { el } from "./ui.js";
-import { DUR, CURVE, css, reducedMotion } from "./motion.js";
+import { DUR, CURVE, css, reducedMotion, holdWidth } from "./motion.js";
 
 const $ = (id) => document.getElementById(id);
 let data = null;
@@ -96,11 +96,13 @@ function countUp(node, to) {
     io.disconnect();
     const t0 = performance.now();
     const dur = DUR.develop;
+    const release = holdWidth(node, fmt(0), fmt(to));
     const step = (now) => {
       const p = Math.min(1, (now - t0) / dur);
       const e = 1 - Math.pow(1 - p, 3);
       node.textContent = fmt(Math.round(to * e));
       if (p < 1) requestAnimationFrame(step);
+      else release();
     };
     requestAnimationFrame(step);
   });

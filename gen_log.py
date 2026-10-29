@@ -400,10 +400,12 @@ def stats(known, favorites) -> dict:
     }
 
 
-def by_tag(tag: str, favorites: dict, limit: int = 48, offset: int = 0) -> dict:
+def by_tag(tag: str, favorites: dict, limit: int = 48, offset: int = 0, alive=None) -> dict:
     """卡冊「用它做過的圖」：日誌裡用到這張牌、印好的每一張（Hires 不重複算）。
 
     favorites：fav_key → 作品冊那一筆（{"id", "thumb"}）。收藏過的排前面，再來一般的，撤下過的最後；同一類新的在前。
+    alive：image → 原圖還在不在（伺服器查得到 ComfyUI 的 output 時才給）。不在的不列、不算張數；
+    收藏過的照列（作品冊自己存了一份）。以前全部列出來、卡冊讀圖 404 才一格格拿掉，面板一縮再縮、底下的按鈕跟著跳。
     """
     tag = str(tag or "").strip()
     if not tag:
@@ -420,6 +422,8 @@ def by_tag(tag: str, favorites: dict, limit: int = 48, offset: int = 0) -> dict:
     for e, tags in rows:
         known = favorites.get("_known", ())
         fav = favorites.get(fav_key(e.get("seed"), [t for t in tags if t in known]))
+        if alive is not None and not fav and not alive(e.get("image")):
+            continue
         out.append({
             "id": e.get("id"),
             "at": e.get("at") or 0,

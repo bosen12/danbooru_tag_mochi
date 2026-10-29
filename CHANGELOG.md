@@ -1,6 +1,14 @@
 # Release notes
 
-## v1.4 — 2026-10-29
+## v1.4.1 — 2026-10-29
+
+Changes since [v1.4](https://github.com/bosen12/danbooru_tag_mochi/releases/tag/v1.4): no more jittering in the Card Book.
+
+- **Images using this card** (card detail) no longer lists images whose originals ComfyUI has already cleaned up. Before, they were laid out and then removed one by one as each failed to load, so the panel kept shrinking and the buttons at the bottom jumped several times (most used cards had almost all of their logged images deleted: 0–2 of several hundred left). With ComfyUI on this machine the server checks its output folder and leaves them out, and the count matches. With a remote ComfyUI the page checks the first 12 itself before showing them, and any later failures are removed together in one smooth shrink.
+- The panel grows into place smoothly when the images arrive, and no longer flashes "No images with this card yet" first.
+- Hovering one of those images no longer flickers when the pointer is on its bottom edge (it lifted 2 px, the pointer fell off, it dropped back, eight times a second). It now grows slightly in place.
+- Counting numbers (the big count in the card detail, "N / M cards used · N uses" at the top of the Card Book, the stats in How it works) keep their final width while they count, so the words next to them stay still instead of being nudged sideways at each new digit.
+
 
 Changes since [v1.3.1](https://github.com/bosen12/danbooru_tag_mochi/releases/tag/v1.3.1).
 

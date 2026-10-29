@@ -1997,6 +1997,34 @@ def comfy_output_dir() -> Path | None:
     return root / "output" if root else None
 
 
+_OUTPUT_DIR_CACHE: dict = {"at": 0.0, "dir": None}
+
+
+def output_alive():
+    """卡冊「用它做過的圖」用：/api/image 那張原圖還在不在 ComfyUI 的 output（被清掉的就不列）。
+    查不到 output 在哪（Comfy 在別台、沒開）回 None：不過濾，交給網頁讀圖時自己判斷。
+    output 在哪問一次記一分鐘（要問 ComfyUI，卡冊每打開一張牌都會來）。"""
+    now = time.monotonic()
+    if now - _OUTPUT_DIR_CACHE["at"] > 60:
+        _OUTPUT_DIR_CACHE["dir"] = comfy_output_dir()
+        _OUTPUT_DIR_CACHE["at"] = now
+    out = _OUTPUT_DIR_CACHE["dir"]
+    if not out or not Path(out).is_dir():
+        return None
+
+    def alive(src) -> bool:
+        q = urllib.parse.parse_qs(str(src or "").split("?", 1)[-1])
+        name = (q.get("filename") or [""])[0]
+        if not str(src or "").startswith("/api/image") or (q.get("type") or ["output"])[0] != "output" or not name:
+            return True
+        sub = (q.get("subfolder") or [""])[0].replace("\\", "/").strip("/")
+        if ".." in Path(sub).parts or ".." in Path(name).parts or Path(name).name != name:
+            return True
+        return (Path(out) / sub / name).is_file()
+
+    return alive
+
+
 def _output_name(src) -> str:
     """/api/image?filename=…&subfolder=danbooru_case 的檔名（別的資料夾的不算）。"""
     q = urllib.parse.parse_qs(str(src or "").split("?", 1)[-1])
@@ -6014,7 +6042,7 @@ class Handler(BaseHTTPRequestHandler):
             except ValueError:
                 self._json(400, {"ok": False, "error": "limit、offset 要是數字"})
                 return
-            self._json(200, {"ok": True, **gen_log.by_tag((qs.get("tag") or [""])[0], favorite_index(), limit, offset)})
+            self._json(200, {"ok": True, **gen_log.by_tag((qs.get("tag") or [""])[0], favorite_index(), limit, offset, alive=output_alive())})
             return
         if path == "/api/genlog/stats":
             self._json(200, {"ok": True, **genlog_stats()})

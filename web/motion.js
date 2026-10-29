@@ -825,6 +825,31 @@ export function leave(node, done, { duration = DUR.short } = {}) {
 }
 
 /**
+ * 數字一格一格數上去（0 → 1,234）之前，先把寬度留成頭尾裡寬的那個、靠右對齊：
+ * 不然位數一變多，後面的字就被往右推一下，數字一路數、旁邊的字一路跳（2026-10-29 專案主：卡冊詳情會抖）。
+ * texts 是頭尾兩個要顯示的字；數完呼叫回傳的 release() 拿掉保留的寬度。
+ */
+export function holdWidth(node, ...texts) {
+  if (!node) return () => {};
+  const was = node.textContent;
+  const inline = getComputedStyle(node).display === "inline";
+  if (inline) node.style.display = "inline-block";
+  let w = 0;
+  for (const t of texts) {
+    node.textContent = t;
+    w = Math.max(w, node.getBoundingClientRect().width);
+  }
+  node.textContent = was;
+  node.style.minWidth = `${Math.ceil(w)}px`;
+  node.style.textAlign = "right";
+  return () => {
+    node.style.minWidth = "";
+    node.style.textAlign = "";
+    if (inline) node.style.display = "";
+  };
+}
+
+/**
  * 一整塊內容換成另一組（換花色後的分類籤）：淡進來、落一點點，跟底下發牌同一拍。
  * key 沒變（點分類籤、打字搜尋時整排重畫）就不演，免得每按一下整排閃一次。第一次畫也不演（開頁有自己的進場）。
  */

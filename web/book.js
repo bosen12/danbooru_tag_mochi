@@ -28,7 +28,7 @@ import { mountGenStatus } from "./gen-status.js";
 import { createHand } from "./hand.js";
 import { handTools } from "./hand-tools.js";
 import { measure, evaluate, announce, openWall } from "./achievements.js";
-import { initMotion, settleMotion, seat, refuse, flight, reducedMotion, swapIn, rowChange, heightChange, CURVE, DUR, css, cropFlipStart, cropFlipEnd } from "./motion.js";
+import { initMotion, settleMotion, seat, refuse, flight, reducedMotion, swapIn, rowChange, heightChange, holdWidth, CURVE, DUR, css, cropFlipStart, cropFlipEnd } from "./motion.js";
 import { viewSrc } from "./gen.js";
 import { pingLoop } from "./ping.js";
 import { getSfx } from "./sfx.js";
@@ -473,11 +473,18 @@ function renderSummary({ count = false } = {}) {
   const dur = count ? DUR.develop : DUR.long;
   const ease = (x) => 1 - Math.pow(1 - x, 3);
   clearInterval(box._tick);
+  // 兩個數字數的時候各自留好寬度：「181 ／ 7,042 張用過・共 284 次」後面的字不跟著位數跳。
+  const releaseU = holdWidth(nU, fmt(from.used), fmt(used));
+  const releaseT = holdWidth(nT, fmt(from.total), fmt(total));
   box._tick = setInterval(() => {
     const k = Math.min(1, (performance.now() - t0) / dur);
     const e = ease(k);
     paint(Math.round(from.used + (used - from.used) * e), Math.round(from.total + (total - from.total) * e));
-    if (k >= 1) clearInterval(box._tick);
+    if (k >= 1) {
+      clearInterval(box._tick);
+      releaseU();
+      releaseT();
+    }
   }, 33);
 }
 
@@ -2061,13 +2068,21 @@ function worksOf(card) {
     grid.hidden = !shown;
     note.hidden = !!shown || !settled;
   };
+  // 捲下去才讀的格子讀不到（原圖被刪）：收一下，0.25 秒內的一起拿掉，面板只縮一次，不是一格縮一次。
+  let dying = [];
+  let dyingTimer = 0;
   const onGone = (x, tile) => {
-    const grow = heightChange(box);
-    tile?.remove();
     gone.add(x.image);
-    shown = grid.children.length;
-    showCount();
-    grow.done();
+    dying.push(tile);
+    clearTimeout(dyingTimer);
+    dyingTimer = setTimeout(() => {
+      const grow = heightChange(box);
+      for (const t of dying) t?.remove();
+      dying = [];
+      shown = grid.children.length;
+      showCount();
+      grow.done();
+    }, 250);
   };
   // 原圖被刪的作品以前先排上去、讀圖失敗才一格格拿掉：面板一縮再縮，底下的按鈕跟著跳好幾下
   // （2026-10-29 專案主：3個女性 打開時按鈕會抖。它 10 張裡 9 張的原圖已經被 ComfyUI 清掉）。
@@ -2199,11 +2214,13 @@ function countUp(node, to) {
   const t0 = performance.now() + DUR.short;
   const dur = Math.min(DUR.story, 300 + to * 40);
   const ease = (x) => 1 - Math.pow(1 - x, 3);
+  const release = holdWidth(node, fmt(0), fmt(to));
   const tick = setInterval(() => {
     const k = Math.max(0, Math.min(1, (performance.now() - t0) / dur));
     node.textContent = fmt(Math.round(to * ease(k)));
     if (k >= 1) {
       clearInterval(tick);
+      release();
       node.animate([{ transform: "scale(1.12)" }, { transform: "none" }], { duration: DUR.short, easing: css(CURVE.settle) });
     }
   }, 33);
