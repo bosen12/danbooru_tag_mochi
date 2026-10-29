@@ -529,6 +529,8 @@ Enter 放上第一張，↓ 走進字盒|Enter adds the first result; ↓ moves 
 無限抽|Continuous
 同一個人|Same character
 同一個人：一次 2 張以上才有作用|Same character requires a batch of at least 2 images.
+ComfyUI 沒開：可以先只抽牌、挑牌，開了再生圖。|ComfyUI is not running: you can still draw and pick cards, and generate once it is up.
+連不到主機（網路斷了？）：接上了再生圖。|Cannot reach the host (network down?): generate once it is back.
 一次抽好幾張時，第 2 張起沿用第 1 張的長相：同一個角色換姿勢、換衣服|Reuse the first image's appearance throughout a batch, with new poses and outfits.
 抽完一輪自動接著抽下一輪，一直到按「停」，或印到右邊設定的張數|Keep drawing new batches until you press Stop, or until the count set on the right is reached.
 無限抽印到幾張停|Stop continuous generation after

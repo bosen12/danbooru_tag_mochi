@@ -122,6 +122,8 @@ const parkedWeights = new Map();
 let bans = new Set();
 let shots = [];
 let infinite = false;
+// 連線狀態（ping.js）：ok／comfy（ComfyUI 沒開）／net（連不到主機）。抽牌列的狀態字用，跟疊印台付印鈕底下那行一樣先說。
+let linkNow = "ok";
 let stopAsked = false;
 // 無限抽印完一輪、還沒排下一輪的那一小段空檔：照樣算「在忙」，「停」不能在這時候閃掉。
 let looping = false;
@@ -264,7 +266,10 @@ async function boot() {
   initLoraPicker({ gallery: true, motion: { DUR, CURVE, css } });
   initWorkflow({ sampling: true, faceFix: true, gallery: true, motion: { DUR, CURVE, css } });
   discord = mountDiscord(zh, "墨池", { lib: () => lib });
-  pingLoop();
+  pingLoop((st) => {
+    linkNow = st;
+    renderOffline();
+  });
 
   renderRating();
   // 分級左邊的「不限制」（rating-free.js）：開著所有牌不受分級限制，分級鈕照樣選圖本身的分級。
@@ -2468,6 +2473,23 @@ function handCount() {
 function renderGoStatus() {
   const s = $("go-bar")?.querySelector(".go-status");
   if (s) s.textContent = goStatusText();
+}
+
+/**
+ * 抽牌那排上面一行黃字：ComfyUI 沒開、連不到主機（跟疊印台付印鈕底下那行同一句話、同一種黃字）。
+ * 按下去之前就說：以前沒開時只有頂欄一顆小紅點，按了「抽並生圖」才在成品牆看到一格「ComfyUI 連不上」。
+ * 狀態列那排已經擠滿，放進去會把按鈕擠到下一行；連線狀態不常變，多一行不會一直跳。
+ */
+function renderOffline() {
+  const bar = $("go-bar");
+  if (!bar) return;
+  const text = linkNow === "comfy" ? "ComfyUI 沒開：可以先只抽牌、挑牌，開了再生圖。" : linkNow === "net" ? "連不到主機（網路斷了？）：接上了再生圖。" : "";
+  const old = document.getElementById("go-offline");
+  if ((old?.textContent || "") === text) return;
+  if (!text) return void old?.remove();
+  const line = el("p", { class: "rating-overreach", id: "go-offline", role: "status" }, text);
+  if (old) old.replaceWith(line);
+  else bar.before(line);
 }
 
 /** 抽牌列上面那一行：不限制開著、尺度超過右邊選的分級時提醒（rating-free.js 的 overreachLine）。 */

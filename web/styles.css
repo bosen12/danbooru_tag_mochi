@@ -2221,6 +2221,10 @@ body #wf-pick-btn.has {
 .rating-overreach + .go-bar {
   border-top: 0;
 }
+/* 兩行黃字（分級超過＋ComfyUI 沒開）疊在一起：中間不要再一條線。 */
+.rating-overreach + .rating-overreach {
+  border-top: 0;
+}
 
 /* 照這張再印（作品冊、日誌帶過來的，app.js 的 greetRecipe）：抽牌那排上面一張小便條。
  * 左邊一道池水色的邊，說時代、種子照那張；模型不一樣時問要不要換。 */
@@ -2409,6 +2413,11 @@ html[lang="en"] .pool > .panel-head .workspace-purpose {
     flex-basis: 100%;
     justify-content: flex-start;
     margin-inline-start: 0;
+  }
+  /* 「4 張會一定進圖」自己一行，四顆鈕排一行：以前張數跟鈕擠一行，「清空」被擠到下一行自己一顆。 */
+  .pool > .panel-head > p:last-child > #pool-count:not(:empty) {
+    flex-basis: 100%;
+    margin-bottom: var(--space-2xs);
   }
   .go-bar > .stepper {
     justify-self: start;
@@ -3411,8 +3420,9 @@ body[data-dragging="true"] .library[data-over="true"] {
   overflow: auto;
   overscroll-behavior: contain;
   /* 捲軸的位置先留著：內容剛好長到要捲（卡冊詳情的作品圖讀進來）時捲軸冒出來，整個彈窗的內容會被擠窄、
-   * 字和圖一起往左縮一下（2026-10-29 專案主：1個、2個、3個女性打開會抖，跟旁邊的捲動桿有關）。 */
-  scrollbar-gutter: stable;
+   * 字和圖一起往左縮一下（2026-10-29 專案主：1個、2個、3個女性打開會抖，跟旁邊的捲動桿有關）。
+   * 兩邊都留（both-edges）：只留右邊時，底下按鈕列的分隔線右端會短一截，兩邊一樣短看起來是刻意的。 */
+  scrollbar-gutter: stable both-edges;
   padding: var(--space-lg);
   border-radius: var(--radius-md);
   background: var(--color-paper-2);
@@ -6396,6 +6406,19 @@ html[data-booting] :is(#lib-grid, #case-grid, #book-grid):empty::before {
   flex: none;
   align-items: center;
   gap: var(--space-sm);
+}
+/* 「套用」是主鈕；「存成自製牌」「刪除」是次要的字連結：跟旁邊的小字同一級，不要比主鈕還大還亮。 */
+.deck-acts .link-btn {
+  color: var(--color-muted);
+  font-size: var(--text-xs);
+}
+@media (hover: hover) and (pointer: fine) {
+  .deck-acts .link-btn:hover {
+    color: var(--color-ink);
+  }
+  .deck-acts .deck-del:hover {
+    color: var(--color-accent-text);
+  }
 }
 
 /* ---------- 貼上提示詞變成牌（paste-prompt.js）：上面貼、底下即時分好類 ---------- */
