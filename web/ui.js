@@ -283,7 +283,6 @@ export function toast(text, { action = null, ms = action ? 5200 : 2600 } = {}) {
     t.append(clock);
   }
   t.style.setProperty("--toast-ms", ms + "ms");
-  liftOverSheet(t);
   t.inert = false;
   t.dataset.action = action ? "true" : "false";
   t.dataset.paused = "false";
@@ -294,18 +293,6 @@ export function toast(text, { action = null, ms = action ? 5200 : 2600 } = {}) {
   clearTimeout(toastTimer);
   toastDeadline = Date.now() + ms;
   toastTimer = setTimeout(hideToast, ms);
-}
-
-/**
- * 最上面那張彈窗底部的按鈕列（.sheet-foot）在畫面下方時，提示浮到它上面。
- * 手機的彈窗貼著底邊，提示以前正好蓋住「印這張」「收藏」那排鈕兩三秒（要按得等它消失）。
- * 沒有彈窗、或按鈕列在上面一點（電腦上置中的小彈窗）就照 CSS 原本的位置。
- */
-function liftOverSheet(t) {
-  const foot = openOverlays.at(-1)?.querySelector(".sheet-foot");
-  const r = foot?.getBoundingClientRect();
-  const covers = r && r.height > 0 && r.top < innerHeight && r.bottom > innerHeight - 120;
-  t.style.bottom = covers ? `${Math.ceil(innerHeight - r.top) + 8}px` : "";
 }
 
 // 伺服器的存檔壞了（server.py 回 503 store_corrupt，usage.js 這類背景存檔丟 mochi-store-corrupt）：

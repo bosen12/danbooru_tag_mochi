@@ -920,7 +920,10 @@ export function heightChange(node) {
       // 同一段裡又叫到一次（印製進度每一下都會重畫）：剛開始的動畫還沒套上去，量到的已經是新高度，
       // 不能拿它重來 —— 看上一段長到哪裡、要長到多高，自己算。
       const prev = node._grow;
-      const at = prev ? Math.min(1, (prev.currentTime || 0) / DUR.medium) : 0;
+      // 播到哪裡要在 cancel 之前記：cancel 之後 currentTime 變 null，底下「接著播」會從頭來 ——
+      // 疊印台付印時每一格進度都叫一次，預覽一直從 191px 重長、底下的試印列上下跳（2026-10-30 修）。
+      const prevTime = prev ? prev.currentTime || 0 : 0;
+      const at = prev ? Math.min(1, prevTime / DUR.medium) : 0;
       prev?.cancel();
       const to = node.getBoundingClientRect().height;
       const start = prev ? prev.from + (prev.to - prev.from) * bezier(CURVE.out)(at) : from;
@@ -929,7 +932,7 @@ export function heightChange(node) {
       if (prev && Math.abs(to - prev.to) < 2) {
         // 目標沒變：接著原本那一段播，不重頭。
         a.effect.setKeyframes([{ height: prev.from + "px", minHeight: "0px", overflow: "hidden" }, { height: to + "px", minHeight: "0px", overflow: "hidden" }]);
-        a.currentTime = prev.currentTime || 0;
+        a.currentTime = prevTime;
       }
       node._grow = Object.assign(a, { from: prev && Math.abs(to - prev.to) < 2 ? prev.from : start, to });
       a.onfinish = a.oncancel = () => {

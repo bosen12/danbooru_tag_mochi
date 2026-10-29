@@ -2374,6 +2374,59 @@ html[lang="en"] .pool > .panel-head .workspace-purpose {
   color: var(--color-muted);
   min-width: 0;
 }
+/* 印的時候狀態字只給螢幕閱讀器（看得到的寫在「停」上）：插在開關和種子中間時，一出現、一變長就把右邊推走。 */
+.go-bar[data-busy="true"] > .go-status {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+/* 沒有狀態字時不佔位（連間距都不留）：印的時候它改成只給螢幕閱讀器，兩邊才排得一樣，種子欄不會左右挪 12px。 */
+.go-bar > .go-status:empty {
+  display: none;
+}
+/* 印的時候「成品」那列右邊：「印製中，還有 N 張」＋「停」（app.js renderWallBusy）。沒在印就是空的、不佔位。 */
+.wall-busy {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
+.wall-busy:empty {
+  display: none;
+}
+/* 底部浮動列出來時它自己有「印製中…／停」：這邊隱形（留著位子，浮動列進出時這列不跳），畫面上不會兩顆「停」。 */
+body:has(#go-float[data-show="true"]) .wall-busy {
+  visibility: hidden;
+}
+/* 跟旁邊「每排自動」一樣高：小按鈕高 2px，印的時候整列跟著高 2px、整面牆上下動一下。 */
+.wall-busy {
+  align-self: stretch;
+}
+.wall-busy .go-stop {
+  align-self: stretch;
+  min-height: 0;
+  padding-block: 0;
+}
+.wall-busy-text {
+  color: var(--color-muted);
+  font-size: var(--text-xs);
+  white-space: nowrap;
+}
+/* 「成品」那列不換行：說明字放不下就截斷。印的時候右邊多了「印製中…／停」，以前會把整列擠成兩行、整面牆往下跳。 */
+@media (min-width: 40.0625rem) {
+  .wall-head {
+    flex-wrap: nowrap;
+  }
+  .wall-head p {
+    flex: 1 1 0;
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+}
 
 /* 手機：兩欄排好 —— 張數一行、兩個開關並排、兩個次要動作並排、「抽並生圖」撐滿自己一行。
    flex 換行時「同一個人」會跟「偏好卡牌」擠一行、「只抽牌」又落單，主次看不出來。 */
@@ -2477,8 +2530,10 @@ html[lang="en"] .pool > .panel-head .workspace-purpose {
   margin-left: auto;
 }
 
-/* 還沒有成品：「全部展開／收起」沒有東西可開，描述牌組的那句也還沒有對象，先收起來。 */
-.wall-head:not([data-has-shots="true"]) .wall-tools,
+/* 還沒有成品：「每排幾張」沒有東西可排，描述牌組的那句也還沒有對象，先收起來。
+ * 第一次抽牌、牆還空著的那幾百毫秒「印製中…／停」照樣要看得到（renderWallBusy），所以工具區只在空的時候收。 */
+.wall-head:not([data-has-shots="true"]) .wall-tools:not(:has(.wall-busy:not(:empty))),
+.wall-head:not([data-has-shots="true"]) .wall-cols,
 .wall-head:not([data-has-shots="true"]) p {
   display: none;
 }
@@ -3926,7 +3981,8 @@ body[data-dragging="true"] .library[data-over="true"] {
 }
 
 /* 有彈窗開著：提示改到畫面上方。彈窗的按鈕列在底部，提示浮在那裡會蓋住主要的鈕
- * （卡冊打開一張牌時跳「成就牆開張」，剛好壓在「帶去墨池合成池」上）。.toast.toast 是為了蓋過上面抽牌列那條。 */
+ * （卡冊打開一張牌時跳「成就牆開張」，剛好壓在「帶去墨池合成池」上）。.toast.toast 是為了蓋過上面抽牌列那條。
+ * 以前 ui.js 照按鈕列量位置、把 bottom 寫在元素上往上抬：彈窗還在進場時量的不準，跟這條一起用又會把提示上下拉長，拿掉了。 */
 body:has(> .overlay) .toast.toast {
   top: calc(var(--space-md) + env(safe-area-inset-top));
   bottom: auto;

@@ -2517,9 +2517,10 @@ function renderGoBar() {
   // 「偏好卡牌」在合成池標題列（跟疊印台一樣放在池子旁邊）：只換選中狀態和張數，不跟著整排重畫。
   syncHandBtn();
   renderOverreach();
-  const key = [busy, generator.pending, infinite, n, settings.samePerson].join("|");
+  const key = [busy, generator.pending, infinite, infinite ? loopSent : 0, n, settings.samePerson].join("|");
   if (bar.dataset.key === key && bar.childElementCount) return renderGoFloat();
   bar.dataset.key = key;
+  bar.dataset.busy = busy ? "true" : "false";
   bar.replaceChildren(
     ...[
     stepper("一次", n, 1, 50, (v) => {
@@ -2546,7 +2547,8 @@ function renderGoBar() {
     el(
       "span",
       { class: "go-actions" },
-      busy ? el("button", { class: "btn go-stop", type: "button", onclick: stopAll }, "停") : null,
+      // 「停」和「印製中，還有 N 張」不放這排，放在底下「成品」那列（renderWallBusy）：以前「停」冒出來，
+      // 1440 寬整組按鈕被擠到下一行、剛按的「抽並生圖」往下跳 48px、整面成品牆跟著被推，狀態字也把種子欄推走；印完又跳回來。
       el("button", { class: "btn btn-ghost", type: "button", onclick: () => drawBatch(false), title: "只抽牌，不送 Comfy（P）" }, "只抽牌"),
       el("button", { class: "btn btn-primary", type: "button", onclick: () => drawBatch(true), title: "抽並生圖（G）" }, "抽並生圖", el("span", { class: "count" }, `×${n}`))
     ),
@@ -2554,13 +2556,31 @@ function renderGoBar() {
     seedNode || (seedNode = mountSeedControl(null, { compact: true, fixedNote: "固定：每張都用這顆種子（一次多張、無限抽也一樣）。抽牌照樣每張隨機" })),
     ].filter(Boolean)
   );
-  // 整排重畫時，真的變了的那一小塊才演：開始印、「停」冒出來時淡進來。其他按鈕原樣，不閃。
-  if (!reducedMotion() && bar._busy !== undefined) {
-    const stop = busy && !bar._busy ? bar.querySelector(".go-stop") : null;
-    if (stop) stop.animate([{ opacity: 0, transform: "scale(0.9)" }], { duration: DUR.short, easing: css(CURVE.settle) });
-  }
   bar._busy = busy;
+  renderWallBusy();
   renderGoFloat();
+}
+
+/**
+ * 印的時候「成品」那列右邊：「印製中，還有 N 張」＋「停」。印出來的圖就落在這列底下，進度跟著它們說；
+ * 抽牌那排從頭到尾不變（只抽牌照樣能按、排下一輪）。沒在印就空著、不佔位。
+ */
+let wallBusy = null;
+function renderWallBusy() {
+  const busy = generator.busy || looping || drawingRounds > 0;
+  wallBusy ||= el("span", { class: "wall-busy", id: "wall-busy" });
+  const key = busy ? [generator.pending, infinite, infinite ? loopSent : 0].join("|") : "";
+  if (wallBusy.dataset.key === key && wallBusy.isConnected) return;
+  const was = wallBusy.dataset.key;
+  wallBusy.dataset.key = key;
+  if (!busy) return void wallBusy.replaceChildren();
+  // 「停」換數字時不換新的（按下去的那一瞬間被換掉，按下跟放開落在兩個元素上，按不到），只換旁邊的字。
+  let stop = wallBusy.querySelector(".go-stop");
+  if (!stop) {
+    stop = el("button", { class: "btn btn-small go-stop", type: "button", onclick: stopAll, title: "停（Esc）" }, "停");
+    if (!reducedMotion() && was !== undefined) stop.animate([{ opacity: 0, transform: "scale(0.9)" }], { duration: DUR.short, easing: css(CURVE.settle) });
+  }
+  wallBusy.replaceChildren(el("span", { class: "wall-busy-text" }, goStatusText(true)), stop);
 }
 
 /**
@@ -3005,7 +3025,9 @@ function renderWall() {
     applyWallCols(true);
   });
   // 「全部展開／收起」拿掉了：有圖的成品，牌改在成品詳情視窗裡看（牆不會被撐開）；只抽牌的那張本來就攤著。
-  tools.replaceChildren(colsSel);
+  // 左邊是印的時候的「印製中…／停」（renderWallBusy）。
+  wallBusy ||= el("span", { class: "wall-busy", id: "wall-busy" });
+  tools.replaceChildren(wallBusy, colsSel);
   applyWallCols(false);
   const wall = $("wall");
   wall.replaceChildren(...shots.map((s) => shotNode(s, false)));
