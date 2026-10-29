@@ -131,7 +131,8 @@
   --color-accent-2: oklch(50% 0.18 32);
   --color-accent-3: oklch(44% 0.16 31);
   --color-accent-ink: oklch(98.5% 0.008 80);
-  --color-accent-text: oklch(50% 0.18 33);
+  /* 47%：提示條（paper-4）上的「看成就」這類朱色字也要 4.5:1；50% 在 paper-4 上只有 4.3。 */
+  --color-accent-text: oklch(47% 0.18 33);
   --color-pool: oklch(52% 0.1 225);
   --color-pool-2: oklch(42% 0.09 228);
   --color-pool-soft: oklch(52% 0.1 225 / 0.12);

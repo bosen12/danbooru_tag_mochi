@@ -715,10 +715,22 @@ let dealLibrary = false;
 // 籤列捲走後，搜尋框下面那顆「航海王」清除鈕（cards.js 的 groupNow）。第一次畫字盒時接上。
 let libNow = null;
 
+// 這張牌在現在的分級下擋不擋：只跟牌和分級有關，換分級才重算。字盒每打一個字要掃八千張、算兩遍（visible、countLine），
+// 以前每張都重跑一次規則裡的 regex（電腦約 10ms，手機降速 4 倍 40ms）。用 item 當鑰匙：自製牌改了內容換新的 item，自然重算。
+let ratingMemo = { rating: "", map: new WeakMap() };
+function ratingHides(card) {
+  const r = ratingOf(settings);
+  if (!card.item) return ratingBlocked(card.item, r);
+  if (ratingMemo.rating !== r) ratingMemo = { rating: r, map: new WeakMap() };
+  let v = ratingMemo.map.get(card.item);
+  if (v === undefined) ratingMemo.map.set(card.item, (v = ratingBlocked(card.item, r)));
+  return v;
+}
+
 /** 字盒裡看不看得到：分級擋掉的、性別不合的、（只看這時代時）時代不合的收起來。釘選的字永遠看得到。 */
 function visible(card) {
   if (pool.has(card.tag)) return true;
-  if (ratingBlocked(card.item, ratingOf(settings))) return false;
+  if (ratingHides(card)) return false;
   if (card.gate === "male" && !settings.boy) return false;
   if (card.gate === "female" && !settings.girl) return false;
   if (ui.eraOnly && settings.eras.length === 1) {
@@ -734,7 +746,7 @@ function countLine(shown) {
   const hid = { rating: 0, gender: 0, era: 0 };
   for (const c of lib.cards) {
     if (pool.has(c.tag)) continue;
-    if (ratingBlocked(c.item, ratingOf(settings))) hid.rating += 1;
+    if (ratingHides(c)) hid.rating += 1;
     else if ((c.gate === "male" && !settings.boy) || (c.gate === "female" && !settings.girl)) hid.gender += 1;
     else if (!visible(c)) hid.era += 1;
   }

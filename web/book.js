@@ -1238,6 +1238,8 @@ function buildAhead() {
       if (deadline.timeRemaining() < 2) return buildAhead();
       cellOf(list[i]);
     }
+    // 下方的格子做完了，再閒下來就先建詞庫索引：第一次打開詳情不必當場建（電腦 60ms、手機 0.25 秒，飛出去的牌會晚一拍）。
+    if (!lex && data) idle(() => lexNow());
   });
 }
 

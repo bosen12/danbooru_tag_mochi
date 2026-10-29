@@ -4,7 +4,8 @@
  * 顏色、字體都用 tokens.css 的；Discord 的藍紫只用在加入的那顆鈕和標誌上。 */
 
 .about-page {
-  --discord: oklch(58% 0.21 274);
+  /* 55%：白字在上面要到 4.5:1（58% 只有 4.4，「加入 Discord」那行小字不夠）。 */
+  --discord: oklch(55% 0.21 274);
   --discord-2: oklch(52% 0.2 274);
   --discord-soft: oklch(58% 0.21 274 / 0.16);
   background:
@@ -347,9 +348,10 @@ html[lang="en"] .ab-hero h1 em {
   }
 }
 
+/* 浮起來用 transform：以前動 margin-top，整頁每一格都在重排版（放著不動也吃 CPU）。滑鼠視差走 translate，兩個疊在一起。 */
 @keyframes ab-breathe {
   50% {
-    margin-top: -14px;
+    transform: translateY(-14px);
   }
 }
 

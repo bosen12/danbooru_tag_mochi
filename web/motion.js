@@ -342,11 +342,13 @@ export function playPageEntrance() {
   // <head> 先把要演的幾塊藏著（html[data-entering]）；演不了或不演時要記得露出來。
   const unveil = () => delete root.dataset.entering;
   const media = matchMedia("(prefers-reduced-motion: reduce)");
-  const skip = () => media.matches || document.hidden || window.scrollY > 24 ||
+  // scrollY 留到下一格（rAF）才看：開機中間讀它會逼瀏覽器當場把整頁排一次（電腦約 45ms），
+  // 接著開機又改 DOM，第一格畫面得再排一次。rAF 裡讀不多花：那一格本來就要排。畫之前就判斷完，看不出差別。
+  const skip = (late) => media.matches || document.hidden || (late && window.scrollY > 24) ||
     performance.getEntriesByType("navigation")[0]?.type === "back_forward" ||
     "enterLate" in root.dataset ||
     root.dataset.vt || root.dataset.vtIn || root.dataset.vtPlayed;
-  if (skip()) return unveil();
+  if (skip(false)) return unveil();
 
   let frame = 0;
   let stopped = false;
@@ -371,7 +373,7 @@ export function playPageEntrance() {
   media.addEventListener?.("change", preference);
 
   frame = requestAnimationFrame(() => {
-    if (stopped || skip()) {
+    if (stopped || skip(true)) {
       unveil();
       return stop();
     }

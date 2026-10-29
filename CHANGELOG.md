@@ -1,11 +1,16 @@
 # Release notes
 
-## Unreleased
+## v1.4 — 2026-10-29
+
+Changes since [v1.3.1](https://github.com/bosen12/danbooru_tag_mochi/releases/tag/v1.3.1).
 
 - **Light mode**: the half-moon button next to the language globe switches between **Dark** (default), **Light** (cream paper, ink text) and **System**. It applies before the first paint (no dark flash), is remembered across rooms and tabs, and changes every open tab. Cards keep their cream stock in both. Where the top bar is too full (phones, a few in-between widths), the button moves next to the sound button in the tool row instead of pushing the globe onto a new line. The intro and tutorial films stay dark.
 - Switching appearance spreads from the button like ink on paper: the new colours open out in a soft-edged circle (View Transitions in Chrome, Edge and Safari 18; a cross-fade elsewhere; instant with reduced motion).
 - Chinese top bar fits on one row again from 1366 px up to 2560 px on every room (it was two rows on the Ink Pool and Fuse Bed at 1366–1440 and everywhere at 1501–1920): icon-only tools are 36 px wide instead of 50, room tabs a little tighter, and the checkpoint shows just its icon below 1680 px (full name on hover).
 - Starter buttons in the empty Ink Pool line up with the text above instead of sitting centred.
+- Faster on slower machines (measured with the CPU slowed 4×): the first card you open in the Card Book appears in 0.18 s instead of 0.55 s (the lexicon index is built while the page is idle, not on the click); typing in the Ink Pool search and switching the rating take about a third less time (each card's rating check is remembered until the rating changes); the Ink Pool's longest start-up task drops from about 140 ms to 90 ms (one forced full-page layout removed).
+- The About page no longer re-lays out the whole page 60 times a second while you just look at it (the floating hand of cards moves with a transform).
+- Contrast: small text now reaches 4.5:1 in both themes: **Join Discord**, the ×1 on **Draw & generate**, the favorite-cards count, and red action links in light mode (such as **View achievements** in a notice).
 
 ## v1.3.1 — 2026-10-28
 
