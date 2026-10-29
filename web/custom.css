@@ -108,6 +108,7 @@
 .cce-grid-box {
   height: min(62vh, 40rem);
   overflow: auto;
+  scrollbar-gutter: stable;
   padding: var(--space-2xs);
   border-radius: var(--radius-sm);
   background: var(--color-paper-2);

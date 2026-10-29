@@ -98,6 +98,7 @@ body .lg-modal .lora-modal-close {
   overflow-y: auto;
   overscroll-behavior: contain;
   scrollbar-width: thin;
+  scrollbar-gutter: stable;
   background: oklch(13.5% 0.011 250 / 0.55);
   border-right: 1px solid var(--color-rule-2);
 }
@@ -558,6 +559,7 @@ body .lg-side.lm-right {
   padding: var(--space-lg) var(--space-md);
   overflow-y: auto;
   scrollbar-width: thin;
+  scrollbar-gutter: stable;
   background: oklch(13.5% 0.011 250 / 0.55);
   border-left: 1px solid var(--color-rule-2);
 }

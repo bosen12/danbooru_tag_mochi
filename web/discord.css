@@ -108,6 +108,7 @@
 .tg-body {
   padding: var(--space-md);
   overflow-y: auto;
+  scrollbar-gutter: stable;
   display: flex;
   flex-direction: column;
   gap: var(--space-md);

@@ -552,8 +552,9 @@ body #wf-pick-btn.has {
   }
 }
 
-/* 筆電寬度：頂欄已經擠滿（多這顆就換成兩排）。只留那顆小開關，「不限」給滑鼠提示和螢幕閱讀器。 */
-@media (max-width: 1700px) {
+/* 頂欄擠滿的寬度（多這兩個字疊印台就換成兩排）：只留那顆小開關，「不限」給滑鼠提示和螢幕閱讀器。
+ * 工具鈕收窄之後 1401～1680 放得下，字放回來：只有一顆小開關看不出是什麼。1681～1700 底模還顯示全名，又擠了。 */
+@media (max-width: 1400px), (min-width: 1681px) and (max-width: 1700px) {
   .rating-free {
     padding-inline: 6px;
   }
@@ -3409,6 +3410,9 @@ body[data-dragging="true"] .library[data-over="true"] {
   max-height: min(88dvh, 52rem);
   overflow: auto;
   overscroll-behavior: contain;
+  /* 捲軸的位置先留著：內容剛好長到要捲（卡冊詳情的作品圖讀進來）時捲軸冒出來，整個彈窗的內容會被擠窄、
+   * 字和圖一起往左縮一下（2026-10-29 專案主：1個、2個、3個女性打開會抖，跟旁邊的捲動桿有關）。 */
+  scrollbar-gutter: stable;
   padding: var(--space-lg);
   border-radius: var(--radius-md);
   background: var(--color-paper-2);
@@ -3909,6 +3913,17 @@ body[data-dragging="true"] .library[data-over="true"] {
   .go-float[data-show="true"] ~ .toast {
     bottom: max(var(--fav-h, 0px), calc(var(--space-md) + 3.25rem + var(--space-xs) + env(safe-area-inset-bottom)));
   }
+}
+
+/* 有彈窗開著：提示改到畫面上方。彈窗的按鈕列在底部，提示浮在那裡會蓋住主要的鈕
+ * （卡冊打開一張牌時跳「成就牆開張」，剛好壓在「帶去墨池合成池」上）。.toast.toast 是為了蓋過上面抽牌列那條。 */
+body:has(> .overlay) .toast.toast {
+  top: calc(var(--space-md) + env(safe-area-inset-top));
+  bottom: auto;
+  transform: translateY(-8px);
+}
+body:has(> .overlay) .toast.toast[data-show="true"] {
+  transform: none;
 }
 
 /* 帶「復原」鈕的提示要點得到。 */

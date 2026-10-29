@@ -511,10 +511,15 @@
 }
 
 @media (hover: hover) and (pointer: fine) {
-  /* 往四周放大一點，不往上抬：抬 2px 時滑鼠停在下緣那 2px 就不在格子上了 → 落回來 → 又碰到 → 又抬，
-   * 一秒跳八次（2026-10-29 專案主：滑鼠放在成品上會抖）。放大只會變大，滑鼠一直在裡面。 */
+  /* 框不動，裡面的圖放大一點：抬 2px 時滑鼠停在下緣就不在格子上了 → 落回來 → 又碰到 → 又抬，一秒跳八次；
+   * 整格放大又會在彈窗底部多出幾 px，把捲軸撐出來、內容跟著縮（2026-10-29 專案主：滑鼠放在成品上會抖）。 */
+  .book-work img {
+    transition: scale var(--dur-medium) var(--ease-out);
+  }
+  .book-work:hover img {
+    scale: 1.06;
+  }
   .book-work:hover {
-    transform: scale(1.04);
     border-color: var(--color-ink-2);
     box-shadow: var(--shadow-lift);
   }
@@ -946,6 +951,7 @@ body[data-hand-edit="true"] #book-grid .card[data-in-hand="true"] {
   grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));
   gap: var(--space-xs);
   overflow-y: auto;
+  scrollbar-gutter: stable;
   overscroll-behavior: contain;
   padding: 4px 2px;
   min-height: 0;
