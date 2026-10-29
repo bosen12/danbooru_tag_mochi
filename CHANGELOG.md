@@ -1,6 +1,13 @@
 # Release notes
 
-## v1.4.2 — 2026-10-29
+## v1.4.3 — 2026-10-30
+
+Changes since [v1.4.2](https://github.com/bosen12/danbooru_tag_mochi/releases/tag/v1.4.2).
+
+- **Notices no longer stretch down the whole screen.** With a dialog open, v1.4.2 moved notices to the top, but an older rule still pinned their bottom edge, so a notice such as "Pinned 6 cards to the Ink Pool" became a tall empty panel. Notices are their normal size again.
+- **The Ink Pool stays still while printing.** **Stop** and "Generating · N remaining" used to appear inside the draw bar: at 1440 px the buttons wrapped to a second row, **Draw & generate** jumped 48 px down right after you pressed it, the whole Results wall was pushed down, and the seed controls were nudged sideways, then everything jumped back when printing finished. They now sit to the right of the **Results** heading, next to **Auto per row**; the draw bar never changes. **Draw only** still works while printing, **Esc** still stops, and when the floating bar is showing its own **Stop**, the one by the heading steps aside so there is only one.
+- **Fuse Bed: the preview grows once.** When printing started, the preview's height animation restarted on every progress update, so the trials below bounced up and down. It now grows smoothly in one go (this also fixes the same restart anywhere else a panel grows, such as the Card Book's images).
+
 
 Changes since [v1.4.1](https://github.com/bosen12/danbooru_tag_mochi/releases/tag/v1.4.1).
 
