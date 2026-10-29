@@ -1,6 +1,17 @@
 # Release notes
 
-## v1.4.1 — 2026-10-29
+## v1.4.2 — 2026-10-29
+
+Changes since [v1.4.1](https://github.com/bosen12/danbooru_tag_mochi/releases/tag/v1.4.1).
+
+- **Dialogs no longer jump sideways.** When a dialog's content was just tall enough to need scrolling, moving the pointer (even into the gap between two buttons) made the scrollbar appear and disappear, and the right-aligned buttons jumped 10 px back and forth. Dialogs now keep the scrollbar's space reserved on both sides, so nothing moves. The same goes for the favorites box, the custom-card picker, the Discord / Telegram panel and the model panel.
+- Hovering an image under **Images using this card** zooms the picture inside its frame; the frame itself no longer moves or grows.
+- With a dialog open, notices appear at the top of the screen instead of over the dialog's buttons (the "Achievements ready" notice used to cover **Send to Ink Pool**).
+- When ComfyUI is not running (or the host can't be reached), the Ink Pool says so in a line above **Draw & generate**, as the Fuse Bed already did; before, there was only a small red dot in the top bar until you pressed the button.
+- The **Any** (no rating limit) switch shows its label again from 1401 to 1680 px wide.
+- Phone Ink Pool: the card count gets its own line and the four buttons stay on one row (**Clear** used to drop onto a line of its own).
+- Deck rows: **Save as custom card** and **Delete** are small text links, no longer larger than **Apply**.
+
 
 Changes since [v1.4](https://github.com/bosen12/danbooru_tag_mochi/releases/tag/v1.4): no more jittering in the Card Book.
 
