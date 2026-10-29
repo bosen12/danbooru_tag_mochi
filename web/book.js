@@ -28,7 +28,7 @@ import { mountGenStatus } from "./gen-status.js";
 import { createHand } from "./hand.js";
 import { handTools } from "./hand-tools.js";
 import { measure, evaluate, announce, openWall } from "./achievements.js";
-import { initMotion, settleMotion, seat, refuse, flight, reducedMotion, swapIn, rowChange, CURVE, DUR, css, cropFlipStart, cropFlipEnd } from "./motion.js";
+import { initMotion, settleMotion, seat, refuse, flight, reducedMotion, swapIn, rowChange, heightChange, CURVE, DUR, css, cropFlipStart, cropFlipEnd } from "./motion.js";
 import { viewSrc } from "./gen.js";
 import { pingLoop } from "./ping.js";
 import { getSfx } from "./sfx.js";
@@ -1971,22 +1971,53 @@ function localWorks(card) {
   ].sort((a, b) => b.at - a.at);
 }
 
+const workSrc = (x) => x.albumThumb || viewSrc(x.image);
+
+/**
+ * 這張作品的原圖還在不在。ComfyUI 那邊把原圖刪了（又沒收藏）就不顯示、張數也不算它（2026-10-26 專案主：自己清掉）。
+ * 只認 404（伺服器說原圖不在了）；ComfyUI 沒開是 502，那時候圖都還在，不能整排清掉。
+ */
+async function workGone(src) {
+  const r = await fetch(src, { cache: "no-store" }).catch(() => null);
+  r?.body?.cancel().catch(() => {});
+  return r?.status === 404;
+}
+
+// 打開詳情時先探前幾張（讀到、確定被刪、或等太久就算數），探完才一次排進去。
+const WORKS_PROBE_N = 12;
+const WORKS_PROBE_MS = 1500;
+
+/** 探一張：讀得到（或等太久、讀不到但不是 404）→ true；原圖已刪 → false。同一張只探一次。 */
+const probed = new Map();
+function workAlive(x) {
+  const src = workSrc(x);
+  if (!probed.has(src)) {
+    probed.set(src, new Promise((done) => {
+      const im = new Image();
+      const late = setTimeout(() => done(true), WORKS_PROBE_MS);
+      im.onload = () => (clearTimeout(late), done(true));
+      im.onerror = async () => {
+        clearTimeout(late);
+        done(!(await workGone(src)));
+      };
+      im.decoding = "async";
+      im.src = src;
+    }));
+  }
+  return probed.get(src);
+}
+
 function workTile(x, i, onGone) {
-  const src = x.albumThumb || viewSrc(x.image);
+  const src = workSrc(x);
   const img = el("img", {
     src,
     alt: "",
     loading: "lazy",
     decoding: "async",
+    // 沒探過的（排在後面、捲下去才讀的）讀圖失敗：原圖被刪了就把這一格拿掉。
     onerror: async (e) => {
-      // ComfyUI 那邊把原圖刪了（又沒收藏）：這一格整個拿掉，張數也不算它（2026-10-26 專案主：自己清掉）。
-      // 只認 404（伺服器說原圖不在了）；ComfyUI 沒開是 502，那時候圖都還在，不能整排清掉。
       const tile = e.currentTarget.closest(".book-work");
-      const r = await fetch(src, { cache: "no-store" }).catch(() => null);
-      r?.body?.cancel().catch(() => {});
-      if (r?.status !== 404) return;
-      tile?.remove();
-      onGone?.(x);
+      if (await workGone(src)) onGone?.(x, tile);
     },
   });
   return el(
@@ -2011,7 +2042,8 @@ function worksOf(card) {
   const head = el("h3", { class: "book-works-head" }, "用它做過的圖", count);
   const grid = el("div", { class: "book-works-grid" });
   const more = el("button", { class: "btn btn-small book-works-more", type: "button", hidden: true }, "再多看一些");
-  const note = el("p", { class: "book-works-empty" });
+  // 還在探圖時：沒有格子、也還不說「沒有成品」。
+  const note = el("p", { class: "book-works-empty", hidden: true });
   const box = el("section", { class: "book-works" }, head, grid, note, more);
   let items = [];
   let total = 0;
@@ -2020,29 +2052,46 @@ function worksOf(card) {
   const gone = new Set();
   let shown = 0;
   let extraN = 0;
+  // 日誌回來（或確定拿不到）之前不說「還沒有成品」：不然常常先閃一下這句，接著才換成作品。
+  let settled = false;
 
   const showCount = () => {
     const n = Math.max(shown, total + extraN - gone.size);
     count.textContent = shown || n ? `${n} 張圖${total > fromLog ? `・先看 ${shown} 張` : ""}` : "";
     grid.hidden = !shown;
-    note.hidden = !!shown;
+    note.hidden = !!shown || !settled;
   };
-  const onGone = (x) => {
+  const onGone = (x, tile) => {
+    const grow = heightChange(box);
+    tile?.remove();
     gone.add(x.image);
     shown = grid.children.length;
     showCount();
+    grow.done();
   };
-  const paint = () => {
+  // 原圖被刪的作品以前先排上去、讀圖失敗才一格格拿掉：面板一縮再縮，底下的按鈕跟著跳好幾下
+  // （2026-10-29 專案主：3個女性 打開時按鈕會抖。它 10 張裡 9 張的原圖已經被 ComfyUI 清掉）。
+  // 現在先探前幾張，探完一次排進去（被刪的不出現），面板長高用滑的；後面捲下去才讀的照舊讀不到才拿掉。
+  let painting = 0;
+  const paint = async () => {
+    const turn = ++painting;
     // 日誌那邊有的就不重複放（同一張圖的網址一樣）；日誌以前的接在後面。
     const seen = new Set(items.map((x) => x.image));
     const extra = local.filter((x) => !seen.has(x.image));
-    const all = [...items, ...extra].filter((x) => !gone.has(x.image));
+    let all = [...items, ...extra].filter((x) => !gone.has(x.image));
     extraN = extra.length;
+    const head = all.slice(0, WORKS_PROBE_N);
+    const alive = await Promise.all(head.map(workAlive));
+    if (turn !== painting) return;
+    head.forEach((x, i) => alive[i] || gone.add(x.image));
+    all = all.filter((x) => !gone.has(x.image));
+    const grow = heightChange(box);
     grid.replaceChildren(...all.map((x, i) => workTile(x, i, onGone)));
     shown = all.length;
     note.textContent = "還沒有用到它的成品。從現在起印的每一張都會記下來，這裡就看得到。";
     showCount();
     more.hidden = fromLog >= total;
+    grow.done();
   };
 
   const load = async (offset) => {
@@ -2059,7 +2108,7 @@ function worksOf(card) {
     more.disabled = true;
     try {
       await load(fromLog);
-      paint();
+      await paint();
     } catch {
       refuse(more);
     } finally {
@@ -2069,8 +2118,11 @@ function worksOf(card) {
   paint();
   // 先畫本機還留著的，日誌回來再補齊（伺服器沒開就只有本機的）。
   load(0)
-    .then(paint)
-    .catch(() => {});
+    .catch(() => {})
+    .then(() => {
+      settled = true;
+      return paint();
+    });
   return box;
 }
 

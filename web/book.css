@@ -485,7 +485,8 @@
   background: var(--color-paper-3);
   cursor: zoom-in;
   transition: transform var(--dur-short) var(--ease-out), border-color var(--dur-micro) var(--ease-out), box-shadow var(--dur-short) var(--ease-out);
-  animation: book-work-in var(--dur-medium) var(--ease-out) calc(var(--dur-short) + var(--i, 0) * 30ms) both;
+  /* backwards，不是 both：進場播完就放手。fill 留著的話 transform 一直被動畫佔住，滑過去的浮起沒有過渡、一格跳。 */
+  animation: book-work-in var(--dur-medium) var(--ease-out) calc(var(--dur-short) + var(--i, 0) * 30ms) backwards;
 }
 
 .book-work img {
@@ -510,8 +511,10 @@
 }
 
 @media (hover: hover) and (pointer: fine) {
+  /* 往四周放大一點，不往上抬：抬 2px 時滑鼠停在下緣那 2px 就不在格子上了 → 落回來 → 又碰到 → 又抬，
+   * 一秒跳八次（2026-10-29 專案主：滑鼠放在成品上會抖）。放大只會變大，滑鼠一直在裡面。 */
   .book-work:hover {
-    transform: translateY(-2px);
+    transform: scale(1.04);
     border-color: var(--color-ink-2);
     box-shadow: var(--shadow-lift);
   }
