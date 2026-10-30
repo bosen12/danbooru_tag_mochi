@@ -1548,13 +1548,14 @@ function renderPoolNote() {
   box.hidden = false;
   const back = poolNote.back;
   const era = poolNote.era || [];
+  // 原生 replaceChildren 會把 null 寫成「null」字樣（畫面上出現「… null 換回」），不放東西要給空字串。
   box.replaceChildren(
     el("span", {}, poolNote.text),
     // 時代對不上：先給「兩張都留」（改成混合），「換回」會把剛放的那張又踢掉。
-    era.length ? el("button", { class: "link-btn", type: "button", onclick: () => keepBothEras(era) }, "改成混合，兩張都留") : null,
+    era.length ? el("button", { class: "link-btn", type: "button", onclick: () => keepBothEras(era) }, "改成混合，兩張都留") : "",
     back && lib.byTag.has(back)
       ? el("button", { class: "link-btn", type: "button", onclick: () => { poolNote = null; pin(back); } }, "換回")
-      : null
+      : ""
   );
 }
 

@@ -438,8 +438,9 @@ function renderSummary({ count = false } = {}) {
       el("span", {}, "日誌裡印好 "),
       el("b", { class: "book-sum-n" }, fmt(t)),
       el("span", {}, " 張"),
-      t ? el("span", { class: "book-sum-dot", "aria-hidden": "true" }, "・") : null,
-      t ? el("span", {}, `整體收藏 ${pct(war.fav, t)}%・撤下 ${pct(war.discard, t)}%`) : null
+      // 原生 replaceChildren 會把 null 寫成「null」字樣，不放東西要給空字串。
+      t ? el("span", { class: "book-sum-dot", "aria-hidden": "true" }, "・") : "",
+      t ? el("span", {}, `整體收藏 ${pct(war.fav, t)}%・撤下 ${pct(war.discard, t)}%`) : ""
     );
     sumShown = { used: -1, total: -1 };
     return;
@@ -774,7 +775,7 @@ function mountMiniBar() {
   const sync = () => {
     if (document.activeElement !== q) q.value = ui.query;
     const s = ui.suit === "all" ? null : CARD_SUIT_INFO[ui.suit];
-    suitBtn.replaceChildren(s ? el("b", { class: "suit-glyph", "aria-hidden": "true", style: `color: var(--suit-${ui.suit})` }, s.glyph) : null, el("span", {}, s ? s.zh : "全部花色"));
+    suitBtn.replaceChildren(s ? el("b", { class: "suit-glyph", "aria-hidden": "true", style: `color: var(--suit-${ui.suit})` }, s.glyph) : "", el("span", {}, s ? s.zh : "全部花色"));
     suitBtn.setAttribute("aria-label", t(`花色：${s ? s.zh : "全部"}`));
     sortBtn.replaceChildren(el("span", { class: "sort-arrow", "aria-hidden": "true" }, ORDER_MARK[ui.order]), el("span", {}, ORDER_ZH[ui.order]));
     sortBtn.setAttribute("aria-label", t(`排序：${ORDER_ZH[ui.order]}`));
