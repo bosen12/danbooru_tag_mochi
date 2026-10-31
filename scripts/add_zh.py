@@ -1283,6 +1283,7 @@ ZH = {
 
     "panties around one leg": "內褲掛一腿",
     "holding another's wrist": "抓手腕",
+    "arm held back": "反拉手臂",
     "mary janes": "瑪麗珍鞋",
     "knee boots": "及膝靴",
     "plaid skirt": "格裙",

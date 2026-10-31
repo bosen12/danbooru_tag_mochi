@@ -2490,6 +2490,7 @@ const LEAN_POSE = new Set(["leaning forward", "leaning back", "leaning to the si
 const ARM_POSE = new Set([
   "arms up",
   "arms behind back",
+  "arm held back",
   "arms behind head",
   "crossed arms",
   "heart hands",
@@ -2580,6 +2581,7 @@ const BOTH_ARMS = new Set([
   "hands up",
   "outstretched arms",
   "arms behind back",
+  "arm held back",
   "arms behind head",
   "crossed arms",
   "heart hands",

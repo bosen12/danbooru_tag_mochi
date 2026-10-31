@@ -175,6 +175,12 @@
       "alt": "trash bin",
       "why": "2026-10-24 第四輪：Danbooru 合併後舊名 0 張，WAI v17 五種子測過，兩名皆可用。",
       "test": "現名 D 5/5、舊名 D 5/5；C 0/5"
+    },
+    {
+      "tag": "grabbing another's arm",
+      "alt": "arm grab",
+      "why": "舊名，Danbooru 2024-09 停用（0 張），併進 grabbing another's arm",
+      "test": "未實測"
     }
   ]
 }

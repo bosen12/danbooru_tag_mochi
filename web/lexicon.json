@@ -30579,6 +30579,29 @@
       "zh": "抓手腕"
     },
     {
+      "tag": "arm held back",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "sex",
+      "sub": "sex_bdsm",
+      "needs": [
+        "pair",
+        "male",
+        "female"
+      ],
+      "zh": "反拉手臂"
+    },
+    {
       "tag": "single braid",
       "section": "feature",
       "gate": "any",
@@ -172523,6 +172546,29 @@
         "pair"
       ],
       "zh": "抓住對方手臂"
+    },
+    {
+      "tag": "arm grab",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "tease",
+      "sub": "pose_two",
+      "needs": [
+        "pair"
+      ],
+      "zh": "抓住對方手臂",
+      "altOf": "grabbing another's arm"
     },
     {
       "tag": "holding gift",

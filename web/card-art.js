@@ -393,6 +393,8 @@ const ART_EXTRA = {
   "panties around one leg": "panties, thighs, full body",
   // 上半身加 hand 會把男方的手畫到胸口。側面近景才看得到被握住的手腕。
   "holding another's wrist": "from side, close-up, outstretched arms, wrist, forearm, a hand gripping the wrist",
+  // Danbooru 這張圖八成是後背位：側面上半身才看得到手臂被往後拉。
+  "arm held back": "sex from behind, from side, upper body, arms behind back, a hand gripping the forearm",
   "mary janes": "feet, full body, standing",
   "knee boots": "full body, standing, thighs",
   "plaid skirt": "skirt, full body, standing",
@@ -472,6 +474,7 @@ const HETERO_PICTURE = new Set([
   "slap mark",
   "impregnation",
   "holding another's wrist",
+  "arm held back",
   "hand on another's head",
   "grabbing another's hair",
 ]);
@@ -498,6 +501,7 @@ const ART_NEG = {
   impregnation: "pregnant, pregnant belly, maternity",
   // 抓手腕的手要在手腕上，不要改畫成摸胸。
   "holding another's wrist": "breast grab, grabbing another's breast, groping, paizuri, nipple tweak, hands on breasts, covering breasts, holding hands, handshake, interlocked fingers, ass grab, grabbing another's ass, breasts, ass, thighs, nipples, bandage, bandages, gauze, wristband, wrist wrap",
+  "arm held back": "bondage, rope, handcuffs, bound wrists, arms up, outstretched arms, holding hands",
   fang: "vampire, demon",
   "covering privates": "spread pussy, visible pussy",
   // 高領衫不要畫成高領毛衣。汗滴、鼻頭紅不要畫成眼淚。腕環是裸腕上的環，不是女僕袖口。

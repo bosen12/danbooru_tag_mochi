@@ -9246,6 +9246,29 @@ function indoorOutdoorClash(have) {
   ok("pinned impregnation was drawn with the boy switch off", pregSeen > 0);
   eq("pinned impregnation brings a man and a woman", pregNoBoy, 0);
 
+  // 反拉手臂（arm held back）：跟抓手腕一樣只在性愛、要一男一女；女生兩隻手都被拉到後面。
+  // arm grab 是 grabbing another's arm 的舊名（Danbooru 已停用），照 alt_names 複製成同中文名的一張。
+  const held = lex.byTag.get("arm held back");
+  ok("arm held back needs a man and a woman", needsCouple(held));
+  ok("arm held back is sex only", !!held && held.heat.length === 1 && held.heat[0] === "sex");
+  ok("arm held back clashes with arms up", contradictions(lex, ["arm held back", "arms up"]).length > 0);
+  ok("arm held back clashes with crossed arms", contradictions(lex, ["arm held back", "crossed arms"]).length > 0);
+  ok("arm held back can sit with sex from behind", contradictions(lex, ["arm held back", "sex from behind"]).length === 0);
+  const armGrab = lex.byTag.get("arm grab");
+  ok("arm grab is the old name of grabbing another's arm", !!armGrab && armGrab.altOf === "grabbing another's arm" && armGrab.zh === lex.byTag.get("grabbing another's arm").zh);
+  const pinHeld = applyPin(lex, new Set(), new Set(), "arm held back").pinned;
+  let heldSeen = 0;
+  let heldNoBoy = 0;
+  for (let i = 0; i < 20; i++) {
+    const got = tagsOf(drawOne(lex, girl, pinHeld, new Set(), mulberry32(155700 + i), 155700 + i));
+    if (got.has("arm held back")) {
+      heldSeen += 1;
+      if (!hasBoy(got) || !hasGirl(got)) heldNoBoy += 1;
+    }
+  }
+  ok("pinned arm held back was drawn with the boy switch off", heldSeen > 0);
+  eq("pinned arm held back brings a man and a woman", heldNoBoy, 0);
+
   const bath = applyPin(lex, new Set(), new Set(), "bathroom").pinned;
   let sprint = 0;
   for (let i = 0; i < 80; i++) {

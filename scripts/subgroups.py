@@ -652,7 +652,7 @@ SUBS = {
             "prostate milking", "humiliation", "objectification", "human furniture",
             "forniphilia", "spanking", "slapping", "slap mark", "whipping", "wax play",
             "electrostimulation", "orgasm denial", "foot worship", "trampling", "crotch kick",
-            "stomach punch", "head grab", "grabbing another's hair", "holding another's wrist",
+            "stomach punch", "head grab", "grabbing another's hair", "holding another's wrist", "arm held back",
             "neck grab", "strangling", "headlock", "rear naked choke", "asphyxiation",
             "rape", "after rape", "prostitution",
             "bound breasts", "tied breast", "slapping breasts", "breast punch",

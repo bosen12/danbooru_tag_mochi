@@ -1092,6 +1092,7 @@ NEEDS_MALE = {
     # 按住頭、抓頭髮也是男生對女生。pair 不夠，兩個女生會漏過去。
     "impregnation",
     "holding another's wrist",
+    "arm held back",
     "hand on another's head",
     "grabbing another's hair",
     "triple penetration",
@@ -1212,6 +1213,7 @@ NEEDS_FEMALE = {
     # 按住頭、抓頭髮的對象是女生。
     "impregnation",
     "holding another's wrist",
+    "arm held back",
     "hand on another's head",
     "grabbing another's hair",
     "sex machine",
@@ -1335,6 +1337,7 @@ NEEDS_PAIR = {
     "slap mark",
     "impregnation",
     "holding another's wrist",
+    "arm held back",
     "hand on another's head",
     "double anal",
     "double vaginal",
@@ -3162,6 +3165,9 @@ def extra_expand_tags() -> list[dict]:
         # 不是停用的別名。2026-09-28 拿掉 cumdrip from pussy（沒有這個 tag）
         # 和 erect nipples（已停用、0 張）。wrist grab 自 2021-10-15 起的正式名是下面這個。
         pose("holding another's wrist", needs=["pair"], heat=sex, zh="抓手腕"),
+        # 男生把女生的手臂往後拉（Danbooru 5799 張，4549 張同時是 sex from behind，全年齡只有 10 張）。
+        # 跟抓手腕一樣只在性愛、要一男一女；女生兩隻手都被拉走，engine 放進 ARM_POSE／BOTH_ARMS。
+        pose("arm held back", needs=["pair"], heat=sex, zh="反拉手臂"),
         feat("single braid", mutex="hair_style", implies=["braid"], zh="單辮"),
         feat("low twintails", mutex="hair_style", implies=["twintails"], zh="低雙馬尾"),
         feat("half updo", zh="半扎"),

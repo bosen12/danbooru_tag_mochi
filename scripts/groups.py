@@ -658,6 +658,7 @@ SEX = {
     "cumdrip from penis",
     "impregnation",
     "holding another's wrist",
+    "arm held back",
     "penis over eyes",
     "penis on face",
     "precum",
