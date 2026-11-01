@@ -559,6 +559,8 @@ const DARK_LIGHT = new Set([
   // 2026-10-26 環境一批：探照燈跟夜並存，不跟白天並存。
   "searchlight",
   "flashlight",
+  // 2026-11-01：星雲跟夜並存，不跟白天並存。不放 NIGHT_MARK，免得跟 night 互斥。
+  "nebula",
 ]);
 const SLEEP_BAD_POSE = new Set([
   "partially submerged",
@@ -590,7 +592,10 @@ const SLEEP_BAD_EXPR = new Set([
   "nervous",
 ]);
 // 閉著的眼睛。眼睛的表情符號裡瞇眼笑 ^ ^、緊閉眼 > <、無言眼 = = 也是閉眼，不能再看哪裡（2026-10-12）。
-const CLOSED_EYES = new Set(["closed eyes", "^ ^", "> <", "= ="]);
+const CLOSED_EYES = new Set(["closed eyes", "^ ^", "> <", "= =",
+  // 2026-11-01：閉著眼的朝向，以及 x3（眼睛是 >_<）。不能再看哪裡。
+  "facing up", "facing down", "facing ahead", "x3",
+]);
 const EYE_EXTRA = new Set(["one eye closed", "empty eyes", "sparkling eyes", "half-closed eyes", "rolling eyes", "crazy eyes"]);
 const MOUTH_EXTRA = new Set([
   "open mouth",
@@ -612,6 +617,9 @@ const MOUTH_EXTRA = new Set([
   "colored tongue",
   "blue tongue",
   "lower teeth only",
+  // 2026-11-01：嘴裡有東西。閉著的嘴不能再疊。
+  "flower in mouth",
+  "biting own finger",
 ]);
 const OUTDOOR_LEFTOVER = new Set([
   "tree",
@@ -700,6 +708,22 @@ const OUTDOOR_LEFTOVER = new Set([
   "whale",
   "wheat",
   "on ground", "on swing",
+  // 2026-11-01：戶外的天、地、水、野生動物、斜屋頂。不在這張表時，室內圖會配到。
+  // 廂型車和火車頭不放：2026-10-26 的車也沒放，室內外都能出現。
+  "white sky",
+  "nebula",
+  "cobblestone",
+  "on roof",
+  "clothesline",
+  "inflatable raft",
+  "volleyball net",
+  "mast",
+  "otter",
+  "seal (animal)",
+  "clownfish",
+  "bee",
+  "dragonfly",
+  "giant monster",
 ]);
 
 function usedMutexTags(used, lex, mutex) {
@@ -1098,6 +1122,16 @@ const INDOOR_PROP = new Set([
   "windowsill",
   "zabuton",
   "fusuma",
+  // 2026-11-01：搬不出去的室內物件，以及坐在電腦前。
+  "hanging light",
+  "soap bottle",
+  "hand grip",
+  "exercise ball",
+  "seatbelt",
+  "folder",
+  "menu board",
+  "mannequin",
+  "at computer",
 ]);
 const SPORT_PLACE = new Set([
   "fitness gym",
@@ -2546,6 +2580,12 @@ const HANDS_BUSY_ACT = new Set([
   "singing",
   "karaoke",
   "picnic",
+  // 2026-11-01：兩隻手都在做事，不能再比手勢。
+  "firing",
+  "applying own makeup",
+  "braiding hair",
+  "casting spell",
+  "at computer",
 ]);
 // Only worn blockers belong here. A racket/bat/bow in the scene does not prove somebody is holding it.
 const HANDS_OCCUPIED = new Set(["boxing gloves"]);
@@ -2575,7 +2615,10 @@ const NEEDS_FREE_HAND = new Set([
   "grabbing another's hair",
   "hands on own thighs",
 ]);
-const HANDS_BUSY_BODY = new Set(["crawling", "all fours", "top-down bottom-up", "bondage", "restrained", "handcuffs", "bound wrists"]);
+const HANDS_BUSY_BODY = new Set(["crawling", "all fours", "top-down bottom-up", "bondage", "restrained", "handcuffs", "bound wrists",
+  // 2026-11-01：手腕被鎖住，或整個人伏在地上，手沒有空。
+  "chained wrists", "ball and chain restraint", "prostration",
+]);
 const BOTH_ARMS = new Set([
   "arms up",
   "hands up",
@@ -2602,6 +2645,11 @@ const BOTH_ARMS = new Set([
   "dual wielding",
   "aiming",
   "tying hair",
+  // 2026-11-01：兩隻手一起。開火跟瞄準一樣佔滿兩隻手。
+  "shrugging",
+  "hugging book",
+  "hugging viewer",
+  "firing",
 ]);
 const HAND_GESTURE = new Set([
   "finger to mouth",
@@ -2665,6 +2713,25 @@ const HAND_GESTURE = new Set([
   "holding phone",
   "holding umbrella",
   "holding fan",
+  // 2026-11-01：一隻手一次做一件事，跟其他手勢同一格。
+  "pointing forward",
+  "arm on knee",
+  "hand on table",
+  "finger to another's mouth",
+  "holding bow (music)",
+  "holding cake",
+  "holding mirror",
+  "holding photo",
+  "holding scroll",
+  "holding shirt",
+  "holding fish",
+  "holding flute",
+  "holding shovel",
+  "holding lipstick tube",
+  "leaf umbrella",
+  "biting own finger",
+  "covering another's eyes",
+  "holding another's horns",
 ]);
 const MALE_FACE = new Set(["facial hair", "stubble", "beard", "goatee", "mustache"]);
 const GAG_BLOCKS = new Set([
@@ -4388,6 +4455,15 @@ const ODD_MOTIF = new Set([
   "onesie",
   "training bra",
   "clone", "animalization",
+  // 2026-11-01：非自願、拘束、只有性愛，以及會改寫整張圖的字。只在釘了才出現。
+  "drugged",
+  "chained wrists",
+  "ball and chain restraint",
+  "unworn gag",
+  "glory wall",
+  "keep out",
+  "4others",
+  "giant monster",
 ]);
 // 只當父字用的動作：騎乘要有騎的東西（騎馬、騎車、騎掃帚帶出來）。自己被抽到時
 // 畫面沒有坐騎（以前 41 張裡 11 張）。釘它、必抽照收。
@@ -7902,12 +7978,23 @@ function drawOneImpl(lex, settings, pinned, userBanned, rand, seed, opts) {
       for (const t of [...used]) {
         if (guard.has(t) || pinRel.has(t)) continue;
         const it = lex.byTag.get(t);
+        if (!it || it.section !== "clothing") continue;
+        // 正在洗時，內衣會把「只裹毛巾」擋掉：naked towel 跟任何內衣互斥
+        // （NAKED_ONLY）。補救池於是只剩浴袍，洗到一半又把袍子穿回去。
+        // 2026-11-01 strapless bottom 進了走光池，現代走光浴場 89 張裡 15 張因此穿回浴袍。
+        // 浴場白名單裡的兜襠布要留著，那是歷史浴場的身體交代。
+        const washUnder =
+          dropRobes &&
+          !isBathOkGarment(it) &&
+          (it.layer === "underwear" ||
+            it.group === "underwear" ||
+            it.mutex === "underwear_top" ||
+            it.mutex === "underwear_bottom");
         if (
-          it &&
-          it.section === "clothing" &&
-          (it.layer === "garment" || it.layer === "accessory") &&
-          (!garmentOkForKind(it, kind, era) ||
-            (dropRobes && NOT_WHILE_WASHING.has(it.tag)))
+          washUnder ||
+          ((it.layer === "garment" || it.layer === "accessory") &&
+            (!garmentOkForKind(it, kind, era) ||
+              (dropRobes && NOT_WHILE_WASHING.has(it.tag))))
         ) {
           used.delete(t);
           for (const g of extraMutex(it)) {

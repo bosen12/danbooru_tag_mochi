@@ -306,6 +306,8 @@
     "char_dungeon_ni_deai_wo_motomeru_no_wa_machigatteiru_darou_ka": "動漫・地錯",
     "char_jigokuraku": "動漫・地獄樂",
     "char_spice_and_wolf": "動漫・狼與辛香",
+    "char_ghost_in_the_shell": "動漫・攻殼機動隊",
+    "char_lyrical_nanoha": "動漫・魔法奈葉",
     "char_arknights": "遊戲・明日方舟",
     "char_azur_lane": "遊戲・碧藍航線",
     "char_fate_series": "遊戲・命運系列",
@@ -319,11 +321,33 @@
     "char_persona": "遊戲・女神異聞錄",
     "char_steins_gate": "遊戲・命運石之門",
     "char_umamusume": "遊戲・賽馬娘",
+    "char_league_of_legends": "遊戲・英雄聯盟",
+    "char_resident_evil": "遊戲・惡靈古堡",
     "char_blue_archive": "遊戲・蔚藍檔案",
     "char_princess_connect": "遊戲・公主連結",
     "char_danganronpa_series": "遊戲・槍彈辯駁",
+    "char_elden_ring": "遊戲・艾爾登法環",
+    "char_guilty_gear": "遊戲・聖騎士之戰",
+    "char_apex_legends": "遊戲・Apex英雄",
     "char_zenless_zone_zero": "遊戲・絕區零",
+    "char_fire_emblem_three_houses": "遊戲・風花雪月",
+    "char_darkstalkers": "遊戲・惡魔戰士",
+    "char_fatal_fury": "遊戲・餓狼傳說",
+    "char_granblue_fantasy": "遊戲・碧藍幻想",
+    "char_umineko_no_naku_koro_ni": "遊戲・海貓鳴泣",
+    "char_fire_emblem_fates": "遊戲・聖火if",
+    "char_bayonetta_series": "遊戲・魔兵驚天錄",
+    "char_devil_may_cry_series": "遊戲・惡魔獵人",
+    "char_kid_icarus": "遊戲・光神話",
+    "char_fire_emblem_awakening": "遊戲・聖火覺醒",
+    "char_final_fantasy_xiv": "遊戲・最終幻想14",
+    "char_xenosaga": "遊戲・異域傳說",
+    "char_the_king_of_fighters": "遊戲・拳皇",
+    "char_ace_attorney": "遊戲・逆轉裁判",
+    "char_helltaker": "遊戲・地獄征服者",
     "char_vocaloid": "其他・虛擬歌手",
+    "char_nitroplus": "其他・尼特羅",
+    "char_frozen_disney": "其他・冰雪奇緣",
     "hair_shape": "髮型・綁法造型",
     "hair_detail": "髮型・瀏海髮質",
     "wear_bits": "髮飾兜帽",
@@ -523,6 +547,8 @@
     "char_dungeon_ni_deai_wo_motomeru_no_wa_machigatteiru_darou_ka": "Anime · DanMachi",
     "char_jigokuraku": "Anime · Hell's Paradise",
     "char_spice_and_wolf": "Anime · Spice and Wolf",
+    "char_ghost_in_the_shell": "Anime · Ghost in the Shell",
+    "char_lyrical_nanoha": "Anime · Lyrical Nanoha",
     "char_arknights": "Games · Arknights",
     "char_azur_lane": "Games · Azur Lane",
     "char_fate_series": "Games · Fate",
@@ -536,11 +562,33 @@
     "char_persona": "Games · Persona",
     "char_steins_gate": "Games · Steins;Gate",
     "char_umamusume": "Games · Umamusume",
+    "char_league_of_legends": "Games · League of Legends",
+    "char_resident_evil": "Games · Resident Evil",
     "char_blue_archive": "Games · Blue Archive",
     "char_princess_connect": "Games · Princess Connect!",
     "char_danganronpa_series": "Games · Danganronpa",
+    "char_elden_ring": "Games · Elden Ring",
+    "char_guilty_gear": "Games · Guilty Gear",
+    "char_apex_legends": "Games · Apex Legends",
     "char_zenless_zone_zero": "Games · Zenless Zone Zero",
-    "char_vocaloid": "Other · Vocaloid"
+    "char_fire_emblem_three_houses": "Games · Three Houses",
+    "char_darkstalkers": "Games · Darkstalkers",
+    "char_fatal_fury": "Games · Fatal Fury",
+    "char_granblue_fantasy": "Games · Granblue Fantasy",
+    "char_umineko_no_naku_koro_ni": "Games · Umineko",
+    "char_fire_emblem_fates": "Games · Fates",
+    "char_bayonetta_series": "Games · Bayonetta",
+    "char_devil_may_cry_series": "Games · Devil May Cry",
+    "char_kid_icarus": "Games · Kid Icarus",
+    "char_fire_emblem_awakening": "Games · Awakening",
+    "char_final_fantasy_xiv": "Games · Final Fantasy XIV",
+    "char_xenosaga": "Games · Xenosaga",
+    "char_the_king_of_fighters": "Games · The King of Fighters",
+    "char_ace_attorney": "Games · Ace Attorney",
+    "char_helltaker": "Games · Helltaker",
+    "char_vocaloid": "Other · Vocaloid",
+    "char_nitroplus": "Other · Nitroplus",
+    "char_frozen_disney": "Other · Frozen"
   },
   "subOrder": {
     "quality": [
@@ -628,6 +676,8 @@
       "char_dungeon_ni_deai_wo_motomeru_no_wa_machigatteiru_darou_ka",
       "char_jigokuraku",
       "char_spice_and_wolf",
+      "char_ghost_in_the_shell",
+      "char_lyrical_nanoha",
       "char_arknights",
       "char_azur_lane",
       "char_fate_series",
@@ -641,11 +691,33 @@
       "char_persona",
       "char_steins_gate",
       "char_umamusume",
+      "char_league_of_legends",
+      "char_resident_evil",
       "char_blue_archive",
       "char_princess_connect",
       "char_danganronpa_series",
+      "char_elden_ring",
+      "char_guilty_gear",
+      "char_apex_legends",
       "char_zenless_zone_zero",
-      "char_vocaloid"
+      "char_fire_emblem_three_houses",
+      "char_darkstalkers",
+      "char_fatal_fury",
+      "char_granblue_fantasy",
+      "char_umineko_no_naku_koro_ni",
+      "char_fire_emblem_fates",
+      "char_bayonetta_series",
+      "char_devil_may_cry_series",
+      "char_kid_icarus",
+      "char_fire_emblem_awakening",
+      "char_final_fantasy_xiv",
+      "char_xenosaga",
+      "char_the_king_of_fighters",
+      "char_ace_attorney",
+      "char_helltaker",
+      "char_vocaloid",
+      "char_nitroplus",
+      "char_frozen_disney"
     ],
     "feature": [
       "hair_len",
@@ -116597,6 +116669,781 @@
       "zh": "羅倫斯"
     },
     {
+      "tag": "female byleth (fire emblem)",
+      "section": "subject",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_fire_emblem_three_houses",
+      "series": "fire emblem: three houses",
+      "cardPositive": "1girl, female byleth (fire emblem), fire emblem: three houses, masterpiece, best quality, amazing quality",
+      "needs": [
+        "female"
+      ],
+      "zh": "貝雷絲"
+    },
+    {
+      "tag": "morrigan aensland",
+      "section": "subject",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_darkstalkers",
+      "series": "darkstalkers",
+      "cardPositive": "1girl, morrigan aensland, darkstalkers, masterpiece, best quality, amazing quality",
+      "needs": [
+        "female"
+      ],
+      "zh": "莫莉卡"
+    },
+    {
+      "tag": "ahri (league)",
+      "section": "subject",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_league_of_legends",
+      "series": "league of legends",
+      "cardPositive": "1girl, ahri (league), league of legends, masterpiece, best quality, amazing quality",
+      "needs": [
+        "female"
+      ],
+      "zh": "阿璃"
+    },
+    {
+      "tag": "super sonico",
+      "section": "subject",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_nitroplus",
+      "series": "nitroplus",
+      "cardPositive": "1girl, super sonico, nitroplus, masterpiece, best quality, amazing quality",
+      "needs": [
+        "female"
+      ],
+      "zh": "超級索尼子"
+    },
+    {
+      "tag": "shiranui mai",
+      "section": "subject",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_fatal_fury",
+      "series": "fatal fury",
+      "cardPositive": "1girl, shiranui mai, fatal fury, masterpiece, best quality, amazing quality",
+      "needs": [
+        "female"
+      ],
+      "zh": "不知火舞"
+    },
+    {
+      "tag": "narmaya (granblue fantasy)",
+      "section": "subject",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_granblue_fantasy",
+      "series": "granblue fantasy",
+      "cardPositive": "1girl, narmaya (granblue fantasy), granblue fantasy, masterpiece, best quality, amazing quality",
+      "needs": [
+        "female"
+      ],
+      "zh": "娜爾梅亞"
+    },
+    {
+      "tag": "beatrice (umineko)",
+      "section": "subject",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_umineko_no_naku_koro_ni",
+      "series": "umineko no naku koro ni",
+      "cardPositive": "1girl, beatrice (umineko), umineko no naku koro ni, masterpiece, best quality, amazing quality",
+      "needs": [
+        "female"
+      ],
+      "zh": "貝阿朵莉切"
+    },
+    {
+      "tag": "camilla (fire emblem)",
+      "section": "subject",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_fire_emblem_fates",
+      "series": "fire emblem fates",
+      "cardPositive": "1girl, camilla (fire emblem), fire emblem fates, masterpiece, best quality, amazing quality",
+      "needs": [
+        "female"
+      ],
+      "zh": "卡美拉"
+    },
+    {
+      "tag": "bayonetta",
+      "section": "subject",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_bayonetta_series",
+      "series": "bayonetta (series)",
+      "cardPositive": "1girl, bayonetta, bayonetta (series), masterpiece, best quality, amazing quality",
+      "needs": [
+        "female"
+      ],
+      "zh": "蓓優妮塔"
+    },
+    {
+      "tag": "kusanagi motoko",
+      "section": "subject",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_ghost_in_the_shell",
+      "series": "ghost in the shell",
+      "cardPositive": "1girl, kusanagi motoko, ghost in the shell, masterpiece, best quality, amazing quality",
+      "needs": [
+        "female"
+      ],
+      "zh": "草薙素子"
+    },
+    {
+      "tag": "jill valentine",
+      "section": "subject",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_resident_evil",
+      "series": "resident evil",
+      "cardPositive": "1girl, jill valentine, resident evil, masterpiece, best quality, amazing quality",
+      "needs": [
+        "female"
+      ],
+      "zh": "吉兒"
+    },
+    {
+      "tag": "leon s. kennedy",
+      "section": "subject",
+      "gate": "male",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_resident_evil",
+      "series": "resident evil",
+      "cardPositive": "1boy, leon s. kennedy, resident evil, masterpiece, best quality, amazing quality",
+      "needs": [
+        "male"
+      ],
+      "zh": "里昂"
+    },
+    {
+      "tag": "dante (devil may cry)",
+      "section": "subject",
+      "gate": "male",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_devil_may_cry_series",
+      "series": "devil may cry (series)",
+      "cardPositive": "1boy, dante (devil may cry), devil may cry (series), masterpiece, best quality, amazing quality",
+      "needs": [
+        "male"
+      ],
+      "zh": "但丁"
+    },
+    {
+      "tag": "chris redfield",
+      "section": "subject",
+      "gate": "male",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_resident_evil",
+      "series": "resident evil",
+      "cardPositive": "1boy, chris redfield, resident evil, masterpiece, best quality, amazing quality",
+      "needs": [
+        "male"
+      ],
+      "zh": "雷德菲爾德"
+    },
+    {
+      "tag": "elsa (frozen)",
+      "section": "subject",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_frozen_disney",
+      "series": "frozen (disney)",
+      "cardPositive": "1girl, elsa (frozen), frozen (disney), masterpiece, best quality, amazing quality",
+      "needs": [
+        "female"
+      ],
+      "zh": "艾莎"
+    },
+    {
+      "tag": "ranni the witch",
+      "section": "subject",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_elden_ring",
+      "series": "elden ring",
+      "cardPositive": "1girl, ranni the witch, elden ring, masterpiece, best quality, amazing quality",
+      "needs": [
+        "female"
+      ],
+      "zh": "魔女菈妮"
+    },
+    {
+      "tag": "malenia blade of miquella",
+      "section": "subject",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_elden_ring",
+      "series": "elden ring",
+      "cardPositive": "1girl, malenia blade of miquella, elden ring, masterpiece, best quality, amazing quality",
+      "needs": [
+        "female"
+      ],
+      "zh": "瑪蓮妮亞"
+    },
+    {
+      "tag": "palutena",
+      "section": "subject",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_kid_icarus",
+      "series": "kid icarus",
+      "cardPositive": "1girl, palutena, kid icarus, masterpiece, best quality, amazing quality",
+      "needs": [
+        "female"
+      ],
+      "zh": "帕露蒂娜"
+    },
+    {
+      "tag": "tharja (fire emblem)",
+      "section": "subject",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_fire_emblem_awakening",
+      "series": "fire emblem awakening",
+      "cardPositive": "1girl, tharja (fire emblem), fire emblem awakening, masterpiece, best quality, amazing quality",
+      "needs": [
+        "female"
+      ],
+      "zh": "莎莉亞"
+    },
+    {
+      "tag": "y'shtola rhul",
+      "section": "subject",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_final_fantasy_xiv",
+      "series": "final fantasy xiv",
+      "cardPositive": "1girl, y'shtola rhul, final fantasy xiv, masterpiece, best quality, amazing quality",
+      "needs": [
+        "female"
+      ],
+      "zh": "雅·修特拉"
+    },
+    {
+      "tag": "kos-mos",
+      "section": "subject",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_xenosaga",
+      "series": "xenosaga",
+      "cardPositive": "1girl, kos-mos, xenosaga, masterpiece, best quality, amazing quality",
+      "needs": [
+        "female"
+      ],
+      "zh": "科斯摩斯"
+    },
+    {
+      "tag": "leona heidern",
+      "section": "subject",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_the_king_of_fighters",
+      "series": "the king of fighters",
+      "cardPositive": "1girl, leona heidern, the king of fighters, masterpiece, best quality, amazing quality",
+      "needs": [
+        "female"
+      ],
+      "zh": "莉安娜"
+    },
+    {
+      "tag": "sol badguy",
+      "section": "subject",
+      "gate": "male",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_guilty_gear",
+      "series": "guilty gear",
+      "cardPositive": "1boy, sol badguy, guilty gear, masterpiece, best quality, amazing quality",
+      "needs": [
+        "male"
+      ],
+      "zh": "索爾"
+    },
+    {
+      "tag": "baiken",
+      "section": "subject",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_guilty_gear",
+      "series": "guilty gear",
+      "cardPositive": "1girl, baiken, guilty gear, masterpiece, best quality, amazing quality",
+      "needs": [
+        "female"
+      ],
+      "zh": "梅喧"
+    },
+    {
+      "tag": "caitlyn (league)",
+      "section": "subject",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_league_of_legends",
+      "series": "league of legends",
+      "cardPositive": "1girl, caitlyn (league), league of legends, masterpiece, best quality, amazing quality",
+      "needs": [
+        "female"
+      ],
+      "zh": "凱特琳"
+    },
+    {
+      "tag": "vi (league)",
+      "section": "subject",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_league_of_legends",
+      "series": "league of legends",
+      "cardPositive": "1girl, vi (league), league of legends, masterpiece, best quality, amazing quality",
+      "needs": [
+        "female"
+      ],
+      "zh": "菲艾"
+    },
+    {
+      "tag": "wattson (apex legends)",
+      "section": "subject",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_apex_legends",
+      "series": "apex legends",
+      "cardPositive": "1girl, wattson (apex legends), apex legends, masterpiece, best quality, amazing quality",
+      "needs": [
+        "female"
+      ],
+      "zh": "瓦特森"
+    },
+    {
+      "tag": "wraith (apex legends)",
+      "section": "subject",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_apex_legends",
+      "series": "apex legends",
+      "cardPositive": "1girl, wraith (apex legends), apex legends, masterpiece, best quality, amazing quality",
+      "needs": [
+        "female"
+      ],
+      "zh": "惡靈"
+    },
+    {
+      "tag": "phoenix wright",
+      "section": "subject",
+      "gate": "male",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_ace_attorney",
+      "series": "ace attorney",
+      "cardPositive": "1boy, phoenix wright, ace attorney, masterpiece, best quality, amazing quality",
+      "needs": [
+        "male"
+      ],
+      "zh": "成步堂龍一"
+    },
+    {
+      "tag": "signum",
+      "section": "subject",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_lyrical_nanoha",
+      "series": "lyrical nanoha",
+      "cardPositive": "1girl, signum, lyrical nanoha, masterpiece, best quality, amazing quality",
+      "needs": [
+        "female"
+      ],
+      "zh": "希格諾"
+    },
+    {
+      "tag": "lucifer (helltaker)",
+      "section": "subject",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_helltaker",
+      "series": "helltaker",
+      "cardPositive": "1girl, lucifer (helltaker), helltaker, masterpiece, best quality, amazing quality",
+      "needs": [
+        "female"
+      ],
+      "zh": "路西法"
+    },
+    {
       "tag": "headgear",
       "section": "clothing",
       "gate": "any",
@@ -179542,6 +180389,5456 @@
       "group": "underwear",
       "sub": "uw_top",
       "zh": "少女初階內衣"
+    },
+    {
+      "tag": "hanging light",
+      "section": "env",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "lighting",
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "modern"
+      ],
+      "group": "light",
+      "sub": "light",
+      "zh": "吊燈（單燈）"
+    },
+    {
+      "tag": "firing",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "activity",
+      "bind": [],
+      "implies": [
+        "gun"
+      ],
+      "layer": "normal",
+      "era": [
+        "modern"
+      ],
+      "group": "activity",
+      "sub": "act_sport",
+      "zh": "開火射擊"
+    },
+    {
+      "tag": "butterfly brooch",
+      "section": "clothing",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "jewelry",
+      "bind": [],
+      "implies": [
+        "brooch"
+      ],
+      "layer": "accessory",
+      "era": [
+        "any"
+      ],
+      "group": "acc",
+      "sub": "acc_jewel",
+      "zh": "蝴蝶胸針"
+    },
+    {
+      "tag": "holding bow (music)",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "tease",
+      "sub": "pose_hold",
+      "zh": "拿著琴弓"
+    },
+    {
+      "tag": "aqua hairband",
+      "section": "clothing",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [
+        "hairband"
+      ],
+      "layer": "accessory",
+      "era": [
+        "any"
+      ],
+      "group": "acc",
+      "sub": "acc_head",
+      "zh": "水藍髮箍"
+    },
+    {
+      "tag": "planet hair ornament",
+      "section": "clothing",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "headwear",
+      "bind": [],
+      "implies": [
+        "hair ornament"
+      ],
+      "layer": "accessory",
+      "era": [
+        "any"
+      ],
+      "group": "acc",
+      "sub": "acc_head",
+      "zh": "行星髮飾"
+    },
+    {
+      "tag": "blue suit",
+      "section": "clothing",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "onepiece",
+      "bind": [],
+      "implies": [
+        "suit"
+      ],
+      "layer": "garment",
+      "era": [
+        "modern",
+        "victorian"
+      ],
+      "group": "onepiece",
+      "sub": "op_uniform",
+      "zh": "藍色西裝"
+    },
+    {
+      "tag": "jetpack",
+      "section": "clothing",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "accessory",
+      "era": [
+        "modern"
+      ],
+      "group": "acc",
+      "sub": "acc_carry",
+      "zh": "噴射背包"
+    },
+    {
+      "tag": "used condom on penis",
+      "section": "feature",
+      "gate": "male",
+      "heat": [
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [
+        "used condom"
+      ],
+      "layer": "skin",
+      "era": [
+        "modern"
+      ],
+      "group": "body_m",
+      "sub": "bm_penis",
+      "needs": [
+        "male"
+      ],
+      "zh": "陰莖上用過的保險套"
+    },
+    {
+      "tag": "two-sided skirt",
+      "section": "clothing",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "bottom",
+      "bind": [],
+      "implies": [
+        "skirt"
+      ],
+      "layer": "garment",
+      "era": [
+        "modern",
+        "victorian",
+        "medieval",
+        "ancient_china"
+      ],
+      "group": "bottom",
+      "sub": "bot_skirt",
+      "zh": "雙面色裙"
+    },
+    {
+      "tag": "shirt overhang",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "tease",
+      "sub": "pose_situ",
+      "zh": "上衣胸前垂空"
+    },
+    {
+      "tag": "pinstripe jacket",
+      "section": "clothing",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "outer",
+      "bind": [],
+      "implies": [
+        "jacket"
+      ],
+      "layer": "garment",
+      "era": [
+        "modern"
+      ],
+      "group": "outer",
+      "sub": "outer",
+      "zh": "細條紋外套"
+    },
+    {
+      "tag": "analogous colors",
+      "section": "quality",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "style",
+      "sub": "style_palette",
+      "zh": "類似色配色"
+    },
+    {
+      "tag": "rubber gloves",
+      "section": "clothing",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "hands",
+      "bind": [],
+      "implies": [
+        "gloves"
+      ],
+      "layer": "accessory",
+      "era": [
+        "modern"
+      ],
+      "group": "acc",
+      "sub": "acc_hand",
+      "zh": "橡膠手套"
+    },
+    {
+      "tag": "holding cake",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [
+        "cake"
+      ],
+      "layer": "normal",
+      "era": [
+        "modern"
+      ],
+      "group": "tease",
+      "sub": "pose_hold",
+      "zh": "拿著蛋糕"
+    },
+    {
+      "tag": "lying on lap",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "tease",
+      "sub": "pose_two",
+      "needs": [
+        "pair"
+      ],
+      "zh": "躺在別人腿上"
+    },
+    {
+      "tag": "butterfly sitting",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "body_pose",
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "body",
+      "sub": "body",
+      "zh": "蝴蝶坐"
+    },
+    {
+      "tag": "ball and chain restraint",
+      "section": "clothing",
+      "gate": "any",
+      "heat": [
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [
+        "shackles"
+      ],
+      "layer": "accessory",
+      "era": [
+        "any"
+      ],
+      "group": "acc",
+      "sub": "acc_bind",
+      "zh": "腳鐐鐵球"
+    },
+    {
+      "tag": "green one-piece swimsuit",
+      "section": "clothing",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "onepiece",
+      "bind": [],
+      "implies": [
+        "one-piece swimsuit",
+        "swimsuit"
+      ],
+      "layer": "garment",
+      "era": [
+        "modern"
+      ],
+      "group": "onepiece",
+      "sub": "op_swim",
+      "zh": "綠色連身泳裝"
+    },
+    {
+      "tag": "striped vest",
+      "section": "clothing",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "top",
+      "bind": [],
+      "implies": [
+        "vest"
+      ],
+      "layer": "garment",
+      "era": [
+        "modern"
+      ],
+      "group": "top",
+      "sub": "top_tank",
+      "zh": "條紋背心"
+    },
+    {
+      "tag": "sickle",
+      "section": "env",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "other",
+      "sub": "obj_weapon",
+      "zh": "鐮刀（手鐮）"
+    },
+    {
+      "tag": "arm on knee",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "tease",
+      "sub": "pose_hand",
+      "zh": "手臂搭在膝上"
+    },
+    {
+      "tag": "determined",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "expression",
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "face",
+      "sub": "face_mood",
+      "zh": "堅定的表情"
+    },
+    {
+      "tag": "band uniform",
+      "section": "clothing",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "onepiece",
+      "bind": [],
+      "implies": [],
+      "layer": "garment",
+      "era": [
+        "modern"
+      ],
+      "group": "onepiece",
+      "sub": "op_uniform",
+      "zh": "樂隊制服"
+    },
+    {
+      "tag": "horseshoe",
+      "section": "env",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "other",
+      "sub": "obj_hand",
+      "zh": "馬蹄鐵"
+    },
+    {
+      "tag": "object head",
+      "section": "feature",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "race",
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "race",
+      "sub": "race_fantasy",
+      "zh": "物品頭"
+    },
+    {
+      "tag": "facing up",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "gaze",
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "gaze",
+      "sub": "gaze",
+      "zh": "閉眼仰臉"
+    },
+    {
+      "tag": "clothesline",
+      "section": "env",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "modern"
+      ],
+      "group": "other",
+      "sub": "obj_street",
+      "zh": "曬衣繩"
+    },
+    {
+      "tag": "jaguar tail",
+      "section": "feature",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [
+        "tail"
+      ],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "other",
+      "sub": "nonhuman",
+      "zh": "美洲豹尾巴"
+    },
+    {
+      "tag": "facing down",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "gaze",
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "gaze",
+      "sub": "gaze",
+      "zh": "閉眼低頭"
+    },
+    {
+      "tag": "red track suit",
+      "section": "clothing",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "onepiece",
+      "bind": [],
+      "implies": [
+        "track suit"
+      ],
+      "layer": "garment",
+      "era": [
+        "modern"
+      ],
+      "group": "onepiece",
+      "sub": "op_uniform",
+      "zh": "紅色運動套裝"
+    },
+    {
+      "tag": "hooded vest",
+      "section": "clothing",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "top",
+      "bind": [],
+      "implies": [
+        "vest"
+      ],
+      "layer": "garment",
+      "era": [
+        "modern"
+      ],
+      "group": "top",
+      "sub": "top_tank",
+      "zh": "連帽背心"
+    },
+    {
+      "tag": "red nose",
+      "section": "feature",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "skin",
+      "sub": "skin_flush",
+      "zh": "紅鼻子"
+    },
+    {
+      "tag": "footwear flower",
+      "section": "clothing",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "accessory",
+      "era": [
+        "any"
+      ],
+      "group": "feet",
+      "sub": "feet",
+      "zh": "鞋上花飾"
+    },
+    {
+      "tag": "applying own makeup",
+      "section": "pose",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "activity",
+      "bind": [],
+      "implies": [
+        "makeup"
+      ],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "activity",
+      "sub": "act_daily",
+      "zh": "自己上妝"
+    },
+    {
+      "tag": "x3",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "expression",
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "face",
+      "sub": "face_mouth",
+      "zh": "x3 表情"
+    },
+    {
+      "tag": "implied kiss",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "tease",
+      "sub": "pose_two",
+      "needs": [
+        "pair"
+      ],
+      "zh": "暗示接吻"
+    },
+    {
+      "tag": "flower in mouth",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "face",
+      "sub": "face_mouth",
+      "zh": "嘴裡咬花"
+    },
+    {
+      "tag": "circle formation",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "tease",
+      "sub": "pose_situ",
+      "needs": [
+        "group"
+      ],
+      "zh": "圍成一圈"
+    },
+    {
+      "tag": "green eyeshadow",
+      "section": "feature",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [
+        "eyeshadow"
+      ],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "eyes",
+      "sub": "makeup",
+      "zh": "綠色眼影"
+    },
+    {
+      "tag": "labret piercing",
+      "section": "clothing",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [
+        "piercing"
+      ],
+      "layer": "accessory",
+      "era": [
+        "any"
+      ],
+      "group": "acc",
+      "sub": "acc_jewel",
+      "zh": "下唇環"
+    },
+    {
+      "tag": "cellphone charm",
+      "section": "clothing",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "accessory",
+      "era": [
+        "modern"
+      ],
+      "group": "acc",
+      "sub": "acc_carry",
+      "zh": "手機吊飾"
+    },
+    {
+      "tag": "nudist",
+      "section": "clothing",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "nudity",
+      "bind": [],
+      "implies": [
+        "nude"
+      ],
+      "layer": "skin",
+      "era": [
+        "any"
+      ],
+      "group": "nude",
+      "sub": "nude",
+      "zh": "天體主義者"
+    },
+    {
+      "tag": "presenting own ass",
+      "section": "pose",
+      "gate": "female",
+      "heat": [
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "flash",
+      "sub": "flash_pose",
+      "zh": "展示自己的屁股"
+    },
+    {
+      "tag": "groom",
+      "section": "feature",
+      "gate": "male",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "other",
+      "sub": "persona",
+      "needs": [
+        "male"
+      ],
+      "zh": "新郎"
+    },
+    {
+      "tag": "glory wall",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [
+        "glory hole"
+      ],
+      "layer": "normal",
+      "era": [
+        "modern"
+      ],
+      "group": "sex",
+      "sub": "sex_fetish",
+      "zh": "穿牆卡住（性）"
+    },
+    {
+      "tag": "wheelbarrow",
+      "section": "env",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "modern"
+      ],
+      "group": "other",
+      "sub": "obj_furn",
+      "zh": "手推車（獨輪）"
+    },
+    {
+      "tag": "lone nape hair",
+      "section": "feature",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "hair_style",
+      "sub": "hair_detail",
+      "zh": "一撮後頸髮"
+    },
+    {
+      "tag": "tucked penis",
+      "section": "feature",
+      "gate": "male",
+      "heat": [
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "skin",
+      "era": [
+        "any"
+      ],
+      "group": "body_m",
+      "sub": "bm_penis",
+      "needs": [
+        "male"
+      ],
+      "zh": "陰莖夾藏"
+    },
+    {
+      "tag": "pointing forward",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "tease",
+      "sub": "pose_sign",
+      "zh": "往前指"
+    },
+    {
+      "tag": "food bite",
+      "section": "env",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "other",
+      "sub": "obj_food",
+      "zh": "咬痕缺口"
+    },
+    {
+      "tag": "honeycomb background",
+      "section": "env",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "background",
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "background",
+      "sub": "background",
+      "zh": "蜂巢背景"
+    },
+    {
+      "tag": "skeleton print",
+      "section": "clothing",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "garment",
+      "era": [
+        "any"
+      ],
+      "group": "fabric",
+      "sub": "fab_material",
+      "zh": "骷髏骨架印花"
+    },
+    {
+      "tag": "cardigan under jacket",
+      "section": "clothing",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [
+        "jacket"
+      ],
+      "layer": "garment",
+      "era": [
+        "modern"
+      ],
+      "group": "fabric",
+      "sub": "fab_state",
+      "zh": "外套內穿開襟衫"
+    },
+    {
+      "tag": "huge dildo",
+      "section": "clothing",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [
+        "dildo"
+      ],
+      "layer": "accessory",
+      "era": [
+        "modern"
+      ],
+      "group": "acc",
+      "sub": "acc_toy",
+      "zh": "巨大假陽具"
+    },
+    {
+      "tag": "leaf umbrella",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "tease",
+      "sub": "pose_hold",
+      "zh": "葉子當傘"
+    },
+    {
+      "tag": "purple pupils",
+      "section": "feature",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "eyes",
+      "sub": "eye_shape",
+      "zh": "紫色瞳孔"
+    },
+    {
+      "tag": "twintails with hair base",
+      "section": "feature",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "hair_style",
+      "bind": [],
+      "implies": [
+        "twintails"
+      ],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "hair_style",
+      "sub": "hair_shape",
+      "zh": "雙馬尾帶髮包"
+    },
+    {
+      "tag": "jewel under eye",
+      "section": "feature",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "skin",
+      "sub": "skin_mark",
+      "zh": "眼下寶石"
+    },
+    {
+      "tag": "finger to another's mouth",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "tease",
+      "sub": "pose_two",
+      "needs": [
+        "pair"
+      ],
+      "zh": "手指按對方嘴"
+    },
+    {
+      "tag": "sharp tail",
+      "section": "feature",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [
+        "tail"
+      ],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "other",
+      "sub": "nonhuman",
+      "zh": "尖尾"
+    },
+    {
+      "tag": "stitched arm",
+      "section": "feature",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [
+        "stitches"
+      ],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "skin",
+      "sub": "skin_mark",
+      "zh": "手臂縫線"
+    },
+    {
+      "tag": "ankle wrap",
+      "section": "clothing",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "accessory",
+      "era": [
+        "any"
+      ],
+      "group": "feet",
+      "sub": "feet",
+      "zh": "腳踝纏布"
+    },
+    {
+      "tag": "white pubic hair",
+      "section": "feature",
+      "gate": "any",
+      "heat": [
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [
+        "colored pubic hair"
+      ],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "sex",
+      "sub": "bf_intimate",
+      "zh": "白色陰毛"
+    },
+    {
+      "tag": "clawed gauntlets",
+      "section": "clothing",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "hands",
+      "bind": [],
+      "implies": [
+        "gauntlets"
+      ],
+      "layer": "accessory",
+      "era": [
+        "medieval"
+      ],
+      "group": "acc",
+      "sub": "acc_hand",
+      "zh": "爪形護手"
+    },
+    {
+      "tag": "cuff links",
+      "section": "clothing",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "accessory",
+      "era": [
+        "modern",
+        "victorian"
+      ],
+      "group": "acc",
+      "sub": "acc_hand",
+      "zh": "袖扣"
+    },
+    {
+      "tag": "van",
+      "section": "env",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "modern"
+      ],
+      "group": "other",
+      "sub": "obj_tech",
+      "zh": "廂型車"
+    },
+    {
+      "tag": "unworn bikini bottom",
+      "section": "env",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "modern"
+      ],
+      "group": "other",
+      "sub": "obj_hand",
+      "zh": "脫下的比基尼褲"
+    },
+    {
+      "tag": "menu board",
+      "section": "env",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "modern"
+      ],
+      "group": "other",
+      "sub": "obj_furn",
+      "zh": "菜單看板"
+    },
+    {
+      "tag": "adapted uniform",
+      "section": "clothing",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "onepiece",
+      "bind": [],
+      "implies": [],
+      "layer": "garment",
+      "era": [
+        "modern"
+      ],
+      "group": "onepiece",
+      "sub": "op_uniform",
+      "zh": "改造制服"
+    },
+    {
+      "tag": "soap bottle",
+      "section": "env",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "modern"
+      ],
+      "group": "other",
+      "sub": "obj_hand",
+      "zh": "沐浴乳瓶"
+    },
+    {
+      "tag": "pink horns",
+      "section": "feature",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [
+        "horns"
+      ],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "other",
+      "sub": "nonhuman",
+      "zh": "粉紅色角"
+    },
+    {
+      "tag": "forehead tattoo",
+      "section": "feature",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [
+        "tattoo"
+      ],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "skin",
+      "sub": "tattoo",
+      "zh": "額頭刺青"
+    },
+    {
+      "tag": "chained wrists",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "sex",
+      "sub": "sex_bdsm",
+      "zh": "手腕被鎖鏈綁住"
+    },
+    {
+      "tag": "side ahoge",
+      "section": "feature",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [
+        "ahoge"
+      ],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "hair_style",
+      "sub": "hair_detail",
+      "zh": "側呆毛"
+    },
+    {
+      "tag": "hand on table",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "tease",
+      "sub": "pose_hand",
+      "zh": "手放桌上"
+    },
+    {
+      "tag": "4others",
+      "section": "subject",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "extra",
+      "sub": "cast_mix",
+      "zh": "四個其他角色"
+    },
+    {
+      "tag": "facing ahead",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "gaze",
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "gaze",
+      "sub": "gaze",
+      "zh": "閉眼面向前方"
+    },
+    {
+      "tag": "bent over furniture",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [
+        "bent over"
+      ],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "flash",
+      "sub": "flash_pose",
+      "zh": "趴靠家具彎腰"
+    },
+    {
+      "tag": "clownfish",
+      "section": "env",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "other",
+      "sub": "obj_plant",
+      "zh": "小丑魚"
+    },
+    {
+      "tag": "fishing line",
+      "section": "env",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "other",
+      "sub": "obj_sport",
+      "zh": "釣魚線"
+    },
+    {
+      "tag": "white scales",
+      "section": "feature",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [
+        "scales"
+      ],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "other",
+      "sub": "nonhuman",
+      "zh": "白色鱗片"
+    },
+    {
+      "tag": "gradient horns",
+      "section": "feature",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [
+        "horns"
+      ],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "other",
+      "sub": "nonhuman",
+      "zh": "漸層色角"
+    },
+    {
+      "tag": "white sky",
+      "section": "env",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "sky",
+      "sub": "sky",
+      "zh": "白色天空"
+    },
+    {
+      "tag": "heart on chest",
+      "section": "feature",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "skin",
+      "sub": "tattoo",
+      "zh": "胸口愛心"
+    },
+    {
+      "tag": "cart",
+      "section": "env",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "other",
+      "sub": "obj_furn",
+      "zh": "推車"
+    },
+    {
+      "tag": "grey bowtie",
+      "section": "clothing",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "neckwear",
+      "bind": [],
+      "implies": [
+        "bowtie"
+      ],
+      "layer": "accessory",
+      "era": [
+        "modern",
+        "victorian"
+      ],
+      "group": "acc",
+      "sub": "acc_neck",
+      "zh": "灰色領結"
+    },
+    {
+      "tag": "mannequin",
+      "section": "env",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "modern"
+      ],
+      "group": "other",
+      "sub": "obj_furn",
+      "zh": "人台模特兒"
+    },
+    {
+      "tag": "stopwatch",
+      "section": "env",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "modern"
+      ],
+      "group": "other",
+      "sub": "obj_hand",
+      "zh": "碼錶"
+    },
+    {
+      "tag": "holding with feet",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "tease",
+      "sub": "pose_act",
+      "zh": "用腳拿東西"
+    },
+    {
+      "tag": "unworn necktie",
+      "section": "env",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "modern"
+      ],
+      "group": "other",
+      "sub": "obj_hand",
+      "zh": "脫下的領帶"
+    },
+    {
+      "tag": "layered shirt",
+      "section": "clothing",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "top",
+      "bind": [],
+      "implies": [
+        "shirt"
+      ],
+      "layer": "garment",
+      "era": [
+        "modern",
+        "victorian"
+      ],
+      "group": "top",
+      "sub": "top_shirt",
+      "zh": "多層上衣"
+    },
+    {
+      "tag": "gradient wings",
+      "section": "feature",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [
+        "wings"
+      ],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "other",
+      "sub": "nonhuman",
+      "zh": "漸層色翅膀"
+    },
+    {
+      "tag": "ehoumaki",
+      "section": "env",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "edo",
+        "modern"
+      ],
+      "group": "other",
+      "sub": "obj_food",
+      "zh": "惠方卷"
+    },
+    {
+      "tag": "thong aside",
+      "section": "pose",
+      "gate": "female",
+      "heat": [
+        "flash",
+        "sex"
+      ],
+      "mutex": "clothes_action",
+      "bind": [],
+      "implies": [
+        "thong"
+      ],
+      "layer": "normal",
+      "era": [
+        "modern"
+      ],
+      "group": "flash",
+      "sub": "flash_expose",
+      "zh": "丁字褲撥到一旁"
+    },
+    {
+      "tag": "studded choker",
+      "section": "clothing",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "neckwear",
+      "bind": [],
+      "implies": [
+        "choker"
+      ],
+      "layer": "accessory",
+      "era": [
+        "any"
+      ],
+      "group": "acc",
+      "sub": "acc_neck",
+      "zh": "鉚釘頸圈"
+    },
+    {
+      "tag": "black eyeliner",
+      "section": "feature",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "makeup",
+      "sub": "makeup",
+      "zh": "黑色眼線"
+    },
+    {
+      "tag": "hat tassel",
+      "section": "clothing",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "accessory",
+      "era": [
+        "any"
+      ],
+      "group": "acc",
+      "sub": "acc_head",
+      "zh": "帽穗"
+    },
+    {
+      "tag": "lightning bolt print",
+      "section": "clothing",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "garment",
+      "era": [
+        "any"
+      ],
+      "group": "fabric",
+      "sub": "fab_material",
+      "zh": "閃電印花"
+    },
+    {
+      "tag": "holding mirror",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [
+        "mirror"
+      ],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "tease",
+      "sub": "pose_hold",
+      "zh": "拿著鏡子"
+    },
+    {
+      "tag": "gingham clothes",
+      "section": "clothing",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "garment",
+      "era": [
+        "any"
+      ],
+      "group": "fabric",
+      "sub": "fab_material",
+      "zh": "格紋衣"
+    },
+    {
+      "tag": "folder",
+      "section": "env",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "modern"
+      ],
+      "group": "other",
+      "sub": "obj_hand",
+      "zh": "文件夾"
+    },
+    {
+      "tag": "eye reflection",
+      "section": "feature",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "eyes",
+      "sub": "eye_shape",
+      "zh": "眼中倒影"
+    },
+    {
+      "tag": "humping",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "sex",
+      "sub": "sex_oral",
+      "needs": [
+        "pair"
+      ],
+      "zh": "隔衣磨蹭"
+    },
+    {
+      "tag": "clothed male nude male",
+      "section": "pose",
+      "gate": "male",
+      "heat": [
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [
+        "yaoi"
+      ],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "flash",
+      "sub": "flash_expose",
+      "needs": [
+        "male",
+        "2male",
+        "pair",
+        "yaoi"
+      ],
+      "zh": "穿衣男與裸男"
+    },
+    {
+      "tag": "fur-trimmed shirt",
+      "section": "clothing",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "top",
+      "bind": [],
+      "implies": [
+        "shirt"
+      ],
+      "layer": "garment",
+      "era": [
+        "modern",
+        "victorian"
+      ],
+      "group": "top",
+      "sub": "top_shirt",
+      "zh": "毛邊上衣"
+    },
+    {
+      "tag": "otter",
+      "section": "env",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "other",
+      "sub": "obj_plant",
+      "zh": "水獺"
+    },
+    {
+      "tag": "purple butterfly",
+      "section": "env",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [
+        "butterfly"
+      ],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "other",
+      "sub": "obj_plant",
+      "zh": "紫色蝴蝶"
+    },
+    {
+      "tag": "holding photo",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "tease",
+      "sub": "pose_hold",
+      "zh": "拿著照片"
+    },
+    {
+      "tag": "bee",
+      "section": "env",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "other",
+      "sub": "obj_plant",
+      "zh": "蜜蜂"
+    },
+    {
+      "tag": "exercise ball",
+      "section": "env",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "modern"
+      ],
+      "group": "other",
+      "sub": "obj_sport",
+      "zh": "瑜伽球"
+    },
+    {
+      "tag": "blue pubic hair",
+      "section": "feature",
+      "gate": "any",
+      "heat": [
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [
+        "colored pubic hair"
+      ],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "sex",
+      "sub": "bf_intimate",
+      "zh": "藍色陰毛"
+    },
+    {
+      "tag": "lowleg skirt",
+      "section": "clothing",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "bottom",
+      "bind": [],
+      "implies": [
+        "skirt"
+      ],
+      "layer": "garment",
+      "era": [
+        "modern",
+        "victorian",
+        "medieval",
+        "ancient_china"
+      ],
+      "group": "bottom",
+      "sub": "bot_skirt",
+      "zh": "低腰裙"
+    },
+    {
+      "tag": "inflatable raft",
+      "section": "env",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "modern"
+      ],
+      "group": "other",
+      "sub": "obj_sport",
+      "zh": "充氣筏"
+    },
+    {
+      "tag": "webbed hands",
+      "section": "feature",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "other",
+      "sub": "nonhuman",
+      "zh": "蹼手"
+    },
+    {
+      "tag": "cola",
+      "section": "env",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "modern"
+      ],
+      "group": "other",
+      "sub": "obj_food",
+      "zh": "可樂"
+    },
+    {
+      "tag": "frilled umbrella",
+      "section": "env",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [
+        "umbrella"
+      ],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "other",
+      "sub": "obj_hand",
+      "zh": "荷葉邊洋傘"
+    },
+    {
+      "tag": "mast",
+      "section": "env",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "other",
+      "sub": "obj_build",
+      "zh": "船桅"
+    },
+    {
+      "tag": "uneven twintails",
+      "section": "feature",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "hair_style",
+      "bind": [],
+      "implies": [
+        "twintails"
+      ],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "hair_style",
+      "sub": "hair_shape",
+      "zh": "不對稱雙馬尾"
+    },
+    {
+      "tag": "holding scroll",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [
+        "scroll"
+      ],
+      "layer": "normal",
+      "era": [
+        "edo",
+        "medieval",
+        "ancient_china"
+      ],
+      "group": "tease",
+      "sub": "pose_hold",
+      "zh": "拿著卷軸"
+    },
+    {
+      "tag": "holding shirt",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [
+        "shirt"
+      ],
+      "layer": "normal",
+      "era": [
+        "modern",
+        "victorian"
+      ],
+      "group": "tease",
+      "sub": "pose_hold",
+      "zh": "拿著上衣"
+    },
+    {
+      "tag": "undone neck ribbon",
+      "section": "clothing",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "neckwear",
+      "bind": [],
+      "implies": [
+        "neck ribbon"
+      ],
+      "layer": "accessory",
+      "era": [
+        "any"
+      ],
+      "group": "acc",
+      "sub": "acc_neck",
+      "zh": "鬆開的領口緞帶"
+    },
+    {
+      "tag": "ferret",
+      "section": "env",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "other",
+      "sub": "obj_plant",
+      "zh": "雪貂"
+    },
+    {
+      "tag": "cigarette pack",
+      "section": "env",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "modern"
+      ],
+      "group": "other",
+      "sub": "obj_hand",
+      "zh": "菸盒"
+    },
+    {
+      "tag": "seatbelt",
+      "section": "env",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "modern"
+      ],
+      "group": "other",
+      "sub": "obj_tech",
+      "zh": "安全帶"
+    },
+    {
+      "tag": "red suit",
+      "section": "clothing",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "onepiece",
+      "bind": [],
+      "implies": [
+        "suit"
+      ],
+      "layer": "garment",
+      "era": [
+        "modern",
+        "victorian"
+      ],
+      "group": "onepiece",
+      "sub": "op_uniform",
+      "zh": "紅色西裝"
+    },
+    {
+      "tag": "listening to music",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "activity",
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "modern"
+      ],
+      "group": "activity",
+      "sub": "act_daily",
+      "zh": "聽音樂"
+    },
+    {
+      "tag": "gyaruo",
+      "section": "feature",
+      "gate": "male",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "modern"
+      ],
+      "group": "other",
+      "sub": "persona",
+      "needs": [
+        "male"
+      ],
+      "zh": "辣男（男版辣妹）"
+    },
+    {
+      "tag": "foreplay",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "sex",
+      "sub": "sex_touch",
+      "needs": [
+        "pair"
+      ],
+      "zh": "前戲"
+    },
+    {
+      "tag": "keep out",
+      "section": "env",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "modern"
+      ],
+      "group": "other",
+      "sub": "obj_street",
+      "zh": "KEEP OUT 字樣"
+    },
+    {
+      "tag": "on roof",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "tease",
+      "sub": "pose_stance",
+      "zh": "在斜屋頂上"
+    },
+    {
+      "tag": "cum on eyewear",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [
+        "cum"
+      ],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "sex",
+      "sub": "sex_cum",
+      "needs": [
+        "male",
+        "female",
+        "pair"
+      ],
+      "zh": "眼鏡上的精液"
+    },
+    {
+      "tag": "vertical-striped panties",
+      "section": "clothing",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "underwear_bottom",
+      "bind": [],
+      "implies": [
+        "panties"
+      ],
+      "layer": "garment",
+      "era": [
+        "modern"
+      ],
+      "group": "underwear",
+      "sub": "uw_bottom",
+      "zh": "直條紋內褲"
+    },
+    {
+      "tag": "heart-shaped eyes",
+      "section": "feature",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "eyes",
+      "sub": "eye_shape",
+      "zh": "愛心形眼睛"
+    },
+    {
+      "tag": "toe cleavage",
+      "section": "clothing",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "feet",
+      "sub": "feet",
+      "zh": "鞋口露趾縫"
+    },
+    {
+      "tag": "strapless bottom",
+      "section": "clothing",
+      "gate": "female",
+      "heat": [
+        "flash",
+        "sex"
+      ],
+      "mutex": "underwear_bottom",
+      "bind": [],
+      "implies": [],
+      "layer": "underwear",
+      "era": [
+        "modern"
+      ],
+      "group": "underwear",
+      "sub": "uw_bottom",
+      "zh": "無帶遮私下身"
+    },
+    {
+      "tag": "naked tabard",
+      "section": "clothing",
+      "gate": "any",
+      "heat": [
+        "flash",
+        "sex"
+      ],
+      "mutex": "onepiece",
+      "bind": [],
+      "implies": [],
+      "layer": "garment",
+      "era": [
+        "any"
+      ],
+      "group": "onepiece",
+      "sub": "op_only",
+      "zh": "只穿前垂布"
+    },
+    {
+      "tag": "hugging book",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [
+        "book"
+      ],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "tease",
+      "sub": "pose_act",
+      "zh": "抱著書"
+    },
+    {
+      "tag": "prostration",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "body_pose",
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "body",
+      "sub": "body",
+      "zh": "伏地跪拜（orz）"
+    },
+    {
+      "tag": "star-shaped eyewear",
+      "section": "clothing",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "eyewear",
+      "bind": [],
+      "implies": [],
+      "layer": "accessory",
+      "era": [
+        "any"
+      ],
+      "group": "acc",
+      "sub": "acc_face",
+      "zh": "星形眼鏡"
+    },
+    {
+      "tag": "grey apron",
+      "section": "clothing",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "onepiece",
+      "bind": [],
+      "implies": [
+        "apron"
+      ],
+      "layer": "garment",
+      "era": [
+        "any"
+      ],
+      "group": "onepiece",
+      "sub": "op_uniform",
+      "zh": "灰色圍裙"
+    },
+    {
+      "tag": "holly hair ornament",
+      "section": "clothing",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "headwear",
+      "bind": [],
+      "implies": [
+        "hair ornament"
+      ],
+      "layer": "accessory",
+      "era": [
+        "any"
+      ],
+      "group": "acc",
+      "sub": "acc_head",
+      "zh": "冬青髮飾"
+    },
+    {
+      "tag": "black male swimwear",
+      "section": "clothing",
+      "gate": "male",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "onepiece",
+      "bind": [],
+      "implies": [
+        "male swimwear"
+      ],
+      "layer": "garment",
+      "era": [
+        "modern"
+      ],
+      "group": "onepiece",
+      "sub": "op_swim",
+      "needs": [
+        "male"
+      ],
+      "zh": "黑色男泳褲"
+    },
+    {
+      "tag": "biting own finger",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "face",
+      "sub": "face_part",
+      "zh": "咬自己的手指"
+    },
+    {
+      "tag": "hand wraps",
+      "section": "clothing",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "accessory",
+      "era": [
+        "any"
+      ],
+      "group": "acc",
+      "sub": "acc_bandage",
+      "zh": "手部纏布"
+    },
+    {
+      "tag": "corsage",
+      "section": "clothing",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "accessory",
+      "era": [
+        "modern"
+      ],
+      "group": "acc",
+      "sub": "acc_jewel",
+      "zh": "胸花"
+    },
+    {
+      "tag": "jiangshi costume",
+      "section": "clothing",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "onepiece",
+      "bind": [],
+      "implies": [],
+      "layer": "garment",
+      "era": [
+        "ancient_china",
+        "modern"
+      ],
+      "group": "era",
+      "sub": "era_cn",
+      "zh": "殭屍服裝"
+    },
+    {
+      "tag": "dragonfly",
+      "section": "env",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "other",
+      "sub": "obj_plant",
+      "zh": "蜻蜓"
+    },
+    {
+      "tag": "lipgloss",
+      "section": "feature",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "makeup",
+      "sub": "makeup",
+      "zh": "唇蜜"
+    },
+    {
+      "tag": "holding fish",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [
+        "fish"
+      ],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "tease",
+      "sub": "pose_hold",
+      "zh": "拿著魚"
+    },
+    {
+      "tag": "braiding hair",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "activity",
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "activity",
+      "sub": "act_daily",
+      "zh": "編頭髮"
+    },
+    {
+      "tag": "marking on cheek",
+      "section": "feature",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "skin",
+      "sub": "skin_mark",
+      "zh": "臉頰記號"
+    },
+    {
+      "tag": "hugging viewer",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "tease",
+      "sub": "pose_act",
+      "zh": "要抱觀眾"
+    },
+    {
+      "tag": "rabbit costume",
+      "section": "clothing",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "onepiece",
+      "bind": [],
+      "implies": [],
+      "layer": "garment",
+      "era": [
+        "modern"
+      ],
+      "group": "onepiece",
+      "sub": "op_body",
+      "zh": "兔子布偶裝"
+    },
+    {
+      "tag": "pelvic curtain lift",
+      "section": "pose",
+      "gate": "female",
+      "heat": [
+        "flash",
+        "sex"
+      ],
+      "mutex": "clothes_action",
+      "bind": [],
+      "implies": [
+        "pelvic curtain"
+      ],
+      "layer": "normal",
+      "era": [
+        "ancient_china"
+      ],
+      "group": "flash",
+      "sub": "flash_expose",
+      "zh": "掀起腰前垂布"
+    },
+    {
+      "tag": "leaf earrings",
+      "section": "clothing",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "jewelry",
+      "bind": [],
+      "implies": [
+        "earrings"
+      ],
+      "layer": "accessory",
+      "era": [
+        "any"
+      ],
+      "group": "acc",
+      "sub": "acc_jewel",
+      "zh": "葉子耳環"
+    },
+    {
+      "tag": "hand grip",
+      "section": "env",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "modern"
+      ],
+      "group": "other",
+      "sub": "obj_furn",
+      "zh": "吊環（車廂把手）"
+    },
+    {
+      "tag": "brown lips",
+      "section": "feature",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "makeup",
+      "sub": "makeup",
+      "zh": "棕色嘴唇"
+    },
+    {
+      "tag": "casting spell",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "activity",
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "activity",
+      "sub": "act_fun",
+      "zh": "施法"
+    },
+    {
+      "tag": "checkered bow",
+      "section": "clothing",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [
+        "bow"
+      ],
+      "layer": "accessory",
+      "era": [
+        "any"
+      ],
+      "group": "acc",
+      "sub": "acc_bow",
+      "zh": "棋盤格蝴蝶結"
+    },
+    {
+      "tag": "yellow camisole",
+      "section": "clothing",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "top",
+      "bind": [],
+      "implies": [
+        "camisole"
+      ],
+      "layer": "garment",
+      "era": [
+        "modern"
+      ],
+      "group": "top",
+      "sub": "top_tank",
+      "zh": "黃色細肩帶背心"
+    },
+    {
+      "tag": "floating headgear",
+      "section": "clothing",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "headwear",
+      "bind": [],
+      "implies": [],
+      "layer": "accessory",
+      "era": [
+        "any"
+      ],
+      "group": "acc",
+      "sub": "acc_head",
+      "zh": "漂浮頭飾"
+    },
+    {
+      "tag": "behind-the-head headphones",
+      "section": "clothing",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "headwear",
+      "bind": [],
+      "implies": [
+        "headphones"
+      ],
+      "layer": "accessory",
+      "era": [
+        "modern"
+      ],
+      "group": "acc",
+      "sub": "acc_face",
+      "zh": "後掛式耳機"
+    },
+    {
+      "tag": "white bandeau",
+      "section": "clothing",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "top",
+      "bind": [],
+      "implies": [
+        "bandeau"
+      ],
+      "layer": "garment",
+      "era": [
+        "modern"
+      ],
+      "group": "top",
+      "sub": "top_shirt",
+      "zh": "白色抹胸"
+    },
+    {
+      "tag": "red petals",
+      "section": "env",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "effect",
+      "bind": [],
+      "implies": [
+        "petals"
+      ],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "effect",
+      "sub": "fx_fall",
+      "zh": "紅色花瓣"
+    },
+    {
+      "tag": "gold coin",
+      "section": "env",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "other",
+      "sub": "obj_hand",
+      "zh": "金幣"
+    },
+    {
+      "tag": "chakram",
+      "section": "env",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "other",
+      "sub": "obj_weapon",
+      "zh": "環刃"
+    },
+    {
+      "tag": "nipple chain",
+      "section": "clothing",
+      "gate": "female",
+      "heat": [
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "accessory",
+      "era": [
+        "any"
+      ],
+      "group": "acc",
+      "sub": "acc_toy",
+      "zh": "乳頭鏈"
+    },
+    {
+      "tag": "stained clothes",
+      "section": "clothing",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "garment",
+      "era": [
+        "any"
+      ],
+      "group": "fabric",
+      "sub": "fab_state",
+      "zh": "衣服污漬"
+    },
+    {
+      "tag": "nebula",
+      "section": "env",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "sky",
+      "sub": "sky",
+      "zh": "星雲"
+    },
+    {
+      "tag": "penis in panties",
+      "section": "feature",
+      "gate": "male",
+      "heat": [
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "skin",
+      "era": [
+        "modern"
+      ],
+      "group": "body_m",
+      "sub": "bm_penis",
+      "needs": [
+        "male"
+      ],
+      "zh": "陰莖在內褲裡"
+    },
+    {
+      "tag": "cuirass",
+      "section": "clothing",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "garment",
+      "era": [
+        "medieval"
+      ],
+      "group": "era",
+      "sub": "era_west",
+      "zh": "胸背甲"
+    },
+    {
+      "tag": "midriff sarashi",
+      "section": "clothing",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "top",
+      "bind": [],
+      "implies": [
+        "sarashi"
+      ],
+      "layer": "garment",
+      "era": [
+        "modern",
+        "edo"
+      ],
+      "group": "top",
+      "sub": "top_tank",
+      "zh": "腹部纏布"
+    },
+    {
+      "tag": "soft serve",
+      "section": "env",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "modern"
+      ],
+      "group": "other",
+      "sub": "obj_food",
+      "zh": "霜淇淋"
+    },
+    {
+      "tag": "tamagoyaki",
+      "section": "env",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "edo",
+        "modern"
+      ],
+      "group": "other",
+      "sub": "obj_food",
+      "zh": "玉子燒"
+    },
+    {
+      "tag": "giant monster",
+      "section": "env",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "other",
+      "sub": "obj_plant",
+      "zh": "巨大怪獸"
+    },
+    {
+      "tag": "holding flute",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [
+        "flute"
+      ],
+      "layer": "normal",
+      "era": [
+        "modern",
+        "victorian"
+      ],
+      "group": "tease",
+      "sub": "pose_hold",
+      "zh": "拿著長笛"
+    },
+    {
+      "tag": "implied masturbation",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [
+        "masturbation"
+      ],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "sex",
+      "sub": "sex_touch",
+      "zh": "暗示自慰"
+    },
+    {
+      "tag": "holed coin",
+      "section": "env",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "ancient_china",
+        "edo"
+      ],
+      "group": "other",
+      "sub": "obj_hand",
+      "zh": "方孔錢"
+    },
+    {
+      "tag": "police badge",
+      "section": "clothing",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "accessory",
+      "era": [
+        "modern"
+      ],
+      "group": "acc",
+      "sub": "acc_jewel",
+      "zh": "警徽"
+    },
+    {
+      "tag": "covering another's eyes",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "tease",
+      "sub": "pose_two",
+      "needs": [
+        "pair"
+      ],
+      "zh": "遮住對方眼睛"
+    },
+    {
+      "tag": "protecting",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "tease",
+      "sub": "pose_two",
+      "needs": [
+        "pair"
+      ],
+      "zh": "保護他人"
+    },
+    {
+      "tag": "unworn eyepatch",
+      "section": "env",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "other",
+      "sub": "obj_hand",
+      "zh": "拿下的眼罩"
+    },
+    {
+      "tag": "crotch zipper",
+      "section": "clothing",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "garment",
+      "era": [
+        "any"
+      ],
+      "group": "fabric",
+      "sub": "fab_detail",
+      "zh": "襠部拉鍊"
+    },
+    {
+      "tag": "hexagon print",
+      "section": "clothing",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "garment",
+      "era": [
+        "any"
+      ],
+      "group": "fabric",
+      "sub": "fab_material",
+      "zh": "六角形印花"
+    },
+    {
+      "tag": "clock eyes",
+      "section": "feature",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "eyes",
+      "sub": "eye_shape",
+      "zh": "時鐘眼"
+    },
+    {
+      "tag": "scoop neck",
+      "section": "clothing",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "garment",
+      "era": [
+        "any"
+      ],
+      "group": "fabric",
+      "sub": "fab_sleeve",
+      "zh": "U 字領"
+    },
+    {
+      "tag": "black tiara",
+      "section": "clothing",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "headwear",
+      "bind": [],
+      "implies": [
+        "tiara"
+      ],
+      "layer": "accessory",
+      "era": [
+        "any"
+      ],
+      "group": "acc",
+      "sub": "acc_head",
+      "zh": "黑色頭冠"
+    },
+    {
+      "tag": "holding another's horns",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "sex",
+      "sub": "sex_touch",
+      "needs": [
+        "pair"
+      ],
+      "zh": "抓住對方的角"
+    },
+    {
+      "tag": "aqua leotard",
+      "section": "clothing",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "onepiece",
+      "bind": [],
+      "implies": [
+        "leotard"
+      ],
+      "layer": "garment",
+      "era": [
+        "modern"
+      ],
+      "group": "onepiece",
+      "sub": "op_body",
+      "zh": "水藍色緊身衣"
+    },
+    {
+      "tag": "locomotive",
+      "section": "env",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "modern"
+      ],
+      "group": "other",
+      "sub": "obj_tech",
+      "zh": "火車頭"
+    },
+    {
+      "tag": "cut bangs",
+      "section": "feature",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "hair_style",
+      "sub": "hair_detail",
+      "zh": "參差瀏海"
+    },
+    {
+      "tag": "unworn gag",
+      "section": "env",
+      "gate": "any",
+      "heat": [
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "modern"
+      ],
+      "group": "other",
+      "sub": "obj_hand",
+      "zh": "沒戴著的口塞"
+    },
+    {
+      "tag": "pastry bag",
+      "section": "env",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "modern"
+      ],
+      "group": "other",
+      "sub": "obj_food",
+      "zh": "擠花袋"
+    },
+    {
+      "tag": "crowbar",
+      "section": "env",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "other",
+      "sub": "obj_weapon",
+      "zh": "撬棍"
+    },
+    {
+      "tag": "nail bat",
+      "section": "env",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "other",
+      "sub": "obj_weapon",
+      "zh": "釘棒"
+    },
+    {
+      "tag": "multicolored bowtie",
+      "section": "clothing",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "neckwear",
+      "bind": [],
+      "implies": [
+        "bowtie"
+      ],
+      "layer": "accessory",
+      "era": [
+        "modern",
+        "victorian"
+      ],
+      "group": "acc",
+      "sub": "acc_neck",
+      "zh": "多色領結"
+    },
+    {
+      "tag": "brown sash",
+      "section": "clothing",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "waist",
+      "bind": [],
+      "implies": [
+        "sash"
+      ],
+      "layer": "accessory",
+      "era": [
+        "edo",
+        "ancient_china"
+      ],
+      "group": "acc",
+      "sub": "acc_hand",
+      "zh": "棕色腰帶布"
+    },
+    {
+      "tag": "arthropod boy",
+      "section": "feature",
+      "gate": "male",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "race",
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "race",
+      "sub": "race_fantasy",
+      "needs": [
+        "male"
+      ],
+      "zh": "節肢特徵男性"
+    },
+    {
+      "tag": "borderless panels",
+      "section": "quality",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "style",
+      "sub": "style_tech",
+      "zh": "無框分格"
+    },
+    {
+      "tag": "single braided sidelock",
+      "section": "feature",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "hair_style",
+      "sub": "hair_detail",
+      "zh": "單邊鬢辮"
+    },
+    {
+      "tag": "carapace",
+      "section": "feature",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "other",
+      "sub": "nonhuman",
+      "zh": "甲殼"
+    },
+    {
+      "tag": "cobblestone",
+      "section": "env",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "background",
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "background",
+      "sub": "background",
+      "zh": "石板路"
+    },
+    {
+      "tag": "ticket",
+      "section": "env",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "modern"
+      ],
+      "group": "other",
+      "sub": "obj_hand",
+      "zh": "票券"
+    },
+    {
+      "tag": "at computer",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "activity",
+      "bind": [],
+      "implies": [
+        "computer"
+      ],
+      "layer": "normal",
+      "era": [
+        "modern"
+      ],
+      "group": "activity",
+      "sub": "act_daily",
+      "zh": "在電腦前"
+    },
+    {
+      "tag": "studded collar",
+      "section": "clothing",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "neckwear",
+      "bind": [],
+      "implies": [
+        "collar"
+      ],
+      "layer": "accessory",
+      "era": [
+        "any"
+      ],
+      "group": "acc",
+      "sub": "acc_neck",
+      "zh": "鉚釘項圈"
+    },
+    {
+      "tag": "raccoon",
+      "section": "env",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "other",
+      "sub": "obj_plant",
+      "zh": "浣熊"
+    },
+    {
+      "tag": "animal head",
+      "section": "feature",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "race",
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "race",
+      "sub": "race_fantasy",
+      "zh": "動物頭"
+    },
+    {
+      "tag": "surrounded",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "tease",
+      "sub": "pose_situ",
+      "needs": [
+        "group"
+      ],
+      "zh": "被包圍"
+    },
+    {
+      "tag": "adjusting panties",
+      "section": "pose",
+      "gate": "female",
+      "heat": [
+        "flash",
+        "sex"
+      ],
+      "mutex": "clothes_action",
+      "bind": [],
+      "implies": [
+        "panties"
+      ],
+      "layer": "normal",
+      "era": [
+        "modern"
+      ],
+      "group": "flash",
+      "sub": "flash_expose",
+      "zh": "調整內褲"
+    },
+    {
+      "tag": "chibikemo",
+      "section": "quality",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [
+        "chibi"
+      ],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "style",
+      "sub": "style_tech",
+      "zh": "Q 版獸人"
+    },
+    {
+      "tag": "cauldron",
+      "section": "env",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "other",
+      "sub": "obj_classic",
+      "zh": "大鍋（魔女鍋）"
+    },
+    {
+      "tag": "model kit",
+      "section": "env",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "modern"
+      ],
+      "group": "other",
+      "sub": "obj_hand",
+      "zh": "模型套件"
+    },
+    {
+      "tag": "volleyball net",
+      "section": "env",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "modern"
+      ],
+      "group": "other",
+      "sub": "obj_sport",
+      "zh": "排球網"
+    },
+    {
+      "tag": "fat rolls",
+      "section": "feature",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "body_f",
+      "sub": "bf_shape",
+      "zh": "肚子肥肉"
+    },
+    {
+      "tag": "holding shovel",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [
+        "shovel"
+      ],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "tease",
+      "sub": "pose_hold",
+      "zh": "拿著鏟子"
+    },
+    {
+      "tag": "blue sweater vest",
+      "section": "clothing",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "top",
+      "bind": [],
+      "implies": [
+        "sweater vest"
+      ],
+      "layer": "garment",
+      "era": [
+        "modern"
+      ],
+      "group": "top",
+      "sub": "top_knit",
+      "zh": "藍色毛衣背心"
+    },
+    {
+      "tag": "throwing knife",
+      "section": "env",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "other",
+      "sub": "obj_weapon",
+      "zh": "飛刀"
+    },
+    {
+      "tag": "holding lipstick tube",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [
+        "lipstick tube"
+      ],
+      "layer": "normal",
+      "era": [
+        "modern"
+      ],
+      "group": "tease",
+      "sub": "pose_hold",
+      "zh": "拿著口紅"
+    },
+    {
+      "tag": "unworn bikini",
+      "section": "env",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "modern"
+      ],
+      "group": "other",
+      "sub": "obj_hand",
+      "zh": "脫下的比基尼"
+    },
+    {
+      "tag": "crazy straw",
+      "section": "env",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "modern"
+      ],
+      "group": "other",
+      "sub": "obj_food",
+      "zh": "造型吸管"
+    },
+    {
+      "tag": "patterned hair",
+      "section": "feature",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "hair_style",
+      "sub": "hair_detail",
+      "zh": "花紋頭髮"
+    },
+    {
+      "tag": "cum on fingers",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [
+        "cum"
+      ],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "sex",
+      "sub": "sex_cum",
+      "needs": [
+        "male",
+        "female",
+        "pair"
+      ],
+      "zh": "手指上的精液"
+    },
+    {
+      "tag": "aqua kimono",
+      "section": "clothing",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [
+        "japanese clothes"
+      ],
+      "implies": [
+        "kimono"
+      ],
+      "layer": "garment",
+      "era": [
+        "edo"
+      ],
+      "group": "era",
+      "sub": "era_jp",
+      "zh": "水藍色和服"
+    },
+    {
+      "tag": "low-cut armhole",
+      "section": "clothing",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "garment",
+      "era": [
+        "any"
+      ],
+      "group": "fabric",
+      "sub": "fab_sleeve",
+      "zh": "低開袖孔"
+    },
+    {
+      "tag": "seal (animal)",
+      "section": "env",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "other",
+      "sub": "obj_plant",
+      "zh": "海豹"
+    },
+    {
+      "tag": "stuffed penguin",
+      "section": "env",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "modern"
+      ],
+      "group": "other",
+      "sub": "obj_hand",
+      "zh": "企鵝玩偶"
+    },
+    {
+      "tag": "bloodshot eyes",
+      "section": "feature",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "eyes",
+      "sub": "eye_shape",
+      "zh": "眼睛布滿血絲"
+    },
+    {
+      "tag": "unworn hair ornament",
+      "section": "env",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "other",
+      "sub": "obj_hand",
+      "zh": "拿下的髮飾"
+    },
+    {
+      "tag": "purple armor",
+      "section": "clothing",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "onepiece",
+      "bind": [],
+      "implies": [
+        "armor"
+      ],
+      "layer": "garment",
+      "era": [
+        "edo",
+        "medieval"
+      ],
+      "group": "era",
+      "sub": "era_west",
+      "zh": "紫色盔甲"
+    },
+    {
+      "tag": "cat on shoulder",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [
+        "cat"
+      ],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "tease",
+      "sub": "pose_situ",
+      "zh": "肩上的貓"
+    },
+    {
+      "tag": "frilled wrist cuffs",
+      "section": "clothing",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [
+        "wrist cuffs"
+      ],
+      "layer": "accessory",
+      "era": [
+        "any"
+      ],
+      "group": "acc",
+      "sub": "acc_jewel",
+      "zh": "荷葉邊袖套"
+    },
+    {
+      "tag": "maple leaf print",
+      "section": "clothing",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "garment",
+      "era": [
+        "any"
+      ],
+      "group": "fabric",
+      "sub": "fab_material",
+      "zh": "楓葉印花"
+    },
+    {
+      "tag": "shippou (pattern)",
+      "section": "clothing",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "garment",
+      "era": [
+        "any"
+      ],
+      "group": "fabric",
+      "sub": "fab_material",
+      "zh": "七寶紋"
+    },
+    {
+      "tag": "pig ears",
+      "section": "feature",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "animal_ear",
+      "bind": [],
+      "implies": [
+        "animal ears"
+      ],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "other",
+      "sub": "nonhuman",
+      "zh": "豬耳"
+    },
+    {
+      "tag": "looking at hand",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "gaze",
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "gaze",
+      "sub": "gaze",
+      "zh": "看著手"
+    },
+    {
+      "tag": "brown neckerchief",
+      "section": "clothing",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "neckwear",
+      "bind": [],
+      "implies": [
+        "neckerchief"
+      ],
+      "layer": "accessory",
+      "era": [
+        "any"
+      ],
+      "group": "acc",
+      "sub": "acc_neck",
+      "zh": "棕色領巾"
+    },
+    {
+      "tag": "jersey maid",
+      "section": "clothing",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "onepiece",
+      "bind": [],
+      "implies": [],
+      "layer": "garment",
+      "era": [
+        "modern"
+      ],
+      "group": "onepiece",
+      "sub": "op_uniform",
+      "zh": "運動服女僕"
+    },
+    {
+      "tag": "brown mittens",
+      "section": "clothing",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "hands",
+      "bind": [],
+      "implies": [
+        "gloves"
+      ],
+      "layer": "accessory",
+      "era": [
+        "modern"
+      ],
+      "group": "acc",
+      "sub": "acc_hand",
+      "zh": "棕色連指手套"
+    },
+    {
+      "tag": "pumpkin hair ornament",
+      "section": "clothing",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "headwear",
+      "bind": [],
+      "implies": [
+        "hair ornament"
+      ],
+      "layer": "accessory",
+      "era": [
+        "any"
+      ],
+      "group": "acc",
+      "sub": "acc_head",
+      "zh": "南瓜髮飾"
+    },
+    {
+      "tag": "dress swimsuit",
+      "section": "clothing",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "onepiece",
+      "bind": [],
+      "implies": [
+        "swimsuit"
+      ],
+      "layer": "garment",
+      "era": [
+        "modern"
+      ],
+      "group": "onepiece",
+      "sub": "op_swim",
+      "zh": "洋裝式泳裝"
+    },
+    {
+      "tag": "one-piece thong",
+      "section": "clothing",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "onepiece",
+      "bind": [],
+      "implies": [
+        "one-piece swimsuit"
+      ],
+      "layer": "garment",
+      "era": [
+        "modern"
+      ],
+      "group": "onepiece",
+      "sub": "op_swim",
+      "zh": "丁字連身泳裝"
+    },
+    {
+      "tag": "fried chicken",
+      "section": "env",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "modern"
+      ],
+      "group": "other",
+      "sub": "obj_food",
+      "zh": "炸雞"
+    },
+    {
+      "tag": "vertical-striped shorts",
+      "section": "clothing",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "bottom",
+      "bind": [],
+      "implies": [
+        "shorts"
+      ],
+      "layer": "garment",
+      "era": [
+        "modern"
+      ],
+      "group": "bottom",
+      "sub": "bot_pants",
+      "zh": "直條紋短褲"
+    },
+    {
+      "tag": "pink tank top",
+      "section": "clothing",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "top",
+      "bind": [],
+      "implies": [
+        "tank top"
+      ],
+      "layer": "garment",
+      "era": [
+        "modern"
+      ],
+      "group": "top",
+      "sub": "top_tank",
+      "zh": "粉紅色背心"
+    },
+    {
+      "tag": "partial humanization",
+      "section": "feature",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "other",
+      "sub": "persona",
+      "zh": "部分擬人化"
+    },
+    {
+      "tag": "clueless",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "expression",
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "face",
+      "sub": "face_mood",
+      "zh": "一臉茫然"
+    },
+    {
+      "tag": "green cardigan",
+      "section": "clothing",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "outer",
+      "bind": [],
+      "implies": [
+        "cardigan"
+      ],
+      "layer": "garment",
+      "era": [
+        "modern"
+      ],
+      "group": "outer",
+      "sub": "outer",
+      "zh": "綠色開襟衫"
+    },
+    {
+      "tag": "lop rabbit ears",
+      "section": "feature",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "animal_ear",
+      "bind": [],
+      "implies": [
+        "animal ears"
+      ],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "other",
+      "sub": "nonhuman",
+      "zh": "垂耳兔耳"
+    },
+    {
+      "tag": "shrugging",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "tease",
+      "sub": "pose_hand",
+      "zh": "聳肩"
+    },
+    {
+      "tag": "gothic punk",
+      "section": "clothing",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "garment",
+      "era": [
+        "modern"
+      ],
+      "group": "fabric",
+      "sub": "fab_style",
+      "zh": "哥德龐克"
+    },
+    {
+      "tag": "flower trim",
+      "section": "clothing",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "garment",
+      "era": [
+        "any"
+      ],
+      "group": "fabric",
+      "sub": "fab_detail",
+      "zh": "花朵滾邊"
+    },
+    {
+      "tag": "christmas stocking",
+      "section": "env",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "modern"
+      ],
+      "group": "other",
+      "sub": "obj_fest",
+      "zh": "聖誕襪"
+    },
+    {
+      "tag": "male on futa",
+      "section": "pose",
+      "gate": "female",
+      "heat": [
+        "sex"
+      ],
+      "mutex": "sex_act",
+      "bind": [],
+      "implies": [
+        "futanari"
+      ],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "sex",
+      "sub": "sex_pos",
+      "needs": [
+        "male",
+        "female",
+        "pair"
+      ],
+      "zh": "男對扶她"
+    },
+    {
+      "tag": "bikini shorts",
+      "section": "clothing",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "underwear_bottom",
+      "bind": [],
+      "implies": [],
+      "layer": "underwear",
+      "era": [
+        "modern"
+      ],
+      "group": "underwear",
+      "sub": "uw_bottom",
+      "zh": "比基尼短褲"
+    },
+    {
+      "tag": "red wine",
+      "section": "env",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "other",
+      "sub": "obj_food",
+      "zh": "紅酒"
+    },
+    {
+      "tag": "combat knife",
+      "section": "env",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "other",
+      "sub": "obj_weapon",
+      "zh": "戰鬥刀"
+    },
+    {
+      "tag": "deer tail",
+      "section": "feature",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [
+        "tail"
+      ],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "other",
+      "sub": "nonhuman",
+      "zh": "鹿尾巴"
+    },
+    {
+      "tag": "blue outline",
+      "section": "quality",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [
+        "outline"
+      ],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "style",
+      "sub": "style_tech",
+      "zh": "藍色外框線"
+    },
+    {
+      "tag": "drugged",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "sex",
+      "sub": "sex_fetish",
+      "zh": "下藥"
     }
   ]
 }

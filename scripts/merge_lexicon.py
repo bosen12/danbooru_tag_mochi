@@ -13,6 +13,15 @@ from clothing_tags import UMBRELLA_EXTRA, extra_clothing_tags
 from env_tags import NARROW as ENV_NARROW, extra_env_tags
 from pose_tags import NARROW as POSE_NARROW, extra_pose_tags
 from quality_tags import NARROW as QUALITY_NARROW, extra_quality_tags
+from sync_20261101_tags import NARROW as SYNC_20261101_NARROW, extra_sync_20261101_tags
+from sync_20261101_tags import CLOTHING_STATE_EXTRA as SYNC_20261101_CLOTHING_STATE
+from sync_20261101_tags import (
+    NEEDS_MALE_EXTRA as SYNC_20261101_NEEDS_MALE,
+    NEEDS_FEMALE_EXTRA as SYNC_20261101_NEEDS_FEMALE,
+    NEEDS_PAIR_EXTRA as SYNC_20261101_NEEDS_PAIR,
+    NEEDS_2MALE_EXTRA as SYNC_20261101_NEEDS_2MALE,
+    NEEDS_GROUP_EXTRA as SYNC_20261101_NEEDS_GROUP,
+)
 from subgroups import CHARACTER_SUB_EN, SUB_ORDER, SUB_ZH, assign_sub, character_sub_id, check_subs
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -85,6 +94,8 @@ CLOTHING_STATE = {
     "vibrator",
     "egg vibrator",
 }
+# 2026-11-01：腳鐐鐵球、乳頭鏈、無帶遮私、只穿前垂布。不列進來會被 widen 成三檔。
+CLOTHING_STATE.update(SYNC_20261101_CLOTHING_STATE)
 # Faces that *are* a heat. Everyday faces / sitting / looking are not.
 POSE_CLIMAX = {
     "ahegao",
@@ -385,7 +396,10 @@ SUFFIX_COMPOUND_EXCEPTIONS = {
     "socks": ("unworn socks",),
     "gloves": ("unworn gloves",),
     # 掛在腰上、褪到一隻腳，是那件衣服的狀態，不是再穿一件。
-    "shorts": ("shorts around one leg",),
+    "shorts": ("shorts around one leg", "bikini shorts"),
+    # 脫下來放在旁邊，不是身上正穿的那一件。
+    "bikini": ("unworn bikini",),
+    "necktie": ("unworn necktie",),
     "sweater": ("sweater around waist",),
     "cardigan": ("cardigan around waist",),
     # 褲型袴是江戶的袴，不是現代長褲。帶出 pants 會在江戶時代對不上。
@@ -1395,6 +1409,12 @@ NEED_KEYS = {"female", "male", "pair", "yuri", "yaoi", "group", "crowd", "2male"
 YURI_ONLY = {
     "tribadism",
 }
+# 2026-11-01：男主體、兩人、兩個男的、三人以上。列在字上的 needs 會留著，這裡再補一次。
+NEEDS_MALE.update(SYNC_20261101_NEEDS_MALE)
+NEEDS_FEMALE.update(SYNC_20261101_NEEDS_FEMALE)
+NEEDS_PAIR.update(SYNC_20261101_NEEDS_PAIR)
+NEEDS_2MALE.update(SYNC_20261101_NEEDS_2MALE)
+NEEDS_GROUP.update(SYNC_20261101_NEEDS_GROUP)
 
 
 def apply_relations(tag: str, implies: list[str], bind: list[str], mutex, section, gate, layer, heat, era, needs):
@@ -1518,6 +1538,7 @@ NARROW_HEAT.update(CLOTHING_NARROW)
 NARROW_HEAT.update(ENV_NARROW)
 NARROW_HEAT.update(POSE_NARROW)
 NARROW_HEAT.update(QUALITY_NARROW)
+NARROW_HEAT.update(SYNC_20261101_NARROW)
 UMBRELLA.update(UMBRELLA_EXTRA)
 
 
@@ -6985,6 +7006,7 @@ def main() -> None:
     rows.extend(extra_env_tags())
     rows.extend(extra_pose_tags())
     rows.extend(extra_quality_tags())
+    rows.extend(extra_sync_20261101_tags())
 
     old_zh: dict[str, str] = {}
     if OUT.exists():

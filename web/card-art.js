@@ -421,6 +421,31 @@ const ART_EXTRA = {
   "covering privates": "hand, crotch, mature female, full body",
   "hand on another's head": "head, hand, upper body",
   "grabbing another's hair": "hair, hand, from side, upper body",
+  // 2026-11-01：名字會讓模型畫成另一個東西。寫在正面，不進負面詞
+  // （沒有人的靜物不能帶負面詞，而且負面詞裡若再寫一次牌名會跟正面打架）。
+  "hanging light": "single pendant lamp, hanging from ceiling",
+  "holding bow (music)": "holding a violin bow",
+  sickle: "hand sickle, harvesting sickle, short handle",
+  "leaf umbrella": "large leaf used as an umbrella",
+  wheelbarrow: "garden wheelbarrow",
+  "soap bottle": "pump bottle of body soap",
+  "exercise ball": "large yoga exercise ball",
+  "hand grip": "overhead train hand strap",
+  ehoumaki: "uncut thick sushi roll",
+  "unworn gag": "ball gag, unworn",
+  mannequin: "clothing store mannequin, dress form",
+  "model kit": "plastic model kit box",
+  "food bite": "bite mark taken out of an object",
+  jetpack: "jetpack worn on the back",
+  horseshoe: "horseshoe, lucky charm",
+  chakram: "circular throwing blade",
+  crowbar: "crowbar, pry bar",
+  "nail bat": "wooden bat with nails",
+  "throwing knife": "throwing knife, short blade",
+  "combat knife": "combat knife, military knife",
+  chibikemo: "chibi kemono, stylized adult",
+  "giant monster": "giant kaiju, city scale",
+  cauldron: "witch cauldron, large iron pot",
 };
 
 // 精液落在對方身上，或這個動作的對象是女生。
@@ -543,12 +568,20 @@ const ART_NEG = {
   "ryona": "guro, injury",
   "abuse": "guro, injury",
   skindentation: "latex, leotard, bodysuit, bodystocking, school uniform, serafuku, plaid skirt, child, teenage",
+  // 2026-11-01：有人的牌才擋「畫成另一個東西」。靜物是 no humans，負面詞必須是空的。
+  "holding bow (music)": "archery, bow (weapon)",
+  sickle: "scythe",
+  "leaf umbrella": "umbrella",
+  "nail bat": "baseball bat",
+  chibikemo: "child, loli, shota",
 };
 
 // 學校味重的衣著：畫的一定是成年人。
 // 魔法少女在 Danbooru 上偏年幼的畫法，樂福鞋底模會自己配上學生制服：兩張都要明講成年。
 const SCHOOL_CODED = new Set([
   "school uniform",
+  // 2026-11-01：改造制服常把上衣和裙子改短，卡面要畫成成年人。
+  "adapted uniform",
   "serafuku",
   "sailor dress",
   "school swimsuit",
@@ -644,7 +677,10 @@ const SCENE_WITH_PERSON = new Set(["furniture", "background", "effect"]);
 const ENV_WITH_PERSON = new Set(["silhouette"]);
 
 // 工具類單獨畫靜物，模型會畫成機械零件、電鋸、戰斧（2026-10-26 烘兩次都不對）：改畫一個成年人拿著它。
-const HELD_ART = new Set(["hammer", "screwdriver", "saw", "axe", "makeup brush", "condom packet strip", "crime prevention buzzer", "lube", "used tissue", "spatula", "skewer", "whisk", "tongs", "mallet", "kine", "nata (tool)", "scythe", "whip", "riding crop", "chainsaw", "club (weapon)", "mace", "battle axe", "spiked club", "kitchen knife", "kanabou", "pickaxe", "cleaver", "boxcutter", "tonfa", "drill", "hand net", "school briefcase"]);
+const HELD_ART = new Set(["hammer", "screwdriver", "saw", "axe", "makeup brush", "condom packet strip", "crime prevention buzzer", "lube", "used tissue", "spatula", "skewer", "whisk", "tongs", "mallet", "kine", "nata (tool)", "scythe", "whip", "riding crop", "chainsaw", "club (weapon)", "mace", "battle axe", "spiked club", "kitchen knife", "kanabou", "pickaxe", "cleaver", "boxcutter", "tonfa", "drill", "hand net", "school briefcase",
+  // 2026-11-01：單獨畫會變成大鐮、零件或體位。改畫成年人拿著。
+  "sickle", "chakram", "crowbar", "nail bat", "throwing knife", "combat knife",
+]);
 
 // 場景節裡的物件：用風景去畫會小到看不見，改畫靜物。
 export const STILL_LIFE = new Set([
@@ -1255,6 +1291,14 @@ export const STILL_LIFE = new Set([
   "gunblade",
   "weapon",
   "microphone", "stethoscope", "condom", "condom wrapper", "condom box", "dildo", "vibrator", "sex toy", "lube",
+  // 2026-11-01：小物件照風景畫會縮到看不見。
+  "hanging light", "soap bottle", "hand grip", "exercise ball", "ehoumaki",
+  "horseshoe", "food bite", "cola", "soft serve", "tamagoyaki", "fried chicken",
+  "red wine", "gold coin", "holed coin", "pastry bag", "crazy straw", "cigarette pack",
+  "stopwatch", "folder", "ticket", "model kit", "stuffed penguin", "christmas stocking",
+  "menu board", "mannequin", "cauldron", "seatbelt", "fishing line", "frilled umbrella",
+  "unworn gag", "unworn bikini", "unworn bikini bottom", "unworn necktie",
+  "unworn eyepatch", "unworn hair ornament",
 ]);
 
 export const ART_SEED = 1383;

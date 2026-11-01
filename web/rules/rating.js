@@ -242,6 +242,9 @@ const EXPLICIT_ONLY_EXTRA = new Set([
   "full-package futanari",
   // 沒有罩杯，乳頭露出。mutex 已經讓敏感分級抽不到，這裡讓畫出來的圖標成色情。
   "cupless bra",
+  // 2026-11-01：字面碰不到露點那條 regex。腳鐐鐵球在飾品、沒戴的口塞在環境。
+  "ball and chain restraint",
+  "unworn gag",
 ]);
 
 // 只有 explicit 能出現：真正的性、裸露、脫衣走光、內衣當外衣。

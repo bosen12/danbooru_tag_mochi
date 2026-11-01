@@ -6,6 +6,7 @@ from clothing_tags import GROUP_OF as CLOTHING_GROUPS
 from env_tags import GROUP_OF as ENV_GROUPS
 from pose_tags import GROUP_OF as POSE_GROUPS
 from quality_tags import GROUP_OF as QUALITY_GROUPS
+from sync_20261101_tags import GROUP_OF as SYNC_20261101_GROUPS
 
 GROUP_ORDER = {
     "quality": ["fixed", "style", "boost"],
@@ -921,6 +922,9 @@ ROUND_1500_GROUPS = {
 }
 
 def assign_group(item: dict) -> str:
+    # 2026-11-01。名字裡的 eye、light、男閘會被下面的規則改組，這裡以分類結果為準。
+    if item.get("tag") in SYNC_20261101_GROUPS:
+        return SYNC_20261101_GROUPS[item["tag"]]
     # 2026-10-26 衣服一批。名字裡的「armor」「kimono」會被時代規則改組，這裡以分類結果為準。
     if item.get("tag") in CLOTHING_GROUPS:
         return CLOTHING_GROUPS[item["tag"]]

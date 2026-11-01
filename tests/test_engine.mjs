@@ -5194,7 +5194,8 @@ function indoorOutdoorClash(have) {
   let driveSwim = 0;
   for (let i = 0; i < 40; i++) {
     const h = tagsOf(drawOne(lex, s, pinDrive2, new Set(), mulberry32(440120 + i), 440120 + i));
-    if ([...h].some((t) => /\b(bikini|swimsuit)\b/.test(t))) driveSwim += 1;
+    // 2026-11-01：脫下來的比基尼是環境物件，不是身上的泳裝。跟下面 leftoverSwim 一樣只算衣服。
+    if ([...h].some((t) => lex.byTag.get(t)?.section === "clothing" && /\b(bikini|swimsuit)\b/.test(t))) driveSwim += 1;
   }
   eq("normal driving never leftover swimsuit", driveSwim, 0);
   const pinCookLap = applyPin(lex, new Set(), new Set(), "cooking").pinned;
@@ -5759,7 +5760,8 @@ function indoorOutdoorClash(have) {
     // 2026-10-26 第四次：衣服狀態不再把那件衣服穿回去。這張換成夢可愛、踢腿、飛機。仍是 1girl solo，沒有男生或人類陰莖。
     // 2026-10-26 第六次：姿勢、特徵、主題 628 張進池（raimon 封鎖）。仍是 1girl solo，沒有男生或人類陰莖。
     // 2026-10-26 第七次：品質與 54.csv 共 110 張進池（9 個未成年保護字封鎖；noose、self-harm 不收）。仍是 1girl solo，沒有男生或人類陰莖。
-    "1girl, solo, very short hair, yellow eyes, aqua hair, glowing hair, medium breasts, navel, bun cover, yellow tail, tail, teeth, bodypaint, fingering, sitting backwards, aiming at viewer, staring, >:), upper teeth only, bathhouse, bath, indoors, twilight, dim lighting, wolf, nsfw, explicit, masterpiece, best quality, amazing quality");
+    // 2026-11-01：260 個新字進池。澡堂、狼換成道場、畫架、波點洋裝。仍是 1girl solo，沒有男生或人類陰莖。
+    "1girl, solo, very short hair, yellow eyes, aqua hair, alternate hairstyle, small breasts, arm under breasts, nail polish, hair scrunchie, polka dot dress, dress, formal clothes, jacket partially removed, jacket, grey neckerchief, neckerchief, masturbation through clothes, seiza, straight-on, looking to the side, ;), stomach (organ), dojo, indoors, day, easel, coffin, nsfw, explicit, masterpiece, best quality, amazing quality");
   ok("drawOne exposes shadow diagnostics", Array.isArray(shadowIntegrationDraw.shadowViolations));
 
   const eatProneShadow = validateSupportShadow({
@@ -7441,7 +7443,8 @@ function indoorOutdoorClash(have) {
       s.heats = [heat];
       // 這版詞庫 6 時代 × 4 尺度 × 200 張只看到 173 張浴場，低於「至少 200」。
       // 身體交代那條在這 173 張裡是過的。門檻不降，每格改抽 320，把樣本補過 200。
-      for (let i = 1; i <= 320; i++) {
+      // 2026-11-01：環境池再大一輪，320 張只看到 194。門檻仍是 200，每格改抽 400。
+      for (let i = 1; i <= 400; i++) {
         const h = tagsOf(drawOne(lex, s, new Set(), new Set(), mulberry32(i), i));
         if (![...h].some((t) => BATH.has(t))) continue;
         bathSeen += 1;
@@ -8013,6 +8016,11 @@ function indoorOutdoorClash(have) {
   ok("正常模式抽得到乳貼", pasties > 0, `pasties=${pasties}`);
   eq("乳貼不會藏在蓋住的胸口底下", pastiesHidden, 0);
   eq("運動服要有運動場合", sportBad, 0);
+  // 2026-11-01：詞庫多 260 字，環境池變稀。前 400 張路人是 0，第 447 張才中。
+  // 跟上面乳貼一樣，抽得到就停，不是路人又被擋在池外。
+  for (let i = 400; people === 0 && i < 3000; i += 1) {
+    if (tagsOf(drawOne(lex, girl, new Set(), new Set(), mulberry32(120000 + i), 120000 + i)).has("people")) people += 1;
+  }
   ok("路人進得了環境池", people > 0, `people=${people}`);
   ok("多個女生時抽得到百合", yuri > 0, `yuri=${yuri}`);
   eq("百合不會帶男生", yuriBoy, 0);
@@ -9444,7 +9452,8 @@ function indoorOutdoorClash(have) {
         n += 1;
         for (const tag of HARD_BANNED) if (h.has(tag)) bad.hard += 1;
         if (h.has("wet") && ![...h].some((t) => wetOk.has(t))) bad.wet += 1;
-        if ((h.has("swimsuit") || h.has("bikini") || h.has("school swimsuit") || [...h].some((t) => t.includes("swimsuit") || t.includes("bikini"))) && h.has("snow")) bad.swim += 1;
+        // 2026-11-01：unworn swimsuit 是脫下來的物件，引擎 isSwimGarment 本來就不把它當身上的泳衣。
+        if ((h.has("swimsuit") || h.has("bikini") || h.has("school swimsuit") || [...h].some((t) => !t.startsWith("unworn ") && (t.includes("swimsuit") || t.includes("bikini")))) && h.has("snow")) bad.swim += 1;
         if (h.has("riding bicycle") && (h.has("walking") || h.has("running") || h.has("jumping"))) bad.bike += 1;
         if (h.has("diving") && (h.has("walking") || h.has("running") || h.has("standing split"))) bad.dive += 1;
         if (h.has("floating") && (h.has("walking") || h.has("running"))) bad.float += 1;
