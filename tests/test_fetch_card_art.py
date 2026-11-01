@@ -157,6 +157,45 @@ ok("原圖都到了：上一版的舊原圖也換新", (cards2 / "bob.webp").rea
 ok("完成：這一版的標記、縮圖標記和要換的清單都收掉", fc.MARKER.exists() and not fc.THUMB_MARKER.exists() and not fc.UPGRADE.exists())
 ok("裝好之後下次啟動不再下載", fc.have_enough() is True)
 
+# v13 起：有上一版（.card-art-<from>）的人只抓增量包，縮圖、原圖、manifest 都在同一包。
+NEWER = "1girl, solo, adult, ponytail, portrait, looking at viewer"
+with zipfile.ZipFile(src / "card-art-update.zip", "w") as z:
+    z.writestr("cards/thumb/ponytail.webp", b"thumb v13")
+    z.writestr("cards/thumb/cat.webp", b"thumb cat")
+    z.writestr("cards/ponytail.webp", b"full v13")
+    z.writestr("cards/cat.webp", b"full cat")
+    z.writestr("cards/manifest.json", json.dumps({"ponytail": {"file": "ponytail.webp", "positive": NEWER, "thumb": True}, "cat": {"file": "cat.webp", "positive": "cat", "thumb": True}}))
+    z.writestr("cards/previous.json", json.dumps({"ponytail": NEW}))
+(cards2 / "bob.webp").write_bytes(b"my own bob")  # 自己重烘過的：不在增量包裡，也不能被碰
+fc.MARKER.rename(cards2 / ".card-art-v12")
+fc.MARKER = cards2 / ".card-art-v13"
+fc.UPDATE = {**packinfo("card-art-update.zip"), "from": "v12"}
+for name in ("card-art-thumbs.zip", "card-art-full.zip"):  # 增量就夠：兩個整包都不該被抓
+    (src / name).rename(src / (name + ".gone"))
+fc.JOBS.write_text(json.dumps([{"tag": "ponytail", "file": "ponytail.webp", "positive": NEWER, "rating": "general"}, {"tag": "bob", "file": "bob.webp", "positive": "bob, portrait", "rating": "general"}, {"tag": "cat", "file": "cat.webp", "positive": "cat", "rating": "general"}]), encoding="utf-8")
+ok("有上一版、缺新的卡：要下載", fc.have_enough() is False)
+out = io.StringIO()
+with contextlib.redirect_stdout(out):
+    rc = fc.main()
+text = out.getvalue()
+m = json.loads((cards2 / "manifest.json").read_text(encoding="utf-8"))
+ok("只抓增量包就完成", rc == 0 and "Card art update" in text and fc.MARKER.exists(), text)
+ok("增量包的新卡縮圖、原圖都到了", (cards2 / "cat.webp").read_bytes() == b"full cat" and (cards2 / "thumb" / "cat.webp").read_bytes() == b"thumb cat" and m["cat"]["positive"] == "cat")
+ok("上一版放的、這一版重畫的：縮圖原圖當場換新，不留給原圖包的清單", (cards2 / "ponytail.webp").read_bytes() == b"full v13"
+   and (cards2 / "thumb" / "ponytail.webp").read_bytes() == b"thumb v13" and m["ponytail"]["positive"] == NEWER and not fc.UPGRADE.exists())
+ok("自己烘的不碰", (cards2 / "bob.webp").read_bytes() == b"my own bob")
+ok("裝好增量包之後不再下載", fc.have_enough() is True)
+fc.MARKER.unlink()
+(cards2 / ".card-art-v12").unlink()
+for name in ("card-art-thumbs.zip", "card-art-full.zip"):
+    (src / (name + ".gone")).rename(src / name)
+fc.MARKER = cards2 / ".card-art-v13"
+(cards2 / "cat.webp").unlink()  # 缺一張、又沒有上一版的標記
+out = io.StringIO()
+with contextlib.redirect_stdout(out):
+    rc = fc.main()
+ok("沒有上一版的標記：照舊抓兩個整包", rc == 0 and "Card art update" not in out.getvalue() and "thumbnails first" in out.getvalue(), out.getvalue())
+
 if failed:
     print(f"\n{failed} failed")
     sys.exit(1)

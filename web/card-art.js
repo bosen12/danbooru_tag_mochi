@@ -268,6 +268,17 @@ const PERSON_FRAME = {
 
 // 單獨畫會怪的字，補一個道具。
 const ART_EXTRA = {
+  // 2026-11-02：v12 卡面包裡畫壞的（scripts/scan_card_art.py 抓到的）。人數不對的在 castOf 改卡司。
+  "multiple riders": "riding, motorcycle, full body",
+  "multiple crossover": "crossover, group picture, full body, standing",
+  // 只寫 4others 畫成三個沒有臉的兜帽人；補 androgynous 出來是一排機器人（Danbooru 的 others 多半就是機器人、生物）。
+  "4others": "androgynous, group picture, full body, standing",
+  "no eyepatch": "portrait, looking at viewer, simple background",
+  "no blindfold": "portrait, looking at viewer, simple background",
+  "implied fellatio": "cheek bulge, portrait, looking at viewer",
+  peeking: "peeking out, doorway, looking at viewer",
+  "peeking out": "doorway, looking at viewer",
+  hiding: "behind curtain, looking at viewer, upper body",
   // 2026-10-26 第四批：身高表和角色年齡的牌要看得出是成年人。
   "height chart": "full body, mature female",
   "character age": "mature female",
@@ -674,12 +685,19 @@ const SCHOOL_CODED = new Set([
 // 場景節裡要有人才畫得出來的：傢俱（坐在上面）、背景（白背景沒有人就是一張白紙）、
 // 畫面特效（速度線、集中線、花瓣都是圍著人物的）。剪影也是 —— 沒有人就沒有剪影。
 const SCENE_WITH_PERSON = new Set(["furniture", "background", "effect"]);
-const ENV_WITH_PERSON = new Set(["silhouette"]);
+// 2026-11-02：沒戴單眼罩、沒戴眼罩當靜物畫，牌面是一張空白（v12 卡面包）：要畫一個沒戴的人。
+const ENV_WITH_PERSON = new Set(["silhouette", "no eyepatch", "no blindfold"]);
+// 人群、路人、觀眾、軍隊：一個主角加背景的人。以前寫 solo，跟人群打架，畫成一個人站在白底上。
+const CROWD_ART = new Set(["crowd", "crowded", "people", "audience", "army"]);
+// 白底會把整張牌吃掉的字（融合畫面：頭髮、衣服融進背景，背景是白的就只剩白紙）。
+const ART_BG = { blending: "abstract background, gradient background, colorful" };
 
 // 工具類單獨畫靜物，模型會畫成機械零件、電鋸、戰斧（2026-10-26 烘兩次都不對）：改畫一個成年人拿著它。
 const HELD_ART = new Set(["hammer", "screwdriver", "saw", "axe", "makeup brush", "condom packet strip", "crime prevention buzzer", "lube", "used tissue", "spatula", "skewer", "whisk", "tongs", "mallet", "kine", "nata (tool)", "scythe", "whip", "riding crop", "chainsaw", "club (weapon)", "mace", "battle axe", "spiked club", "kitchen knife", "kanabou", "pickaxe", "cleaver", "boxcutter", "tonfa", "drill", "hand net", "school briefcase",
   // 2026-11-01：單獨畫會變成大鐮、零件或體位。改畫成年人拿著。
   "sickle", "chakram", "crowbar", "nail bat", "throwing knife", "combat knife",
+  // 2026-11-02：細繩當靜物畫，只有一條紅線（v12 卡面包）。
+  "string",
 ]);
 
 // 場景節裡的物件：用風景去畫會小到看不見，改畫靜物。
@@ -936,7 +954,6 @@ export const STILL_LIFE = new Set([
   "id card",
   "anchor",
   "duel monster",
-  "string",
   "photo (object)",
   "in container",
   "shell",
@@ -1057,7 +1074,6 @@ export const STILL_LIFE = new Set([
   "cat teaser",
   "mechanical pencil",
   "cat day",
-  "no blindfold",
   "dowsing rod",
   "hexagon",
   "club (shape)",
@@ -1140,7 +1156,6 @@ export const STILL_LIFE = new Set([
   "brick",
   "year of the rat",
   "ink tank (splatoon)",
-  "no eyepatch",
   "tools",
   "diamond (gemstone)",
   "chalice",
@@ -1305,7 +1320,7 @@ export const ART_SEED = 1383;
 const QUALITY = "masterpiece, best quality, amazing quality";
 const TAIL = { general: "sfw, general", sensitive: "sensitive", explicit: "nsfw, explicit" };
 
-const MULTI = /^(?:[2-9]\+?(?:girls|boys)|multiple (?:girls|boys)|yuri)$/;
+const MULTI = /^(?:[2-9]\+?(?:girls|boys|others)|multiple (?:girls|boys|others)|yuri)$/;
 
 /** 這組卡司是不是不只一個人（同性別多人，或一男一女以上）。 */
 const GIRLS = /^(?:\d\+?girls?|multiple girls|yuri)$/;
@@ -1359,7 +1374,13 @@ function castOf(item) {
     if (tag === "multiple boys") return ["2boys", "multiple boys", "adult male"];
     if (tag === "hetero") return ["1girl", "1boy", "hetero", "adult"];
     if (tag === "yuri") return ["2girls", "yuri", "adult"];
+    // 2026-11-02：4others 寫成 1girl, solo，畫出一個戴面具的女生（v12 卡面包）。others 是看不出性別的角色。
+    if (/^\d\+?others$/.test(tag)) return [tag, "multiple others", "adult"];
   }
+  // 2026-11-02：v12 卡面包裡寫 solo、畫成一個人的多人牌。
+  if (CROWD_ART.has(tag)) return ["1girl", "solo focus", "adult"];
+  if (tag === "multiple riders") return ["2girls", "multiple girls", "adult"];
+  if (tag === "multiple crossover") return ["4girls", "multiple girls", "adult"];
   if (HETERO_PICTURE.has(tag)) return ["1girl", "1boy", "hetero", "adult"];
   // 協力性事在 Danbooru 約 97% 是多個女生、約 74% 是兩女一男，不是一個女生加多個男生。
   if (tag === "teamwork (sexual)") return ["2girls", "1boy", "multiple girls", "adult"];
@@ -1429,14 +1450,15 @@ export function artPrompt(item, ctx = {}) {
     if (places) for (const p of places) { place = p; break; }
     parts = [...castFor(item), item.tag, ...extra, place || "simple background"];
   } else if (item.section === "env") {
-    parts = [...castFor(item), item.tag, ...extra, "full body"];
+    const framed = extra.some((e) => /\b(body|shot|portrait)\b/.test(e));
+    parts = [...castFor(item), item.tag, ...extra, framed ? "" : "full body"];
   } else {
     const cast = castFor(item);
     const framed = extra.some((e) => /\b(body|shot|portrait)\b/.test(e));
     let frame = framed ? "" : PERSON_FRAME[item.group] ?? "upper body";
     // 多個女生擠在上半身時，中間那個會被畫成小孩。已經是全身的鏡頭不動。
     if (cast.includes("multiple girls") && !framed && !/\bfull body\b/.test(frame)) frame = "full body, standing";
-    const bg = item.group === "camera" || item.group === "sex" ? "simple background" : "simple background, white background";
+    const bg = ART_BG[item.tag] || (item.group === "camera" || item.group === "sex" ? "simple background" : "simple background, white background");
     parts = [...cast, item.tag, ...extra, frame, bg];
   }
   const tags = [...new Set(parts.join(", ").split(",").map((s) => s.trim()).filter(Boolean))];

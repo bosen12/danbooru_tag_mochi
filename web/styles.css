@@ -1357,6 +1357,19 @@ body #wf-pick-btn.has {
   line-height: 1.6;
 }
 
+/* 搜得到、但還有被性別、時代收起來的（lib-hint.js 的 searchAlso）：不是警告，淡一點，按鈕跟在句子後面。 */
+.search-also {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0 var(--space-xs);
+  color: var(--color-muted);
+}
+
+.search-note > span + .search-also {
+  margin-left: var(--space-sm);
+}
+
 .lib-empty {
   grid-column: 1 / -1;
   padding: var(--space-lg) 0;

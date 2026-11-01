@@ -41,7 +41,7 @@ import { whenPrinter, settingsToWrite, onOtherTab } from "./tab-sync.js";
 import { createLibWindow } from "./lib-window.js";
 import { warmDrawWorker, drawInWorker, hasDrawWorker } from "./draw-pool.js";
 import { footMore } from "./foot-more.js";
-import { searchMiss } from "./lib-hint.js";
+import { searchMiss, searchAlso } from "./lib-hint.js";
 import { HEATS, toggleHeat } from "./heats.js";
 import { SCENE_MODES, SCENE_MODE_LABELS, heatBlockedByRating } from "./scene-policy.js";
 import { initLoraPicker, currentLorasPayload, currentTriggerText, currentCkpt, handleLoraKeys, applyRecipeModels, joinTriggerParts, modelTitles } from "./lora.js";
@@ -808,7 +808,11 @@ function renderLibrary() {
   // 整盒找得到、只是被花色、分級、時代…收起來：照舊說是哪個開關擋住（libraryMiss），不要用猜的蓋過去。
   if (found.mode !== "all" && lib.cards.some((c) => cardMatches(c, q))) found = { list: [], mode: "none" };
   const list = found.list;
-  searchNote($("lib-grid"), found, ui.query);
+  // 搜得到、但還有被性別、時代收起來的（現代搜「吊燈」，維多利亞的吊燈；沒開男生搜「胖」，肥胖）：
+  // 牌格上面一行說「另有 N 張」。分級不提：那是刻意選的尺度，全年齡搜「胸」不該一直推色情的牌。
+  const scope = (c) => (ui.suit === "all" || c.suit === ui.suit) && (!ui.group || c.group === ui.group) && genderOk(c) && !ratingHides(c);
+  const also = q && list.length ? searchAlso({ cards: lib.cards.filter(scope), shown: list, q, reasons: libReasons().slice(2) }) : null;
+  searchNote($("lib-grid"), found, ui.query, also);
   countLine(list.length);
   const grid = $("lib-grid");
   const was = $("library").dataset.search;
@@ -854,47 +858,46 @@ function renderLibrary() {
 
 /** 搜不到：說是被花色、分級、性別還是時代收起來的，並給一顆按鈕解開（lib-hint.js）。 */
 function libraryMiss(q) {
+  return searchMiss({ cards: lib.cards, q, query: ui.query, className: "lib-empty", reasons: libReasons() });
+}
+
+/** 字盒的牌被什麼收起來（lib-hint.js 的 reasons）：第一條是花色、分類，其餘是分級、性別、時代。 */
+function libReasons() {
   const shownBy = (c) => visible(c) && (ui.suit === "all" || c.suit === ui.suit) && (!ui.group || c.group === ui.group);
   const unlockRating = (c) => ["general", "sensitive", "explicit"].find((r) => !ratingBlocked(c.item, r)) || "explicit";
   const radio = (label, i) => $("rules").querySelectorAll(`[aria-label="${t(label)}"] [role="radio"]`)[i];
-  return searchMiss({
-    cards: lib.cards,
-    q,
-    query: ui.query,
-    className: "lib-empty",
-    reasons: [
-      {
-        hides: (c) => visible(c) && !shownBy(c),
-        text: (c) => `「${c.zh}」在「${CARD_SUIT_INFO[c.suit]?.zh || c.suit}」裡`,
-        label: () => "看全部",
-        run: () => pickSuit("all"),
+  return [
+    {
+      hides: (c) => visible(c) && !shownBy(c),
+      text: (c) => `「${c.zh}」在「${CARD_SUIT_INFO[c.suit]?.zh || c.suit}」裡`,
+      label: () => "看全部",
+      run: () => pickSuit("all"),
+    },
+    {
+      hides: (c) => ratingBlocked(c.item, ratingOf(settings)),
+      text: (c) => `「${c.zh}」要在「${RATING_LABEL[unlockRating(c)]}」才看得到`,
+      label: (c) => `切到${RATING_LABEL[unlockRating(c)]}`,
+      run: (c) => $("rating").querySelector(`[data-v="${unlockRating(c)}"]`)?.click(),
+    },
+    {
+      hides: (c) => (c.gate === "male" && !settings.boy) || (c.gate === "female" && !settings.girl),
+      text: (c) => `「${c.zh}」是${c.gate === "male" ? "男生" : "女生"}的牌`,
+      label: () => "人物改成不限",
+      run: () => radio("畫面裡有誰", 2)?.click(),
+    },
+    {
+      hides: (c) => !visible(c),
+      text: (c) => `「${c.zh}」不屬於現在的時代`,
+      // 改成「混合」而不是只把字盒打開：放進去的牌才不會在抽的時候、放下一張的時候又被時代拿掉。
+      label: () => "時代改成混合",
+      run: () => {
+        setSettings({ eras: [...ERAS], eraMix: true });
+        renderRules();
+        renderLibrary();
+        toast("時代改成「混合」：不同時代的牌可以一起出現");
       },
-      {
-        hides: (c) => ratingBlocked(c.item, ratingOf(settings)),
-        text: (c) => `「${c.zh}」要在「${RATING_LABEL[unlockRating(c)]}」才看得到`,
-        label: (c) => `切到${RATING_LABEL[unlockRating(c)]}`,
-        run: (c) => $("rating").querySelector(`[data-v="${unlockRating(c)}"]`)?.click(),
-      },
-      {
-        hides: (c) => (c.gate === "male" && !settings.boy) || (c.gate === "female" && !settings.girl),
-        text: (c) => `「${c.zh}」是${c.gate === "male" ? "男生" : "女生"}的牌`,
-        label: () => "人物改成不限",
-        run: () => radio("畫面裡有誰", 2)?.click(),
-      },
-      {
-        hides: (c) => !visible(c),
-        text: (c) => `「${c.zh}」不屬於現在的時代`,
-        // 改成「混合」而不是只把字盒打開：放進去的牌才不會在抽的時候、放下一張的時候又被時代拿掉。
-        label: () => "時代改成混合",
-        run: () => {
-          setSettings({ eras: [...ERAS], eraMix: true });
-          renderRules();
-          renderLibrary();
-          toast("時代改成「混合」：不同時代的牌可以一起出現");
-        },
-      },
-    ],
-  });
+    },
+  ];
 }
 
 /** 搜尋框裡打了字：Enter 會放進合成池的那一張（第一張）描一圈。 */

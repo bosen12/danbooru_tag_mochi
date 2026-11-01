@@ -4,6 +4,7 @@
  */
 import { isCard, cardSuit, ratingTier, artFile, artSources, artUrl, groupSeal, CARD_SUIT_INFO, CARD_SUITS } from "./card-art.js";
 import { toSimplified } from "./t2s.js";
+import { SEARCH_WORDS } from "./search-words.js";
 import { el, ICONS } from "./ui.js";
 import { miniSet, bindArt, artFallback } from "./card-images.js";
 import { DUR, CURVE, css, reducedMotion } from "./motion.js";
@@ -86,7 +87,7 @@ const keyCache = new WeakMap();
 function keysOf(c) {
   let k = keyCache.get(c);
   if (!k) {
-    k = { zh: searchKey(c.zh), tag: searchKey(c.tag), extra: c.suit === "chara" ? searchKey(`${c.groupZh || ""} ${c.item?.series || ""}`) : "" };
+    k = { zh: searchKey(c.zh), tag: searchKey(c.tag), raw: c.tag, extra: c.suit === "chara" ? searchKey(`${c.groupZh || ""} ${c.item?.series || ""}`) : "" };
     keyCache.set(c, k);
   }
   return k;
@@ -102,7 +103,11 @@ function termsOf(q) {
   return lastTerms;
 }
 
-const hits = (k, t) => k.zh.includes(t) || k.tag.includes(t) || (!!k.extra && k.extra.includes(t));
+// 同義詞（search-words.js）：打的某一段等於鍵，就帶出那幾張（「胖」→ 豐滿、肚子肥肉；「開槍」→ 開火射擊）。
+const WORDS = new Map(Object.entries(SEARCH_WORDS).map(([w, tags]) => [searchKey(w), tags]));
+const wordAt = (k, t) => WORDS.get(t)?.indexOf(k.raw) ?? -1;
+
+const hits = (k, t) => k.zh.includes(t) || k.tag.includes(t) || (!!k.extra && k.extra.includes(t)) || wordAt(k, t) >= 0;
 
 export function cardMatches(c, q) {
   if (!q) return true;
@@ -114,7 +119,7 @@ export function cardMatches(c, q) {
 }
 
 /**
- * 跟搜尋字有多接近（小的排前面）：完全相符 → 開頭相符 → 英文某個字的開頭 → 中文名裡有 → tag 裡有 → 作品名。
+ * 跟搜尋字有多接近（小的排前面）：完全相符 → 開頭相符 → 英文某個字的開頭 → 中文名裡有 → tag 裡有 → 同義詞（照表上的順序）→ 作品名。
  * 搜「和服」第一張是和服，不是「和服敞開」；搜「yor」第一張是約兒（yor briar），不是 conveyor belt sushi。
  */
 export function matchRank(c, q) {
@@ -128,6 +133,8 @@ function rankBy(k, qk) {
   if (k.tag.includes(" " + qk) || k.tag.includes("(" + qk)) return 2;
   if (k.zh.includes(qk)) return 3;
   if (k.tag.includes(qk)) return 4;
+  const w = wordAt(k, qk);
+  if (w >= 0) return 4.5 + w / 1000;
   return 5;
 }
 
@@ -182,8 +189,11 @@ export function searchCards(pool, q) {
   return guess.length ? { list: guess, mode: "guess" } : { list: [], mode: "none" };
 }
 
-/** 搜尋結果不是「每一段都有」的那種（分別找到、猜的）：牌格上面一行說清楚。grid 是牌格，沒有要說的就拿掉那一行。 */
-export function searchNote(grid, res, q) {
+/**
+ * 搜尋結果不是「每一段都有」的那種（分別找到、猜的）：牌格上面一行說清楚。grid 是牌格，沒有要說的就拿掉那一行。
+ * also：lib-hint.js 的 searchAlso 給的「另有 N 張沒列出：原因［解開］」，搜得到、但還有被分級、時代…收起來的時候才有。
+ */
+export function searchNote(grid, res, q, also = null) {
   if (!grid) return;
   let note = grid.previousElementSibling?.classList.contains("search-note") ? grid.previousElementSibling : null;
   const text =
@@ -191,14 +201,17 @@ export function searchNote(grid, res, q) {
     res.mode === "any" ? `沒有一張同時有「${String(q).trim().split(/\s+/).join("」「")}」，分別找到這些`
     : res.mode === "guess" ? `找不到「${String(q).trim()}」，你是不是要找這幾張？`
     : "";
-  if (!text) return void note?.remove();
+  if (!text && !also) return void note?.remove();
   if (!note) {
     note = el("p", { class: "search-note", role: "status" });
     grid.before(note);
   }
   // 英文版：換成英文再比（畫面上永遠是英文，直接比中文每次都不一樣）。
   const shown = t(text);
-  if (note.textContent !== shown) note.textContent = shown;
+  const key = `${shown}|${also?.dataset.key || ""}`;
+  if (note.dataset.key === key) return;
+  note.dataset.key = key;
+  note.replaceChildren(...(shown ? [el("span", {}, shown)] : []), ...(also ? [also] : []));
 }
 
 /**

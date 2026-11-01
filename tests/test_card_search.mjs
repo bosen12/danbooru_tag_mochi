@@ -76,3 +76,34 @@ test("no match guesses cards whose name is spelled inside the query", () => {
   }
   assert.equal(find("鑫").mode, "none", "a one-character query does not guess");
 });
+
+// 2026-11-02 走查：搜「胖」只有胖製作，「開槍」只猜到槍，「黑絲」「墨鏡」「夕陽」一張都沒有。同義詞表在 web6/search-words.js。
+const { SEARCH_WORDS } = await import(new URL(dir + "search-words.js", import.meta.url));
+
+test("every synonym points at a card that exists, so a renamed tag cannot fail silently", () => {
+  const tags = new Set(data.tags.map((x) => x.tag));
+  for (const [word, list] of Object.entries(SEARCH_WORDS)) {
+    assert.ok(list.length, word);
+    for (const tag of list) assert.ok(tags.has(tag), `${word} → ${tag} is not in the lexicon`);
+  }
+});
+
+test("everyday words find the cards named differently", () => {
+  const has = (q, tag) => assert.ok(find(q).list.some((c) => c.tag === tag), `${q} should find ${tag}`);
+  has("胖", "plump");
+  has("胖", "fat rolls");
+  assert.equal(first("開槍"), "firing");
+  assert.equal(first("黑絲"), "black pantyhose");
+  assert.equal(first("墨鏡"), "sunglasses");
+  assert.equal(first("夕陽"), "sunset");
+  assert.equal(first("帽T"), "hoodie");
+  assert.equal(first("Q版"), "chibi");
+  // 簡體照樣對得上；牌名直接有的字排在同義詞前面
+  assert.equal(first("黑丝"), "black pantyhose");
+  const fat = find("胖").list.map((c) => c.tag);
+  assert.ok(fat.indexOf("obese") < fat.indexOf("plump"), "過胖 has 胖 in its name, 豐滿 only through the synonym");
+  // 兩段：每一段都可以靠同義詞（「黑」在牌名、「絲襪」靠同義詞）
+  const black = find("黑 絲襪");
+  assert.equal(black.mode, "all");
+  assert.deepEqual(black.list.map((c) => c.tag).sort(), ["black pantyhose", "black thighhighs"]);
+});

@@ -37,7 +37,7 @@ import { ratingBlocked, ratingOf, RATING_LABEL } from "./rules/rating.js";
 import { mountRatingFree, overreachLine } from "./rating-free.js";
 import { makeShelf, whenPrinter, settingsToWrite, onOtherTab } from "./tab-sync.js";
 import { warmDrawWorker, drawInWorker, hasDrawWorker } from "./draw-pool.js";
-import { searchMiss } from "./lib-hint.js";
+import { searchMiss, searchAlso } from "./lib-hint.js";
 import { watchGone, sweepGone } from "./gone.js";
 import { HEATS, toggleHeat } from "./heats.js";
 import { heatBlockedByRating } from "./scene-policy.js";
@@ -3660,37 +3660,36 @@ function visibleCard(card) {
 
 /** 找牌框搜不到：說是被花色、分級、性別還是廢字簍收起來的（lib-hint.js）。 */
 function caseMiss(q) {
+  return searchMiss({ cards: lib.cards, q, query: $("case-q").value.trim(), className: "case-empty", reasons: caseReasons() });
+}
+
+/** 找牌框的牌被什麼收起來（lib-hint.js 的 reasons）：花色、分級、性別、廢字簍。 */
+function caseReasons() {
   const inTab = (c) => caseTab === "all" || c.suit === caseTab;
-  return searchMiss({
-    cards: lib.cards,
-    q,
-    query: $("case-q").value.trim(),
-    className: "case-empty",
-    reasons: [
-      {
-        hides: (c) => visibleCard(c) && (!inTab(c) || (caseGroup && c.group !== caseGroup) || caseTab === "match"),
-        text: (c) => `「${c.zh}」在「${CARD_SUIT_INFO[c.suit]?.zh || c.suit}」裡`,
-        label: () => "看全部",
-        run: () => $("case-tabs").querySelector('[data-tab="all"]')?.click(),
-      },
-      {
-        hides: (c) => !rankOk(c),
-        text: (c) => `「${c.zh}」要在「${RATING_LABEL[c.rating] || c.rating}」才看得到`,
-        label: (c) => `切到${RATING_LABEL[c.rating] || c.rating}`,
-        run: (c) => $("rating").querySelector(`[data-v="${c.rating}"]`)?.click(),
-      },
-      {
-        hides: (c) => (c.gate === "male" && !settings.boy) || (c.gate === "female" && !settings.girl),
-        text: (c) => `「${c.zh}」是${c.gate === "male" ? "男生" : "女生"}的牌`,
-        label: () => "人物改成不限",
-        run: () => setSettings({ girl: true, boy: true }),
-      },
-      {
-        hides: (c) => bans.has(c.tag),
-        text: (c) => `「${c.zh}」在廢字簍裡：從廢字簍拿出來就看得到`,
-      },
-    ],
-  });
+  return [
+    {
+      hides: (c) => visibleCard(c) && (!inTab(c) || (caseGroup && c.group !== caseGroup) || caseTab === "match"),
+      text: (c) => `「${c.zh}」在「${CARD_SUIT_INFO[c.suit]?.zh || c.suit}」裡`,
+      label: () => "看全部",
+      run: () => $("case-tabs").querySelector('[data-tab="all"]')?.click(),
+    },
+    {
+      hides: (c) => !rankOk(c),
+      text: (c) => `「${c.zh}」要在「${RATING_LABEL[c.rating] || c.rating}」才看得到`,
+      label: (c) => `切到${RATING_LABEL[c.rating] || c.rating}`,
+      run: (c) => $("rating").querySelector(`[data-v="${c.rating}"]`)?.click(),
+    },
+    {
+      hides: (c) => (c.gate === "male" && !settings.boy) || (c.gate === "female" && !settings.girl),
+      text: (c) => `「${c.zh}」是${c.gate === "male" ? "男生" : "女生"}的牌`,
+      label: () => "人物改成不限",
+      run: () => setSettings({ girl: true, boy: true }),
+    },
+    {
+      hides: (c) => bans.has(c.tag),
+      text: (c) => `「${c.zh}」在廢字簍裡：從廢字簍拿出來就看得到`,
+    },
+  ];
 }
 
 function affinities() {
@@ -3817,7 +3816,10 @@ function renderCase() {
     if (found.mode !== "all" && lib.cards.some((c) => cardMatches(c, q))) found = { list: [], mode: "none" };
     list = found.list;
   }
-  searchNote($("case-grid"), found, caseQuery);
+  // 搜得到、但還有被性別、廢字簍收起來的：牌格上面一行說「另有 N 張」（跟墨池字盒一樣，分級不提）。
+  const scope = (c) => caseTab !== "match" && (caseTab === "all" || c.suit === caseTab) && (!caseGroup || c.group === caseGroup) && (caseTab !== "chara" || !caseGender || c.gate === caseGender) && rankOk(c);
+  const also = q && list.length ? searchAlso({ cards: lib.cards.filter(scope), shown: list, q, reasons: caseReasons().slice(2) }) : null;
+  searchNote($("case-grid"), found, caseQuery, also);
   caseList = list;
   caseShown = 0;
   const grid = $("case-grid");

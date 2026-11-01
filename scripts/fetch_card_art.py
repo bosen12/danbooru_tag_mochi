@@ -65,6 +65,10 @@ BASE = os.environ.get("CARD_ART_BASE") or "https://github.com/bosen12/danbooru_t
 THUMBS = {"name": "card-art-thumbs.zip", "size": 74860033, "sha256": "9aa660d01f69968a5632d2c66b18d87bcfa00d6ce628d2a34faf00e42e997c21"}
 FULL = {"name": "card-art-full.zip", "size": 243357644, "sha256": "df0a89e0a748f295645af91433c2f846c92d743e4d5f2a154ddde29d0ebf1e5c"}
 EXPECTED = 6581  # 這一版全年齡的張數
+# 增量包（v13 起，pack_card_art.py --previous 打的）：只放比上一版（from）新增或重畫的卡，縮圖、原圖、manifest 都在裡面。
+# 已經有上一版標記（.card-art-<from>）的人只抓這一包，不再整包重抓（v11 升 v12 要 318 MB，只抓新的是 131 MB）。
+# 沒有增量包的版本寫 None。
+UPDATE = None
 
 
 JOBS = ROOT / "scripts" / "card_jobs.json"
@@ -389,9 +393,11 @@ def unpack(path: Path) -> tuple[int, int]:
         for k in upgrade:
             f = str(incoming[k].get("file", ""))
             replace_files.update({f, f"thumb/{f}"})
+        whole = incoming is not None and any(n.startswith("cards/") and not n.startswith("cards/thumb/") and n.endswith(".webp") for n in z.namelist())
         if pending is not None:
             replace_files.update(str(f) for f in pending if isinstance(f, str))
-        elif upgrade:
+        elif upgrade and not whole:
+            # 縮圖包：原圖在另一包，要換的原圖記下來給它。增量包（whole）縮圖、原圖都在這一包，當場換完。
             UPGRADE.write_text(json.dumps(sorted(f for f in replace_files if not f.startswith("thumb/"))), encoding="utf-8")
         for name in z.namelist():
             if not name.startswith("cards/") or name.endswith("/") or name in ("cards/manifest.json", "cards/previous.json"):
@@ -432,6 +438,17 @@ def main() -> int:
         print(f"card art check: {absent} missing, {stale} outdated; e.g. {' | '.join(examples)}")
         return 3
     if not force and have_enough():
+        return 0
+    if not force and UPDATE and (CARDS / f".card-art-{UPDATE['from']}").exists():
+        # 有上一版：只抓增量包（縮圖、原圖一起），不整包重抓。
+        print(f"Card art update: downloading the cards added or redrawn since {UPDATE['from']} "
+              f"(about {max(1, UPDATE['size'] // 1_000_000)} MB)...")
+        with tempfile.TemporaryDirectory() as tmpdir:
+            rc, added, entries = fetch_pack(UPDATE, Path(tmpdir), "")
+        if rc:
+            return rc
+        MARKER.write_text(BASE + "\n", encoding="utf-8")
+        print(f"Card art ready: {added} images added, {entries} manifest entries added (existing files kept).")
         return 0
     print(f"Card illustrations are missing. Downloading the all-ages set from GitHub: thumbnails first "
           f"(about {THUMBS['size'] // 1_000_000} MB), then full size (about {FULL['size'] // 1_000_000} MB)...")

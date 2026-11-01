@@ -27,3 +27,34 @@ export function searchMiss({ cards, q, query, reasons, className }) {
   }
   return el("p", { class: className }, `字盒裡沒有「${query}」。`);
 }
+
+/**
+ * 搜得到、但還有符合的牌被分級、性別、時代…收起來（現代搜「吊燈」，維多利亞的吊燈被時代藏著；
+ * 沒開男生搜「胖」，肥胖是男生的牌）：以前完全不說，看起來像詞庫只有這幾張。
+ * 回「另有 N 張沒列出：原因［解開］」給 searchNote 放在牌格上面一行；沒有就回 null。
+ * cards 只放解開之後會出現在這一格的牌（同一個花色、細分類）；reasons 跟 searchMiss 同一套，
+ * 但不放「在別的花色裡」那條：花色、分類是自己點的，不是被藏起來。
+ */
+export function searchAlso({ cards, shown, q, reasons }) {
+  if (!q) return null;
+  const have = new Set(shown);
+  let n = 0;
+  let best = null;
+  for (const card of cards) {
+    if (have.has(card) || !cardMatches(card, q)) continue;
+    const reason = reasons.find((r) => r.hides(card));
+    if (!reason) continue;
+    n += 1;
+    const rank = matchRank(card, q);
+    if (!best || rank < best.rank) best = { card, reason, rank };
+  }
+  if (!best) return null;
+  const { card, reason } = best;
+  return el(
+    "span",
+    { class: "search-also", dataset: { key: `${n}|${card.tag}|${reasons.indexOf(reason)}` } },
+    el("span", {}, n > 1 ? `另有 ${n} 張沒列出，例如` : "另有 1 張沒列出："),
+    el("span", {}, reason.text(card)),
+    reason.run ? el("button", { class: "btn btn-small", type: "button", onclick: () => reason.run(card) }, reason.label(card)) : null
+  );
+}
