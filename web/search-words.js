@@ -34,6 +34,9 @@ export const SEARCH_WORDS = {
   紋身: ["tattoo", "facial tattoo"],
   傷疤: ["scar", "scar on face"],
   疤: ["scar", "scar on face"],
+  // 2026-11-06：AI 經 MCP 查「人妻在公園打棒球」，人妻、熟女一張都對不到。
+  人妻: ["mature female", "wedding ring"],
+  熟女: ["mature female"],
 
   // 頭髮
   黃頭髮: ["blonde hair"],

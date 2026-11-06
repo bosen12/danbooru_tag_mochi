@@ -5,6 +5,7 @@ import { dateLocale, english } from "./i18n.js";
 /**
  * 作品冊：收藏的成品（album-save.js 從墨池、疊印台收進來；存在伺服器 recipes.py，圖另存一份）。
  *   - 大圖牆：照每張的長寬比排（album.css 的 columns），新的在前；超出頂端分級的先收起來。
+ *     存了配方還沒生圖的，畫框裡攤這件的牌（最多七張），底下仍寫「只有配方，尚無圖片」。
  *   - 找作品：作品名、牌的中文名、提示詞。
  *   - 點一張：大圖、你選的牌、全部的牌、尺寸／種子／底模。主鈕「照這張再印」：牌、份量、時代、種子、底模、LoRA
  *     一起交給墨池；其他（只帶牌、複製 POS、開原圖、從作品冊拿掉）手機上收進「⋯」（foot-more.js）。
@@ -16,7 +17,8 @@ import { dateLocale, english } from "./i18n.js";
  */
 import { RATING_LABEL, ratingBlocked } from "./rules/rating.js";
 import { mountRatingFree } from "./rating-free.js";
-import { buildLibrary, ERA_ZH } from "./cards.js";
+import { buildLibrary, createAssets, ERA_ZH } from "./cards.js";
+import { artFallback, bindArt } from "./card-images.js";
 import { el, openSheet, toast, syncChoices, bootFailed, friendlyError, isNetError } from "./ui.js";
 import { zoomFromThumb } from "./zoom.js";
 import { mountKeysHelp } from "./keys-help.js";
@@ -86,6 +88,8 @@ const smallUrl = (ref) => {
 };
 const cardsOf = (w) => tagsOfPositive(w.positive || "").filter((t) => lib.byTag.has(t));
 const mineOf = (w) => (Array.isArray(w.pinned) ? w.pinned : []).filter((t) => lib.byTag.has(t));
+// 沒有圖、但提示詞裡有詞庫牌：畫框改攤牌。有圖（含讀取失敗）不走這裡。
+const needsRecipeFan = (w) => !fileUrl(w.thumbnail) && !fileUrl(w.image) && cardsOf(w).length > 0;
 // 找相似用：去掉每張都有的人數牌（1個女性、單人），留下看得出差別的。
 const tellingOf = (w) => (w._telling ??= cardsOf(w).filter((t) => lib.byTag.get(t)?.item?.section !== "subject"));
 
@@ -100,6 +104,87 @@ function dateText(iso) {
     dateFmtFor = String(dateLocale);
   }
   return dateFmt.format(d);
+}
+
+/* ================= 只有配方：畫框裡攤牌 ================= */
+// 最多攤七張（跟成品牆「只抽了牌」那一手一樣）。多的寫「＋N」。
+// 樣式在 album.css 的「只有配方：攤牌」（web7 的 album.css 同一份，那邊用不到）。
+const FAN_MAX = 7;
+const FAN_SUITS = new Set(["cast", "chara", "look", "wear", "pose", "scene", "style", "custom"]);
+let cardAssets = null;
+
+// 插畫清單只抓一次。沒有、或讀失敗：牌面改畫一個字，作品冊照開。
+async function ensureCardArt() {
+  if (cardAssets) return;
+  let manifest = {};
+  try {
+    const r = await fetch("cards/manifest.json");
+    if (r.ok) manifest = await r.json();
+  } catch { /* 下面用空清單 */ }
+  cardAssets = createAssets(manifest && typeof manifest === "object" ? manifest : {});
+}
+
+// 七張以內照 cardsOf 的順序。超過才把你選的（仍須在 cardsOf 裡）排前面，免得七張都是每張都有的人數牌。
+function fanTags(w) {
+  const all = cardsOf(w);
+  if (all.length <= FAN_MAX) return { shown: all, extra: 0 };
+  const mine = new Set(mineOf(w));
+  const shown = [...all.filter((t) => mine.has(t)), ...all.filter((t) => !mine.has(t))].slice(0, FAN_MAX);
+  return { shown, extra: all.length - FAN_MAX };
+}
+
+function fanGlyph(card) {
+  const text = !card ? "·" : english ? String(card.tag || "").slice(0, 2).toUpperCase() || "·" : [...(card.zh || "")][0] || "·";
+  return el("b", {}, text);
+}
+
+// 牌面走 card-images.js：bindArt 照牌的大小挑細縮圖，失敗再退原圖。不自己拼檔名。
+function fanFace(tag) {
+  const card = lib.byTag.get(tag);
+  const mini = cardAssets?.mini(tag) || null;
+  const sources = cardAssets?.sources(tag) || null;
+  if (!mini && !sources) return fanGlyph(card);
+  const img = el("img", { alt: "", decoding: "async", draggable: "false" });
+  bindArt(img, mini, sources, "hand");
+  img.addEventListener("error", () => {
+    if (!artFallback(img)) img.replaceWith(fanGlyph(card));
+  });
+  return img;
+}
+
+function recipeFan(w, kind) {
+  const { shown, extra } = fanTags(w);
+  if (!shown.length) return null;
+  const n = shown.length;
+  const cards = shown.map((tag, i) => {
+    const card = lib.byTag.get(tag);
+    const off = i - (n - 1) / 2;
+    const suit = FAN_SUITS.has(card?.suit) ? card.suit : "look";
+    return el(
+      "span",
+      {
+        class: "album-fan-card",
+        style: `--o:${off};--y:${(off * off).toFixed(2)};--i:${Math.round(12 - Math.abs(off) * 2)};--suit:var(--suit-${suit})`,
+      },
+      fanFace(tag)
+    );
+  });
+  return el(
+    "span",
+    { class: `album-fan is-${kind}`, style: `--n:${n}`, "aria-hidden": "true" },
+    cards,
+    extra > 0 ? el("span", { class: "album-fan-more", title: `還有 ${extra} 張牌` }, `＋${extra}`) : null
+  );
+}
+
+function recipeFrame(w, kind, style) {
+  const fan = recipeFan(w, kind);
+  return el(
+    "span",
+    { class: fan ? "album-frame is-recipe" : "album-frame", style: style || undefined },
+    fan,
+    el("span", { class: "album-noimg" }, "只有配方，尚無圖片")
+  );
 }
 
 /* ================= 開機 ================= */
@@ -206,6 +291,8 @@ async function load() {
     loadFailed = true;
     toast("讀不到作品冊：伺服器沒開，或連不到主機");
   }
+  // 有圖的作品冊不到插畫清單。抓清單失敗也不要把整本作品冊說成讀不到。
+  if (!loadFailed && works.some(needsRecipeFan)) await ensureCardArt();
 }
 
 /* ================= 頂欄 ================= */
@@ -237,7 +324,6 @@ function renderRating() {
   );
   ratingFreePaint?.();
 }
-
 
 function wireSound() {
   const snd = $("sound-btn");
@@ -488,7 +574,8 @@ function render({ deal = false } = {}) {
 // 以前每次整片重建，150 件時手機換回「作品」分頁要 256ms。名字、圖、日期變了才重做那一格。
 const tileCache = new Map();
 function tileOf(w) {
-  const sig = [w.name, w.thumbnail?.file, w.image?.file, w.width, w.height, w.createdAt, String(dateLocale)].join("|");
+  // 沒圖的那格，牌或你選的變了要重攤。有圖的不把整段提示詞算進簽名（換分頁時每格都比一次）。
+  const sig = [w.name, w.thumbnail?.file, w.image?.file, w.width, w.height, w.createdAt, String(dateLocale), needsRecipeFan(w) ? `${cardsOf(w).join("\u0001")}\u0002${mineOf(w).join("\u0001")}` : ""].join("|");
   const had = tileCache.get(w.id);
   if (had && had.sig === sig) {
     had.node._work = w;
@@ -520,11 +607,11 @@ function tile(w) {
           if (performance.now() - born > 80 && !reducedMotion()) e.currentTarget.animate([{ opacity: 0 }, { opacity: 1 }], { duration: DUR.medium, easing: css(CURVE.out) });
         },
       })
-    : el("span", { class: "album-noimg" }, "只有配方，尚無圖片");
+    : null;
   const node = el(
     "button",
     { class: "album-tile pressable", type: "button", role: "listitem", dataset: { id: w.id }, "aria-label": `${w.name}，${dateText(w.createdAt)}` },
-    el("span", { class: "album-frame", style: `aspect-ratio: ${ratio}` }, img),
+    src ? el("span", { class: "album-frame", style: `aspect-ratio: ${ratio}` }, img) : recipeFrame(w, "tile", `aspect-ratio: ${ratio}`),
     el("span", { class: "album-cap" }, el("b", { dataset: { noI18n: "" } }, w.name), el("small", {}, dateText(w.createdAt)))
   );
   node.addEventListener("click", () => openWork(node._work || w));
@@ -557,7 +644,9 @@ function similarBox(w, sheetOf) {
               setTimeout(() => openWork(x), reducedMotion() ? 0 : DUR.short);
             },
           },
-          el("span", { class: "album-frame", style: x.width && x.height ? `aspect-ratio: ${x.width} / ${x.height}` : "" }, src ? el("img", { src, alt: "", loading: "lazy", decoding: "async", onerror: e => e.currentTarget.replaceWith(el("span", { class: "album-noimg" }, "圖片讀取失敗")) }) : el("span", { class: "album-noimg" }, "只有配方，尚無圖片")),
+          src
+            ? el("span", { class: "album-frame", style: x.width && x.height ? `aspect-ratio: ${x.width} / ${x.height}` : "" }, el("img", { src, alt: "", loading: "lazy", decoding: "async", onerror: e => e.currentTarget.replaceWith(el("span", { class: "album-noimg" }, "圖片讀取失敗")) }))
+            : recipeFrame(x, "similar", x.width && x.height ? `aspect-ratio: ${x.width} / ${x.height}` : ""),
           el("small", {}, `${both} 張一樣`)
         );
       })
@@ -675,7 +764,9 @@ function openWork(w) {
     if (recovered && !reducedMotion()) image.animate([{ opacity: 0 }, { opacity: 1 }], { duration: DUR.medium, easing: css(CURVE.out) });
   } }) : null;
   const imageBlank = el("span", { class: "album-noimg", hidden: !!full }, full ? "圖片讀取失敗" : "只有配方，尚無圖片");
-  const big = el(full ? "a" : "div", { class: "album-big", href: full || undefined, target: full ? "_blank" : undefined, rel: full ? "noopener" : undefined, style: w.width && w.height ? `aspect-ratio: ${w.width} / ${w.height}` : "" }, image, imageBlank);
+  // 有網址的圖（含後來讀取失敗）不攤牌。沒有任何詞庫牌時 recipeFan 回 null，畫框維持原本那行小字。
+  const fan = full ? null : recipeFan(w, "detail");
+  const big = el(full ? "a" : "div", { class: fan ? "album-big is-recipe" : "album-big", href: full || undefined, target: full ? "_blank" : undefined, rel: full ? "noopener" : undefined, style: w.width && w.height ? `aspect-ratio: ${w.width} / ${w.height}` : "" }, image, fan, imageBlank);
   const del = el("button", { class: "btn btn-small album-del", type: "button" }, "從作品冊拿掉");
   let armed = 0;
   del.addEventListener("click", async () => {

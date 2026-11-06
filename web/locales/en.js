@@ -2089,6 +2089,7 @@ Discord 設定（自動傳送{0}）|Discord settings (auto sharing {0})
 試印 {0}・{1}|Proof {0} · {1}
 {0}/{1} 張試印有它|In {0}/{1} proofs
 {0}：{1}。點一下回{2}|{0} · {1}. Click to return to {2}
+{0}：{1}。點一下看作品冊的日誌|{0} · {1}. Click to open the Gallery log
 第 {0} 個人的|Person {0} ·
 （藏起來了）|(hidden)
 目前走 webhook · {0}|Webhook · {0}
@@ -2252,6 +2253,7 @@ Discord 設定（自動傳送{0}）|Discord settings (auto sharing {0})
 {0}：現在的設定抽不到它|{0} · Unavailable with the current rules
 {0} 張沒印成|{0} generations failed
 還有 {0} 張待印|{0} images waiting
+還有 {0} 張牌|+{0} more
 正在印 {0} 張|Generating {0} images
 正在印，畫到 {0}%|Generating · {0}%
 還有 {0} 張排著，回去才接著印|{0} queued images will resume when you return

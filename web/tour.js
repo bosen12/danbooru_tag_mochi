@@ -4,6 +4,7 @@
  *   - 有的步驟要你真的動手（點一張牌、打開字盒…）：做到了打勾、自動到下一步；也可以「跳過這步」。
  *   - 每個房間自己的步驟（tour-steps.js）；手機和電腦指的地方不一樣，找不到目標的步驟自動略過。
  *   - 第一次來這個房間：角落冒出一張小卡「第一次來？一步一步帶你走一遍」，關掉或走完就不再出現。
+ *     兩個房間都按了「不用了」，其他房間也不再冒出來（五個房間各問一次太煩）；頂欄的「導覽」照樣在。
  *     自動化測試（navigator.webdriver）不出現，免得擋到別的測試。
  *   - 鍵盤：→／Enter 下一步、← 上一步、Esc 結束（彈窗開著時 Esc 讓給彈窗）。
  * 導覽層的 id 是 "tour"：web/scroll-lock.js 的 NEVER_INERT 有它，彈窗開著時小視窗照樣按得到。
@@ -14,6 +15,9 @@ import { DUR, CURVE, css, reducedMotion } from "./motion.js";
 import { askCommunityOnce, communityButton } from "./community.js";
 
 const SEEN_KEY = (room) => `mochi.tour.${room}.v1`;
+// 按過幾次「不用了」：到 DECLINE_LIMIT 次，還沒去過的房間也不再問。
+const DECLINED_KEY = "mochi.tour.declined.v1";
+const DECLINE_LIMIT = 2;
 const PAD = 8;
 const phoneMQ = matchMedia("(max-width: 40rem)");
 
@@ -22,6 +26,22 @@ function seen(room) {
     return localStorage.getItem(SEEN_KEY(room)) === "1";
   } catch {
     return true;
+  }
+}
+
+function declinedEnough() {
+  try {
+    return Number(localStorage.getItem(DECLINED_KEY) || 0) >= DECLINE_LIMIT;
+  } catch {
+    return false;
+  }
+}
+
+function noteDecline() {
+  try {
+    localStorage.setItem(DECLINED_KEY, String(Number(localStorage.getItem(DECLINED_KEY) || 0) + 1));
+  } catch {
+    /* 存不了：照舊每個房間問一次 */
   }
 }
 
@@ -262,7 +282,7 @@ export function mountTour(room) {
   // 第一次來：等頁面安定一下再冒出來，不跟開場動畫搶。第一次來墨池先問要不要加入 Discord，關掉才輪到導覽。
   setTimeout(async () => {
     await askCommunityOnce();
-    if (seen(room) || active || document.getElementById("tour-offer")) return;
+    if (seen(room) || declinedEnough() || active || document.getElementById("tour-offer")) return;
     offerTour(room);
   }, 1400);
 }
@@ -271,6 +291,7 @@ export function mountTour(room) {
 function offerTour(room) {
   const close = () => {
     markSeen(room);
+    noteDecline();
     if (reducedMotion()) return offer.remove();
     offer.style.pointerEvents = "none";
     offer.animate([{ opacity: 1, transform: "none" }, { opacity: 0, transform: "translateY(8px)" }], { duration: DUR.short, easing: css(CURVE.exit), fill: "forwards" }).finished.then(() => offer.remove(), () => offer.remove());

@@ -141,6 +141,14 @@ ComfyUI LoRA Manager is a separate project (GPLv3). It is installed into your ow
 
 **Phones.** `start.bat` binds `0.0.0.0` but accepts only loopback and Tailscale (`100.64.0.0/10`). On a phone, use the `Tailscale http://100.x.x.x:8796/` address printed in the server window.
 
+## Use it from an AI (MCP)
+
+`mcp/mochi-mcp.mjs` is an MCP server that lets Claude (Claude Code, Claude Desktop), Codex or Grok Build use Mochi's vocabulary and draw rules: search cards in English or Chinese, explain a card (what it excludes, what it brings along, which content levels, ratings and eras allow it), check whether a set of cards fits together, and draw a prompt with the source of every card (pinned, implied, random) and the reason for anything removed. These need only Node.js. With Mochi and ComfyUI running, it can also generate: images go through Mochi's queue, the top bar shows "AI", and results land in the Gallery's history. It only searches, draws and generates; it never deletes, changes settings or posts to Discord, and words about minors are refused. Setup for each AI is in [mcp/README.md](mcp/README.md), for example:
+
+```bash
+claude mcp add --scope user mochi -- node /path/to/danbooru_tag_mochi/mcp/mochi-mcp.mjs
+```
+
 ## Your data
 
 Everything you create stays in `data/` (git-ignored): card usage, decks, custom cards (`data/custom_cards.json`, their art in `data/custom_cards/`), the gallery, the generation history, imported workflows and a webp cache of results. To move to another machine, copy `data/` and `config.json`.
@@ -157,6 +165,7 @@ web/                 front end (no build step; the browser loads ES modules dire
   index.html …       the five rooms
   i18n.js, locales/  the English edition
   cards/             card art (downloaded or baked; not in git)
+mcp/                 MCP server for AIs (Claude, Codex, Grok Build)
 scripts/             card art download and baking, upscale model, pose reference, face fix nodes,
                      and the lexicon build (merge_lexicon.py, characters.json …)
 tests/               node tests/test_i18n.mjs
@@ -311,6 +320,10 @@ LoRA 面板的「詳情」在 ComfyUI 的 LoRA Manager 直接打開那一個 LoR
 自己的 ComfyUI workflow：把 ComfyUI 用它畫的任何一張 PNG 拖進「工作流」面板（或用「匯出工作流 (API)」的 JSON）；種子每個取樣器都會換，LoRA 面板選的會接在底模後面，底模可以選跟著頂欄或保留工作流的。送到 Discord：頂欄的 Discord 按鈕貼上頻道 webhook；也可以另外開分頻道（最多 20 個），每個頻道有自己的 webhook 和條件（分級、角色 1～3 個、tag 1～5 個，「任一個／全部都要」），一張圖符合幾個就送幾個，都沒對到的送原本那條。成品詳情的「用這張開 Discord 頻道」會帶入那張的角色和分級。手機走 Tailscale，用黑窗印出的 `Tailscale http://100.x.x.x:8796/`。
 
 你的資料（使用次數、牌組、作品冊、出圖日誌、匯入的 workflow）都在 `data/`，搬家時連同 `config.json` 一起帶走。
+
+## 讓 AI 來用（MCP）
+
+`mcp/mochi-mcp.mjs` 是一個 MCP 伺服器，讓 Claude（Claude Code、Claude Desktop）、Codex、Grok Build 用墨池的詞庫和抽牌規則：中英文查牌、解釋一張牌（跟誰互斥、帶出什麼、哪些尺度／分級／時代才會出現）、檢查一組牌放不放得在一起、照規則抽提示詞（每張牌標來源：釘選、附帶、隨機，被拿掉的附原因）。這些只要有 Node.js。開著墨池和 ComfyUI 時還能生圖：走墨池的生圖排程，頂欄看得到「AI」，成品記進作品冊的日誌。只會查、抽、生圖，不刪東西、不改設定、不送 Discord，未成年的字一律擋。各家 AI 的設定方法見 [mcp/README.md](mcp/README.md)。
 
 ## 跑不起來時
 

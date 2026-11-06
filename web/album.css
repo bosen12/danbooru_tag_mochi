@@ -664,3 +664,155 @@ a.album-chip:focus-visible {
 }
 @media (max-width: 40rem) {
 }
+
+/* ---------- 只有配方：畫框裡攤牌（album.js 的 recipeFan）。2026-11-06 Grok 做的。 ---------- */
+.album-frame.is-recipe,
+.album-big.is-recipe {
+  display: grid;
+  grid-template: 1fr / 1fr;
+  container-type: inline-size;
+  background:
+    radial-gradient(88% 62% at 50% 38%, color-mix(in oklch, var(--color-paper) 55%, transparent), transparent 70%),
+    var(--color-paper-3);
+  box-shadow:
+    inset 0 0 0 1px color-mix(in oklch, var(--color-rule) 72%, transparent),
+    0 10px 24px -16px var(--color-shade);
+}
+.album-big.is-recipe {
+  aspect-ratio: 3 / 4;
+  min-height: 22rem;
+  cursor: default;
+}
+.album-similar-item .album-frame.is-recipe {
+  aspect-ratio: 2 / 3;
+}
+.album-frame.is-recipe > .album-fan,
+.album-big.is-recipe > .album-fan,
+.album-frame.is-recipe > .album-noimg,
+.album-big.is-recipe > .album-noimg {
+  grid-area: 1 / 1;
+}
+.album-fan {
+  /* --n 是這把實際張數。攤開的間距把整把收進畫框：兩張不會疊成一張，七張就只露出一截。 */
+  /* 牌心放在畫框中間偏上（底下留給「只有配方」那行字）；外側兩張轉開後還收在框裡。 */
+  --fan-w: 42cqi;
+  --spread: calc((70cqi - var(--fan-w)) / max(var(--n, 2) - 1, 1));
+  --tilt: 5.5deg;
+  position: relative;
+  z-index: 1;
+  isolation: isolate;
+  height: 100%;
+  min-height: 0;
+  pointer-events: none;
+}
+.album-fan.is-detail {
+  --fan-w: min(22cqi, 9.25rem);
+  --tilt: 6.5deg;
+}
+.album-fan.is-similar {
+  --fan-w: 34cqi;
+  --tilt: 8deg;
+}
+.album-fan::after {
+  content: "";
+  position: absolute;
+  left: 22%;
+  right: 22%;
+  top: calc(46% + var(--fan-w) * 0.62);
+  height: calc(var(--fan-w) * 0.2);
+  border-radius: 50%;
+  background: radial-gradient(closest-side, var(--color-shade), transparent 72%);
+  z-index: 0;
+}
+.album-fan-card {
+  position: absolute;
+  left: 50%;
+  top: 46%;
+  width: var(--fan-w);
+  aspect-ratio: 480 / 702;
+  margin-left: calc(var(--fan-w) / -2);
+  margin-top: calc(var(--fan-w) * 702 / 480 / -2);
+  border-radius: calc(var(--fan-w) * 0.075);
+  overflow: hidden;
+  background: var(--color-stock);
+  color: var(--color-stock-ink);
+  border-top: 3px solid var(--suit, var(--color-rule));
+  box-shadow:
+    0 0 0 1px color-mix(in oklch, var(--color-stock-ink) 14%, transparent),
+    -8px 12px 18px -12px var(--color-shade),
+    var(--shadow-card);
+  transform-origin: 50% 105%;
+  transform:
+    translateX(calc(var(--o) * var(--spread)))
+    translateY(calc(var(--y) * 0.32cqi))
+    rotate(calc(var(--o) * var(--tilt)))
+    scale(calc(1 - var(--y) * 0.012));
+  z-index: var(--i);
+  transition: transform var(--dur-short) var(--ease-out);
+}
+.album-frame .album-fan-card img,
+.album-big .album-fan-card img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 18%;
+  pointer-events: none;
+}
+.album-fan-card b {
+  display: grid;
+  place-items: center;
+  height: 100%;
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: calc(var(--fan-w) * 0.4);
+  background: color-mix(in oklch, var(--suit, var(--color-stock-2)) 18%, var(--color-stock));
+}
+.album-fan-more {
+  position: absolute;
+  z-index: 20;
+  top: var(--space-xs);
+  right: var(--space-xs);
+  padding: 2px var(--space-xs);
+  border: 1px solid var(--color-rule);
+  border-radius: 999px;
+  background: color-mix(in oklch, var(--color-paper) 88%, transparent);
+  color: var(--color-ink-2);
+  box-shadow: var(--shadow-card);
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  font-weight: 500;
+  letter-spacing: 0.02em;
+}
+.album-frame.is-recipe > .album-noimg,
+.album-big.is-recipe > .album-noimg {
+  align-self: end;
+  z-index: 2;
+  height: auto;
+  min-height: 0;
+  padding: var(--space-xl) var(--space-xs) var(--space-sm);
+  background: linear-gradient(to top, color-mix(in oklch, var(--color-paper-3) 94%, transparent) 30%, transparent);
+  color: var(--color-ink-2);
+  text-align: center;
+  letter-spacing: 0.06em;
+}
+.album-similar-item .album-frame.is-recipe > .album-noimg {
+  padding: var(--space-md) var(--space-2xs) var(--space-2xs);
+  font-size: var(--text-2xs);
+  letter-spacing: 0.02em;
+  line-height: 1.25;
+}
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  .album-tile:hover .album-fan.is-tile,
+  .album-tile:focus-visible .album-fan.is-tile,
+  .album-similar-item:hover .album-fan.is-similar {
+    --spread: calc((98cqi - var(--fan-w)) / max(var(--n, 2) - 1, 1));
+    --tilt: 8.5deg;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .album-fan-card {
+    transition: none;
+  }
+}
