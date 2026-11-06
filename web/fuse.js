@@ -66,6 +66,8 @@ import { attachPeek, hidePeek, showPeek } from "./card-peek.js";
 import { attachTilt } from "./card-tilt.js";
 import { loadCustom, addCustomToLib, withCustomArt, onCustomChange, setCharacterBan, isCustomTag, customOf, extraText, handOffCustom, startFromPrompt } from "./custom-cards.js";
 import { createHires, openHiresPicker, openFacePicker, paintHiresVeil, hiresBusy, faceBusy, faceDepth } from "./hires.js";
+import { transferredBed } from "./fuse-transfer.js";
+import { transferLabel, reviewTransfer } from "./transfer.js";
 import * as S from "./store.js";
 import { recordUses, tagsOfPositive } from "./usage.js";
 import { REGISTERS, REGISTER_ROLE, emptyBed, sanitizeBed, placeCard, removeCard, relationsOf } from "./fuse-bed.js";
@@ -251,7 +253,7 @@ async function boot() {
     return;
   }
   // 疊印台的規則自己一份，跟墨池分開。第一次打開（還沒有自己的）先沿用墨池那一份當起點。
-  settings = sanitizeSettings(readJ(FK.settings, null) || S.loadSettings() || { rating: "general" }, data);
+  settings = sanitizeSettings(S.loadFuseSettings() || S.loadSettings() || { rating: "general" }, data);
   bans = new Set(S.loadBans().filter((t) => lib.byTag.has(t)));
   bed = emptyBed();
   // 從別的房間回來（同一個分頁、不是重新整理）：卡池、四張試印、選中的那張照剛才的樣子（store.js 的 loadTab）。
@@ -260,11 +262,7 @@ async function boot() {
   const handoff = S.takeFuse();
   if (back && !handoff) bed = sanitizeBed(back.bed, (tag) => lib.byTag.has(tag) && !bans.has(tag));
   if (handoff) {
-    for (const tag of handoff.tags) {
-      const item = lib.byTag.get(tag);
-      if (item && !bans.has(tag) && !ratingBlocked(item.item, ratingOf(settings)) && !HARD_BANNED.includes(tag)) bed = placeCard(bed, tag, { lex, applyPin: pinFor }).bed;
-    }
-    bed = sanitizeBed({ ...bed, weights: handoff.weights }, tag => lib.byTag.has(tag));
+    bed = transferredBed(handoff.tags, handoff.weights, lib, lex, settings, bans);
   }
   seeds = back && !handoff && Array.isArray(back.seeds) && back.seeds.length === TRIALS ? back.seeds : freshSeeds();
   picked = back && !handoff && Number.isInteger(back.picked) ? back.picked : 0;
@@ -3268,7 +3266,7 @@ function renderPrintBar() {
     p && p.status === "failed" ? el("p", { class: "pb-hint", dataset: { kind: "err" } }, p.note || "印壞了") : null,
     el("p", { class: "pb-links" },
       el("button", { class: "link-btn pressable", type: "button", onclick: showPos }, "看提示詞"),
-      bed.pins.length ? el("a", { class: "link-btn pressable", href: "./", onclick: sendToPool }, "帶牌去墨池") : null
+      bed.pins.length ? el("a", { class: "link-btn pressable", href: "./", onclick: sendToPool }, transferLabel("pool")) : null
     ),
     el(
       "details",
@@ -3320,10 +3318,11 @@ function showPos() {
 }
 
 function sendToPool(e) {
-  if (!bed.pins.length || !S.handOffPool(bed.pins, "fuse", bed.weights || {})) {
-    e.preventDefault();
-    toast("無法交接選牌，請檢查瀏覽器儲存空間。");
-  }
+  e.preventDefault();
+  reviewTransfer("pool", bed.pins, bed.weights || {}, zh, () => {
+    if (!bed.pins.length || !S.handOffPool(bed.pins, "fuse", bed.weights || {})) return toast("無法交接選牌，請檢查瀏覽器儲存空間。");
+    location.href = "./";
+  });
 }
 
 /* ================= 晾紙繩 ================= */

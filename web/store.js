@@ -171,6 +171,11 @@ export function saveTab(key, value) {
 }
 export function loadTab(key) {
   if (reloaded()) return null;
+  return peekTab(key);
+}
+
+// 預覽別的房間：即使本頁是重新整理，下一次換房間仍會讀取目的地的分頁存檔。
+export function peekTab(key) {
   try {
     return JSON.parse(sessionStorage.getItem(key) || "null");
   } catch {
@@ -198,6 +203,7 @@ export function takePool() {
   handoffRecipe = recipeOf(note.recipe);
   return note.tags.filter((t) => typeof t === "string");
 }
+export const loadFuseSettings = () => read("mochi.fuse.settings.v1", null);
 export const loadBans = () => read(KEY.bans, []);
 export const saveBans = (tags) => write(KEY.bans, [...tags]);
 export const SETTINGS_KEY = KEY.settings;

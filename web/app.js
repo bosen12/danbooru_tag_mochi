@@ -74,6 +74,8 @@ import { loadCustom, addCustomToLib, withCustomArt, onCustomChange, setCharacter
 // 牌庫裡現在放的是哪一份自製牌清單（onCustomChanged 用來判斷有沒有換）。
 let customShown = null;
 import { createHires, openHiresPicker, openFacePicker, paintHiresVeil, hiresBusy, faceBusy, faceDepth, HIRES_MODES } from "./hires.js";
+import { reviewFuseTransfer } from "./fuse-transfer.js";
+import { transferLabel } from "./transfer.js";
 import * as S from "./store.js";
 import { recordUses } from "./usage.js";
 import { getSfx } from "./sfx.js";
@@ -4516,11 +4518,14 @@ function openPastePool(text = "") {
   });
 }
 $("pool-paste").addEventListener("click", () => openPastePool());
+$("pool-to-fuse").replaceChildren(transferLabel("fuse"));
 $("pool-to-fuse").addEventListener("click", (e) => {
-  if (!pool.size || !S.handOffFuse(pool, Object.fromEntries(weights))) {
-    e.preventDefault();
-    toast("無法交接選牌，請檢查瀏覽器儲存空間。");
-  }
+  e.preventDefault();
+  const amounts = Object.fromEntries(weights);
+  reviewFuseTransfer(pool, amounts, lib, data, lex, zh, () => {
+    if (!pool.size || !S.handOffFuse(pool, amounts)) return toast("無法交接選牌，請檢查瀏覽器儲存空間。");
+    location.href = "fuse.html";
+  });
 });
 listenPaste((text) => {
   if (!pickerOpen) openPastePool(text);

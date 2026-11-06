@@ -17,6 +17,7 @@ import { favButton } from "./album-save.js";
 import { weightsOfPositive } from "./weights.js";
 import { RATING_LABEL } from "./rules/rating.js";
 import { footMore } from "./foot-more.js";
+import { transferLabel } from "./transfer.js";
 import { recipeOf } from "./store.js";
 
 /** 一張牌的籤：點了打開卡冊那張牌的詳情（book.html 開頁時看 #card=）。作品冊也用這個。 */
@@ -288,12 +289,12 @@ export function createLog(ctx) {
     );
     // 主鈕：照這張再印（牌、份量、時代、種子、底模、LoRA）；只帶牌、收藏、複製、開原圖是次要的，手機上收進「⋯」。
     const again = c.length
-      ? el("button", { class: "btn btn-small btn-primary reprint-btn", type: "button", title: "牌、份量、時代、種子、底模、LoRA 一起帶去墨池", onclick: (ev) => ctx.toMochi(c, `這張的 ${c.length} 張牌`, e, ev.currentTarget, { recipe: recipeOf(e) }) }, "照這張再印")
+      ? el("button", { class: "btn btn-small btn-primary reprint-btn", type: "button", title: "牌、份量、時代、種子、底模、LoRA 一起帶去墨池", onclick: (ev) => ctx.toMochi(c, `這張的 ${c.length} 張牌`, e, ev.currentTarget, { recipe: recipeOf(e) }) }, transferLabel("pool", "照這張再印"))
       : null;
     const sheet = openSheet(title(e), body, {
       wide: true,
       foot: footMore(again, [
-        c.length ? el("button", { class: "btn btn-small", type: "button", onclick: (ev) => ctx.toMochi(c, `這張的 ${c.length} 張牌`, e, ev.currentTarget) }, "只帶牌") : null,
+        c.length ? el("button", { class: "btn btn-small", type: "button", onclick: (ev) => ctx.toMochi(c, `這張的 ${c.length} 張牌`, e, ev.currentTarget) }, transferLabel("pool", "只帶牌")) : null,
         fav,
         el(
           "button",

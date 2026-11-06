@@ -34,7 +34,7 @@ import { flight, CURVE, DUR, css } from "./motion.js";
 import { cloneCard } from "./card-images.js";
 import { setCardFlag } from "./cards.js";
 const reduced = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
-const ICON =
+export const HAND_ICON =
   '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="7" width="8" height="12" rx="1.5" transform="rotate(-14 7 13)"/><rect x="8" y="5" width="8" height="12" rx="1.5"/><rect x="13" y="7" width="8" height="12" rx="1.5" transform="rotate(14 17 13)"/></svg>';
 const CHEVRON =
   '<svg class="fav-chev" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg>';
@@ -387,7 +387,7 @@ export function createHand({
   const pickText = `點${where}裡的牌加進來，再點一次拿掉`;
   function paintHead() {
     const placed = tags.length - shownTags().length;
-    tab.innerHTML = `${ICON}<span class="fav-title">偏好卡牌</span><b class="fav-count">${Number.isFinite(max) ? `${tags.length}/${max}` : tags.length}</b>${CHEVRON}`;
+    tab.innerHTML = `${HAND_ICON}<span class="fav-title">偏好卡牌</span><b class="fav-count">${Number.isFinite(max) ? `${tags.length}/${max}` : tags.length}</b>${CHEVRON}`;
     tab.setAttribute("aria-expanded", open ? "true" : "false");
     tab.title = open ? "收起偏好卡牌" : "打開偏好卡牌";
     pick.textContent = editing ? "完成" : "＋ 挑牌";

@@ -21,6 +21,17 @@ const copy = String.raw`
 點字盒的牌放進來，也可以拖曳|Click a library card to add it, or drag it here
 選牌後直接生成。疊印台可先比較四組提示詞；兩邊的選牌與規則各自獨立。|Choose cards and generate directly. Fuse Bed lets you compare four prompts first; each room has its own cards and settings.
 比較四組候選提示詞，選好再付印生圖。選牌與規則和墨池各自獨立。|Compare four candidate prompts, then print to generate an image. Cards and settings are independent from Ink Pool.
+正在挑偏好卡牌|Choosing favorite cards
+點牌面加入或移除偏好，按 ＋ 送到墨池。|Click a card to toggle a favorite. Use + to send it to Ink Pool.
+加入合成池|Add to Ink Pool
+加入疊印台|Add to Fuse Bed
+替換合成池的選牌|Replace the Ink Pool selection
+替換疊印台的選牌|Replace the Fuse Bed selection
+會拿下的牌|Cards to remove
+份量變更|Weight changes
+確認替換|Replace selection
+確認加入|Add to pool
+加入合成池時會換牌|Adding these cards will remove existing cards
 帶牌去疊印台|Take cards to the press
 帶牌去墨池|Take cards to Ink Pool
 無法交接選牌，請檢查瀏覽器儲存空間。|Could not transfer cards. Check browser storage.
@@ -1958,6 +1969,9 @@ export const messages = Object.freeze(Object.fromEntries(copy.trim().split("\n")
 // {0} is translated again (card names, ratings); {0!} is inserted verbatim
 // because it is user content: deck, work, model and workflow names, search text.
 const parameterized = String.raw`
+替換疊印台的 {0} 張牌|Replace {0} cards in Fuse Bed
+替換合成池的 {0} 張牌|Replace {0} cards in Ink Pool
+加入合成池 · {0} 張牌|Add {0} cards to Ink Pool
 「{0}」是禁用角色|“{0!}” is blocked
 一共 {0} 張禁用角色被藏著|{0} blocked characters are hidden
 用過 {0} 次，{1} 加入|Used {0} times, added {1!}

@@ -26,6 +26,7 @@ import { mountGenStatus } from "./gen-status.js";
 import { initMotion, settleMotion, seat, refuse, enter, leave, reducedMotion, swapIn, CURVE, DUR, css } from "./motion.js";
 import { pingLoop } from "./ping.js";
 import { getSfx } from "./sfx.js";
+import { transferLabel, reviewTransfer } from "./transfer.js";
 import * as S from "./store.js";
 import { tagsOfPositive } from "./usage.js";
 import { removeFromAlbum } from "./album-save.js";
@@ -603,6 +604,10 @@ function customFromWork(w, mine, rest) {
 function toMochi(tags, label, w, button = document.activeElement, { recipe = null } = {}) {
   // 份量（weights.js）從提示詞讀回來：收藏時調過的牌，帶回去還是那個份量。
   const all = weightsOfPositive(w?.positive);
+  reviewTransfer("pool", tags, all, zh, () => sendToMochi(tags, label, all, recipe, button));
+}
+
+function sendToMochi(tags, label, all, recipe, button) {
   if (!S.handOffPool(tags, "album", Object.fromEntries(tags.filter((t) => all[t]).map((t) => [t, all[t]])), recipe)) {
     if (button?.matches?.("button")) refuse(button);
     toast("無法交接選牌，請檢查瀏覽器儲存空間。");
@@ -717,16 +722,16 @@ function openWork(w) {
   );
   // 主鈕：照這張再印（全部的牌＋份量＋時代＋種子＋底模＋LoRA）。只帶牌的是次要的，手機上收進「⋯」。
   const again = all.length
-    ? el("button", { class: "btn btn-small btn-primary reprint-btn", type: "button", title: "牌、份量、時代、種子、底模、LoRA 一起帶去墨池", onclick: (e) => toMochi(all, `全部 ${all.length} 張牌`, w, e.currentTarget, { recipe: S.recipeOf(w) }) }, "照這張再印")
+    ? el("button", { class: "btn btn-small btn-primary reprint-btn", type: "button", title: "牌、份量、時代、種子、底模、LoRA 一起帶去墨池", onclick: (e) => toMochi(all, `全部 ${all.length} 張牌`, w, e.currentTarget, { recipe: S.recipeOf(w) }) }, transferLabel("pool", "照這張再印"))
     : null;
   const s = openSheet(w.name, body, {
     translateTitle: false,
     wide: true,
     foot: footMore(again, [
       mine.length
-        ? el("button", { class: "btn btn-small", type: "button", onclick: (e) => toMochi(mine, `你選的 ${mine.length} 張`, w, e.currentTarget) }, "只帶你選的牌")
+        ? el("button", { class: "btn btn-small", type: "button", onclick: (e) => toMochi(mine, `你選的 ${mine.length} 張`, w, e.currentTarget) }, transferLabel("pool", "只帶你選的牌"))
         : all.length
-          ? el("button", { class: "btn btn-small", type: "button", onclick: (e) => toMochi(all, `全部 ${all.length} 張`, w, e.currentTarget) }, "只帶牌")
+          ? el("button", { class: "btn btn-small", type: "button", onclick: (e) => toMochi(all, `全部 ${all.length} 張`, w, e.currentTarget) }, transferLabel("pool", "只帶牌"))
           : null,
       // 自製牌：這件的牌（你選的在前，帶份量）換到卡冊的「新增自製牌」，挑掉不要的再存。
       all.length

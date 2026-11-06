@@ -91,11 +91,75 @@ async function deckPanel(page, seed = false) {
   await page.evaluate(() => deckModule.openDecks({ where: '卡盒', current: () => ['red hair'], has: () => true, zh: t => t, apply: () => {} }));
 }
 try {
+  await test('transfer destinations stay distinct with favorite cards open', async page => {
+    await book(page);
+    await page.keyboard.press('b');
+    const cell = page.locator('.book-cell:not(.is-skel)').first();
+    assert.equal(await page.locator('#book-pick-hint').isVisible(), true);
+    const tag = await cell.getAttribute('data-tag');
+    await cell.hover();
+    await cell.locator('.box-add').click();
+    assert.deepEqual(await page.evaluate(() => JSON.parse(localStorage.getItem('mochi.pool.handoff.v1'))?.tags), [tag]);
+    assert.deepEqual(await page.evaluate(() => JSON.parse(localStorage.getItem('mochi.hand.v1'))), ['red hair']);
+    await cell.locator('.card').click();
+    assert.ok(await page.evaluate(tag => JSON.parse(localStorage.getItem('mochi.hand.v1')).includes(tag), tag));
+    assert.equal(await cell.locator('.box-add').getAttribute('aria-pressed'), 'true');
+    await cell.locator('.box-add').click();
+    assert.equal(await page.evaluate(() => localStorage.getItem('mochi.pool.handoff.v1')), null);
+  });
   await test('plus send stays unsent when handoff storage fails', async page => { await book(page); await quota(page); const cell = page.locator('.book-cell:not(.is-skel)').first(); await cell.hover(); await cell.locator('.box-add').click(); await handoffStayed(page, '/book.html'); assert.equal(await page.evaluate(() => localStorage.getItem('mochi.pool.handoff.v1')), null); assert.equal(await cell.locator('.box-add').getAttribute('aria-pressed'), 'false'); assert.equal(await page.locator('.page-switch .send-badge').count(), 0); assert.deepEqual(await page.evaluate(() => JSON.parse(localStorage.getItem('mochi.hand.v1'))), ['red hair']); });
-  await test('single card handoff stays in card details on failure', async page => { await book(page); await page.locator('.book-cell .card').first().click(); await quota(page); await page.getByRole('button', { name: '帶去墨池合成池', exact: true }).click(); await handoffStayed(page, '/book.html'); assert.equal(await page.locator('.book-detail').count(), 1); });
+  await test('single card handoff stays in card details on failure', async page => { await book(page); await page.locator('.book-cell .card').first().click(); await quota(page); await page.getByRole('button', { name: '加入合成池', exact: true }).click(); await handoffStayed(page, '/book.html'); assert.equal(await page.locator('.book-detail').count(), 1); });
+  await test('transfer from book details keeps cards already marked for Ink Pool', async page => {
+    await book(page);
+    await page.locator('#book-q').fill('kimono');
+    const first = page.locator('.book-cell[data-tag="kimono"]');
+    await first.hover();
+    await first.locator('.box-add').click();
+    await page.locator('#book-q').fill('red hair');
+    await page.locator('.book-cell[data-tag="red hair"] > .card').click();
+    await page.getByRole('button', { name: '加入合成池', exact: true }).click();
+    await page.waitForURL(origin + '/');
+    await page.locator('#pool-well [data-tag="red hair"]').waitFor();
+    assert.equal(await page.locator('#pool-well [data-tag="kimono"]').count(), 1);
+  });
+  await test('transfer review checks Ink Pool conflicts when adding a book card', async page => {
+    await book(page);
+    await page.evaluate(() => sessionStorage.setItem('mochi.tab.pool.v1', JSON.stringify({ tags: ['black hair', 'kimono'] })));
+    await page.locator('#book-q').fill('red hair');
+    const cell = page.locator('.book-cell[data-tag="red hair"]');
+    await cell.hover();
+    await cell.locator('.box-add').click();
+    const review = page.getByRole('dialog', { name: '加入合成池時會換牌' });
+    assert.match(await review.innerText(), /黑髮/);
+    assert.doesNotMatch(await review.innerText(), /和服/);
+    await review.getByRole('button', { name: '取消' }).click();
+    assert.equal(await page.evaluate(() => localStorage.getItem('mochi.pool.handoff.v1')), null);
+    await cell.locator('.box-add').click();
+    await page.getByRole('button', { name: '確認加入' }).last().click();
+    assert.equal(await cell.locator('.box-add').getAttribute('aria-pressed'), 'true');
+  });
+  await test('transfer review protects the previous selection before reprint', async page => {
+    await page.goto(origin + '/album.html');
+    await page.evaluate(() => sessionStorage.setItem('mochi.tab.pool.v1', JSON.stringify({ tags: ['red hair', 'long hair'], weights: { 'red hair': 1.4 } })));
+    await page.reload();
+    await page.locator('.album-tile').click();
+    const reprint = page.locator('.reprint-btn');
+    assert.match(await reprint.innerText(), /替換合成池的 2 張牌/);
+    await reprint.click();
+    const review = page.getByRole('dialog', { name: '替換合成池的選牌' });
+    assert.match(await review.innerText(), /會拿下的牌/);
+    assert.match(await review.innerText(), /份量變更.*1\.4 → 1/);
+    await review.getByRole('button', { name: '取消' }).click();
+    assert.equal(await page.evaluate(() => localStorage.getItem('mochi.pool.handoff.v1')), null);
+    await reprint.click();
+    await page.getByRole('button', { name: '確認替換' }).last().click();
+    await page.waitForURL(origin + '/');
+    await page.locator('#pool-well [data-tag="red hair"]').waitFor();
+    assert.equal(await page.locator('#pool-well [data-tag="long hair"]').count(), 0);
+  });
   await test('book work handoff preserves the open work on failure', async page => {
     await book(page); await page.locator('.book-cell .card').first().click();
-    await page.locator('.book-work').first().click(); await quota(page); await page.getByRole('button', { name: /這張的 .* 張牌帶回墨池/ }).click();
+    await page.locator('.book-work').first().click(); await quota(page); await page.getByRole('button', { name: /加入合成池 · .* 張牌/ }).click();
     await handoffStayed(page, '/book.html'); assert.equal(await page.locator('.book-work-full').count(), 1);
   });
   await test('book works hide only images the server says are gone', async page => {

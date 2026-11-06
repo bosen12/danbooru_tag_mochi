@@ -28,6 +28,8 @@ import { getSfx } from "./sfx.js";
 import { attachTilt } from "./card-tilt.js";
 import { cloneCard } from "./card-images.js";
 import { parsePrompt } from "./paste-prompt.js";
+import { reviewFuseTransfer } from "./fuse-transfer.js";
+import { transferLabel, reviewTransfer } from "./transfer.js";
 import * as S from "./store.js";
 
 guardPrerender("parse");
@@ -691,6 +693,8 @@ function renderExtra() {
 /* ================= 帶走 ================= */
 
 function wireBar() {
+  $("parse-to-pool").replaceChildren(transferLabel("pool"));
+  $("parse-to-fuse").replaceChildren(transferLabel("fuse"));
   $("parse-all").addEventListener("click", () => {
     if (!parsed) return;
     const can = parsed.cards.filter((c) => shown(c) && !locked(c.tag));
@@ -719,6 +723,12 @@ function send(where, btn) {
   const list = picked();
   if (!list.length) return refuse(btn);
   const tags = list.map((c) => c.tag);
+  const proceed = () => finishSend(where, btn, list, tags);
+  if (where === "fuse") reviewFuseTransfer(tags, {}, lib, data, null, zh, proceed);
+  else reviewTransfer("pool", tags, {}, zh, proceed);
+}
+
+function finishSend(where, btn, list, tags) {
   const ok = where === "pool" ? S.handOffPool(tags, "parse") : S.handOffFuse(tags, {}, "parse");
   if (!ok) {
     refuse(btn);

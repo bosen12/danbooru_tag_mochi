@@ -15,7 +15,8 @@ import { cloneCard } from "./card-images.js";
  *   - 別的分頁抽完牌：這裡的數字跟著跳一下（storage 事件），排序不自己亂動，給一顆「重新排序」。
  */
 import { HARD_BANNED } from "./card-art.js";
-import { indexLexicon } from "./engine.js";
+import { reviewTransfer } from "./transfer.js";
+import { applyPin, indexLexicon, sanitizeSettings } from "./engine.js";
 import { ratingBlocked, RATING_LABEL } from "./rules/rating.js";
 import { mountRatingFree } from "./rating-free.js";
 import { buildLibrary, sizeCards, groupChips, genderChips, chipRun, seriesRun, createAssets, cardNode, cardFacts, setCardFlag, cardMatches, searchCards, searchNote, matchRank, CARD_SUIT_INFO, CARD_SUITS } from "./cards.js";
@@ -25,7 +26,7 @@ import { mountKeysHelp } from "./keys-help.js";
 import { mountTour } from "./tour.js";
 import { mountScreensaver } from "./screensaver.js";
 import { mountGenStatus } from "./gen-status.js";
-import { createHand } from "./hand.js";
+import { createHand, HAND_ICON } from "./hand.js";
 import { handTools } from "./hand-tools.js";
 import { measure, evaluate, announce, openWall } from "./achievements.js";
 import { initMotion, settleMotion, seat, refuse, flight, reducedMotion, swapIn, rowChange, heightChange, holdWidth, CURVE, DUR, css, cropFlipStart, cropFlipEnd } from "./motion.js";
@@ -981,7 +982,7 @@ function cellOf(card) {
   return cell;
 }
 
-/** 「＋」（偏好卡牌／送去墨池）、角色的愛心。 */
+/** 送墨池的「＋」、角色的愛心。 */
 function addButtons(cell, card) {
   cell._lazyButtons = false;
   cell.append(plusButton(card));
@@ -1506,8 +1507,8 @@ function openEditor(card, start) {
     onSaved: (c) => {
       // 做好多半是要馬上用：提示上給「帶去墨池」（放進合成池、切過去）。
       const tag = "custom:" + c.id;
-      const go = () => (S.handOffPool([tag], "book") ? (location.href = "./") : toast("無法交接選牌，請檢查瀏覽器儲存空間。"));
-      toast(card ? `「${c.name}」存好了` : `「${c.name}」做好了：墨池、疊印台的字盒「自製」裡找得到`, { action: { label: "帶去墨池", run: go } });
+      const go = () => addToPool([tag]);
+      toast(card ? `「${c.name}」存好了` : `「${c.name}」做好了：墨池、疊印台的字盒「自製」裡找得到`, { action: { label: "加入合成池", run: go } });
       if (ui.suit !== "custom") pickSuit("custom");
       // 面板收起來之後，那張牌在格子裡「蓋」下去（捲到看得到的地方）。
       setTimeout(() => stampCard(tag), reducedMotion() ? 0 : DUR.medium);
@@ -1722,18 +1723,9 @@ function openCard(card, srcNode) {
           {
             class: "btn btn-primary",
             type: "button",
-            onclick: (e) => {
-              // 交接便條：墨池下次打開時把它放進合成池（30 分鐘內有效，見 store.js）。
-              if (!S.handOffPool([card.tag], "book")) {
-                refuse(e.currentTarget);
-                return toast("無法交接選牌，請檢查瀏覽器儲存空間。");
-              }
-              sfx.tap?.();
-              e.currentTarget.textContent = "帶過去了…";
-              setTimeout(() => (location.href = "./"), reducedMotion() ? 0 : DUR.short);
-            },
+            onclick: (e) => addToPool([card.tag], e.currentTarget),
           },
-          "帶去墨池合成池"
+          "加入合成池"
         ),
         el(
           "button",
@@ -2189,15 +2181,10 @@ function openWork(x, thumb) {
                 onclick: (e) => {
                   // 份量（weights.js）從提示詞讀回來：帶回去還是那個份量。
                   const all = weightsOfPositive(x.positive);
-                  if (!S.handOffPool(cards, "book", Object.fromEntries(cards.filter((t) => all[t]).map((t) => [t, all[t]])))) {
-                    refuse(e.currentTarget);
-                    return toast("無法交接選牌，請檢查瀏覽器儲存空間。");
-                  }
-                  e.currentTarget.textContent = "帶過去了…";
-                  setTimeout(() => (location.href = "./"), reducedMotion() ? 0 : DUR.short);
+                  addToPool(cards, e.currentTarget, Object.fromEntries(cards.filter(t => all[t]).map(t => [t, all[t]])));
                 },
               },
-              `這張的 ${cards.length} 張牌帶回墨池`
+              `加入合成池 · ${cards.length} 張牌`
             )
           : null,
         x.fav ? el("a", { class: "btn btn-small", href: `album.html#${encodeURIComponent(x.fav)}` }, "打開作品冊") : null,
@@ -2257,9 +2244,9 @@ function flyToDetail(src, sheetEl) {
 
 /* ================= 偏好卡牌、送去墨池 =================
  * 卡冊底下是墨池的偏好卡牌（hand.js，同一份 mochi.hand.v1；長期常用的牌，不限張數）。
- *   托盤展開：點卡冊的牌（或牌上的「＋」）就飛進托盤，再點一次拿出來 —— 跟墨池字盒的挑牌一樣；
+ *   托盤展開：點卡冊的牌就飛進托盤，再點一次拿出來 —— 跟墨池字盒的挑牌一樣；
  *     要看詳情先收起托盤。
- *   托盤收著：牌上的「＋」把牌送去墨池合成池（這次要用的）：寫進交接便條（store.js 的 handOffPool，
+ *   任何時候：牌上的「＋」把牌送去墨池合成池（這次要用的）：寫進交接便條（store.js 的 handOffPool，
  *     from "book"），人留在卡冊繼續挑；頂欄「墨池」分頁上掛「+3」，回到墨池時牌已經加進剛才那一池。
  *     再按一次「＋」拿回來。托盤上的牌點一下也是送去墨池。
  * 以前的卡盒（mochi.book.box.v1）：第一次打開新版時併進偏好卡牌。 */
@@ -2273,6 +2260,37 @@ let sending = S.peekPoolHandoff("book");
 /** 托盤展開＝在挑偏好卡牌。 */
 const picking = () => !!hand?.open;
 const inSend = (tag) => sending.includes(tag);
+
+function reviewBookAddition(tags, proceed) {
+  const previous = S.peekTab(S.TAB_POOL);
+  if (!Array.isArray(previous?.tags) || !previous.tags.length) return proceed();
+  const settings = sanitizeSettings(S.loadSettings() || { rating: "general" }, data);
+  const opts = { eraMix: settings.eraMix, keepMutex: settings.pinMutex === false };
+  let pinned = new Set(previous.tags);
+  let userBanned = new Set(S.loadBans());
+  const pin = tag => { ({ pinned, userBanned } = applyPin(lexNow(), pinned, userBanned, tag, opts)); };
+  for (const tag of tags) pin(tag);
+  for (const tag of [...pinned]) {
+    for (const member of customOf(tag)?.members || []) {
+      if (!pinned.has(member.tag) && lib.byTag.has(member.tag) && !HARD_BANNED.includes(member.tag)) pin(member.tag);
+    }
+  }
+  return reviewTransfer("pool", pinned, previous.weights || {}, tag => lib.byTag.get(tag)?.zh || tag, proceed, { merge: true });
+}
+
+function addToPool(selected, button, weights = {}) {
+  // 卡冊右下角已勾的牌也在這次交接中。這次點的牌最後放，互斥時沿用放牌順序。
+  const tags = [...sending.filter(tag => !selected.includes(tag)), ...selected];
+  reviewBookAddition(tags, () => {
+    if (!S.handOffPool(tags, "book", weights)) {
+      if (button) refuse(button);
+      return toast("無法交接選牌，請檢查瀏覽器儲存空間。");
+    }
+    if (button) button.textContent = "帶過去了…";
+    sfx.tap?.();
+    setTimeout(() => (location.href = "./"), reducedMotion() ? 0 : DUR.short);
+  });
+}
 
 /* ---------- 偏好角色（fav-chars.js；墨池、疊印台同一份名單） ---------- */
 
@@ -2315,21 +2333,16 @@ favChars.onChange(() => {
   }
 });
 
-/** 牌格右下角的「＋」：托盤開著＝加進偏好卡牌，收著＝送去墨池。 */
+/** 牌格右下角的「＋」一律送去墨池；再按一次拿回。 */
 function plusButton(card) {
   const b = el("button", { class: "box-add", type: "button", "aria-pressed": "false" });
   b.addEventListener("click", (e) => {
     e.stopPropagation();
-    plus(card, cells.get(card.tag)?.querySelector(".card"));
+    toggleSend(card, cells.get(card.tag)?.querySelector(".card"));
   });
   return b;
 }
 
-function plus(card, node) {
-  if (card.banned) return;
-  if (picking()) return pickHand(card, node);
-  toggleSend(card, node);
-}
 
 /** 挑偏好卡牌：牌從格子飛進托盤；已經在就拿出來。 */
 function pickHand(card, node) {
@@ -2341,17 +2354,15 @@ function pickHand(card, node) {
   hand.toggle(card.tag, r && r.width ? r : null);
 }
 
-/** 格子上的狀態：「＋」或「✓」（看的是現在那一份：托盤開著是偏好卡牌、收著是送去墨池）、「送墨池」章、「手」。 */
+/** 送墨池和偏好是兩個獨立狀態。 */
 function paintMark(cell, tag) {
   const zh = lib.byTag.get(tag)?.zh || tag;
-  const toHand = picking();
   const sent = inSend(tag);
-  const on = toHand ? !!hand?.has(tag) : sent;
   const b = cell.querySelector(".box-add");
   if (b) {
-    b.setAttribute("aria-pressed", on ? "true" : "false");
-    b.setAttribute("aria-label", toHand ? `${on ? "從偏好卡牌拿掉" : "加進偏好卡牌"}：${zh}` : `${on ? "不送了，拿回來" : "送去墨池合成池"}：${zh}`);
-    b.title = toHand ? "加進偏好卡牌（再按一次拿掉）" : "送去墨池合成池，留在卡冊繼續挑（再按一次拿回來）";
+    b.setAttribute("aria-pressed", String(sent));
+    b.setAttribute("aria-label", `${sent ? "不送了，拿回來" : "送去墨池合成池"}：${zh}`);
+    b.title = "送去墨池合成池，留在卡冊繼續挑（再按一次拿回來）";
   }
   cell.dataset.sent = sent ? "true" : "false";
   const node = cell.querySelector(".card");
@@ -2365,9 +2376,15 @@ function repaintMarks() {
 }
 
 /** 送去墨池（或拿回來）：便條整份重寫；全部拿回來就撕掉。 */
-function toggleSend(card, node) {
-  const was = sending;
+function toggleSend(card, node, rect = null) {
   const adding = !inSend(card.tag);
+  const apply = () => updateSend(card, node, rect, adding);
+  if (adding) reviewBookAddition([...sending, card.tag], apply);
+  else apply();
+}
+
+function updateSend(card, node, rect, adding) {
+  const was = sending;
   sending = adding ? [...sending, card.tag] : sending.filter((t) => t !== card.tag);
   const ok = sending.length ? S.handOffPool(sending, "book") : (S.clearPoolHandoff(), true);
   if (!ok) {
@@ -2379,7 +2396,7 @@ function toggleSend(card, node) {
   if (cell) paintMark(cell, card.tag);
   if (adding) {
     sfx.tap?.();
-    flyToMochi(node);
+    flyToMochi(node, rect);
   } else renderSendBadge();
 }
 
@@ -2427,6 +2444,12 @@ function flyToMochi(fromNode, rect = null) {
 
 /** 偏好卡牌（hand.js）：墨池同一份。卡冊不量自己的牌（noSample），托盤的牌跟墨池那邊一樣大。 */
 function buildHand() {
+  const hint = $("book-pick-hint");
+  hint.insertAdjacentHTML("afterbegin", HAND_ICON);
+  function showMode() {
+    hint.hidden = !picking();
+    document.body.dataset.handEdit = String(picking());
+  }
   mergeOldBox();
   hand = createHand({
     key: HAND_KEY,
@@ -2449,19 +2472,18 @@ function buildHand() {
         return toast(`「${card.zh}」已經送去墨池了`);
       }
       const node = hand.nodeOf(t);
-      toggleSend(card, null);
-      if (node && r) flyToMochi(node, r);
+      toggleSend(card, node, r);
     },
     onChange: () => {
       if (!hand) return;
-      document.body.dataset.handEdit = picking() ? "true" : "false";
+      showMode();
       hand.mark($("book-grid"));
       repaintMarks();
     },
     onRemoved: (t, undo) => toast(`「${lib.byTag.get(t)?.zh || t}」拿出偏好卡牌`, { action: { label: "復原", key: "Z", run: undo } }),
     tools: handTools({ hand: () => hand, data: () => data, isCard: (t) => lib.byTag.has(t) && !lib.byTag.get(t).banned, zh: (t) => lib.byTag.get(t)?.zh || t }),
   });
-  document.body.dataset.handEdit = picking() ? "true" : "false";
+  showMode();
   renderSendBadge();
   addEventListener("keydown", (e) => {
     // B：開關偏好卡牌（在找字的框裡打字時不算）。以前是卡盒。
