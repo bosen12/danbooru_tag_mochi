@@ -11,7 +11,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { os: ubuntu-latest, python: "3.9" }
+          - { os: ubuntu-24.04, python: "3.9" }  # ubuntu-latest 換成 26.04 後裝不到 3.9
           - { os: ubuntu-latest, python: "3.13" }
           - { os: windows-latest, python: "3.13" }
           - { os: macos-latest, python: "3.13" }

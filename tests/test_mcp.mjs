@@ -209,8 +209,15 @@ try {
   await tool("generate_image", { positive: "1girl, solo, smile, sfw, general, masterpiece" });
   await tool("generate_image", { positive: "1girl, solo, nude, nsfw, explicit" });
   await tool("generate_image", { positive: "1girl, solo" });
-  const rs = got.filter((x) => x.body).slice(before).map((x) => x.body.rating);
+  const three = got.filter((x) => x.body).slice(before).map((x) => x.body);
+  const rs = three.map((b) => b.rating);
   ok("生圖沒給分級：看提示詞尾巴（general／explicit），看不出來當全年齡", rs.join() === "general,explicit,general", rs.join());
+  ok("生圖：AI 自己寫的提示詞經墨池補齊 adult、分級字、品質字", three[2].positive === "1girl, adult, solo, sfw, general, masterpiece, best quality, amazing quality" && three[0].positive === "1girl, adult, solo, smile, sfw, general, masterpiece, best quality, amazing quality" && three[1].positive === "1girl, adult, solo, nude, nsfw, explicit, masterpiece, best quality, amazing quality", three.map((b) => b.positive).join(" | "));
+  ok("生圖：抽出來的提示詞原樣送（已經齊了）", sent.positive === res.positive.replace("park", "baseball \\(object\\), park"), sent.positive);
+  const before2 = got.filter((x) => x.body).length;
+  const tidy = await tool("generate_image", { positive: "1girl, (masterpiece:1.2), nsfw, explicit, beach", rating: "general" });
+  const tb = got.filter((x) => x.body).at(-1).body;
+  ok("生圖：分級字換成指定分級的、份量照留、回報補了什麼", got.filter((x) => x.body).length === before2 + 1 && tb.positive === "1girl, adult, (masterpiece:1.2), beach, sfw, general, best quality, amazing quality" && /墨池補上/.test(tidy.data.tidied) && /explicit/.test(tidy.data.tidied), tb.positive + " / " + tidy.data?.tidied);
 
   const face = await tool("fix_image", { mode: "face", job: g.data.job });
   const fb = got.filter((x) => x.body).at(-1).body;

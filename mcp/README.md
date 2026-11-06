@@ -10,7 +10,7 @@
 | `check_cards` | 一組牌放在一起會怎樣：誰被換掉、誰被擋、原因 | 不用 |
 | `draw_prompt` | 照墨池的規則抽提示詞，每張牌標來源（釘選、附帶、隨機）。可以帶份量 `(smile:1.3)` | 不用（套牌組、自製牌、偏好角色時要） |
 | `my_cards` | 你在墨池存的牌組、自製牌、卡冊標的偏好角色；抽牌時可以直接套用 | 要 |
-| `generate_image` | 經墨池的生圖排程送 ComfyUI，回縮圖和網址；記進作品冊的日誌（來源寫 AI） | 要（還有 ComfyUI） |
+| `generate_image` | 經墨池的生圖排程送 ComfyUI，回縮圖和網址；記進作品冊的日誌（來源寫 AI）。AI 自己寫的提示詞會先照墨池補齊 adult、分級字、品質字 | 要（還有 ComfyUI） |
 | `fix_image` | 對印好的圖修臉、快速或深度放大（跟成品牆的修臉、Hires 同一條路） | 要（還有 ComfyUI） |
 | `image_status` | 接著等還沒畫完的那張 | 要 |
 | `list_models`、`recent_images` | 底模與 LoRA、最近印的圖 | 要 |

@@ -135,7 +135,7 @@ ${skeleton}
 1. search_cards 把使用者的話拆成關鍵字一次查完（中文、英文都行；「胖」「黑絲」這類說法有同義詞）。查不到的元素，自己換成相近的牌，或放進 extra（詞庫外的英文 tag）。
 2. 不確定能不能放在一起，用 check_cards；想知道一張牌的細節，用 explain_card。
 3. draw_prompt 抽提示詞。題目明確時每段只補 1～2 張（例如 feature 2、pose 2、clothing 1、env 2），題目模糊用預設（${Object.entries(DEFAULT_COUNTS).map(([s, n]) => `${s} ${n}`).join("、")}）。看回傳每張牌的來源，有不合題意的隨機牌就調整（加 bans、降張數、補釘選）再抽。
-4. generate_image 用抽好的 positive 生圖（要開著墨池和 ComfyUI）。沒等到就用 image_status 接著等。
+4. generate_image 用抽好的 positive 生圖（要開著墨池和 ComfyUI）。自己改寫的提示詞也行：墨池會補 adult、分級字、品質字。沒等到就用 image_status 接著等。
 5. 臉崩了用 fix_image 的 face 修臉；要大圖用 quick／deep 放大。帶上 generate_image 回的 job 就好。
 6. 沒說幾個人時預設一個女生（1girl）。不畫未成年。
 `;
@@ -561,6 +561,48 @@ function ratingOf(args, positive) {
   return "general";
 }
 
+const RATING_TAIL = { general: data.sfwTail || [], sensitive: data.sensitiveTail || [], explicit: data.nsfwTail || [] };
+const RATING_WORDS = new Set(Object.values(RATING_TAIL).flat());
+const QUALITY = data.quality || [];
+const PEOPLE_RE = /^(?:\d+\+?|multiple )(?:girls?|boys?)$/;
+
+/**
+ * 經墨池處理：AI 自己寫的提示詞常常沒有分級字、品質字（墨池抽出來的一定有），也沒有 adult。
+ * 照引擎的結尾補齊：有人物補 adult；分級字換成這個分級的（別的分級的拿掉）；品質字補在最後。
+ * draw_prompt 抽出來的本來就齊，原樣不動。調過份量的 (masterpiece:1.2) 照留。
+ */
+function mochiTail(positive, rating) {
+  const want = RATING_TAIL[rating] || [];
+  const dropped = [];
+  const tokens = String(positive).split(",").map((t) => t.trim()).filter(Boolean).filter((t) => {
+    const b = bareTag(t);
+    if (RATING_WORDS.has(b) && !want.includes(b)) return dropped.push(t), false;
+    return true;
+  });
+  const has = new Set(tokens.map(bareTag));
+  const added = [];
+  if (!has.has("adult")) {
+    let at = -1;
+    tokens.forEach((t, i) => PEOPLE_RE.test(bareTag(t)) && (at = i));
+    if (at >= 0) tokens.splice(at + 1, 0, "adult"), added.push("adult");
+  }
+  const missRating = want.filter((t) => !has.has(t));
+  if (missRating.length) {
+    // 插在結尾那串品質字前面（引擎的順序：…場景, 分級字, 品質字）
+    let q = tokens.length;
+    while (q > 0 && QUALITY.includes(bareTag(tokens[q - 1]))) q--;
+    tokens.splice(q, 0, ...missRating);
+    added.push(...missRating);
+  }
+  const missQuality = QUALITY.filter((t) => !has.has(t));
+  tokens.push(...missQuality);
+  added.push(...missQuality);
+  return { positive: tokens.join(", "), added, dropped };
+}
+
+const tidyNote = (added, dropped) =>
+  [added.length ? "墨池補上：" + added.join(", ") : "", dropped.length ? "拿掉（跟分級不合）：" + dropped.join(", ") : ""].filter(Boolean).join("；") || undefined;
+
 /** 送一張去墨池的生圖排程（生圖、修臉、Hires 都是 POST /api/gen），讀 SSE 直到畫完。 */
 async function startJob(body, meta) {
   const id = "mcp-" + randomBytes(8).toString("hex");
@@ -608,12 +650,14 @@ async function startJob(body, meta) {
 }
 
 async function generateImage(args) {
-  const positive = String(args.positive ?? "").trim();
-  if (!positive) throw new Error("positive 是空的：先用 draw_prompt 抽一組");
-  guard(positive);
+  const raw = String(args.positive ?? "").trim();
+  if (!raw) throw new Error("positive 是空的：先用 draw_prompt 抽一組");
+  guard(raw);
+  const rating = ratingOf(args, raw);
+  const { positive, added, dropped } = mochiTail(raw, rating);
   const body = {
     positive: E.escapeForComfy(positive),
-    rating: ratingOf(args, positive),
+    rating,
     width: checkSize(args.width, "width") ?? 1024,
     height: checkSize(args.height, "height") ?? 1024,
     ...(args.seed !== undefined && args.seed !== null && args.seed !== "" ? { seed: Number(args.seed) >>> 0 } : {}),
@@ -621,7 +665,7 @@ async function generateImage(args) {
     ...(Array.isArray(args.loras) ? { loras: args.loras } : {}),
     ...(args.era ? { era: String(args.era) } : {}),
   };
-  const job = await startJob(body, { positive, rating: body.rating, width: body.width, height: body.height, ckpt: body.ckpt, loras: body.loras, era: body.era });
+  const job = await startJob(body, { positive, rating, width: body.width, height: body.height, ckpt: body.ckpt, loras: body.loras, era: body.era, tidied: tidyNote(added, dropped) });
   return waitJob(job, args.wait_seconds);
 }
 
@@ -640,11 +684,12 @@ async function fixImage(args) {
   let image = String(args.image || from?.image || "");
   if (image.startsWith(BASE)) image = image.slice(BASE.length);
   if (!image.startsWith("/api/image?")) throw new Error("image 要是墨池的圖片網址（/api/image?… 開頭，或 generate_image 回的 imageUrl）");
-  const positive = String(args.positive || from?.positive || "").trim();
-  if (!positive) throw new Error("要給 positive（那張圖的提示詞）");
-  guard(positive);
+  const raw = String(args.positive || from?.positive || "").trim();
+  if (!raw) throw new Error("要給 positive（那張圖的提示詞）");
+  guard(raw);
   const scale = mode === "face" ? 1 : Math.max(1.25, Math.min(3, Number(args.scale) || HIRES_SCALE[mode]));
-  const rating = E.RATINGS.includes(args.rating) ? args.rating : from?.rating || ratingOf(args, positive);
+  const rating = E.RATINGS.includes(args.rating) ? args.rating : from?.rating || ratingOf(args, raw);
+  const { positive, added, dropped } = mochiTail(raw, rating);
   const body = {
     positive: E.escapeForComfy(positive),
     rating,
@@ -654,7 +699,7 @@ async function fixImage(args) {
     ...((args.loras || from?.loras) ? { loras: args.loras || from.loras } : {}),
     hires: mode === "face" ? { mode, image } : { mode, scale, image },
   };
-  const job = await startJob(body, { positive, rating, ckpt: body.ckpt, loras: body.loras, fixed: mode });
+  const job = await startJob(body, { positive, rating, ckpt: body.ckpt, loras: body.loras, fixed: mode, tidied: tidyNote(added, dropped) });
   return waitJob(job, args.wait_seconds);
 }
 
@@ -698,7 +743,7 @@ function waitJob(job, seconds) {
 }
 
 async function report(job) {
-  const out = { job: job.id, state: job.state, progress: Math.round(job.progress * 100) + "%" };
+  const out = { job: job.id, state: job.state, progress: Math.round(job.progress * 100) + "%", ...(job.tidied ? { tidied: job.tidied } : {}) };
   if (job.state === "error") return { ...out, error: job.error };
   if (job.state !== "done") return { ...out, next: "還沒畫完：用 image_status 帶這個 job 接著等。" };
   const url = BASE + job.image;
@@ -853,11 +898,11 @@ const TOOLS = [
   },
   {
     name: "generate_image",
-    description: "把正向提示詞送去墨池生圖（經墨池的生圖排程到 ComfyUI，跟網頁排同一個隊，記進作品冊的日誌）。要開著墨池和 ComfyUI。最多等 wait_seconds 秒，畫完回縮圖和網址；沒畫完回 job，用 image_status 接著等。",
+    description: "把正向提示詞送去墨池生圖（經墨池的生圖排程到 ComfyUI，跟網頁排同一個隊，記進作品冊的日誌）。送出前照墨池的結尾補齊：有人物加 adult、這個分級的分級字、品質字（masterpiece…）；補了什麼寫在 tidied。要開著墨池和 ComfyUI。最多等 wait_seconds 秒，畫完回縮圖和網址；沒畫完回 job，用 image_status 接著等。",
     inputSchema: {
       type: "object",
       properties: {
-        positive: { type: "string", description: "draw_prompt 回的 positive（或改過的）" },
+        positive: { type: "string", description: "draw_prompt 回的 positive（或改過的）。墨池會補齊 adult、分級字、品質字，不用自己寫" },
         rating: { type: "string", enum: E.RATINGS, description: "分級（決定負向提示詞）。不給就看 positive 尾巴的 general／sensitive／explicit" },
         width: { type: "integer", description: "直圖 832×1216、橫圖 1216×832、方圖 1024×1024" },
         height: { type: "integer" },
