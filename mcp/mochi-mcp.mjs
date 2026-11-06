@@ -40,6 +40,22 @@ const MINOR_RE =
   /\b(loli|lolicon|shota|shotacon|child|children|kid|kids|toddler|baby|infant|underage|minor|preteen|young(?:er)?\s+(?:girl|boy)|little\s+(?:girl|boy|sister|brother)|elementary\s+school|middle\s+school|kindergarten|aged\s+down|age\s+regression)\b|蘿莉|萝莉|正太|幼女|幼童|兒童|儿童|小孩|孩童|未成年|小學生|小学生|國中生|初中生/i;
 const isMinor = (t) => MINOR_RE.test(String(t));
 
+// 禁用角色（詞庫的 characterBan，2000 多個，多半是年齡不明）：墨池網頁貼上、存檔、烤卡面都擋，這裡也擋——
+// 以前詞庫找不到的字會當「詞庫外」接進提示詞，禁用角色就從這裡溜進去（2026-11-06 釘 hatsune miku 實測）。
+// 角色的中文名在 scripts/characters.json（開源版也有）：查「初音未來」要能說出它是禁用的，AI 才不會改用英文硬塞。
+const BANNED = new Set((data.characterBan || []).map((t) => String(t).toLowerCase().trim()));
+const CHARACTERS = (() => {
+  try {
+    const raw = JSON.parse(readFileSync(join(ROOT, "scripts", "characters.json"), "utf8"));
+    return Array.isArray(raw) ? raw : raw.characters || [];
+  } catch {
+    return [];
+  }
+})();
+const bareTag = (t) => E.parseWeighted(String(t ?? "")).tag.toLowerCase().replace(/_/g, " ").trim();
+const isBanned = (t) => BANNED.has(bareTag(t));
+const BANNED_TEXT = "禁用角色（年齡不明或看起來未成年），墨池不畫";
+
 const HEAT_ZH = { activity: "活動（全年齡的日常動作）", tease: "誘惑", flash: "走光", sex: "性愛" };
 const GATE_ZH = { any: "不限", female: "女性才有", male: "男性才有" };
 const SECTION_ZH = { subject: "人數／角色", feature: "長相", pose: "姿勢", clothing: "服裝", env: "場景" };
@@ -108,13 +124,20 @@ ${skeleton}
 - 性別：有些牌只對女性或男性（gate），人物性別不合就不出。
 - 情境：運動器材要配得上場地、手被占住就不能再拿東西、全套衣服跟裸體不能並存…
 - 場景模式（sceneMode）：${E.SCENE_MODES.map((m) => `${m}＝${E.SCENE_MODE_LABELS[m]}`).join("、")}。
+- 沒指定尺度和分級時一律全年齡；使用者要求性感、走光、色情才指定。
+- 禁用角色（${BANNED.size} 個，多半年齡不明）查不到也抽不出來，不要改用英文或 extra 硬塞。
+
+## 份量與你存的牌
+- 份量：pins 寫 (smile:1.3)，或 weights {"smile": 1.3}，範圍 0.6～1.5。成品寫成 (smile:1.3)。
+- my_cards 看使用者在墨池存的牌組、自製牌、偏好角色（要開著墨池）。draw_prompt 用 deck 套牌組、pins 放 custom:… 用自製牌、favoriteCharacter: true 挑偏好角色。
 
 ## 建議流程
 1. search_cards 把使用者的話拆成關鍵字一次查完（中文、英文都行；「胖」「黑絲」這類說法有同義詞）。查不到的元素，自己換成相近的牌，或放進 extra（詞庫外的英文 tag）。
 2. 不確定能不能放在一起，用 check_cards；想知道一張牌的細節，用 explain_card。
 3. draw_prompt 抽提示詞。題目明確時每段只補 1～2 張（例如 feature 2、pose 2、clothing 1、env 2），題目模糊用預設（${Object.entries(DEFAULT_COUNTS).map(([s, n]) => `${s} ${n}`).join("、")}）。看回傳每張牌的來源，有不合題意的隨機牌就調整（加 bans、降張數、補釘選）再抽。
 4. generate_image 用抽好的 positive 生圖（要開著墨池和 ComfyUI）。沒等到就用 image_status 接著等。
-5. 沒說幾個人時預設一個女生（1girl）。不畫未成年。
+5. 臉崩了用 fix_image 的 face 修臉；要大圖用 quick／deep 放大。帶上 generate_image 回的 job 就好。
+6. 沒說幾個人時預設一個女生（1girl）。不畫未成年。
 `;
 }
 
@@ -130,6 +153,13 @@ function searchCards({ queries, section, limit }) {
       continue;
     }
     const q = key(w);
+    const bannedHit = CHARACTERS.find((c) => c.character_ban && (key(c.tag) === q || key(c.zh) === q));
+    if (bannedHit || isBanned(w)) {
+      results[w] = { blocked: `${bannedHit ? `${bannedHit.zh || ""}（${bannedHit.tag}）` : w}是${BANNED_TEXT}。不要改用英文或放進 extra。` };
+      continue;
+    }
+    // 中文名只寫一部分的（characters.json 寫「初音」，人家打「初音未來」）：照樣列相關的牌（例如角色扮演的衣服），最前面先提醒。
+    const bannedNear = CHARACTERS.find((c) => c.character_ban && key(c.zh).length >= 2 && q.startsWith(key(c.zh)));
     const scored = [];
     for (const it of pool) {
       const tag = key(it.tag);
@@ -152,7 +182,8 @@ function searchCards({ queries, section, limit }) {
       seen.add(tag);
       hits.push({ ...brief(it), via: "同義詞" });
     }
-    results[w] = hits.length ? hits.map(line) : "詞庫沒有。換個說法再查，或寫成英文 Danbooru tag 放進 draw_prompt 的 extra。";
+    const warn = bannedNear ? [`注意：角色本人${bannedNear.zh}（${bannedNear.tag}）是${BANNED_TEXT}，不要改用英文或放進 extra。下面是其他相關的牌。`] : [];
+    results[w] = hits.length ? [...warn, ...hits.map(line)] : bannedNear ? { blocked: warn[0] } : "詞庫沒有。換個說法再查，或寫成英文 Danbooru tag 放進 draw_prompt 的 extra。";
   }
   return { format: "tag ｜ 中文 ｜ 段/子分類 ｜ 會出現的尺度 ｜ 最低分級 ｜ 時代 ｜ 性別限制", results };
 }
@@ -187,25 +218,135 @@ function explainCard({ tag }) {
 
 const people = (tags) => tags.some((t) => lex.byTag.get(t)?.section === "subject");
 
+const RANK = { general: 0, sensitive: 1, explicit: 2 };
+
+/**
+ * 沒講尺度、分級：全年齡（以前照墨池網頁預設成色情，AI 沒寫就抽出緊身衣加 nsfw）。
+ * 只講尺度：有性愛、走光是色情，只有誘惑是敏感，其餘全年齡。只講分級：尺度照引擎預設。
+ */
+function contentLevel(spec) {
+  const heats = Array.isArray(spec.heats) && spec.heats.length ? spec.heats : null;
+  const rating = E.RATINGS.includes(spec.rating) ? spec.rating : null;
+  if (!heats && !rating) return { heats: ["activity"], rating: "general", note: "沒指定尺度和分級：用全年齡（activity、general）。要更露骨得明確指定。" };
+  if (rating) return { heats, rating, note: null };
+  const r = heats.some((h) => h === "sex" || h === "flash") ? "explicit" : heats.includes("tease") ? "sensitive" : "general";
+  return { heats, rating: r, note: `沒指定分級：照尺度用 ${r}。` };
+}
+
+/** 份量：pins 裡的 (tag:1.2) 和 weights 物件合在一起，夾在墨池的 0.6～1.5。 */
+function splitWeights(list, weightsIn) {
+  const tags = [];
+  const weights = {};
+  for (const raw of list) {
+    const { tag, weight } = E.parseWeighted(raw);
+    if (!tag) continue;
+    tags.push(tag);
+    if (weight !== 1) weights[tag] = E.clampTagWeight(weight);
+  }
+  for (const [tag, w] of Object.entries(weightsIn && typeof weightsIn === "object" ? weightsIn : {})) {
+    const n = E.clampTagWeight(w);
+    if (n !== 1) weights[tag] = n;
+    else delete weights[tag];
+  }
+  return { tags, weights };
+}
+
+/**
+ * 你在墨池存的東西（要開著墨池）：牌組、自製牌、偏好角色。一次要求只抓一次。
+ * 讀不到（墨池沒開）時，用到它們的要求會說清楚，其他照常。
+ */
+async function mine(kind) {
+  const path = { decks: "/api/decks", custom: "/api/custom-cards", chars: "/api/fav-chars" }[kind];
+  const r = await mochi(path);
+  const d = await r.json().catch(() => ({}));
+  if (kind === "decks") return Array.isArray(d.decks) ? d.decks : [];
+  if (kind === "custom") return Array.isArray(d.cards) ? d.cards : [];
+  return Array.isArray(d.tags) ? d.tags : [];
+}
+
+const findByName = (list, name) => {
+  const k = key(name);
+  return list.find((x) => x.id === name || key(x.name) === k) || list.find((x) => key(x.name).includes(k)) || null;
+};
+
 /** 把要求轉成引擎的設定、釘選、禁用。drawOne 和 check_cards 共用。 */
-function prepare(spec) {
-  const pinsIn = (spec.pins || []).map((t) => String(t).trim()).filter(Boolean);
-  const bansIn = (spec.bans || []).map((t) => String(t).trim()).filter(Boolean);
-  const extraIn = (spec.extra || []).map((t) => String(t).trim()).filter(Boolean);
-  const blocked = [...pinsIn, ...extraIn].filter(isMinor);
-  if (blocked.length) throw new Error("不能畫未成年角色，這些字被擋下：" + blocked.join(", "));
+async function prepare(spec) {
+  const raw = (spec.pins || []).map((t) => String(t).trim()).filter(Boolean);
+  const notes = [];
+  const extraW = {};
+  const extraIn = [];
+  for (const t of (spec.extra || []).map((x) => String(x).trim()).filter(Boolean)) {
+    const { tag, weight } = E.parseWeighted(t);
+    extraIn.push(tag);
+    if (weight !== 1) extraW[tag] = E.clampTagWeight(weight);
+  }
+  // 牌組：整組的牌和份量先放進來，pins、weights 再蓋上去。
+  let deckW = {};
+  if (spec.deck) {
+    const deck = findByName(await mine("decks"), String(spec.deck));
+    if (!deck) throw new Error(`找不到牌組「${spec.deck}」：先用 my_cards 看有哪些`);
+    raw.unshift(...(deck.tags || []));
+    deckW = deck.weights || {};
+    notes.push(`套用牌組「${deck.name}」：${(deck.tags || []).length} 張牌`);
+  }
+  const { tags: pinsAll, weights } = splitWeights(raw, { ...deckW, ...(spec.weights || {}) });
+  // 自製牌（custom:<id> 或自製牌的名字）：拆成裡面的牌（帶份量）＋詞庫外的字，跟墨池網頁一樣。
+  const level = contentLevel(spec);
+  if (level.note) notes.push(level.note);
+  const pinsIn = [];
+  let customs = null;
+  for (const t of pinsAll) {
+    if (lex.byTag.has(t) && !t.startsWith("custom:")) {
+      pinsIn.push(t);
+      continue;
+    }
+    // custom:<id> 一定要讀得到（墨池沒開就照實說）；一般的詞庫外字順便看是不是自製牌的名字，讀不到就當詞庫外。
+    if (t.startsWith("custom:")) customs = customs?.length ? customs : await mine("custom");
+    else customs ??= await mine("custom").catch(() => []);
+    const c = t.startsWith("custom:") ? customs.find((x) => x.id === t.slice(7)) : customs.find((x) => key(x.name) === key(t));
+    if (!c) {
+      if (t.startsWith("custom:")) throw new Error(`找不到自製牌 ${t}：先用 my_cards 看有哪些`);
+      pinsIn.push(t);
+      continue;
+    }
+    if (RANK[c.rating] > RANK[level.rating]) throw new Error(`自製牌「${c.name}」是${E.RATING_LABEL[c.rating]}，比這次的分級（${E.RATING_LABEL[level.rating]}）高`);
+    for (const m of c.members || []) {
+      pinsIn.push(m.tag);
+      if (m.w && m.w !== 1 && !(m.tag in weights)) weights[m.tag] = E.clampTagWeight(m.w);
+    }
+    for (const x of c.extra || []) {
+      extraIn.push(x.text);
+      if (x.w && x.w !== 1) extraW[x.text] = E.clampTagWeight(x.w);
+    }
+    notes.push(`自製牌「${c.name}」拆成 ${(c.members || []).length} 張牌${(c.extra || []).length ? `＋詞庫外 ${(c.extra || []).length} 個字` : ""}`);
+  }
+  // 偏好角色：從你在墨池標的角色裡挑一個（跳過禁用的、詞庫沒有的），用抽牌的種子挑，同設定同結果。
+  if (spec.favoriteCharacter) {
+    const pool = (await mine("chars")).filter((t) => lex.byTag.has(t) && !isBanned(t));
+    if (!pool.length) throw new Error("你還沒有標偏好角色（卡冊的角色牌上按愛心），或都不在詞庫裡");
+    const pick = pool[E.mulberry32(Number(spec.seed) >>> 0 || 1)() * pool.length | 0];
+    pinsIn.push(pick);
+    notes.push(`從 ${pool.length} 個偏好角色挑了${label(pick)}`);
+  }
+  const bansIn = (spec.bans || []).map((t) => bareTag(t)).filter(Boolean);
+  const all = [...pinsIn, ...extraIn];
+  const minor = all.filter(isMinor);
+  if (minor.length) throw new Error("不能畫未成年角色，這些字被擋下：" + minor.join(", "));
+  const bannedChars = all.filter(isBanned);
+  if (bannedChars.length) throw new Error(`${bannedChars.join(", ")}：${BANNED_TEXT}。`);
   const notInLexicon = pinsIn.filter((t) => !lex.byTag.has(t));
+  for (const t of notInLexicon) if (weights[t]) extraW[t] = weights[t];
   const girl = spec.girl ?? true;
   const boy = spec.boy ?? false;
-  const pins = pinsIn.filter((t) => lex.byTag.has(t));
+  const pins = [...new Set(pinsIn.filter((t) => lex.byTag.has(t)))];
   // 沒說幾個人：預設一個人（女生優先）。引擎自己抽的話常抽成兩三個人。
   const defaulted = !people(pins) && spec.people !== false ? (girl ? "1girl" : boy ? "1boy" : null) : null;
   if (defaulted) pins.unshift(defaulted);
   let settings = E.sanitizeSettings(
     {
       counts: { ...DEFAULT_COUNTS, ...(spec.counts || {}) },
-      heats: spec.heats,
-      rating: spec.rating,
+      heats: level.heats || undefined,
+      rating: level.rating,
       eras: spec.eras,
       girl,
       boy,
@@ -241,7 +382,7 @@ function prepare(spec) {
     for (const x of before) if (!pinned.has(x)) displaced.push({ tag: x, by: t, why: `${label(x)}被拿掉：跟後來釘的${label(t)}互斥（同一格只能一張）` });
   }
   for (const t of bansIn) ({ pinned, userBanned: banned } = E.applyBan(lex, pinned, banned, t));
-  return { pinsIn, bansIn, extras: [...extraIn, ...notInLexicon], notInLexicon, defaulted, settings, pinned, banned, displaced };
+  return { pinsIn, bansIn, extras: [...new Set([...extraIn, ...notInLexicon])], notInLexicon, defaulted, settings, pinned, banned, displaced, weights: { ...weights, ...extraW }, notes };
 }
 
 function warningsOf(p) {
@@ -270,8 +411,8 @@ function traceOf(r, p) {
   return { kept, removed, tags };
 }
 
-/** 有人物就在人數字後面補 adult；extra 放在分級與品質字前面（跟 danbooru-draw skill 一樣）。 */
-function finishTags(r, extras) {
+/** 有人物就在人數字後面補 adult；extra 放在分級與品質字前面（跟 danbooru-draw skill 一樣）；調過份量的寫成 (tag:1.2)。 */
+function finishTags(r, extras, weights = {}) {
   const tags = r.positive.split(",").map((t) => t.trim()).filter(Boolean);
   const subj = new Set(r.sections?.subject || []);
   let at = 0;
@@ -281,15 +422,15 @@ function finishTags(r, extras) {
   let tail = tags.findIndex((t) => TAIL.has(t));
   if (tail < 0) tail = tags.length;
   tags.splice(tail, 0, ...add);
-  const bad = tags.filter(isMinor);
-  if (bad.length) throw new Error("抽出來的結果含未成年字，已停止：" + bad.join(", "));
-  return tags;
+  const bad = tags.filter((t) => isMinor(t) || isBanned(t));
+  if (bad.length) throw new Error("抽出來的結果含未成年字或禁用角色，已停止：" + bad.join(", "));
+  return tags.map((t) => (weights[t] && weights[t] !== 1 ? E.formatWeighted(t, weights[t]) : t));
 }
 
-function checkCards(spec) {
+async function checkCards(spec) {
   const tags = (spec.tags || []).map(String);
-  if (!tags.length) throw new Error("tags 至少要一張牌");
-  const p = prepare({ ...spec, pins: tags, counts: { subject: 0, feature: 0, pose: 0, clothing: 0, env: 0 } });
+  if (!tags.length && !spec.deck) throw new Error("tags 至少要一張牌（或給 deck）");
+  const p = await prepare({ ...spec, pins: tags, counts: { subject: 0, feature: 0, pose: 0, clothing: 0, env: 0 } });
   const r = E.drawOne(lex, p.settings, p.pinned, p.banned, E.mulberry32(1), 1, { trace: true });
   const { removed, tags: traced } = traceOf(r, p);
   const out = new Set(r.positive.split(",").map((t) => t.trim()));
@@ -303,18 +444,19 @@ function checkCards(spec) {
     notInLexicon: p.notInLexicon,
     addedAutomatically: traced.filter((k) => !p.pinsIn.includes(k.tag) && k.from !== sourceLabel("fixed")).map((k) => `${label(k.tag)}：${k.from}`),
     settings: { heats: p.settings.heats, rating: p.settings.rating, eras: p.settings.eras },
+    ...(p.notes.length ? { notes: p.notes } : {}),
   };
 }
 
-function drawPrompt(spec) {
-  const p = prepare(spec);
+async function drawPrompt(spec) {
+  const p = await prepare(spec);
   const n = Math.max(1, Math.min(4, Math.floor(Number(spec.n) || 1)));
   const base = spec.seed !== undefined && spec.seed !== null && spec.seed !== "" ? Number(spec.seed) >>> 0 : null;
   const results = [];
   for (let i = 0; i < n; i++) {
     const seed = base === null ? E.randomSeed() : (base + i) >>> 0;
     const r = E.drawOne(lex, p.settings, p.pinned, p.banned, E.mulberry32(seed), seed, { trace: true });
-    const tags = finishTags(r, p.extras);
+    const tags = finishTags(r, p.extras, p.weights);
     const { kept, removed } = traceOf(r, p);
     results.push({
       positive: tags.join(", "),
@@ -322,7 +464,7 @@ function drawPrompt(spec) {
       drawSeed: seed,
       cards: kept,
       removed,
-      droppedPins: p.pinsIn.filter((t) => lex.byTag.has(t) && !tags.includes(t)),
+      droppedPins: p.pinsIn.filter((t) => lex.byTag.has(t) && !tags.some((x) => bareTag(x) === t)),
     });
   }
   return {
@@ -331,6 +473,8 @@ function drawPrompt(spec) {
     warnings: warningsOf(p),
     notInLexicon: p.notInLexicon,
     defaultedPeople: p.defaulted,
+    ...(Object.keys(p.weights).length ? { weights: p.weights } : {}),
+    ...(p.notes.length ? { notes: p.notes } : {}),
     settings: {
       counts: p.settings.counts,
       heats: p.settings.heats,
@@ -394,28 +538,36 @@ function checkSize(v, name) {
   return n;
 }
 
-async function generateImage(args) {
-  const positive = String(args.positive ?? "").trim();
-  if (!positive) throw new Error("positive 是空的：先用 draw_prompt 抽一組");
-  const bad = positive.split(",").map((t) => t.trim()).filter(isMinor);
-  if (bad.length) throw new Error("不能畫未成年角色，這些字被擋下：" + bad.join(", "));
+/** 提示詞裡的字（去掉份量）。檢查未成年、禁用角色、判斷分級用。 */
+const partsOf = (positive) => String(positive ?? "").split(",").map((t) => bareTag(t)).filter(Boolean);
+
+function guard(positive) {
+  const parts = partsOf(positive);
+  const minor = parts.filter(isMinor);
+  if (minor.length) throw new Error("不能畫未成年角色，這些字被擋下：" + minor.join(", "));
+  const banned = parts.filter((t) => BANNED.has(t));
+  if (banned.length) throw new Error(`${banned.join(", ")}：${BANNED_TEXT}。`);
+}
+
+/**
+ * 沒給分級：看提示詞尾巴（墨池抽出來的一定有 general／sensitive／explicit）。以前一律當色情送，
+ * 全年齡的提示詞會配上色情的負向提示詞。什麼都看不出來就當全年齡。
+ */
+function ratingOf(args, positive) {
+  if (E.RATINGS.includes(args.rating)) return args.rating;
+  const parts = new Set(partsOf(positive));
+  if (parts.has("explicit") || parts.has("nsfw")) return "explicit";
+  if (parts.has("sensitive")) return "sensitive";
+  return "general";
+}
+
+/** 送一張去墨池的生圖排程（生圖、修臉、Hires 都是 POST /api/gen），讀 SSE 直到畫完。 */
+async function startJob(body, meta) {
   const id = "mcp-" + randomBytes(8).toString("hex");
-  const body = {
-    positive: E.escapeForComfy(positive),
-    rating: E.RATINGS.includes(args.rating) ? args.rating : "explicit",
-    width: checkSize(args.width, "width") ?? 1024,
-    height: checkSize(args.height, "height") ?? 1024,
-    ...(args.seed !== undefined && args.seed !== null && args.seed !== "" ? { seed: Number(args.seed) >>> 0 } : {}),
-    ...(args.ckpt ? { ckpt: String(args.ckpt) } : {}),
-    ...(Array.isArray(args.loras) ? { loras: args.loras } : {}),
-    ...(args.era ? { era: String(args.era) } : {}),
-    origin: "mcp",
-    job: id,
-  };
   const res = await mochi("/api/gen", {
     method: "POST",
     headers: { "Content-Type": "application/json", Accept: "text/event-stream", "X-Gen-Resume": "1" },
-    body: JSON.stringify(body),
+    body: JSON.stringify({ ...body, origin: "mcp", job: id }),
   });
   if (!res.ok) {
     let msg = `墨池回 ${res.status}`;
@@ -426,7 +578,7 @@ async function generateImage(args) {
     }
     throw new Error(msg);
   }
-  const job = { id: res.headers.get("X-Gen-Job") || id, state: "queued", progress: 0, positive, rating: body.rating, width: body.width, height: body.height, waiters: [] };
+  const job = { id: res.headers.get("X-Gen-Job") || id, state: "queued", progress: 0, ...meta, waiters: [] };
   jobs.set(job.id, job);
   const settle = () => job.waiters.splice(0).forEach((f) => f());
   // 一直讀到畫完：墨池的工作有人接著才會畫完（沒人接的兩分鐘會被收掉），所以這條連線要留著，工具先回也一樣。
@@ -438,7 +590,7 @@ async function generateImage(args) {
           job.state = "running";
           job.progress = Math.min(1, (d?.value || 0) / (d?.max || 25));
         } else if (event === "done") {
-          Object.assign(job, { state: "done", progress: 1, image: d?.image, seed: d?.seed });
+          Object.assign(job, { state: "done", progress: 1, image: d?.image, seed: d?.seed, ...(d?.width ? { width: d.width, height: d.height } : {}) });
           return;
         } else if (event === "error") {
           Object.assign(job, { state: "error", error: d?.error || "ComfyUI 報錯" });
@@ -452,7 +604,85 @@ async function generateImage(args) {
       settle();
     }
   })();
+  return job;
+}
+
+async function generateImage(args) {
+  const positive = String(args.positive ?? "").trim();
+  if (!positive) throw new Error("positive 是空的：先用 draw_prompt 抽一組");
+  guard(positive);
+  const body = {
+    positive: E.escapeForComfy(positive),
+    rating: ratingOf(args, positive),
+    width: checkSize(args.width, "width") ?? 1024,
+    height: checkSize(args.height, "height") ?? 1024,
+    ...(args.seed !== undefined && args.seed !== null && args.seed !== "" ? { seed: Number(args.seed) >>> 0 } : {}),
+    ...(args.ckpt ? { ckpt: String(args.ckpt) } : {}),
+    ...(Array.isArray(args.loras) ? { loras: args.loras } : {}),
+    ...(args.era ? { era: String(args.era) } : {}),
+  };
+  const job = await startJob(body, { positive, rating: body.rating, width: body.width, height: body.height, ckpt: body.ckpt, loras: body.loras, era: body.era });
   return waitJob(job, args.wait_seconds);
+}
+
+const HIRES_SCALE = { quick: 1.5, deep: 2 };
+
+/**
+ * 修臉、Hires：對已經印好的一張再跑一次（墨池成品牆的「修臉」「Hires」同一條路，payload 多一個 hires）。
+ * 給 job（這次 MCP 送的那張）就沿用它的提示詞、分級、底模、LoRA；不然要給 image（/api/image?… 或完整網址）和 positive。
+ */
+async function fixImage(args) {
+  const mode = String(args.mode || "");
+  if (!["face", "quick", "deep"].includes(mode)) throw new Error("mode 只收 face（修臉）、quick（快速放大）、deep（深度放大）");
+  const from = args.job ? jobs.get(String(args.job)) : null;
+  if (args.job && !from) throw new Error("找不到這個 job（MCP 重開過？）：改給 image 和 positive");
+  if (from && from.state !== "done") throw new Error("那張還沒畫完：先用 image_status 等它");
+  let image = String(args.image || from?.image || "");
+  if (image.startsWith(BASE)) image = image.slice(BASE.length);
+  if (!image.startsWith("/api/image?")) throw new Error("image 要是墨池的圖片網址（/api/image?… 開頭，或 generate_image 回的 imageUrl）");
+  const positive = String(args.positive || from?.positive || "").trim();
+  if (!positive) throw new Error("要給 positive（那張圖的提示詞）");
+  guard(positive);
+  const scale = mode === "face" ? 1 : Math.max(1.25, Math.min(3, Number(args.scale) || HIRES_SCALE[mode]));
+  const rating = E.RATINGS.includes(args.rating) ? args.rating : from?.rating || ratingOf(args, positive);
+  const body = {
+    positive: E.escapeForComfy(positive),
+    rating,
+    ...(from?.width ? { width: from.width, height: from.height } : {}),
+    ...(args.seed !== undefined && args.seed !== null && args.seed !== "" ? { seed: Number(args.seed) >>> 0 } : {}),
+    ...((args.ckpt || from?.ckpt) ? { ckpt: String(args.ckpt || from.ckpt) } : {}),
+    ...((args.loras || from?.loras) ? { loras: args.loras || from.loras } : {}),
+    hires: mode === "face" ? { mode, image } : { mode, scale, image },
+  };
+  const job = await startJob(body, { positive, rating, ckpt: body.ckpt, loras: body.loras, fixed: mode });
+  return waitJob(job, args.wait_seconds);
+}
+
+/** 你在墨池存的：牌組、自製牌、偏好角色（要開著墨池）。 */
+async function myCards({ kind } = {}) {
+  const want = kind && kind !== "all" ? [kind] : ["decks", "custom", "characters"];
+  const out = {};
+  const zhList = (tags, weights = {}) => tags.map((t) => (weights[t] && weights[t] !== 1 ? `${label(t)}×${weights[t]}` : label(t)));
+  if (want.includes("decks")) {
+    out.decks = (await mine("decks")).map((d) => ({ name: d.name, cards: zhList(d.tags || [], d.weights || {}) }));
+  }
+  if (want.includes("custom")) {
+    out.customCards = (await mine("custom")).map((c) => ({
+      tag: "custom:" + c.id,
+      name: c.name,
+      rating: c.rating,
+      cards: (c.members || []).map((m) => (m.w && m.w !== 1 ? `${label(m.tag)}×${m.w}` : label(m.tag))),
+      extra: (c.extra || []).map((x) => x.text),
+    }));
+  }
+  if (want.includes("characters")) {
+    const all = await mine("chars");
+    out.favoriteCharacters = all.filter((t) => lex.byTag.has(t) && !isBanned(t)).map(label);
+    const skipped = all.length - out.favoriteCharacters.length;
+    if (skipped) out.favoriteCharactersSkipped = `${skipped} 個不在詞庫或是禁用角色，不能用`;
+  }
+  out.howTo = "draw_prompt／check_cards：deck 填牌組名稱；pins 放 custom:… 或自製牌名稱；favoriteCharacter: true 從偏好角色挑一個。";
+  return out;
 }
 
 function waitJob(job, seconds) {
@@ -548,7 +778,10 @@ async function recentImages({ limit }) {
 const SECTIONS = ["subject", "feature", "pose", "clothing", "env"];
 const strList = { type: "array", items: { type: "string" } };
 const drawSchema = {
-  pins: { ...strList, description: "一定要有的牌（詞庫 tag，用 search_cards 查到的那一欄原樣填）" },
+  pins: { ...strList, description: "一定要有的牌（詞庫 tag，用 search_cards 查到的那一欄原樣填）。可以寫份量 (tag:1.2)；也可以放自製牌（custom:… 或它的名字）" },
+  weights: { type: "object", description: "份量 {tag: 0.6～1.5}，例如 {\"smile\": 1.3}；1 是不調" },
+  deck: { type: "string", description: "套用你在墨池存的牌組（名稱，見 my_cards）：整組的牌和份量先放進來，pins 再加上去" },
+  favoriteCharacter: { type: "boolean", description: "從你在卡冊標的偏好角色挑一個釘上（用 seed 挑，同設定同結果）" },
   bans: { ...strList, description: "不要出現的牌" },
   extra: { ...strList, description: "詞庫沒有、自己寫的英文 Danbooru tag（不經規則檢查，越少越好）" },
   counts: {
@@ -557,8 +790,8 @@ const drawSchema = {
     properties: Object.fromEntries(["feature", "pose", "clothing", "env"].map((s) => [s, { type: "integer", minimum: 0, maximum: 10 }])),
   },
   focus: { type: "object", description: "張數比格子少時優先補哪幾格，例如 {\"pose\":[\"face\",\"camera\"]}。格子名見 mochi_guide。" },
-  heats: { type: "array", items: { type: "string", enum: E.HEATS }, description: "尺度：activity 全年齡日常、tease 誘惑、flash 走光、sex 性愛" },
-  rating: { type: "string", enum: E.RATINGS, description: "分級：general 全年齡、sensitive 敏感、explicit 色情" },
+  heats: { type: "array", items: { type: "string", enum: E.HEATS }, description: "尺度：activity 全年齡日常、tease 誘惑、flash 走光、sex 性愛。尺度、分級都沒給就是全年齡" },
+  rating: { type: "string", enum: E.RATINGS, description: "分級：general 全年齡、sensitive 敏感、explicit 色情。只給尺度時照尺度推（有性愛、走光就是色情）" },
   eras: { type: "array", items: { type: "string", enum: E.ERAS } },
   girl: { type: "boolean", description: "有女性（預設 true）" },
   boy: { type: "boolean", description: "有男性（預設 false）" },
@@ -603,8 +836,7 @@ const TOOLS = [
     description: "檢查一組牌放在一起會怎樣：哪些互斥被換掉、哪些被尺度／分級／時代／情境擋掉（附原因）、會自動帶出哪些牌。",
     inputSchema: {
       type: "object",
-      properties: { tags: { ...strList, description: "要放在一起的牌" }, heats: drawSchema.heats, rating: drawSchema.rating, eras: drawSchema.eras, girl: drawSchema.girl, boy: drawSchema.boy },
-      required: ["tags"],
+      properties: { tags: { ...strList, description: "要放在一起的牌（可以寫份量、放自製牌）" }, deck: drawSchema.deck, heats: drawSchema.heats, rating: drawSchema.rating, eras: drawSchema.eras, girl: drawSchema.girl, boy: drawSchema.boy },
     },
     annotations: { readOnlyHint: true },
     run: checkCards,
@@ -626,7 +858,7 @@ const TOOLS = [
       type: "object",
       properties: {
         positive: { type: "string", description: "draw_prompt 回的 positive（或改過的）" },
-        rating: drawSchema.rating,
+        rating: { type: "string", enum: E.RATINGS, description: "分級（決定負向提示詞）。不給就看 positive 尾巴的 general／sensitive／explicit" },
         width: { type: "integer", description: "直圖 832×1216、橫圖 1216×832、方圖 1024×1024" },
         height: { type: "integer" },
         seed: { type: "integer", description: "生圖種子（同提示詞＋同種子＝同構圖）；不給就隨機" },
@@ -639,6 +871,33 @@ const TOOLS = [
     },
     annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
     run: generateImage,
+  },
+  {
+    name: "fix_image",
+    description: "對印好的圖再跑一次：face 修臉（原尺寸）、quick 快速放大（預設 1.5 倍，構圖不動）、deep 深度放大（放大模型＋輕重畫，預設 2 倍）。跟墨池成品牆的修臉、Hires 同一條路，結果也記進日誌。",
+    inputSchema: {
+      type: "object",
+      properties: {
+        mode: { type: "string", enum: ["face", "quick", "deep"] },
+        job: { type: "string", description: "generate_image 回的 job：沿用那張的提示詞、分級、底模、LoRA" },
+        image: { type: "string", description: "沒有 job 時：墨池的圖片網址（imageUrl 或 /api/image?…）" },
+        positive: { type: "string", description: "沒有 job 時要給：那張圖的提示詞" },
+        scale: { type: "number", minimum: 1.25, maximum: 3, description: "放大倍數（face 不用）" },
+        rating: drawSchema.rating,
+        seed: { type: "integer" },
+        wait_seconds: { type: "integer", minimum: 0, maximum: 110, description: "最多等幾秒（預設 50）" },
+      },
+      required: ["mode"],
+    },
+    annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
+    run: fixImage,
+  },
+  {
+    name: "my_cards",
+    description: "你在墨池存的：牌組、自製牌、卡冊標的偏好角色（要開著墨池）。抽牌時可以用 deck、custom:…、favoriteCharacter 套用。",
+    inputSchema: { type: "object", properties: { kind: { type: "string", enum: ["all", "decks", "custom", "characters"] } } },
+    annotations: { readOnlyHint: true },
+    run: myCards,
   },
   {
     name: "image_status",

@@ -143,7 +143,7 @@ ComfyUI LoRA Manager is a separate project (GPLv3). It is installed into your ow
 
 ## Use it from an AI (MCP)
 
-`mcp/mochi-mcp.mjs` is an MCP server that lets Claude (Claude Code, Claude Desktop), Codex or Grok Build use Mochi's vocabulary and draw rules: search cards in English or Chinese, explain a card (what it excludes, what it brings along, which content levels, ratings and eras allow it), check whether a set of cards fits together, and draw a prompt with the source of every card (pinned, implied, random) and the reason for anything removed. These need only Node.js. With Mochi and ComfyUI running, it can also generate: images go through Mochi's queue, the top bar shows "AI", and results land in the Gallery's history. It only searches, draws and generates; it never deletes, changes settings or posts to Discord, and words about minors are refused. Setup for each AI is in [mcp/README.md](mcp/README.md), for example:
+`mcp/mochi-mcp.mjs` is an MCP server that lets Claude (Claude Code, Claude Desktop), Codex or Grok Build use Mochi's vocabulary and draw rules: search cards in English or Chinese, explain a card (what it excludes, what it brings along, which content levels, ratings and eras allow it), check whether a set of cards fits together, and draw a prompt with the source of every card (pinned, implied, random), weights such as `(smile:1.3)`, and the reason for anything removed. These need only Node.js. With Mochi running it can also use your decks, custom cards and favorite characters; with ComfyUI too, it can generate and then fix faces or upscale: images go through Mochi's queue, the top bar shows "AI", and results land in the Gallery's history. Without a content level or rating it draws all-ages prompts. It only searches, draws and generates; it never deletes, changes settings or posts to Discord, and words about minors are refused. Setup for each AI is in [mcp/README.md](mcp/README.md), for example:
 
 ```bash
 claude mcp add --scope user mochi -- node /path/to/danbooru_tag_mochi/mcp/mochi-mcp.mjs
@@ -323,7 +323,7 @@ LoRA 面板的「詳情」在 ComfyUI 的 LoRA Manager 直接打開那一個 LoR
 
 ## 讓 AI 來用（MCP）
 
-`mcp/mochi-mcp.mjs` 是一個 MCP 伺服器，讓 Claude（Claude Code、Claude Desktop）、Codex、Grok Build 用墨池的詞庫和抽牌規則：中英文查牌、解釋一張牌（跟誰互斥、帶出什麼、哪些尺度／分級／時代才會出現）、檢查一組牌放不放得在一起、照規則抽提示詞（每張牌標來源：釘選、附帶、隨機，被拿掉的附原因）。這些只要有 Node.js。開著墨池和 ComfyUI 時還能生圖：走墨池的生圖排程，頂欄看得到「AI」，成品記進作品冊的日誌。只會查、抽、生圖，不刪東西、不改設定、不送 Discord，未成年的字一律擋。各家 AI 的設定方法見 [mcp/README.md](mcp/README.md)。
+`mcp/mochi-mcp.mjs` 是一個 MCP 伺服器，讓 Claude（Claude Code、Claude Desktop）、Codex、Grok Build 用墨池的詞庫和抽牌規則：中英文查牌、解釋一張牌（跟誰互斥、帶出什麼、哪些尺度／分級／時代才會出現）、檢查一組牌放不放得在一起、照規則抽提示詞（每張牌標來源：釘選、附帶、隨機，可以帶份量 `(smile:1.3)`，被拿掉的附原因）。這些只要有 Node.js。開著墨池時還能套用你的牌組、自製牌、偏好角色；再開著 ComfyUI 就能生圖、修臉、放大：走墨池的生圖排程，頂欄看得到「AI」，成品記進作品冊的日誌。沒指定尺度、分級時一律抽全年齡。只會查、抽、生圖，不刪東西、不改設定、不送 Discord，未成年的字一律擋。各家 AI 的設定方法見 [mcp/README.md](mcp/README.md)。
 
 ## 跑不起來時
 

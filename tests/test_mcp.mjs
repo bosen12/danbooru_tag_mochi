@@ -52,6 +52,9 @@ const fake = createServer((req, res) => {
   if (url.pathname === "/api/loras") return json({ items: [{ folder: "style", category: "style", file: "detail.safetensors", name: "detail", title: "Detail Tweaker", trainedWords: ["detailed"] }, { folder: "Character", category: "Character", file: "x.safetensors", name: "x", title: "X" }], counts: { style: 1, Character: 1 } });
   if (url.pathname === "/api/genlog") return json({ ok: true, items: [{ ok: true, origin: "mcp", positive: "1girl, solo", seed: 1, image: "/api/image?filename=a.png&type=output" }] });
   if (url.pathname === "/api/gen/recover") return json({ ok: true, state: "gone" });
+  if (url.pathname === "/api/decks") return json({ ok: true, decks: [{ id: "d-1", name: "書房午後", tags: ["library", "reading", "glasses"], weights: { glasses: 1.2 } }] });
+  if (url.pathname === "/api/custom-cards") return json({ ok: true, cards: [{ id: "abc", name: "我的女僕", rating: "general", members: [{ tag: "maid", w: 1.2 }, { tag: "smile", w: 1 }], extra: [{ text: "made up thing", w: 1 }] }, { id: "hot", name: "辣的", rating: "explicit", members: [{ tag: "smile", w: 1 }], extra: [] }] });
+  if (url.pathname === "/api/fav-chars") return json({ ok: true, tags: ["hatsune miku", "yor briar"] });
   res.writeHead(404);
   res.end();
 });
@@ -107,8 +110,8 @@ try {
   mcp.stdin.write(JSON.stringify({ jsonrpc: "2.0", method: "notifications/initialized" }) + "\n");
   const list = (await rpc("tools/list")).result.tools;
   const names = list.map((t) => t.name);
-  ok("九個工具都在、每個都有說明和輸入格式", ["mochi_guide", "search_cards", "explain_card", "check_cards", "draw_prompt", "generate_image", "image_status", "list_models", "recent_images"].every((n) => names.includes(n)) && list.every((t) => t.description && t.inputSchema?.type === "object"), names.join(" "));
-  ok("只有 generate_image 不是唯讀", list.filter((t) => !t.annotations?.readOnlyHint).map((t) => t.name).join() === "generate_image");
+  ok("十一個工具都在、每個都有說明和輸入格式", ["mochi_guide", "search_cards", "explain_card", "check_cards", "draw_prompt", "generate_image", "fix_image", "my_cards", "image_status", "list_models", "recent_images"].every((n) => names.includes(n)) && list.every((t) => t.description && t.inputSchema?.type === "object"), names.join(" "));
+  ok("只有生圖、修圖不是唯讀", list.filter((t) => !t.annotations?.readOnlyHint).map((t) => t.name).join() === "generate_image,fix_image");
   ok("不認得的方法回 -32601", (await rpc("resources/list")).error?.code === -32601);
 
   const guide = await tool("mochi_guide", {});
@@ -153,12 +156,71 @@ try {
   const minorExtra = await tool("draw_prompt", { extra: ["child"] });
   ok("抽牌：extra 的未成年字也擋", minorExtra.error);
 
+  // ---- 禁用角色（2026-11-06：以前詞庫找不到就當詞庫外接進去）----
+  const bs = await tool("search_cards", { queries: ["初音", "初音未來", "hatsune miku"] });
+  const r0 = bs.data.results;
+  ok("禁用角色：中文、英文查都說是禁用、別硬塞", ["初音", "hatsune miku"].every((q) => /禁用角色/.test(r0[q]?.blocked || "") && /extra/.test(r0[q].blocked)), bs.text);
+  ok("禁用角色：全名查（初音未來）先提醒，角色扮演服照列", Array.isArray(r0["初音未來"]) && /禁用角色/.test(r0["初音未來"][0]) && r0["初音未來"].some((l) => l.startsWith("hatsune miku (cosplay)")), bs.text);
+  const bp = await tool("draw_prompt", { pins: ["hatsune miku"] });
+  const be = await tool("draw_prompt", { extra: ["(rem (re:zero):1.2)"] });
+  const bc = await tool("check_cards", { tags: ["hatsune_miku"] });
+  ok("禁用角色：釘選、extra（帶份量）、檢查都擋", bp.error && be.error && bc.error && [bp, be, bc].every((x) => /禁用角色/.test(x.text)), [bp.text, be.text, bc.text].join(" / "));
+  const bg = await tool("generate_image", { positive: "1girl, (hatsune miku:1.1), smile" });
+  ok("禁用角色：生圖擋下、沒送出去", bg.error && !got.some((x) => x.body?.positive.includes("miku")));
+
+  // ---- 沒指定分級 → 全年齡 ----
+  const plain = await tool("draw_prompt", { pins: ["park"], seed: 5 });
+  const pt = plain.data.results[0].positive.split(", ");
+  ok("沒給尺度、分級：全年齡（general、沒有 nsfw）、說明有寫", pt.includes("general") && !pt.includes("nsfw") && !pt.includes("explicit") && plain.data.settings.rating === "general" && plain.data.notes.some((n) => /全年齡/.test(n)), plain.text.slice(0, 400));
+  const sexOnly = await tool("draw_prompt", { pins: ["park"], heats: ["sex"], seed: 5 });
+  ok("只給性愛尺度：分級推成色情", sexOnly.data.settings.rating === "explicit" && sexOnly.data.results[0].positive.includes("explicit"), sexOnly.data.settings?.rating);
+
+  // ---- 份量 ----
+  const wt = await tool("draw_prompt", { pins: ["(park:1.3)", "smile"], weights: { smile: 2 }, seed: 5, heats: ["activity"], rating: "general" });
+  const wp = wt.data.results[0].positive;
+  ok("份量：pins 的 (park:1.3) 照釘、帶出室外；weights 夾到 1.5", wp.includes("(park:1.3)") && wp.includes("(smile:1.5)") && wp.split(", ").includes("outdoors") && !wt.data.notInLexicon.length && !wt.data.results[0].droppedPins.length, wp);
+
+  // ---- 牌組、自製牌、偏好角色 ----
+  const deck = await tool("draw_prompt", { deck: "書房午後", seed: 2, heats: ["activity"], rating: "general" });
+  const dp = deck.data.results?.[0]?.positive || "";
+  ok("牌組：整組的牌和份量放進來", ["library", "reading", "(glasses:1.2)"].every((t) => dp.split(", ").includes(t)) && deck.data.notes.some((n) => n.includes("書房午後")), deck.text.slice(0, 400));
+  const noDeck = await tool("draw_prompt", { deck: "沒有這組" });
+  ok("牌組：找不到說清楚", noDeck.error && /my_cards/.test(noDeck.text));
+  const cc = await tool("draw_prompt", { pins: ["custom:abc"], seed: 2, heats: ["activity"], rating: "general" });
+  const cp = cc.data.results?.[0]?.positive || "";
+  ok("自製牌：拆成裡面的牌（帶份量）＋詞庫外的字", cp.includes("(maid:1.2)") && cp.split(", ").includes("smile") && cp.includes("made up thing"), cc.text.slice(0, 500));
+  const ccName = await tool("draw_prompt", { pins: ["我的女僕"], seed: 2, heats: ["activity"], rating: "general" });
+  ok("自製牌：用名字也找得到", ccName.data.results?.[0]?.positive.includes("(maid:1.2)"), ccName.text.slice(0, 300));
+  const hot = await tool("draw_prompt", { pins: ["custom:hot"], heats: ["activity"], rating: "general" });
+  ok("自製牌：分級比這次高的擋下", hot.error && /色情/.test(hot.text), hot.text);
+  const fav = await tool("draw_prompt", { favoriteCharacter: true, seed: 9, heats: ["activity"], rating: "general" });
+  ok("偏好角色：跳過禁用的，挑到能用的", fav.data.results?.[0]?.positive.split(", ").includes("yor briar") && !fav.data.results[0].positive.includes("miku"), fav.text.slice(0, 400));
+  const mc = await tool("my_cards", {});
+  ok("my_cards：牌組、自製牌（custom: 標籤）、偏好角色（禁用的不列、說跳過幾個）", mc.data.decks[0].name === "書房午後" && mc.data.decks[0].cards.some((c) => c.includes("glasses") && c.includes("×1.2")) && mc.data.customCards[0].tag === "custom:abc" && mc.data.favoriteCharacters.length === 1 && /1 個/.test(mc.data.favoriteCharactersSkipped), mc.text);
+
   const g = await tool("generate_image", { positive: res.positive.replace("park", "baseball (object), park"), rating: "general", width: 832, height: 1216, seed: 99, era: "modern" });
   const sent = got.find((x) => x.body)?.body;
   const headers = got.find((x) => x.body)?.headers;
   ok("生圖：經墨池 /api/gen（SSE、可接回、來源寫 mcp）", sent && sent.origin === "mcp" && headers.accept === "text/event-stream" && headers["x-gen-resume"] === "1" && /^mcp-[0-9a-f]{16}$/.test(sent.job), JSON.stringify(sent));
   ok("生圖：括號照墨池的規矩跳脫、尺寸分級種子帶上", sent.positive.includes("baseball \\(object\\)") && sent.width === 832 && sent.height === 1216 && sent.rating === "general" && sent.seed === 99 && sent.era === "modern", JSON.stringify(sent));
   ok("生圖：等到印好，回網址、種子、縮圖（?w=480）", g.data.state === "done" && g.data.seed === 4242 && g.data.imageUrl === BASE + "/api/image?filename=mcp_00001_.png&subfolder=&type=output" && g.image?.mimeType === "image/png" && got.some((x) => x.image?.includes("w=480")), g.text);
+
+  const before = got.filter((x) => x.body).length;
+  await tool("generate_image", { positive: "1girl, solo, smile, sfw, general, masterpiece" });
+  await tool("generate_image", { positive: "1girl, solo, nude, nsfw, explicit" });
+  await tool("generate_image", { positive: "1girl, solo" });
+  const rs = got.filter((x) => x.body).slice(before).map((x) => x.body.rating);
+  ok("生圖沒給分級：看提示詞尾巴（general／explicit），看不出來當全年齡", rs.join() === "general,explicit,general", rs.join());
+
+  const face = await tool("fix_image", { mode: "face", job: g.data.job });
+  const fb = got.filter((x) => x.body).at(-1).body;
+  ok("修臉：沿用那張的提示詞、分級，hires 指向原圖", face.data.state === "done" && fb.hires?.mode === "face" && fb.hires.image === "/api/image?filename=mcp_00001_.png&subfolder=&type=output" && fb.rating === "general" && fb.positive.includes("baseball \\(object\\)") && fb.origin === "mcp", JSON.stringify(fb));
+  await tool("fix_image", { mode: "quick", image: BASE + "/api/image?filename=x.png&type=output", positive: "1girl, solo, sfw, general" });
+  const qb = got.filter((x) => x.body).at(-1).body;
+  ok("Hires：完整網址去掉前綴、預設 1.5 倍", qb.hires?.mode === "quick" && qb.hires.scale === 1.5 && qb.hires.image === "/api/image?filename=x.png&type=output" && qb.rating === "general", JSON.stringify(qb));
+  const fbad = await tool("fix_image", { mode: "face" });
+  const fmode = await tool("fix_image", { mode: "blur", job: g.data.job });
+  ok("修圖：沒有 job 也沒有 image、mode 不對都說清楚", fbad.error && /image/.test(fbad.text) && fmode.error && /face/.test(fmode.text));
 
   slow = true;
   const g2 = await tool("generate_image", { positive: "1girl, solo", wait_seconds: 0 });
