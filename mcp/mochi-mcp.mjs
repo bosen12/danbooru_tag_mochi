@@ -135,6 +135,8 @@ ${skeleton}
 1. search_cards 把使用者的話拆成關鍵字一次查完（中文、英文都行；「胖」「黑絲」這類說法有同義詞）。查不到的元素，自己換成相近的牌，或放進 extra（詞庫外的英文 tag）。
 2. 不確定能不能放在一起，用 check_cards；想知道一張牌的細節，用 explain_card。
 3. draw_prompt 抽提示詞。題目明確時每段只補 1～2 張（例如 feature 2、pose 2、clothing 1、env 2），題目模糊用預設（${Object.entries(DEFAULT_COUNTS).map(([s, n]) => `${s} ${n}`).join("、")}）。看回傳每張牌的來源，有不合題意的隨機牌就調整（加 bans、降張數、補釘選）再抽。
+   使用者說「不要抽」「牌你自己挑」：牌全放 pins，counts 四段都給 0，照樣用 draw_prompt——不隨機補牌，但附帶、互斥、分級的規則還是會跑。不要跳過 draw_prompt 自己拼提示詞。
+   使用者限定最多幾張：pins 不超過那個數；成品還會多 1girl／solo、附帶的牌和分級品質字。
 4. generate_image 用抽好的 positive 生圖（要開著墨池和 ComfyUI）。自己改寫的提示詞也行：墨池會補分級字、品質字。沒等到就用 image_status 接著等。
 5. 臉崩了用 fix_image 的 face 修臉；要大圖用 quick／deep 放大。帶上 generate_image 回的 job 就好。
 6. 沒說幾個人時預設一個女生（1girl）。不畫未成年。
@@ -821,7 +823,7 @@ const drawSchema = {
   extra: { ...strList, description: "詞庫沒有、自己寫的英文 Danbooru tag（不經規則檢查，越少越好）" },
   counts: {
     type: "object",
-    description: "各段隨機補幾張（不含釘選）。題目明確給 1～2，模糊用預設 feature 5、pose 4、clothing 3、env 4。",
+    description: "各段隨機補幾張（不含釘選）。題目明確給 1～2，模糊用預設 feature 5、pose 4、clothing 3、env 4。使用者說不要抽、牌自己挑：四段都給 0，只用 pins。",
     properties: Object.fromEntries(["feature", "pose", "clothing", "env"].map((s) => [s, { type: "integer", minimum: 0, maximum: 10 }])),
   },
   focus: { type: "object", description: "張數比格子少時優先補哪幾格，例如 {\"pose\":[\"face\",\"camera\"]}。格子名見 mochi_guide。" },

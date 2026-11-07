@@ -147,6 +147,11 @@ try {
   ok("抽牌：釘的都在、沒說幾個人預設 1girl、跟墨池一樣不補 adult、全年齡尾巴", spec.pins.every((t) => tags.includes(t)) && tags[0] === "1girl" && !tags.includes("adult") && tags.includes("general") && d1.data.defaultedPeople === "1girl", res?.positive);
   ok("抽牌：每張牌依來源分組（釘選、暗示帶入、隨機、預設一人）", ["釘選", "暗示帶入", "預設一人"].every((k) => Array.isArray(res.cards[k])) && res.cards["暗示帶入"].some((x) => x.includes("baseball bat") && x.includes("←")), JSON.stringify(res?.cards));
   ok("抽牌：張數少，提示詞短（25 個以內）", tags.length <= 25, tags.length);
+  const zero = await tool("draw_prompt", { pins: ["huge breasts", "mature female", "wedding ring", "swimming", "swimsuit", "pool"], counts: { feature: 0, pose: 0, clothing: 0, env: 0 }, seed: 5 });
+  const zr = zero.data.results?.[0];
+  const randomZero = (zr?.cards["隨機抽取"] || []).filter((x) => !x.includes("（solo）"));
+  ok("不要抽（四段 0）：只有釘的牌和附帶的，不隨機補", zr && randomZero.length === 0 && zr.cards["暗示帶入"]?.some((x) => x.includes("（ring）")) && /sfw, general, masterpiece/.test(zr.positive), JSON.stringify(zr?.cards));
+  ok("說明書教 AI：不要抽就 counts 全 0、照樣用 draw_prompt", /不要抽/.test(guide.text) && /counts 四段都給 0/.test(guide.text));
   const two = await tool("draw_prompt", { pins: ["2girls"], seed: 3, heats: ["activity"], rating: "general" });
   ok("抽牌：釘了人數就不再補 1girl", two.data.defaultedPeople === null && two.data.results[0].positive.startsWith("2girls"), two.data.results?.[0]?.positive);
   const extra = await tool("draw_prompt", { pins: ["park"], extra: ["made-up tag"], seed: 1, heats: ["activity"], rating: "general" });
