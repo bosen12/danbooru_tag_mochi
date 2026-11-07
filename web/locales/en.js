@@ -431,6 +431,8 @@ Comfy 未連|Comfy offline
 復原|Undo
 撤回|Undo
 換回|Restore
+這張牌不能用|This card can't be used
+抽出來的結果含禁用的字，已停止|The draw contained a blocked word, so it was stopped
 刪除|Delete
 清空|Clear
 清版|Clear layers

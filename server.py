@@ -3710,8 +3710,8 @@ class GenJob:
         self.id = jid or uuid.uuid4().hex[:16]
         # 頂欄的生圖進度（GET /api/gen/active）：哪一頁送的、是不是 Hires、建立時間、畫到哪。
         src = payload if isinstance(payload, dict) else {}
-        # mcp：AI 經 mcp/mochi-mcp.mjs 送的（頂欄寫「AI」，點了看作品冊的日誌）。
-        self.origin = src.get("origin") if src.get("origin") in ("mochi", "fuse", "mcp") else ""
+        # mcp：AI 經 mcp/mochi-mcp.mjs 送的（頂欄寫「AI」，點了看作品冊的日誌）。ios：iPhone App 送的（頂欄寫「iPhone」，一樣看日誌）。
+        self.origin = src.get("origin") if src.get("origin") in ("mochi", "fuse", "mcp", "ios") else ""
         self.kind = "hires" if src.get("hires") else "gen"
         # 修臉也走 Hires 的路（日誌裡 kind 一樣是 hires）；頂欄要分得出來才寫「修臉中」。
         self.face = isinstance(src.get("hires"), dict) and src["hires"].get("mode") == "face"

@@ -273,7 +273,8 @@ const { readFileSync, existsSync } = await import("node:fs");
 const FRONT = existsSync(join(ROOT, "web6", "gen-status.js")) ? "web6" : "web";
 const server = readFileSync(join(ROOT, "server.py"), "utf8");
 const status = readFileSync(join(ROOT, FRONT, "gen-status.js"), "utf8");
-ok("伺服器認 origin mcp；頂欄、日誌寫 AI、點了看作品冊日誌", server.includes('in ("mochi", "fuse", "mcp")') && status.includes('mcp: "album.html?tab=log"') && readFileSync(join(ROOT, FRONT, "album-log.js"), "utf8").includes('mcp: "AI"'));
-
+ok("伺服器認 origin mcp；頂欄、日誌寫 AI、點了看作品冊日誌", server.includes('in ("mochi", "fuse", "mcp", "ios")') && status.includes('mcp: "album.html?tab=log"') && readFileSync(join(ROOT, FRONT, "album-log.js"), "utf8").includes('mcp: "AI"'));
+// iPhone App（origin ios）也一樣：沒有自己的房間，頂欄、日誌寫 iPhone，點了看作品冊日誌。
+ok("伺服器認 origin ios；頂欄、日誌寫 iPhone、點了看作品冊日誌", status.includes('ios: "iPhone"') && status.includes('ios: "album.html?tab=log"') && readFileSync(join(ROOT, FRONT, "album-log.js"), "utf8").includes('ios: "iPhone"'));
 console.log(failed ? `\n${failed} failed` : "\nall ok");
 process.exit(failed ? 1 : 0);

@@ -12,9 +12,9 @@
 import { el, toast } from "./ui.js";
 import { WAIT_KEEP_MS } from "./store.js";
 
-// mcp：AI 經 MCP（mcp/mochi-mcp.mjs）送的。沒有自己的房間：點了看作品冊的日誌。
-const ROOM_ZH = { mochi: "墨池", fuse: "疊印台", mcp: "AI" };
-const ROOM_HREF = { mochi: "./", fuse: "fuse.html", mcp: "album.html?tab=log" };
+// mcp：AI 經 MCP（mcp/mochi-mcp.mjs）送的；ios：iPhone App 送的。兩個都沒有自己的房間：點了看作品冊的日誌。
+const ROOM_ZH = { mochi: "墨池", fuse: "疊印台", mcp: "AI", ios: "iPhone" };
+const ROOM_HREF = { mochi: "./", fuse: "fuse.html", mcp: "album.html?tab=log", ios: "album.html?tab=log" };
 // 兩頁的存檔：數一數還排著的（gen-status 不載入那兩頁的程式，直接讀存檔）。
 const SAVES = { mochi: "mochi.shots.v1", fuse: "mochi.fuse.prints.v1" };
 // 看過的「印好了」：回到送印的那一頁、或點了徽章，就不再掛著。
@@ -88,7 +88,7 @@ export function genSummary(jobs, room, seen, waiting) {
   if (done.length) parts.push(`印好 ${done.length} 張`);
   if (failed.length) parts.push(`${failed.length} 張沒印成`);
   if (waitN) parts.push(`還有 ${waitN} 張排著，回去才接著印`);
-  const label = target === "mcp" ? `${where || "生圖"}：${parts.join("，")}。點一下看作品冊的日誌` : `${where || "生圖"}：${parts.join("，")}。點一下回${ROOM_ZH[target]}`;
+  const label = ROOM_HREF[target] === ROOM_HREF.mcp ? `${where || "生圖"}：${parts.join("，")}。點一下看作品冊的日誌` : `${where || "生圖"}：${parts.join("，")}。點一下回${ROOM_ZH[target]}`;
   return {
     state,
     text: where ? `${where} ${text}` : text,
