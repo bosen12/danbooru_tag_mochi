@@ -23,7 +23,7 @@ globalThis.localStorage = { getItem: () => null, setItem() {}, removeItem() {} }
 globalThis.matchMedia = () => ({ matches: false, addEventListener() {} });
 
 const dir = existsSync(new URL("../web6/cards.js", import.meta.url)) ? "../web6/" : "../web/";
-const { buildLibrary, searchCards, searchKey } = await import(new URL(dir + "cards.js", import.meta.url));
+const { buildLibrary, searchCards, searchKey, searchNoteText } = await import(new URL(dir + "cards.js", import.meta.url));
 const { ratingBlocked } = await import(new URL("../web/rules/rating.js", import.meta.url));
 const data = JSON.parse(readFileSync(new URL("../web/lexicon.json", import.meta.url), "utf8"));
 const cards = buildLibrary(data, { ratingBlocked }).cards;
@@ -106,4 +106,66 @@ test("everyday words find the cards named differently", () => {
   const black = find("黑 絲襪");
   assert.equal(black.mode, "all");
   assert.deepEqual(black.list.map((c) => c.tag).sort(), ["black pantyhose", "black thighhighs"]);
+});
+
+// 連寫的中文、英文複數、牌格那一行（中文句子要對得上 en.js 的模板，英文版才換得了）。
+const { templates } = await import(new URL(dir + "locales/en.js", import.meta.url));
+const enOf = (text) => {
+  const escape = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const compiled = [...templates]
+    .sort((a, b) => b[0].replace(/\{\d+\}/g, "").length - a[0].replace(/\{\d+\}/g, "").length)
+    .map(([source, target]) => {
+      const parts = source.split(/\{\d+\}/);
+      return { re: new RegExp("^" + parts.map(escape).join("([\\s\\S]*?)") + "$"), target };
+    });
+  for (const { re, target } of compiled) {
+    const match = text.match(re);
+    if (match) return target.replace(/\{(\d+)(!?)\}/g, (_, i) => match[Number(i) + 1]);
+  }
+  return null;
+};
+
+test("unspaced Chinese splits into lexicon words and the note uses those pieces", () => {
+  const sea = find("海邊夕陽");
+  assert.equal(sea.mode, "any");
+  assert.deepEqual(sea.terms, ["海邊", "夕陽"]);
+  const tags = sea.list.map((c) => c.tag);
+  assert.ok(tags.includes("beach") && tags.includes("sunset"), tags.slice(0, 8).join(", "));
+  assert.ok(tags.indexOf("beach") < tags.indexOf("sunset"), "beach then sunset, in the order of the pieces");
+  const note = searchNoteText(sea, "海邊夕陽");
+  assert.equal(note, "沒有一張同時有「海邊」「夕陽」，分別找到這些");
+  assert.equal(enOf(note), "No single card has all of “海邊」「夕陽”; showing each separately");
+  const both = find("白髮微笑");
+  assert.equal(both.mode, "any");
+  assert.deepEqual(both.terms, ["白髮", "微笑"]);
+  assert.ok(both.list.some((c) => c.tag === "white hair") && both.list.some((c) => c.tag === "smile"));
+  assert.ok(both.list.findIndex((c) => c.tag === "white hair") < both.list.findIndex((c) => c.tag === "smile"));
+  const spaced = find("長髮 紅髮");
+  assert.equal(searchNoteText(spaced, "長髮 紅髮"), "沒有一張同時有「長髮」「紅髮」，分別找到這些");
+});
+
+test("a phrase that does not split still guesses, and English plurals guess the singular", () => {
+  for (const [q, tag] of [["下雨", "rain"], ["雨天", "rain"]]) {
+    const r = find(q);
+    assert.equal(r.mode, "guess", q);
+    assert.equal(r.list[0].tag, tag, q);
+    assert.equal(searchNoteText(r, q), `找不到「${q}」，你是不是要找這幾張？`);
+  }
+  assert.equal(enOf(searchNoteText(find("下雨"), "下雨")), "No match for “下雨”. Did you mean these?");
+  const wear = find("穿著和服");
+  assert.equal(wear.mode, "guess");
+  assert.ok(wear.list.some((c) => c.tag === "kimono"), wear.list.slice(0, 8).map((c) => c.tag).join(", "));
+  const bats = find("baseball bats");
+  assert.equal(bats.mode, "guess");
+  assert.equal(bats.list[0].tag, "baseball bat");
+  assert.deepEqual(bats.terms, ["baseball", "bats"]);
+  // -ies 換回 y：只去掉 es 會變成 strawberri，什麼都對不到。
+  for (const [q, tag] of [["strawberries", "strawberry"], ["butterflies", "butterfly"]]) {
+    const r = find(q);
+    assert.equal(r.mode, "guess", q);
+    assert.equal(r.list[0].tag, tag, q);
+  }
+  assert.equal(find("baseball bat").mode, "all");
+  assert.equal(find("glasses").mode, "all");
+  assert.equal(find("glasses").list[0].tag, "glasses");
 });

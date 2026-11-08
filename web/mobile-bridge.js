@@ -5,6 +5,7 @@
  *   放牌 applyPin、丟廢字簍 applyBan、拿掉 applyClear、份量 weights.js、每段張數 stepSkeleton、
  *   抽牌 drawWithSeed（withEffectiveHeats）、份量寫回 weightPositive、LoRA 觸發字 insertTriggerAfterCast、
  *   字盒搜尋 cards.js 的 searchCards、牌的說明 cardFacts、被拿掉的原因 trace-copy.js、英文 i18n.js 的 t()。
+ * 字盒收牌跟網頁的 visible() 同一套：分級、性別（男生的牌沒開男生、女生的牌沒開女生）、只看一個時代（eraOnly）不合的收起來；已經在合成池的牌永遠看得到。
  * 墨池更新後，App 下次連線載入的就是新版（離線時 App 用上一次整份載入成功的快取）。
  *
  * 進出都是 JSON。App 那邊存的狀態：
@@ -43,7 +44,7 @@ import { heatBlockedByRating } from "./scene-policy.js";
 import { weightPositive, stepWeight, WEIGHTS } from "./weights.js";
 import { formatTraceReason, sourceLabel } from "./trace-copy.js";
 import { HARD_BANNED, artSources, CARD_SUITS, CARD_SUIT_INFO } from "./card-art.js";
-import { buildLibrary, searchCards, cardFacts } from "./cards.js";
+import { buildLibrary, searchCards, cardMatches, matchRank, cardFacts } from "./cards.js";
 import { ratingBlocked, ratingOf } from "./rules/rating.js";
 import { english, t, GLYPHS } from "./i18n.js";
 
@@ -153,16 +154,86 @@ export function meta() {
 }
 
 /**
- * 字盒：搜尋（中文、英文、同義詞，cards.js 的 searchCards）＋花色篩選。
- * 現在的分級用不了的牌跟網頁一樣收起來（rating 不限制時全部看得到）。
+ * 字盒被什麼收起來（app.js 的 libReasons，同一句中文，t() 換成現在的語言）。
+ * 順序跟網頁一樣：分級、性別、時代。花色是 App 自己傳的 suit，不是規則，這裡不收。
+ * eraOnly 跟網頁的「字盒只看這個時代」一樣，而且只在正好選了一個時代時才收。
  */
-export function library(state, { query = "", suit = "", offset = 0, limit = 120 } = {}) {
+function hideReasons(settings, eraOnly) {
+  const rating = ratingOf(settings);
+  const onlyEra = eraOnly && settings.eras.length === 1 ? settings.eras[0] : null;
+  const unlock = (c) => RATINGS.find((id) => !ratingBlocked(c.item, id)) || "explicit";
+  return [
+    {
+      kind: "rating",
+      hides: (c) => ratingBlocked(c.item, rating),
+      text: (c) => `「${c.zh}」要在「${RATING_LABEL[unlock(c)]}」才看得到`,
+      label: (c) => `切到${RATING_LABEL[unlock(c)]}`,
+      patch: (c) => ({ rating: unlock(c) }),
+    },
+    {
+      kind: "gender",
+      hides: (c) => (c.gate === "male" && !settings.boy) || (c.gate === "female" && !settings.girl),
+      text: (c) => `「${c.zh}」是${c.gate === "male" ? "男生" : "女生"}的牌`,
+      label: () => "人物改成不限",
+      patch: () => ({ who: "any" }),
+    },
+    {
+      kind: "era",
+      hides: (c) => !!onlyEra && !c.eras.includes("any") && !c.eras.includes(onlyEra),
+      text: (c) => `「${c.zh}」不屬於現在的時代`,
+      label: () => "時代改成混合",
+      patch: () => ({ era: "mix" }),
+    },
+  ];
+}
+
+/**
+ * 搜尋有牌被收起來時，回第一個原因（lib-hint.js 的 searchMiss：最像的那張、reasons 依序第一個擋到它的）。
+ * 已經搜到牌時不提分級（searchAlso 的 slice：分級是刻意選的尺度，不拿色情的牌來推）。
+ * count 是這次會說的那些牌，不只舉例的那一張。沒有就 null。
+ */
+function hiddenOf(query, suit, pins, reasons, skipRating) {
+  const q = String(query || "");
+  if (!q.trim()) return null;
+  const rating = reasons.find((r) => r.kind === "rating");
+  const active = skipRating ? reasons.filter((r) => r.kind !== "rating") : reasons;
+  const matches = lib.cards.filter((c) => {
+    if (suit && c.suit !== suit) return false;
+    if (banned.has(bare(c.tag)) || pins.has(c.tag)) return false;
+    if (skipRating && rating.hides(c)) return false;
+    return cardMatches(c, q);
+  });
+  matches.sort((a, b) => matchRank(a, q) - matchRank(b, q));
+  let count = 0;
+  let picked = null;
+  for (const card of matches) {
+    const reason = active.find((r) => r.hides(card));
+    if (!reason) continue;
+    count += 1;
+    if (!picked) picked = { card, reason };
+  }
+  if (!picked) return null;
+  const { card, reason } = picked;
+  return { count, text: t(reason.text(card)), label: t(reason.label(card)), patch: reason.patch(card) };
+}
+
+/**
+ * 字盒：搜尋（中文、英文、同義詞，cards.js 的 searchCards）＋花色篩選。
+ * 收牌跟網頁 visible() 一樣：分級、性別、只看這個時代（eraOnly 預設開，跟網頁 ui.eraOnly 一樣）。
+ * 合成池裡的牌不收。hidden 給第一個原因，patch 直接丟給 configure()。
+ */
+export function library(state, { query = "", suit = "", offset = 0, limit = 120, eraOnly = true } = {}) {
   const settings = settingsOf(state);
-  const r = ratingOf(settings);
-  const pool = lib.cards.filter((c) => (!suit || c.suit === suit) && !ratingBlocked(c.item, r) && !banned.has(bare(c.tag)));
-  const res = searchCards(pool, query);
+  const pins = new Set((state && state.pins) || []);
+  const reasons = hideReasons(settings, eraOnly);
+  const scope = lib.cards.filter((c) => (!suit || c.suit === suit) && !banned.has(bare(c.tag)));
+  // 釘選的字永遠看得到（app.js 的 visible：先看合成池，再談分級、性別、時代）。
+  const pool = scope.filter((c) => pins.has(c.tag) || !reasons.some((r) => r.hides(c)));
+  let res = searchCards(pool, query);
+  // 真的有牌、只是被收起來：跟 app.js 一樣不要用猜的蓋過去，交給 hidden 說明。
+  if (String(query).trim() && res.mode !== "all" && scope.some((c) => cardMatches(c, query))) res = { list: [], mode: "none" };
   const list = res.list.slice(offset, offset + limit);
-  return { total: res.list.length, mode: res.mode, cards: list.map(cardOut) };
+  return { total: res.list.length, mode: res.mode, cards: list.map(cardOut), hidden: hiddenOf(query, suit, pins, reasons, res.list.length > 0) };
 }
 
 /** 一張牌的說明（網頁卡冊、字盒的詳情那幾行）。 */

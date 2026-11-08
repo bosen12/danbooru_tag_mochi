@@ -57,6 +57,9 @@ if (EN) {
   ok("英文：尺度、分級照 locales/en.js", meta.english && meta.heats[0].label === "Activity" && meta.ratings[0].label === "General", JSON.stringify(meta.heats));
   const r = B.draw({ settings: null, pins: [], bans: [], weights: {} }, { n: 1, seeds: [7] });
   ok("英文：成品小牌的來源寫英文", r.shots[0].cards.every((c) => !/[㐀-鿿]/.test(c.label)), JSON.stringify(r.shots[0].cards.map((c) => c.label)));
+  const girl = B.configure({ settings: null, pins: [], bans: [], weights: {} }, { who: "girl" }).state;
+  const hid = B.library(girl, { query: "胖", limit: 50 });
+  ok("英文：收起來的原因沒有中文", !!hid.hidden && !/[㐀-鿿]/.test(hid.hidden.text), JSON.stringify(hid.hidden));
   process.exit(failed ? 1 : 0);
 }
 
@@ -124,6 +127,37 @@ ok("沒存過設定：全年齡（general），尺度實際用 activity", meta.d
   const zh = B.library(empty, { query: "微笑" });
   const en = B.library(empty, { query: "smile" });
   ok("字盒：中文、英文都搜得到", zh.total > 0 && en.total > 0 && en.cards[0].tag === "smile", `${zh.total} ${en.total} ${en.cards[0]?.tag}`);
+}
+
+// 字盒收牌：跟網頁 visible() 一樣，性別、時代不合的收起來；合成池裡的仍然看得到。hidden 的 patch 丟給 configure。
+{
+  const girl = B.configure(empty, { who: "girl" }).state;
+  const fat = B.library(girl, { query: "胖", limit: 500 });
+  ok("只開女生搜「胖」：不列男生的牌", fat.cards.length > 0 && fat.cards.every((c) => c.gate !== "male") && !fat.cards.some((c) => c.tag === "fat man"));
+  ok(
+    "只開女生搜「胖」：收起來的原因是人物改成不限",
+    !!fat.hidden && fat.hidden.count > 0 && fat.hidden.patch && fat.hidden.patch.who === "any" && /是男生的牌$/.test(fat.hidden.text || "") && fat.hidden.label === "人物改成不限",
+    JSON.stringify(fat.hidden)
+  );
+  const opened = B.configure(girl, (fat.hidden && fat.hidden.patch) || {}).state;
+  ok("人物改成不限之後搜「胖」：胖男出現", B.library(opened, { query: "胖", limit: 500 }).cards.some((c) => c.tag === "fat man"));
+
+  const modern = B.configure(empty, { era: "modern" }).state;
+  const kimono = B.library(modern, { query: "和服", limit: 500 });
+  ok("現代、只看這個時代：搜「和服」不列 kimono", !kimono.cards.some((c) => c.tag === "kimono"));
+  ok(
+    "現代搜「和服」：收起來的原因是時代改成混合",
+    !!kimono.hidden && kimono.hidden.patch && kimono.hidden.patch.era === "mix" && /不屬於現在的時代$/.test(kimono.hidden.text || "") && kimono.hidden.label === "時代改成混合",
+    JSON.stringify(kimono.hidden)
+  );
+  const mixed = B.configure(modern, (kimono.hidden && kimono.hidden.patch) || {}).state;
+  ok("時代改成混合之後 kimono 出現", B.library(mixed, { query: "和服", limit: 500 }).cards.some((c) => c.tag === "kimono"));
+  ok("eraOnly 關掉：現代也列 kimono", B.library(modern, { query: "和服", limit: 500, eraOnly: false }).cards.some((c) => c.tag === "kimono"));
+
+  const heldBoy = B.pin(girl, "fat man");
+  ok("釘了胖男：只開女生也看得到", !heldBoy.refused && B.library(heldBoy.state, { query: "胖", limit: 500 }).cards.some((c) => c.tag === "fat man"), JSON.stringify(heldBoy.refused || null));
+  const heldKimono = B.pin(modern, "kimono");
+  ok("釘了和服：現代、只看這個時代也看得到", !heldKimono.refused && B.library(heldKimono.state, { query: "和服", limit: 500 }).cards.some((c) => c.tag === "kimono"), JSON.stringify(heldKimono.refused || null));
 }
 
 // 每段張數：照 stepSkeleton，骨架格跟著熄。

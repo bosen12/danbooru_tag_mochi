@@ -30,7 +30,9 @@ const load = (p) => import(pathToFileURL(p).href);
 const E = await load(join(ROOT, "web", "engine.js"));
 const { formatTraceReason, sourceLabel } = await load(join(ROOT, "web", "trace-copy.js"));
 const { toSimplified } = await load(front("t2s.js"));
-const { SEARCH_WORDS } = await load(front("search-words.js"));
+const { isCard, cardSuit } = await load(join(ROOT, "web", "card-art.js"));
+// 查牌跟字盒、iPhone 同一套（card-search.js 不碰 DOM）。開源版檔在 web/，這邊在 web6/。
+const { searchCards: findCards, indexSearchNames, isSynonymOnly } = await load(front("card-search.js"));
 const data = JSON.parse(readFileSync(join(ROOT, "web", "lexicon.json"), "utf8"));
 const lex = E.indexLexicon(data);
 
@@ -68,11 +70,25 @@ const zhOf = (tag) => lex.byTag.get(tag)?.zh || data.zh?.[tag] || "";
 const groupZh = (g) => data.groupZh?.[g] || g || "";
 const label = (tag) => (zhOf(tag) ? `${zhOf(tag)}（${tag}）` : tag);
 const key = (s) => toSimplified(String(s ?? "").toLowerCase().replace(/_/g, " ")).replace(/\s+/g, " ").trim();
-const WORDS = new Map(Object.entries(SEARCH_WORDS).map(([k, tags]) => [key(k), tags]));
 
 // 牌的 heat 欄位不等於「哪些尺度會出現」（全年齡的 activity 另有判斷）：一律問引擎。分級也是：取不會被擋的最低一級。
 const heatsOf = (it) => E.HEATS.filter((h) => E.itemFitsHeats(it, [h]));
 const minRating = (it) => E.RATINGS.find((r) => !E.ratingBlocked(it, r)) || "explicit";
+
+// 跟字盒同一本牌（isCard）。連寫的中文靠整本的中文名來拆，所以這裡先建好、先登錄。
+const CARDS = [];
+for (const it of items) {
+  if (!isCard(it)) continue;
+  CARDS.push({
+    tag: it.tag,
+    zh: it.zh || zhOf(it.tag),
+    suit: cardSuit(it),
+    groupZh: (data.groupZh && data.groupZh[it.sub || it.group]) || it.sub || it.group,
+    gate: it.gate || "any",
+    item: it,
+  });
+}
+indexSearchNames(CARDS);
 
 function brief(it) {
   return {
@@ -132,12 +148,12 @@ ${skeleton}
 - my_cards 看使用者在墨池存的牌組、自製牌、偏好角色（要開著墨池）。draw_prompt 用 deck 套牌組、pins 放 custom:… 用自製牌、favoriteCharacter: true 挑偏好角色。
 
 ## 建議流程
-1. search_cards 把使用者的話拆成關鍵字一次查完（中文、英文都行；「胖」「黑絲」這類說法有同義詞）。查不到的元素，自己換成相近的牌，或放進 extra（詞庫外的英文 tag）。
+1. search_cards 把使用者的話拆成關鍵字一次查完（中文、英文都行；「胖」「黑絲」這類說法有同義詞；「海邊夕陽」這種連在一起的會拆開）。查不到會猜，結果最前面有一行說明。還是沒有的，自己換成相近的牌，或放進 extra（詞庫外的英文 tag）。
 2. 不確定能不能放在一起，用 check_cards；想知道一張牌的細節，用 explain_card。
 3. draw_prompt 抽提示詞。題目明確時每段只補 1～2 張（例如 feature 2、pose 2、clothing 1、env 2），題目模糊用預設（${Object.entries(DEFAULT_COUNTS).map(([s, n]) => `${s} ${n}`).join("、")}）。看回傳每張牌的來源，有不合題意的隨機牌就調整（加 bans、降張數、補釘選）再抽。
    使用者說「不要抽」「牌你自己挑」：牌全放 pins，counts 四段都給 0，照樣用 draw_prompt——不隨機補牌，但附帶、互斥、分級的規則還是會跑。不要跳過 draw_prompt 自己拼提示詞。
    使用者限定最多幾張：pins 不超過那個數；成品還會多 1girl／solo、附帶的牌和分級品質字。
-4. generate_image 用抽好的 positive 生圖（要開著墨池和 ComfyUI）。自己改寫的提示詞也行：墨池會補分級字、品質字。沒等到就用 image_status 接著等。
+4. generate_image 用抽好的 positive 生圖（要開著墨池和 ComfyUI）。自己改寫的提示詞也行：墨池會補分級字、品質字。帶 loras 時，強度 > 0 的觸發詞會自動插在人物牌（1girl、solo…）後面，不用自己寫進 positive；要指定用哪幾個就在該項加 triggers。沒等到就用 image_status 接著等。
 5. 臉崩了用 fix_image 的 face 修臉；要大圖用 quick／deep 放大。帶上 generate_image 回的 job 就好。
 6. 沒說幾個人時預設一個女生（1girl）。不畫未成年。
 `;
@@ -147,7 +163,7 @@ function searchCards({ queries, section, limit }) {
   const words = (Array.isArray(queries) ? queries : [queries]).map((q) => String(q ?? "").trim()).filter(Boolean).slice(0, 20);
   if (!words.length) throw new Error("queries 至少要一個關鍵字");
   const max = Math.max(1, Math.min(20, Number(limit) || 8));
-  const pool = section ? items.filter((it) => it.section === section) : items;
+  const pool = section ? CARDS.filter((c) => c.item.section === section) : CARDS;
   const results = {};
   for (const w of words) {
     if (isMinor(w)) {
@@ -162,30 +178,19 @@ function searchCards({ queries, section, limit }) {
     }
     // 中文名只寫一部分的（characters.json 寫「初音」，人家打「初音未來」）：照樣列相關的牌（例如角色扮演的衣服），最前面先提醒。
     const bannedNear = CHARACTERS.find((c) => c.character_ban && key(c.zh).length >= 2 && q.startsWith(key(c.zh)));
-    const scored = [];
-    for (const it of pool) {
-      const tag = key(it.tag);
-      const zh = key(it.zh || zhOf(it.tag));
-      let s = -1;
-      if (tag === q || zh === q) s = 0;
-      else if (tag.startsWith(q) || zh.startsWith(q)) s = 1;
-      else if (tag.split(/[\s()]+/).includes(q)) s = 2;
-      else if (zh.includes(q)) s = 3;
-      else if (tag.includes(q)) s = 4;
-      if (s >= 0) scored.push([s, tag.length, it]);
-    }
-    scored.sort((a, b) => a[0] - b[0] || a[1] - b[1]);
-    const hits = scored.slice(0, max).map(([, , it]) => brief(it));
-    // 同義詞（墨池字盒用的同一份 search-words.js）：牌名裡沒有、但大家會這樣說的。
-    const seen = new Set(hits.map((h) => h.tag));
-    for (const tag of WORDS.get(q) || []) {
-      const it = lex.byTag.get(tag);
-      if (!it || seen.has(tag) || (section && it.section !== section) || isMinor(tag)) continue;
-      seen.add(tag);
-      hits.push({ ...brief(it), via: "同義詞" });
-    }
+    const found = findCards(pool, w);
+    // 抽牌預設只有女性。「胖」的牌名對到一堆男角色，排在豐滿前面；女性時把男角、角色牌挪到後面。limit 含同義詞，不再另外接。
+    const front = [];
+    const back = [];
+    for (const c of found.list) (c.gate === "male" || c.suit === "chara" ? back : front).push(c);
+    const picked = [...front, ...back].slice(0, max);
+    const terms = found.terms?.length ? found.terms : [w];
+    const hits = picked.map((c) => ({ ...brief(c.item), via: isSynonymOnly(c, terms) ? "同義詞" : "" }));
     const warn = bannedNear ? [`注意：角色本人${bannedNear.zh}（${bannedNear.tag}）是${BANNED_TEXT}，不要改用英文或放進 extra。下面是其他相關的牌。`] : [];
-    results[w] = hits.length ? [...warn, ...hits.map(line)] : bannedNear ? { blocked: warn[0] } : "詞庫沒有。換個說法再查，或寫成英文 Danbooru tag 放進 draw_prompt 的 extra。";
+    const head = [...warn];
+    if (hits.length && found.mode === "guess") head.push(`找不到「${w}」，最接近的是：`);
+    else if (hits.length && found.mode === "any") head.push(`沒有一張同時有「${terms.join("」「")}」，分別找到這些`);
+    results[w] = hits.length ? [...head, ...hits.map(line)] : bannedNear ? { blocked: warn[0] } : "詞庫沒有。換個說法再查，或寫成英文 Danbooru tag 放進 draw_prompt 的 extra。";
   }
   return { format: "tag ｜ 中文 ｜ 段/子分類 ｜ 會出現的尺度 ｜ 最低分級 ｜ 時代 ｜ 性別限制", results };
 }
@@ -344,12 +349,16 @@ async function prepare(spec) {
   // 沒說幾個人：預設一個人（女生優先）。引擎自己抽的話常抽成兩三個人。
   const defaulted = !people(pins) && spec.people !== false ? (girl ? "1girl" : boy ? "1boy" : null) : null;
   if (defaulted) pins.unshift(defaulted);
+  // 沒給 eras：釘了江戶的和服卻照預設現代抽，會配上現代的襪子。有共同時代就改成那個；互相衝突就跟網頁一樣改成混合。
+  const eraPlan = planEras(spec, pins);
+  if (eraPlan.note) notes.push(eraPlan.note);
   let settings = E.sanitizeSettings(
     {
       counts: { ...DEFAULT_COUNTS, ...(spec.counts || {}) },
       heats: level.heats || undefined,
       rating: level.rating,
-      eras: spec.eras,
+      eras: eraPlan.eras,
+      eraMix: eraPlan.eraMix,
       girl,
       boy,
       sceneMode: spec.sceneMode,
@@ -380,15 +389,65 @@ async function prepare(spec) {
   const displaced = [];
   for (const t of pins) {
     const before = new Set(pinned);
-    ({ pinned, userBanned: banned } = E.applyPin(lex, pinned, banned, t));
-    for (const x of before) if (!pinned.has(x)) displaced.push({ tag: x, by: t, why: `${label(x)}被拿掉：跟後來釘的${label(t)}互斥（同一格只能一張）` });
+    // 混合時不同時代的牌都留（漢服配摩天樓）。沒開混合時，時代對不上的會被拿下來，原因不要說成互斥。
+    ({ pinned, userBanned: banned } = E.applyPin(lex, pinned, banned, t, eraPlan.eraMix ? { eraMix: true } : undefined));
+    for (const x of before) {
+      if (pinned.has(x)) continue;
+      const why = erasClash(x, t) ? `${label(x)}被拿掉：跟後來釘的${label(t)}不是同一個時代` : `${label(x)}被拿掉：跟後來釘的${label(t)}互斥（同一格只能一張）`;
+      displaced.push({ tag: x, by: t, why });
+    }
   }
   for (const t of bansIn) ({ pinned, userBanned: banned } = E.applyBan(lex, pinned, banned, t));
-  return { pinsIn, bansIn, extras: [...new Set([...extraIn, ...notInLexicon])], notInLexicon, defaulted, settings, pinned, banned, displaced, weights: { ...weights, ...extraW }, notes };
+  return { pinsIn, bansIn, extras: [...new Set([...extraIn, ...notInLexicon])], notInLexicon, defaulted, settings, pinned, banned, displaced, weights: { ...weights, ...extraW }, notes, eraWarnings: eraPlan.warnings };
+}
+
+/** 時代不是 any 的那一份。any、沒標的不當成某個時代。 */
+function specificEras(tag) {
+  const e = lex.byTag.get(tag)?.era;
+  if (!Array.isArray(e) || !e.length || e.includes("any")) return null;
+  const list = e.filter((x) => E.ERAS.includes(x));
+  return list.length ? list : null;
+}
+
+function erasClash(a, b) {
+  const ea = specificEras(a);
+  const eb = specificEras(b);
+  return !!(ea && eb && !ea.some((e) => eb.includes(e)));
+}
+
+const eraZh = (list) => list.map((e) => E.ERA_LABELS[e] || e).join("、");
+
+/**
+ * 沒給 eras：釘選（含牌組、自製牌拆開的）裡時代不是 any 的牌，有共同時代就用那一個（或那幾個），
+ * 互相沒有交集就改成混合（全部時代＋eraMix，跟網頁「時代改成混合」一樣）。使用者有給就照給的。
+ */
+function planEras(spec, pinTags) {
+  const named = pinTags.map((t) => ({ tag: t, eras: specificEras(t) })).filter((x) => x.eras);
+  const given = Array.isArray(spec.eras) ? spec.eras.filter((e) => E.ERAS.includes(e)) : [];
+  if (given.length) {
+    const warnings = named
+      .filter((x) => !x.eras.some((e) => given.includes(e)))
+      .map((x) => ({ kind: "era", tags: [x.tag], note: `${label(x.tag)}是${eraZh(x.eras)}的，跟指定的時代（${eraZh(given)}）不合` }));
+    return { eras: given, eraMix: false, note: null, warnings };
+  }
+  if (!named.length) return { eras: undefined, eraMix: false, note: null, warnings: [] };
+  let common = named[0].eras.slice();
+  for (const x of named.slice(1)) common = common.filter((e) => x.eras.includes(e));
+  const who = named.map((x) => label(x.tag)).join("、");
+  if (common.length) {
+    const defaults = data.defaults?.eras || ["modern"];
+    const same = !defaults.length ? false : common.length === defaults.length && common.every((e, i) => e === defaults[i]);
+    // 本來就是現代就不必說「改成」。
+    if (same) return { eras: undefined, eraMix: false, note: null, warnings: [] };
+    const note = common.length === 1 ? `時代改成${eraZh(common)}：釘了${who}，只在${eraZh(common)}` : `時代改成${eraZh(common)}：釘了${who}，共同的時代是${eraZh(common)}`;
+    return { eras: common, eraMix: false, note, warnings: [] };
+  }
+  const bits = named.map((x) => `${label(x.tag)}是${eraZh(x.eras)}`);
+  return { eras: [...E.ERAS], eraMix: true, note: `時代改成混合：${bits.join("、")}，不是同一個時代，不同時代的牌可以一起出現`, warnings: [] };
 }
 
 function warningsOf(p) {
-  const out = [];
+  const out = [...(p.eraWarnings || [])];
   const say = (w, text) => out.push({ kind: w.kind, tags: w.tags || [], note: text });
   for (const w of E.sportHeatWarnings(lex, p.pinned, p.settings.heats)) say(w, "性愛尺度下，運動類的動作會被拿掉");
   for (const w of E.sportPinWarnings(lex, p.pinned)) say(w, "這幾張運動牌不是同一項運動");
@@ -435,13 +494,14 @@ async function checkCards(spec) {
   const ok = p.pinsIn.filter((t) => out.has(t));
   return {
     allFit: !p.displaced.length && ok.length === p.pinsIn.length,
-    kept: ok.map(label),
+    kept: ok.map((t) => (p.weights[t] && p.weights[t] !== 1 ? `${label(t)}×${p.weights[t]}` : label(t))),
     displacedWhilePinning: p.displaced,
     removedByRules: removed,
     warnings: warningsOf(p),
     notInLexicon: p.notInLexicon,
     addedAutomatically: traced.filter((k) => !p.pinsIn.includes(k.tag) && k.from !== sourceLabel("fixed")).map((k) => `${label(k.tag)}：${k.from}`),
-    settings: { heats: p.settings.heats, rating: p.settings.rating, eras: p.settings.eras },
+    era: r.era,
+    settings: { heats: p.settings.heats, rating: p.settings.rating, eras: p.settings.eras, eraMix: p.settings.eraMix === true },
     ...(p.notes.length ? { notes: p.notes } : {}),
   };
 }
@@ -460,6 +520,7 @@ async function drawPrompt(spec) {
       positive: tags.join(", "),
       tagCount: tags.length,
       drawSeed: seed,
+      era: r.era,
       cards: kept,
       removed,
       droppedPins: p.pinsIn.filter((t) => lex.byTag.has(t) && !tags.some((x) => bareTag(x) === t)),
@@ -478,6 +539,7 @@ async function drawPrompt(spec) {
       heats: p.settings.heats,
       rating: p.settings.rating,
       eras: p.settings.eras,
+      eraMix: p.settings.eraMix === true,
       girl: p.settings.girl,
       boy: p.settings.boy,
       sceneMode: p.settings.sceneMode,
@@ -592,8 +654,85 @@ function mochiTail(positive, rating) {
   return { positive: tokens.join(", "), added, dropped };
 }
 
-const tidyNote = (added, dropped) =>
-  [added.length ? "墨池補上：" + added.join(", ") : "", dropped.length ? "拿掉（跟分級不合）：" + dropped.join(", ") : ""].filter(Boolean).join("；") || undefined;
+const tidyNote = (added, dropped, triggers) =>
+  [triggers?.length ? "補上觸發詞：" + triggers.join(", ") : "", added.length ? "墨池補上：" + added.join(", ") : "", dropped.length ? "拿掉（跟分級不合）：" + dropped.join(", ") : ""].filter(Boolean).join("；") || undefined;
+
+// 跟 web/lora.js 的 joinTriggerParts 同一套接法。那支檔有 DOM，MCP 不能載。
+function joinTriggerParts(parts) {
+  let out = "";
+  for (const p of parts) {
+    const s = String(p || "").trim();
+    if (!s) continue;
+    if (!out) out = s;
+    else out = out.endsWith(",") ? `${out} ${s}` : `${out}, ${s}`;
+  }
+  return out;
+}
+
+function findLora(items, spec) {
+  const file = String(spec?.file || "");
+  if (!file) return null;
+  const folder = spec.folder != null && spec.folder !== "" ? String(spec.folder) : null;
+  const same = items.filter((x) => x.file === file);
+  if (folder !== null) return same.find((x) => (x.folder || "") === folder) || null;
+  return same[0] || null;
+}
+
+/** 強度 > 0 才插。沒寫強度當有開（網頁預設 0.8）。多個 trainedWords 預設第一個；triggers 指定要哪幾個。 */
+function chosenTriggers(lora, spec) {
+  const tw = (lora?.trainedWords || []).map((w) => String(w || "").trim()).filter(Boolean);
+  if (Array.isArray(spec.triggers)) {
+    const want = spec.triggers.map((w) => String(w || "").trim()).filter(Boolean);
+    const byLow = new Map(tw.map((w) => [w.toLowerCase(), w]));
+    return want.map((w) => byLow.get(w.toLowerCase())).filter(Boolean);
+  }
+  if (tw.length <= 1) return tw.slice(0, 1);
+  return [tw[0]];
+}
+
+function loraOn(spec) {
+  if (spec?.strength === undefined || spec.strength === null || spec.strength === "") return true;
+  return Number(spec.strength) > 0;
+}
+
+function loraPayload(spec) {
+  const out = { file: spec.file };
+  if (spec.folder != null && spec.folder !== "") out.folder = spec.folder;
+  if (spec.strength !== undefined && spec.strength !== null && spec.strength !== "") out.strength = Number(spec.strength);
+  return out;
+}
+
+const hasTrigger = (positive, word) => {
+  const want = bareTag(word);
+  return !want || partsOf(positive).includes(want);
+};
+
+/**
+ * 跟網頁一樣：每個開著的 LoRA 取觸發詞，insertTriggerAfterCast 插在人物牌後面。
+ * 提示詞裡已經有的不插。送給墨池的 loras 拿掉 triggers，伺服器只認 file／folder／strength。
+ */
+async function withTriggers(positive, loras) {
+  if (!Array.isArray(loras)) return { positive, inserted: [], loras: undefined };
+  let catalog = [];
+  try {
+    const r = await mochi("/api/loras");
+    const d = await r.json().catch(() => ({}));
+    catalog = Array.isArray(d.items) ? d.items : [];
+  } catch {
+    catalog = [];
+  }
+  const parts = [];
+  for (const spec of loras) {
+    if (!spec || typeof spec !== "object" || !loraOn(spec)) continue;
+    for (const word of chosenTriggers(findLora(catalog, spec), spec)) {
+      if (hasTrigger(positive, word) || parts.some((p) => bareTag(p) === bareTag(word))) continue;
+      parts.push(word);
+    }
+  }
+  const payload = loras.map(loraPayload);
+  if (!parts.length) return { positive, inserted: [], loras: payload };
+  return { positive: E.insertTriggerAfterCast(positive, joinTriggerParts(parts)), inserted: parts, loras: payload };
+}
 
 /** 送一張去墨池的生圖排程（生圖、修臉、Hires 都是 POST /api/gen），讀 SSE 直到畫完。 */
 async function startJob(body, meta) {
@@ -645,8 +784,10 @@ async function generateImage(args) {
   const raw = String(args.positive ?? "").trim();
   if (!raw) throw new Error("positive 是空的：先用 draw_prompt 抽一組");
   guard(raw);
-  const rating = ratingOf(args, raw);
-  const { positive, added, dropped } = mochiTail(raw, rating);
+  const dressed = await withTriggers(raw, args.loras);
+  if (dressed.inserted.length) guard(dressed.positive);
+  const rating = ratingOf(args, dressed.positive);
+  const { positive, added, dropped } = mochiTail(dressed.positive, rating);
   const body = {
     positive: E.escapeForComfy(positive),
     rating,
@@ -654,10 +795,11 @@ async function generateImage(args) {
     height: checkSize(args.height, "height") ?? 1024,
     ...(args.seed !== undefined && args.seed !== null && args.seed !== "" ? { seed: Number(args.seed) >>> 0 } : {}),
     ...(args.ckpt ? { ckpt: String(args.ckpt) } : {}),
-    ...(Array.isArray(args.loras) ? { loras: args.loras } : {}),
+    ...(dressed.loras ? { loras: dressed.loras } : {}),
     ...(args.era ? { era: String(args.era) } : {}),
   };
-  const job = await startJob(body, { positive, rating, width: body.width, height: body.height, ckpt: body.ckpt, loras: body.loras, era: body.era, tidied: tidyNote(added, dropped) });
+  // 工作上留呼叫端的 loras（含 triggers）。修圖沿用時才知道要插哪幾個；送給墨池的那份在 body 裡，已經拿掉 triggers。
+  const job = await startJob(body, { positive, rating, width: body.width, height: body.height, ckpt: body.ckpt, loras: Array.isArray(args.loras) ? args.loras : undefined, era: body.era, tidied: tidyNote(added, dropped, dressed.inserted) });
   return waitJob(job, args.wait_seconds);
 }
 
@@ -679,19 +821,23 @@ async function fixImage(args) {
   const raw = String(args.positive || from?.positive || "").trim();
   if (!raw) throw new Error("要給 positive（那張圖的提示詞）");
   guard(raw);
+  // 沒另外給 loras 就沿用那張生圖時的規格（含使用者指定的 triggers）。已在提示詞裡的不重插。
+  const loraSpec = Array.isArray(args.loras) ? args.loras : from?.loras;
+  const dressed = await withTriggers(raw, loraSpec);
+  if (dressed.inserted.length) guard(dressed.positive);
   const scale = mode === "face" ? 1 : Math.max(1.25, Math.min(3, Number(args.scale) || HIRES_SCALE[mode]));
-  const rating = E.RATINGS.includes(args.rating) ? args.rating : from?.rating || ratingOf(args, raw);
-  const { positive, added, dropped } = mochiTail(raw, rating);
+  const rating = E.RATINGS.includes(args.rating) ? args.rating : from?.rating || ratingOf(args, dressed.positive);
+  const { positive, added, dropped } = mochiTail(dressed.positive, rating);
   const body = {
     positive: E.escapeForComfy(positive),
     rating,
     ...(from?.width ? { width: from.width, height: from.height } : {}),
     ...(args.seed !== undefined && args.seed !== null && args.seed !== "" ? { seed: Number(args.seed) >>> 0 } : {}),
     ...((args.ckpt || from?.ckpt) ? { ckpt: String(args.ckpt || from.ckpt) } : {}),
-    ...((args.loras || from?.loras) ? { loras: args.loras || from.loras } : {}),
+    ...(dressed.loras ? { loras: dressed.loras } : {}),
     hires: mode === "face" ? { mode, image } : { mode, scale, image },
   };
-  const job = await startJob(body, { positive, rating, ckpt: body.ckpt, loras: body.loras, fixed: mode, tidied: tidyNote(added, dropped) });
+  const job = await startJob(body, { positive, rating, ckpt: body.ckpt, loras: loraSpec, fixed: mode, tidied: tidyNote(added, dropped, dressed.inserted) });
   return waitJob(job, args.wait_seconds);
 }
 
@@ -788,7 +934,7 @@ async function listModels({ lora_query } = {}) {
     loraCount: all.length,
     ...(lj.counts ? { loraCategories: lj.counts } : {}),
     ...(loras ? { loras } : { loraHint: "LoRA 太多不全列：給 lora_query（檔名、標題或分類的一部分）再查。" }),
-    note: "generate_image 的 ckpt 填 checkpoints 裡的字串，不給就用墨池目前的底模。loras 填 [{\"file\": …, \"folder\": …, \"strength\": 0.8}]，觸發詞要自己加進 positive。",
+    note: "generate_image 的 ckpt 填 checkpoints 裡的字串，不給就用墨池目前的底模。loras 填 [{\"file\": …, \"folder\": …, \"strength\": 0.8}]。強度 > 0 的觸發詞會自動插在人物牌後面（trainedWords 只有一個就用它，多個預設第一個）；該項可加 triggers 指定要哪幾個。提示詞裡已經有的不重複插。",
   };
 }
 
@@ -838,6 +984,22 @@ const drawSchema = {
   height: { type: "integer" },
 };
 
+// 生圖、修圖共用。以前寫在 drawSchema 上，修圖的 loras 會變成 undefined、說明整個消失。
+const loraSchema = {
+  type: "array",
+  description: "list_models 查到的 LoRA。強度 > 0 的觸發詞會自動插在人物牌後面（trainedWords 只有一個就用它，多個預設第一個）；提示詞裡已經有的不重複插",
+  items: {
+    type: "object",
+    properties: {
+      file: { type: "string" },
+      folder: { type: "string" },
+      strength: { type: "number" },
+      triggers: { type: "array", items: { type: "string" }, description: "指定要用的觸發詞（這個 LoRA 的 trainedWords 裡的）。不給就照上面的預設" },
+    },
+    required: ["file"],
+  },
+};
+
 const TOOLS = [
   {
     name: "mochi_guide",
@@ -848,7 +1010,7 @@ const TOOLS = [
   },
   {
     name: "search_cards",
-    description: "用中文或英文查墨池詞庫的牌（一次可以查好幾個關鍵字）。回 tag、中文、段與子分類、尺度、時代、性別限制。",
+    description: "用中文或英文查墨池詞庫的牌（跟字盒同一套，一次可以查好幾個關鍵字）。連寫的中文會拆開，英文複數會猜；猜的、或沒有一張同時都有的，結果最前面有一行說明。回 tag、中文、段與子分類、尺度、時代、性別限制。",
     inputSchema: {
       type: "object",
       properties: {
@@ -900,7 +1062,7 @@ const TOOLS = [
         height: { type: "integer" },
         seed: { type: "integer", description: "生圖種子（同提示詞＋同種子＝同構圖）；不給就隨機" },
         ckpt: { type: "string", description: "底模檔名（list_models 查）；不給用墨池預設" },
-        loras: { type: "array", description: "list_models 查到的 LoRA；觸發詞自己加進 positive", items: { type: "object", properties: { file: { type: "string" }, folder: { type: "string" }, strength: { type: "number" } }, required: ["file"] } },
+        loras: loraSchema,
         era: { type: "string", enum: E.ERAS, description: "記進日誌用（作品冊照這張再印時帶回時代）" },
         wait_seconds: { type: "integer", minimum: 0, maximum: 110, description: "最多等幾秒（預設 50）" },
       },
@@ -922,6 +1084,7 @@ const TOOLS = [
         scale: { type: "number", minimum: 1.25, maximum: 3, description: "放大倍數（face 不用）" },
         rating: drawSchema.rating,
         seed: { type: "integer" },
+        loras: loraSchema,
         wait_seconds: { type: "integer", minimum: 0, maximum: 110, description: "最多等幾秒（預設 50）" },
       },
       required: ["mode"],

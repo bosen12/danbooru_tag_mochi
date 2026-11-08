@@ -49,7 +49,7 @@ const fake = createServer((req, res) => {
   const json = (v) => (res.writeHead(200, { "Content-Type": "application/json" }), res.end(JSON.stringify(v)));
   // 跟真的墨池一樣的形狀（/api/checkpoints 的 ckpt_name 含子資料夾；/api/loras 是 LoRA Manager 的清單）。
   if (url.pathname === "/api/checkpoints") return json({ ok: true, current: "il\waiIllustriousSDXL_v170.safetensors", items: [{ file: "waiIllustriousSDXL_v170.safetensors", ckpt_name: "il\waiIllustriousSDXL_v170.safetensors" }] });
-  if (url.pathname === "/api/loras") return json({ items: [{ folder: "style", category: "style", file: "detail.safetensors", name: "detail", title: "Detail Tweaker", trainedWords: ["detailed"] }, { folder: "Character", category: "Character", file: "x.safetensors", name: "x", title: "X" }], counts: { style: 1, Character: 1 } });
+  if (url.pathname === "/api/loras") return json({ items: [{ folder: "style", category: "style", file: "detail.safetensors", name: "detail", title: "Detail Tweaker", trainedWords: ["detailed"] }, { folder: "Character", category: "Character", file: "x.safetensors", name: "x", title: "X", trainedWords: ["alpha trigger", "beta trigger"] }], counts: { style: 1, Character: 1 } });
   if (url.pathname === "/api/genlog") return json({ ok: true, items: [{ ok: true, origin: "mcp", positive: "1girl, solo", seed: 1, image: "/api/image?filename=a.png&type=output" }] });
   if (url.pathname === "/api/gen/recover") return json({ ok: true, state: "gone" });
   if (url.pathname === "/api/decks") return json({ ok: true, decks: [{ id: "d-1", name: "書房午後", tags: ["library", "reading", "glasses"], weights: { glasses: 1.2 } }] });
@@ -111,6 +111,10 @@ try {
   const list = (await rpc("tools/list")).result.tools;
   const names = list.map((t) => t.name);
   ok("十一個工具都在、每個都有說明和輸入格式", ["mochi_guide", "search_cards", "explain_card", "check_cards", "draw_prompt", "generate_image", "fix_image", "my_cards", "image_status", "list_models", "recent_images"].every((n) => names.includes(n)) && list.every((t) => t.description && t.inputSchema?.type === "object"), names.join(" "));
+  const genTool = list.find((t) => t.name === "generate_image");
+  const fixTool = list.find((t) => t.name === "fix_image");
+  const loraText = JSON.stringify(genTool?.inputSchema?.properties?.loras || {}) + JSON.stringify(fixTool?.inputSchema?.properties?.loras || {});
+  ok("生圖、修圖的 loras 說明是自動插觸發詞", /自動插/.test(genTool?.inputSchema?.properties?.loras?.description || "") && /自動插/.test(fixTool?.inputSchema?.properties?.loras?.description || "") && /triggers/.test(loraText) && !/自己加/.test(loraText), loraText.slice(0, 400));
   ok("只有生圖、修圖不是唯讀", list.filter((t) => !t.annotations?.readOnlyHint).map((t) => t.name).join() === "generate_image,fix_image");
   ok("不認得的方法回 -32601", (await rpc("resources/list")).error?.code === -32601);
 
@@ -256,6 +260,60 @@ try {
   ok("list_models：lora_query 找標題，附資料夾和觸發詞", lq.data.loras.length === 1 && lq.data.loras[0].file === "detail.safetensors" && lq.data.loras[0].folder === "style" && lq.data.loras[0].triggers[0] === "detailed", lq.text);
   const recent = await tool("recent_images", { limit: 3 });
   ok("recent_images：來源 mcp 寫成 AI、網址補完整", recent.data.images[0].from === "AI" && recent.data.images[0].imageUrl === BASE + "/api/image?filename=a.png&type=output", recent.text);
+
+  // ---- 查牌跟字盒同一套：猜、連寫、複數、limit 含同義詞、女性時男角往後 ----
+  const cardLines = (rows) => (Array.isArray(rows) ? rows.filter((l) => l.includes("｜")) : []);
+  for (const [q, tag] of [["下雨", "rain"], ["雨天", "rain"], ["穿著和服", "kimono"]]) {
+    const rows = (await tool("search_cards", { queries: [q] })).data.results[q];
+    ok(`查牌 guess：${q} → ${tag}`, Array.isArray(rows) && /最接近/.test(rows[0]) && rows.some((l) => l.startsWith(tag + " ")), JSON.stringify(rows)?.slice(0, 500));
+  }
+  const sea = (await tool("search_cards", { queries: ["海邊夕陽"] })).data.results["海邊夕陽"];
+  const seaBeach = sea?.findIndex?.((l) => l.startsWith("beach ")) ?? -1;
+  const seaSun = sea?.findIndex?.((l) => l.startsWith("sunset ")) ?? -1;
+  ok("查牌：海邊夕陽拆開，分別找到海邊和夕陽", Array.isArray(sea) && /沒有一張同時有「海邊」「夕陽」/.test(sea[0]) && seaBeach >= 0 && seaSun > seaBeach, JSON.stringify(sea)?.slice(0, 500));
+  const bats = (await tool("search_cards", { queries: ["baseball bats"] })).data.results["baseball bats"];
+  ok("查牌：baseball bats 猜到 baseball bat", Array.isArray(bats) && /最接近/.test(bats[0]) && bats.some((l) => l.startsWith("baseball bat ")), JSON.stringify(bats)?.slice(0, 400));
+  const fatRows = (await tool("search_cards", { queries: ["胖"], limit: 5 })).data.results["胖"];
+  const fatCards = cardLines(fatRows);
+  ok("查牌：limit 5 含同義詞，最多 5 張", fatCards.length === 5 && fatRows.length === 5 && fatCards.some((l) => l.startsWith("plump ") || l.includes("同義詞")), JSON.stringify(fatRows));
+  ok("查牌：女性時前幾筆沒有男性、沒有角色", fatCards.every((l) => !l.includes("男性才有") && !l.includes("/character")), JSON.stringify(fatRows));
+
+  // ---- 沒給 eras：釘了別的時代就改；有給就不動，不合的寫進 warnings ----
+  const edo = await tool("draw_prompt", { pins: ["kimono"], heats: ["activity"], rating: "general", seed: 11 });
+  const edoRes = edo.data.results?.[0];
+  ok("釘和服沒給 eras：時代改成江戶，結果帶 era，不配現代襪子", !edo.error && edo.data.settings?.eras?.join() === "edo" && edo.data.settings.eraMix === false && edoRes?.era === "edo" && (edo.data.notes || []).some((n) => /江戶/.test(n) && /和服/.test(n)) && edoRes.positive.includes("kimono") && !edoRes.positive.includes("black thighhighs") && !edoRes.positive.includes("two-tone legwear"), edo.text.slice(0, 700));
+  const mix = await tool("draw_prompt", { pins: ["kimono", "cellphone"], heats: ["activity"], rating: "general", seed: 12 });
+  const mixRes = mix.data.results?.[0];
+  ok("釘了兩個時代：改成混合，兩張都留", !mix.error && mix.data.settings?.eraMix === true && mix.data.settings.eras?.length === 6 && mixRes?.era === "mixed" && (mix.data.notes || []).some((n) => /混合/.test(n)) && mixRes.positive.includes("kimono") && mixRes.positive.includes("cellphone"), mix.text.slice(0, 700));
+  const badEra = await tool("draw_prompt", { pins: ["kimono"], eras: ["modern"], heats: ["activity"], rating: "general", seed: 13 });
+  ok("有給 eras 就不改，不合的牌寫進 warnings", !badEra.error && badEra.data.settings?.eras?.join() === "modern" && badEra.data.settings.eraMix !== true && badEra.data.results?.[0]?.era === "modern" && (badEra.data.warnings || []).some((w) => (w.tags || []).includes("kimono") && /不合/.test(w.note || "")), badEra.text.slice(0, 700));
+  const ckEra = await tool("check_cards", { tags: ["kimono"], heats: ["activity"], rating: "general" });
+  ok("check_cards 釘和服也改成江戶", !ckEra.error && ckEra.data.settings?.eras?.join() === "edo" && ckEra.data.era === "edo" && (ckEra.data.notes || []).some((n) => /江戶/.test(n)), ckEra.text.slice(0, 500));
+  const weighted = await tool("check_cards", { tags: ["(smile:1.3)"], heats: ["activity"], rating: "general" });
+  ok("check_cards：kept 看得到份量", !weighted.error && (weighted.data.kept || []).some((s) => s.includes("smile") && s.includes("×1.3")), weighted.text.slice(0, 400));
+
+  // ---- LoRA 觸發詞自動插在人物牌後面 ----
+  const beforeLora = got.filter((x) => x.body).length;
+  const gLora = await tool("generate_image", { positive: "1girl, solo, smile", loras: [{ file: "detail.safetensors", folder: "style", strength: 0.8 }] });
+  const lb = got.filter((x) => x.body).at(-1)?.body;
+  ok("生圖 LoRA：觸發詞插在人物牌後、tidied 寫了、送給墨池的沒有 triggers", got.filter((x) => x.body).length === beforeLora + 1 && lb?.positive.includes("1girl, solo, detailed, smile") && /補上觸發詞/.test(gLora.data.tidied || "") && /detailed/.test(gLora.data.tidied || "") && lb.loras?.length === 1 && lb.loras[0].file === "detail.safetensors" && !lb.loras.some((l) => Object.hasOwn(l, "triggers")), (lb?.positive || "") + " / " + (gLora.data?.tidied || "") + " / " + JSON.stringify(lb?.loras));
+  const gDup = await tool("generate_image", { positive: "1girl, solo, detailed, smile", loras: [{ file: "detail.safetensors", folder: "style" }] });
+  const db = got.filter((x) => x.body).at(-1)?.body;
+  ok("生圖 LoRA：提示詞裡已經有的不重插", (db?.positive.match(/detailed/g) || []).length === 1 && !/補上觸發詞/.test(gDup.data.tidied || ""), (db?.positive || "") + " / " + (gDup.data?.tidied || ""));
+  const gBeta = await tool("generate_image", { positive: "1girl, solo, smile", loras: [{ file: "x.safetensors", folder: "Character", triggers: ["beta trigger"] }] });
+  const bb = got.filter((x) => x.body).at(-1)?.body;
+  ok("生圖 LoRA：triggers 指定用哪一個", bb?.positive.includes("beta trigger") && !bb.positive.includes("alpha trigger") && !bb.loras.some((l) => Object.hasOwn(l, "triggers")), bb?.positive);
+  const gOff = await tool("generate_image", { positive: "1girl, solo, smile", loras: [{ file: "detail.safetensors", folder: "style", strength: 0 }] });
+  const ob = got.filter((x) => x.body).at(-1)?.body;
+  ok("生圖 LoRA：強度 0 不插觸發詞", ob && !ob.positive.includes("detailed") && ob.loras?.[0]?.strength === 0 && !ob.loras.some((l) => Object.hasOwn(l, "triggers")), ob?.positive);
+  const fx = await tool("fix_image", { mode: "face", job: gLora.data.job, positive: "1girl, solo, smile", loras: [{ file: "detail.safetensors", folder: "style" }] });
+  const fxb = got.filter((x) => x.body).at(-1)?.body;
+  ok("修圖 LoRA：一樣把觸發詞插在人物牌後", !fx.error && fxb?.positive.includes("1girl, solo, detailed, smile") && /補上觸發詞/.test(fx.data.tidied || "") && !fxb.loras.some((l) => Object.hasOwn(l, "triggers")), (fxb?.positive || "") + " / " + (fx.data?.tidied || ""));
+  const fxKeep = await tool("fix_image", { mode: "face", job: gBeta.data.job });
+  const kb = got.filter((x) => x.body).at(-1)?.body;
+  ok("修圖沿用 LoRA：已指定的觸發詞不改插成預設的第一個", !fxKeep.error && kb?.positive.includes("beta trigger") && !kb.positive.includes("alpha trigger"), kb?.positive);
+
+  ok("list_models：觸發詞自動插，不再叫人自己加", /自動/.test(m.data.note) && !/自己加/.test(m.data.note || ""), m.data.note);
 
   const none = await tool("沒有這個", {});
   ok("不認得的工具回 isError", none.error);
