@@ -50,6 +50,7 @@ import file_lock
 import gen_log
 import image_parse
 import lora_scan
+import prompt_formats
 import recipes
 import setup_tasks
 import workflows
@@ -647,17 +648,59 @@ def convert_loras(loras_in) -> list:
     return out
 
 
-def inject_lora(wf: dict, lora_name: str, strength: float) -> None:
-    """插入一個 LoraLoader：把吃 checkpoint model([_,0])/clip([_,1]) 的節點改接到它。
+def model_format_overrides() -> dict:
+    """config.json 的 models.formats：檔名片段 → illustrious／pony／anima。"""
+    raw = cfg("models.formats", "", None)
+    return raw if isinstance(raw, dict) else {}
 
-    VAE([_,2]) 不動。連呼叫兩次會自動疊成 ckpt → LoRA2 → LoRA1 → 其餘。"""
-    ckpt = None
-    for nid, n in wf.items():
-        if isinstance(n, dict) and n.get("class_type") in ("CheckpointLoaderSimple", "CheckpointLoader"):
-            ckpt = str(nid)
-            break
-    if ckpt is None:
-        return
+
+def anima_options() -> dict:
+    """Anima 工作流的預設（ComfyUI 內建 Text to Image (Anima Base 1.0)）。models.anima.* 可覆寫。"""
+    def pick(key, default):
+        v = cfg(f"models.anima.{key}", "", None)
+        return default if v is None or v == "" else v
+
+    return {
+        "textEncoder": str(pick("textEncoder", "qwen_3_06b_base.safetensors")),
+        "vae": str(pick("vae", "qwen_image_vae.safetensors")),
+        "clipType": str(pick("clipType", "stable_diffusion")),
+        "steps": sampling_value(pick("steps", 30), "steps", 30),
+        "cfg": sampling_value(pick("cfg", 4), "cfg", 4),
+        "sampler": str(pick("sampler", "er_sde")),
+        "scheduler": str(pick("scheduler", "simple")),
+    }
+
+
+def pony_clip_skip() -> int:
+    """Pony 的 CLIP skip。models.pony.clipSkip，預設 2 → stop_at_clip_layer -2。"""
+    raw = cfg("models.pony.clipSkip", "", 2)
+    try:
+        n = int(float(raw))
+    except (TypeError, ValueError):
+        n = 2
+    if n <= 0:
+        n = 2
+    return min(n, 12)
+
+
+def inject_lora(wf: dict, lora_name: str, strength: float, model_src=None, clip_src=None) -> None:
+    """插入一個 LoraLoader：把吃 model／clip 的節點改接到它。
+
+    沒指定來源時，找 CheckpointLoaderSimple 的 model([_,0])／clip([_,1])。
+    VAE([_,2]) 不動。連呼叫兩次會自動疊成來源 → LoRA2 → LoRA1 → 其餘。
+    Anima 的 model 和 clip 來自不同節點，呼叫端傳 model_src／clip_src（節點 id, 輸出編號）。"""
+    if model_src is None or clip_src is None:
+        ckpt = None
+        for nid, n in wf.items():
+            if isinstance(n, dict) and n.get("class_type") in ("CheckpointLoaderSimple", "CheckpointLoader"):
+                ckpt = str(nid)
+                break
+        if ckpt is None:
+            return
+        model_src = (ckpt, 0)
+        clip_src = (ckpt, 1)
+    model_id, model_out = str(model_src[0]), model_src[1]
+    clip_id, clip_out = str(clip_src[0]), clip_src[1]
     lid = "201"
     while lid in wf:
         lid = str(int(lid) + 1)
@@ -667,24 +710,112 @@ def inject_lora(wf: dict, lora_name: str, strength: float) -> None:
             "lora_name": lora_name,
             "strength_model": float(strength),
             "strength_clip": float(strength),
-            "model": [ckpt, 0],
-            "clip": [ckpt, 1],
+            "model": [model_id, model_out],
+            "clip": [clip_id, clip_out],
         },
     }
     for nid, n in wf.items():
         if nid == lid or not isinstance(n, dict):
             continue
         for k, v in (n.get("inputs") or {}).items():
-            if isinstance(v, list) and len(v) == 2 and str(v[0]) == ckpt:
-                if v[1] == 0:
-                    n["inputs"][k] = [lid, 0]
-                elif v[1] == 1:
-                    n["inputs"][k] = [lid, 1]
+            if not (isinstance(v, list) and len(v) == 2):
+                continue
+            src = str(v[0])
+            if src == model_id and v[1] == model_out:
+                n["inputs"][k] = [lid, 0]
+            elif src == clip_id and v[1] == clip_out:
+                n["inputs"][k] = [lid, 1]
+
+
+def _rating_arg(rating, sfw: bool):
+    return rating if rating is not None else sfw
+
+
+def _negative_text(fmt: str, rating, sfw: bool) -> str:
+    arg = _rating_arg(rating, sfw)
+    return prompt_formats.negative_for(fmt, arg, negative_for(arg))
+
+
+def build_anima_workflow(positive: str, width: int, height: int, seed: int, loras, ckpt_name: str,
+                         sfw: bool = False, rating=None, steps=None, cfg_scale=None) -> dict:
+    """Anima：UNETLoader + CLIPLoader + VAELoader，不是 checkpoint。LoRA 串在 UNET 和 CLIP 後面。"""
+    opt = anima_options()
+    unet_name = str(ckpt_name)
+    if unet_name.lower().startswith(prompt_formats.UNET_PREFIX):
+        unet_name = unet_name[len(prompt_formats.UNET_PREFIX):]
+    wf = {
+        "13": {
+            "class_type": "UNETLoader",
+            "inputs": {"unet_name": unet_name, "weight_dtype": "default"},
+        },
+        "14": {
+            "class_type": "CLIPLoader",
+            "inputs": {
+                "clip_name": opt["textEncoder"],
+                "type": opt["clipType"],
+                "device": "default",
+            },
+        },
+        "15": {
+            "class_type": "VAELoader",
+            "inputs": {"vae_name": opt["vae"]},
+        },
+        "36": {
+            "class_type": "CLIPTextEncode",
+            "inputs": {"text": positive, "clip": ["14", 0]},
+        },
+        "37": {
+            "class_type": "CLIPTextEncode",
+            "inputs": {"text": _negative_text(prompt_formats.ANIMA, rating, sfw), "clip": ["14", 0]},
+        },
+        "119": {
+            "class_type": "EmptyLatentImage",
+            "inputs": {"width": int(width), "height": int(height), "batch_size": 1},
+        },
+        "35": {
+            "class_type": "KSampler",
+            "inputs": {
+                "seed": int(seed),
+                "steps": sampling_value(steps, "steps", opt["steps"]),
+                "cfg": sampling_value(cfg_scale, "cfg", opt["cfg"]),
+                "sampler_name": opt["sampler"],
+                "scheduler": opt["scheduler"],
+                "denoise": 1.0,
+                "model": ["13", 0],
+                "positive": ["36", 0],
+                "negative": ["37", 0],
+                "latent_image": ["119", 0],
+            },
+        },
+        "85": {
+            "class_type": "VAEDecode",
+            "inputs": {"samples": ["35", 0], "vae": ["15", 0]},
+        },
+        "200": {
+            "class_type": "SaveImage",
+            "inputs": {
+                "filename_prefix": "danbooru_case/case",
+                "images": ["85", 0],
+            },
+        },
+    }
+    for lora_name, strength in convert_loras(loras):
+        inject_lora(wf, lora_name, strength, model_src=("13", 0), clip_src=("14", 0))
+    return wf
 
 
 def build_workflow(positive: str, width: int, height: int, seed: int, loras=None,
                    ckpt=None, sfw: bool = False, rating=None, steps=None, cfg_scale=None, pose=None) -> dict:
     ckpt_name = resolve_ckpt(ckpt)
+    fmt = prompt_formats.format_of(ckpt_name, model_format_overrides())
+    if fmt == prompt_formats.ANIMA:
+        if pose:
+            raise ValueError("Anima 底模還不能用姿勢參考")
+        return build_anima_workflow(
+            positive, width, height, seed, loras, ckpt_name,
+            sfw=sfw, rating=rating, steps=steps, cfg_scale=cfg_scale,
+        )
+    clip_from = ["13", 1]
     wf = {
         "13": {
             "class_type": "CheckpointLoaderSimple",
@@ -692,11 +823,11 @@ def build_workflow(positive: str, width: int, height: int, seed: int, loras=None
         },
         "36": {
             "class_type": "CLIPTextEncode",
-            "inputs": {"text": positive, "clip": ["13", 1]},
+            "inputs": {"text": positive, "clip": clip_from},
         },
         "37": {
             "class_type": "CLIPTextEncode",
-            "inputs": {"text": negative_for(rating if rating is not None else sfw), "clip": ["13", 1]},
+            "inputs": {"text": _negative_text(fmt, rating, sfw), "clip": ["13", 1]},
         },
         "119": {
             "class_type": "EmptyLatentImage",
@@ -729,6 +860,14 @@ def build_workflow(positive: str, width: int, height: int, seed: int, loras=None
             },
         },
     }
+    if fmt == prompt_formats.PONY:
+        # 文字編碼前先把 CLIP 停在倒數第 n 層（Pony 預設 clip skip 2）。
+        wf["14"] = {
+            "class_type": "CLIPSetLastLayer",
+            "inputs": {"clip": ["13", 1], "stop_at_clip_layer": -pony_clip_skip()},
+        }
+        wf["36"]["inputs"]["clip"] = ["14", 0]
+        wf["37"]["inputs"]["clip"] = ["14", 0]
     for lora_name, strength in convert_loras(loras):
         inject_lora(wf, lora_name, strength)
     if pose:
@@ -1071,6 +1210,7 @@ _MODEL_CACHE = {"t": 0.0, "data": {}}
 def models_from_comfy(kind: str) -> list[str]:
     table = {
         "checkpoints": ("CheckpointLoaderSimple", "ckpt_name"),
+        "diffusion_models": ("UNETLoader", "unet_name"),
         "loras": ("LoraLoader", "lora_name"),
         "vae": ("VAELoader", "vae_name"),
         "upscale": ("UpscaleModelLoader", "model_name"),
@@ -1197,7 +1337,12 @@ def checkpoints_for_ui() -> tuple[list[dict], str]:
     except Exception:
         names = []
     if not names:
-        return local, "local" if local else "none"
+        items = list(local)
+        _append_anima_models(items)
+        _stamp_ckpt_formats(items)
+        if any(str(it.get("ckpt_name") or "").lower().startswith(prompt_formats.UNET_PREFIX) for it in items):
+            return items, "comfy"
+        return items, "local" if items else "none"
     lm = lm_checkpoints()
     items = []
     for raw in names:
@@ -1227,7 +1372,38 @@ def checkpoints_for_ui() -> tuple[list[dict], str]:
                 if name:
                     it["preview"] = name
                     it["previewUrl"] = "/api/ckpt-preview?file=" + urllib.parse.quote(name)
+    _append_anima_models(items)
+    _stamp_ckpt_formats(items)
     return items, "comfy"
+
+
+def _append_anima_models(items: list[dict]) -> None:
+    """偏好路徑濾完 checkpoint 之後，補上 diffusion model 裡名字含 anima 的（ckpt_name 加 unet:）。"""
+    try:
+        names = [str(n).replace("/", "\\") for n in models_from_comfy("diffusion_models")]
+    except Exception:
+        return
+    seen = {str(it.get("ckpt_name") or "") for it in items}
+    for raw in names:
+        if "anima" not in raw.lower():
+            continue
+        ckpt_name = prompt_formats.UNET_PREFIX + raw
+        if ckpt_name in seen:
+            continue
+        fn = raw.split("\\")[-1]
+        items.append({
+            "file": fn,
+            "ckpt_name": ckpt_name,
+            "title": Path(fn).stem,
+            "preview": "",
+        })
+        seen.add(ckpt_name)
+
+
+def _stamp_ckpt_formats(items: list[dict]) -> None:
+    overrides = model_format_overrides()
+    for it in items:
+        it["format"] = prompt_formats.format_of(it.get("ckpt_name") or it.get("file"), overrides)
 
 
 
@@ -1519,6 +1695,16 @@ def sampling_defaults() -> dict:
     }
 
 
+def refuse_anima_edit(ckpt) -> str:
+    """Hires／修臉還是 CheckpointLoaderSimple。底模是 unet:（Anima）就講清楚，不組圖。回傳解析後的底模名。"""
+    if str(ckpt or "").replace("/", "\\").lower().startswith(prompt_formats.UNET_PREFIX):
+        raise HiresError("Anima 的圖還不能 Hires／修臉")
+    name = resolve_ckpt(ckpt)
+    if str(name).lower().startswith(prompt_formats.UNET_PREFIX):
+        raise HiresError("Anima 的圖還不能 Hires／修臉")
+    return name
+
+
 def build_hires_workflow(
     positive: str,
     seed: int,
@@ -1533,7 +1719,7 @@ def build_hires_workflow(
     sampling: dict | None = None,
 ) -> dict:
     """內建 Hires 圖。不管原來是不是 profile 工作流，放大一律走這張。"""
-    ckpt_name = resolve_ckpt(ckpt)
+    ckpt_name = refuse_anima_edit(ckpt)
     steps, cfg_v, denoise = hires_sampler(mode, sampling)
     negative = negative_for(rating if rating is not None else sfw)
     wf = {
@@ -1836,7 +2022,7 @@ def build_face_workflow(
     sam: str = "",
 ) -> dict:
     """內建修臉圖：原圖 → FaceDetailer（同一個底模、提示詞、LoRA）→ 存檔。sam 給了就只重畫臉的形狀。"""
-    ckpt_name = resolve_ckpt(ckpt)
+    ckpt_name = refuse_anima_edit(ckpt)
     steps, cfg_v, denoise = hires_sampler("face", sampling)
     negative = negative_for(rating if rating is not None else sfw)
     wf = {
@@ -2224,6 +2410,8 @@ def prune_hires_inputs(extra: set[str] | None = None) -> list[str]:
 def prepare_hires(payload: dict) -> tuple[dict, dict]:
     """有 hires 就走這裡：下載原圖、量尺寸、上傳、組內建圖。workflowId 不用。"""
     spec = parse_hires(payload.get("hires"))
+    # Anima 沒有這條工作流：先擋下來，不要先去跟 Comfy 要原圖、再上傳。
+    refuse_anima_edit(payload.get("ckpt"))
     positive = str(payload.get("positive") or "").strip()
     if not positive:
         raise ValueError("missing positive")
@@ -2704,13 +2892,20 @@ def prepare_workflow(payload: dict):
     }
     wid = str(payload.get("workflowId") or "").strip()
     if not wid:
+        # 內建工作流才換格式。寫回同一個 payload：GenJob 和出圖日誌用的就是這份，日誌才記到真正送出的提示詞。
+        ckpt_name = resolve_ckpt(payload.get("ckpt"))
+        rating_arg = _rating_arg(payload.get("rating"), bool(payload.get("sfw")))
+        fmt = prompt_formats.format_of(ckpt_name, model_format_overrides())
+        positive = prompt_formats.convert_positive(positive, fmt, rating_arg)
+        payload["positive"] = positive
+        meta["positive"] = positive
         wf = build_workflow(
             positive,
             width,
             height,
             seed,
             payload.get("loras"),
-            payload.get("ckpt"),
+            ckpt_name,
             sfw=bool(payload.get("sfw")),
             rating=payload.get("rating"),
             steps=payload.get("steps"),
@@ -6469,6 +6664,20 @@ def pick_default_ckpt(names: list) -> str | None:
     return (anime or xl or names)[0]
 
 
+def explicit_unet(name: str | None) -> str | None:
+    """安全的 unet: 名字。有 ..、空段或磁碟機代號就回 None。"""
+    raw = str(name or "").replace("/", "\\").strip()
+    if not raw.lower().startswith(prompt_formats.UNET_PREFIX):
+        return None
+    rest = raw[len(prompt_formats.UNET_PREFIX):]
+    if not rest or rest.startswith("\\"):
+        return None
+    parts = rest.split("\\")
+    if any(not p or p in (".", "..") or ":" in p for p in parts):
+        return None
+    return prompt_formats.UNET_PREFIX + "\\".join(parts)
+
+
 def resolve_ckpt(name: str | None, items: list | None = None) -> str:
     """Allow names from the provided list (local folder or Comfy object_info).
 
@@ -6494,6 +6703,20 @@ def resolve_ckpt(name: str | None, items: list | None = None) -> str:
     if not name:
         return allowed.get(fallback, fallback)
     raw = str(name).replace("/", "\\").strip()
+    if raw.lower().startswith(prompt_formats.UNET_PREFIX):
+        unet = explicit_unet(raw)
+        if not unet:
+            return allowed.get(fallback, fallback)
+    else:
+        unet = None
+    if unet:
+        if unet in allowed:
+            return allowed[unet]
+        tail = unet.split("\\")[-1]
+        if tail in allowed and str(allowed[tail]).lower().startswith(prompt_formats.UNET_PREFIX):
+            return allowed[tail]
+        # 點名要 Anima 就不要默默換成 checkpoint：檔不在的話讓 ComfyUI 自己說。
+        return unet
     parts = [p for p in raw.split("\\") if p]
     if not parts or any(p in (".", "..") for p in parts) or raw.startswith("\\"):
         return allowed.get(fallback, fallback)

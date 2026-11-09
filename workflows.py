@@ -255,6 +255,7 @@ def inspect_nodes(workflow: dict) -> list[dict]:
 
 
 def ckpt_name_of(workflow: dict) -> str | None:
+    unet = None
     for node in (workflow or {}).values():
         if not isinstance(node, dict):
             continue
@@ -262,7 +263,12 @@ def ckpt_name_of(workflow: dict) -> str | None:
             name = (node.get("inputs") or {}).get("ckpt_name")
             if name:
                 return str(name)
-    return None
+        if unet is None and node.get("class_type") == "UNETLoader":
+            name = (node.get("inputs") or {}).get("unet_name")
+            if name:
+                text = str(name)
+                unet = text if text.lower().startswith("unet:") else "unet:" + text
+    return unet
 
 
 _TEXT_INPUTS = ("text", "text_g", "text_l", "prompt", "positive")

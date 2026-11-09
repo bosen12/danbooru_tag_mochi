@@ -9,7 +9,7 @@ Created by [bosen12](https://github.com/bosen12) · Code: GPLv3
 
 English · [繁體中文](#繁體中文)
 
-Danbooru tags as illustrated cards. Pin a few cards, let the engine draw the rest by its rules, and send the composition to your local ComfyUI (WAI / Illustrious SDXL).
+Danbooru tags as illustrated cards. Pin a few cards, let the engine draw the rest by its rules, and send the composition to your local ComfyUI (WAI / Illustrious SDXL). Pony and Anima checkpoints are supported too: the prompt is rewritten into that model's format, and Anima runs on its own workflow.
 
 Questions, prints to share, card requests: **[join the Mochi Discord](https://discord.gg/UtDK9w3Hw)**.
 
@@ -228,7 +228,7 @@ Mochi code is distributed under **GNU GPLv3 only (`GPL-3.0-only`)**, see [LICENS
 
 原作者：[bosen12](https://github.com/bosen12) · 程式授權：GPLv3 · [加入 Discord 伺服器](https://discord.gg/UtDK9w3Hw)
 
-把 Danbooru 標籤做成一張張有插畫的牌：挑幾張放進合成池，引擎依規則抽牌補齊，整組送進本機的 ComfyUI（WAI / Illustrious SDXL）生圖。
+把 Danbooru 標籤做成一張張有插畫的牌：挑幾張放進合成池，引擎依規則抽牌補齊，整組送進本機的 ComfyUI（WAI / Illustrious SDXL）生圖。也支援 Pony、Anima：提示詞會換成那一家的格式，Anima 走另一套工作流。
 
 有問題、想分享作品、許願新牌：**[加入墨池的 Discord](https://discord.gg/UtDK9w3Hw)**。
 

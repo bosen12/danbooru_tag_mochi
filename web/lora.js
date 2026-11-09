@@ -522,8 +522,24 @@ function sameLora(a, b) {
   return !!(a && b && a.folder === b.folder && a.file === b.file);
 }
 
+/** Pony／Anima 才標；Illustrious 是預設，不標。 */
+function ckptFmtLabel(format) {
+  if (format === "pony") return "Pony";
+  if (format === "anima") return "Anima";
+  return "";
+}
+
+function appendCkptFmt(el, format) {
+  const label = ckptFmtLabel(format);
+  if (!label || !el) return;
+  const badge = document.createElement("span");
+  badge.className = "ckpt-fmt";
+  badge.textContent = label;
+  el.appendChild(badge);
+}
+
 /** 一張畫廊卡：圖在上、名字在下；在槽裡的蓋一顆 ①／②。deal：剛換清單時一張張發出來。 */
-function galleryCard({ preview, title, sub, seat, on, deal, i }) {
+function galleryCard({ preview, title, sub, seat, on, deal, i, mark = "" }) {
   const card = document.createElement("button");
   card.type = "button";
   card.className = "lora-row lg-card" + (on ? " on" : "") + (seat && !on ? " in-other" : "");
@@ -560,6 +576,12 @@ function galleryCard({ preview, title, sub, seat, on, deal, i }) {
   const rt = document.createElement("span");
   rt.className = "rt";
   rt.textContent = title;
+  if (mark) {
+    const badge = document.createElement("span");
+    badge.className = "ckpt-fmt";
+    badge.textContent = mark;
+    rt.appendChild(badge);
+  }
   const rf = document.createElement("span");
   rf.className = "rf";
   rf.textContent = sub;
@@ -1991,6 +2013,7 @@ function renderCkptCurrent() {
   const t = document.createElement("div");
   t.className = "lm-cur-title";
   t.textContent = cur.title || cur.file;
+  appendCkptFmt(t, cur.format);
   const f = document.createElement("div");
   f.className = "lm-cur-folder";
   f.textContent = cur.ckpt_name;
@@ -2106,7 +2129,7 @@ function renderCkptList(filter, deal = false) {
         preview.loading = "lazy";
         preview.src = ckptPreviewUrl(c);
       }
-      const card = galleryCard({ preview, title: c.title || c.file, sub: c.file, seat: "", on: c.ckpt_name === GEN_CKPT, deal, i });
+      const card = galleryCard({ preview, title: c.title || c.file, sub: c.file, seat: "", on: c.ckpt_name === GEN_CKPT, deal, i, mark: ckptFmtLabel(c.format) });
       card._mark = () => ({ seat: "", on: c.ckpt_name === GEN_CKPT });
       card.addEventListener("click", () => selectCkpt(c, card));
       box.appendChild(card);
@@ -2137,6 +2160,7 @@ function renderCkptList(filter, deal = false) {
     const rt = document.createElement("span");
     rt.className = "rt";
     rt.textContent = c.title || c.file;
+    appendCkptFmt(rt, c.format);
     const rf = document.createElement("span");
     rf.className = "rf";
     rf.textContent = c.file;

@@ -2414,6 +2414,176 @@ ok("卡面自訂：第一次準備的卡面檢查照自訂的比對（不會當�
    any(j.get("tag") == _job_tag and j.get("positive") == "1girl, adult, green sweater" for j in _fca.load_jobs()))
 _cac.remove(_job_tag)
 
+# === 底模格式：Illustrious／Pony／Anima（不連 ComfyUI） ============================
+import prompt_formats as _pf
+
+_ill = _pf.convert_positive("1girl, masterpiece, best quality, amazing quality, nsfw, explicit", _pf.ILLUSTRIOUS, "general")
+ok("format: illustrious rating and quality at the end", _ill == "1girl, sfw, general, masterpiece, best quality, amazing quality", _ill)
+_pony = _pf.convert_positive(_ill, _pf.PONY, "sensitive")
+ok(
+    "format: pony prefix, old quality removed",
+    _pony == "score_9, score_8_up, score_7_up, score_6_up, source_anime, rating_questionable, 1girl",
+    _pony,
+)
+_anima_pos = _pf.convert_positive(_pony, _pf.ANIMA, "explicit")
+ok(
+    "format: anima prefix, score and rating words removed",
+    _anima_pos == "masterpiece, best quality, explicit, 1girl",
+    _anima_pos,
+)
+ok("format: converting again changes nothing", _pf.convert_positive(_anima_pos, _pf.ANIMA, "explicit") == _anima_pos)
+ok("format: illustrious twice changes nothing", _pf.convert_positive(_ill, _pf.ILLUSTRIOUS, "general") == _ill)
+_weighted = _pf.convert_positive("(masterpiece:1.2), (best quality:1.1), 1girl, (nsfw:1.3)", _pf.PONY, "explicit")
+ok(
+    "format: weighted quality tags are stripped",
+    _weighted == "score_9, score_8_up, score_7_up, score_6_up, source_anime, rating_explicit, 1girl",
+    _weighted,
+)
+ok("format_of: unet is anima", _pf.format_of(r"unet:anima\anima-base-v1.0.safetensors") == "anima")
+ok("format_of: filename pony", _pf.format_of(r"SDXL\ponyDiffusionV6XL.safetensors") == "pony")
+ok("format_of: other is illustrious", _pf.format_of(r"illurtrious\wai.safetensors") == "illustrious")
+ok("format_of: config fragment wins over unet", _pf.format_of("unet:anima-base.safetensors", {"anima-base": "pony"}) == "pony")
+ok(
+    "resolve keeps an explicit unet name",
+    server.resolve_ckpt(r"unet:anima\anima-base-v1.0.safetensors", []) == r"unet:anima\anima-base-v1.0.safetensors",
+)
+ok("resolve rejects a unet path that climbs out", server.resolve_ckpt(r"unet:..\evil.safetensors", []) == str(server.CKPT).replace("/", "\\"))
+
+_fmt_ckpts = server.checkpoints_for_ui
+_fmt_models = server.models_from_comfy
+_fmt_lm = server.lm_checkpoints
+_fmt_cfg = server.CONFIG
+server.checkpoints_for_ui = lambda: ([
+    {"file": "wai.safetensors", "ckpt_name": r"illurtrious\wai.safetensors", "title": "WAI"},
+    {"file": "ponyDiffusionV6XL.safetensors", "ckpt_name": "ponyDiffusionV6XL.safetensors", "title": "Pony"},
+    {"file": "anima-base-v1.0.safetensors", "ckpt_name": "unet:anima-base-v1.0.safetensors", "title": "Anima"},
+], "comfy")
+try:
+    _iw = server.build_workflow("1girl", 1024, 1024, 1, ckpt=r"illurtrious\wai.safetensors", rating="explicit")
+    ok("illustrious workflow is still a checkpoint", _iw["13"]["class_type"] == "CheckpointLoaderSimple" and "14" not in _iw)
+    ok("illustrious negative is unchanged", _iw["37"]["inputs"]["text"] == server.negative_for("explicit"))
+    _pw = server.build_workflow(
+        "1girl", 1024, 1024, 1,
+        [{"folder": "style", "file": "a.safetensors", "strength": 0.5}],
+        ckpt="ponyDiffusionV6XL.safetensors", rating="explicit",
+    )
+    ok(
+        "pony inserts CLIPSetLastLayer before the text encode",
+        _pw["14"]["class_type"] == "CLIPSetLastLayer"
+        and _pw["14"]["inputs"]["stop_at_clip_layer"] == -2
+        and _pw["14"]["inputs"]["clip"] == ["201", 1]
+        and _pw["36"]["inputs"]["clip"] == ["14", 0]
+        and _pw["35"]["inputs"]["model"] == ["201", 0],
+        str(_pw.get("14")),
+    )
+    ok("pony negative adds the low scores", _pw["37"]["inputs"]["text"].startswith("score_6, score_5, score_4, source_pony, source_furry, source_cartoon"))
+    _aw = server.build_workflow(
+        "1girl, red hair", 832, 1216, 3,
+        [{"file": "style.safetensors", "strength": 0.7}],
+        ckpt="unet:anima-base-v1.0.safetensors", rating="general",
+    )
+    ok(
+        "anima UNET CLIP VAE",
+        _aw["13"]["class_type"] == "UNETLoader"
+        and _aw["13"]["inputs"] == {"unet_name": "anima-base-v1.0.safetensors", "weight_dtype": "default"}
+        and _aw["14"]["class_type"] == "CLIPLoader"
+        and _aw["14"]["inputs"]["clip_name"] == "qwen_3_06b_base.safetensors"
+        and _aw["14"]["inputs"]["type"] == "stable_diffusion"
+        and _aw["14"]["inputs"]["device"] == "default"
+        and _aw["15"]["class_type"] == "VAELoader"
+        and _aw["15"]["inputs"]["vae_name"] == "qwen_image_vae.safetensors",
+        str((_aw["13"], _aw["14"], _aw["15"])),
+    )
+    _ks = _aw["35"]["inputs"]
+    ok(
+        "anima sampler matches the blueprint",
+        _ks["steps"] == 30 and _ks["cfg"] == 4 and _ks["sampler_name"] == "er_sde" and _ks["scheduler"] == "simple" and _ks["denoise"] == 1
+        and _aw["200"]["inputs"]["filename_prefix"] == "danbooru_case/case"
+        and _aw["85"]["inputs"]["vae"] == ["15", 0],
+        str(_ks),
+    )
+    ok(
+        "anima lora sits between UNET/CLIP and the rest",
+        _aw["201"]["class_type"] == "LoraLoader"
+        and _aw["201"]["inputs"]["model"] == ["13", 0]
+        and _aw["201"]["inputs"]["clip"] == ["14", 0]
+        and _ks["model"] == ["201", 0]
+        and _aw["36"]["inputs"]["clip"] == ["201", 1],
+    )
+    _aneg = _aw["37"]["inputs"]["text"]
+    ok(
+        "anima negative adds the model page words once",
+        all(w in _aneg.split(", ") for w in ("low quality", "score_1", "score_2", "score_3", "artist name", "jpeg artifacts", "chromatic aberration", "sepia", "sensitive", "worst quality"))
+        and _aneg.split(", ").count("worst quality") == 1,
+        _aneg[:180],
+    )
+    ok("ckpt_name_of reads UNETLoader", wfmod.ckpt_name_of(_aw) == "unet:anima-base-v1.0.safetensors", wfmod.ckpt_name_of(_aw))
+    _payload = {
+        "positive": "1girl, masterpiece, best quality, amazing quality, nsfw, explicit",
+        "seed": 9, "width": 832, "height": 1216,
+        "ckpt": "unet:anima-base-v1.0.safetensors", "rating": "general",
+    }
+    _aw2, _meta = server.prepare_workflow(_payload)
+    ok(
+        "prepare rewrites payload positive to the anima prompt",
+        _payload["positive"] == _meta["positive"] == "masterpiece, best quality, safe, 1girl"
+        and _aw2["36"]["inputs"]["text"] == _payload["positive"],
+        _payload["positive"],
+    )
+    try:
+        server.build_workflow("1girl", 832, 1216, 1, ckpt="unet:anima-base-v1.0.safetensors", pose={"name": "x"})
+        ok("anima pose is refused", False)
+    except ValueError as exc:
+        ok("anima pose is refused", "姿勢" in str(exc), str(exc))
+    try:
+        server.build_hires_workflow("1girl", 1, "quick", 1.5, "danbooru_hires/a.png", ckpt="unet:anima-base-v1.0.safetensors")
+        ok("anima hires is refused", False)
+    except server.HiresError as exc:
+        ok("anima hires is refused", str(exc) == "Anima 的圖還不能 Hires／修臉", str(exc))
+    try:
+        server.build_face_workflow("1girl", 1, "a.png", {}, "bbox/face_yolov8m.pt", ckpt="unet:anima-base-v1.0.safetensors")
+        ok("anima face fix is refused", False)
+    except server.HiresError as exc:
+        ok("anima face fix is refused", str(exc) == "Anima 的圖還不能 Hires／修臉", str(exc))
+    server.CONFIG = {"models": {"anima": {"steps": 20, "cfg": 3.5, "sampler": "euler", "scheduler": "normal", "textEncoder": "te.safetensors", "vae": "vae.safetensors"}, "pony": {"clipSkip": 1}}}
+    _tuned = server.build_workflow("1girl", 832, 1216, 1, ckpt="unet:anima-base-v1.0.safetensors", rating="general")
+    ok(
+        "anima config overrides the blueprint",
+        _tuned["35"]["inputs"]["steps"] == 20 and _tuned["35"]["inputs"]["cfg"] == 3.5
+        and _tuned["35"]["inputs"]["sampler_name"] == "euler" and _tuned["14"]["inputs"]["clip_name"] == "te.safetensors"
+        and _tuned["15"]["inputs"]["vae_name"] == "vae.safetensors",
+        str(_tuned["35"]["inputs"]),
+    )
+    _skip = server.build_workflow("1girl", 1024, 1024, 1, ckpt="ponyDiffusionV6XL.safetensors", rating="explicit")
+    ok("pony clip skip follows config", _skip["14"]["inputs"]["stop_at_clip_layer"] == -1, str(_skip.get("14")))
+finally:
+    server.checkpoints_for_ui = _fmt_ckpts
+    server.models_from_comfy = _fmt_models
+    server.lm_checkpoints = _fmt_lm
+    server.CONFIG = _fmt_cfg
+
+server.models_from_comfy = lambda kind: (
+    [r"anima\anima-base-v1.0.safetensors", "other-unet.safetensors"] if kind == "diffusion_models"
+    else [r"illurtrious\wai.safetensors", "ponyDiffusionV6XL.safetensors"]
+)
+server.lm_checkpoints = lambda: {}
+try:
+    _listed, _src = server.checkpoints_for_ui()
+    _by = {it["ckpt_name"]: it for it in _listed}
+    ok("checkpoint list adds anima diffusion models only", "unet:" + r"anima\anima-base-v1.0.safetensors" in _by and "unet:other-unet.safetensors" not in _by, str(list(_by)))
+    ok(
+        "checkpoint list stamps format",
+        _by[r"illurtrious\wai.safetensors"]["format"] == "illustrious"
+        and _by["ponyDiffusionV6XL.safetensors"]["format"] == "pony"
+        and _by["unet:" + r"anima\anima-base-v1.0.safetensors"]["format"] == "anima"
+        and _by["unet:" + r"anima\anima-base-v1.0.safetensors"]["file"] == "anima-base-v1.0.safetensors",
+        str({k: v.get("format") for k, v in _by.items()}),
+    )
+    ok("anima still listed when checkpoints come from Comfy", _src == "comfy")
+finally:
+    server.models_from_comfy = _fmt_models
+    server.lm_checkpoints = _fmt_lm
+
 if failed:
     print(f"\n{failed} failed")
     sys.exit(1)

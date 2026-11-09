@@ -537,6 +537,15 @@
   white-space: nowrap;
   display: block;
 }
+.ckpt-fmt {
+  display: inline-block;
+  margin-left: 0.4em;
+  font-size: 10px;
+  font-weight: 650;
+  letter-spacing: 0.04em;
+  color: var(--faint);
+  vertical-align: 0.08em;
+}
 .lora-row .rf {
   font-size: 10px;
   color: var(--faint);
