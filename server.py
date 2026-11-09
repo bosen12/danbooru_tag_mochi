@@ -93,13 +93,6 @@ def cfg(path: str, env: str = "", default=None):
 
 WEB = (ROOT / str(cfg("paths.webDir", "WEB_DIR", "web"))).resolve()
 SHARED = (ROOT / "web").resolve()
-# 借用的版面（逗號分開）：這個版面沒有的檔，先到這些資料夾找，再退回共用的 web/。
-# web8 借 web6 的規則模組和其他房間（WEB_DIR=web8、WEB_BASE=web6），規則只有一份，不用複製。
-BASES = [
-    (ROOT / part.strip()).resolve()
-    for part in str(cfg("paths.webBase", "WEB_BASE", "") or "").split(",")
-    if part.strip()
-]
 CKPT = str(cfg("comfy.ckpt", "COMFY_CKPT", r"illurtrious\waiIllustriousSDXL_v170.safetensors"))
 # 沒設定就是 None，不要退回 Path("")：那會變成專案根目錄，然後被當成
 # checkpoint 資料夾掃一遍。沒設定時 /api/checkpoints 就回空清單。
@@ -493,10 +486,6 @@ def static_path(rel: str) -> Path | None:
     dest = (WEB / rel).resolve()
     if dest.is_relative_to(WEB) and dest.is_file():
         return dest
-    for base in BASES:
-        borrowed = (base / rel).resolve()
-        if borrowed.is_relative_to(base) and borrowed.is_file():
-            return borrowed
     shared = (SHARED / rel).resolve()
     if shared.is_relative_to(SHARED) and shared.is_file():
         return shared
@@ -506,12 +495,6 @@ def static_path(rel: str) -> Path | None:
     if stand_in is not None:
         return static_path(stand_in)
     return None
-
-
-def has_setup_panel() -> bool:
-    """這個版面（或它借用的版面，例如 web8 借 web6）有第一次準備的面板：伺服器才在背景做準備。
-    共用的 web/ 不算：其他舊版面照舊用啟動檔檢查。"""
-    return any((d / "setup-panel.js").is_file() for d in (WEB, *BASES))
 
 
 def card_stand_in(rel: str) -> str | None:
@@ -528,7 +511,7 @@ def own_js_files() -> list[str]:
     if _ASSET_SCAN["files"] and now - _ASSET_SCAN["t"] < 2:
         return _ASSET_SCAN["files"]
     seen: set[str] = set()
-    for base in {WEB, SHARED, *BASES}:
+    for base in {WEB, SHARED}:
         for root, dirs, files in os.walk(base):
             dirs[:] = [d for d in dirs if d not in _ASSET_SKIP_DIRS and not d.startswith(".")]
             for name in files:
@@ -6637,7 +6620,7 @@ def main() -> None:
         raise SystemExit(1) from None
     # 0.0.0.0 是「聽所有網卡」，不是能打開的網址：印這台自己的。
     shown = "127.0.0.1" if host in ("0.0.0.0", "::", "") else host
-    name = "墨池 Mochi" if has_setup_panel() else "排字匣"
+    name = "墨池 Mochi" if (WEB / "setup-panel.js").is_file() else "排字匣"
     print(f"{name}  http://{shown}:{port}/   畫面 {WEB.name}")
     print("allow    " + ",".join(str(n) for n in ALLOW_NETS))
     print(f"設定檔  {CONFIG_PATH}" + ("" if CONFIG else "（沒有，全部用預設值 / not found, using defaults）"))
@@ -6683,7 +6666,7 @@ def main() -> None:
     # 要問 ComfyUI 的幾項（連不連得到、LoRA Manager、底模、清上傳原圖）丟到背景：
     # 以前在這裡一項一項同步問，ComfyUI 卡住時要 19 秒才開始接連線（網頁一直轉圈）。
     threading.Thread(target=boot_comfy_report, name="boot-comfy", daemon=True).start()
-    if has_setup_panel():
+    if (WEB / "setup-panel.js").is_file():
         # 這個版面在網頁上顯示準備進度（web6/setup-panel.js）：卡面、LoRA Manager、放大模型、
         # 姿勢參考、烘焙都由 setup_tasks 在背景做，ComfyUI 什麼時候開都接得上。
         setup_tasks.start(comfy_base, on_lora_ready=lora_scan.reset_cache)

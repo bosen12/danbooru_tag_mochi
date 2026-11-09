@@ -1416,34 +1416,6 @@ try:
     ok("card art: no full, no thumb -> 404 as before; non-card paths never stand in", _srv_h.static_path("cards/none.webp") is None and _srv_h.card_stand_in("engine.js") is None and _srv_h.card_stand_in("cards/thumb/a.webp") is None)
 finally:
     _srv_h.WEB, _srv_h.SHARED = _saved_web
-# WEB_BASE（web8 借 web6）：先找這個版面，再找借用的版面，最後才是共用的 web/；第一次準備的面板借來的也算。
-_wb_root = Path(_tf_si.mkdtemp()).resolve()
-for _d in ("web8", "web6", "web"):
-    (_wb_root / _d).mkdir()
-(_wb_root / "web8" / "index.html").write_text("8", encoding="utf-8")
-(_wb_root / "web6" / "index.html").write_text("6", encoding="utf-8")
-(_wb_root / "web6" / "mobile-bridge.js").write_text("6", encoding="utf-8")
-(_wb_root / "web6" / "setup-panel.js").write_text("6", encoding="utf-8")
-(_wb_root / "web" / "mobile-bridge.js").write_text("shared", encoding="utf-8")
-(_wb_root / "web" / "engine.js").write_text("shared", encoding="utf-8")
-(_wb_root / "web" / "setup-panel.js").write_text("shared", encoding="utf-8")
-(_wb_root / "secret.txt").write_text("no", encoding="utf-8")
-_saved_wb = (_srv_h.WEB, _srv_h.SHARED, _srv_h.BASES, dict(_srv_h._ASSET_SCAN))
-_srv_h.WEB, _srv_h.SHARED, _srv_h.BASES = _wb_root / "web8", _wb_root / "web", [_wb_root / "web6"]
-_srv_h._ASSET_SCAN.update(t=0, files=[])
-try:
-    ok("WEB_BASE: the room's own file wins over the borrowed one", _srv_h.static_path("index.html") == _wb_root / "web8" / "index.html")
-    ok("WEB_BASE: a file the room lacks comes from the borrowed room before the shared web/", _srv_h.static_path("mobile-bridge.js") == _wb_root / "web6" / "mobile-bridge.js")
-    ok("WEB_BASE: still falls back to the shared web/", _srv_h.static_path("engine.js") == _wb_root / "web" / "engine.js")
-    ok("WEB_BASE: no escaping out of the served folders", _srv_h.static_path("../secret.txt") is None and _srv_h.static_path("../../server.py") is None)
-    ok("WEB_BASE: borrowed modules go into the import map", "mobile-bridge.js" in _srv_h.own_js_files())
-    ok("WEB_BASE: a borrowed setup panel turns on first-time setup", _srv_h.has_setup_panel())
-    _srv_h.BASES = []
-    ok("setup panel only in the shared web/ does not count (older rooms keep their launcher checks)", not _srv_h.has_setup_panel())
-finally:
-    _srv_h.WEB, _srv_h.SHARED, _srv_h.BASES = _saved_wb[:3]
-    _srv_h._ASSET_SCAN.clear()
-    _srv_h._ASSET_SCAN.update(_saved_wb[3])
 import struct as _st_nf  # noqa: E402
 import zlib as _zl_nf  # noqa: E402
 
