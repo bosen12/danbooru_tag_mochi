@@ -7309,6 +7309,16 @@ html[data-setup] .tour-offer {
   font-size: var(--text-xs);
   overflow-wrap: anywhere;
 }
+/* 等同一件事的併成一行：名字用間隔號隔開（名字裡本身有頓號，例如「敏感、色情卡面」），一個名字不折成兩行。 */
+.setup-names > span {
+  white-space: nowrap;
+}
+.setup-names > span + span::before {
+  content: "·";
+  margin: 0 0.4em;
+  color: var(--color-ink-2);
+  font-weight: 400;
+}
 .setup-answers,
 .setup-foot {
   display: flex;

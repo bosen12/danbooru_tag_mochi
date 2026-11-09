@@ -72,6 +72,54 @@ try {
     await context.close();
   }
   console.log('Setup panel: installation/patch choices in English/Traditional Chinese passed');
+  // ComfyUI not running: only waits left -> one title line, the eight identical waits merged into one row;
+  // a choice made in this tab is kept; once ComfyUI starts and work begins, the panel opens by itself.
+  const waitTitles = ['LoRA Manager', 'Hires 放大模型', '姿勢參考', '修臉（FaceDetailer）', '圖片解析（WD14 Tagger）', '烘焙卡面', '敏感、色情卡面', '角色卡面'];
+  const waitingSnap = () => ({ started: true, active: true, restart: false, items: [
+    { id: 'cards', title: '卡面插畫', state: 'done', text: '' },
+    ...waitTitles.map((title, i) => ({ id: 'w' + i, title, state: 'wait', text: '等 ComfyUI 開起來' })),
+  ] });
+  const openPage = async (locale) => {
+    const context = await browser.newContext({ locale, viewport: { width: 1440, height: 900 } });
+    await context.route('https://**/*', r => r.abort());
+    await context.addInitScript(() => Object.defineProperty(navigator, 'webdriver', { get: () => false }));
+    const page = await context.newPage(), errors = [];
+    page.on('pageerror', e => errors.push(e.message));
+    await page.goto(`http://127.0.0.1:${server.address().port}/`);
+    const panel = page.locator('#setup-panel');
+    await panel.waitFor();
+    return { context, page, panel, errors };
+  };
+  for (const locale of ['en-US', 'zh-TW']) {
+    snap = waitingSnap();
+    const { context, page, panel, errors } = await openPage(locale);
+    assert.equal(await panel.getAttribute('data-collapsed'), 'true', 'Waiting for ComfyUI starts collapsed');
+    assert.equal(await panel.locator('.setup-head').getAttribute('aria-expanded'), 'false');
+    await page.waitForFunction(() => !/[\u3400-\u9fff]/.test(document.querySelector('.setup-title').textContent) || document.documentElement.lang !== 'en');
+    assert.equal(await panel.locator('.setup-title').textContent(), locale === 'en-US' ? 'First-time setup: waiting for ComfyUI (8 left)' : '第一次使用：等 ComfyUI 開起來（還有 8 項）');
+    await panel.locator('.setup-head').click();
+    assert.equal(await panel.getAttribute('data-collapsed'), 'false');
+    assert.equal(await panel.locator('.setup-item').count(), 1, 'Eight identical waits become one row');
+    assert.equal(await panel.locator('.setup-names > span').count(), 8);
+    if (locale === 'en-US') assert.equal(/[\u3400-\u9fff]/.test(await panel.innerText()), false, 'Waiting copy is translated');
+    await page.reload();
+    await panel.waitFor();
+    assert.equal(await panel.getAttribute('data-collapsed'), 'false', 'A choice made in this tab is kept');
+    assert.deepEqual(errors, []);
+    await context.close();
+  }
+  {
+    snap = waitingSnap();
+    const { context, page, panel, errors } = await openPage('zh-TW');
+    assert.equal(await panel.getAttribute('data-collapsed'), 'true');
+    snap = { ...snap, items: snap.items.map(it => it.id === 'w0' ? { ...it, state: 'run', text: '安裝到 ComfyUI 的 custom_nodes' } : it) };
+    await page.waitForFunction(() => document.querySelector('#setup-panel')?.dataset.collapsed === 'false', null, { timeout: 10000 });
+    assert.match(await panel.locator('.setup-title').textContent(), /^第一次使用：準備中 0\/8$/);
+    assert.equal(await panel.locator('.setup-item').count(), 2, 'The running step gets its own row; the rest still share one');
+    assert.deepEqual(errors, []);
+    await context.close();
+  }
+  console.log('Setup panel: waiting for ComfyUI stays one collapsed line and opens when work starts');
 } finally {
   await browser?.close();
   await new Promise(r => server.close(r));

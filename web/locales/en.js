@@ -2301,6 +2301,8 @@ LoRA Manager 送來的「{0}」在這裡的清單找不到|LoRA “{0!}” from 
 LoRA：清單來自 ComfyUI（{0} 個）。想要預覽圖和觸發詞：在 ComfyUI 裝 LoRA Manager（裝完重開 ComfyUI），或在 config.json 填 paths.loraRoot。|LoRA: list from ComfyUI ({0!}). For preview images and trigger words, install ComfyUI LoRA Manager (restart ComfyUI after installing it) or set paths.loraRoot in config.json.
 LoRA：沒設定 paths.loraRoot，改問 ComfyUI 也失敗了：{0}|LoRA: no LoRA Manager or paths.loraRoot, and ComfyUI could not be reached: {0!}
 第一次使用：準備中 {0}/{1}|First-time setup {0}/{1}
+第一次使用：等 ComfyUI 開起來（還有 {0} 項）|First-time setup: waiting for ComfyUI ({0!} left)
+第一次使用：{0}（還有 {1} 項）|First-time setup: {0} ({1!} left)
 重開失敗（{0}）：請自己重開 ComfyUI|Restart failed ({0!}). Restart ComfyUI yourself.
 {0}（下次啟動接著抓）|{0} (resumes next launch)
 {0}：清掉篩選|{0}: clear filter

@@ -47,6 +47,8 @@ const store = (key, value) => {
   }
 };
 let collapsed = stored(COLLAPSED_KEY) === "1";
+// 這個分頁自己按過收合／展開：照按的，不再自動收合或打開。
+let chosen = stored(COLLAPSED_KEY) !== "";
 let finishedAt = 0;
 
 function render(snap) {
@@ -61,6 +63,11 @@ function render(snap) {
     finishedAt ||= Date.now();
     if (Date.now() - finishedAt > 6000) return hide();
   }
+  // 只剩在等（ComfyUI 沒開）：沒有要按的、也沒有進度可看，只留一行標題
+  //（以前列八行一模一樣的「等 ComfyUI 開起來」，在電腦上蓋住半個字盒）。ComfyUI 一開、開始跑就自己打開。
+  const pending = shown.filter((it) => it.state !== "done" && it.state !== "skip");
+  const waiting = snap.active && pending.length > 0 && pending.every((it) => it.state === "wait");
+  if (!box && !chosen) collapsed = waiting;
   if (!box) mount();
   document.documentElement.dataset.setup = "";
   // 內容沒變就不重畫：按鈕被換掉的話，滑鼠正要按、鍵盤焦點都會落空。
@@ -69,9 +76,15 @@ function render(snap) {
   box.dataset.sig = sig;
   const done = shown.filter((it) => it.state === "done" || it.state === "skip").length;
   // 伺服器剛開、每一步都還沒動（全是 idle）：不寫「0/0」。
-  box.querySelector(".setup-title").textContent = !snap.active ? "準備好了" : shown.length ? `第一次使用：準備中 ${done}/${shown.length}` : "第一次使用：準備中…";
+  box.querySelector(".setup-title").textContent = !snap.active
+    ? "準備好了"
+    : waiting
+      ? `第一次使用：${pending[0].text}（還有 ${pending.length} 項）`
+      : shown.length
+        ? `第一次使用：準備中 ${done}/${shown.length}`
+        : "第一次使用：準備中…";
   box.dataset.collapsed = collapsed ? "true" : "false";
-  list.replaceChildren(...shown.map(row));
+  list.replaceChildren(...mergeWaits(shown).map(row));
   const acts = [];
   if (snap.restart) acts.push(el("button", { class: "btn btn-small btn-primary", type: "button", onclick: restart }, "重開 ComfyUI"));
   if (reload) acts.push(el("button", { class: "btn btn-small", type: "button", onclick: () => location.reload() }, "重新整理看新圖"));
@@ -80,17 +93,29 @@ function render(snap) {
   // 內容換好才量：展開的過場要長到新內容的大小。
   const asking = shown.filter((it) => it.state === "ask").map((it) => it.id).join();
   if (asking && asking !== stored(ASKED_KEY)) setCollapsed(false);
+  else if (!chosen && collapsed !== waiting) setCollapsed(waiting, false);
   store(ASKED_KEY, asking);
+}
+
+// 等同一件事的併成一行：名字排在一起，「等 ComfyUI 開起來」只寫一次。
+function mergeWaits(items) {
+  const rows = [];
+  for (const it of items) {
+    const same = it.state === "wait" && rows.find((r) => r.state === "wait" && r.text === it.text);
+    if (same) same.titles.push(it.title);
+    else rows.push({ ...it, titles: [it.title] });
+  }
+  return rows;
 }
 
 /**
  * 收合／展開。面板大小直接跳的話（手機上寬度 359 → 202px）很突兀：從舊的大小長到新的，
  * 展開時清單跟著淡進來。量大小用 FLIP：先量、切狀態、再量，從舊的動到新的。
  */
-function setCollapsed(v) {
+function setCollapsed(v, remember = true) {
   const was = box.getBoundingClientRect();
   collapsed = v;
-  store(COLLAPSED_KEY, v ? "1" : "0");
+  if (remember) store(COLLAPSED_KEY, v ? "1" : "0");
   box.querySelector(".setup-head").setAttribute("aria-expanded", v ? "false" : "true");
   box.dataset.collapsed = v ? "true" : "false";
   if (reducedMotion() || !was.width) return;
@@ -118,7 +143,7 @@ function row(it) {
     el(
       "span",
       { class: "setup-body" },
-      el("b", {}, it.title),
+      it.titles?.length > 1 ? el("b", { class: "setup-names" }, it.titles.map((name) => el("span", {}, name))) : el("b", {}, it.title),
       it.text ? el("small", {}, it.text) : null,
       answers.length
         ? el(
@@ -140,6 +165,7 @@ function mount() {
   const head = el(
     "button",
     { class: "setup-head", type: "button", "aria-expanded": collapsed ? "false" : "true", onclick: () => {
+      chosen = true;
       setCollapsed(!collapsed);
     } },
     el("b", { class: "setup-title" }),
