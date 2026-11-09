@@ -1,5 +1,18 @@
 # Release notes
 
+## v1.5 — 2026-11-09
+
+Changes since [v1.4.3](https://github.com/bosen12/danbooru_tag_mochi/releases/tag/v1.4.3).
+
+- **Pony and Anima models.** Pick a Pony or Anima model and Mochi rewrites the prompt into that model's format right before it goes to ComfyUI, so every room, the iPhone app and MCP work unchanged. Pony gets `score_9, score_8_up, score_7_up, score_6_up, source_anime` and `rating_safe` / `rating_questionable` / `rating_explicit` (plus CLIP skip 2); Anima gets `masterpiece, best quality` and `safe` / `sensitive` / `explicit`. Negatives switch too. Illustrious / NoobAI prompts are unchanged. The Gallery log keeps the prompt that was actually sent, and reprinting on another model converts it back. Model names containing "pony" are treated as Pony; set `models.formats` in `config.json` for merges with other names.
+- **Anima runs on its own workflow:** `anima*` diffusion models are listed in the model picker (labelled Anima, Pony models labelled Pony) and printed with UNET + `qwen_3_06b_base` text encoder + `qwen_image_vae` (er_sde, 30 steps, CFG 4; see `models.anima` in `config.example.json`). Pose reference, Hires and face fix don't support Anima yet and say so.
+- **MCP server for AI assistants** (`mcp/`): Claude, Codex or Grok Build can search cards, explain exclusions, check a set of cards, draw prompts by Mochi's rules and print through Mochi (shown as "AI" in the top bar and the log). Mochi rules apply: rating, implies, mutex, banned characters, LoRA trigger words.
+- **iPhone app bridge** (`web/mobile-bridge.js`): the app draws with the same engine and modules as the page; its jobs show as "iPhone".
+- **One card search everywhere** (page, iPhone, MCP): run-together Chinese is split (海邊夕陽 finds 海邊 and 夕陽), English plurals fall back to the singular, everyday synonyms were added, and when matches are hidden by gender or era the library says so with a button to show them.
+- **First-time setup** while ComfyUI is closed is one line ("waiting for ComfyUI (8 left)") instead of eight identical rows covering the card library; it opens by itself once work starts.
+- **Moving cards between rooms** names the destination and how many cards it replaces, and lists removed cards and changed weights before you confirm.
+- Lexicon: 260 new tags and 31 characters. Card art v12 / v13 (released separately as `card-art-v13`).
+
 ## v1.4.3 — 2026-10-30
 
 Changes since [v1.4.2](https://github.com/bosen12/danbooru_tag_mochi/releases/tag/v1.4.2).
