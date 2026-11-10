@@ -164,6 +164,7 @@
 
 .album-cap small {
   flex: none;
+  font-size: var(--text-2xs);
   color: var(--color-muted);
   font-variant-numeric: tabular-nums;
 }
@@ -569,7 +570,7 @@ a.album-chip:focus-visible {
 }
 .model-art small {
   padding: var(--space-2xs);
-  font-size: 10px;
+  font-size: var(--text-2xs);
 }
 .model-body {
   display: grid;
