@@ -1392,6 +1392,12 @@ body #wf-pick-btn.has {
   min-width: 0;
 }
 
+/* 右下角固定的廢字簍（76px 圓）會蓋住頁面最底下那一列：平板上「還沒有成品」那列的「抽並生圖」被蓋住、
+ * 捲不開。底部留出圓鈕的高度，最後一列能捲到它上面。 */
+html:has(#trash) .work {
+  padding-bottom: calc(76px + var(--space-md));
+}
+
 .pool {
   position: relative;
   overflow: hidden;
