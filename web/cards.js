@@ -353,10 +353,20 @@ export function spineName(zh) {
   return /\p{Script=Han}/u.test(short) ? short : name;
 }
 
+/** 字名到幾個字就排成兩行直書（card.css 的 .card-name[data-wrap]）：一行塞九個字以上，字小到讀不出來。 */
+const WRAP_LEN = 9;
+/** 兩行從正中間切（右行多一個字），不靠自動換行：自動換行會切成「十個字＋一個字」。 */
+function splitSpine(spine) {
+  const chars = [...spine];
+  const half = Math.ceil(chars.length / 2);
+  return [chars.slice(0, half).join(""), el("br"), chars.slice(half).join("")];
+}
+
 /** 一張牌。左邊是直排書脊（花色、字名、分級），疊起來也讀得到。 */
 export function cardNode(card, assets, { tagName = "button", flag, src } = {}) {
   const spine = card.spine ?? spineName(card.zh);
   const len = [...spine].length;
+  const wrap = !english && len >= WRAP_LEN;
   const art = assets.art(card.tag);
   const suit = CARD_SUIT_INFO[card.suit];
   const node = el(
@@ -370,9 +380,10 @@ export function cardNode(card, assets, { tagName = "button", flag, src } = {}) {
     },
     el(
       "span",
-      { class: "card-spine", "aria-hidden": "true" },
+      // 書脊上除了字名還有幾個章（分級、小分類），字名能用的高度跟著變：card.css 照這個算字級。
+      { class: "card-spine", "aria-hidden": "true", dataset: { marks: (card.rating !== "general" ? "r" : "") + (card.seal ? "s" : "") } },
       el("span", { class: "card-suit" }, suit.glyph),
-      el("span", { class: "card-name", dataset: { len: String(Math.min(len, 8)) } }, spine),
+      el("span", { class: "card-name", dataset: wrap ? { len: "8", wrap: "" } : { len: String(Math.min(len, 8)) }, style: `--len:${wrap ? Math.ceil(len / 2) : len}` }, wrap ? splitSpine(spine) : spine),
       card.rating !== "general" ? el("span", { class: "card-rate", dataset: { r: card.rating } }, card.rating === "explicit" ? "色" : "敏") : null,
       card.seal ? el("span", { class: "card-seal", title: card.groupZh }, card.seal) : null
     ),

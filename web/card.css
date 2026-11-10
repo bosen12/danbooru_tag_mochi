@@ -122,16 +122,31 @@
   white-space: nowrap;
 }
 
-.card-name[data-len="4"] {
-  font-size: 0.95em;
+/* 字名的字級照書脊剩下的高度算：剩下的高度（扣掉花色章、分級章、小分類章）÷ 字數，最大 1.12em。
+ * 以前照字數一刀切（4 字 0.95、5 字 0.8、6～8 字 0.66em），6 字的名字只用到一半高度卻縮到字盒裡 7px；
+ * 9 字以上又一律當 8 字，有章的牌會被裁掉。--name-room 是「每個字 1em 時排得下幾個字」（量過：沒有章
+ * 9.4em、小分類章 7.9em、兩個章 6.9em，字距 0.02em，留 4% 餘裕）。--len 是 cards.js 寫的字數。 */
+.card-spine {
+  --name-room: 8.85em;
 }
-.card-name[data-len="5"] {
-  font-size: 0.8em;
+.card-spine[data-marks="r"] {
+  --name-room: 7.9em;
 }
-.card-name[data-len="6"],
-.card-name[data-len="7"],
-.card-name[data-len="8"] {
-  font-size: 0.66em;
+.card-spine[data-marks="s"] {
+  --name-room: 7.4em;
+}
+.card-spine[data-marks="rs"] {
+  --name-room: 6.45em;
+}
+.card-name {
+  font-size: min(1.12em, calc(var(--name-room) / var(--len, 4)));
+}
+/* 九個字以上排兩行直書（右行先讀）：cards.js 從正中間放一個換行，--len 是一行的字數。兩行的寬度不能
+ * 超過書脊（26% 卡寬 ≈ 2.08em），所以最大 0.92em。 */
+html:not([lang="en"]) .card-name[data-wrap] {
+  font-size: min(0.92em, calc(var(--name-room) / var(--len, 4)));
+  line-height: 1.04;
+  letter-spacing: 0;
 }
 
 .card-rate {
@@ -1093,17 +1108,32 @@ html:not([lang="en"]) .card-peek .card-peek-suit {
   font-size: 0.95em;
 }
 html:not([lang="en"]) .card-peek .card-peek-name {
-  font-size: 1.12em;
   letter-spacing: 0.02em;
 }
-html:not([lang="en"]) .card-peek .card-peek-name[data-len="4"] {
-  font-size: 0.95em;
+/* 放大卡的字名跟小牌同一套算法（上面 .card-name）：放大卡只有一張，章用 :has 看就好。九個字以上一樣排
+ * 兩行（card-peek.js 讀 --peek-name-wrap，跟 cards.js 的 WRAP_LEN 同一個數）。 */
+html:not([lang="en"]) {
+  --peek-name-wrap: 9;
 }
-html:not([lang="en"]) .card-peek .card-peek-name[data-len="5"] {
-  font-size: 0.8em;
+html:not([lang="en"]) .card-peek .card-peek-spine {
+  --name-room: 8.85em;
 }
-html:not([lang="en"]) .card-peek .card-peek-name:is([data-len="6"], [data-len="7"], [data-len="8"]) {
-  font-size: 0.66em;
+html:not([lang="en"]) .card-peek .card-peek-spine:has(> .card-peek-rate) {
+  --name-room: 7.9em;
+}
+html:not([lang="en"]) .card-peek .card-peek-spine:has(> .card-peek-seal) {
+  --name-room: 7.4em;
+}
+html:not([lang="en"]) .card-peek .card-peek-spine:has(> .card-peek-rate):has(> .card-peek-seal) {
+  --name-room: 6.45em;
+}
+html:not([lang="en"]) .card-peek .card-peek-name {
+  font-size: min(1.12em, calc(var(--name-room) / var(--len, 4)));
+}
+html:not([lang="en"]) .card-peek .card-peek-name[data-wrap] {
+  font-size: min(0.92em, calc(var(--name-room) / var(--len, 4)));
+  line-height: 1.04;
+  letter-spacing: 0;
 }
 html:not([lang="en"]) .card-peek .card-peek-seal {
   width: 1.45em;

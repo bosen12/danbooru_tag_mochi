@@ -85,6 +85,18 @@ function render(info) {
   if (info.suitColor) suit.style.setProperty("--peek-suit", info.suitColor);
   const name = h("span", "card-peek-name", info.zh);
   name.dataset.len = String(Math.min([...(info.zh || "")].length, 8));
+  // 放大卡照字數算字級（--len）；版面的 CSS 有寫 --peek-name-wrap（web6/card.css）的話，字數到那麼多就從
+  // 正中間排成兩行，--len 改成一行的字數。其他版面沒寫，照舊只看 data-len。
+  const nameLen = [...(info.zh || "")].length || 1;
+  const wrapAt = Number(getComputedStyle(document.documentElement).getPropertyValue("--peek-name-wrap")) || Infinity;
+  const wrap = nameLen >= wrapAt;
+  if (wrap) {
+    const chars = [...info.zh];
+    const half = Math.ceil(chars.length / 2);
+    name.dataset.wrap = "";
+    name.replaceChildren(chars.slice(0, half).join(""), document.createElement("br"), chars.slice(half).join(""));
+  }
+  name.style.setProperty("--len", String(wrap ? Math.ceil(nameLen / 2) : nameLen));
   spine.append(suit, name);
   if (info.rating && info.rating !== "general") {
     const r = h("span", "card-peek-rate", info.rating === "explicit" ? "色" : "敏");
