@@ -1715,6 +1715,76 @@ body #wf-pick-btn.has {
   white-space: nowrap;
 }
 
+/* 時代、人物、尺寸、姿勢、放牌：電腦上跟「尺度」排在同一排（這層盒子不存在）；手機收成一行摘要
+ * （app.js 的 .rule-sum），點了才展開。 */
+.rule-quiet {
+  display: contents;
+}
+.rule-sum {
+  display: none;
+}
+@media (max-width: 40rem) {
+  .rule-quiet:not(.is-open) {
+    display: none;
+  }
+  .rule-sum {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    width: 100%;
+    min-height: 44px;
+    padding: var(--space-xs) var(--space-sm);
+    border: 1px solid var(--color-rule-2);
+    border-radius: var(--radius-sm);
+    background: color-mix(in oklch, var(--color-paper-2) 70%, transparent);
+    color: var(--color-ink-2);
+    font: inherit;
+    font-size: var(--text-xs);
+    text-align: left;
+    cursor: pointer;
+  }
+  .rule-sum-items {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px var(--space-sm);
+    flex: 1;
+    min-width: 0;
+  }
+  .rule-sum-item {
+    display: inline-flex;
+    gap: 0.35em;
+    white-space: nowrap;
+  }
+  .rule-sum-item > span {
+    color: var(--color-muted);
+  }
+  .rule-sum-item > b {
+    font-weight: 600;
+    color: var(--color-ink);
+  }
+  .rule-sum-act {
+    flex: none;
+    color: var(--color-accent);
+    font-weight: 600;
+  }
+  .rule-sum-act::after {
+    content: "";
+    display: inline-block;
+    width: 0.45em;
+    height: 0.45em;
+    margin-left: 0.4em;
+    border-right: 1.5px solid currentColor;
+    border-bottom: 1.5px solid currentColor;
+    translate: 0 -0.15em;
+    rotate: 45deg;
+    transition: rotate var(--dur-short) var(--ease-out);
+  }
+  .rule-sum[aria-expanded="true"] .rule-sum-act::after {
+    translate: 0 0.1em;
+    rotate: 225deg;
+  }
+}
+
 /* 標籤＋控制項一組：換行只發生在組與組之間。 */
 .rule-pair {
   display: inline-flex;

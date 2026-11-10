@@ -132,7 +132,7 @@ let looping = false;
 // 無限抽這一趟送出去幾張（打開開關、或開著時自己按「抽並生圖」從 0 算起）；到 ui.loopMax 就停（0＝不限）。
 let loopSent = 0;
 const LOOP_MAX_CHOICES = [0, 10, 20, 50, 100, 200];
-const ui = S.typedLike({ suit: "all", group: "", query: "", eraOnly: true, charGender: "", collapsed: matchMedia("(max-width: 63.99rem)").matches, wallCols: "auto", loopMax: 0 }, S.loadUi());
+const ui = S.typedLike({ suit: "all", group: "", query: "", eraOnly: true, charGender: "", collapsed: matchMedia("(max-width: 63.99rem)").matches, wallCols: "auto", loopMax: 0, rulesOpen: false }, S.loadUi());
 if (!LOOP_MAX_CHOICES.includes(ui.loopMax)) ui.loopMax = 0;
 // 存檔裡的花色不是現在有的（改版、壞掉）：回到「全部」，不然字盒整盒是空的。
 // 「自製」不在共用的 CARD_SUITS 裡（只有 web6 有）：字盒自己多一格（有自製牌才出現）。
@@ -374,7 +374,7 @@ function setSettings(patch) {
 }
 
 function saveUi() {
-  S.saveUi({ suit: ui.suit, group: ui.group, eraOnly: ui.eraOnly, collapsed: ui.collapsed, charGender: ui.charGender, wallCols: ui.wallCols, loopMax: ui.loopMax });
+  S.saveUi({ suit: ui.suit, group: ui.group, eraOnly: ui.eraOnly, collapsed: ui.collapsed, charGender: ui.charGender, wallCols: ui.wallCols, loopMax: ui.loopMax, rulesOpen: ui.rulesOpen });
 }
 
 /* ================= 分級與 Comfy ================= */
@@ -2196,19 +2196,56 @@ function renderRules() {
   // 放牌的兩個開關（預設都開，跟以前一樣）。
   const companions = switchBox("附帶", settings.pinCompanions !== false, (v) => setSettings({ pinCompanions: v }), "開：釘了一張牌，抽的時候把它附帶的牌一起帶上（夏日洋裝帶洋裝）。關：你從池子拿掉的附帶牌不會被抽回來");
   const mutex = switchBox("互斥", settings.pinMutex !== false, (v) => setSettings({ pinMutex: v }), "開：放一張牌時，池子裡跟它互斥的牌拿下來（放黑髮，紅髮下來）。關：互斥的牌都留著，兩張都寫進提示詞");
+  // 姿勢參考：人物照一張圖的姿勢擺（pose.js）。
+  const poseBtn = poseButton({ recent: poseRecent, wf: currentWorkflowId, rating: () => settings.rating, size: () => ({ w: settings.width, h: settings.height }) });
+  // 手機：時代、人物、尺寸、姿勢、放牌設好就很少動（日誌 557 張，尺寸只換過 2 次），卻佔掉五六列，
+  // 合成池和成品之間要捲過一大段。平常收成一行「現代・女・直 832×1216…」，點了才展開。
+  // 收起來也寫出每一項現在的值（以前把尺寸收進「更多規則」，專案主在手機上找不到）。電腦上照舊整排攤開。
+  const quiet = el(
+    "div",
+    { class: "rule-quiet", id: "rule-quiet" },
+    rulePair("時代", eraSel),
+    rulePair("人物", whoRow),
+    rulePair("尺寸", sizeSel),
+    rulePair("姿勢", poseBtn),
+    rulePair("放牌", el("span", { class: "rule-pair" }, companions, mutex))
+  );
+  const sum = el("button", { class: "rule-sum pressable", type: "button", "aria-controls": "rule-quiet" });
+  const paintSum = () => {
+    const era = settings.eraMix ? "混合" : settings.eras.length === 1 ? ERA_LABELS[settings.eras[0]] : "隨機";
+    const whoNow = settings.girl && settings.boy ? "不限" : settings.boy ? "男" : "女";
+    const size = (SIZES.find((x) => x.w === settings.width && x.h === settings.height) || SIZES[0]).zh;
+    const pins = [settings.pinCompanions !== false ? "附帶" : "", settings.pinMutex !== false ? "互斥" : ""].filter(Boolean);
+    const item = (label, value, own) => el("span", { class: "rule-sum-item" }, el("span", {}, label), el("b", own ? { dataset: { noI18n: "" } } : {}, ...[value].flat()));
+    sum.replaceChildren(
+      el(
+        "span",
+        { class: "rule-sum-items" },
+        item("時代", era),
+        item("人物", whoNow),
+        item("尺寸", size),
+        // 姿勢鈕自己的字已經翻好了（「照這張・中」），原樣搬過來。
+        item("姿勢", poseBtn.querySelector("span")?.textContent || t("不用"), true),
+        // 一個字一個字節點：英文版才翻得到（整串「附帶＋互斥」對不到 en.js）。
+        item("放牌", pins.length ? pins.flatMap((x, i) => (i ? ["＋", x] : [x])) : "關")
+      ),
+      el("span", { class: "rule-sum-act" }, ui.rulesOpen ? "收起" : "改設定")
+    );
+    sum.setAttribute("aria-expanded", ui.rulesOpen ? "true" : "false");
+    quiet.classList.toggle("is-open", !!ui.rulesOpen);
+  };
+  sum.onclick = () => {
+    ui.rulesOpen = !ui.rulesOpen;
+    saveUi();
+    paintSum();
+  };
+  // 展開時改了哪一項，收起來那一行要對得上：選單、開關改了就重寫；姿勢鈕換字（挑了參考圖）也是。
+  quiet.addEventListener("change", paintSum);
+  new MutationObserver(paintSum).observe(poseBtn, { childList: true, subtree: true, characterData: true });
+  paintSum();
   box.replaceChildren(
     // 標籤跟它的控制項包成一組：窄畫面換行時整組一起走，不會出現「時代」掛在上一行尾、選單在下一行。
-    el(
-      "div",
-      { class: "rule-row" },
-      rulePair("尺度", heatRow),
-      rulePair("時代", eraSel),
-      rulePair("人物", whoRow),
-      rulePair("尺寸", sizeSel),
-      // 姿勢參考：人物照一張圖的姿勢擺（pose.js）。
-      rulePair("姿勢", poseButton({ recent: poseRecent, wf: currentWorkflowId, rating: () => settings.rating, size: () => ({ w: settings.width, h: settings.height }) })),
-      rulePair("放牌", el("span", { class: "rule-pair" }, companions, mutex))
-    ),
+    el("div", { class: "rule-row" }, rulePair("尺度", heatRow), sum, quiet),
     el(
       "details",
       { class: "more-rules", open: moreOpen },

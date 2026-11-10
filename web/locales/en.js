@@ -197,6 +197,7 @@ tag（最多 5 個）|Tags (up to 5)
 ComfyUI 的輸出資料夾裡找不到這張，可能被刪掉了。按「再印一次」照原樣重印。|The original image is missing from ComfyUI output. Choose Generate again to recreate it.
 固定 seed|Lock seed
 收起|Collapse
+改設定|Edit
 空著|Empty
 疊上|Layer
 在廢字簍，會跳過|Blocked; will be skipped

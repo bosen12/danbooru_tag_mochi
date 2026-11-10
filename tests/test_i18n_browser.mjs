@@ -188,6 +188,10 @@ try {
       for (const selector of route === '/' ? ['#pool-decks', '#pool-paste', '#wf-pick-btn', '#lora-pick-btn', '#ckpt-pick-btn', '#dc-btn', '.pose-btn'] : route === '/fuse.html' ? ['#rules-btn', '#decks-btn'] : route === '/book.html' ? ['#book-ach', '#book-grid .card:first-child'] : route === '/parse.html' ? ['#parse-gear', '#parse-trust [data-v="sure"]'] : ['.album-tile', '#album-tabs button:nth-child(2)', '#album-log .log-row', '#album-tabs button:nth-child(3)']) {
         const n = page.locator(selector).first();
         if (await n.count()) {
+          // 手機上時代、人物、尺寸、姿勢、放牌收成一行摘要（app.js 的 .rule-sum）：先展開，順便掃展開後的字。
+          if (selector === '.pose-btn' && await page.locator('.rule-sum').isVisible() && await page.locator('.rule-sum').getAttribute('aria-expanded') !== 'true') {
+            await page.locator('.rule-sum').click(); await page.waitForTimeout(150); await scan(page, name + '-rules-open');
+          }
           await n.click(); await page.waitForTimeout(250); await scan(page, name + selector);
           if (selector === '#book-grid .card:first-child') {
             // 詳情腳下的「提示詞」：打開卡面提示詞視窗，按修改看編輯狀態。
