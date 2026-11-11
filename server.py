@@ -142,10 +142,17 @@ CKPT_PREVIEW_EXTS = (
     ".preview.jpeg",
     ".preview.jpg",
     ".preview.webp",
+    ".preview.gif",
     ".png",
     ".jpg",
     ".jpeg",
     ".webp",
+    ".gif",
+    # 只有影片的底模（Civitai 上有些只放短片）：底模面板照 LoRA 面板的做法放 <video>。
+    ".preview.mp4",
+    ".preview.webm",
+    ".mp4",
+    ".webm",
 )
 def _negative() -> str:
     path = SHARED / "lexicon.json"
@@ -1275,10 +1282,7 @@ def lm_checkpoints() -> dict:
     for it in raw or []:
         fn = str(it.get("file_path") or "").replace("\\", "/").rsplit("/", 1)[-1]
         name = lora_scan.lm_preview_name(it.get("preview_url") or "") or ""
-        # 底模面板只放 <img>：影片預覽（實測有 27MB 的 mp4）下載了也顯示不出來，不給。
-        if lora_scan.is_video_preview(name):
-            it = {**it, "preview_url": ""}
-            name = ""
+        # 影片預覽也給：底模面板跟 LoRA 面板一樣放 <video>（捲到才載、伺服器支援 Range，不會一次抓完 27MB）。
         if fn:
             by_file[fn] = {
                 "path": str(it.get("file_path") or ""),
@@ -1391,13 +1395,37 @@ def _append_anima_models(items: list[dict]) -> None:
         if ckpt_name in seen:
             continue
         fn = raw.split("\\")[-1]
-        items.append({
+        item = {
             "file": fn,
             "ckpt_name": ckpt_name,
             "title": Path(fn).stem,
             "preview": "",
-        })
+        }
+        man = lm_checkpoints().get(fn) or {}
+        if man.get("previewUrl"):
+            item["title"] = man.get("title") or item["title"]
+            item["preview"] = man.get("preview") or "preview"
+            item["previewUrl"] = man["previewUrl"]
+        else:
+            model = _diffusion_model_path(raw)
+            name = _local_preview(model) if model else ""
+            if name:
+                item["preview"] = name
+                item["previewUrl"] = "/api/ckpt-preview?file=" + urllib.parse.quote(name)
+        items.append(item)
         seen.add(ckpt_name)
+
+
+def _diffusion_model_path(raw: str) -> Path | None:
+    """ComfyUI 的 diffusion_models 資料夾裡這個模型的實際路徑（raw 可能帶子資料夾 a\\b.safetensors）。"""
+    rel = Path(*str(raw).replace("\\", "/").split("/"))
+    if any(part in ("", ".", "..") for part in rel.parts):
+        return None
+    for d in lora_scan.comfy_model_dirs("diffusion_models"):
+        cand = Path(d) / rel
+        if cand.is_file():
+            return cand
+    return None
 
 
 def _stamp_ckpt_formats(items: list[dict]) -> None:
@@ -3195,6 +3223,26 @@ _THUMB_DISK_MAX = 3000
 _THUMB_WRITES = {"n": 0}
 # 一次只縮兩張：底模面板一開十幾張同時進來，全部一起解 5 MB 的 PNG 會吃滿 CPU、拖慢正在生圖的 ComfyUI。
 _THUMB_GATE = threading.Semaphore(2)
+
+
+def byte_range(header: str, size: int):
+    """HTTP Range（只認一段 bytes=a-b、bytes=a-、bytes=-n）：回 (start, end)；沒有 Range 回 None；範圍不合法回 "bad"。"""
+    m = re.fullmatch(r"\s*bytes=(\d*)-(\d*)\s*", header or "")
+    if not m or (not m.group(1) and not m.group(2)):
+        return None
+    if size <= 0:
+        return "bad"
+    if m.group(1):
+        start = int(m.group(1))
+        end = min(int(m.group(2)), size - 1) if m.group(2) else size - 1
+    else:
+        n = int(m.group(2))
+        if n <= 0:
+            return "bad"
+        start, end = max(0, size - n), size - 1
+    if start >= size or end < start:
+        return "bad"
+    return start, end
 
 
 def thumb_width(qs: dict) -> int:
@@ -5732,6 +5780,12 @@ class Handler(BaseHTTPRequestHandler):
             mime = "image/png"
         elif low.endswith(".jpg") or low.endswith(".jpeg"):
             mime = "image/jpeg"
+        elif low.endswith(".gif"):
+            mime = "image/gif"
+        elif low.endswith(".mp4"):
+            mime = "video/mp4"
+        elif low.endswith(".webm"):
+            mime = "video/webm"
         else:
             mime = "application/octet-stream"
         try:
@@ -5739,11 +5793,21 @@ class Handler(BaseHTTPRequestHandler):
         except OSError as exc:
             self._json(502, {"ok": False, "error": str(exc)})
             return
-        self._preview_bytes(raw, mime, thumb_width(qs))
+        extra = {"Accept-Ranges": "bytes"} if mime.startswith("video/") else {}
+        self._preview_bytes(raw, mime, thumb_width(qs), extra)
 
     def _preview_bytes(self, raw: bytes, mime: str, width: int, extra=None) -> None:
-        """預覽圖：網址帶 w= 而且縮得了就給縮圖（webp），不然給原圖。"""
+        """預覽圖：網址帶 w= 而且縮得了就給縮圖（webp），不然給原圖。影片照 Range 只送要的那一段。"""
         headers = {"Cache-Control": "private, max-age=86400", **(extra or {})}
+        if mime.startswith("video/"):
+            got = byte_range(self.headers.get("Range") or "", len(raw))
+            if got == "bad":
+                self._bytes(416, b"", mime, {**headers, "Content-Range": f"bytes */{len(raw)}"})
+                return
+            if got:
+                start, end = got
+                self._bytes(206, raw[start : end + 1], mime, {**headers, "Content-Range": f"bytes {start}-{end}/{len(raw)}"})
+                return
         small = preview_thumb(raw, width) if width and mime.startswith("image/") else None
         if small:
             self._bytes(200, small, "image/webp", headers)
@@ -5793,11 +5857,17 @@ class Handler(BaseHTTPRequestHandler):
         if not src.startswith(lora_scan.LM_PREVIEW_PREFIX) or any(c in src for c in "\r\n#") or "://" in src:
             self._json(404, {"ok": False, "error": "not found"})
             return
+        # 影片：瀏覽器要的是一段（Range），轉給 LoRA Manager 也只要那一段；回 206 就原樣送回，
+        # 不然每一段都要先從 ComfyUI 把整支影片（實測 27MB）抓過來。
+        rng = self.headers.get("Range") or ""
         try:
-            req = urllib.request.Request(comfy_base() + src, method="GET")
+            req = urllib.request.Request(comfy_base() + src, method="GET", headers={"Range": rng} if byte_range(rng, 1 << 62) not in (None, "bad") else {})
             with urllib.request.urlopen(req, timeout=20) as r:
                 raw = r.read()
                 mime = (r.headers.get("Content-Type") or "").split(";")[0].strip()
+                if r.status == 206 and mime.startswith("video/") and r.headers.get("Content-Range"):
+                    self._bytes(206, raw, mime, {"Cache-Control": "private, max-age=86400", "Accept-Ranges": "bytes", "Content-Range": r.headers["Content-Range"]})
+                    return
         except urllib.error.HTTPError as exc:
             self._json(404 if exc.code == 404 else 502, {"ok": False, "error": f"LoRA Manager {exc.code}"})
             return
@@ -6736,6 +6806,15 @@ def ckpt_preview_path(fn: str, root: Path | None = None) -> Path | None:
         # 偏好路徑底下（含子資料夾）的預覽圖：只認那些底模旁邊的同名預覽。
         for model in pref_ckpt_files().values():
             if model.with_name(fn).is_file() and model.with_name(fn).name.startswith(model.stem):
+                return model.with_name(fn)
+        # Anima（diffusion_models 裡）：一樣只認清單上那幾個模型旁邊的同名預覽。
+        try:
+            unets = [n for n in models_from_comfy("diffusion_models") if "anima" in str(n).lower()]
+        except Exception:
+            unets = []
+        for raw in unets:
+            model = _diffusion_model_path(raw)
+            if model and fn.startswith(model.stem) and model.with_name(fn).is_file():
                 return model.with_name(fn)
     base = Path(root) if root is not None else CKPT_DIR
     if base is None:

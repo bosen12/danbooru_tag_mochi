@@ -2584,6 +2584,43 @@ finally:
     server.models_from_comfy = _fmt_models
     server.lm_checkpoints = _fmt_lm
 
+
+# ---------- 影片預覽：Range 只送那一段；底模的影片預覽不再丟掉；Anima 找模型旁邊的預覽 ----------
+ok("byte_range: no header", server.byte_range("", 100) is None)
+ok("byte_range: a-b", server.byte_range("bytes=0-9", 100) == (0, 9))
+ok("byte_range: open end", server.byte_range("bytes=90-", 100) == (90, 99))
+ok("byte_range: end clamps to size", server.byte_range("bytes=50-500", 100) == (50, 99))
+ok("byte_range: suffix", server.byte_range("bytes=-10", 100) == (90, 99))
+ok("byte_range: start past end is bad", server.byte_range("bytes=100-", 100) == "bad")
+ok("byte_range: multi-range ignored", server.byte_range("bytes=0-1,5-6", 100) is None)
+ok("checkpoint previews include video and gif", all(e in server.CKPT_PREVIEW_EXTS for e in (".mp4", ".webm", ".gif"))
+   and server.CKPT_PREVIEW_EXTS.index(".mp4") > server.CKPT_PREVIEW_EXTS.index(".jpeg"))
+
+import tempfile as _tf
+_saved2 = (server.models_from_comfy, server.lm_checkpoints, _ls.comfy_model_dirs)
+with _tf.TemporaryDirectory() as _d:
+    _dm = Path(_d) / "diffusion_models"
+    (_dm / "anima").mkdir(parents=True)
+    (_dm / "anima" / "anima-x.safetensors").write_bytes(b"x")
+    (_dm / "anima" / "anima-x.jpeg").write_bytes(b"\xff\xd8\xff")
+    (_dm / "anima" / "secret.txt").write_bytes(b"no")
+    server.models_from_comfy = lambda kind: [r"anima\anima-x.safetensors"] if kind == "diffusion_models" else []
+    server.lm_checkpoints = lambda: {}
+    _ls.comfy_model_dirs = lambda kind: [_dm] if kind == "diffusion_models" else []
+    try:
+        _items = []
+        server._append_anima_models(_items)
+        ok("anima gets the preview next to its model", _items and _items[0]["preview"] == "anima-x.jpeg"
+           and _items[0]["previewUrl"] == "/api/ckpt-preview?file=anima-x.jpeg", str(_items))
+        ok("ckpt-preview serves the anima preview", server.ckpt_preview_path("anima-x.jpeg") == _dm / "anima" / "anima-x.jpeg")
+        ok("ckpt-preview won't serve other files beside it", server.ckpt_preview_path("secret.txt") is None)
+        server.lm_checkpoints = lambda: {"anima-x.safetensors": {"title": "Anima X", "previewUrl": "/api/lora-preview?lm=x", "preview": "anima-x.mp4"}}
+        _items = []
+        server._append_anima_models(_items)
+        ok("anima prefers LoRA Manager's preview and title", _items[0]["previewUrl"] == "/api/lora-preview?lm=x" and _items[0]["title"] == "Anima X")
+    finally:
+        server.models_from_comfy, server.lm_checkpoints, _ls.comfy_model_dirs = _saved2
+
 if failed:
     print(f"\n{failed} failed")
     sys.exit(1)

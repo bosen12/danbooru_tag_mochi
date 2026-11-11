@@ -748,7 +748,8 @@ function flyToSeat(from, to) {
   if (!GALLERY || !MOTION || REDUCE_MOTION || !from || !to) return;
   const a = from.getBoundingClientRect();
   const b = to.getBoundingClientRect();
-  if (!a.width || !b.width || !from.currentSrc) return;
+  // 影片預覽不飛：飛的那張是 <img>，拿影片網址當圖會是一格破圖。
+  if (!a.width || !b.width || !from.currentSrc || from.tagName !== "IMG") return;
   const ghost = document.createElement("img");
   ghost.className = "lg-fly";
   ghost.src = from.currentSrc;
@@ -1952,6 +1953,10 @@ export function handleLoraKeys(e) {
 function ckptPreviewUrl(c, w = 480) {
   return sizedUrl(c.previewUrl || `/api/ckpt-preview?file=${encodeURIComponent(c.preview)}`, w);
 }
+/** 底模預覽：圖片照舊；只有影片的（Civitai 上有些只放短片）跟 LoRA 面板一樣放 <video>，捲到才載。 */
+function ckptPreviewEl(c, w = 480) {
+  return makeLoraPreviewEl({ preview: c.preview, previewUrl: c.previewUrl || `/api/ckpt-preview?file=${encodeURIComponent(c.preview)}` }, w);
+}
 
 function renderCkptBtn() {
   const btn = $("ckpt-pick-btn");
@@ -1987,12 +1992,16 @@ function renderCkptCurrent() {
   if (GALLERY && cur.preview) {
     const pv = document.createElement("div");
     pv.className = "lm-preview lg-seat";
-    const img = document.createElement("img");
-    img.alt = "";
-    img.decoding = "async";
-    img.src = ckptPreviewUrl(cur);
-    upgradeSrc(img, ckptPreviewUrl(cur, 960));
-    pv.appendChild(img);
+    if (isLoraPreviewVideo(cur)) {
+      pv.appendChild(ckptPreviewEl(cur));
+    } else {
+      const img = document.createElement("img");
+      img.alt = "";
+      img.decoding = "async";
+      img.src = ckptPreviewUrl(cur);
+      upgradeSrc(img, ckptPreviewUrl(cur, 960));
+      pv.appendChild(img);
+    }
     box.appendChild(pv);
   }
   const head = document.createElement("div");
@@ -2122,7 +2131,8 @@ function renderCkptList(filter, deal = false) {
   if (GALLERY) {
     items.forEach((c, i) => {
       let preview = null;
-      if (c.preview) {
+      if (c.preview && isLoraPreviewVideo(c)) preview = ckptPreviewEl(c);
+      else if (c.preview) {
         preview = document.createElement("img");
         preview.alt = "";
         preview.decoding = "async";
@@ -2143,7 +2153,9 @@ function renderCkptList(filter, deal = false) {
     row.type = "button";
     row.className = "lora-row" + (c.ckpt_name === GEN_CKPT ? " on" : "");
     if (c.ckpt_name === GEN_CKPT) row.setAttribute("aria-current", "true");
-    if (c.preview) {
+    if (c.preview && isLoraPreviewVideo(c)) {
+      row.appendChild(ckptPreviewEl(c));
+    } else if (c.preview) {
       const img = document.createElement("img");
       img.alt = "";
       img.decoding = "async";
