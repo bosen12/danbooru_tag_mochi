@@ -1930,19 +1930,12 @@ body #wf-pick-btn.has {
   white-space: nowrap;
 }
 
-/* 手機（手指點）：頂欄的介紹影片／教學／導覽、底線字按鈕（換一組、全部、看提示詞…）、開關只有 19～22px 高，
- * 常常點不到。能按到的範圍往外撐（padding），再用等量的負 margin 收回來：看起來、排版都不變。 */
+/* 手機（手指點）：底線字按鈕（換一組、全部、看提示詞…）、開關只有 19～22px 高，常常點不到。
+ * 能按到的範圍往外撐（padding），再用等量的負 margin 收回來：看起來、排版都不變。
+ * 頂欄的介紹影片／教學／導覽不在這裡撐：它們用 ::before 往外擴 12px（下面「看得見的字不變」那段）。
+ * 以前兩種一起用，連結的可點範圍疊成 67px 高，往下蓋住五個房間分頁最上面那幾 px——點「疊印台」的上緣
+ * 會開成教學。 */
 @media (pointer: coarse) {
-  .mast-extra {
-    padding: 12px 4px;
-    margin-block: -12px;
-    margin-inline: -4px;
-  }
-
-  .mast-extra + .mast-extra {
-    margin-left: calc(var(--space-xs) - 4px);
-  }
-
   .link-btn {
     padding: 10px 6px;
     margin: -10px -6px;
@@ -8181,6 +8174,22 @@ a.btn {
 @media (max-width: 40rem) {
   .community-perks {
     grid-template-columns: minmax(0, 1fr);
+  }
+}
+/* 觸控：頂欄小連結的可點範圍是 .mast-extra::before 往外擴的那一塊，但「社群」的 ::before 是那顆藍點——
+ * 兩條規則混在一起，藍點變成絕對定位、飄到字的左上角外面，可點範圍也沒擴到（只有 24×20）。
+ * 藍點留在字前面，可點範圍改用 padding 撐（負 margin 收回來，排版不變）。 */
+@media (pointer: coarse) {
+  .community-btn {
+    padding: 12px 4px;
+    margin-block: -12px;
+    margin-inline: -4px;
+  }
+  .mast-extra + .community-btn {
+    margin-left: 2px;
+  }
+  .community-btn::before {
+    position: static;
   }
 }
 @media (prefers-reduced-motion: reduce) {
