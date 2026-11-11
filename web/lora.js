@@ -512,7 +512,7 @@ function renderLmTools() {
   chip("match", "配合底模", fam ? counts[fam] || 0 : all.length, fam ? FAMILY_LABEL[fam] : "");
   chip("all", "全部", all.length);
   // 跟目前底模同一家的不再單獨列一顆（「配合底模」就是它），除非現在選的就是那一顆。
-  for (const f of ["illustrious", "pony", "anima", "krea2", "zimage", "other", "unknown"]) {
+  for (const f of ["illustrious", "pony", "anima", "krea2", "zimage", "moss", "other", "unknown"]) {
     if (counts[f] && (f !== fam || LORA_VIEW.base === f)) chip(f, LORA_BASE_LABEL[f], counts[f]);
   }
   // 存著的篩選這次沒有任何 LoRA（例如換了資料夾）：還是放一顆，看得到現在篩的是什麼、點別的換掉。
@@ -712,6 +712,7 @@ function ckptFmtLabel(format) {
   if (format === "anima") return "Anima";
   if (format === "krea2") return "Krea 2";
   if (format === "zimage") return "Z-Image";
+  if (format === "moss") return "MOSS-Image";
   return "";
 }
 

@@ -9,7 +9,7 @@ Created by [bosen12](https://github.com/bosen12) · Code: GPLv3
 
 English · [繁體中文](#繁體中文)
 
-Danbooru tags as illustrated cards. Pin a few cards, let the engine draw the rest by its rules, and send the composition to your local ComfyUI (WAI / Illustrious SDXL). Pony, Anima, Krea 2 and Z-Image Turbo are supported too: the model family comes from LoRA Manager's base model, the prompt is rewritten into that family's format, the UNET families run on their own workflows, and each family keeps its own steps, CFG, sampler and scheduler. The LoRA picker shows the LoRAs that match your checkpoint first and can sort by newest or most used.
+Danbooru tags as illustrated cards. Pin a few cards, let the engine draw the rest by its rules, and send the composition to your local ComfyUI (WAI / Illustrious SDXL). Pony, Anima, Krea 2, Z-Image Turbo and MOSS-Image are supported too: the model family comes from LoRA Manager's base model, the prompt is rewritten into that family's format, the UNET families run on their own workflows, and each family keeps its own steps, CFG, sampler and scheduler. The LoRA picker shows the LoRAs that match your checkpoint first and can sort by newest or most used.
 
 Questions, prints to share, card requests: **[join the Mochi Discord](https://discord.gg/UtDK9w3Hw)**.
 
@@ -228,7 +228,7 @@ Mochi code is distributed under **GNU GPLv3 only (`GPL-3.0-only`)**, see [LICENS
 
 原作者：[bosen12](https://github.com/bosen12) · 程式授權：GPLv3 · [加入 Discord 伺服器](https://discord.gg/UtDK9w3Hw)
 
-把 Danbooru 標籤做成一張張有插畫的牌：挑幾張放進合成池，引擎依規則抽牌補齊，整組送進本機的 ComfyUI（WAI / Illustrious SDXL）生圖。也支援 Pony、Anima、Krea 2、Z-Image Turbo：照 LoRA Manager 的基礎模型判斷是哪一家，提示詞換成那一家的格式，UNET 那幾家走自己的工作流，每家各存一套步數、CFG、採樣器、排程。選 LoRA 時預設只看跟底模相配的，也能照最新加入、最常用排序。
+把 Danbooru 標籤做成一張張有插畫的牌：挑幾張放進合成池，引擎依規則抽牌補齊，整組送進本機的 ComfyUI（WAI / Illustrious SDXL）生圖。也支援 Pony、Anima、Krea 2、Z-Image Turbo、MOSS-Image：照 LoRA Manager 的基礎模型判斷是哪一家，提示詞換成那一家的格式，UNET 那幾家走自己的工作流，每家各存一套步數、CFG、採樣器、排程。選 LoRA 時預設只看跟底模相配的，也能照最新加入、最常用排序。
 
 有問題、想分享作品、許願新牌：**[加入墨池的 Discord](https://discord.gg/UtDK9w3Hw)**。
 

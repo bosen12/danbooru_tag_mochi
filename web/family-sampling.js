@@ -13,13 +13,14 @@
 const STORE = "mochi.family-sampling.v1";
 const LEGACY_STORE = "yz-sampling";
 
-export const FAMILIES = ["illustrious", "pony", "anima", "krea2", "zimage"];
+export const FAMILIES = ["illustrious", "pony", "anima", "krea2", "zimage", "moss"];
 export const FAMILY_LABEL = {
   illustrious: "Illustrious／NoobAI",
   pony: "Pony",
   anima: "Anima",
   krea2: "Krea 2",
   zimage: "Z-Image",
+  moss: "MOSS-Image",
 };
 
 /* 伺服器還沒回話（或是舊版伺服器沒有 families）時顯示用的預設；實際以 /api/sampling 為準。 */
@@ -29,6 +30,7 @@ const FALLBACK = {
   anima: { steps: 30, cfg: 4, sampler: "er_sde", scheduler: "simple" },
   krea2: { steps: 8, cfg: 1, sampler: "euler", scheduler: "simple" },
   zimage: { steps: 8, cfg: 1, sampler: "res_multistep", scheduler: "simple" },
+  moss: { steps: 25, cfg: 2.5, sampler: "er_sde", scheduler: "simple" },
 };
 const LIMITS = { steps: [1, 80], cfg: [1, 15] };
 const NUM = {
@@ -78,6 +80,7 @@ function save() {
 export function familyOfBase(base) {
   const b = String(base || "").toLowerCase().replace(/[\s._-]+/g, "");
   if (!b) return null;
+  if (b.includes("moss")) return "moss";
   if (b.includes("pony")) return "pony";
   if (b.includes("illustrious") || b.includes("noobai") || b.includes("sdxl")) return "illustrious";
   if (b.includes("anima")) return "anima";

@@ -48,7 +48,7 @@
     "queueMax": 200
   },
   "models": {
-    "_comment": "底模的提示詞格式。formats 是檔名片段對到格式（illustrious、pony、anima、krea2、zimage），比自動判斷優先。沒寫的話先看 LoRA Manager（或模型旁邊 metadata）的 base_model：Pony→pony，Illustrious／NoobAI／SDXL→illustrious，Anima→anima，Krea 2→krea2，ZImageTurbo→zimage；對不上再看檔名（unet: 開頭且含 krea2→krea2，含 zimage／z_image／z-image→zimage，其他 unet:→anima，檔名有 pony→pony，其餘 illustrious）。Anima、Krea 2、Z-Image 用 UNET、文字編碼器、VAE，不是 checkpoint；姿勢參考、Hires、修臉還不支援。krea2、zimage 的 textEncoder、vae 拿掉就改從 ComfyUI 的選單挑。各家的 steps、cfg、sampler、scheduler 可覆寫；沒寫的話 illustrious、pony 用上面的 comfy.*。",
+    "_comment": "底模的提示詞格式。formats 是檔名片段對到格式（illustrious、pony、anima、krea2、zimage），比自動判斷優先。沒寫的話先看 LoRA Manager（或模型旁邊 metadata）的 base_model：Pony→pony，Illustrious／NoobAI／SDXL→illustrious，Anima→anima，Krea 2→krea2，ZImageTurbo→zimage，含 Moss→moss（MOSS-Image，要較新的 ComfyUI）；對不上再看檔名（unet: 開頭且含 krea2→krea2，含 zimage／z_image／z-image→zimage，其他 unet:→anima，檔名有 pony→pony，其餘 illustrious）。Anima、Krea 2、Z-Image 用 UNET、文字編碼器、VAE，不是 checkpoint；姿勢參考、Hires、修臉還不支援。krea2、zimage 的 textEncoder、vae 拿掉就改從 ComfyUI 的選單挑。各家的 steps、cfg、sampler、scheduler 可覆寫；沒寫的話 illustrious、pony 用上面的 comfy.*。",
     "formats": {},
     "anima": {
       "textEncoder": "qwen_3_06b_base.safetensors",
@@ -73,6 +73,14 @@
       "steps": 8,
       "cfg": 1,
       "sampler": "res_multistep",
+      "scheduler": "simple"
+    },
+    "moss": {
+      "textEncoder": "qwen3.5_9b_w4a8_gptq.safetensors",
+      "vae": "flux2-vae_small.safetensors",
+      "steps": 25,
+      "cfg": 2.5,
+      "sampler": "er_sde",
       "scheduler": "simple"
     },
     "pony": {

@@ -401,7 +401,9 @@ def comfy_rejection_text(body: dict) -> str:
                     "vae_name": "models/vae",
                     "unet_name": "models/diffusion_models（或 models/unet）",
                 }.get(field_name)
-                if folder:
+                if field_name == "type" and value == "moss_image":
+                    parts.append("這版 ComfyUI 還不支援 MOSS-Image：執行 ComfyUI 資料夾 update 裡的 update_comfyui.bat 更新後重開")
+                elif folder:
                     parts.append(f"找不到「{value}」：放到 ComfyUI 的 {folder}")
                 else:
                     parts.append(f"節點 {ct}（#{nid}）的 {field_name} 是「{value}」，ComfyUI 裡沒有這個")
@@ -722,6 +724,9 @@ def family_sampling_defaults(fmt: str) -> dict:
         base = {"steps": 8, "cfg": 1, "sampler": "euler", "scheduler": "simple"}
     elif fmt == prompt_formats.ZIMAGE:
         base = {"steps": 8, "cfg": 1, "sampler": "res_multistep", "scheduler": "simple"}
+    elif fmt == prompt_formats.MOSS:
+        # ComfyUI 官方範本 image_moss_image_t2i：25 步、CFG 2.5、er_sde、simple。
+        base = {"steps": 25, "cfg": 2.5, "sampler": "er_sde", "scheduler": "simple"}
     else:
         base = {"steps": STEPS, "cfg": CFG, "sampler": SAMPLER, "scheduler": SCHEDULER}
     return {
@@ -802,6 +807,13 @@ _NATURAL_SPEC = {
         "clipType": "lumina2",
         "key": "zimage",
     },
+    # MOSS-Image（OpenMOSS，2026-10）：Qwen3.5-9B 文字編碼器（CLIPLoader 類型 moss_image，ComfyUI 要夠新）＋FLUX.2 VAE。
+    prompt_formats.MOSS: {
+        "clip": "qwen3.5_9b_w4a8_gptq.safetensors",
+        "vae": "flux2-vae_small.safetensors",
+        "clipType": "moss_image",
+        "key": "moss",
+    },
 }
 
 
@@ -830,7 +842,9 @@ def natural_files(fmt: str) -> tuple[str, str, str]:
     vae = str(_configured(f"models.{key}.vae", "") or "")
     if not clip:
         names = menu_names("CLIPLoader", "clip_name")
-        if fmt == prompt_formats.KREA2:
+        if fmt == prompt_formats.MOSS:
+            clip = _first_menu(names, lambda n: "qwen3.5_9b" in str(n).lower() or "qwen3_5_9b" in str(n).lower(), spec["clip"])
+        elif fmt == prompt_formats.KREA2:
             clip = _first_menu(names, lambda n: "qwen3vl_4b" in str(n).lower(), spec["clip"])
         else:
             clip = _first_menu(
@@ -840,7 +854,11 @@ def natural_files(fmt: str) -> tuple[str, str, str]:
             )
     if not vae:
         names = menu_names("VAELoader", "vae_name")
-        if fmt == prompt_formats.KREA2:
+        if fmt == prompt_formats.MOSS:
+            # 範本用 flux2-vae_small；沒有就用一般的 flux2-vae（同一套 latent）。
+            vae = _first_menu(names, lambda n: _menu_basename(n).startswith("flux2-vae_small"), "")
+            vae = vae or _first_menu(names, lambda n: _menu_basename(n).startswith("flux2-vae"), spec["vae"])
+        elif fmt == prompt_formats.KREA2:
             vae = _first_menu(names, lambda n: "qwen_image_vae" in _menu_basename(n), spec["vae"])
         else:
             exact = [n for n in names or [] if str(n).replace("\\", "/") == "ae.safetensors"]
@@ -1048,7 +1066,7 @@ def build_natural_workflow(fmt: str, positive: str, width: int, height: int, see
         },
         "37": negative,
         "119": {
-            "class_type": "EmptySD3LatentImage" if fmt == prompt_formats.ZIMAGE else "EmptyLatentImage",
+            "class_type": "EmptySD3LatentImage" if fmt == prompt_formats.ZIMAGE else "EmptyFlux2LatentImage" if fmt == prompt_formats.MOSS else "EmptyLatentImage",
             "inputs": {"width": int(width), "height": int(height), "batch_size": 1},
         },
         "35": {
@@ -1060,7 +1078,7 @@ def build_natural_workflow(fmt: str, positive: str, width: int, height: int, see
                 "sampler_name": sampling["sampler"],
                 "scheduler": sampling["scheduler"],
                 "denoise": 1.0,
-                "model": ["16", 0] if fmt == prompt_formats.ZIMAGE else ["13", 0],
+                "model": ["16", 0] if fmt in (prompt_formats.ZIMAGE, prompt_formats.MOSS) else ["13", 0],
                 "positive": ["36", 0],
                 "negative": ["37", 0],
                 "latent_image": ["119", 0],
@@ -1083,6 +1101,12 @@ def build_natural_workflow(fmt: str, positive: str, width: int, height: int, see
             "class_type": "ModelSamplingAuraFlow",
             "inputs": {"model": ["13", 0], "shift": 3},
         }
+    elif fmt == prompt_formats.MOSS:
+        # 官方範本：負面那一支在第 22 層跳過（前一半的步數），細節比較清楚。
+        wf["16"] = {
+            "class_type": "SkipLayerGuidanceDiTSimple",
+            "inputs": {"model": ["13", 0], "double_layers": "", "single_layers": "22", "start_percent": 0.0, "end_percent": 0.5},
+        }
     for lora_name, strength in convert_loras(loras):
         inject_lora_model_only(wf, lora_name, strength, ("13", 0))
     return wf
@@ -1094,7 +1118,10 @@ def build_workflow(positive: str, width: int, height: int, seed: int, loras=None
     ckpt_name = resolve_ckpt(ckpt)
     fmt = prompt_formats.format_of(ckpt_name, model_format_overrides(), lookup_base_model(ckpt_name))
     sampling = resolve_sampling(fmt, steps, cfg_scale, family_sampling)
-    if fmt in (prompt_formats.ANIMA, prompt_formats.KREA2, prompt_formats.ZIMAGE):
+    if fmt in (prompt_formats.ANIMA, prompt_formats.KREA2, prompt_formats.ZIMAGE, prompt_formats.MOSS):
+        if not str(ckpt_name).lower().startswith(prompt_formats.UNET_PREFIX):
+            # base_model 說它是 Anima／Krea 2／Z-Image／MOSS-Image，卻放在 checkpoints：UNETLoader 讀不到那個資料夾。
+            raise ValueError(f"{prompt_formats.LABELS.get(fmt, fmt)} 是 diffusion model，要放在 ComfyUI 的 models/diffusion_models（或 models/unet），不是 checkpoints：搬過去、重開 ComfyUI")
         if pose:
             raise ValueError(f"{prompt_formats.LABELS.get(fmt, fmt)} 底模還不能用姿勢參考")
         if fmt == prompt_formats.ANIMA:

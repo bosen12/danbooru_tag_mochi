@@ -2704,12 +2704,45 @@ try:
        and _wf["35"]["inputs"]["model"] == ["13", 0] and _wf["35"]["inputs"]["cfg"] == 3, str(_ct))
 
     _d = server.sampling_defaults()
-    ok("/api/sampling has families, samplers, schedulers", set(_d["families"]) == {"illustrious", "pony", "anima", "krea2", "zimage"}
+    ok("/api/sampling has families, samplers, schedulers", set(_d["families"]) == {"illustrious", "pony", "anima", "krea2", "zimage", "moss"}
        and _d["families"]["krea2"] == {"steps": 8, "cfg": 1, "sampler": "euler", "scheduler": "simple"}
        and _d["families"]["zimage"]["sampler"] == "res_multistep" and _d["samplers"] == ["euler", "res_multistep"] and _d["schedulers"] == ["simple", "normal"]
        and "base" in _d and "hires" in _d, str(_d.get("families")))
 finally:
     server.ksampler_choices, server.menu_names = _saved3
+
+# ---------- MOSS-Image（2026-10，OpenMOSS）----------
+ok("family_of_base: Moss", _pf.family_of_base("MOSS-Image") == "moss" and _pf.family_of_base("Moss Image Base") == "moss")
+ok("format_of: unet moss by name", _pf.format_of("unet:PornMaster_Moss_MIX_V2_int8_convrot.safetensors") == "moss")
+ok("listed_unet_family: moss", _pf.listed_unet_family("moss_image_sft_int8_convrot.safetensors", "") == "moss")
+ok("moss: natural prompt", _pf.convert_positive("1girl, smile, nsfw, masterpiece", "moss", "explicit") == "1girl, smile")
+_saved5 = (server.menu_names, server.ksampler_choices)
+try:
+    server.ksampler_choices = lambda: None
+    server.menu_names = lambda ct, field: {
+        ("CLIPLoader", "clip_name"): ["qwen_3_4b_fp8_mixed.safetensors", "qwen3.5_9b_w4a8_gptq.safetensors"],
+        ("VAELoader", "vae_name"): ["ae.safetensors", "flux2-vae.safetensors", "flux2-vae_small.safetensors"],
+    }.get((ct, field), [])
+    ok("natural_files: Moss picks qwen3.5 + flux2-vae_small", server.natural_files("moss") == ("qwen3.5_9b_w4a8_gptq.safetensors", "flux2-vae_small.safetensors", "moss_image"), str(server.natural_files("moss")))
+    _wf = server.build_natural_workflow("moss", "1girl", 832, 1216, 3, [{"file": "m.safetensors", "strength": 0.8}], "unet:PornMaster_Moss_MIX_V2_int8_convrot.safetensors",
+                                       rating="general", sampling=server.resolve_sampling("moss"))
+    _ct = {k: v["class_type"] for k, v in _wf.items()}
+    _lora = next((k for k, v in _ct.items() if v == "LoraLoaderModelOnly"), None)
+    ok("Moss workflow follows the official template", _ct.get("119") == "EmptyFlux2LatentImage" and _ct.get("16") == "SkipLayerGuidanceDiTSimple"
+       and _wf["16"]["inputs"]["single_layers"] == "22" and _wf["16"]["inputs"]["end_percent"] == 0.5 and _wf["35"]["inputs"]["model"] == ["16", 0]
+       and _wf["35"]["inputs"]["steps"] == 25 and _wf["35"]["inputs"]["cfg"] == 2.5 and _wf["35"]["inputs"]["sampler_name"] == "er_sde"
+       and _ct.get("37") == "CLIPTextEncode" and _lora and _wf["16"]["inputs"]["model"] == [_lora, 0], str(_ct))
+    server.menu_names = lambda ct, field: {("VAELoader", "vae_name"): ["flux2-vae.safetensors"]}.get((ct, field), [])
+    ok("natural_files: Moss falls back to flux2-vae", server.natural_files("moss")[1] == "flux2-vae.safetensors")
+finally:
+    server.menu_names, server.ksampler_choices = _saved5
+ok("ComfyUI too old for MOSS-Image says so", "update_comfyui" in server.comfy_rejection_text({"node_errors": {"14": {"class_type": "CLIPLoader", "errors": [
+    {"type": "value_not_in_list", "message": "Value not in list", "details": "type: 'moss_image' not in ['stable_diffusion']"}]}}}), server.comfy_rejection_text({"node_errors": {"14": {"class_type": "CLIPLoader", "errors": [
+    {"type": "value_not_in_list", "message": "Value not in list", "details": "type: 'moss_image' not in ['stable_diffusion']"}]}}}))
+
+_nn = _pf.negative_for("moss", "general", "low quality, 3d, photorealistic, loli, child, nsfw")
+ok("natural negatives drop anime-only style words, keep safety words", "photorealistic" not in _nn and "3d" not in _pf.split_tags(_nn) and "loli" in _nn and "child" in _nn and "nsfw" in _nn, _nn)
+ok("illustrious negative untouched", _pf.negative_for("illustrious", "general", "3d, photorealistic") == "3d, photorealistic")
 
 _saved4 = (_ls.preferred_path, _ls.LORA_FOLDERS)
 _ls.preferred_path, _ls.LORA_FOLDERS = (lambda: None), ["Style"]

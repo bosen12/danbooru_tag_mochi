@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""底模的提示詞格式：Illustrious／NoobAI（預設）、Pony、Anima、Krea 2、Z-Image。
+"""底模的提示詞格式：Illustrious／NoobAI（預設）、Pony、Anima、Krea 2、Z-Image、MOSS-Image。
 
 墨池、疊印台、MCP、iPhone 抽出來的都是 Illustrious 的格式（尾巴是品質字和分級字）。
 伺服器送 ComfyUI 之前照選的底模換成那一家的格式（server.py 的 prepare_workflow），
@@ -7,7 +7,7 @@
 
 轉換是「重複做也一樣」：先拿掉所有格式的品質字、分級字、score／source 字，再加上目標格式的。
 作品冊拿一張 Pony 印的圖重印到 Illustrious 底模，會自動換回 Illustrious 的頭尾。
-Krea 2、Z-Image 是自然語言（Qwen 文字編碼器）：拿掉那些字之後不再加頭尾。
+Krea 2、Z-Image、MOSS-Image 是自然語言（Qwen 文字編碼器）：拿掉那些字之後不再加頭尾。
 
 格式（照各模型的說明）：
   Illustrious：… , 分級字, masterpiece, best quality, amazing quality（現在的樣子，照舊）
@@ -27,19 +27,21 @@ PONY = "pony"
 ANIMA = "anima"
 KREA2 = "krea2"
 ZIMAGE = "zimage"
-FORMATS = (ILLUSTRIOUS, PONY, ANIMA, KREA2, ZIMAGE)
+MOSS = "moss"
+FORMATS = (ILLUSTRIOUS, PONY, ANIMA, KREA2, ZIMAGE, MOSS)
 LABELS = {
     ILLUSTRIOUS: "Illustrious",
     PONY: "Pony",
     ANIMA: "Anima",
     KREA2: "Krea 2",
     ZIMAGE: "Z-Image",
+    MOSS: "MOSS-Image",
 }
 
 # Anima、Krea 2、Z-Image 是 diffusion model（UNETLoader），不是 checkpoint：清單和工作流裡用這個前綴分開。
 UNET_PREFIX = "unet:"
 # 會出現在底模清單裡的 diffusion model。Flux、SD 1.5 之類不在這裡。
-UNET_FAMILIES = (ANIMA, KREA2, ZIMAGE)
+UNET_FAMILIES = (ANIMA, KREA2, ZIMAGE, MOSS)
 
 # Illustrious 的頭尾（跟 web/lexicon.json 的 quality、sfwTail、sensitiveTail、nsfwTail 一樣）。
 ILLUSTRIOUS_QUALITY = ["masterpiece", "best quality", "amazing quality"]
@@ -57,6 +59,8 @@ ANIMA_NEGATIVE = ["worst quality", "low quality", "score_1", "score_2", "score_3
 
 # Krea 2、Z-Image 預設 CFG 1，負面用不到；使用者把 CFG 調高時接在原本那串前面。
 NATURAL_NEGATIVE = ["worst quality", "low quality", "blurry", "jpeg artifacts", "watermark", "text"]
+# 伺服器的負面詞是給動漫底模的（不要 3D、不要寫實）。這幾家多半拿來畫寫實照片：畫風類的字拿掉，防兒童、分級的字照留。
+_ANIME_STYLE_NEGATIVE = {"3d", "photorealistic", "realistic", "photo", "real life", "sketch"}
 
 # 各家的分級字裡，比這一級高的那些放進負面（Illustrious 不加：它的負面本來就有 nsfw、explicit 那一串）。
 _HIGHER = {"general": ["sensitive", "explicit"], "sensitive": ["explicit"], "explicit": []}
@@ -109,6 +113,8 @@ def family_of_base(base_model: str | None) -> str | None:
     key = _BASE_KEY.sub("", str(base_model or "").lower())
     if not key:
         return None
+    if "moss" in key:
+        return MOSS
     if "pony" in key:
         return PONY
     if "illustrious" in key or "noobai" in key or "sdxl" in key:
@@ -137,6 +143,8 @@ def format_of(model: str | None, overrides: dict | None = None, base_model: str 
     if fam:
         return fam
     if low.startswith(UNET_PREFIX):
+        if "moss" in low:
+            return MOSS
         if "krea2" in low:
             return KREA2
         if "zimage" in low or "z_image" in low or "z-image" in low:
@@ -162,6 +170,8 @@ def listed_unet_family(name: str | None, base_model: str | None = None) -> str |
     low = str(name or "").lower()
     if low.startswith(UNET_PREFIX):
         low = low[len(UNET_PREFIX):]
+    if "moss" in low:
+        return MOSS
     if "anima" in low:
         return ANIMA
     if "krea2" in low:
@@ -179,7 +189,7 @@ def convert_positive(positive: str, fmt: str, rating) -> str:
         return ", ".join(PONY_PREFIX + [PONY_RATING[r]] + body)
     if fmt == ANIMA:
         return ", ".join(ANIMA_QUALITY + [ANIMA_RATING[r]] + body)
-    if fmt in (KREA2, ZIMAGE):
+    if fmt in (KREA2, ZIMAGE, MOSS):
         return ", ".join(body)
     return ", ".join(body + ILLUSTRIOUS_RATING[r] + ILLUSTRIOUS_QUALITY)
 
@@ -191,8 +201,9 @@ def negative_for(fmt: str, rating, base: str) -> str:
         extra = PONY_NEGATIVE + [PONY_RATING[x] for x in _HIGHER[r]]
     elif fmt == ANIMA:
         extra = ANIMA_NEGATIVE + [ANIMA_RATING[x] for x in _HIGHER[r]]
-    elif fmt in (KREA2, ZIMAGE):
+    elif fmt in (KREA2, ZIMAGE, MOSS):
         extra = list(NATURAL_NEGATIVE)
+        base = ", ".join(t for t in split_tags(base) if _bare(t) not in _ANIME_STYLE_NEGATIVE)
     else:
         return base
     have = {_bare(t) for t in split_tags(base)}
