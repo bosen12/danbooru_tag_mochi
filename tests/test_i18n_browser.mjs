@@ -64,6 +64,13 @@ const server = createServer(async (req, res) => {
 await new Promise((r) => server.listen(0, '127.0.0.1', r));
 const origin = `http://127.0.0.1:${server.address().port}`, browser = await chromium.launch({ headless: true, ...(process.env.PLAYWRIGHT_CHANNEL ? { channel: process.env.PLAYWRIGHT_CHANNEL } : {}) });
 const results = [], untranslated = new Set();
+// 每個瀏覽器情境都封鎖生圖與中斷端點。
+const newContext = browser.newContext.bind(browser);
+browser.newContext = async (...args) => {
+  const context = await newContext(...args);
+  await context.route(/\/api\/(?:gen|interrupt)(?:\?|$)/, (route) => route.abort());
+  return context;
+};
 async function scan(page, name) {
   await page.waitForTimeout(120);
   const data = await page.evaluate(() => {
@@ -131,6 +138,68 @@ try {
       await page.close();
     }
     await context.close();
+  }
+  // 工具列、空清單與各家參數使用隔離資料，涵蓋後端的新欄位。
+  for (const width of [390, 1440]) {
+    const context = await browser.newContext({ locale: 'en-US', viewport: { width, height: 960 }, reducedMotion: 'reduce' });
+    const models = [
+      { file: 'illustrious.safetensors', ckpt_name: 'illustrious.safetensors', title: 'Illustrious', format: 'illustrious', base_model: 'NoobAI' },
+      { file: 'krea2.safetensors', ckpt_name: 'unet:krea2.safetensors', title: 'Krea 2', format: 'krea2', base_model: 'Krea 2' },
+      { file: 'zimage.safetensors', ckpt_name: 'unet:zimage.safetensors', title: 'Z-Image', format: 'zimage', base_model: 'ZImageTurbo' },
+    ];
+    const loras = [
+      { name: 'older.safetensors', file: 'older.safetensors', title: 'Older', folder: 'Fixture', base_model: 'Illustrious', modified: 100, usageCount: 2, favorite: false },
+      { name: 'newer.safetensors', file: 'newer.safetensors', title: 'Newer', folder: 'Fixture', base_model: 'NoobAI', modified: 200, usageCount: 1, favorite: true },
+      { name: 'other.safetensors', file: 'other.safetensors', title: 'Other model', folder: 'Fixture', base_model: 'Flux.1 D', modified: 150 },
+      { name: 'unknown.safetensors', file: 'unknown.safetensors', title: 'Unspecified model', folder: 'Fixture', base_model: '', modified: 50 },
+    ];
+    const families = {
+      illustrious: { steps: 25, cfg: 6.5, sampler: 'euler_ancestral', scheduler: 'normal' },
+      krea2: { steps: 8, cfg: 1, sampler: 'euler', scheduler: 'simple' },
+      zimage: { steps: 8, cfg: 1, sampler: 'res_multistep', scheduler: 'simple' },
+    };
+    await context.route('**/api/checkpoints', r => r.fulfill({ json: { items: models, current: models[0].ckpt_name } }));
+    await context.route('**/api/loras', r => r.fulfill({ json: { items: loras, categories: ['Fixture'] } }));
+    await context.route('**/api/sampling', r => r.fulfill({ json: { families, samplers: ['euler', 'euler_ancestral', 'res_multistep'], schedulers: ['normal', 'simple'] } }));
+    await context.addInitScript(() => localStorage.setItem('mochi.tour.seen.v1', 'true'));
+    const page = await context.newPage();
+    try {
+      await page.goto(origin);
+      await page.waitForFunction(() => !('booting' in document.documentElement.dataset));
+      await page.locator('#ckpt-pick-btn').click();
+      for (const family of ['krea2', 'zimage']) {
+        await page.locator('#ckpt-list .lora-row').filter({ hasText: family === 'krea2' ? 'Krea 2' : 'Z-Image' }).click();
+        const block = page.locator(`.fam-samp[data-family="${family}"]`);
+        await block.waitFor();
+        await page.waitForFunction(() => document.querySelector('.fam-samp [data-key="sampler"] select')?.options.length === 3);
+        assert.equal(await block.locator('[data-key="steps"] input').inputValue(), '8');
+        assert.equal(await block.locator('[data-key="cfg"] input').inputValue(), '1.0');
+        assert.equal(await block.locator('[data-key="sampler"] select').inputValue(), families[family].sampler);
+        assert.equal(await block.locator('[data-key="scheduler"] select').inputValue(), 'simple');
+        await scan(page, `${width}-${family}-sampling`);
+        await page.screenshot({ path: resolve(out, `${width}-${family}-sampling.png`) });
+      }
+      await page.keyboard.press('Escape');
+      await page.locator('#lora-pick-btn').click();
+      await page.locator('#lm-tools [data-base="match"]').waitFor();
+      await scan(page, `${width}-lora-empty`);
+      assert.equal(await page.locator('#lm-list .lora-empty').textContent(), 'No LoRA matches this checkpoint (Z-Image).Show all LoRA');
+      await page.screenshot({ path: resolve(out, `${width}-lora-empty.png`) });
+      await page.locator('#lm-search').fill('missing');
+      await scan(page, `${width}-lora-search-empty`);
+      assert.ok((await page.locator('#lm-list').innerText()).includes('No matching LoRA found for this checkpoint (Z-Image).'));
+      await page.locator('#lm-search').fill('');
+      await page.locator('#lm-tools [data-base="all"]').click();
+      await page.locator('.lm-sort select').selectOption('new');
+      assert.deepEqual(await page.locator('#lm-list .rt').evaluateAll(nodes => nodes.map(node => node.firstChild.textContent)), ['Newer', 'Other model', 'Older', 'Unspecified model']);
+      await scan(page, `${width}-lora-tools`);
+      for (const selector of ['.lm-bases', '.lm-sort select']) {
+        assert.ok(!/[\u3400-\u9fff]/.test(await page.locator(selector).getAttribute('aria-label')), '工具列無障礙標籤已翻譯');
+      }
+      await page.screenshot({ path: resolve(out, `${width}-lora-tools.png`) });
+    } finally {
+      await context.close();
+    }
   }
   for (const width of [320, 390, 1440]) {
     const context = await browser.newContext({ locale: 'en-US', viewport: { width, height: 960 }, reducedMotion: 'reduce' });

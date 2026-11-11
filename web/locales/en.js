@@ -929,6 +929,22 @@ ComfyUI 網址|ComfyUI URL
 匯入的 API workflow|Imported API workflow
 取樣參數|Sampling parameters
 全部恢復預設|Reset all defaults
+生圖參數|Generation settings
+配合底模|Match checkpoint
+其他|Other
+沒標示|Unlabeled
+資料夾|Folder
+最新加入|Newest
+最常用|Most used
+最近用過|Recently used
+看全部 LoRA|Show all LoRA
+依底模篩選|Filter by base model
+LoRA 排序|Sort LoRA
+採樣器|Sampler
+排程|Scheduler
+生圖的 Steps、CFG、採樣器在「底模」視窗裡，每種底模各一套。改過的會描一道底線；清空欄位或改回預設值就回到預設。|Generation steps, CFG and sampler live in the Model window, one set per model family. Changed values are underlined. Clear a field or enter its default to reset it.
+目前用的是自己的工作流：生圖照它圖裡的 steps／CFG。Hires、修臉一律用這裡的。|Your imported workflow controls generation steps and CFG. Hires and face fix always use these settings.
+目前用的是自己的工作流：生圖照它圖裡的 steps／CFG。Hires 一律用這裡的。|Your imported workflow controls generation steps and CFG. Hires always uses these settings.
 取樣參數都回到預設了。|Sampling parameters reset to defaults.
 改過的會描一道底線；清空欄位或改回預設值就回到預設。|Changed values are underlined. Clear a field or enter its default to reset it.
 修臉細節（偵測框、臉形遮罩）|Face fix details (detection box, face mask)
@@ -1972,6 +1988,12 @@ export const messages = Object.freeze(Object.fromEntries(copy.trim().split("\n")
 // {0} is translated again (card names, ratings); {0!} is inserted verbatim
 // because it is user content: deck, work, model and workflow names, search text.
 const parameterized = String.raw`
+{0}（預設）|{0!} (default)
+{0} 的底模都用這一套；換成別家的底模會換成那一家的。改過的會描一道底線。|All {0!} models share these settings; other model families have their own. Changed values are underlined.
+沒有配合這個底模（{0}）的 LoRA。|No LoRA matches this checkpoint ({0}).
+找不到配合這個底模（{0}）的 LoRA。|No matching LoRA found for this checkpoint ({0}).
+沒有「{0}」的 LoRA。|No {0} LoRA.
+找不到「{0}」的 LoRA。|No matching {0} LoRA found.
 替換疊印台的 {0} 張牌|Replace {0} cards in Fuse Bed
 替換合成池的 {0} 張牌|Replace {0} cards in Ink Pool
 加入合成池 · {0} 張牌|Add {0} cards to Ink Pool

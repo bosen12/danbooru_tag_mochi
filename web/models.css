@@ -269,6 +269,115 @@ body .lg-rail .lm-manager-link {
   min-height: 0;
   padding: var(--space-lg) var(--space-lg) 0;
 }
+/* LoRA 清單上方：依底模篩選的籤（一排、放不下左右捲）＋排序選單（lora.js 的 renderLmTools）。 */
+.lm-tools {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  margin: 0 0 var(--space-xs);
+  padding-right: 3rem;
+}
+.lm-countrow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  margin: 0 0 var(--space-sm);
+}
+.lm-countrow .lg-count {
+  margin: 0;
+  padding-right: 0;
+}
+.lm-tools:empty {
+  display: none;
+}
+.lm-bases {
+  display: flex;
+  flex: 1 1 auto;
+  gap: var(--space-2xs);
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+  overscroll-behavior-x: contain;
+}
+.lm-base {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: var(--space-xs);
+  min-height: 2rem;
+  padding: 0 var(--space-sm);
+  border: 1px solid var(--color-rule-2);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--color-ink-2);
+  font: inherit;
+  font-size: var(--text-xs);
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    color var(--dur-micro) var(--ease-out),
+    background-color var(--dur-micro) var(--ease-out),
+    border-color var(--dur-micro) var(--ease-out);
+}
+.lm-base small {
+  color: var(--color-accent);
+  font-size: inherit;
+  font-weight: 600;
+}
+.lm-base .lm-cat-n {
+  font-family: var(--font-mono);
+  color: var(--color-muted);
+  font-variant-numeric: tabular-nums;
+}
+.lm-base[aria-pressed="true"] {
+  border-color: transparent;
+  background: var(--color-ink);
+  color: var(--color-paper);
+}
+.lm-base[aria-pressed="true"] :is(small, .lm-cat-n) {
+  color: inherit;
+  opacity: 0.75;
+}
+@media (hover: hover) and (pointer: fine) {
+  .lm-base:not([aria-pressed="true"]):hover {
+    border-color: var(--color-rule);
+    color: var(--color-ink);
+  }
+}
+.lm-base:focus-visible,
+.lm-sort select:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 1px;
+}
+.lm-sort {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: var(--space-xs);
+  font-size: var(--text-xs);
+  color: var(--color-muted);
+}
+.lm-sort select {
+  height: 2rem;
+  padding: 0 var(--space-xs);
+  border: 1px solid var(--color-rule-2);
+  border-radius: var(--radius-sm);
+  background: var(--color-paper-2);
+  color: var(--color-ink);
+  font: inherit;
+  font-size: var(--text-xs);
+}
+@media (max-width: 760px) {
+  .lm-tools {
+    padding-right: 0;
+  }
+  .lm-sort select {
+    height: 1.9rem;
+    font-size: 16px;
+  }
+}
+
 .lg-count {
   min-height: 1.5em;
   margin: 0 0 var(--space-sm);

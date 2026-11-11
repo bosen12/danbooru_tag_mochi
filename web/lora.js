@@ -1,5 +1,6 @@
 import { lockScroll, unlockScroll } from "./scroll-lock.js";
 import { focusEntry } from "./focus-entry.js";
+import { familySamplingBlock, familyOf, familyOfBase, FAMILY_LABEL } from "./family-sampling.js";
 
 const $ = (id) => document.getElementById(id);
 const REDUCE_MOTION = matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -283,7 +284,8 @@ function renderLmCats() {
   const box = $("lm-cats");
   if (!box) return;
   const was = GALLERY ? catInkAt(box) : null;
-  const items = GEN_LORAS || [];
+  // 分類的數字跟著底模篩選走（畫廊版）：Pony 底模上「Character 497」其實只有幾十個能用。
+  const items = (GEN_LORAS || []).filter((l) => !GALLERY || loraBaseOk(l));
   const counts = {};
   for (const l of items) counts[l.category] = (counts[l.category] || 0) + 1;
   const folders = Object.keys(counts).sort();
@@ -377,11 +379,177 @@ function renderLmSubcats() {
   markPress(box);
 }
 
+/* ---------- LoRA 面板：依底模篩選、排序（畫廊版，墨池／疊印台）----------
+ * 每個 LoRA 在 LoRA Manager 的資料裡有 base_model（Illustrious、Pony、ZImageTurbo…），跟底模同一套家族
+ * （family-sampling.js 的 familyOfBase）。預設「配合底模」：只看跟目前底模同一家的，Pony 底模就不會冒出
+ * 一堆 Illustrious 的 LoRA。排序：資料夾（原本的樣子）、最新加入、最常用、最近用過（後兩個照墨池自己的
+ * 出圖日誌算，/api/genlog/stats）、名稱。選擇存在這台裝置。 */
+const LORA_VIEW_STORE = "mochi.lora.view.v1";
+const LORA_SORTS = [
+  ["folder", "資料夾"],
+  ["new", "最新加入"],
+  ["used", "最常用"],
+  ["recent", "最近用過"],
+  ["name", "名稱"],
+];
+const LORA_VIEW = (() => {
+  const d = { base: "match", sort: "folder" };
+  try {
+    const v = JSON.parse(localStorage.getItem(LORA_VIEW_STORE) || "{}");
+    return {
+      base: typeof v.base === "string" && v.base ? v.base : d.base,
+      sort: LORA_SORTS.some(([k]) => k === v.sort) ? v.sort : d.sort,
+    };
+  } catch {
+    return d;
+  }
+})();
+function saveLoraView() {
+  try {
+    localStorage.setItem(LORA_VIEW_STORE, JSON.stringify(LORA_VIEW));
+  } catch {
+    /* 無痕模式：這次有效 */
+  }
+}
+/** 墨池出圖日誌裡每個 LoRA 印過幾張、最後一次什麼時候（名字是檔名去掉副檔名）。 */
+let LORA_STATS = null;
+let loraStatsAsk = null;
+function loadLoraStats() {
+  if (LORA_STATS) return Promise.resolve(LORA_STATS);
+  if (!loraStatsAsk) {
+    loraStatsAsk = fetch("/api/genlog/stats", { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .catch(() => null)
+      .then((j) => {
+        LORA_STATS = new Map();
+        for (const m of j?.models || []) if (m.kind === "lora" && m.name) LORA_STATS.set(m.name, { n: m.n || 0, last: m.last || 0 });
+        return LORA_STATS;
+      });
+  }
+  return loraStatsAsk;
+}
+const loraStat = (l) => LORA_STATS?.get(l.name) || { n: 0, last: 0 };
+/** 目前底模的家族（底模清單還沒到就是 null：「配合底模」先當全部）。 */
+function currentCkptFamily() {
+  const c = (GEN_CKPTS || []).find((x) => x.ckpt_name === GEN_CKPT);
+  return c ? familyOf(c.format) : null;
+}
+/** LoRA 的家族：認得的五家之一；沒標（Unknown、空的）是 unknown；SD 1.5、Flux、Wan… 是 other。 */
+function loraFamily(l) {
+  const base = String(l.base_model || "").trim();
+  if (!base || /^unknown$/i.test(base)) return "unknown";
+  return familyOfBase(base) || "other";
+}
+/** 實際套用的篩選：「配合底模」換成目前底模的家族。 */
+function loraBaseKey() {
+  return LORA_VIEW.base === "match" ? currentCkptFamily() || "all" : LORA_VIEW.base;
+}
+function loraBaseOk(l) {
+  const k = loraBaseKey();
+  return k === "all" || loraFamily(l) === k;
+}
+const LORA_BASE_LABEL = { ...FAMILY_LABEL, other: "其他", unknown: "沒標示" };
+function sortLoras(items) {
+  const by = LORA_VIEW.sort;
+  if (by === "folder") return items;
+  const name = (l) => (l.title || l.name || "").toLowerCase();
+  const out = items.slice();
+  if (by === "name") out.sort((a, b) => name(a).localeCompare(name(b)));
+  else if (by === "new") out.sort((a, b) => (b.modified || 0) - (a.modified || 0) || name(a).localeCompare(name(b)));
+  else if (by === "used") out.sort((a, b) => loraStat(b).n - loraStat(a).n || loraStat(b).last - loraStat(a).last || name(a).localeCompare(name(b)));
+  else if (by === "recent") out.sort((a, b) => loraStat(b).last - loraStat(a).last || name(a).localeCompare(name(b)));
+  return out;
+}
+
+/** 清單上方那一排：依底模篩選的籤＋排序選單（只有畫廊版有 #lm-tools）。 */
+function renderLmTools() {
+  const box = $("lm-tools");
+  if (!box) return;
+  const all = GEN_LORAS || [];
+  const counts = {};
+  for (const l of all) {
+    const f = loraFamily(l);
+    counts[f] = (counts[f] || 0) + 1;
+  }
+  const fam = currentCkptFamily();
+  const chips = document.createElement("div");
+  chips.className = "lm-bases";
+  chips.setAttribute("role", "group");
+  chips.setAttribute("aria-label", "依底模篩選");
+  const chip = (key, label, n, sub) => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "lm-base pressable";
+    b.dataset.base = key;
+    const on = LORA_VIEW.base === key;
+    b.setAttribute("aria-pressed", on ? "true" : "false");
+    const lb = document.createElement("span");
+    lb.textContent = label;
+    b.append(lb);
+    if (sub) {
+      const sb = document.createElement("small");
+      sb.dataset.noI18n = "";
+      sb.textContent = sub;
+      b.append(sb);
+    }
+    const nb = document.createElement("span");
+    nb.className = "lm-cat-n";
+    nb.textContent = n;
+    b.append(nb);
+    b.addEventListener("click", () => {
+      if (LORA_VIEW.base === key) return;
+      const focused = document.activeElement === b;
+      LORA_VIEW.base = key;
+      saveLoraView();
+      renderLmTools();
+      renderLmCats();
+      renderLmSubcats();
+      renderLmList($("lm-search")?.value, true);
+      if (focused) $("lm-tools")?.querySelector(`[data-base="${key}"]`)?.focus({ preventScroll: true });
+    });
+    chips.append(b);
+  };
+  chip("match", "配合底模", fam ? counts[fam] || 0 : all.length, fam ? FAMILY_LABEL[fam] : "");
+  chip("all", "全部", all.length);
+  // 跟目前底模同一家的不再單獨列一顆（「配合底模」就是它），除非現在選的就是那一顆。
+  for (const f of ["illustrious", "pony", "anima", "krea2", "zimage", "other", "unknown"]) {
+    if (counts[f] && (f !== fam || LORA_VIEW.base === f)) chip(f, LORA_BASE_LABEL[f], counts[f]);
+  }
+  // 存著的篩選這次沒有任何 LoRA（例如換了資料夾）：還是放一顆，看得到現在篩的是什麼、點別的換掉。
+  if (!["match", "all"].includes(LORA_VIEW.base) && !counts[LORA_VIEW.base]) chip(LORA_VIEW.base, LORA_BASE_LABEL[LORA_VIEW.base] || LORA_VIEW.base, 0);
+
+  const sortWrap = document.createElement("label");
+  sortWrap.className = "lm-sort";
+  const sl = document.createElement("span");
+  sl.textContent = "排序";
+  const sel = document.createElement("select");
+  sel.setAttribute("aria-label", "LoRA 排序");
+  for (const [k, zh] of LORA_SORTS) {
+    const o = document.createElement("option");
+    o.value = k;
+    o.textContent = zh;
+    sel.append(o);
+  }
+  sel.value = LORA_VIEW.sort;
+  sel.addEventListener("change", async () => {
+    LORA_VIEW.sort = sel.value;
+    saveLoraView();
+    if (LORA_VIEW.sort === "used" || LORA_VIEW.sort === "recent") await loadLoraStats();
+    renderLmList($("lm-search")?.value, true);
+  });
+  sortWrap.append(sl, sel);
+  box.replaceChildren(chips);
+  // 排序放在「共 N 個」那一行的右邊（手機上不多佔一行）。
+  ($("lm-sort-slot") || box).replaceChildren(sortWrap);
+  markPress(chips);
+}
+
 function loraCatPool() {
   return (GEN_LORAS || []).filter(
     (l) =>
       (curScope().cat === "all" || l.category === curScope().cat) &&
-      (!curScope().subfolder || l.folder === curScope().subfolder)
+      (!curScope().subfolder || l.folder === curScope().subfolder) &&
+      (!GALLERY || loraBaseOk(l))
   );
 }
 function loraCatLabel() {
@@ -402,6 +570,7 @@ function renderLmList(filter, resetPage, deal = resetPage) {
   // 畫廊版：清單沒換（只是選了、清了、調了槽）就原地改記號，不整片重畫（重畫會讓每張圖重載一次、閃一下）。
   if (GALLERY && !resetPage && box._gallery?.key === loraGalleryKey(q) && box.dataset.result === "found") return refreshGalleryMarks(box);
   let items = loraCatPool();
+  if (GALLERY && !q) items = sortLoras(items);
   if (q) {
     items = items
       .map((l) => {
@@ -419,7 +588,22 @@ function renderLmList(filter, resetPage, deal = resetPage) {
   if (!items.length) {
     const empty = document.createElement("div");
     empty.className = "lora-empty";
-    empty.textContent = "找不到 LoRA";
+    const key = GALLERY ? loraBaseKey() : "all";
+    if (key !== "all" && (GEN_LORAS || []).length) {
+      // 篩掉了：講清楚是哪一家沒有，給一顆看全部。
+      const label = LORA_BASE_LABEL[key] || key;
+      if (LORA_VIEW.base === "match") {
+        empty.textContent = q ? `找不到配合這個底模（${label}）的 LoRA。` : `沒有配合這個底模（${label}）的 LoRA。`;
+      } else {
+        empty.textContent = q ? `找不到「${label}」的 LoRA。` : `沒有「${label}」的 LoRA。`;
+      }
+      const all = document.createElement("button");
+      all.type = "button";
+      all.className = "ghost lora-more-btn";
+      all.textContent = "看全部 LoRA";
+      all.addEventListener("click", () => $("lm-tools")?.querySelector('[data-base="all"]')?.click());
+      empty.append(document.createElement("br"), all);
+    } else empty.textContent = "找不到 LoRA";
     box.appendChild(empty);
     box.dataset.result = "empty";
     return;
@@ -526,6 +710,8 @@ function sameLora(a, b) {
 function ckptFmtLabel(format) {
   if (format === "pony") return "Pony";
   if (format === "anima") return "Anima";
+  if (format === "krea2") return "Krea 2";
+  if (format === "zimage") return "Z-Image";
   return "";
 }
 
@@ -591,6 +777,10 @@ function galleryCard({ preview, title, sub, seat, on, deal, i, mark = "" }) {
 }
 
 function loraCard(l, i, deal) {
+  // 看全部（或別家）的時候，跟目前底模不同家的卡標出它是哪一家：Pony 底模上一眼看出這張是 Illustrious 的。
+  const fam = currentCkptFamily();
+  const lf = loraFamily(l);
+  const mark = fam && lf !== fam ? LORA_BASE_LABEL[lf] : "";
   const card = galleryCard({
     preview: l.preview ? makeLoraPreviewEl(l) : null,
     title: l.title || l.name,
@@ -598,6 +788,7 @@ function loraCard(l, i, deal) {
     ...loraSeat(l),
     deal,
     i,
+    mark,
   });
   card._mark = () => loraSeat(l);
   card.addEventListener("click", () => selectGenLora(l, card));
@@ -609,7 +800,7 @@ function appendLoraCards(box, from, to, deal) {
   const frag = document.createDocumentFragment();
   for (let i = from; i < to; i++) {
     const l = items[i];
-    if (!q && l.folder !== box._gallery.folder) {
+    if (!q && LORA_VIEW.sort === "folder" && l.folder !== box._gallery.folder) {
       box._gallery.folder = l.folder;
       const h = document.createElement("div");
       h.className = "lora-cat-head";
@@ -623,7 +814,7 @@ function appendLoraCards(box, from, to, deal) {
 }
 
 function loraGalleryKey(q) {
-  return [q, curScope().cat, curScope().subfolder].join("\n");
+  return [q, curScope().cat, curScope().subfolder, loraBaseKey(), LORA_VIEW.sort].join("\n");
 }
 
 function loraSeat(l) {
@@ -1397,6 +1588,7 @@ async function applyPath(kind, path, status) {
   if (kind === "lora") {
     GEN_LORAS = null;
     await fetchGenLoras();
+    renderLmTools();
     renderLmCats();
     renderLmSubcats();
     renderLmList($("lm-search").value, true);
@@ -1436,7 +1628,12 @@ async function openLoraModal() {
   // 畫廊版先排一排空的卡框（光掃過去），清單到了直接換上，版面不會跳。
   if (!GEN_LORAS) $("lm-list").innerHTML = '<div class="lora-empty">載入中…</div>' + (GALLERY ? '<span class="lg-skel" aria-hidden="true"></span>'.repeat(12) : "");
   renderLmCurrent();
-  await fetchGenLoras();
+  await Promise.all([
+    fetchGenLoras(),
+    GALLERY ? fetchCkpts().catch(() => null) : null,
+    GALLERY && (LORA_VIEW.sort === "used" || LORA_VIEW.sort === "recent") ? loadLoraStats() : null,
+  ]);
+  renderLmTools();
   renderLmCats();
   renderLmSubcats();
   renderLmList($("lm-search").value, true);
@@ -1673,7 +1870,8 @@ function ensureDom() {
           </div>
         </aside>
         <section class="lg-main" aria-labelledby="lm-title">
-          <p class="lg-count" id="lm-count" aria-live="polite"></p>
+          <div class="lm-tools" id="lm-tools"></div>
+          <div class="lm-countrow"><p class="lg-count" id="lm-count" aria-live="polite"></p><span class="lm-sort-slot" id="lm-sort-slot"></span></div>
           <div id="lm-list" class="lm-list lg-grid"></div>
         </section>
         <aside class="lm-right lg-side">
@@ -2033,6 +2231,9 @@ function renderCkptCurrent() {
   hint.className = "ckpt-cur-hint";
   hint.textContent = "生圖會用這顆底模。";
   box.appendChild(hint);
+  // 這顆底模那一家的 Steps／CFG／採樣器／排程（family-sampling.js）：選了哪顆就顯示哪一家的。
+  // 自訂工作流用它自己圖裡的參數，這一格照樣能改（換回內建流程時就用得到）。
+  box.appendChild(familySamplingBlock(cur.format));
   if (GALLERY) return;
   if (cur.preview) {
     const pv = document.createElement("div");

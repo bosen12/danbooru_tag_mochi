@@ -2621,6 +2621,106 @@ with _tf.TemporaryDirectory() as _d:
     finally:
         server.models_from_comfy, server.lm_checkpoints, _ls.comfy_model_dirs = _saved2
 
+
+# ---------- 底模家族：base_model 判斷、Krea 2／Z-Image 工作流、每家取樣參數、LoRA 排序欄位 ----------
+import prompt_formats as _pf  # noqa: E402
+
+for _base, _want in [
+    ("Illustrious", "illustrious"), ("NoobAI", "illustrious"), ("SDXL 1.0", "illustrious"), ("Pony", "pony"),
+    ("Anima", "anima"), ("Krea 2", "krea2"), ("ZImageTurbo", "zimage"), ("Flux.1 Krea", None), ("Flux.1 D", None),
+    ("Flux.2 Klein 4B", None), ("SD 1.5", None), ("Wan Video 2.2 I2V-A14B", None), ("Other", None), ("Unknown", None), ("", None),
+]:
+    ok(f"family_of_base({_base!r}) = {_want}", _pf.family_of_base(_base) == _want, str(_pf.family_of_base(_base)))
+
+ok("format_of: config overrides beat base_model", _pf.format_of("abc.safetensors", {"abc": "pony"}, "Illustrious") == "pony")
+ok("format_of: base_model beats file name", _pf.format_of("noobaiXL.safetensors", None, "Pony") == "pony"
+   and _pf.format_of("unet:redzit.safetensors", None, "ZImageTurbo") == "zimage"
+   and _pf.format_of("unet:redcraft30Krea2.safetensors", None, "Krea 2") == "krea2")
+ok("format_of: file name fallback for unet", _pf.format_of("unet:x_Krea2.safetensors") == "krea2"
+   and _pf.format_of("unet:z_image_turbo.safetensors") == "zimage" and _pf.format_of("unet:WAI-ANIMA1.safetensors") == "anima")
+ok("format_of: unknown base falls back to the name", _pf.format_of("waiPONY.safetensors", None, "Unknown") == "pony"
+   and _pf.format_of("wai.safetensors", None, "Other") == "illustrious")
+
+ok("listed_unet_family: Flux Klein is not listed", _pf.listed_unet_family("flux-2-klein-4b.safetensors", "Flux.2 Klein 4B") is None)
+ok("listed_unet_family: Krea 2, Z-Image, Anima by base_model",
+   _pf.listed_unet_family("redcraft23INT8INT4FP8_30Krea2.safetensors", "Krea 2") == "krea2"
+   and _pf.listed_unet_family("pornmasterZImage_turboV35Bf16.safetensors", "ZImageTurbo") == "zimage"
+   and _pf.listed_unet_family("redcraft23INT8INT4FP8_redzit222026HD.safetensors", "ZImageTurbo") == "zimage"
+   and _pf.listed_unet_family("WAI-ANIMA1.safetensors", "Anima") == "anima")
+ok("listed_unet_family: SDXL-family unet is not listed", _pf.listed_unet_family("anima-but-illustrious.safetensors", "Illustrious") is None)
+ok("listed_unet_family: no metadata → name", _pf.listed_unet_family("anima-base.safetensors", "") == "anima"
+   and _pf.listed_unet_family("mystery.safetensors", "") is None)
+
+_ill = "1girl, smile, (red hair:1.2), nsfw, explicit, masterpiece, best quality, amazing quality"
+for _fmt in ("krea2", "zimage"):
+    _once = _pf.convert_positive(_ill, _fmt, "explicit")
+    ok(f"{_fmt}: drops quality/rating words, keeps content and weights", _once == "1girl, smile, (red hair:1.2)", _once)
+    ok(f"{_fmt}: converting twice is the same", _pf.convert_positive(_once, _fmt, "explicit") == _once)
+    _from_pony = _pf.convert_positive(_pf.convert_positive(_ill, "pony", "explicit"), _fmt, "explicit")
+    ok(f"{_fmt}: Pony prompt converts cleanly", _from_pony == "1girl, smile, (red hair:1.2)", _from_pony)
+    _neg = _pf.negative_for(_fmt, "general", "nsfw, lowres")
+    ok(f"{_fmt}: negative adds its own words before the base", _neg.startswith("worst quality, low quality, blurry") and _neg.endswith("nsfw, lowres"), _neg)
+ok("existing formats unchanged", _pf.convert_positive("1girl, smile", "illustrious", "general") == "1girl, smile, sfw, general, masterpiece, best quality, amazing quality"
+   and _pf.convert_positive("1girl", "anima", "sensitive") == "masterpiece, best quality, sensitive, 1girl")
+
+_saved3 = (server.ksampler_choices, server.menu_names)
+try:
+    server.ksampler_choices = lambda: (["euler", "euler_ancestral", "res_multistep", "er_sde"], ["normal", "simple", "karras"])
+    _r = server.resolve_sampling("zimage", None, None, {"zimage": {"steps": 12, "sampler": "bogus", "scheduler": "karras"}})
+    ok("resolve_sampling: family override + unknown sampler falls back", _r == {"steps": 12, "cfg": 1, "sampler": "res_multistep", "scheduler": "karras"}, str(_r))
+    _r = server.resolve_sampling("krea2", 20, 2.5, None)
+    ok("resolve_sampling: old top-level steps/cfg still work", _r["steps"] == 20 and _r["cfg"] == 2.5 and _r["sampler"] == "euler", str(_r))
+    _r = server.resolve_sampling("krea2", 20, None, {"krea2": {"steps": 6}, "anima": {"steps": 50}})
+    ok("resolve_sampling: family value beats top-level, other families ignored", _r["steps"] == 6, str(_r))
+    _r = server.resolve_sampling("anima", None, None, {"anima": {"steps": 999, "cfg": "x"}})
+    ok("resolve_sampling: clamps steps, ignores junk cfg", _r["steps"] == 80 and _r["cfg"] == server.family_sampling_defaults("anima")["cfg"], str(_r))
+    server.ksampler_choices = lambda: None
+    _r = server.resolve_sampling("pony", None, None, {"pony": {"sampler": "dpmpp_2m"}})
+    ok("resolve_sampling: no ComfyUI → sampler not checked", _r["sampler"] == "dpmpp_2m", str(_r))
+
+    server.menu_names = lambda ct, field: {
+        ("CLIPLoader", "clip_name"): ["qwen3vl_4b_fp8_scaled.safetensors", "qwen_3_4b_fp8_mixed.safetensors", "qwen_3_06b_base.safetensors"],
+        ("VAELoader", "vae_name"): ["qwen_image_vae.safetensors", "zimage\\ae.safetensors", "ae.safetensors"],
+        ("KSampler", "sampler_name"): ["euler", "res_multistep"],
+        ("KSampler", "scheduler"): ["simple", "normal"],
+    }.get((ct, field), [])
+    ok("natural_files: Krea 2 picks qwen3vl + qwen_image_vae", server.natural_files("krea2") == ("qwen3vl_4b_fp8_scaled.safetensors", "qwen_image_vae.safetensors", "krea2"), str(server.natural_files("krea2")))
+    ok("natural_files: Z-Image picks qwen_3_4b (not qwen3vl) + ae", server.natural_files("zimage") == ("qwen_3_4b_fp8_mixed.safetensors", "ae.safetensors", "lumina2"), str(server.natural_files("zimage")))
+
+    _samp = {"steps": 8, "cfg": 1, "sampler": "res_multistep", "scheduler": "simple"}
+    _wf = server.build_natural_workflow("zimage", "1girl", 832, 1216, 7, [{"file": "zlora.safetensors", "strength": 0.7}], "unet:pornmasterZImage_turboV35Bf16.safetensors", sampling=_samp)
+    _ct = {k: v["class_type"] for k, v in _wf.items()}
+    _lora = next((k for k, v in _ct.items() if v == "LoraLoaderModelOnly"), None)
+    ok("Z-Image workflow nodes", _ct.get("13") == "UNETLoader" and _wf["13"]["inputs"]["unet_name"] == "pornmasterZImage_turboV35Bf16.safetensors"
+       and _wf["14"]["inputs"]["type"] == "lumina2" and _ct.get("16") == "ModelSamplingAuraFlow" and _wf["16"]["inputs"]["shift"] == 3
+       and _ct.get("119") == "EmptySD3LatentImage" and _ct.get("37") == "ConditioningZeroOut" and _wf["35"]["inputs"]["model"] == ["16", 0], str(_ct))
+    ok("Z-Image LoRA is model-only and sits between UNET and AuraFlow", _lora and _wf[_lora]["inputs"]["model"] == ["13", 0]
+       and _wf["16"]["inputs"]["model"] == [_lora, 0] and "LoraLoader" not in _ct.values(), str(_wf.get(_lora)))
+    _wf = server.build_natural_workflow("krea2", "1girl", 1024, 1024, 7, [], "unet:redcraft23INT8INT4FP8_30Krea2.safetensors", rating="general",
+                                       sampling={"steps": 8, "cfg": 3, "sampler": "euler", "scheduler": "simple"})
+    _ct = {k: v["class_type"] for k, v in _wf.items()}
+    ok("Krea 2 workflow nodes; CFG > 1 uses a real negative", _wf["14"]["inputs"]["type"] == "krea2" and _ct.get("119") == "EmptyLatentImage"
+       and "16" not in _wf and _ct.get("37") == "CLIPTextEncode" and "watermark" in _wf["37"]["inputs"]["text"]
+       and _wf["35"]["inputs"]["model"] == ["13", 0] and _wf["35"]["inputs"]["cfg"] == 3, str(_ct))
+
+    _d = server.sampling_defaults()
+    ok("/api/sampling has families, samplers, schedulers", set(_d["families"]) == {"illustrious", "pony", "anima", "krea2", "zimage"}
+       and _d["families"]["krea2"] == {"steps": 8, "cfg": 1, "sampler": "euler", "scheduler": "simple"}
+       and _d["families"]["zimage"]["sampler"] == "res_multistep" and _d["samplers"] == ["euler", "res_multistep"] and _d["schedulers"] == ["simple", "normal"]
+       and "base" in _d and "hires" in _d, str(_d.get("families")))
+finally:
+    server.ksampler_choices, server.menu_names = _saved3
+
+_saved4 = (_ls.preferred_path, _ls.LORA_FOLDERS)
+_ls.preferred_path, _ls.LORA_FOLDERS = (lambda: None), ["Style"]
+try:
+    _lm_items = _ls.from_lora_manager([{"file_path": "E:/l/Style/a.safetensors", "folder": "Style", "file_name": "a", "model_name": "A",
+                                        "base_model": "ZImageTurbo", "modified": "1783284833.5", "usage_count": "3", "favorite": True}])["items"]
+    ok("LoRA Manager items carry sort fields", _lm_items and _lm_items[0]["modified"] == 1783284833.5 and _lm_items[0]["usageCount"] == 3
+       and _lm_items[0]["favorite"] is True and _lm_items[0]["base_model"] == "ZImageTurbo", str(_lm_items))
+finally:
+    _ls.preferred_path, _ls.LORA_FOLDERS = _saved4
+
 if failed:
     print(f"\n{failed} failed")
     sys.exit(1)

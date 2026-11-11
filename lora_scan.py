@@ -225,6 +225,29 @@ def lm_manager_url(base: str | None = None) -> str:
     return (base or comfy_base()).rstrip("/") + "/loras"
 
 
+def _as_float(v) -> float:
+    try:
+        return float(v)
+    except (TypeError, ValueError):
+        return 0.0
+
+
+def _as_int(v) -> int:
+    try:
+        return int(float(v))
+    except (TypeError, ValueError):
+        return 0
+
+
+def _lora_sort_fields(modified, usage_count, favorite) -> dict:
+    """清單排序用：修改時間（epoch 秒）、用過幾次、是不是最愛。"""
+    return {
+        "modified": _as_float(modified),
+        "usageCount": _as_int(usage_count),
+        "favorite": bool(favorite),
+    }
+
+
 def from_lora_manager(raw: list) -> dict:
     """LoRA Manager 的 items → 本專案 /api/loras 的格式（同 build_lora_list）。
 
@@ -264,6 +287,7 @@ def from_lora_manager(raw: list) -> dict:
             "preview": lm_preview_name(preview_url),
             "previewUrl": lm_preview_src(preview_url) or None,
             "base_model": str(it.get("base_model") or ""),
+            **_lora_sort_fields(it.get("modified"), it.get("usage_count"), it.get("favorite")),
         }
         if civ.get("modelId"):
             entry["civitai"] = {"modelId": civ.get("modelId"), "versionId": civ.get("id")}
@@ -308,6 +332,7 @@ def build_from_comfy() -> dict:
             "trainedWords": [],
             "preview": None,
             "base_model": "",
+            **_lora_sort_fields(0, 0, False),
         })
     return {
         "items": items,
@@ -406,6 +431,10 @@ def build_lora_list() -> dict:
                 if (d / (stem + ext)).is_file():
                     preview = stem + ext
                     break
+            try:
+                modified = p.stat().st_mtime
+            except OSError:
+                modified = 0.0
             items.append({
                 "folder": folder,
                 "category": category,
@@ -415,6 +444,7 @@ def build_lora_list() -> dict:
                 "trainedWords": words,
                 "preview": preview,
                 "base_model": base_model,
+                **_lora_sort_fields(modified, 0, False),
             })
             n += 1
         counts[category] = n

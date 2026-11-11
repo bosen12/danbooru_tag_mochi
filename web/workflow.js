@@ -2,6 +2,7 @@
 
 import { lockScroll, unlockScroll } from "./scroll-lock.js";
 import { invalidateModelLists } from "./lora.js";
+import { familySamplingPayload } from "./family-sampling.js";
 
 const $ = (id) => document.getElementById(id);
 const REDUCE_MOTION = matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -21,12 +22,13 @@ try {
   WORKFLOW_ID = "";
 }
 
-/* ---------- 取樣參數：生圖的 steps／CFG，兩種 Hires 和修臉的 steps／CFG／denoise ----------
+/* ---------- 取樣參數：兩種 Hires 和修臉的 steps／CFG／denoise ----------
+ * 生圖的 Steps／CFG／採樣器／排程每種底模各一套，在底模視窗裡改（family-sampling.js）。以前這裡的「生圖」那一行
+ * 給所有底模共用，第一次開新版時搬到 Illustrious 和 Pony。
  * 只存「改過的」：沒改的不送，伺服器用它自己的預設（config.json），預設換了這裡跟著換。
  * 只有呼叫 initWorkflow({ sampling: true }) 的頁面（墨池、疊印台）才顯示、才送。 */
 const SAMPLING_STORE = "yz-sampling";
 const SAMPLING_ROWS = [
-  { id: "base", zh: "生圖", keys: ["steps", "cfg"] },
   { id: "quick", zh: "快速 Hires", keys: ["steps", "cfg", "denoise"] },
   { id: "deep", zh: "深度 Hires", keys: ["steps", "cfg", "denoise"] },
   // 修臉只有墨池（web6）有：initWorkflow({ faceFix: true }) 才顯示這一行。
@@ -117,7 +119,7 @@ function saveSampling() {
 
 /** 付印時帶上：{ steps, cfg } 裡改過的那幾個（沒改就是空物件）。 */
 export function currentSampling() {
-  return samplingOn ? { ...sampling.base } : {};
+  return samplingOn ? familySamplingPayload() : {};
 }
 
 /** Hires 帶上：{ steps, cfg, denoise } 裡改過的那幾個。 */
@@ -719,8 +721,8 @@ function syncSamplingNote() {
   if (!note) return;
   const custom = !!WORKFLOW_ID;
   note.textContent = custom
-    ? `目前用的是自己的工作流：生圖照它圖裡的 steps／CFG，這裡的「生圖」那一行不套用。${faceFixOn ? "Hires、修臉" : "Hires"}一律用這裡的。`
-    : "改過的會描一道底線；清空欄位或改回預設值就回到預設。";
+    ? `目前用的是自己的工作流：生圖照它圖裡的 steps／CFG。${faceFixOn ? "Hires、修臉" : "Hires"}一律用這裡的。`
+    : "生圖的 Steps、CFG、採樣器在「底模」視窗裡，每種底模各一套。改過的會描一道底線；清空欄位或改回預設值就回到預設。";
   $("wf-sampling").dataset.custom = custom ? "true" : "false";
 }
 

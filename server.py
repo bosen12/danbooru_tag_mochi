@@ -393,9 +393,18 @@ def comfy_rejection_text(body: dict) -> str:
                 return "ComfyUI 裡還沒有任何底模：下載一個 SDXL 底模（建議 Illustrious 系，例如 WAI-Illustrious）放進 ComfyUI 的 models/checkpoints，重開 ComfyUI 再試"
             if kind == "value_not_in_list":
                 field, _, rest = details.partition(":")
+                field_name = field.strip()
                 m = re.search(r"'([^']*)'", rest)
                 value = m.group(1) if m else rest.strip()[:80]
-                parts.append(f"節點 {ct}（#{nid}）的 {field.strip()} 是「{value}」，ComfyUI 裡沒有這個")
+                folder = {
+                    "clip_name": "models/text_encoders（或 models/clip）",
+                    "vae_name": "models/vae",
+                    "unet_name": "models/diffusion_models（或 models/unet）",
+                }.get(field_name)
+                if folder:
+                    parts.append(f"找不到「{value}」：放到 ComfyUI 的 {folder}")
+                else:
+                    parts.append(f"節點 {ct}（#{nid}）的 {field_name} 是「{value}」，ComfyUI 裡沒有這個")
             elif kind == "required_input_missing":
                 parts.append(f"節點 {ct}（#{nid}）少了輸入 {details or e.get('message') or ''}".strip())
             else:
@@ -656,7 +665,7 @@ def convert_loras(loras_in) -> list:
 
 
 def model_format_overrides() -> dict:
-    """config.json 的 models.formats：檔名片段 → illustrious／pony／anima。"""
+    """config.json 的 models.formats：檔名片段 → illustrious／pony／anima／krea2／zimage。"""
     raw = cfg("models.formats", "", None)
     return raw if isinstance(raw, dict) else {}
 
@@ -688,6 +697,157 @@ def pony_clip_skip() -> int:
     if n <= 0:
         n = 2
     return min(n, 12)
+
+
+def _configured(path: str, default):
+    """config 有寫就用；沒寫或空字串用 default。"""
+    v = cfg(path, "", None)
+    return default if v is None or v == "" else v
+
+
+def family_sampling_defaults(fmt: str) -> dict:
+    """這一家的取樣預設。config models.<family>.steps|cfg|sampler|scheduler 可覆寫。
+
+    illustrious、pony 沒寫就用 comfy.steps／cfg／sampler／scheduler。
+    """
+    if fmt == prompt_formats.ANIMA:
+        opt = anima_options()
+        return {
+            "steps": opt["steps"],
+            "cfg": opt["cfg"],
+            "sampler": str(opt["sampler"]),
+            "scheduler": str(opt["scheduler"]),
+        }
+    if fmt == prompt_formats.KREA2:
+        base = {"steps": 8, "cfg": 1, "sampler": "euler", "scheduler": "simple"}
+    elif fmt == prompt_formats.ZIMAGE:
+        base = {"steps": 8, "cfg": 1, "sampler": "res_multistep", "scheduler": "simple"}
+    else:
+        base = {"steps": STEPS, "cfg": CFG, "sampler": SAMPLER, "scheduler": SCHEDULER}
+    return {
+        "steps": sampling_value(_configured(f"models.{fmt}.steps", base["steps"]), "steps", base["steps"]),
+        "cfg": sampling_value(_configured(f"models.{fmt}.cfg", base["cfg"]), "cfg", base["cfg"]),
+        "sampler": str(_configured(f"models.{fmt}.sampler", base["sampler"])),
+        "scheduler": str(_configured(f"models.{fmt}.scheduler", base["scheduler"])),
+    }
+
+
+def _given_sampling(raw, kind: str, default):
+    """有給、而且是數字，才回夾過範圍的值；沒給或不是數字回 None。"""
+    if raw is None or raw == "" or isinstance(raw, bool):
+        return None
+    try:
+        v = float(raw)
+    except (TypeError, ValueError):
+        return None
+    if v != v:
+        return None
+    return sampling_value(raw, kind, default)
+
+
+def resolve_sampling(fmt: str, steps=None, cfg_scale=None, family_sampling=None) -> dict:
+    """這次底模要用的取樣。familySampling[家族] 的欄位 → payload 頂層的 steps／cfg → 家族預設。
+
+    sampler、scheduler 只看 familySampling 和家族預設（舊前端沒有這兩欄）。
+    不在 ComfyUI 的 KSampler 選單裡就退回家族預設；連不上就不檢查。
+    """
+    defaults = family_sampling_defaults(fmt)
+    fam = {}
+    if isinstance(family_sampling, dict):
+        one = family_sampling.get(fmt)
+        if isinstance(one, dict):
+            fam = one
+
+    def pick(kind, top):
+        if kind in fam:
+            got = _given_sampling(fam.get(kind), kind, defaults[kind])
+            if got is not None:
+                return got
+        got = _given_sampling(top, kind, defaults[kind])
+        if got is not None:
+            return got
+        return defaults[kind]
+
+    sampler = defaults["sampler"]
+    scheduler = defaults["scheduler"]
+    if isinstance(fam.get("sampler"), str) and fam["sampler"].strip():
+        sampler = fam["sampler"].strip()
+    if isinstance(fam.get("scheduler"), str) and fam["scheduler"].strip():
+        scheduler = fam["scheduler"].strip()
+    choices = ksampler_choices()
+    if choices is not None:
+        names, schedulers = choices
+        if sampler not in names:
+            sampler = defaults["sampler"]
+        if scheduler not in schedulers:
+            scheduler = defaults["scheduler"]
+    return {
+        "steps": pick("steps", steps),
+        "cfg": pick("cfg", cfg_scale),
+        "sampler": sampler,
+        "scheduler": scheduler,
+    }
+
+
+_NATURAL_SPEC = {
+    prompt_formats.KREA2: {
+        "clip": "qwen3vl_4b_fp8_scaled.safetensors",
+        "vae": "qwen_image_vae.safetensors",
+        "clipType": "krea2",
+        "key": "krea2",
+    },
+    prompt_formats.ZIMAGE: {
+        "clip": "qwen_3_4b.safetensors",
+        "vae": "ae.safetensors",
+        "clipType": "lumina2",
+        "key": "zimage",
+    },
+}
+
+
+def _menu_basename(name: str) -> str:
+    return str(name or "").replace("\\", "/").rsplit("/", 1)[-1].lower()
+
+
+def _first_menu(names, pred, default: str) -> str:
+    for n in names or []:
+        if pred(n):
+            return str(n)
+    return default
+
+
+def natural_files(fmt: str) -> tuple[str, str, str]:
+    """Krea 2／Z-Image 的文字編碼器、VAE、CLIP type。
+
+    config models.<family>.textEncoder／vae 有寫就用。沒寫就從 ComfyUI 的選單挑
+    （Krea 2 的文字編碼器含 qwen3vl_4b、VAE 含 qwen_image_vae；Z-Image 的文字編碼器含
+    qwen_3_4b 且不能是 qwen3vl_4b、VAE 檔名去掉資料夾後是 ae.safetensors）。
+    選單沒有或連不上，就用預設檔名，讓 ComfyUI 退件時講缺哪個檔、該放哪個資料夾。
+    """
+    spec = _NATURAL_SPEC[fmt]
+    key = spec["key"]
+    clip = str(_configured(f"models.{key}.textEncoder", "") or "")
+    vae = str(_configured(f"models.{key}.vae", "") or "")
+    if not clip:
+        names = menu_names("CLIPLoader", "clip_name")
+        if fmt == prompt_formats.KREA2:
+            clip = _first_menu(names, lambda n: "qwen3vl_4b" in str(n).lower(), spec["clip"])
+        else:
+            clip = _first_menu(
+                names,
+                lambda n: "qwen_3_4b" in str(n).lower() and "qwen3vl_4b" not in str(n).lower(),
+                spec["clip"],
+            )
+    if not vae:
+        names = menu_names("VAELoader", "vae_name")
+        if fmt == prompt_formats.KREA2:
+            vae = _first_menu(names, lambda n: "qwen_image_vae" in _menu_basename(n), spec["vae"])
+        else:
+            exact = [n for n in names or [] if str(n).replace("\\", "/") == "ae.safetensors"]
+            vae = str(exact[0]) if exact else _first_menu(
+                names, lambda n: _menu_basename(n) == "ae.safetensors", spec["vae"],
+            )
+    return clip, vae, spec["clipType"]
 
 
 def inject_lora(wf: dict, lora_name: str, strength: float, model_src=None, clip_src=None) -> None:
@@ -734,6 +894,30 @@ def inject_lora(wf: dict, lora_name: str, strength: float, model_src=None, clip_
                 n["inputs"][k] = [lid, 1]
 
 
+def inject_lora_model_only(wf: dict, lora_name: str, strength: float, model_src) -> None:
+    """LoraLoaderModelOnly：只接 model，不接 clip。連呼叫兩次會疊成來源 → 後加的 → 先加的 → 其餘。"""
+    model_id, model_out = str(model_src[0]), model_src[1]
+    lid = "201"
+    while lid in wf:
+        lid = str(int(lid) + 1)
+    wf[lid] = {
+        "class_type": "LoraLoaderModelOnly",
+        "inputs": {
+            "lora_name": lora_name,
+            "strength_model": float(strength),
+            "model": [model_id, model_out],
+        },
+    }
+    for nid, n in wf.items():
+        if nid == lid or not isinstance(n, dict):
+            continue
+        for k, v in (n.get("inputs") or {}).items():
+            if not (isinstance(v, list) and len(v) == 2):
+                continue
+            if str(v[0]) == model_id and v[1] == model_out:
+                n["inputs"][k] = [lid, 0]
+
+
 def _rating_arg(rating, sfw: bool):
     return rating if rating is not None else sfw
 
@@ -744,9 +928,18 @@ def _negative_text(fmt: str, rating, sfw: bool) -> str:
 
 
 def build_anima_workflow(positive: str, width: int, height: int, seed: int, loras, ckpt_name: str,
-                         sfw: bool = False, rating=None, steps=None, cfg_scale=None) -> dict:
+                         sfw: bool = False, rating=None, steps=None, cfg_scale=None,
+                         sampler=None, scheduler=None) -> dict:
     """Anima：UNETLoader + CLIPLoader + VAELoader，不是 checkpoint。LoRA 串在 UNET 和 CLIP 後面。"""
     opt = anima_options()
+    if steps is None:
+        steps = opt["steps"]
+    if cfg_scale is None:
+        cfg_scale = opt["cfg"]
+    if sampler is None:
+        sampler = opt["sampler"]
+    if scheduler is None:
+        scheduler = opt["scheduler"]
     unet_name = str(ckpt_name)
     if unet_name.lower().startswith(prompt_formats.UNET_PREFIX):
         unet_name = unet_name[len(prompt_formats.UNET_PREFIX):]
@@ -783,10 +976,10 @@ def build_anima_workflow(positive: str, width: int, height: int, seed: int, lora
             "class_type": "KSampler",
             "inputs": {
                 "seed": int(seed),
-                "steps": sampling_value(steps, "steps", opt["steps"]),
-                "cfg": sampling_value(cfg_scale, "cfg", opt["cfg"]),
-                "sampler_name": opt["sampler"],
-                "scheduler": opt["scheduler"],
+                "steps": steps,
+                "cfg": cfg_scale,
+                "sampler_name": sampler,
+                "scheduler": scheduler,
                 "denoise": 1.0,
                 "model": ["13", 0],
                 "positive": ["36", 0],
@@ -811,16 +1004,109 @@ def build_anima_workflow(positive: str, width: int, height: int, seed: int, lora
     return wf
 
 
+def _unet_file(ckpt_name: str) -> str:
+    name = str(ckpt_name)
+    if name.lower().startswith(prompt_formats.UNET_PREFIX):
+        return name[len(prompt_formats.UNET_PREFIX):]
+    return name
+
+
+def build_natural_workflow(fmt: str, positive: str, width: int, height: int, seed: int, loras, ckpt_name: str,
+                           sfw: bool = False, rating=None, sampling: dict | None = None) -> dict:
+    """Krea 2、Z-Image：UNET + CLIP + VAE。CFG ≤ 1 負面用 ConditioningZeroOut；LoRA 只接 model。
+
+    Z-Image 多一個 ModelSamplingAuraFlow（shift 3）接在 UNET 後面，空 latent 用 EmptySD3LatentImage。
+    """
+    sampling = sampling or resolve_sampling(fmt)
+    clip_name, vae_name, clip_type = natural_files(fmt)
+    if float(sampling["cfg"]) <= 1:
+        negative = {
+            "class_type": "ConditioningZeroOut",
+            "inputs": {"conditioning": ["36", 0]},
+        }
+    else:
+        negative = {
+            "class_type": "CLIPTextEncode",
+            "inputs": {"text": _negative_text(fmt, rating, sfw), "clip": ["14", 0]},
+        }
+    wf = {
+        "13": {
+            "class_type": "UNETLoader",
+            "inputs": {"unet_name": _unet_file(ckpt_name), "weight_dtype": "default"},
+        },
+        "14": {
+            "class_type": "CLIPLoader",
+            "inputs": {"clip_name": clip_name, "type": clip_type, "device": "default"},
+        },
+        "15": {
+            "class_type": "VAELoader",
+            "inputs": {"vae_name": vae_name},
+        },
+        "36": {
+            "class_type": "CLIPTextEncode",
+            "inputs": {"text": positive, "clip": ["14", 0]},
+        },
+        "37": negative,
+        "119": {
+            "class_type": "EmptySD3LatentImage" if fmt == prompt_formats.ZIMAGE else "EmptyLatentImage",
+            "inputs": {"width": int(width), "height": int(height), "batch_size": 1},
+        },
+        "35": {
+            "class_type": "KSampler",
+            "inputs": {
+                "seed": int(seed),
+                "steps": sampling["steps"],
+                "cfg": sampling["cfg"],
+                "sampler_name": sampling["sampler"],
+                "scheduler": sampling["scheduler"],
+                "denoise": 1.0,
+                "model": ["16", 0] if fmt == prompt_formats.ZIMAGE else ["13", 0],
+                "positive": ["36", 0],
+                "negative": ["37", 0],
+                "latent_image": ["119", 0],
+            },
+        },
+        "85": {
+            "class_type": "VAEDecode",
+            "inputs": {"samples": ["35", 0], "vae": ["15", 0]},
+        },
+        "200": {
+            "class_type": "SaveImage",
+            "inputs": {
+                "filename_prefix": "danbooru_case/case",
+                "images": ["85", 0],
+            },
+        },
+    }
+    if fmt == prompt_formats.ZIMAGE:
+        wf["16"] = {
+            "class_type": "ModelSamplingAuraFlow",
+            "inputs": {"model": ["13", 0], "shift": 3},
+        }
+    for lora_name, strength in convert_loras(loras):
+        inject_lora_model_only(wf, lora_name, strength, ("13", 0))
+    return wf
+
+
 def build_workflow(positive: str, width: int, height: int, seed: int, loras=None,
-                   ckpt=None, sfw: bool = False, rating=None, steps=None, cfg_scale=None, pose=None) -> dict:
+                   ckpt=None, sfw: bool = False, rating=None, steps=None, cfg_scale=None, pose=None,
+                   family_sampling=None) -> dict:
     ckpt_name = resolve_ckpt(ckpt)
-    fmt = prompt_formats.format_of(ckpt_name, model_format_overrides())
-    if fmt == prompt_formats.ANIMA:
+    fmt = prompt_formats.format_of(ckpt_name, model_format_overrides(), lookup_base_model(ckpt_name))
+    sampling = resolve_sampling(fmt, steps, cfg_scale, family_sampling)
+    if fmt in (prompt_formats.ANIMA, prompt_formats.KREA2, prompt_formats.ZIMAGE):
         if pose:
-            raise ValueError("Anima 底模還不能用姿勢參考")
-        return build_anima_workflow(
-            positive, width, height, seed, loras, ckpt_name,
-            sfw=sfw, rating=rating, steps=steps, cfg_scale=cfg_scale,
+            raise ValueError(f"{prompt_formats.LABELS.get(fmt, fmt)} 底模還不能用姿勢參考")
+        if fmt == prompt_formats.ANIMA:
+            return build_anima_workflow(
+                positive, width, height, seed, loras, ckpt_name,
+                sfw=sfw, rating=rating,
+                steps=sampling["steps"], cfg_scale=sampling["cfg"],
+                sampler=sampling["sampler"], scheduler=sampling["scheduler"],
+            )
+        return build_natural_workflow(
+            fmt, positive, width, height, seed, loras, ckpt_name,
+            sfw=sfw, rating=rating, sampling=sampling,
         )
     clip_from = ["13", 1]
     wf = {
@@ -844,10 +1130,10 @@ def build_workflow(positive: str, width: int, height: int, seed: int, loras=None
             "class_type": "KSampler",
             "inputs": {
                 "seed": int(seed),
-                "steps": sampling_value(steps, "steps", STEPS),
-                "cfg": sampling_value(cfg_scale, "cfg", CFG),
-                "sampler_name": SAMPLER,
-                "scheduler": SCHEDULER,
+                "steps": sampling["steps"],
+                "cfg": sampling["cfg"],
+                "sampler_name": sampling["sampler"],
+                "scheduler": sampling["scheduler"],
                 "denoise": 1.0,
                 "model": ["13", 0],
                 "positive": ["36", 0],
@@ -1239,6 +1525,54 @@ def models_from_comfy(kind: str) -> list[str]:
     return names
 
 
+_OBJ_CACHE = {"t": 0.0, "data": {}}
+
+
+def object_info_cached(class_type: str) -> dict:
+    """GET /object_info/<class>。30 秒快取（跟 models_from_comfy 一樣）；連不上把失敗也記下來。"""
+    now = time.time()
+    if not _OBJ_CACHE["t"] or now - _OBJ_CACHE["t"] >= 30:
+        _OBJ_CACHE["data"] = {}
+        _OBJ_CACHE["t"] = now
+    if class_type in _OBJ_CACHE["data"]:
+        hit = _OBJ_CACHE["data"][class_type]
+        if hit is None:
+            raise OSError("object_info unavailable")
+        return hit
+    try:
+        info = api("GET", "/object_info/" + urllib.parse.quote(class_type, safe=""), timeout=8)
+    except Exception:
+        _OBJ_CACHE["data"][class_type] = None
+        raise
+    if not isinstance(info, dict):
+        info = {}
+    _OBJ_CACHE["data"][class_type] = info
+    return info
+
+
+def menu_names(class_type: str, field: str) -> list[str]:
+    """ComfyUI 某個節點的下拉清單。連不上回 []。"""
+    try:
+        info = object_info_cached(class_type)
+    except Exception:
+        return []
+    return workflows.combo_list(info, class_type, field)
+
+
+def ksampler_choices():
+    """(sampler_name 選單, scheduler 選單)。ComfyUI 連不上回 None，呼叫端就不檢查。"""
+    try:
+        info = object_info_cached("KSampler")
+    except Exception:
+        return None
+    if not info:
+        return None
+    return (
+        workflows.combo_list(info, "KSampler", "sampler_name"),
+        workflows.combo_list(info, "KSampler", "scheduler"),
+    )
+
+
 _LM_CKPT = {"at": 0.0, "by_file": {}, "ok": False}
 _LOOPBACK = {"127.0.0.1", "localhost", "::1"}
 _REACH: dict = {}
@@ -1289,6 +1623,8 @@ def lm_checkpoints() -> dict:
                 "title": str(it.get("model_name") or Path(fn).stem),
                 "previewUrl": lora_scan.lm_preview_src(it.get("preview_url") or ""),
                 "preview": name,
+                "base_model": str(it.get("base_model") or ""),
+                "sub_type": str(it.get("sub_type") or ""),
             }
     _LM_CKPT.update(at=now, by_file=by_file, ok=raw is not None)
     return by_file
@@ -1342,6 +1678,7 @@ def checkpoints_for_ui() -> tuple[list[dict], str]:
         names = []
     if not names:
         items = list(local)
+        _attach_ckpt_base_models(items)
         _append_anima_models(items)
         _stamp_ckpt_formats(items)
         if any(str(it.get("ckpt_name") or "").lower().startswith(prompt_formats.UNET_PREFIX) for it in items):
@@ -1358,6 +1695,7 @@ def checkpoints_for_ui() -> tuple[list[dict], str]:
             "ckpt_name": raw,
             "title": man.get("title") or loc.get("title") or Path(fn).stem,
             "preview": loc.get("preview") or "",
+            "base_model": _base_model_for_file(fn, man),
         }
         # 本機 checkpointDir 只掃一層；LoRA Manager 認得每個子資料夾。本機沒有圖才用它的。
         if not item["preview"] and man.get("previewUrl"):
@@ -1381,34 +1719,148 @@ def checkpoints_for_ui() -> tuple[list[dict], str]:
     return items, "comfy"
 
 
+def metadata_base_model(path) -> str:
+    """模型檔旁邊 <stem>.metadata.json 的 base_model。讀不到回 ""。"""
+    if not path:
+        return ""
+    try:
+        model = Path(path)
+        if not model.is_file():
+            return ""
+    except (TypeError, OSError):
+        return ""
+    meta = model.with_name(model.stem + ".metadata.json")
+    try:
+        md = json.loads(meta.read_text(encoding="utf-8"))
+    except (OSError, ValueError, UnicodeError):
+        return ""
+    if not isinstance(md, dict):
+        return ""
+    return str(md.get("base_model") or "")
+
+
+def _ckpt_model_path(fn: str, man: dict | None) -> Path | None:
+    """checkpoint 的實際路徑：LoRA Manager 的 file_path → 偏好路徑 → checkpointDir。"""
+    raw = str((man or {}).get("path") or "").strip()
+    if raw:
+        try:
+            p = Path(raw)
+            if p.is_file():
+                return p
+        except OSError:
+            pass
+    hit = pref_ckpt_files().get(fn)
+    if hit is not None:
+        try:
+            if Path(hit).is_file():
+                return Path(hit)
+        except OSError:
+            pass
+    if CKPT_DIR:
+        cand = Path(CKPT_DIR) / fn
+        try:
+            if cand.is_file():
+                return cand
+        except OSError:
+            pass
+    return None
+
+
+def _base_model_for_file(fn: str, man: dict | None, beside: Path | None = None) -> str:
+    """LoRA Manager 的 base_model → 模型旁邊的 metadata → ""。"""
+    base = str((man or {}).get("base_model") or "").strip()
+    if base:
+        return base
+    got = metadata_base_model(beside)
+    if got:
+        return got
+    return metadata_base_model(_ckpt_model_path(fn, man))
+
+
+def _attach_ckpt_base_models(items: list[dict], lm: dict | None = None) -> None:
+    if lm is None:
+        lm = lm_checkpoints()
+    for it in items:
+        if str(it.get("ckpt_name") or "").lower().startswith(prompt_formats.UNET_PREFIX):
+            continue
+        fn = str(it.get("file") or "")
+        it["base_model"] = _base_model_for_file(fn, (lm or {}).get(fn) or {})
+
+
+def lookup_base_model(ckpt_name: str) -> str:
+    """已解析的底模名 → base_model。清單裡有就用那一筆；unet: 不在清單就讀模型旁邊的 metadata。"""
+    key = str(ckpt_name or "").replace("/", "\\")
+    fn = key.split("\\")[-1]
+    raw_unet = None
+    if key.lower().startswith(prompt_formats.UNET_PREFIX):
+        raw_unet = key[len(prompt_formats.UNET_PREFIX):]
+        fn = raw_unet.split("\\")[-1]
+    try:
+        items, _src = checkpoints_for_ui()
+    except Exception:
+        items = []
+    exact = None
+    by_file = None
+    for it in items:
+        name = str(it.get("ckpt_name") or "").replace("/", "\\")
+        file = str(it.get("file") or "")
+        if name == key:
+            exact = it
+            break
+        if file == fn and by_file is None:
+            if raw_unet is None or name.lower().startswith(prompt_formats.UNET_PREFIX):
+                by_file = it
+    hit = exact or by_file
+    if hit is not None:
+        return str(hit.get("base_model") or "")
+    if raw_unet is not None:
+        return metadata_base_model(_diffusion_model_path(raw_unet))
+    try:
+        man = lm_checkpoints().get(fn) or {}
+    except Exception:
+        man = {}
+    return _base_model_for_file(fn, man)
+
+
 def _append_anima_models(items: list[dict]) -> None:
-    """偏好路徑濾完 checkpoint 之後，補上 diffusion model 裡名字含 anima 的（ckpt_name 加 unet:）。"""
+    """偏好路徑濾完 checkpoint 之後，補上 diffusion model 裡家族是 anima、krea2、zimage 的。
+
+    base_model 優先（LoRA Manager → 旁邊的 metadata）；認不出來才看檔名。Flux Klein 之類不列。
+    ckpt_name 加 unet:。預覽：LoRA Manager 的圖優先，否則模型旁邊的同名圖。
+    """
     try:
         names = [str(n).replace("/", "\\") for n in models_from_comfy("diffusion_models")]
     except Exception:
         return
     seen = {str(it.get("ckpt_name") or "") for it in items}
+    lm = lm_checkpoints()
     for raw in names:
-        if "anima" not in raw.lower():
+        fn = raw.split("\\")[-1]
+        man = lm.get(fn) or {}
+        base = str(man.get("base_model") or "").strip()
+        beside = None
+        if not base or not man.get("previewUrl"):
+            beside = _diffusion_model_path(raw)
+        if not base:
+            base = metadata_base_model(beside)
+        if prompt_formats.listed_unet_family(raw, base) is None:
             continue
         ckpt_name = prompt_formats.UNET_PREFIX + raw
         if ckpt_name in seen:
             continue
-        fn = raw.split("\\")[-1]
         item = {
             "file": fn,
             "ckpt_name": ckpt_name,
             "title": Path(fn).stem,
             "preview": "",
+            "base_model": base,
         }
-        man = lm_checkpoints().get(fn) or {}
         if man.get("previewUrl"):
             item["title"] = man.get("title") or item["title"]
             item["preview"] = man.get("preview") or "preview"
             item["previewUrl"] = man["previewUrl"]
         else:
-            model = _diffusion_model_path(raw)
-            name = _local_preview(model) if model else ""
+            name = _local_preview(beside) if beside else ""
             if name:
                 item["preview"] = name
                 item["previewUrl"] = "/api/ckpt-preview?file=" + urllib.parse.quote(name)
@@ -1431,7 +1883,9 @@ def _diffusion_model_path(raw: str) -> Path | None:
 def _stamp_ckpt_formats(items: list[dict]) -> None:
     overrides = model_format_overrides()
     for it in items:
-        it["format"] = prompt_formats.format_of(it.get("ckpt_name") or it.get("file"), overrides)
+        base = str(it.get("base_model") or "")
+        it["base_model"] = base
+        it["format"] = prompt_formats.format_of(it.get("ckpt_name") or it.get("file"), overrides, base)
 
 
 
@@ -1720,16 +2174,27 @@ def sampling_defaults() -> dict:
         # 修臉細節（工作流面板）：預設和可調範圍。
         "faceDetail": {k: r["default"] for k, r in FACE_DETAIL.items()},
         "faceDetailLimits": {k: list(r["range"]) for k, r in FACE_DETAIL.items()},
+        # 每家的取樣預設（套過 config）。samplers／schedulers 是 ComfyUI 的 KSampler 選單，連不上是 []。
+        "families": {fmt: family_sampling_defaults(fmt) for fmt in prompt_formats.FORMATS},
+        "samplers": menu_names("KSampler", "sampler_name"),
+        "schedulers": menu_names("KSampler", "scheduler"),
     }
 
 
+def _unet_family_label(name: str) -> str:
+    fmt = prompt_formats.format_of(name, model_format_overrides(), lookup_base_model(name))
+    return prompt_formats.LABELS.get(fmt, fmt)
+
+
 def refuse_anima_edit(ckpt) -> str:
-    """Hires／修臉還是 CheckpointLoaderSimple。底模是 unet:（Anima）就講清楚，不組圖。回傳解析後的底模名。"""
-    if str(ckpt or "").replace("/", "\\").lower().startswith(prompt_formats.UNET_PREFIX):
-        raise HiresError("Anima 的圖還不能 Hires／修臉")
+    """Hires／修臉還是 CheckpointLoaderSimple。unet: 家族（Anima、Krea 2、Z-Image）就講清楚，不組圖。"""
+    raw = str(ckpt or "").replace("/", "\\").strip()
+    if raw.lower().startswith(prompt_formats.UNET_PREFIX):
+        label = _unet_family_label(explicit_unet(raw) or raw)
+        raise HiresError(f"{label} 的圖還不能 Hires／修臉")
     name = resolve_ckpt(ckpt)
     if str(name).lower().startswith(prompt_formats.UNET_PREFIX):
-        raise HiresError("Anima 的圖還不能 Hires／修臉")
+        raise HiresError(f"{_unet_family_label(name)} 的圖還不能 Hires／修臉")
     return name
 
 
@@ -2923,7 +3388,7 @@ def prepare_workflow(payload: dict):
         # 內建工作流才換格式。寫回同一個 payload：GenJob 和出圖日誌用的就是這份，日誌才記到真正送出的提示詞。
         ckpt_name = resolve_ckpt(payload.get("ckpt"))
         rating_arg = _rating_arg(payload.get("rating"), bool(payload.get("sfw")))
-        fmt = prompt_formats.format_of(ckpt_name, model_format_overrides())
+        fmt = prompt_formats.format_of(ckpt_name, model_format_overrides(), lookup_base_model(ckpt_name))
         positive = prompt_formats.convert_positive(positive, fmt, rating_arg)
         payload["positive"] = positive
         meta["positive"] = positive
@@ -2939,7 +3404,15 @@ def prepare_workflow(payload: dict):
             steps=payload.get("steps"),
             cfg_scale=payload.get("cfg"),
             pose=parse_pose(payload.get("pose")),
+            family_sampling=payload.get("familySampling"),
         )
+        # 日誌記這次真正用的取樣（家族預設或 familySampling）。自訂工作流不走這裡。
+        ks = (wf.get("35") or {}).get("inputs") or {}
+        if ks.get("steps") is not None:
+            payload["steps"] = ks.get("steps")
+            payload["cfg"] = ks.get("cfg")
+            payload["sampler"] = ks.get("sampler_name") or ""
+            payload["scheduler"] = ks.get("scheduler") or ""
         return wf, meta
     prof = workflows.get_profile(wid)
     if prof is None:
@@ -4020,19 +4493,23 @@ class GenJob:
                 ended = not self.cancelled
             self.cond.notify_all()
         if ended:
-            gen_log.record(
-                gen_log.entry_of(
-                    self.id,
-                    self.payload,
-                    event == "done",
-                    data,
-                    origin=self.origin,
-                    kind=self.kind,
-                    created_at=self.created_at,
-                    started_at=self.drawing_at,
-                    finished_at=self.finished_at,
-                )
+            row = gen_log.entry_of(
+                self.id,
+                self.payload,
+                event == "done",
+                data,
+                origin=self.origin,
+                kind=self.kind,
+                created_at=self.created_at,
+                started_at=self.drawing_at,
+                finished_at=self.finished_at,
             )
+            src = self.payload if isinstance(self.payload, dict) else {}
+            for key in ("sampler", "scheduler"):
+                val = src.get(key)
+                if isinstance(val, str) and val:
+                    row[key] = val[:80]
+            gen_log.record(row)
             if event == "done":
                 schedule_output_prune()
 
@@ -6807,13 +7284,25 @@ def ckpt_preview_path(fn: str, root: Path | None = None) -> Path | None:
         for model in pref_ckpt_files().values():
             if model.with_name(fn).is_file() and model.with_name(fn).name.startswith(model.stem):
                 return model.with_name(fn)
-        # Anima（diffusion_models 裡）：一樣只認清單上那幾個模型旁邊的同名預覽。
+        # diffusion model（anima／krea2／zimage）：一樣只認清單上那幾個模型旁邊的同名預覽。
         try:
-            unets = [n for n in models_from_comfy("diffusion_models") if "anima" in str(n).lower()]
+            unets = list(models_from_comfy("diffusion_models"))
         except Exception:
             unets = []
+        try:
+            lm = lm_checkpoints()
+        except Exception:
+            lm = {}
         for raw in unets:
-            model = _diffusion_model_path(raw)
+            raw_s = str(raw).replace("/", "\\")
+            file_name = raw_s.split("\\")[-1]
+            man = (lm or {}).get(file_name) or {}
+            base = str(man.get("base_model") or "").strip()
+            model = _diffusion_model_path(raw_s)
+            if not base:
+                base = metadata_base_model(model)
+            if prompt_formats.listed_unet_family(raw_s, base) is None:
+                continue
             if model and fn.startswith(model.stem) and model.with_name(fn).is_file():
                 return model.with_name(fn)
     base = Path(root) if root is not None else CKPT_DIR

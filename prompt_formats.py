@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""底模的提示詞格式：Illustrious／NoobAI（預設）、Pony、Anima。
+"""底模的提示詞格式：Illustrious／NoobAI（預設）、Pony、Anima、Krea 2、Z-Image。
 
 墨池、疊印台、MCP、iPhone 抽出來的都是 Illustrious 的格式（尾巴是品質字和分級字）。
 伺服器送 ComfyUI 之前照選的底模換成那一家的格式（server.py 的 prepare_workflow），
@@ -7,13 +7,16 @@
 
 轉換是「重複做也一樣」：先拿掉所有格式的品質字、分級字、score／source 字，再加上目標格式的。
 作品冊拿一張 Pony 印的圖重印到 Illustrious 底模，會自動換回 Illustrious 的頭尾。
+Krea 2、Z-Image 是自然語言（Qwen 文字編碼器）：拿掉那些字之後不再加頭尾。
 
 格式（照各模型的說明）：
   Illustrious：… , 分級字, masterpiece, best quality, amazing quality（現在的樣子，照舊）
   Pony（V6 XL）：score_9, score_8_up, score_7_up, score_6_up, source_anime, rating_safe|rating_questionable|rating_explicit, …
   Anima：masterpiece, best quality, safe|sensitive|explicit, …（[品質／分級] [人數] [角色] [作品] [畫師] [一般 tag]）
-底模怎麼對到格式：Anima 是 ComfyUI diffusion_models 裡的 anima*（名字前面加 unet:）；
-底模檔名有 pony 的是 Pony；其他是 Illustrious。config.json 的 models.formats 可以指定（檔名片段 → 格式）。
+  Krea 2、Z-Image：只留內容 tag，不加品質字、分級字
+底模怎麼對到格式：config.json 的 models.formats（檔名片段）最優先；其次是 LoRA Manager／
+metadata 的 base_model（family_of_base）；對不上再看檔名。unet: 開頭且含 krea2 是 Krea 2，
+含 zimage／z_image／z-image 是 Z-Image，其他 unet: 是 Anima；檔名有 pony 是 Pony；其餘是 Illustrious。
 """
 from __future__ import annotations
 
@@ -22,11 +25,21 @@ import re
 ILLUSTRIOUS = "illustrious"
 PONY = "pony"
 ANIMA = "anima"
-FORMATS = (ILLUSTRIOUS, PONY, ANIMA)
-LABELS = {ILLUSTRIOUS: "Illustrious", PONY: "Pony", ANIMA: "Anima"}
+KREA2 = "krea2"
+ZIMAGE = "zimage"
+FORMATS = (ILLUSTRIOUS, PONY, ANIMA, KREA2, ZIMAGE)
+LABELS = {
+    ILLUSTRIOUS: "Illustrious",
+    PONY: "Pony",
+    ANIMA: "Anima",
+    KREA2: "Krea 2",
+    ZIMAGE: "Z-Image",
+}
 
-# Anima 是 diffusion model（UNETLoader），不是 checkpoint：清單和工作流裡用這個前綴分開。
+# Anima、Krea 2、Z-Image 是 diffusion model（UNETLoader），不是 checkpoint：清單和工作流裡用這個前綴分開。
 UNET_PREFIX = "unet:"
+# 會出現在底模清單裡的 diffusion model。Flux、SD 1.5 之類不在這裡。
+UNET_FAMILIES = (ANIMA, KREA2, ZIMAGE)
 
 # Illustrious 的頭尾（跟 web/lexicon.json 的 quality、sfwTail、sensitiveTail、nsfwTail 一樣）。
 ILLUSTRIOUS_QUALITY = ["masterpiece", "best quality", "amazing quality"]
@@ -42,6 +55,9 @@ ANIMA_RATING = {"general": "safe", "sensitive": "sensitive", "explicit": "explic
 # Anima 模型頁建議的負面（score_1～3 是它少數用得到的 score 字）。
 ANIMA_NEGATIVE = ["worst quality", "low quality", "score_1", "score_2", "score_3", "artist name", "blurry", "jpeg artifacts", "chromatic aberration", "sepia"]
 
+# Krea 2、Z-Image 預設 CFG 1，負面用不到；使用者把 CFG 調高時接在原本那串前面。
+NATURAL_NEGATIVE = ["worst quality", "low quality", "blurry", "jpeg artifacts", "watermark", "text"]
+
 # 各家的分級字裡，比這一級高的那些放進負面（Illustrious 不加：它的負面本來就有 nsfw、explicit 那一串）。
 _HIGHER = {"general": ["sensitive", "explicit"], "sensitive": ["explicit"], "explicit": []}
 
@@ -54,6 +70,7 @@ _META = {
 }
 _SCORE = re.compile(r"^score_\d(_up)?$")
 _WEIGHTED = re.compile(r"^\((.+?)(?::[\d.]+)?\)$")
+_BASE_KEY = re.compile(r"[\s\-_.]")
 
 
 def _bare(tag: str) -> str:
@@ -84,19 +101,74 @@ def rating_key(rating) -> str:
     return "explicit"
 
 
-def format_of(model: str | None, overrides: dict | None = None) -> str:
-    """底模名字 → 格式。overrides：{檔名片段: 格式}（config.json 的 models.formats），比自動判斷優先。"""
+def family_of_base(base_model: str | None) -> str | None:
+    """LoRA Manager／metadata 的 base_model → 家族。對不上（Flux、SD 1.5、Wan、Other、Unknown、空的）回 None。
+
+    正規化：小寫、去掉空白、-、_、.。Flux.1 Krea（flux1krea）不是 Krea 2，只認 krea2。
+    """
+    key = _BASE_KEY.sub("", str(base_model or "").lower())
+    if not key:
+        return None
+    if "pony" in key:
+        return PONY
+    if "illustrious" in key or "noobai" in key or "sdxl" in key:
+        return ILLUSTRIOUS
+    if "anima" in key:
+        return ANIMA
+    if "krea2" in key:
+        return KREA2
+    if "zimage" in key:
+        return ZIMAGE
+    return None
+
+
+def format_of(model: str | None, overrides: dict | None = None, base_model: str | None = None) -> str:
+    """底模名字 → 格式。overrides：{檔名片段: 格式}（config.json 的 models.formats），比自動判斷優先。
+
+    其次用 base_model（family_of_base 有結果就用）。再來才是檔名：unet: 且含 krea2 → krea2；
+    含 zimage／z_image／z-image → zimage；其他 unet: → anima；檔名有 pony → pony；其餘 illustrious。
+    """
     name = str(model or "").replace("/", "\\")
     low = name.lower()
     for part, fmt in (overrides or {}).items():
         if part and str(part).lower() in low and fmt in FORMATS:
             return fmt
+    fam = family_of_base(base_model)
+    if fam:
+        return fam
     if low.startswith(UNET_PREFIX):
+        if "krea2" in low:
+            return KREA2
+        if "zimage" in low or "z_image" in low or "z-image" in low:
+            return ZIMAGE
         return ANIMA
     base = low.split("\\")[-1]
     if "pony" in base:
         return PONY
     return ILLUSTRIOUS
+
+
+def listed_unet_family(name: str | None, base_model: str | None = None) -> str | None:
+    """diffusion model 要不要出現在底模清單。只有 anima、krea2、zimage。
+
+    base_model 認得出家族就用它（Illustrious、Pony 不列）。認不出來（沒有 metadata、Other、Unknown、Flux）
+    才看檔名：含 anima、krea2，或 zimage／z_image／z-image。
+    """
+    fam = family_of_base(base_model)
+    if fam in UNET_FAMILIES:
+        return fam
+    if fam in (ILLUSTRIOUS, PONY):
+        return None
+    low = str(name or "").lower()
+    if low.startswith(UNET_PREFIX):
+        low = low[len(UNET_PREFIX):]
+    if "anima" in low:
+        return ANIMA
+    if "krea2" in low:
+        return KREA2
+    if "zimage" in low or "z_image" in low or "z-image" in low:
+        return ZIMAGE
+    return None
 
 
 def convert_positive(positive: str, fmt: str, rating) -> str:
@@ -107,6 +179,8 @@ def convert_positive(positive: str, fmt: str, rating) -> str:
         return ", ".join(PONY_PREFIX + [PONY_RATING[r]] + body)
     if fmt == ANIMA:
         return ", ".join(ANIMA_QUALITY + [ANIMA_RATING[r]] + body)
+    if fmt in (KREA2, ZIMAGE):
+        return ", ".join(body)
     return ", ".join(body + ILLUSTRIOUS_RATING[r] + ILLUSTRIOUS_QUALITY)
 
 
@@ -117,6 +191,8 @@ def negative_for(fmt: str, rating, base: str) -> str:
         extra = PONY_NEGATIVE + [PONY_RATING[x] for x in _HIGHER[r]]
     elif fmt == ANIMA:
         extra = ANIMA_NEGATIVE + [ANIMA_RATING[x] for x in _HIGHER[r]]
+    elif fmt in (KREA2, ZIMAGE):
+        extra = list(NATURAL_NEGATIVE)
     else:
         return base
     have = {_bare(t) for t in split_tags(base)}
