@@ -409,8 +409,10 @@ function artImg(sources, mini) {
   i.addEventListener(
     "load",
     () => {
-      i.dataset.ready = "1";
-      if (performance.now() - born > 60 && !reducedMotion())
+      // quietArt 已經標過的不再寫一次：同樣的值也會讓整格重算樣式（.card-art:has(> img:not([data-ready]))）。
+      if (!i.dataset.ready) i.dataset.ready = "1";
+      // 還沒接上畫面就到了的（卡冊閒下來先抓的圖）：接上時已經是好的，不必顯影。
+      if (!i._quiet && i.isConnected && performance.now() - born > 60 && !reducedMotion())
         i.animate(
           [
             { opacity: 0, transform: "scale(1.08)" },
@@ -422,6 +424,19 @@ function artImg(sources, mini) {
     { once: true }
   );
   return i;
+}
+
+/**
+ * 先接在畫面外的牌（卡冊往下多接的那一屏半）：圖到的時候沒人看得到，不掃光等它、到了也不顯影。
+ * 捲到眼前時圖早就到了，看起來一樣；可是一次捲進幾十張，每張各跑一段掃光、一段顯影＝每張一個合成層，
+ * 手機上第一次往下快速捲，掉的格有四成是這些看不到的動畫（4 倍降速：41 → 25 格）。
+ */
+export function quietArt(node) {
+  for (const img of node.querySelectorAll(".card-art > img")) {
+    img._quiet = true;
+    if (!img.dataset.ready) img.dataset.ready = "1";
+  }
+  return node;
 }
 
 /**

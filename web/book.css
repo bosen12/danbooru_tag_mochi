@@ -182,6 +182,20 @@
   height: var(--book-cell-h, auto);
 }
 
+/* 預排區（book.js 的 stageNow）：閒下來時把下方幾屏的牌放進來排一次版就拿出來，牌名的字整形過了，捲到時接上去才快。
+   看不到、點不到、不佔位；牌寬、格高、字級的變數由 book.js 從網格抄過來，排出來跟網格裡一模一樣。 */
+.book-stage {
+  position: fixed;
+  top: 0;
+  left: -300vw;
+  width: var(--book-cell-w, var(--book-min, 104px));
+  height: 0;
+  overflow: hidden;
+  visibility: hidden;
+  pointer-events: none;
+  contain: strict;
+}
+
 /* 上下兩塊空白：撐住沒畫的那幾排的高度。 */
 .book-pad {
   flex: 0 0 100%;

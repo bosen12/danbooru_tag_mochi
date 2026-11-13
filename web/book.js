@@ -19,7 +19,7 @@ import { reviewTransfer } from "./transfer.js";
 import { applyPin, indexLexicon, sanitizeSettings } from "./engine.js";
 import { ratingBlocked, RATING_LABEL } from "./rules/rating.js";
 import { mountRatingFree } from "./rating-free.js";
-import { buildLibrary, sizeCards, groupChips, genderChips, chipRun, seriesRun, createAssets, cardNode, cardFacts, setCardFlag, cardMatches, searchCards, searchNote, matchRank, CARD_SUIT_INFO, CARD_SUITS } from "./cards.js";
+import { buildLibrary, sizeCards, groupChips, genderChips, chipRun, seriesRun, createAssets, cardNode, quietArt, cardFacts, setCardFlag, cardMatches, searchCards, searchNote, matchRank, CARD_SUIT_INFO, CARD_SUITS } from "./cards.js";
 import { el, openSheet, toast, syncChoices, bootFailed, friendlyError, isNetError } from "./ui.js";
 import { zoomFromThumb } from "./zoom.js";
 import { mountKeysHelp } from "./keys-help.js";
@@ -1129,8 +1129,13 @@ let winEnd = 0;
 let scrollFrame = 0;
 let fillFrame = 0;
 let aheadId = 0;
+let prepTimer = 0;
+// 最後一次捲動的時間：捲動中不預排（buildAhead）。
+let scrolledAt = 0;
 // 上一次照捲動位置接牌時，畫面頂端那一排的第一張（換寬時捲回它）。
 let topIndex = 0;
+// 上一次接牌時看得到的排：[第一排, 最後一排的下一排)。還沒量過格高是 null（第一次畫，全當看得到）。
+let seenRows = null;
 
 /**
  * 卡冊的格寬（book.css 的 .book-grid 改成一排排折行）：跟 grid 的 repeat(auto-fill, minmax(最小, 1fr)) 同一個算法，
@@ -1190,6 +1195,7 @@ function windowNow() {
   if (!rowH) return [0, Math.min(list.length, cols * 6)];
   const top = scrollY - gridTopY();
   topIndex = Math.max(0, Math.floor(top / rowH)) * cols;
+  seenRows = [Math.floor(top / rowH), Math.ceil((top + innerHeight) / rowH)];
   const r0 = Math.max(0, Math.floor((top - innerHeight * BEHIND) / rowH));
   const r1 = Math.max(r0 + 1, Math.ceil((top + innerHeight * (1 + AHEAD)) / rowH));
   return [Math.min(list.length, r0 * cols), Math.min(list.length, r1 * cols)];
@@ -1211,10 +1217,14 @@ function nodeAt(i, t0) {
     return s;
   }
   const cell = cellOf(card);
+  // 接上畫面就會排版：之後不必再進預排區（buildAhead）。
+  cell._laid = true;
   paintCell(cell, card, rankAt(card, i));
-  // 接上畫面的格子（看得到的和下方一屏半）：圖立刻開始抓，不等捲到眼前。
-  const img = cell.querySelector('img[loading="lazy"]');
-  if (img) img.loading = "eager";
+  // 接上畫面的格子（看得到的和下方一屏半）：圖立刻開始抓，不等捲到眼前（通常閒下來時 buildAhead 已經先抓了）。
+  startArt(cell);
+  // 接在畫面外的（捲動時頭尾多接的那幾排）：圖在那裡就到了，不必掃光、顯影給沒人看（cards.js 的 quietArt）。
+  const row = Math.floor(i / cols);
+  if (seenRows && (row < seenRows[0] || row >= seenRows[1])) quietArt(cell);
   return cell;
 }
 
@@ -1258,6 +1268,18 @@ function layoutWindow(force = false) {
   else buildAhead();
 }
 
+/**
+ * 牌面圖開始抓：卡冊的圖預設 lazy（上千張不能一次抓），接上畫面、或快要接上時才改成立刻抓。
+ * 改的那一下瀏覽器就發出請求（手機上一張零點幾毫秒）：能在閒下來時做（buildAhead）就別等到捲動的那一格。
+ * 圖在格子還沒接上時就到了，也不必在捲動中為了圖重排版面。
+ */
+function startArt(cell) {
+  if (cell._art) return;
+  cell._art = true;
+  const img = cell.querySelector('img[loading="lazy"]');
+  if (img) img.loading = "eager";
+}
+
 /** 空位一格畫面換幾張成真的牌（同樣的時間預算），換完為止。 */
 function fillSoon() {
   if (fillFrame) return;
@@ -1276,17 +1298,93 @@ function fillSoon() {
   });
 }
 
-const idle = typeof requestIdleCallback === "function" ? requestIdleCallback : (fn) => setTimeout(() => fn({ timeRemaining: () => 8 }), 60);
-/** 閒下來時先把下方一屏的格子做好（不接上畫面）：捲下去時直接接上，不用當場做。 */
+// Safari 沒有 requestIdleCallback：隔一下再做，每次給 8ms（要真的倒數，不然 buildAhead 的迴圈停不下來，一次把幾屏的牌全排完）。
+const idle =
+  typeof requestIdleCallback === "function"
+    ? requestIdleCallback
+    : (fn) =>
+        setTimeout(() => {
+          const end = performance.now() + 8;
+          fn({ timeRemaining: () => Math.max(0, end - performance.now()) });
+        }, 60);
+// 閒下來先做好、先排過一次版的範圍：接上畫面的那一段再往下幾屏，最多幾張（電腦一排十幾張，8 屏太多）。
+const PREP_SCREENS = 8;
+const PREP_MAX = 160;
+// 預排一張大概要幾毫秒（量上一批的，下一批照這個決定放幾張，不超過閒置的時間）。
+let prepCost = 1;
+let stage = null;
+
+/**
+ * 預排區：網格旁邊一塊看不到、點不到、不佔位的地方（book.css 的 .book-stage），牌寬、格高、字級的變數跟網格一樣。
+ * 牌名第一次排版最貴（字的整形；同樣 30 格，新字是排過的字的 4～7 倍，手機第一次往下快速捲掉格的大宗），
+ * 排過一次瀏覽器就記住了，格子拿出來也還在。所以閒下來時把下方幾屏的格子放進來排一次就拿出來，捲到時接上去跟第二趟一樣快。
+ * 不放在網格裡：網格裡好幾處照 tag 找牌、找畫面上第一格，不能多出看不見的格子。
+ */
+function stageNow() {
+  const grid = $("book-grid");
+  if (!stage) stage = el("div", { class: "book-stage", "aria-hidden": "true" });
+  if (stage.previousElementSibling !== grid) grid.after(stage);
+  for (const k of ["--book-cell-w", "--book-cell-h", "--card-cq"]) {
+    const v = grid.style.getPropertyValue(k);
+    if (stage.style.getPropertyValue(k) !== v) {
+      if (v) stage.style.setProperty(k, v);
+      else stage.style.removeProperty(k);
+    }
+  }
+  stage.toggleAttribute("data-sized", grid.hasAttribute("data-sized"));
+  return stage;
+}
+
+/** 閒下來時先把下方幾屏的格子做好、排過一次版（不接上畫面）：捲下去時直接接上，不用當場做、當場排字。 */
 function buildAhead() {
   if (aheadId || !rowH) return;
   aheadId = idle((deadline) => {
     aheadId = 0;
-    const end = Math.min(list.length, winEnd + Math.ceil(innerHeight / rowH) * cols);
-    for (let i = winEnd; i < end; i++) {
-      if (cells.has(list[i].tag)) continue;
-      if (deadline.timeRemaining() < 2) return buildAhead();
-      cellOf(list[i]);
+    const end = Math.min(list.length, winEnd + Math.min(Math.ceil((innerHeight * PREP_SCREENS) / rowH) * cols, Math.ceil(PREP_MAX / cols) * cols));
+    // 正在捲（250ms 內捲過）：只做格子、不排版。這時版面上常有這一格還沒排的新牌，在這裡逼排版會連那些一起排掉，
+    // 閒置的空檔只有幾毫秒，一次卻花掉 25ms（手機 4 倍降速），反而卡到下一格。停下來再排。
+    const busy = performance.now() - scrolledAt < 250;
+    // 圖先抓到接上畫面那一段再往下一屏：捲到時圖已經在了（再往下的只做格子、排版，不抓圖，省流量）。
+    const artEnd = Math.min(end, winEnd + Math.ceil(innerHeight / rowH) * cols);
+    let i = winEnd;
+    while (i < end) {
+      // 留 2ms 給瀏覽器。
+      const room = deadline.timeRemaining() - 2;
+      if (room < (busy ? 0 : prepCost)) return buildAhead();
+      // 捲動中：做一張就看一次時間。停著：一批最多一排（照上一批每張的時間），放進預排區排一次版。
+      const want = busy ? 1 : Math.max(1, Math.min(cols, Math.floor(room / prepCost)));
+      const t0 = performance.now();
+      const batch = [];
+      for (let made = 0; i < end && made < want; i++) {
+        const known = cells.get(list[i].tag);
+        // 接在畫面上的、排過的：字已經整形過了，不算在這一批。
+        if (known && (known._laid || known.isConnected)) {
+          known._laid = true;
+          if (i < artEnd) startArt(known);
+          continue;
+        }
+        made++;
+        const cell = cellOf(list[i]);
+        if (i < artEnd) startArt(cell);
+        if (!busy) batch.push(cell);
+      }
+      if (!batch.length) continue;
+      const box = stageNow();
+      box.append(...batch);
+      void box.offsetHeight;
+      for (const cell of batch) {
+        cell._laid = true;
+        cell.remove();
+      }
+      // 每張的時間（做格子＋排版）。變慢立刻跟上（手機降頻、背景在忙），變快慢慢降：寧可一批少放幾張，也不要超出閒置時間卡到下一格。
+      const each = (performance.now() - t0) / batch.length;
+      prepCost = Math.max(0.2, each > prepCost ? each : prepCost * 0.7 + each * 0.3);
+    }
+    // 捲動中只做了格子：停下來再回來排版。
+    if (busy) {
+      clearTimeout(prepTimer);
+      prepTimer = setTimeout(buildAhead, 300);
+      return;
     }
     // 下方的格子做完了，再閒下來就先建詞庫索引：第一次打開詳情不必當場建（電腦 60ms、手機 0.25 秒，飛出去的牌會晚一拍）。
     if (!lex && data) idle(() => lexNow());
@@ -1296,6 +1394,7 @@ function buildAhead() {
 /** 捲動、視窗高度變了：下一格畫面換那一段。 */
 function watchScroll() {
   const soon = () => {
+    scrolledAt = performance.now();
     if (!scrollFrame) scrollFrame = requestAnimationFrame(() => {
       scrollFrame = 0;
       layoutWindow();
