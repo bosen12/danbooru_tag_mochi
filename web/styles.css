@@ -331,6 +331,10 @@ body #wf-pick-btn.has {
   position: sticky;
   top: 0;
   z-index: 30;
+  /* 開機時先照上次的高度留著（各頁 <head> 開頭設 --boot-mast-h，motion.js 的 rememberMast 量好就拿掉）。
+   * 留得比內容高的時候，排從頂端排：不然第一排會置中在留好的高度裡，第二排工具進來時第一排又往上跳 24px。 */
+  min-height: var(--boot-mast-h, 0px);
+  align-content: flex-start;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -470,17 +474,18 @@ body #wf-pick-btn.has {
   }
 }
 
-/* 墨池電腦：花色籤、規則、抽牌列是開機時腳本才畫的，HTML 裡是空的。先照畫好的高度留著（中英文、
- * 1280～1920 寬實測：花色兩排 80px，規則、抽牌列一排各 85、71px），字盒的牌和底下的成品不會被往下推。 */
+/* 墨池電腦：花色籤、規則、抽牌列是開機時腳本才畫的，HTML 裡是空的。先照畫好的高度留著，字盒的牌和底下的成品
+ * 不會被往下推。規則、抽牌列的高度跟寬度、語言、ComfyUI 有沒有開都有關（實測 70～234px）：上次在同一個寬度畫出來
+ * 多高就留多高（index.html 開頭讀 mochi.bootsize.v1，app.js 開好時記）；沒有紀錄才用 85、71px。 */
 @media (min-width: 64rem) {
   #suit-tabs:empty {
-    min-height: 80px;
+    min-height: var(--boot-suit-h, 80px);
   }
   #rules:empty {
-    min-height: 85px;
+    min-height: var(--boot-rules-h, 85px);
   }
   #go-bar:empty {
-    min-height: 71px;
+    min-height: var(--boot-go-h, 71px);
   }
 }
 
@@ -594,6 +599,26 @@ body #wf-pick-btn.has {
   html:not([lang="en"]) .mast-tools #ckpt-pick-btn {
     min-width: 36px;
     padding-inline: var(--space-xs);
+  }
+}
+/* 筆電（1280）：頂欄多了「原理」「社群」之後，墨池差 34px、疊印台差 68px 放不下，開頁後工具一插進來就擠成
+ * 兩排（整頁往下掉 44px，換房間時頂欄一下兩排一下一排）。「選 LoRA」跟底模一樣只留圖示（選了什麼在滑鼠提示，
+ * 選了的時候外框是強調色），省下約 80px，回到一排。 */
+@media (max-width: 1365px) {
+  html:not([lang="en"]) .mast-tools #lora-pick-btn .gen-pick-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  html:not([lang="en"]) .mast-tools #lora-pick-btn {
+    min-width: 36px;
+    padding-inline: var(--space-xs);
+  }
+  html:not([lang="en"]) .mast-tools #lora-pick-btn img {
+    margin-right: 0;
   }
 }
 

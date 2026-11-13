@@ -12,7 +12,24 @@
       // 開機中（詞庫、牌面還沒讀完）：頂欄底下一條掃光、空的牌格寫「正在讀詞庫」（styles.css）。
       // 開機做完 settleMotion() 拿掉；讀不到詞庫的話 15 秒後自己收，不會一直轉。
       document.documentElement.dataset.booting = "";
+      // 頂欄的工具（LoRA、底模、Discord、社群…）是開機時才插進來的：寬度不夠時頂欄會在那一下長成兩排，整頁往下掉
+      // （英文版 1280～1920 寬都是，版面跳動 0.22～0.29）。上次在同一頁、同一個寬度、同一種語言長多高，就先留多高
+      // （motion.js 的 rememberMast 記；styles.css 的 .mast 讀 --boot-mast-h）。
+      try {
+        const m = JSON.parse(localStorage.getItem("mochi.mastsize.v1") || "{}")[location.pathname];
+        if (m && m.w === innerWidth && m.lang === document.documentElement.lang && m.h > 0) document.documentElement.style.setProperty("--boot-mast-h", m.h + "px");
+      } catch {}
       setTimeout(() => delete document.documentElement.dataset.booting, 15000);
+      // 規則、抽牌列是開機才畫的：上次在同一個寬度、同一種語言畫出來多高，這次就先留多高（app.js 開好時記），
+      // 下面的成品不會在開機那一下被往下推。高度會隨寬度、語言、ComfyUI 有沒有開而變，寫死的數字總有寬度對不上。
+      try {
+        const b = JSON.parse(localStorage.getItem("mochi.bootsize.v1") || "null");
+        if (b && b.w === innerWidth && b.lang === document.documentElement.lang) {
+          if (b.rules > 0) document.documentElement.style.setProperty("--boot-rules-h", b.rules + "px");
+          if (b.go > 0) document.documentElement.style.setProperty("--boot-go-h", b.go + "px");
+          if (b.suit > 0) document.documentElement.style.setProperty("--boot-suit-h", b.suit + "px");
+        }
+      } catch {}
       // 直接開啟／重新整理：開版進場（motion.js playPageEntrance）要演的那幾塊，第一次畫面就先藏著（styles.css 的
       // html[data-entering]）。不藏的話骨架先露一兩百毫秒，進場時又整塊消失再浮上來，像閃了一下。
       // 頂欄不藏：開機的掃光在它底下。詞庫讀得慢、600ms 內進場還沒開始，就直接露出來、不演了。

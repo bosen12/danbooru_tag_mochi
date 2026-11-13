@@ -138,7 +138,9 @@ export function openSheet(title, body, { wide = false, onClose, foot, translateT
   document.addEventListener("keydown", onKey, true);
   document.body.append(overlay);
   openOverlays.push(overlay);
-  lockScroll(overlayId);
+  // 背景的 inert 等進場動畫（sheet-in，DUR.long）播完再設：當下設要把整頁樣式重算一次（手機 40ms），
+  // 正好卡在「按下去 → 視窗出來」那一格。這個視窗自己會把 Tab 留在裡面（onKey），背景被遮罩蓋著點不到。
+  lockScroll(overlayId, { deferInert: DUR.long + 60 });
   // 焦點等視窗畫出來的下一格才移進去：剛插進來就 focus()，瀏覽器要當場把整個視窗排版好才能移，
   // 開成品詳情光這一下 281ms（手機 CPU 降速 4 倍）。畫完版面已經排好，移過去不花錢。
   // 這一格裡按 Esc／Tab 照樣歸這個視窗（onKey 在 capture 階段接）。

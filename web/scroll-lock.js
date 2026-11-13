@@ -67,11 +67,26 @@ function syncBackgroundInert() {
   }
 }
 
-export function lockScroll(key) {
+// 延後設 inert（deferInert）：把整片背景設成 inert，瀏覽器要把背景每個節點的樣式重算一次——
+// 墨池首頁九百多個節點，手機（CPU 降速 4 倍）實測 41ms、電腦 5ms，剛好落在「按下去 → 視窗出來」那一格。
+// 自己會把 Tab 留在視窗裡的彈窗（web6 ui.js 的 openSheet）可以等進場動畫播完再設：
+// 那幾百毫秒背景被遮罩蓋著點不到，Tab 也出不去；設上之後螢幕閱讀器的虛擬游標一樣進不去背景。
+// 拿掉 inert 永遠當下做：關掉之後焦點要還給背景的按鈕，它不能還是 inert。
+let inertTimer = 0;
+
+export function lockScroll(key, { deferInert = 0 } = {}) {
   if (!key) return;
   if (!openKeys.size) saved = document.documentElement.style.overflow;
   openKeys.add(key);
   document.documentElement.style.overflow = "hidden";
+  if (deferInert > 0) {
+    clearTimeout(inertTimer);
+    inertTimer = setTimeout(() => {
+      inertTimer = 0;
+      if (openKeys.has(key)) syncBackgroundInert();
+    }, deferInert);
+    return;
+  }
   syncBackgroundInert();
 }
 

@@ -34,7 +34,9 @@ function syncManagerLinks() {
     if (url) a.href = url;
   }
 }
-const GEN_LORA_PAGE_SIZE = 80;
+// 一批幾張：打開視窗、換分類時先畫這麼多，捲到附近再補下一批（addLoraMore）。以前 80 張，手機上打開要排 80 張卡；
+// 40 張已經超過電腦一屏半、手機三屏。
+const GEN_LORA_PAGE_SIZE = 40;
 
 let GEN_LORAS = null;
 const GEN_LORA_SLOTS = [
@@ -1004,6 +1006,8 @@ function renderGenCurrent() {
   else label = "選 LoRA";
   btn.querySelector(".gen-pick-label").textContent = label;
   btn.classList.toggle("has", !!(s0.lora || s1.lora));
+  // 只留圖示的時候（web6 1365 以下）看不到名字：滑鼠停上去講選了哪個。
+  btn.title = s0.lora || s1.lora ? `LoRA：${label}（L）` : "選 LoRA（L）";
 }
 
 // 每個槽上次畫的是哪一個 LoRA：換了的那一格才播「放進去」（null＝還沒畫過，第一次不播）。
@@ -1809,7 +1813,8 @@ function ensureDom() {
     btn.className = "ghost";
     btn.id = "lora-pick-btn";
     btn.title = "選 LoRA（L）";
-    btn.innerHTML = `<span class="gen-pick-label">選 LoRA</span>`;
+    // 一開始就帶圖示：窄一點的螢幕（web6 1365 以下）只留圖示，沒有圖示會是一顆空按鈕。
+    btn.innerHTML = `<img src="data:image/png;base64,${LORA_MGR_LOGO_B64}" alt="" class="lora-logo" width="15" height="15"><span class="gen-pick-label">選 LoRA</span>`;
     tools.insertBefore(btn, tools.firstChild);
   }
   if (!$("ckpt-pick-btn") && tools) {

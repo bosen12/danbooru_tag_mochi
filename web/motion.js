@@ -305,9 +305,30 @@ function schedule() {
   else requestAnimationFrame(run);
 }
 
+/**
+ * 記下這一頁頂欄多高（這個寬度、這種語言），下次開頁先照這個高度留位子（各頁 <head> 開頭讀 --boot-mast-h）。
+ * 等工具都插進來（Discord、社群、安裝鈕有的晚一點）再量：先把預留拿掉、量頂欄自己多高。高度沒變就不會動。
+ */
+function rememberMast() {
+  const root = document.documentElement;
+  const mast = document.querySelector(".mast");
+  if (!mast) return;
+  root.style.removeProperty("--boot-mast-h");
+  requestAnimationFrame(() => {
+    try {
+      const all = JSON.parse(localStorage.getItem("mochi.mastsize.v1") || "{}");
+      all[location.pathname] = { w: innerWidth, lang: root.lang, h: Math.round(mast.getBoundingClientRect().height) };
+      localStorage.setItem("mochi.mastsize.v1", JSON.stringify(all));
+    } catch {
+      /* 無痕模式：下次照預設 */
+    }
+  });
+}
+
 /** 開機的 DOM 都放好了：下一格排完版、畫上去之後再量滑塊。 */
 export function settleMotion() {
   delete document.documentElement.dataset.booting;
+  setTimeout(rememberMast, 1500);
   // 換版的轉場停著在等這一版（<head> 的 pagereveal 掛了 data-vt-hold）：內容剛放上去，
   // 畫面上看得到的圖也解碼好、下一格畫出來才放行。以前牌面在轉場演完後才一張張從灰變成圖（卡冊最明顯）。
   // 最多等到 <head> 的 900ms 保底。

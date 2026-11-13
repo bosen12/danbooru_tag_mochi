@@ -616,7 +616,13 @@ body .lg-card.in-other .lora-slot-badge {
 /* 換清單時一張張發出來：從下面浮上來、墨一樣由糊到清。 */
 body .lg-grid .lora-row.lg-card.is-dealt {
   animation: lg-deal var(--dur-xl) var(--ease-out) both;
-  animation-delay: calc(var(--i, 0) * var(--dur-micro) / 6);
+  animation-delay: calc(min(var(--i, 0), 23) * var(--dur-micro) / 6);
+}
+/* 第一屏以外的卡只淡入，不模糊、不錯開。以前一次發 80 張，每張都帶 blur 錯開（第 80 張要等 1.6 秒才開始），
+ * 看不到的卡也各佔一層、每格重畫模糊：手機上打開 LoRA 視窗、換篩選會頓好幾格。 */
+body .lg-grid .lora-row.lg-card.is-dealt:nth-child(n + 25) {
+  animation: lg-swap var(--dur-short) var(--ease-out) both;
+  animation-delay: 0s;
 }
 body .lg-grid .lora-row.lg-card.is-swapped {
   animation: lg-swap var(--dur-short) var(--ease-out) both;

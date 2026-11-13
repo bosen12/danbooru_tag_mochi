@@ -492,11 +492,19 @@ function renderSummary({ count = false } = {}) {
 
 /* ================= 工具列：花色、排序、只看用過的、找字 ================= */
 
-function renderSuits() {
+function renderSuits({ groups = true } = {}) {
   const tabs = $("book-suits");
-  const pool = lib.cards.filter(visibleCard);
-  const usedIn = (s) => pool.filter((c) => (s === "all" || c.suit === s) && countOf(c.tag) > 0).length;
-  const totalIn = (s) => pool.filter((c) => c.suit === s).length || 1;
+  // 每個花色點亮幾張、共幾張：整副牌只掃一遍。以前每個花色各篩四遍（標題、圖章外圈各算一次），
+  // 九個花色 × 六千九百張 × 四遍，手機（CPU 降速 4 倍）換一次花色光這裡就 56ms。
+  const tally = {};
+  for (const c of lib.cards) {
+    if (!visibleCard(c)) continue;
+    const t = (tally[c.suit] ||= { used: 0, total: 0 });
+    t.total++;
+    if (countOf(c.tag) > 0) t.used++;
+  }
+  const usedIn = (s) => tally[s]?.used || 0;
+  const totalIn = (s) => tally[s]?.total || 1;
   tabs.replaceChildren(
     el("button", { class: "suit-tab pressable", type: "button", "aria-pressed": ui.suit === "all" ? "true" : "false", onclick: (e) => pickSuit("all", e.currentTarget) }, "全部"),
     ...BOOK_SUITS.map((s) =>
@@ -516,7 +524,7 @@ function renderSuits() {
       )
     )
   );
-  renderGroups();
+  if (groups) renderGroups();
 }
 
 /**
@@ -546,18 +554,51 @@ function watchMast() {
   if (typeof ResizeObserver === "function") new ResizeObserver(put).observe(mast);
 }
 
+/**
+ * 等這一格畫出來再做（墨池 app.js 的同一招）：按下去的回饋（花色籤亮起來、底色滑過去）先上畫面，
+ * 重建小分類籤和牌格放到下一格。以前整塊一起做，手機上點了要 100～170ms 才看到有反應。
+ * 背景分頁不跑 rAF：用 setTimeout 保底。
+ */
+function afterPaint(fn) {
+  if (document.hidden) return setTimeout(fn, 0);
+  let done = false;
+  const run = () => {
+    if (done) return;
+    done = true;
+    fn();
+  };
+  requestAnimationFrame(() => setTimeout(run, 0));
+  setTimeout(run, 120);
+}
+
+let suitWork = 0;
 function pickSuit(s, from) {
   if (ui.suit === s) return;
   const focused = document.activeElement === from;
   ui.suit = s;
   ui.group = "";
   saveUi();
-  renderSuits();
+  const rest = () => {
+    renderGroups();
+    backToTop();
+    render();
+  };
+  // 程式自己切換（做好自製牌、#custom-new）：後面緊接著要用到牌格，當下做完。
+  if (!from) {
+    renderSuits();
+    const sel = $("book-suits").querySelector('[aria-pressed="true"]');
+    seat(sel);
+    backToTop();
+    render();
+    return;
+  }
+  renderSuits({ groups: false });
   const selected = $("book-suits").querySelector('[aria-pressed="true"]');
   if (focused) selected?.focus({ preventScroll: true });
   seat(selected);
-  backToTop();
-  render();
+  // 連點好幾個花色：只做最後那一個。
+  const id = ++suitWork;
+  afterPaint(() => id === suitWork && rest());
 }
 
 // 角色的小分類是作品（七十幾部），黏在工具列裡會佔掉半個畫面：只有角色這頁把籤放在牌上面跟著捲。

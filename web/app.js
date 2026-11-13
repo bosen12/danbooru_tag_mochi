@@ -350,6 +350,7 @@ async function boot() {
   if (matchMedia("(hover: none)").matches) $("lib-q").placeholder = $("lib-q").placeholder.replace(/（按[^）]*）/, "");
   document.addEventListener("keydown", onKey);
   settleMotion();
+  rememberBootSize();
   // 開好了：左右相鄰的房間在背後先開好，換過去不用再等開頁（prerender.js）。
   whenActive(prerenderNeighbors);
   addEventListener("mochi:before-language-change", (event) => {
@@ -682,6 +683,18 @@ function tuckIntoPicker(tag, from) {
   });
 }
 
+
+/** 開好了：記下規則、抽牌列這次多高（這個寬度、這種語言），下次開頁先照這個高度留位子（index.html 開頭讀）。 */
+function rememberBootSize() {
+  requestAnimationFrame(() => {
+    try {
+      const h = (id) => Math.round($(id)?.getBoundingClientRect().height || 0);
+      localStorage.setItem("mochi.bootsize.v1", JSON.stringify({ w: innerWidth, lang: document.documentElement.lang, rules: h("rules"), go: h("go-bar"), suit: h("suit-tabs") }));
+    } catch {
+      /* 無痕模式：下次照預設 */
+    }
+  });
+}
 
 /**
  * 等這一格畫出來再做：按下去的回饋（分頁亮起來、墨暈、按鈕壓下去）先上畫面，重的事放到下一格。

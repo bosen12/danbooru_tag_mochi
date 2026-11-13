@@ -15,8 +15,24 @@ function isTouch() {
   }
 }
 
-/** @param input 搜尋框 @param fallback 觸控時（或沒有搜尋框時）要給焦點的元素 */
+/**
+ * @param input 搜尋框 @param fallback 觸控時（或沒有搜尋框時）要給焦點的元素
+ *
+ * 焦點等面板畫出來的下一格才移進去（跟 web6 ui.js 的 openSheet 同一招）：剛畫好幾十張卡就 focus()，
+ * 瀏覽器要當場把整個面板排版好才能判斷焦點能不能進去——手機（CPU 降速 4 倍）打開 LoRA 視窗光這一下
+ * 113～147ms，接著那一格又要再排一次。等畫完版面已經排好，移過去不花錢。
+ * 這兩格裡使用者已經點進面板（例如直接點搜尋框）就不搶。沒有畫面的環境（測試）照舊當下給。
+ */
 export function focusEntry(input, fallback) {
   const target = isTouch() ? fallback || input : input || fallback;
-  target?.focus({ preventScroll: true });
+  if (!target) return;
+  const go = () => {
+    if (target.isConnected === false) return;
+    const box = target.closest?.('[role="dialog"], .lora-modal, .overlay');
+    const active = typeof document !== "undefined" ? document.activeElement : null;
+    if (box && active && active !== document.body && box.contains(active)) return;
+    target.focus({ preventScroll: true });
+  };
+  if (typeof requestAnimationFrame !== "function") return go();
+  requestAnimationFrame(() => requestAnimationFrame(go));
 }

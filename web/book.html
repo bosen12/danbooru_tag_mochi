@@ -12,6 +12,13 @@
       // 開機中（詞庫、牌面還沒讀完）：頂欄底下一條掃光、空的牌格寫「正在讀詞庫」（styles.css）。
       // 開機做完 settleMotion() 拿掉；讀不到詞庫的話 15 秒後自己收，不會一直轉。
       document.documentElement.dataset.booting = "";
+      // 頂欄的工具（LoRA、底模、Discord、社群…）是開機時才插進來的：寬度不夠時頂欄會在那一下長成兩排，整頁往下掉
+      // （英文版 1280～1920 寬都是，版面跳動 0.22～0.29）。上次在同一頁、同一個寬度、同一種語言長多高，就先留多高
+      // （motion.js 的 rememberMast 記；styles.css 的 .mast 讀 --boot-mast-h）。
+      try {
+        const m = JSON.parse(localStorage.getItem("mochi.mastsize.v1") || "{}")[location.pathname];
+        if (m && m.w === innerWidth && m.lang === document.documentElement.lang && m.h > 0) document.documentElement.style.setProperty("--boot-mast-h", m.h + "px");
+      } catch {}
       setTimeout(() => delete document.documentElement.dataset.booting, 15000);
       // 直接開啟／重新整理：開版進場（motion.js playPageEntrance）要演的那幾塊，第一次畫面就先藏著（styles.css 的
       // html[data-entering]）。不藏的話骨架先露一兩百毫秒，進場時又整塊消失再浮上來，像閃了一下。
