@@ -2504,8 +2504,10 @@ html[lang="en"] .pool > .panel-head .workspace-purpose {
 .wall-busy:empty {
   display: none;
 }
-/* 底部浮動列出來時它自己有「印製中…／停」：這邊隱形（留著位子，浮動列進出時這列不跳），畫面上不會兩顆「停」。 */
-body:has(#go-float[data-show="true"]) .wall-busy {
+/* 底部浮動列出來時它自己有「印製中…／停」：這邊隱形（留著位子，浮動列進出時這列不跳），畫面上不會兩顆「停」。
+ * <html data-go-float> 是 app.js 的 renderGoFloat 標的。不寫成 body:has(#go-float[data-show="true"])：body 當 :has 的主體，
+ * 頁面上任何地方插入、拿掉一個元素，瀏覽器都要把所有 :has 規則牽涉到的元素重算一次樣式（卡冊捲動每接上、拿掉一排就 150 個）。 */
+html[data-go-float] .wall-busy {
   visibility: hidden;
 }
 /* 跟旁邊「每排自動」一樣高：小按鈕高 2px，印的時候整列跟著高 2px、整面牆上下動一下。 */
@@ -4090,13 +4092,14 @@ body[data-dragging="true"] .library[data-over="true"] {
 
 /* 有彈窗開著：提示改到畫面上方。彈窗的按鈕列在底部，提示浮在那裡會蓋住主要的鈕
  * （卡冊打開一張牌時跳「成就牆開張」，剛好壓在「帶去墨池合成池」上）。.toast.toast 是為了蓋過上面抽牌列那條。
- * 以前 ui.js 照按鈕列量位置、把 bottom 寫在元素上往上抬：彈窗還在進場時量的不準，跟這條一起用又會把提示上下拉長，拿掉了。 */
-body:has(> .overlay) .toast.toast {
+ * 以前 ui.js 照按鈕列量位置、把 bottom 寫在元素上往上抬：彈窗還在進場時量的不準，跟這條一起用又會把提示上下拉長，拿掉了。
+ * <html data-overlay> 是 ui.js 標的（body 底下有 .overlay）；不寫成 body:has(> .overlay)，原因同上面的 html[data-go-float]。 */
+html[data-overlay] .toast.toast {
   top: calc(var(--space-md) + env(safe-area-inset-top));
   bottom: auto;
   transform: translateY(-8px);
 }
-body:has(> .overlay) .toast.toast[data-show="true"] {
+html[data-overlay] .toast.toast[data-show="true"] {
   transform: none;
 }
 

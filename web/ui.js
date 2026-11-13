@@ -229,6 +229,7 @@ function hideToast() {
 function wireToast(t) {
   if (toastWired) return;
   toastWired = true;
+  watchOverlays();
   const hold = () => {
     if (!toastNow || t.dataset.paused === "true") return;
     clearTimeout(toastTimer);
@@ -247,6 +248,17 @@ function wireToast(t) {
   t.addEventListener("focusin", hold);
   t.addEventListener("pointerleave", release);
   t.addEventListener("focusout", () => setTimeout(release, 0));
+}
+
+/**
+ * 有彈窗開著（body 底下有 .overlay，openSheet 接上去、關掉 170ms 後拿掉）：<html data-overlay>，提示改到畫面上方（styles.css）。
+ * 以前 CSS 直接寫 body:has(> .overlay)：body 當 :has 的主體，頁面上任何地方插入、拿掉一個元素，瀏覽器都把所有 :has 規則
+ * 牽涉到的元素重算一次樣式（卡冊捲動每接上、拿掉一排就 150 個）。只看 body 自己的子元素，第一次跳提示時才開始看。
+ */
+function watchOverlays() {
+  const sync = () => document.documentElement.toggleAttribute("data-overlay", !!document.querySelector("body > .overlay"));
+  sync();
+  new MutationObserver(sync).observe(document.body, { childList: true });
 }
 
 /**

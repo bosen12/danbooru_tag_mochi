@@ -19,7 +19,7 @@ import { reviewTransfer } from "./transfer.js";
 import { applyPin, indexLexicon, sanitizeSettings } from "./engine.js";
 import { ratingBlocked, RATING_LABEL } from "./rules/rating.js";
 import { mountRatingFree } from "./rating-free.js";
-import { buildLibrary, sizeCards, groupChips, genderChips, chipRun, seriesRun, createAssets, cardNode, quietArt, cardFacts, setCardFlag, cardMatches, searchCards, searchNote, matchRank, CARD_SUIT_INFO, CARD_SUITS } from "./cards.js";
+import { buildLibrary, sizeCards, groupChips, genderChips, chipRun, seriesRun, createAssets, cardNode, quietArt, spineFace, cardFacts, setCardFlag, cardMatches, searchCards, searchNote, matchRank, CARD_SUIT_INFO, CARD_SUITS } from "./cards.js";
 import { el, openSheet, toast, syncChoices, bootFailed, friendlyError, isNetError } from "./ui.js";
 import { zoomFromThumb } from "./zoom.js";
 import { mountKeysHelp } from "./keys-help.js";
@@ -1312,6 +1312,9 @@ const PREP_SCREENS = 8;
 const PREP_MAX = 160;
 // 預排一張大概要幾毫秒（量上一批的，下一批照這個決定放幾張，不超過閒置的時間）。
 let prepCost = 1;
+// 閒置一次最多用幾毫秒就交還（還閒著瀏覽器馬上再叫一次）。卡冊有攔得下來的 touchmove（拖愛心時不讓頁面捲，drag.js），
+// 手指放上去要等主執行緒空下來才開始捲：瀏覽器給的空檔最長 50ms，整段用完的話，剛好那時摸螢幕就要多等那麼久。
+const SLICE_MS = 12;
 let stage = null;
 
 /**
@@ -1338,8 +1341,10 @@ function stageNow() {
 /** 閒下來時先把下方幾屏的格子做好、排過一次版（不接上畫面）：捲下去時直接接上，不用當場做、當場排字。 */
 function buildAhead() {
   if (aheadId || !rowH) return;
-  aheadId = idle((deadline) => {
+  aheadId = idle((idleDeadline) => {
     aheadId = 0;
+    const until = performance.now() + Math.min(SLICE_MS, idleDeadline.timeRemaining());
+    const deadline = { timeRemaining: () => Math.max(0, until - performance.now()) };
     const end = Math.min(list.length, winEnd + Math.min(Math.ceil((innerHeight * PREP_SCREENS) / rowH) * cols, Math.ceil(PREP_MAX / cols) * cols));
     // 正在捲（250ms 內捲過）：只做格子、不排版。這時版面上常有這一格還沒排的新牌，在這裡逼排版會連那些一起排掉，
     // 閒置的空檔只有幾毫秒，一次卻花掉 25ms（手機 4 倍降速），反而卡到下一格。停下來再排。
@@ -1348,9 +1353,9 @@ function buildAhead() {
     const artEnd = Math.min(end, winEnd + Math.ceil(innerHeight / rowH) * cols);
     let i = winEnd;
     while (i < end) {
-      // 留 2ms 給瀏覽器。
+      // 留 2ms 給瀏覽器。剩下的不夠做一張就等下一次閒下來（最多要 4ms：某一批剛好很慢、量到的時間比一次閒置還長，也不會從此一張都不做）。
       const room = deadline.timeRemaining() - 2;
-      if (room < (busy ? 0 : prepCost)) return buildAhead();
+      if (room < (busy ? 0 : Math.min(prepCost, 4))) return buildAhead();
       // 捲動中：做一張就看一次時間。停著：一批最多一排（照上一批每張的時間），放進預排區排一次版。
       const want = busy ? 1 : Math.max(1, Math.min(cols, Math.floor(room / prepCost)));
       const t0 = performance.now();
@@ -1386,9 +1391,103 @@ function buildAhead() {
       prepTimer = setTimeout(buildAhead, 300);
       return;
     }
-    // 下方的格子做完了，再閒下來就先建詞庫索引：第一次打開詳情不必當場建（電腦 60ms、手機 0.25 秒，飛出去的牌會晚一拍）。
+    // 下方幾屏的格子做好了：接著把整本牌名的字排一次（這次做不完，下次閒下來接著做）。
+    if (!warmGlyphs(deadline)) return buildAhead();
+    // 都做完了，再閒下來就先建詞庫索引：第一次打開詳情不必當場建（電腦 60ms、手機 0.25 秒，飛出去的牌會晚一拍）。
     if (!lex && data) idle(() => lexNow());
   });
+}
+
+// 牌名的字預熱（warmGlyphs）：哪些字在哪種字級排過了；看的是哪一份 list、從第幾張開始、看了幾張；一個字大概幾毫秒。
+const glyphsDone = new Set();
+let glyphList = null;
+let glyphFrom = 0;
+let glyphSeen = 0;
+let glyphCost = 0.5;
+// 每種（章、--len、兩行與否）的字名實際是幾 px：短的名字不管有幾個章都是 1.12em，同一個字級只排一次（整本 8219 組 → 3022 組）。
+// 量一次記住；牌寬（--card-cq）變了全部重量、整份重看。
+const glyphPx = new Map();
+let glyphCq = null;
+
+/** 預排區裡的一個字名：跟牌上的同一套樣式（.book-cell .card > .card-spine > .card-name）。 */
+const glyphNode = (f, text) =>
+  el(
+    "div",
+    { class: "book-cell" },
+    el("span", { class: "card" }, el("span", { class: "card-spine", dataset: { marks: f.marks } }, el("span", { class: "card-name", dataset: f.wrap ? { wrap: "" } : {}, style: `--len:${f.size}` }, text)))
+  );
+
+function glyphSize(f) {
+  const k = `${f.marks}|${f.wrap ? "w" : ""}${f.size}`;
+  let px = glyphPx.get(k);
+  if (!px) {
+    const probe = glyphNode(f, "");
+    stageNow().append(probe);
+    px = getComputedStyle(probe.querySelector(".card-name")).fontSize;
+    probe.remove();
+    glyphPx.set(k, px);
+  }
+  return `${f.wrap ? "w" : ""}${px}|`;
+}
+
+/**
+ * 整本牌名的字，閒下來時先排一次。
+ * 牌名第一次排版貴在「每個字在那個字級第一次直排」，跟是哪張牌、字怎麼排都無關：同樣 30 格沒出現過的牌名，
+ * 先把用到的字照字級分組排一次（順序打亂也一樣），接上去就跟排過的一樣快（手機 4 倍降速 68 → 19ms）；
+ * 橫排、別的字級排過沒什麼用。預排區（buildAhead）只顧得到下方幾屏，再往下捲又是當場排新字（往下甩六次掉 65 格，預熱後 36）。
+ * 幾千張牌名，每種字級不重複的字加起來只有幾千個：照字級分組，每組只放還沒排過的字，放進預排區排一次就拿掉。
+ * 從接上畫面那段的下面開始看（捲下去最先碰到），看到底再從頭。英文版書脊是英文，字母就那幾個，不必。
+ * 回傳 true＝整份 list 都看過了。
+ */
+function warmGlyphs(deadline) {
+  if (english || !list.length) return true;
+  const cq = $("book-grid").style.getPropertyValue("--card-cq");
+  if (cq !== glyphCq) {
+    glyphCq = cq;
+    glyphPx.clear();
+    glyphList = null;
+  }
+  if (glyphList !== list) {
+    glyphList = list;
+    glyphFrom = winEnd;
+    glyphSeen = 0;
+  }
+  const n = list.length;
+  while (glyphSeen < n) {
+    // 留 2ms 給瀏覽器；剩下的時間照上一批每個字的時間決定放幾個字（至少 4 個，同 buildAhead 不會卡住不做）。
+    const room = deadline.timeRemaining() - 2;
+    if (room < Math.min(glyphCost * 4, 4)) return false;
+    const want = Math.max(4, Math.floor(room / glyphCost));
+    const groups = new Map();
+    let chars = 0;
+    for (; glyphSeen < n && chars < want; glyphSeen++) {
+      // 看一張很快，可是排過的字一多（換篩選、排序後整份重看一遍）一次看幾千張也會超時：每 128 張對一次時間，
+      // 不夠排已經挑出來的字就先排這些。
+      if (glyphSeen % 128 === 127 && deadline.timeRemaining() - 2 < chars * glyphCost) break;
+      const f = spineFace(list[(glyphFrom + glyphSeen) % n]);
+      const size = glyphSize(f);
+      for (const ch of f.spine) {
+        if (glyphsDone.has(size + ch)) continue;
+        glyphsDone.add(size + ch);
+        let g = groups.get(size);
+        if (!g) groups.set(size, (g = { f, text: "" }));
+        g.text += ch;
+        chars++;
+      }
+    }
+    if (!chars) continue;
+    const t0 = performance.now();
+    // 一種字級一個字名（用那組第一張牌的章、--len）。
+    const nodes = [...groups.values()].map(({ f, text }) => glyphNode(f, text));
+    const box = stageNow();
+    box.append(...nodes);
+    void box.offsetHeight;
+    for (const node of nodes) node.remove();
+    // 變慢立刻跟上，變快慢慢降（跟 prepCost 一樣）。
+    const each = (performance.now() - t0) / chars;
+    glyphCost = Math.max(0.02, each > glyphCost ? each : glyphCost * 0.7 + each * 0.3);
+  }
+  return true;
 }
 
 /** 捲動、視窗高度變了：下一格畫面換那一段。 */

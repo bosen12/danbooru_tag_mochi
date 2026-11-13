@@ -362,11 +362,22 @@ function splitSpine(spine) {
   return [chars.slice(0, half).join(""), el("br"), chars.slice(half).join("")];
 }
 
-/** 一張牌。左邊是直排書脊（花色、字名、分級），疊起來也讀得到。 */
-export function cardNode(card, assets, { tagName = "button", flag, src } = {}) {
+/**
+ * 書脊上的字名，和決定字級的那幾個值（card.css 照書脊的 data-marks、字名的 --len、data-wrap 算字級）。
+ *   marks：書脊上有幾個章（r 分級、s 小分類）；size：--len；wrap：九個字以上排兩行。
+ * 卡冊閒下來時照這幾個值分組，先把每種字級用到的字排一次（book.js 的 warmGlyphs）。
+ */
+export function spineFace(card) {
   const spine = card.spine ?? spineName(card.zh);
   const len = [...spine].length;
   const wrap = !english && len >= WRAP_LEN;
+  const marks = (card.rating !== "general" ? "r" : "") + (card.seal ? "s" : "");
+  return { spine, len, wrap, marks, size: wrap ? Math.ceil(len / 2) : len };
+}
+
+/** 一張牌。左邊是直排書脊（花色、字名、分級），疊起來也讀得到。 */
+export function cardNode(card, assets, { tagName = "button", flag, src } = {}) {
+  const { spine, len, wrap, marks, size } = spineFace(card);
   const art = assets.art(card.tag);
   const suit = CARD_SUIT_INFO[card.suit];
   const node = el(
@@ -381,9 +392,9 @@ export function cardNode(card, assets, { tagName = "button", flag, src } = {}) {
     el(
       "span",
       // 書脊上除了字名還有幾個章（分級、小分類），字名能用的高度跟著變：card.css 照這個算字級。
-      { class: "card-spine", "aria-hidden": "true", dataset: { marks: (card.rating !== "general" ? "r" : "") + (card.seal ? "s" : "") } },
+      { class: "card-spine", "aria-hidden": "true", dataset: { marks } },
       el("span", { class: "card-suit" }, suit.glyph),
-      el("span", { class: "card-name", dataset: wrap ? { len: "8", wrap: "" } : { len: String(Math.min(len, 8)) }, style: `--len:${wrap ? Math.ceil(len / 2) : len}` }, wrap ? splitSpine(spine) : spine),
+      el("span", { class: "card-name", dataset: wrap ? { len: "8", wrap: "" } : { len: String(Math.min(len, 8)) }, style: `--len:${size}` }, wrap ? splitSpine(spine) : spine),
       card.rating !== "general" ? el("span", { class: "card-rate", dataset: { r: card.rating } }, card.rating === "explicit" ? "色" : "敏") : null,
       card.seal ? el("span", { class: "card-seal", title: card.groupZh }, card.seal) : null
     ),

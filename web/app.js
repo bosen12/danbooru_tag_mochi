@@ -2664,6 +2664,8 @@ function renderGoFloat() {
   const show = !goBarVisible && (shots.length > 0 || pool.size > 0 || pickerMQ.matches);
   float.dataset.show = show ? "true" : "false";
   float.inert = !show;
+  // 成品那列的「印製中…／停」跟著藏（styles.css 的 html[data-go-float]，不用 body:has）。
+  document.documentElement.toggleAttribute("data-go-float", show);
   // 同上：狀態沒變就不換掉底下那排按鈕（不然「停」會閃、按不到）。
   const key = [busy, generator.pending, pool.size, settings.n].join("|");
   if (float.dataset.key === key && float.childElementCount) return;
