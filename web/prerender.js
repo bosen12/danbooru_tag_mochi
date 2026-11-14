@@ -1,7 +1,7 @@
 /**
  * 預先開好的頁：Edge／Chrome 在背後把另一個房間整個開好（詞庫、牌、畫面），點下去直接換上，
  * 不用再等開頁（實測 150～260ms）。Safari 沒有這個功能，照舊一般開頁。
- *   - 左右相鄰的房間：這一頁開好、閒下來就先開（prerenderNeighbors）。
+ *   - 左右相鄰的房間，加上墨池↔卡冊、解析池→墨池（ALSO）：這一頁開好、閒下來就先開（prerenderNeighbors）。
  *   - 其他房間：滑鼠停在頂欄的分頁上才開（每頁 <head> 的 speculationrules）。
  *
  * 背後開的時候跟點進去之間，別的頁可能改過那一頁開機時讀的東西（帶牌過來、廢字簍、規則、語言、剛存的合成池）：
@@ -39,6 +39,8 @@ const ROOMS = [
   ["album", "album.html"],
   ["parse", "parse.html"],
 ];
+// 除了左右相鄰，每間房另外預開的（prerenderNeighbors）。
+const ALSO = { index: ["book"], book: ["index"], parse: ["index"] };
 const roomHere = () => {
   const file = location.pathname.split("/").pop() || "index.html";
   return file === "index.html" ? 0 : ROOMS.findIndex(([, href]) => href === file);
@@ -88,7 +90,10 @@ export function prerenderNeighbors() {
   if (navigator.connection?.saveData) return;
   const here = roomHere();
   if (here < 0) return;
-  const near = [here - 1, here + 1].filter((i) => ROOMS[i]).map((i) => ROOMS[i]);
+  // 左右相鄰，加上不相鄰卻常走的路：墨池↔卡冊（看牌、帶牌去墨池）、解析池→墨池。墨池、解析池在兩端，本來只預開一間。
+  // 沒預開到的房間在手機上冷開要 1.5～2.4 秒（CPU 降速 4 倍）；預開好的點下去直接換上。
+  const also = (ALSO[ROOMS[here][0]] || []).map((name) => ROOMS.find(([n]) => n === name)).filter(Boolean);
+  const near = [...[here - 1, here + 1].filter((i) => ROOMS[i]).map((i) => ROOMS[i]), ...also];
   const urls = near.map(([, href]) => new URL(href, location.href).href);
   const watched = { local: new Set(), session: new Set() };
   for (const [name] of near) {
