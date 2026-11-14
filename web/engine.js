@@ -2908,9 +2908,9 @@ export function indexLexicon(data) {
       bySub.get(k).push(item);
     }
   }
-  const siblings = new Map();
   const lexStub = { byTag };
-  for (const item of data.tags) {
+  const siblingsOf = (tag) => {
+    const item = byTag.get(tag);
     const related = new Set([item.tag, ...relOf(item)]);
     const out = new Set();
     for (const g of extraMutex(item)) {
@@ -2919,9 +2919,67 @@ export function indexLexicon(data) {
         out.add(t);
       }
     }
-    siblings.set(item.tag, [...out]);
-  }
+    return [...out];
+  };
+  const siblings = new LazySiblings(byTag, siblingsOf);
   return { data, byTag, bySection, mutexOf, siblings, byMutex, byGroup, bySub };
+}
+
+/**
+ * 每張牌的互斥兄弟（同一個互斥格、又不是它帶的或帶它的）：用到哪張才算哪張，算過記住。
+ * 以前開機就把全部算好（同一格兩兩比對，量級是平方）：墨池、疊印台每次開頁要 256ms（手機 4 倍降速），
+ * 一輪抽牌卻只會問到二三十張。用法跟 Map 一樣：get／has 照舊；遍歷（for…of、entries、size…）時才一次補齊，
+ * 順序也跟以前一樣是詞庫的順序。
+ */
+class LazySiblings extends Map {
+  constructor(byTag, compute) {
+    super();
+    this._byTag = byTag;
+    this._compute = compute;
+    this._full = false;
+  }
+  get(tag) {
+    if (!super.has(tag)) {
+      if (!this._byTag.has(tag)) return undefined;
+      super.set(tag, this._compute(tag));
+    }
+    return super.get(tag);
+  }
+  has(tag) {
+    return this._byTag.has(tag);
+  }
+  _fill() {
+    if (this._full) return;
+    // 照詞庫的順序重排：先算過的幾張也回到原本的位置。
+    const done = new Map(super.entries());
+    super.clear();
+    for (const tag of this._byTag.keys()) super.set(tag, done.has(tag) ? done.get(tag) : this._compute(tag));
+    this._full = true;
+  }
+  get size() {
+    this._fill();
+    return super.size;
+  }
+  keys() {
+    this._fill();
+    return super.keys();
+  }
+  values() {
+    this._fill();
+    return super.values();
+  }
+  entries() {
+    this._fill();
+    return super.entries();
+  }
+  forEach(fn, thisArg) {
+    this._fill();
+    return super.forEach(fn, thisArg);
+  }
+  [Symbol.iterator]() {
+    this._fill();
+    return super[Symbol.iterator]();
+  }
 }
 
 function implyChain(lex, tag) {

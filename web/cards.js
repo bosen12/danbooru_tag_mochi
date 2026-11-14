@@ -56,9 +56,9 @@ export function buildLibrary(data, { ratingBlocked }) {
     for (const id of (data.subOrder && data.subOrder[sec]) || []) subRank.set(sec + ":" + id, subRank.size);
   }
   if (subRank.size) {
-    const rank = (c) =>
-      CARD_SUITS.indexOf(c.suit) * 100000 + (subRank.get(c.item.section + ":" + c.group) ?? 99999);
-    cards.sort((a, b) => rank(a) - rank(b));
+    // 每張先算好名次再排（以前在比較函式裡算：八千張要算二十幾萬次，每次開頁手機 4 倍降速約 50ms）。sort 是穩定的，順序不變。
+    const rank = new Map(cards.map((c) => [c, CARD_SUITS.indexOf(c.suit) * 100000 + (subRank.get(c.item.section + ":" + c.group) ?? 99999)]));
+    cards.sort((a, b) => rank.get(a) - rank.get(b));
   }
   // 書脊的名字：剪掉尾巴的括號說明，但剪完會跟別的字同名的保留全名（2026-10-27 那 80 個已經改成本身分得開的名字，現在沒有；以後新字撞了就保留全名）。
   const names = new Map();
