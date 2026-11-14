@@ -201,21 +201,29 @@ function restart() {
   note.textContent = "ComfyUI 重開中，大約半分鐘";
 }
 
+// 連續幾次問不到伺服器（重開、一下子斷線）。
+let misses = 0;
+
 async function poll() {
   timer = 0;
   let snap = null;
   try {
     snap = await fetch("/api/setup", { cache: "no-store" }).then((r) => (r.ok ? r.json() : null));
   } catch {
-    /* 伺服器一下子沒回應：下一輪再問 */
+    // 伺服器一下子沒回應：面板留著（不要讓進度突然消失），越等越久再問（2.5、5、10…最多 30 秒）。
+    // 以前這裡寫「下一輪再問」，可是下面只有拿到資料才排下一輪：斷一次就再也不問，準備到一半的進度整塊不見。
+    misses += 1;
+    if (box && note) note.textContent = "連不到伺服器，等一下再問…";
+    return schedule(Math.min(POLL_MS * 2 ** misses, 30000));
   }
+  misses = 0;
   render(snap);
   if (snap && snap.started && (snap.active || box)) schedule();
 }
 
-function schedule() {
+function schedule(wait = POLL_MS) {
   clearTimeout(timer);
-  timer = setTimeout(poll, POLL_MS);
+  timer = setTimeout(poll, wait);
 }
 
 if (typeof document !== "undefined" && !navigator.webdriver) poll();

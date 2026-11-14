@@ -1630,11 +1630,14 @@ function liftOut({ node, rect }, delay = 0) {
   setTimeout(() => ghost.remove(), DUR.long + 20);
 }
 
-/** 給螢幕閱讀器的一句話（畫面上的回饋已經在發生的地方了）。 */
+/**
+ * 給螢幕閱讀器的一句話（畫面上的回饋已經在發生的地方了）：寫在只給讀屏的 #live（跟疊印台一樣）。
+ * 以前借用畫面上的 #toast：先清空、收起來再寫字，把還有效的提示（清空合成池的「復原」、Z）一起清掉；
+ * 收起來的 #toast 又是 inert，讀屏也略過這句。
+ */
 function announce(text) {
-  const t = $("toast");
+  const t = $("live");
   if (!t) return;
-  t.dataset.show = "false";
   t.textContent = "";
   setTimeout(() => (t.textContent = text), 30);
 }
@@ -1643,7 +1646,8 @@ function announce(text) {
 // 墨池沒有疊印台那樣完整的撤回紀錄；封鎖、拿出最容易手滑（Delete、拖歪了、×點偏），留最後一步讓 Z／Ctrl+Z 撿回來。
 // 只認幾秒內、而且之後池子和廢字簍都沒再動過的那一步：不然撿回來的是舊的狀態、會蓋掉後來做的事。
 let lastStep = null;
-const stepKey = () => [...pool].sort().join("|") + "#" + [...bans].sort().join("|");
+// 權重也算：拿出一張之後又調了別張的份量，復原會把整份舊權重蓋回去，那時就不給復原了。
+const stepKey = () => [...pool].sort().join("|") + "#" + [...bans].sort().join("|") + "#" + [...weights].map(([t, w]) => `${t}=${w}`).sort().join("|");
 const stepBefore = () => ({ pool: new Set(pool), bans: new Set(bans), weights: new Map(weights) });
 function rememberStep(text, before) {
   lastStep = { text, before, at: Date.now(), after: stepKey() };
@@ -1655,6 +1659,8 @@ function undoLastStep() {
   pool = s.before.pool;
   bans = s.before.bans;
   weights = s.before.weights;
+  // 封鎖時從偏好卡牌拿掉的那張（ban）：一起放回托盤。
+  if (s.before.hand && hand && !hand.has(s.before.hand)) hand.add(s.before.hand, null, { quiet: true });
   commitPins();
   renderTrash();
   sfx.lift();
@@ -1696,7 +1702,10 @@ function ban(tag, { viaDrag = false, from = null } = {}) {
   // 影子在蓋章之前複製（彩色的那張），路上才慢慢褪成灰。
   const ghost = intoPanel ? cloneCard(src.node) : null;
   const undoTo = stepBefore();
-  if (hand?.has(tag)) hand.remove(tag, { quiet: true });
+  if (hand?.has(tag)) {
+    undoTo.hand = tag;
+    hand.remove(tag, { quiet: true });
+  }
   // 揉紙聲在牌被吸進簍子的那一刻（拖的在放開後落進去，按的要先飛過去）。
   setTimeout(() => sfx.trash(), viaDrag ? DUR.short : DUR.long);
   const next = applyBan(lex, pool, bans, tag);
@@ -1838,8 +1847,11 @@ function greetRecipe() {
   if (!r) return;
   const size = SIZES.find((s) => s.w === r.width && s.h === r.height);
   const bits = [r.era ? `時代：${ERA_LABELS[r.era] || r.era}` : "", size ? size.zh : "", r.seed != null ? `種子固定 ${r.seed}` : ""].filter(Boolean);
-  const nowLoras = currentLorasPayload().map((l) => modelName(l.file)).sort().join("|");
-  const wantLoras = r.loras ? r.loras.map((l) => modelName(l.file)).sort().join("|") : nowLoras;
+  // 權重也比：同一個 LoRA 從 1.0 改成 0.6 印出來不一樣，不能說「跟現在選的一樣」（舊紀錄沒有權重的只比名字）。
+  const loraKey = (l, withStrength) => modelName(l.file) + (withStrength ? `@${Number(l.strength).toFixed(2)}` : "");
+  const strengths = !!r.loras?.length && r.loras.every((l) => Number.isFinite(Number(l.strength)) && l.strength != null);
+  const nowLoras = currentLorasPayload().map((l) => loraKey(l, strengths)).sort().join("|");
+  const wantLoras = r.loras ? r.loras.map((l) => loraKey(l, strengths)).sort().join("|") : nowLoras;
   const ckptDiff = !!r.ckpt && modelName(r.ckpt) !== modelName(currentCkpt());
   const differ = ckptDiff || wantLoras !== nowLoras;
   let names = [modelName(r.ckpt) || modelName(currentCkpt()) || "預設底模", ...(r.loras || []).map((l) => modelName(l.file))];
@@ -2666,6 +2678,8 @@ function renderGoFloat() {
   float.inert = !show;
   // 成品那列的「印製中…／停」跟著藏（styles.css 的 html[data-go-float]，不用 body:has）。
   document.documentElement.toggleAttribute("data-go-float", show);
+  // 印的時候：手機上浮動列放不下那行狀態字，改浮在浮動列上方（styles.css 的 .go-float[data-busy]）。
+  float.toggleAttribute("data-busy", busy);
   // 同上：狀態沒變就不換掉底下那排按鈕（不然「停」會閃、按不到）。
   const key = [busy, generator.pending, pool.size, settings.n].join("|");
   if (float.dataset.key === key && float.childElementCount) return;
@@ -2705,13 +2719,16 @@ function watchGoBar() {
   addEventListener("resize", update, { passive: true });
 }
 
-function stopAll() {
+/** 停下來。say：用 Esc 停的（沒按到「停」那顆鈕、看不到它變化）：說一句停了什麼，無限抽也關了就一起講。 */
+function stopAll({ say = false } = {}) {
+  const wasInfinite = infinite;
   drawEpoch++;
   infinite = false;
   stopAsked = true;
   looping = false;
   generator.stop();
   renderGoBar();
+  if (say) toast(wasInfinite ? "停下了，無限抽也關了" : "停下了");
 }
 
 let shotSeq = Date.now();
@@ -2875,7 +2892,8 @@ async function drawBatchNow(gen, intent, epoch) {
   // 電腦：成品牆本來就在畫面上，只是確保標題看得到。手機：牆在第三屏，「最近」只會把標題帶到畫面最底下、
   // 新的那張幾乎整張在畫面外（實測只露 86px）—— 改成把「成品」捲到最上面，新的那張整張落在眼前。
   const narrow = matchMedia("(max-width: 40rem)").matches;
-  document.getElementById("wall-head").scrollIntoView({ block: narrow ? "start" : "nearest", behavior: reducedMotion() ? "instant" : "smooth" });
+  // 無限抽自己接著抽的那幾輪（intent.auto）不捲：人可能正在搜尋、調規則、看舊圖，每一輪都被拉回成品太煩（進度照樣在抽牌列、浮動列上）。
+  if (!intent.auto) document.getElementById("wall-head").scrollIntoView({ block: narrow ? "start" : "nearest", behavior: reducedMotion() ? "instant" : "smooth" });
   // 抽牌的主秀：手動按的那一下，合成池的牌和引擎補的牌一張張飛進最上面那一格。
   if (!narrow && !intent.auto && epoch === drawEpoch) {
     const top = fresh.find(([s]) => s === made[0]);
@@ -3682,7 +3700,9 @@ function noteGone() {
       action: {
         label: "全部撤下",
         run: () => {
-          for (const s of shots.filter((x) => x._goneSrc)) removeShot(s);
+          // 一張張撤下各跳一則「撤下了一張／復原」會互相蓋掉，最後只救得回一張：整批撤、一則提示、一次全部放回去。
+          const undos = shots.filter((x) => x._goneSrc).map((s) => removeShot(s, { quiet: true })).filter(Boolean);
+          if (undos.length) toast(`撤下了 ${undos.length} 張`, { action: { label: "復原", key: "Z", run: () => undos.reverse().forEach((u) => u()) } });
         },
       },
     });
@@ -3880,18 +3900,19 @@ function swapText(swap) {
   return `換了：${swap.from.map(zh).join("、") || "—"} → ${swap.to.map(zh).join("、")}`;
 }
 
-function removeShot(shot) {
+/** 撤下一張。quiet：整批撤下的其中一張，不各自跳提示（擋下來的就跳過），回傳放回去的函式，由呼叫的那邊說一次。 */
+function removeShot(shot, { quiet = false } = {}) {
   // 正在送、正在畫的那張要先按停（ComfyUI 那邊要砍掉）。還在排、沒送出去的直接從佇列拿掉就好。
   // 寫著排隊中、印表機裡卻沒有它的（切到卡冊再回來之類的漏網的）：沒人會再印它，也直接撤下。
   const held = generator.holds(shot);
   const pending = shot.status === "running" || shot.status === "queued";
   if (held === "current") {
-    toast("這張正在印，先按「停」");
-    return;
+    if (!quiet) toast("這張正在印，先按「停」");
+    return null;
   }
   if (pending && !held && !printerHere) {
-    toast("另一個墨池分頁在印這張，到那邊撤下");
-    return;
+    if (!quiet) toast("另一個墨池分頁在印這張，到那邊撤下");
+    return null;
   }
   if (held === "queued") generator.drop(new Set([shot.id]));
   if (pending) {
@@ -3899,8 +3920,8 @@ function removeShot(shot) {
     shot.note = "取消了";
   }
   if (hiresBusy(shot)) {
-    toast(faceBusy(shot) ? "這張正在修臉，先在圖上按「停」" : "這張正在 Hires，先在圖上按「停」");
-    return;
+    if (!quiet) toast(faceBusy(shot) ? "這張正在修臉，先在圖上按「停」" : "這張正在 Hires，先在圖上按「停」");
+    return null;
   }
   const at = shots.findIndex((s) => s.id === shot.id);
   shots = shots.filter((s) => s.id !== shot.id);
@@ -3912,7 +3933,9 @@ function removeShot(shot) {
   renderGoFloat();
   // 印好的那張單獨撤下：出圖日誌記一筆「不要」（牌的戰績用）。
   if (shot.status === "done") markGenLog(shot.job, "discard");
-  toast("撤下了一張", { action: { label: "復原", key: "Z", run: () => restoreShot(shot, at, pending) } });
+  const undo = () => restoreShot(shot, at, pending);
+  if (!quiet) toast("撤下了一張", { action: { label: "復原", key: "Z", run: undo } });
+  return undo;
 }
 
 /*
@@ -4503,7 +4526,19 @@ function onKey(e) {
     return;
   }
   if (anyOverlay() || e.ctrlKey || e.metaKey || e.altKey) return;
+  // 生圖中、焦點在搜尋框這類輸入框裡，Esc 照樣能停（快捷鍵說明寫「Esc：停下來」）。
+  // 搜尋框、文字框裡還有字時先讓框自己處理（搜尋框的 Esc 是清掉字），清空了再按一次才停。
+  const clears = t && t.tagName === "INPUT" && (t.type === "search" || t.type === "text") && t.value;
+  if (typing && e.key === "Escape" && !clears && (generator.busy || looping || drawingRounds > 0)) {
+    e.preventDefault();
+    return stopAll({ say: true });
+  }
   if (typing) return;
+  // 按住不放：鍵盤自動重複一秒三十次，每一下都會排一輪（drawBatch 連按就是各抽一輪），按住 G 會排進幾十輪。只認第一下。
+  if (e.repeat && (e.key === "g" || e.key === "G" || e.key === "p" || e.key === "P")) {
+    e.preventDefault();
+    return;
+  }
   if (e.key === "g" || e.key === "G") {
     e.preventDefault();
     drawBatch(true);
@@ -4514,7 +4549,7 @@ function onKey(e) {
     trashPanel.close();
     $("trash").focus({ preventScroll: true });
   } else if (e.key === "Escape" && (generator.busy || looping || drawingRounds > 0)) {
-    stopAll();
+    stopAll({ say: true });
   } else if ((e.key === "z" || e.key === "Z") && (runToastAction("Z") || undoLastStep())) {
     // 提示上有「復原」（清空合成池、撤下成品、拿出偏好卡牌）：Z 就是按它。
     // 沒有的話撿回剛才封鎖、拿出的那一張（undoLastStep）。

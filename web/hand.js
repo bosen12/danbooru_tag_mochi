@@ -192,7 +192,8 @@ export function createHand({
     try {
       localStorage.setItem(k, JSON.stringify(v));
     } catch {
-      /* 存不了就只活在這一頁 */
+      // 存不了就只活在這一頁：說一聲（ui.js 的 mochi-store-full）。
+      globalThis.dispatchEvent?.(new CustomEvent("mochi-store-full", { detail: k }));
     }
   }
 

@@ -318,6 +318,15 @@ globalThis.addEventListener?.("mochi-store-corrupt", (e) => {
   toast(String(e.detail || "伺服器的存檔壞了"), { ms: 15000 });
 });
 
+// 瀏覽器的儲存空間滿了、或不允許存（store.js、hand.js 寫 localStorage 失敗）：以前「存不了就算了」，畫面照樣變，
+// 重新整理才發現成品牆、偏好卡牌、設定都沒留下。一頁說一次，留久一點。
+let storeFullSaid = false;
+globalThis.addEventListener?.("mochi-store-full", () => {
+  if (storeFullSaid) return;
+  storeFullSaid = true;
+  toast("瀏覽器的儲存空間滿了（或不允許存）：剛才的變更只在這個分頁，重新整理就不見了。清一下這個網站的瀏覽資料再試", { ms: 12000 });
+});
+
 /** 那則提示的按鈕已經不對了（它講的那一步之後又動過）：提示還掛著就收掉。換成別則了就不動。 */
 export function dropToastAction(action) {
   if (action && toastNow === action) hideToast();

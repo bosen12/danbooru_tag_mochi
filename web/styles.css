@@ -2985,8 +2985,22 @@ html[data-go-float] .wall-busy {
   .go-float[data-show="true"] {
     transform: none;
   }
+  /* 手機一排放不下那行字：沒在印時收掉。印的時候浮在這條上方 —— 浮動列一出來，成品列的「印製中」就藏起來了
+   * （html[data-go-float] .wall-busy），這裡也不放的話，捲去看舊圖時整個畫面都看不到還有幾張。 */
   .go-float-state {
     display: none;
+  }
+  .go-float[data-busy] .go-float-state {
+    display: block;
+    position: absolute;
+    left: var(--space-sm);
+    bottom: calc(100% + var(--space-2xs));
+    max-width: calc(100% - 2 * var(--space-sm));
+    padding: 2px var(--space-sm);
+    border: 1px solid var(--color-rule);
+    border-radius: 999px;
+    background: var(--color-paper-2);
+    box-shadow: 0 6px 14px var(--color-shade);
   }
 }
 

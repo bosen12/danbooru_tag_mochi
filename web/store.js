@@ -63,7 +63,8 @@ function write(key, value) {
     localStorage.setItem(key, JSON.stringify(value));
     return true;
   } catch {
-    /* 存不了就算了 */
+    // 存不了（瀏覽器儲存空間滿了、不允許存）：畫面照樣變，重新整理就不見了。說一聲（ui.js 聽 mochi-store-full，一頁只說一次）。
+    globalThis.dispatchEvent?.(new CustomEvent("mochi-store-full", { detail: key }));
     return false;
   }
 }

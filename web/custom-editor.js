@@ -61,6 +61,9 @@ export function openCustomEditor({ card = null, start = null, lib, lex, assets, 
   let draftV = "";
   let bake = null;
   let pollTimer = 0;
+  // 問烤好了沒，連續幾次問不到（伺服器斷了）；存檔中（等伺服器回覆時改欄位，paintFoot 不能把存檔鈕又打開）。
+  let pollMisses = 0;
+  let saving = false;
   let saved = false;
   // 內容畫過一次了沒（第一次畫不演淡入）。
   let painted = false;
@@ -619,8 +622,8 @@ export function openCustomEditor({ card = null, start = null, lib, lex, assets, 
 
   function paintFoot() {
     const why = !st.name.trim() ? "要取個名字" : !st.members.length && !st.extra.length ? "至少要有一張牌或一個字" : bake?.state === "baking" ? "卡面還在烤" : "";
-    saveBtn.disabled = !!why;
-    msg.textContent = tr(why);
+    saveBtn.disabled = !!why || saving;
+    if (!saving) msg.textContent = tr(why);
   }
 
   function changed({ keepPaste = false, arriving = "" } = {}) {
@@ -681,14 +684,18 @@ export function openCustomEditor({ card = null, start = null, lib, lex, assets, 
     }
   }
 
-  function poll() {
+  // 問不到時越等越久（0.7、1.4、2.8…最多 5 秒），問了 8 次都不通就停下來說，存檔鈕不再卡在「卡面還在烤」。
+  function poll(wait = 700) {
     clearTimeout(pollTimer);
     pollTimer = setTimeout(async () => {
       let r;
       try {
         r = await previewState(draft);
+        pollMisses = 0;
       } catch {
-        return poll();
+        if (++pollMisses < 8) return poll(Math.min(wait * 2, 5000));
+        pollMisses = 0;
+        r = { state: "failed", error: tr("連不到伺服器：可以先存檔（用拼貼卡面），或等一下再按「重烤」") };
       }
       if (r.state === "baking") return poll();
       bake = r;
@@ -708,7 +715,7 @@ export function openCustomEditor({ card = null, start = null, lib, lex, assets, 
         bakeMsg.textContent = r.state === "comfy_down" ? tr("ComfyUI 沒開：先用拼貼卡面，之後再回來烤。") : tr("烤失敗了：") + (r.error || "");
       }
       paintFoot();
-    }, 700);
+    }, wait);
   }
 
   /** 預覽烤好：像相紙顯影 —— 從模糊、淡、亮沉到清楚，圖稍微往下落定（圖讀進來才開始）。 */
@@ -730,6 +737,7 @@ export function openCustomEditor({ card = null, start = null, lib, lex, assets, 
   async function save() {
     paintFoot();
     if (saveBtn.disabled) return refuse(saveBtn);
+    saving = true;
     saveBtn.disabled = true;
     msg.textContent = tr("存檔中…");
     const raw = seedIn.value.trim();
@@ -748,6 +756,7 @@ export function openCustomEditor({ card = null, start = null, lib, lex, assets, 
       sheet.close();
       onSaved?.(out);
     } catch (err) {
+      saving = false;
       msg.textContent = String(err.message || err);
       saveBtn.disabled = false;
       refuse(saveBtn);

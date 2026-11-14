@@ -760,6 +760,8 @@ function wireSearch() {
   });
   q.addEventListener("compositionend", apply);
   q.addEventListener("keydown", (e) => {
+    // 注音、倉頡選字的 Enter 是在選字：以前直接打開第一張牌（墨池字盒的搜尋框一樣這樣擋）。
+    if (e.isComposing || e.keyCode === 229) return;
     if (e.key === "Escape" && q.value) {
       q.value = "";
       ui.query = "";

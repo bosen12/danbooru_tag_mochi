@@ -4444,9 +4444,9 @@ function onKey(e) {
     reroll();
   } else if (e.key === "g" || e.key === "G") {
     // 付印用 G：跟墨池一樣，G 會送 ComfyUI 生圖。以前疊印台是 P，而墨池的 P 是「只抽牌」（不花顯示卡），
-    // 在墨池養成的手感按到這裡就真的開始印了。
+    // 在墨池養成的手感按到這裡就真的開始印了。按住不放（鍵盤自動重複）只算第一下。
     e.preventDefault();
-    printNow();
+    if (!e.repeat) printNow();
   } else if (e.key === "p" || e.key === "P") {
     // 按 P 的人多半以為是「只抽牌」或是舊的付印：都不動作，說一聲改到哪了。
     e.preventDefault();

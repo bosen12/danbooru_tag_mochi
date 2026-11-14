@@ -549,10 +549,7 @@ ComfyUI 沒開：可以先只抽牌、挑牌，開了再生圖。|ComfyUI is not
 抽完一輪自動接著抽下一輪，一直到按「停」，或印到右邊設定的張數|Keep drawing new batches until you press Stop, or until the count set on the right is reached.
 無限抽印到幾張停|Stop continuous generation after
 無限抽印到這麼多張就停（一輪印完才停，不會切掉一半）|Continuous generation stops after this many images (the current batch always finishes)
-印 {0} 張停|Stop after {0}
 不限張數|No limit
-無限抽 {0} / {1}|Continuous {0} / {1}
-無限抽印完 {0} 張，到了設定的張數，停下了|Continuous generation stopped after {0} images, as set
 只抽牌|Draw only
 抽並生圖|Draw & generate
 只抽牌，不送 Comfy（P）|Draw cards without generating an image (P)
@@ -564,7 +561,6 @@ ComfyUI 沒開：可以先只抽牌、挑牌，開了再生圖。|ComfyUI is not
 這一輪抽不出東西：合成池的字可能互相卡住，換一兩張試試|No combination found. Try replacing one or two pinned cards.
 固定種子下抽不出新的組合，無限抽先停下：換幾張牌，或把種子改回隨機|Continuous stopped: with a fixed seed, no new combination came up. Swap a few cards or switch the seed back to random.
 這幾張跟印過的一模一樣（固定種子），沒有再送：換幾張牌，或把種子改回隨機|Not sent: identical to images already printed with this fixed seed. Swap a few cards or switch the seed back to random.
-略過 {0} 張：跟印過的一模一樣（固定種子）|Skipped {0}: identical to images already printed with this fixed seed
 全部展開|Expand all
 全部收起|Collapse all
 每排自動|Auto per row
@@ -601,8 +597,12 @@ ComfyUI 的輸出資料夾裡找不到這張，可能被刪掉了。|This file i
 撤下|Discard
 撤下的|Discarded
 撤下了一張|Image discarded
+停下了|Stopped
+停下了，無限抽也關了|Stopped; continuous generation is off too
+瀏覽器的儲存空間滿了（或不允許存）：剛才的變更只在這個分頁，重新整理就不見了。清一下這個網站的瀏覽資料再試|The browser can't save (storage is full or blocked): your latest changes live only in this tab and will be lost on reload. Clear this site's browsing data and try again
+連不到伺服器：可以先存檔（用拼貼卡面），或等一下再按「重烤」|Can't reach the server: save now (with the collage face), or press Bake again in a moment
+連不到伺服器，等一下再問…|Can't reach the server, retrying shortly…
 收掉了一張取消的|Cleared a cancelled image
-收掉了 {0} 張取消的|Cleared {0} cancelled images
 這張正在印，先按「停」|This image is generating. Press Stop first.
 另一個墨池分頁在印這張，到那邊撤下|Another Mochi tab is printing this one. Remove it from that tab.
 這張正在 Hires，先在圖上按「停」|This image is being upscaled. Press Stop on the image first.
@@ -955,7 +955,6 @@ LoRA 排序|Sort LoRA
 忽略小臉|Skip tiny faces
 臉形遮罩外擴|Mask dilation
 臉形遮罩門檻|Mask threshold
-修臉 {0}|Face fix {0}
 臉部偵測的信心分數要超過多少才算臉。調低：小臉、側臉、半遮的臉比較抓得到，但也比較容易把不是臉的地方當成臉；調高相反。|How confident the face detector must be before something counts as a face. Lower it to catch small, side-on or partly hidden faces, at the risk of treating other things as faces; raise it for the opposite.
 偵測到的臉框往外擴幾個像素再處理。太小可能切到下巴、髮際；太大會連周圍一起算進去。|How many pixels to grow each detected face box. Too small can cut off the chin or hairline; too large pulls in the surroundings.
 拿臉框幾倍大的範圍去重畫。倍數越小，臉放得越大、細節越多（裁切最大 1024 像素：3 倍時臉只放到約 340 像素，1.6 倍約 640）；太小則周圍參考少，膚色、光線可能接不上。|How large an area around the face box to redraw. A smaller factor enlarges the face more and adds detail (the crop is capped at 1024 px, so at 3× the face only reaches about 340 px and at 1.6× about 640); too small leaves little context, so skin tone and lighting may not blend.
@@ -1988,6 +1987,13 @@ export const messages = Object.freeze(Object.fromEntries(copy.trim().split("\n")
 // {0} is translated again (card names, ratings); {0!} is inserted verbatim
 // because it is user content: deck, work, model and workflow names, search text.
 const parameterized = String.raw`
+撤下了 {0} 張|{0} images discarded
+印 {0} 張停|Stop after {0}
+無限抽 {0} / {1}|Continuous {0} / {1}
+無限抽印完 {0} 張，到了設定的張數，停下了|Continuous generation stopped after {0} images, as set
+略過 {0} 張：跟印過的一模一樣（固定種子）|Skipped {0}: identical to images already printed with this fixed seed
+收掉了 {0} 張取消的|Cleared {0} cancelled images
+修臉 {0}|Face fix {0}
 {0}（預設）|{0!} (default)
 {0} 的底模都用這一套；換成別家的底模會換成那一家的。改過的會描一道底線。|All {0!} models share these settings; other model families have their own. Changed values are underlined.
 沒有配合這個底模（{0}）的 LoRA。|No LoRA matches this checkpoint ({0}).

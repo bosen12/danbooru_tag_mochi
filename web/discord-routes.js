@@ -526,6 +526,8 @@ function searchBox({ label, max, placeholder, items, hits, add, drop, modeKey, e
   }
   input.addEventListener("input", paintResults);
   input.addEventListener("keydown", (ev) => {
+    // 注音、倉頡選字時的方向鍵、Enter 是在選字，不是在選結果（墨池字盒的搜尋框一樣這樣擋）。
+    if (ev.isComposing || ev.keyCode === 229) return;
     if (ev.key === "ArrowDown" || ev.key === "ArrowUp") {
       if (!found.length) return;
       ev.preventDefault();
