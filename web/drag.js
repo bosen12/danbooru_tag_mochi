@@ -22,6 +22,7 @@
  */
 
 import { getSfx } from "./sfx.js";
+import { vibrate } from "./haptic.js";
 import { cloneCard } from "./card-images.js";
 import { CURVE, DUR, css } from "./motion.js";
 
@@ -41,7 +42,7 @@ const buzz = (ms) => {
   try {
     // 頁面還沒被點過（長按的第一下還算不上），Chrome 會擋掉震動並在主控台報錯：那時候就不震。
     if (navigator.userActivation && !navigator.userActivation.hasBeenActive) return;
-    if (navigator.vibrate) navigator.vibrate(ms);
+    vibrate(ms);
   } catch {
     /* 不支援就算了 */
   }

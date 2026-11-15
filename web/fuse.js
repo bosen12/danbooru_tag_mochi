@@ -16,6 +16,7 @@
 // 詞庫換過名的字：存著的舊名先換成新名（一定要第一個 import，見 tag-renames.js）。
 import "./tag-renames.js";
 import { guardPrerender, prerenderNeighbors, whenActive } from "./prerender.js";
+import { vibrate } from "./haptic.js";
 import {
   indexLexicon,
   sanitizeSettings,
@@ -204,7 +205,7 @@ function announce(text) {
 }
 
 function haptic(ms) {
-  if (lastPointer === "touch" && navigator.vibrate) navigator.vibrate(ms);
+  if (lastPointer === "touch") vibrate(ms);
 }
 
 /* ================= 開機 ================= */

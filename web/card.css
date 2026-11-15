@@ -562,7 +562,8 @@ button.card:active {
 .fav-hand {
   position: fixed;
   left: 50%;
-  bottom: 10px;
+  /* 加到主畫面（全螢幕）時，底下那條橫槓的範圍（safe-area-inset-bottom）也讓開；Safari 裡是 0。 */
+  bottom: calc(10px + env(safe-area-inset-bottom));
   z-index: 26;
   box-sizing: border-box;
   width: min(calc(100vw - 20px), max(var(--fav-want, 360px), 360px));
@@ -623,9 +624,9 @@ button.card:active {
 
 /* 墨池底下的浮動按鈕列出現時，托盤讓到它上面。以前改 bottom（10px → 72px）：托盤帶毛玻璃，
  * 每一格都要排版、重算模糊，而捲到成品牆看圖正是生圖的時候。改用 translate，
- * 讓位距離也算進操作列的手機安全區，才不會蓋住「只抽牌／抽並生圖」。 */
+ * 手機安全區已經算在托盤的 bottom 裡，這裡只讓操作列的高度，才不會蓋住「只抽牌／抽並生圖」。 */
 .go-float[data-show="true"] ~ .fav-hand {
-  translate: -50% calc(-62px - env(safe-area-inset-bottom));
+  translate: -50% -62px;
 }
 
 /* 拖牌經過：托盤描一圈（可以放），壓在上面亮起來。 */
@@ -993,7 +994,7 @@ body[data-hand-edit="true"] :is(#case-grid, #lib-grid) .card[data-in-hand="true"
 
 @media (max-width: 640px) {
   .fav-hand {
-    bottom: 8px;
+    bottom: calc(8px + env(safe-area-inset-bottom));
     width: calc(100vw - 16px);
     padding: 4px 8px 10px;
   }

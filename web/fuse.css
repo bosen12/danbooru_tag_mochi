@@ -2650,7 +2650,7 @@ body.fuse {
 
 .pool-pill {
   position: fixed;
-  left: var(--space-md);
+  left: calc(var(--space-md) + env(safe-area-inset-left));
   bottom: calc(var(--space-md) + env(safe-area-inset-bottom));
   z-index: 30;
   display: inline-flex;
@@ -2926,7 +2926,7 @@ body.fuse {
  * 出場從右下角彈上來、到位時微微過衝；收回去往下沉。 */
 .print-float {
   position: fixed;
-  right: var(--space-md);
+  right: calc(var(--space-md) + env(safe-area-inset-right));
   bottom: calc(var(--space-md) + env(safe-area-inset-bottom));
   z-index: 30;
   display: inline-flex;

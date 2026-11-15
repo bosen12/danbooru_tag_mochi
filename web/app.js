@@ -11,6 +11,7 @@
 // 詞庫換過名的字：存著的舊名先換成新名（一定要第一個 import，見 tag-renames.js）。
 import "./tag-renames.js";
 import { guardPrerender, prerenderNeighbors, whenActive } from "./prerender.js";
+import { vibrate } from "./haptic.js";
 import {
   indexLexicon,
   sanitizeSettings,
@@ -1275,14 +1276,14 @@ function repaintLibrary() {
 
 /* ================= 釘選與封鎖（全部走 engine） ================= */
 
-// 觸控時輕震一下（跟疊印台一樣）：放牌、抽牌。滑鼠不震；不支援的（iPhone）什麼都不做。
+// 觸控時輕震一下（跟疊印台一樣）：放牌、抽牌。滑鼠不震；iPhone 借開關的觸覺回饋（haptic.js）。
 // 只在手指剛按下去的那一刻震（userActivation.isActive）：無限抽自己接著抽的那幾輪不震。
 let lastPointer = "mouse";
 document.addEventListener("pointerdown", (e) => (lastPointer = e.pointerType || "mouse"), true);
 function haptic(ms) {
-  if (lastPointer !== "touch" || !navigator.vibrate) return;
+  if (lastPointer !== "touch") return;
   if (navigator.userActivation && !navigator.userActivation.isActive) return;
-  navigator.vibrate(ms);
+  vibrate(ms);
 }
 
 /** 放牌的選項：時代混不混，合成池的「互斥」開關（關掉＝互斥的牌不拿下）。 */

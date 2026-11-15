@@ -46,8 +46,11 @@ body {
   text-size-adjust: 100%;
 }
 
+/* iPhone 橫拿：viewport-fit=cover 讓頁面鋪到螢幕邊，靈動島和圓角那兩條（各約 60px）會蓋到靠邊的字和牌。
+   左右讓開安全區；直拿時這兩個值是 0，不影響。固定在畫面上的（浮動鈕、通知）各自另外讓。 */
 body {
   min-height: 100dvh;
+  padding-inline: env(safe-area-inset-left) env(safe-area-inset-right);
   background:
     radial-gradient(ellipse 50% 40% at 62% 18%, var(--color-pool-soft), transparent 70%),
     var(--color-paper);
@@ -2505,7 +2508,7 @@ html[lang="en"] .pool > .panel-head .workspace-purpose {
   display: none;
 }
 /* 底部浮動列出來時它自己有「印製中…／停」：這邊隱形（留著位子，浮動列進出時這列不跳），畫面上不會兩顆「停」。
- * <html data-go-float> 是 app.js 的 renderGoFloat 標的。不寫成 body:has(#go-float[data-show="true"])：body 當 :has 的主體，
+ * <html data-go-float> 是 app.js 的 renderGoFloat 標的。不寫成 body 帶 :has（裡面放 #go-float[data-show="true"]）：body 當 :has 的主體，
  * 頁面上任何地方插入、拿掉一個元素，瀏覽器都要把所有 :has 規則牽涉到的元素重算一次樣式（卡冊捲動每接上、拿掉一排就 150 個）。 */
 html[data-go-float] .wall-busy {
   visibility: hidden;
@@ -3280,7 +3283,7 @@ html[data-go-float] .wall-busy {
 
 .trash {
   position: fixed;
-  right: var(--space-md);
+  right: calc(var(--space-md) + env(safe-area-inset-right));
   bottom: calc(var(--space-md) + env(safe-area-inset-bottom));
   z-index: 25;
   display: grid;
@@ -3343,7 +3346,7 @@ html[data-go-float] .wall-busy {
 
 .trash-panel {
   position: fixed;
-  right: var(--space-md);
+  right: calc(var(--space-md) + env(safe-area-inset-right));
   bottom: calc(var(--space-md) + 76px + var(--space-sm) + env(safe-area-inset-bottom));
   z-index: 27;
   display: flex;
@@ -4107,7 +4110,7 @@ body[data-dragging="true"] .library[data-over="true"] {
 /* 有彈窗開著：提示改到畫面上方。彈窗的按鈕列在底部，提示浮在那裡會蓋住主要的鈕
  * （卡冊打開一張牌時跳「成就牆開張」，剛好壓在「帶去墨池合成池」上）。.toast.toast 是為了蓋過上面抽牌列那條。
  * 以前 ui.js 照按鈕列量位置、把 bottom 寫在元素上往上抬：彈窗還在進場時量的不準，跟這條一起用又會把提示上下拉長，拿掉了。
- * <html data-overlay> 是 ui.js 標的（body 底下有 .overlay）；不寫成 body:has(> .overlay)，原因同上面的 html[data-go-float]。 */
+ * <html data-overlay> 是 ui.js 標的（body 底下有 .overlay）；不寫成 body 帶 :has（裡面放 > .overlay），原因同上面的 html[data-go-float]。 */
 html[data-overlay] .toast.toast {
   top: calc(var(--space-md) + env(safe-area-inset-top));
   bottom: auto;
@@ -5725,7 +5728,7 @@ html[data-vt="back"] .vt-sweep {
 .cmp-close {
   position: fixed;
   top: var(--space-md);
-  right: var(--space-md);
+  right: calc(var(--space-md) + env(safe-area-inset-right));
   z-index: 1;
   display: grid;
   place-items: center;
@@ -7209,7 +7212,7 @@ html[data-booting] :is(#lib-grid, #case-grid, #book-grid):empty::before {
 }
 .tour-offer {
   position: fixed;
-  left: var(--space-md);
+  left: calc(var(--space-md) + env(safe-area-inset-left));
   bottom: var(--space-md);
   z-index: 350;
   display: grid;
@@ -7329,7 +7332,7 @@ html[data-booting] :is(#lib-grid, #case-grid, #book-grid):empty::before {
  * 左下角，跟導覽邀請卡同一種卡片。準備還在進行時邀請卡先不出來（兩張疊在同一個角落）。 */
 .setup-panel {
   position: fixed;
-  left: var(--space-md);
+  left: calc(var(--space-md) + env(safe-area-inset-left));
   bottom: var(--space-md);
   z-index: 360;
   display: grid;
