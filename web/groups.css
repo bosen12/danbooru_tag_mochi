@@ -754,3 +754,122 @@ html[data-book-group="edit"] .book-cell[data-ingroup="true"]::after {
     animation: none;
   }
 }
+
+/* 看一組時標頭裡的小分類：這組有的亮著寫張數（點了只看那一格），沒有的劃掉（抽牌時照常抽）。 */
+.bsh-subs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 6px;
+}
+.bsh-sub-run {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+}
+.bsh-sub-fam {
+  color: var(--color-muted);
+  font-size: var(--text-2xs);
+  font-weight: 700;
+  margin-left: 4px;
+}
+.bsh-sub {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 28px;
+  padding: 0 10px;
+  border: 1px solid var(--color-rule);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--color-muted);
+  font-size: var(--text-xs);
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color var(--dur-short) var(--ease-out), border-color var(--dur-short) var(--ease-out), color var(--dur-short) var(--ease-out);
+}
+.bsh-sub[data-has="true"] {
+  border-color: color-mix(in oklch, var(--gp-suit) 55%, var(--color-rule));
+  color: var(--color-ink);
+  font-weight: 700;
+}
+.bsh-sub[data-has="false"] {
+  text-decoration: line-through;
+  text-decoration-color: color-mix(in oklch, var(--color-muted) 70%, transparent);
+  opacity: 0.55;
+  cursor: default;
+}
+.bsh-sub[aria-pressed="true"] {
+  background: color-mix(in oklch, var(--gp-suit) 26%, var(--color-paper-3));
+  border-color: var(--gp-suit);
+}
+.bsh-sub-n {
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: color-mix(in oklch, var(--gp-suit) 35%, var(--color-paper-3));
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+}
+@media (hover: hover) and (pointer: fine) {
+  .bsh-sub[data-has="true"][aria-pressed="false"]:hover {
+    background: color-mix(in oklch, var(--gp-suit) 12%, transparent);
+  }
+}
+.bsh-sub[data-has="true"]:active {
+  transform: translateY(1px);
+}
+@media (pointer: coarse) {
+  .bsh-sub {
+    min-height: 34px;
+  }
+}
+
+/* 墨池群組面板：每組有哪些小分類、勾了的組加起來管幾格 */
+.gp-row-subs,
+.gp-sum-subs {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+}
+.gp-sub {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 22px;
+  padding: 0 4px 0 8px;
+  border: 1px solid color-mix(in oklch, var(--gp-suit) 45%, var(--color-rule));
+  border-radius: 999px;
+  color: var(--color-ink);
+  font-size: var(--text-2xs);
+  font-weight: 700;
+  white-space: nowrap;
+}
+.gp-sub b {
+  padding: 0 5px;
+  border-radius: 999px;
+  background: color-mix(in oklch, var(--gp-suit) 32%, var(--color-paper-3));
+  font-family: var(--font-mono);
+  font-weight: 500;
+}
+.gp-sum {
+  display: grid;
+  gap: 6px;
+  padding: 10px 12px;
+  border-radius: var(--radius-md);
+  background: color-mix(in oklch, var(--gp-suit) 10%, var(--color-paper-2));
+  border: 1px solid color-mix(in oklch, var(--gp-suit) 35%, var(--color-rule-2));
+}
+.gp-sum-label {
+  color: var(--color-muted);
+  font-size: var(--text-xs);
+  margin-right: 2px;
+}
+.gp-sum-note {
+  margin: 0;
+  color: var(--color-ink-2);
+  font-size: var(--text-xs);
+  line-height: 1.55;
+}

@@ -657,8 +657,18 @@ function renderGroups() {
     b.hidden = true;
     b.replaceChildren();
   }
-  if (ui.suit === "all" || shelf?.active()) return rowMove.done();
-  if (ui.suit === "custom") {
+  // 看一個群組：沒有小分類籤（照群組篩）。替群組加牌：籤是那一段的小分類，方便一類一類挑。
+  const editing = !!shelf?.editing();
+  // 「全部」沒有小分類：加牌時挑的那一格不能帶回來篩全部的牌。
+  if (ui.suit === "all" && !editing) {
+    if (ui.group) {
+      ui.group = "";
+      saveUi();
+    }
+    return rowMove.done();
+  }
+  if (shelf?.active() && !editing) return rowMove.done();
+  if (ui.suit === "custom" && !editing) {
     sticky.hidden = false;
     sticky.replaceChildren(
       el("button", { class: "group-chip pressable cc-new", type: "button", onclick: () => openEditor(null, null) }, el("b", { "aria-hidden": "true" }, "＋"), " 新增自製牌"),
@@ -666,13 +676,13 @@ function renderGroups() {
     );
     return rowMove.done();
   }
-  const runs = groupChips(lib.cards.filter((c) => c.suit === ui.suit && visibleCard(c) && genderOk(c)));
+  const runs = groupChips(lib.cards.filter((c) => (editing ? shelf.keep(c) : c.suit === ui.suit) && visibleCard(c) && genderOk(c)));
   if (ui.group && !runs.some((r) => r.items.some((i) => i.g === ui.group))) ui.group = "";
   const count = runs.reduce((n, r) => n + r.items.length, 0);
-  const many = !!flow && FLOW_GROUP_SUITS.has(ui.suit);
+  const many = !editing && !!flow && FLOW_GROUP_SUITS.has(ui.suit);
   const box = many ? flow : sticky;
   // 角色頁一律留著：性別籤在這一排，篩到沒牌時也要能切回來。
-  box.hidden = ui.suit !== "chara" && count < 2;
+  box.hidden = (editing || ui.suit !== "chara") && count < 2;
   // 籤跟著捲走了：黏住的工具列留一顆「現在篩的這一格 ✕」，捲到多下面都知道在看哪一格，點一下回到全部。
   if (many && ui.group && now) {
     const cur = runs.flatMap((r) => r.items).find((i) => i.g === ui.group);
@@ -698,8 +708,8 @@ function renderGroups() {
         : chip(r.items[0], false)
     ),
   ];
-  box.replaceChildren(...(ui.suit === "chara" ? [genderChips(ui.charGender, pickGender), seriesRun(all)] : all));
-  swapIn(box, ui.suit);
+  box.replaceChildren(...(ui.suit === "chara" && !editing ? [genderChips(ui.charGender, pickGender), seriesRun(all)] : all));
+  swapIn(box, editing ? "group:" + shelf.active().id : ui.suit);
   rowMove.done();
 }
 
@@ -998,7 +1008,9 @@ function listNow() {
       visibleCard(c) &&
       genderOk(c) &&
       // 看一個群組（或替它加牌）：照群組篩，不看花色和小分類。
-      (shelf?.active() ? shelf.keep(c) : (ui.suit === "all" || c.suit === ui.suit) && (!ui.group || c.group === ui.group)) &&
+      (shelf?.active()
+        ? shelf.keep(c) && (shelf.editing() ? !ui.group || c.group === ui.group : !shelf.sub() || c.group === shelf.sub())
+        : (ui.suit === "all" || c.suit === ui.suit) && (!ui.group || c.group === ui.group)) &&
       // 看一個群組時「只看用過的」不算：組員一律列出。
       (!ui.usedOnly || shelf?.active() || countOf(c.tag) > 0) &&
       (!isWar() || warOf(c.tag)[0] >= WAR_MIN)

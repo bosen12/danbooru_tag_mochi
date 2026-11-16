@@ -2690,24 +2690,19 @@ html[data-go-float] .wall-busy {
   color: var(--color-muted);
 }
 
+/* 成品牆是瀑布流（wall-masonry.js 照每張的長寬比疊進最矮的那一欄，照 obscura 的底片庫）：
+ * 這裡只是容器，每張的位置、寬度、牆的高度由 JS 寫。JS 還沒排之前（剛開頁那一格）先一張張直排。 */
 .wall {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 19rem), 1fr));
-  gap: var(--space-md);
-  align-items: start;
+  position: relative;
 }
-
-/* 每排固定幾張（成品牆工具列的「每排 N 張」）：寬度夠就剛好 N 欄，太窄自己少幾欄，每張不小於 140px。 */
-.wall[data-cols] {
-  --wall-cols: 3;
-  grid-template-columns: repeat(auto-fill, minmax(max(140px, calc((100% - (var(--wall-cols) - 1) * var(--space-md)) / var(--wall-cols))), 1fr));
+.wall > .shot {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
 }
-.wall[data-cols="4"] { --wall-cols: 4; }
-.wall[data-cols="5"] { --wall-cols: 5; }
-.wall[data-cols="6"] { --wall-cols: 6; }
-.wall[data-cols="5"],
-.wall[data-cols="6"] {
-  gap: var(--space-sm);
+.wall:not([data-masonry]) > .shot {
+  position: relative;
 }
 
 .wall-cols {
@@ -2715,24 +2710,13 @@ html[data-go-float] .wall-busy {
   font-size: var(--text-xs);
 }
 
-/* 一張成品是一張印張，不是面板裡的卡片：不包外框、不墊底色，
- * 上緣一條細裁切線（兩端各一小段加粗，像裁紙刀的對位記號）把一張張分開。 */
+/* 一張成品：圖就是全部（照 obscura 的底片庫）。圓角、一圈細框，滑過浮起來一點、圖放大一點點；
+ * 狀態、種子、牌・N 和動作按鈕在電腦上疊在圖上，滑過才出現（下面的 hover 區塊）；手機排在圖底下。 */
 .shot {
   display: grid;
   gap: var(--space-xs);
-  padding: var(--space-sm) 0 var(--space-xs);
-  background:
-    linear-gradient(var(--color-ink-2), var(--color-ink-2)) top left / 14px 2px no-repeat,
-    linear-gradient(var(--color-ink-2), var(--color-ink-2)) top right / 14px 2px no-repeat,
-    linear-gradient(var(--color-rule), var(--color-rule)) top / 100% 1px no-repeat;
   min-width: 0;
-  /* 牆上幾十張成品，捲出畫面的那些不排版、不繪製（只抽牌的每張攤著三十張牌，
-     四十張就是一萬個節點）：放一張牌、抽一張，樣式重算不再掃過整面牆。
-     auto：記得它上一次真正排出來的高度，捲回來時不會跳。 */
-  content-visibility: auto;
-  contain-intrinsic-size: auto 19rem auto 36rem;
-  /* 上面那把扇子的牌指著會浮起來、陰影往外暈：content-visibility 會裁掉溢出去的，留一點邊。 */
-  overflow-clip-margin: 12px;
+  transition: translate var(--dur-medium) var(--ease-settle);
 }
 
 /* 只抽了牌、還沒送印：不需要留一整張直式畫框的空白，扇形牌夠放就好。送印之後照圖的比例長回來。 */
@@ -2788,17 +2772,44 @@ html[data-go-float] .wall-busy {
 .shot-frame {
   position: relative;
   container-type: inline-size;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-md);
   overflow: hidden;
   background: var(--color-paper-3);
+  box-shadow: 0 0 0 1px var(--color-rule-2);
+  transition: box-shadow var(--dur-medium) var(--ease-out);
 }
 
 .shot-frame img {
   width: 100%;
   height: 100%;
   cursor: zoom-in;
-  object-fit: contain;
+  object-fit: cover;
   background: var(--color-paper);
+  transition: scale var(--dur-xl) var(--ease-out);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .shot:hover {
+    translate: 0 -2px;
+  }
+  .shot:hover > .shot-frame {
+    box-shadow: 0 0 0 1px var(--color-rule), 0 14px 32px -12px rgb(0 0 0 / 0.65);
+  }
+  .shot:hover > .shot-frame > img:not(.shot-under) {
+    scale: 1.03;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .shot,
+  .shot-frame img {
+    transition: none;
+  }
+  .shot:hover {
+    translate: none;
+  }
+  .shot:hover > .shot-frame > img:not(.shot-under) {
+    scale: none;
+  }
 }
 
 .shot[data-status="running"] .shot-frame img {
@@ -3134,72 +3145,165 @@ html[data-go-float] .wall-busy {
   color: color-mix(in oklch, var(--color-accent) 70%, #fff);
 }
 
-/* 電腦（滑鼠可以懸停）：動作按鈕不再在每張圖底下排兩排（十幾張圖就是一整面按鈕），
- * 改成疊在圖的下緣，滑過那張（或鍵盤走進去、Hires／修臉的面板開著）才從底下浮出來，底下墊一層漸暗。
- * 同一格（grid-area 1/1）疊在圖上，不另外佔高度。觸控裝置沒有懸停，照舊排在圖底下。 */
-@media (hover: hover) and (pointer: fine) {
-  .shot {
-    grid-template-columns: minmax(0, 1fr);
+/* 一張成品只看得到圖（照 obscura）：狀態・種子・時代・牌·N 疊在圖的下緣、動作按鈕疊在上緣，各墊一層漸暗。
+ * 兩條都絕對定位、不佔版面，一張的高度就是圖的高度，瀑布流排得剛好；圖很矮（每排 6 張的橫圖）時最多跟圖一樣高。
+ * 電腦：滑過那張（或鍵盤走進去、Hires／修臉的面板開著）才浮出來；還在排、在印、印壞的那張，下緣那一行一直在（看得到進度）。
+ * 手機（沒有懸停）：下緣那一行一直在；動作按鈕不放牆上，點圖開詳情，Hires、修臉、收藏、重印、複製、撤下都在那裡。
+ * 只抽牌的那張沒有圖、畫框底下是「送去印這張」：那一行照舊排在畫框下面。 */
+.shot {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0;
+}
+.shot > .shot-frame {
+  grid-area: 1 / 1;
+}
+.shot > .shot-actions,
+.shot > .shot-meta {
+  position: absolute;
+  left: 0;
+  right: 0;
+  max-height: 100%;
+  overflow: hidden;
+  z-index: 3;
+  /* 漸暗那一層不擋點圖（點圖是放大）；只有按鈕接得到。 */
+  pointer-events: none;
+  transition: opacity var(--dur-short) var(--ease-out), translate var(--dur-short) var(--ease-out);
+}
+.shot > .shot-actions > *,
+.shot > .shot-meta > * {
+  pointer-events: auto;
+}
+.shot > .shot-actions {
+  top: 0;
+  padding: var(--space-xs) var(--space-xs) var(--space-xl);
+  border-radius: var(--radius-md) var(--radius-md) 0 0;
+  background: linear-gradient(rgba(6, 7, 10, 0.82), rgba(6, 7, 10, 0.5) 60%, transparent);
+}
+.shot > .shot-meta {
+  bottom: 0;
+  flex-wrap: nowrap;
+  padding: var(--space-xl) var(--space-sm) var(--space-xs);
+  border-radius: 0 0 var(--radius-md) var(--radius-md);
+  background: linear-gradient(transparent, rgba(6, 7, 10, 0.6) 40%, rgba(6, 7, 10, 0.88));
+  color: rgba(241, 234, 217, 0.78);
+}
+.shot > .shot-meta > * {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.shot > .shot-meta > .shot-toggle {
+  flex: none;
+}
+.shot > .shot-meta .status,
+.shot > .shot-meta code {
+  color: #f1ead9;
+}
+/* 窄的那幾張（每排 5、6 張、手機兩欄）：下緣只留狀態和牌·N，種子、時代在詳情裡看。 */
+@container shot (max-width: 250px) {
+  .shot-meta > code,
+  .shot-meta > .status + code + span {
+    display: none;
   }
-  .shot > .shot-frame {
-    grid-area: 1 / 1;
+}
+/* 疊在暗底上：淺色字、半透明的底。 */
+.shot-actions .btn-ghost {
+  --btn-bg: rgba(12, 14, 18, 0.45);
+  --btn-ink: #f1ead9;
+  --btn-edge: rgba(241, 234, 217, 0.28);
+  backdrop-filter: blur(4px);
+}
+.shot-actions .shot-remove {
+  color: rgba(241, 234, 217, 0.75);
+}
+/* 只抽牌的那張：畫框底下是「送去印這張」，狀態那一行排在畫框下面、一直看得到。 */
+.shot[data-status="drawn"] {
+  gap: var(--space-xs);
+}
+.shot[data-status="drawn"] > .shot-meta {
+  position: static;
+  max-height: none;
+  grid-area: 2 / 1;
+  padding: 0 var(--space-2xs);
+  background: none;
+  color: var(--color-muted);
+  opacity: 1;
+  translate: none;
+}
+.shot[data-status="drawn"] > .shot-meta .status,
+.shot[data-status="drawn"] > .shot-meta code {
+  color: var(--color-ink-2);
+}
+.shot[data-status="drawn"] > .shot-meta {
+  flex-wrap: wrap;
+}
+.shot[data-status="drawn"] > .shot-meta > * {
+  overflow: visible;
+  white-space: normal;
+}
+/* 換了哪張的籤在左上：按鈕浮上來時讓開。 */
+.shot > .shot-swap {
+  transition: opacity var(--dur-short) var(--ease-out);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .shot > .shot-actions,
+  .shot > .shot-meta {
+    opacity: 0;
   }
   .shot > .shot-actions {
-    grid-area: 1 / 1;
-    align-self: end;
-    z-index: 3;
-    padding: var(--space-xl) var(--space-xs) var(--space-xs);
-    border-radius: 0 0 var(--radius-sm) var(--radius-sm);
-    background: linear-gradient(transparent, rgba(6, 7, 10, 0.55) 35%, rgba(6, 7, 10, 0.85));
-    opacity: 0;
-    translate: 0 6px;
-    /* 漸暗那一層不擋點圖（點圖是放大）；只有按鈕接得到滑鼠。 */
-    pointer-events: none;
-    transition: opacity var(--dur-short) var(--ease-out), translate var(--dur-short) var(--ease-out);
-  }
-  .shot > .shot-actions > * {
-    pointer-events: auto;
-  }
-  /* 只抽牌的那張：底部是「送去印這張」，按鈕列改浮在上緣，滑過去才不會蓋住它、按成別的。 */
-  .shot[data-status="drawn"] > .shot-actions {
-    align-self: start;
-    padding: var(--space-xs) var(--space-xs) var(--space-xl);
-    border-radius: var(--radius-sm) var(--radius-sm) 0 0;
-    background: linear-gradient(rgba(6, 7, 10, 0.85), rgba(6, 7, 10, 0.55) 65%, transparent);
     translate: 0 -6px;
   }
-  /* 焦點只算鍵盤走進來的（:focus-visible）：以前是 :focus-within，滑鼠按過一顆鈕（複製、修臉、牌·N、
-   * 開詳情再關掉）焦點留在那張裡，滑鼠移開按鈕列還亮著，要點別處才消失 —— 移到別張就同時亮兩張。 */
-  .shot:is(:hover, :has(:focus-visible)) > .shot-actions,
-  .shot:has(> .shot-actions [aria-expanded="true"]) > .shot-actions {
+  .shot > .shot-meta {
+    translate: 0 6px;
+  }
+  /* 焦點只算鍵盤走進來的（:focus-visible）：滑鼠按過一顆鈕焦點留在那張裡，移開了按鈕列還亮著。 */
+  .shot:is(:hover, :has(:focus-visible)) > :is(.shot-actions, .shot-meta),
+  .shot:has(> .shot-actions [aria-expanded="true"]) > :is(.shot-actions, .shot-meta),
+  .shot:is([data-status="queued"], [data-status="running"], [data-status="failed"], [data-status="stopped"]) > .shot-meta {
     opacity: 1;
     translate: 0 0;
+  }
+  .shot:is(:hover, :has(:focus-visible)) > .shot-swap {
+    opacity: 0;
   }
   /* 一次只亮一張：滑鼠在牆上時，只有滑鼠底下那張（Hires／修臉的面板開著的那張照樣亮，面板跟著它）。 */
   .wall:hover > .shot:not(:hover):not(:has(> .shot-actions [aria-expanded="true"])) > .shot-actions {
     opacity: 0;
-    translate: 0 6px;
+    translate: 0 -6px;
+  }
+}
+
+/* 印好了就不寫「印好了」：圖在那裡就是印好了；排著、在印、印壞的才寫。 */
+.shot[data-status="done"] > .shot-meta .status {
+  display: none;
+}
+/* 疊在圖上的牌·N：小一點、深色玻璃底。 */
+.shot:not([data-status="drawn"]) > .shot-meta .shot-toggle {
+  min-height: 26px;
+  padding: 0 var(--space-xs);
+  gap: 6px;
+  border-color: rgba(241, 234, 217, 0.3);
+  background: rgba(12, 14, 18, 0.5);
+  color: #f1ead9;
+  backdrop-filter: blur(4px);
+}
+
+/* 沒有懸停（手機、平板）：按鈕列不放牆上（在成品詳情裡）；下緣那一行薄一點，只墊在字底下。 */
+@media not ((hover: hover) and (pointer: fine)) {
+  .shot > .shot-actions {
+    display: none;
   }
   .shot > .shot-meta {
-    grid-area: 2 / 1;
-  }
-  .shot > .shot-cards {
-    grid-area: 3 / 1;
-  }
-  /* 疊在暗底上：淺色字、半透明的底。 */
-  .shot-actions .btn-ghost {
-    --btn-bg: rgba(12, 14, 18, 0.45);
-    --btn-ink: #f1ead9;
-    --btn-edge: rgba(241, 234, 217, 0.28);
-    backdrop-filter: blur(4px);
-  }
-  .shot-actions .shot-remove {
-    color: rgba(241, 234, 217, 0.75);
+    padding: var(--space-lg) var(--space-xs) var(--space-xs);
+    background: linear-gradient(transparent, rgba(6, 7, 10, 0.62));
   }
 }
 
 @media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: reduce) {
-  .shot > .shot-actions {
+  .shot > .shot-actions,
+  .shot > .shot-meta {
     translate: none;
     transition: none;
   }
@@ -3220,7 +3324,7 @@ html[data-go-float] .wall-busy {
 
 .shot-actions .shot-remove {
   margin-left: auto;
-  color: var(--color-muted);
+  color: rgba(241, 234, 217, 0.75);
 }
 
 @media (hover: hover) and (pointer: fine) {

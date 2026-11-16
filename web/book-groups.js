@@ -21,6 +21,7 @@ import { loadGroups, cachedGroups, onGroupsChange, saveGroup, deleteGroup, GROUP
 import { SECTION_ZH, SECTION_SUIT } from "./group-picks.js";
 import { t as tr, english } from "./i18n.js";
 import { groupSlotKey } from "./engine.js";
+import { groupChips } from "./cards.js";
 
 const MAX_TAGS = 120;
 
@@ -40,6 +41,8 @@ export function mountBookGroups({ lib, assets, onChange, toMochi, visible, data 
   const head = document.getElementById("book-shelf-head");
   let activeId = "";
   let editing = false;
+  // 看一組時，標頭的小分類籤挑的那一格（只看這組裡那一格的牌）；空字串是整組。
+  let sub = "";
   let saving = Promise.resolve();
   let folded = readFold();
   // 加牌時浮在畫面底下的「完成」：手機上工具列不黏，捲到多下面都按得到。
@@ -239,16 +242,64 @@ export function mountBookGroups({ lib, assets, onChange, toMochi, visible, data 
     const slotNote = slots.length
       ? el("p", { class: "bsh-hint bsh-slots" }, el("span", {}, "管的格子："), ...slots.flatMap((z, i) => [i ? (english ? ", " : "、") : null, el("b", {}, z)]), el("span", {}, "（其他照常抽）"))
       : null;
+    // 這一段所有的小分類（跟卡冊的小分類籤同一套），一格一顆：這組有放牌的亮著、寫張數，點了只看那一格；
+    // 沒放的劃掉 ——那幾格抽牌時照常從整個詞庫抽。加牌時籤在工具列那一排（點了只看那一格的牌）。
+    const subRow = editing ? null : subChips(g);
     const hiddenNote = hidden && !editing ? el("p", { class: "bsh-hint bsh-hidden" }, `${hidden} 張被目前的分級、性別收起來了`) : null;
-    head.replaceChildren(...[el("div", { class: "bsh-row", dataset: { suit: SECTION_SUIT[g.section] } }, name, count, el("span", { class: "bsh-acts" }, edit, use, del, close)), slotNote, hint, hiddenNote].filter(Boolean));
+    head.replaceChildren(...[el("div", { class: "bsh-row", dataset: { suit: SECTION_SUIT[g.section] } }, name, count, el("span", { class: "bsh-acts" }, edit, use, del, close)), subRow, slotNote, hint, hiddenNote].filter(Boolean));
     head.hidden = false;
     head.dataset.suit = SECTION_SUIT[g.section];
     swapIn(head, g.id + (editing ? ":e" : ""), { firstToo: true });
   }
 
+  /** 標頭裡的小分類籤：這一段所有的小分類，這組有的亮、沒有的劃掉。 */
+  function subChips(g) {
+    const all = lib.cards.filter((c) => c.item?.section === g.section && !c.custom && visible(c));
+    const runs = groupChips(all);
+    const inGroup = new Map();
+    for (const t of g.tags) {
+      const c = lib.byTag.get(t);
+      if (c) inGroup.set(c.group, (inGroup.get(c.group) || 0) + 1);
+    }
+    if (sub && !inGroup.has(sub)) sub = "";
+    const chip = (i) => {
+      const n = inGroup.get(i.g) || 0;
+      return el(
+        "button",
+        {
+          class: "bsh-sub pressable",
+          type: "button",
+          dataset: { has: n ? "true" : "false" },
+          "aria-pressed": n && sub === i.g ? "true" : "false",
+          disabled: n ? null : true,
+          title: n ? `只看這組裡「${i.zh}」的 ${n} 張` : `這組沒有「${i.zh}」：抽牌時照常抽`,
+          onclick: () => {
+            sub = sub === i.g ? "" : i.g;
+            renderHead();
+            onChange();
+          },
+        },
+        i.short,
+        n ? el("b", { class: "bsh-sub-n" }, String(n)) : null
+      );
+    };
+    const parts = runs.map((r) =>
+      r.fam
+        ? el("span", { class: "bsh-sub-run" }, el("span", { class: "bsh-sub-fam" }, r.fam), ...r.items.map(chip))
+        : chip(r.items[0])
+    );
+    return el(
+      "div",
+      { class: "bsh-subs", role: "group", "aria-label": "這組有哪些小分類" },
+      el("button", { class: "bsh-sub pressable", type: "button", dataset: { has: "true" }, "aria-pressed": sub ? "false" : "true", onclick: () => ((sub = ""), renderHead(), onChange()) }, "整組", el("b", { class: "bsh-sub-n" }, String(g.tags.length))),
+      ...parts
+    );
+  }
+
   function pick(id, from) {
     activeId = id;
     editing = false;
+    sub = "";
     changed();
     const sel = shelf?.querySelector(`.bs-tile[data-id="${CSS.escape(id)}"]`);
     if (sel) seat(sel);
@@ -257,6 +308,7 @@ export function mountBookGroups({ lib, assets, onChange, toMochi, visible, data 
 
   function setEditing(on) {
     editing = on;
+    sub = "";
     changed();
   }
 
@@ -472,6 +524,8 @@ export function mountBookGroups({ lib, assets, onChange, toMochi, visible, data 
       return g.tags.includes(card.tag);
     },
     has: (tag) => !!active()?.tags.includes(tag),
+    /** 看一組時挑的小分類（空字串＝整組）。 */
+    sub: () => (editing ? "" : sub),
     toggle,
     detailRow,
     clear,

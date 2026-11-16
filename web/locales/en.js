@@ -2041,6 +2041,7 @@ ComfyUI 沒開：先用拼貼卡面，之後再回來烤。|ComfyUI isn’t runn
 改群組要先讀到最新的那份，請再試一次|Load the latest version of this group first, then try again
 管的格子：|Slots it controls: 
 （其他照常抽）| (the rest draw as usual)
+勾了的組管：|Checked groups cover: 
 `;
 
 export const messages = Object.freeze(Object.fromEntries(copy.trim().split("\n").map((line) => {
@@ -2658,6 +2659,10 @@ ComfyUI 不收：{0}|ComfyUI rejected it: {0!}
 一個群組最多 {0} 張|A group holds up to {0} cards
 一個群組最多 {0} 張牌|A group holds up to {0} cards
 群組最多 {0} 組，先刪掉一些|Up to {0} groups; delete some first
+{0}設 0：這一段不抽，群組也不會用到。|{0} is set to 0: nothing is drawn here, so the groups aren't used.
+共 {0} 格；{1}每張抽 {2} 個，名額先給群組的格子，可能輪不到群組外的。|{0} slots in all; {1} draws {2} per image, and group slots come first, so there may be no room for others.
+共 {0} 格；{1}每張抽 {2} 個：群組的 {0} 格從群組抽，其他 {3} 個照常抽。|{0} slots in all; {1} draws {2} per image: {0} come from the groups, the other {3} draw as usual.
+每張只用其中一組（一組管 {0} 格）；{1}每張抽 {2} 個，其他照常抽。|Each image uses one group ({0} slots per group); {1} draws {2} per image, the rest as usual.
 `;
 export const templates = parameterized.trim().split("\n").map((line) => {
   const split = line.indexOf("|");

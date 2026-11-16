@@ -13,6 +13,7 @@
 import { el, openSheet, toast, friendlyError } from "./ui.js";
 import { reducedMotion, DUR, CURVE, css, swapIn, enter } from "./motion.js";
 import { cachedGroups, loadGroups, onGroupsChange, pickOf, saveGroup } from "./card-groups.js";
+import { groupSlotKey } from "./engine.js";
 
 export const SECTION_ZH = { feature: "長相", clothing: "服裝", pose: "姿勢", env: "場景" };
 export const SECTION_SUIT = { feature: "look", clothing: "wear", pose: "pose", env: "scene" };
@@ -32,6 +33,18 @@ export function mountGroupPicks({ settings, setSettings, cardOf, poolTags, block
     if (!all) return { ids, groups: null, mode };
     const groups = ids.map((id) => all.find((g) => g.id === id && g.section === section)).filter(Boolean);
     return { ids: groups.map((g) => g.id), groups, mode };
+  };
+
+  /** 一組牌照小分類（字盒那套）數張數：[[小分類名, 張數]…]，照第一次出現的順序。 */
+  const subsOf = (tags) => {
+    const m = new Map();
+    for (const t of tags) {
+      const c = cardOf(t);
+      if (!c) continue;
+      const zh = c.groupZh || c.group;
+      m.set(zh, (m.get(zh) || 0) + 1);
+    }
+    return [...m];
   };
 
   const setPick = (section, ids, mode) => {
@@ -84,10 +97,43 @@ export function mountGroupPicks({ settings, setSettings, cardOf, poolTags, block
   function openPicker(section, from) {
     const zh = SECTION_ZH[section];
     const list = el("div", { class: "gp-list", role: "group", "aria-label": `${zh}群組` });
-    const seg = modeSeg(section);
+    const seg = modeSeg(section, () => paintSum());
     const lead = el("p", { class: "gp-lead" }, `勾了的群組：${zh}只從這幾組裡抽。群組沒放到的格子照常抽。`);
     const saveBox = el("div", { class: "gp-save" });
-    const sheetBody = el("div", { class: "gp-sheet", dataset: { suit: SECTION_SUIT[section] } }, lead, list, seg.box, saveBox);
+    // 勾了的組加起來管幾格、跟這段每張抽幾個比：決定「每段抽幾個」要調多少。
+    const sum = el("div", { class: "gp-sum", "aria-live": "polite" });
+    const paintSum = () => {
+      const { groups } = pickedOf(section);
+      const tags = [...new Set((groups || []).flatMap((x) => x.tags))];
+      if (!tags.length) {
+        sum.hidden = true;
+        return;
+      }
+      const slotsOf = (list) => new Set(list.map((t) => cardOf(t)?.item).filter(Boolean).map(groupSlotKey)).size;
+      // 整組一起：每張只用其中一組，格數照單一組算（最少～最多）；混著抽才是全部加起來。
+      const { mode } = pickedOf(section);
+      const each = mode === "whole" && groups.length > 1 ? groups.map((x) => slotsOf(x.tags)) : null;
+      const slots = each ? Math.max(...each) : slotsOf(tags);
+      const range = each && Math.min(...each) !== slots ? `${Math.min(...each)}～${slots}` : String(slots);
+      const want = Number(settings().counts?.[section]) || 0;
+      sum.hidden = false;
+      sum.replaceChildren(
+        el("span", { class: "gp-sum-subs" }, el("span", { class: "gp-sum-label" }, "勾了的組管："), subsOf(tags).map(([zh, n]) => el("span", { class: "gp-sub" }, zh, el("b", {}, String(n))))),
+        el(
+          "p",
+          { class: "gp-sum-note" },
+          want <= 0
+            ? `${zh}設 0：這一段不抽，群組也不會用到。`
+            : each
+              ? `每張只用其中一組（一組管 ${range} 格）；${zh}每張抽 ${want} 個，其他照常抽。`
+              : slots >= want
+                ? `共 ${slots} 格；${zh}每張抽 ${want} 個，名額先給群組的格子，可能輪不到群組外的。`
+                : `共 ${slots} 格；${zh}每張抽 ${want} 個：群組的 ${slots} 格從群組抽，其他 ${want - slots} 個照常抽。`
+        )
+      );
+      swapIn(sum, `${range}|${want}|${tags.length}|${mode}`);
+    };
+    const sheetBody = el("div", { class: "gp-sheet", dataset: { suit: SECTION_SUIT[section] } }, lead, sum, list, seg.box, saveBox);
 
     const render = (fresh = null) => {
       const groups = groupsOf(section);
@@ -99,6 +145,7 @@ export function mountGroupPicks({ settings, setSettings, cardOf, poolTags, block
       );
       seg.sync();
       renderSave();
+      paintSum();
     };
 
     function row(g, on, i, fresh) {
@@ -115,6 +162,10 @@ export function mountGroupPicks({ settings, setSettings, cardOf, poolTags, block
           { class: "gp-row-main" },
           el("span", { class: "gp-row-name", dataset: { noI18n: "" } }, g.name),
           el("span", { class: "gp-row-meta" }, g.tags.length ? `${g.tags.length} 張` : "空的"),
+          // 這組有哪些小分類（跟字盒、卡冊的小分類同一套），一格一顆、寫張數：看了就知道勾它會管到哪幾格。
+          subsOf(g.tags).length
+            ? el("span", { class: "gp-row-subs" }, subsOf(g.tags).map(([zh, n]) => el("span", { class: "gp-sub" }, zh, el("b", {}, String(n)))))
+            : null,
           el("span", { class: "gp-row-tags", dataset: { noI18n: "" } }, names.slice(0, 8).join("、") + (names.length > 8 ? "…" : "")),
           // 只說設定上一定抽不到的（分級、性別、時代）；抽牌途中才決定的（互斥、場景）不先保證。
           out.length ? el("span", { class: "gp-row-warn" }, out.length === g.tags.length ? "這組的牌在現在的設定下都抽不到（分級、性別、時代）" : `${out.length} 張在現在的設定下抽不到（分級、性別、時代）`) : null
@@ -127,6 +178,7 @@ export function mountGroupPicks({ settings, setSettings, cardOf, poolTags, block
         if (box.checked && !reducedMotion()) r.animate([{ backgroundPosition: "100% 0" }, { backgroundPosition: "0 0" }], { duration: DUR.long, easing: css(CURVE.out) });
         setPick(section, next, mode);
         seg.sync();
+        paintSum();
       });
       if (!reducedMotion()) enter(r, { delay: fresh ? 0 : Math.min(i, 8) * 35 });
       return r;
@@ -185,7 +237,7 @@ export function mountGroupPicks({ settings, setSettings, cardOf, poolTags, block
   }
 
   /** 「整組一起｜混著抽」：勾兩組以上才出現，底下一塊會滑的底。 */
-  function modeSeg(section) {
+  function modeSeg(section, onMode) {
     const items = [
       ["whole", "整組一起", "每張圖先挑一組，再從那組裡抽：同一張不會把兩組拆開來混。開「同一個人」時，第 2 張起長相沿用第 1 張那組。"],
       ["mix", "混著抽", "勾到的組合在一起抽：變化最多，會跨組混搭。"],
@@ -203,6 +255,7 @@ export function mountGroupPicks({ settings, setSettings, cardOf, poolTags, block
             const { ids } = pickedOf(section);
             setPick(section, ids, v);
             sync();
+            onMode?.();
           },
         },
         label

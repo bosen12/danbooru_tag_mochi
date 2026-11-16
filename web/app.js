@@ -58,6 +58,7 @@ import { mountGenStatus } from "./gen-status.js";
 import { currentPose, poseButton } from "./pose.js";
 import { openDecks } from "./decks.js";
 import { SIZES, ratioBox } from "./sizes.js";
+import { mountMasonry } from "./wall-masonry.js";
 import { loadGroups, cachedGroups, withGroupPools } from "./card-groups.js";
 import { mountGroupPicks } from "./group-picks.js";
 import { handTools } from "./hand-tools.js";
@@ -2918,7 +2919,7 @@ async function drawBatchNow(gen, intent, epoch) {
   const wall = $("wall");
   const fresh = made.slice().reverse().map((shot) => [shot, shotNode(shot, true, { printing: gen })]);
   // 舊的成品讓位：從原來的格子滑到新位置（跟同種子重印同一個 flip），不是一格跳過去。
-  flip(wall, () => {
+  wallFlip(() => {
     for (const [, node] of fresh) wall.prepend(node);
   });
   for (const [shot, node] of fresh) {
@@ -3095,41 +3096,32 @@ function trimWall() {
 
 /* ================= 成品牆 ================= */
 
-/** 每排幾張套到牆上。換的時候讓每張從舊位置滑到新位置（flip），不是一格跳過去。 */
+/** 每排幾張套到牆上（瀑布流的欄數）。換的時候每張從舊位置、舊大小滑過去（wall-masonry.js）。 */
 function applyWallCols(animate) {
   const wall = $("wall");
   const cols = WALL_COLS.includes(String(ui.wallCols)) ? String(ui.wallCols) : "auto";
-  if (wall.dataset.cols === cols) return;
-  const set = () => (cols === "auto" ? delete wall.dataset.cols : (wall.dataset.cols = cols));
-  if (!animate || reducedMotion()) return set();
-  // 每排張數一換，每張都跟著變大變小：從舊的位置、舊的大小縮放過去（位移＋等比縮放，只動 transform）。
-  // 以前只有位移，大小是一格就跳過去的。只動畫面上看得到的那幾張（捲出去的本來就不排版）。
-  const seen = (r) => r.width && r.bottom > 0 && r.top < innerHeight;
-  const before = new Map();
-  for (const n of wall.children) {
-    const r = n.getBoundingClientRect();
-    if (seen(r)) before.set(n, r);
-  }
-  for (const n of before.keys()) for (const a of n.getAnimations()) if (a.id === "wall-cols") a.cancel();
-  set();
-  for (const [n, a] of before) {
-    const b = n.getBoundingClientRect();
-    if (!b.width || (!seen(b) && !seen(a))) continue;
-    const k = a.width / b.width;
-    if (Math.abs(a.left - b.left) < 1 && Math.abs(a.top - b.top) < 1 && Math.abs(k - 1) < 0.01) continue;
-    n.animate(
-      [
-        { transformOrigin: "0 0", transform: `translate(${(a.left - b.left).toFixed(1)}px, ${(a.top - b.top).toFixed(1)}px) scale(${k.toFixed(4)})` },
-        { transformOrigin: "0 0", transform: "none" },
-      ],
-      { id: "wall-cols", duration: DUR.long, easing: css(CURVE.out) }
-    );
-  }
-  // 變小之後才擠進畫面的那幾張：原地淡進來，不要一格就站在那裡、被滑過來的牌壓著。
-  for (const n of wall.children) {
-    if (before.has(n) || !seen(n.getBoundingClientRect())) continue;
-    n.animate([{ opacity: 0, transform: "scale(0.96)" }, { opacity: 1, transform: "none" }], { id: "wall-cols", duration: DUR.medium, delay: DUR.micro, easing: css(CURVE.out), fill: "backwards" });
-  }
+  if (cols === "auto") delete wall.dataset.cols;
+  else wall.dataset.cols = cols;
+  if (animate) wallLayout().animate();
+  else wallLayout().now();
+}
+
+// 成品牆的瀑布流：照每張的長寬比疊進最矮的那一欄（照 obscura 的底片庫）。
+let masonry = null;
+function wallLayout() {
+  return (masonry ||= mountMasonry($("wall"), {
+    cols: () => (WALL_COLS.includes(String(ui.wallCols)) ? String(ui.wallCols) : "auto"),
+    minCol: () => (matchMedia("(max-width: 40rem)").matches ? 150 : 240),
+    gap: () => (matchMedia("(max-width: 40rem)").matches ? 10 : 14),
+  }));
+}
+
+/** 改牆上有哪幾張（放進新的、撤下、復原）：舊的從原來的位置滑到新位置。 */
+function wallFlip(mutate) {
+  flip($("wall"), () => {
+    mutate();
+    wallLayout().now();
+  });
 }
 
 function syncWallEmpty(hasShots) {
@@ -3160,6 +3152,7 @@ function renderWall() {
   applyWallCols(false);
   const wall = $("wall");
   wall.replaceChildren(...shots.map((s) => shotNode(s, false)));
+  wallLayout().now();
   syncWallEmpty(shots.length > 0);
 }
 
@@ -3889,7 +3882,7 @@ function reprint(shot) {
   shots.unshift(copy);
   noteUses([copy]);
   const node = shotNode(copy, true, { printing: true });
-  flip($("wall"), () => $("wall").prepend(node));
+  wallFlip(() => $("wall").prepend(node));
   enter(node);
   const r = node.getBoundingClientRect();
   if (r.top < 0 || r.top > innerHeight - 80) node.scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "nearest" });
@@ -3938,7 +3931,7 @@ function rerollCard(shot, tag, btn, closeCard) {
   shots.unshift(next);
   noteUses([next]);
   const node = shotNode(next, true, { printing: gen });
-  flip($("wall"), () => $("wall").prepend(node));
+  wallFlip(() => $("wall").prepend(node));
   enter(node);
   const r = node.getBoundingClientRect();
   if (r.top < 0 || r.top > innerHeight - 80) node.scrollIntoView({ behavior: reducedMotion() ? "auto" : "smooth", block: "nearest" });
@@ -3982,7 +3975,7 @@ function removeShot(shot, { quiet = false } = {}) {
   shots = shots.filter((s) => s.id !== shot.id);
   const node = document.querySelector(`.shot[data-id="${shot.id}"]`);
   // 縮掉、旁邊的滑過來補位（以前是整排一格一格跳過去），而且可以反悔：五秒內按「復原」放回原位。
-  leave(node, () => flip($("wall"), () => node?.remove()));
+  leave(node, () => wallFlip(() => node?.remove()));
   syncWallEmpty(shots.length > 0);
   S.saveShots(shots);
   renderGoFloat();
@@ -4018,7 +4011,7 @@ function sweepCancelled() {
   let left = nodes.length;
   const settle = () => {
     if (--left > 0) return;
-    flip(wall, () => nodes.forEach((n) => n.remove()));
+    wallFlip(() => nodes.forEach((n) => n.remove()));
   };
   if (nodes.length) nodes.forEach((n) => leave(n, settle));
   syncWallEmpty(shots.length > 0);
@@ -4043,7 +4036,7 @@ function restoreShot(shot, at, requeue = false) {
   const node = shotNode(shot, false);
   const wall = $("wall");
   const next = shots[i + 1] && wall.querySelector(`.shot[data-id="${shots[i + 1].id}"]`);
-  flip(wall, () => (next ? next.before(node) : wall.append(node)));
+  wallFlip(() => (next ? next.before(node) : wall.append(node)));
   enter(node);
   syncWallEmpty(true);
   if (requeue) generator.enqueue(shot);
