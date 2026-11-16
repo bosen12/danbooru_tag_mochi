@@ -91,6 +91,17 @@ const note = (tags, at) => JSON.stringify({ tags, at, from: "book", weights: {} 
   ok("要重新整理的那一刻：點進去才做的事不做", ran === 0);
 }
 
+// 2b. 別頁先寫了便條，這一頁之後又自己寫了別的（記分頁狀態）：照樣要重新整理（專案主：牌要切走再切回來才出現）
+{
+  const page = fakePage();
+  const { guardPrerender } = await load();
+  guardPrerender("index");
+  page.external(NOTE, note(["smile"], Date.now()));
+  localStorage.setItem("mochi.ui.v1", "{}");
+  page.activate();
+  ok("別頁的便條之後自己又寫了別的：點進去照樣重新整理", page.reloads() === 1);
+}
+
 // 3. takePool：預開時讀到沒有便條，點進去前別頁寫了一張 → 那張留著給重新整理後拿
 {
   const page = fakePage();

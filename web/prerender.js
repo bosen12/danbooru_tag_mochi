@@ -59,7 +59,15 @@ export function whenActive(fn) {
   else fn();
 }
 
-function snapshot({ local, session }) {
+/** 預先開好之後、點進去之前，這個房間在意的存檔變了就重新整理。要在讀存檔之前呼叫（各頁主程式的第一行）。 */
+export function guardPrerender(room) {
+  if (!document.prerendering || !KEYS[room]) return;
+  const keys = KEYS[room];
+  // 開始時每一把鑰匙的值。這一頁自己在背後開的時候寫的（開機整理設定、記住分頁狀態）只更新它寫的那一把：
+  // 自己寫的不算「存檔變了」，別頁寫的（卡冊、解析池的便條）照樣算。
+  // 以前（2026-11-16 早一版）自己一寫就把整份重拍一次：別頁剛寫的便條也被當成基準，點進去不重新整理，
+  // 牌要切走再切回來才出現。
+  const base = new Map();
   const read = (store, k) => {
     try {
       return store.getItem(k);
@@ -67,25 +75,15 @@ function snapshot({ local, session }) {
       return null;
     }
   };
-  return JSON.stringify([local.map((k) => read(localStorage, k)), session.map((k) => read(sessionStorage, k))]);
-}
-
-/** 預先開好之後、點進去之前，這個房間在意的存檔變了就重新整理。要在讀存檔之前呼叫（各頁主程式的第一行）。 */
-export function guardPrerender(room) {
-  if (!document.prerendering || !KEYS[room]) return;
-  let before = snapshot(KEYS[room]);
-  // 這一頁自己在背後開的時候寫的（開機時整理設定、記住分頁狀態）不算「存檔變了」：寫完就當新的基準。
-  // 以前算：墨池背後開好時自己存了一次設定，點進去就一定整頁重新整理（白開了，還撕掉剛帶過來的牌）。
+  for (const k of keys.local) base.set("l:" + k, read(localStorage, k));
+  for (const k of keys.session) base.set("s:" + k, read(sessionStorage, k));
   for (const name of ["setItem", "removeItem"]) {
     const original = Storage.prototype[name];
-    Storage.prototype[name] = function (...args) {
-      const out = original.apply(this, args);
+    Storage.prototype[name] = function (key, ...rest) {
+      const out = original.call(this, key, ...rest);
       if (document.prerendering) {
-        try {
-          before = snapshot(KEYS[room]);
-        } catch {
-          /* 比不了就算了 */
-        }
+        const id = (this === sessionStorage ? "s:" : "l:") + key;
+        if (base.has(id)) base.set(id, read(this, key));
       }
       return out;
     };
@@ -93,7 +91,8 @@ export function guardPrerender(room) {
   document.addEventListener(
     "prerenderingchange",
     () => {
-      if (snapshot(KEYS[room]) !== before) {
+      const changed = [...base].some(([id, was]) => read(id[0] === "s" ? sessionStorage : localStorage, id.slice(2)) !== was);
+      if (changed) {
         reloading = true;
         location.reload();
       }
