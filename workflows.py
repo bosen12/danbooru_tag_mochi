@@ -543,6 +543,15 @@ def save_settings(data: dict) -> None:
         _write_json(SETTINGS_PATH, cur)
 
 
+def update_setting(key: str, change):
+    """讀出 key 那一格、交給 change 改、寫回去，整段排隊（兩支手機同時改負面詞，後存的不會蓋掉先存的）。"""
+    with _STORE_LOCK, file_lock.locked(SETTINGS_PATH):
+        cur = load_settings()
+        cur[key] = change(cur.get(key))
+        _write_json(SETTINGS_PATH, cur)
+        return cur[key]
+
+
 def saved_comfy_api() -> str:
     got = str(load_settings().get("comfyApi") or "").strip()
     return got.rstrip("/") if got else ""

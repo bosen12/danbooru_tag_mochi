@@ -3,6 +3,7 @@
 import { lockScroll, unlockScroll } from "./scroll-lock.js";
 import { invalidateModelLists } from "./lora.js";
 import { familySamplingPayload } from "./family-sampling.js";
+import { negativeBlock } from "./negative-prompt.js";
 
 const $ = (id) => document.getElementById(id);
 const REDUCE_MOTION = matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -787,6 +788,8 @@ function renderCurrent() {
   for (const item of prompts) {
     box.append(nodeButton(item, item.id === negId, () => savePrompt("negative", item), item.id === sugNeg ? "建議" : ""));
   }
+  // 墨池寫進負向節點的那一串：跟著 Illustrious 家族，或這套工作流程自己一份（negative-prompt.js）。
+  if (negId) box.append(negativeBlock({ scope: "workflows", key: WORKFLOW_ID }));
 
   const loras = current.loraNodes || [];
   const loraOn = new Set(pickedLoraIds());

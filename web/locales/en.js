@@ -1977,6 +1977,30 @@ ComfyUI 沒開：先用拼貼卡面，之後再回來烤。|ComfyUI isn’t runn
 自製牌最多 300 張，先刪掉一些|You can have at most 300 custom cards; delete some first
 詞庫外的字太多了（最多 12 個、300 字）|Too many words outside the lexicon (at most 12, 300 characters)
 分級要是全年齡、敏感或色情|Rating must be all-ages, sensitive or explicit
+儲存中…|Saving…
+已存，下一張就用這串。|Saved. The next image uses it.
+連不上伺服器|Can’t reach the server
+要用哪一份|Which copy to use
+這顆底模自己一份|This model’s own copy
+這套工作流程自己一份|This workflow’s own copy
+只有這套工作流程用這一份。|Only this workflow uses this copy.
+只有這顆底模用這一份；同一家的其他底模照樣跟著家族。|Only this model uses this copy. Other models in the family still follow the family.
+怎麼改|How to edit
+在預設上加減|Edit the default
+整串自己寫|Write your own
+預設的負面詞：點一下劃掉，再點一下恢復|Default negative words: tap one to strike it out, tap again to restore it
+點一下劃掉（不送這個字）|Tap to strike it out (it won’t be sent)
+已劃掉，點一下恢復|Struck out. Tap to restore
+加字後按 Enter，逗號隔開可加多個|Add a word, press Enter (commas for several)
+加負面詞|Add negative words
+整串負面詞|Full negative prompt
+用逗號分開，例如 worst quality, bad hands|Separate with commas, e.g. worst quality, bad hands
+一定會加上、不能拿掉的字|Always added, can’t be removed
+防未成年：|Blocks minors:
+選全年齡時另外補：|Also added for General:
+選敏感時另外補：|Also added for Sensitive:
+防未成年的字本來就一定會加上。|Words that block minors are always added already.
+這些字已經在裡面了。|Those words are already in the list.
 `;
 
 export const messages = Object.freeze(Object.fromEntries(copy.trim().split("\n").map((line) => {
@@ -2564,6 +2588,10 @@ ComfyUI 不收：{0}|ComfyUI rejected it: {0!}
 「{0}」不能用（未成年、禁用角色）|“{0!}” isn’t allowed (minors, banned characters)
 詞庫外的字最多 {0} 個|At most {0} words outside the lexicon
 {0} 張：{1}|{0} cards: {1}
+跟著 {0} 家族|Follow the {0!} family
+改這裡會改到所有跟著 {0} 家族的底模。|Changes here apply to every model that follows the {0!} family.
+改這裡會改到所有跟著 {0} 家族的底模和工作流程。|Changes here apply to every model and workflow that follows the {0!} family.
+拿掉 {0}|Remove {0!}
 `;
 export const templates = parameterized.trim().split("\n").map((line) => {
   const split = line.indexOf("|");

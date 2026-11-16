@@ -1,6 +1,7 @@
 import { lockScroll, unlockScroll } from "./scroll-lock.js";
 import { focusEntry } from "./focus-entry.js";
 import { familySamplingBlock, familyOf, familyOfBase, FAMILY_LABEL } from "./family-sampling.js";
+import { negativeBlock } from "./negative-prompt.js";
 
 const $ = (id) => document.getElementById(id);
 const REDUCE_MOTION = matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -2240,6 +2241,8 @@ function renderCkptCurrent() {
   // 這顆底模那一家的 Steps／CFG／採樣器／排程（family-sampling.js）：選了哪顆就顯示哪一家的。
   // 自訂工作流用它自己圖裡的參數，這一格照樣能改（換回內建流程時就用得到）。
   box.appendChild(familySamplingBlock(cur.format));
+  // 這顆底模的負面提示詞（negative-prompt.js）：跟著家族，或自己一份。
+  box.appendChild(negativeBlock({ scope: "ckpts", key: cur.ckpt_name, format: cur.format }));
   if (GALLERY) return;
   if (cur.preview) {
     const pv = document.createElement("div");

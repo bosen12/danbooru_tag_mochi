@@ -50,6 +50,7 @@ import file_lock
 import gen_log
 import image_parse
 import lora_scan
+import negative_prompts
 import prompt_formats
 import recipes
 import setup_tasks
@@ -940,14 +941,54 @@ def _rating_arg(rating, sfw: bool):
     return rating if rating is not None else sfw
 
 
-def _negative_text(fmt: str, rating, sfw: bool) -> str:
+def negative_rules() -> dict:
+    """使用者自訂的負面詞（data/settings.json 的 negativePrompts，negative_prompts.py）。"""
+    return negative_prompts.clean_store(workflows.load_settings().get("negativePrompts"))
+
+
+def custom_negative(default_full: str, default_base: str, family: str, ckpt_name=None, workflow=None) -> str:
+    """預設的負面詞套上使用者的規則（沒設就原樣）。分級補的字、防未成年的字不管規則怎麼寫都會在。"""
+    rule = negative_prompts.resolve(negative_rules(), family, ckpt_name, workflow)
+    return negative_prompts.compose(default_full, default_base, rule)
+
+
+def _negative_text(fmt: str, rating, sfw: bool, ckpt_name=None, custom: bool = True) -> str:
     arg = _rating_arg(rating, sfw)
-    return prompt_formats.negative_for(fmt, arg, negative_for(arg))
+    full = prompt_formats.negative_for(fmt, arg, negative_for(arg))
+    if not custom:
+        return full
+    base = prompt_formats.negative_for(fmt, "explicit", NEGATIVE)
+    return custom_negative(full, base, fmt, ckpt_name)
+
+
+def negative_view() -> dict:
+    """/api/negative-prompts：各家族可以改的預設、各分級一定會補的字、防未成年的字，加上目前存的規則。"""
+    families = {}
+    for fmt in prompt_formats.FORMATS:
+        base = prompt_formats.negative_for(fmt, "explicit", NEGATIVE)
+        families[fmt] = {
+            "label": prompt_formats.LABELS.get(fmt, fmt),
+            "base": negative_prompts.editable(base),
+            "rating": {
+                r: negative_prompts.locked_for(prompt_formats.negative_for(fmt, r, negative_for(r)), base)
+                for r in ("general", "sensitive")
+            },
+        }
+    return {"ok": True, "rules": negative_rules(), "families": families, "guard": list(negative_prompts.AGE_GUARD)}
+
+
+def save_negative_rule(payload: dict) -> dict:
+    scope = str(payload.get("scope") or "")
+    key = str(payload.get("key") or "")
+    if scope == "families" and key not in prompt_formats.FORMATS:
+        raise ValueError("不認得這個模型家族")
+    workflows.update_setting("negativePrompts", lambda cur: negative_prompts.set_rule(cur, scope, key, payload.get("rule")))
+    return negative_view()
 
 
 def build_anima_workflow(positive: str, width: int, height: int, seed: int, loras, ckpt_name: str,
                          sfw: bool = False, rating=None, steps=None, cfg_scale=None,
-                         sampler=None, scheduler=None) -> dict:
+                         sampler=None, scheduler=None, custom_negative: bool = True) -> dict:
     """Anima：UNETLoader + CLIPLoader + VAELoader，不是 checkpoint。LoRA 串在 UNET 和 CLIP 後面。"""
     opt = anima_options()
     if steps is None:
@@ -984,7 +1025,7 @@ def build_anima_workflow(positive: str, width: int, height: int, seed: int, lora
         },
         "37": {
             "class_type": "CLIPTextEncode",
-            "inputs": {"text": _negative_text(prompt_formats.ANIMA, rating, sfw), "clip": ["14", 0]},
+            "inputs": {"text": _negative_text(prompt_formats.ANIMA, rating, sfw, ckpt_name, custom_negative), "clip": ["14", 0]},
         },
         "119": {
             "class_type": "EmptyLatentImage",
@@ -1030,7 +1071,8 @@ def _unet_file(ckpt_name: str) -> str:
 
 
 def build_natural_workflow(fmt: str, positive: str, width: int, height: int, seed: int, loras, ckpt_name: str,
-                           sfw: bool = False, rating=None, sampling: dict | None = None) -> dict:
+                           sfw: bool = False, rating=None, sampling: dict | None = None,
+                           custom_negative: bool = True) -> dict:
     """Krea 2、Z-Image：UNET + CLIP + VAE。CFG ≤ 1 負面用 ConditioningZeroOut；LoRA 只接 model。
 
     Z-Image 多一個 ModelSamplingAuraFlow（shift 3）接在 UNET 後面，空 latent 用 EmptySD3LatentImage。
@@ -1045,7 +1087,7 @@ def build_natural_workflow(fmt: str, positive: str, width: int, height: int, see
     else:
         negative = {
             "class_type": "CLIPTextEncode",
-            "inputs": {"text": _negative_text(fmt, rating, sfw), "clip": ["14", 0]},
+            "inputs": {"text": _negative_text(fmt, rating, sfw, ckpt_name, custom_negative), "clip": ["14", 0]},
         }
     wf = {
         "13": {
@@ -1114,7 +1156,8 @@ def build_natural_workflow(fmt: str, positive: str, width: int, height: int, see
 
 def build_workflow(positive: str, width: int, height: int, seed: int, loras=None,
                    ckpt=None, sfw: bool = False, rating=None, steps=None, cfg_scale=None, pose=None,
-                   family_sampling=None) -> dict:
+                   family_sampling=None, custom_negative: bool = True) -> dict:
+    """custom_negative=False：不套使用者自訂的負面詞（卡面烘焙：同一張牌誰烤都一樣）。"""
     ckpt_name = resolve_ckpt(ckpt)
     fmt = prompt_formats.format_of(ckpt_name, model_format_overrides(), lookup_base_model(ckpt_name))
     sampling = resolve_sampling(fmt, steps, cfg_scale, family_sampling)
@@ -1130,10 +1173,11 @@ def build_workflow(positive: str, width: int, height: int, seed: int, loras=None
                 sfw=sfw, rating=rating,
                 steps=sampling["steps"], cfg_scale=sampling["cfg"],
                 sampler=sampling["sampler"], scheduler=sampling["scheduler"],
+                custom_negative=custom_negative,
             )
         return build_natural_workflow(
             fmt, positive, width, height, seed, loras, ckpt_name,
-            sfw=sfw, rating=rating, sampling=sampling,
+            sfw=sfw, rating=rating, sampling=sampling, custom_negative=custom_negative,
         )
     clip_from = ["13", 1]
     wf = {
@@ -1147,7 +1191,7 @@ def build_workflow(positive: str, width: int, height: int, seed: int, loras=None
         },
         "37": {
             "class_type": "CLIPTextEncode",
-            "inputs": {"text": _negative_text(fmt, rating, sfw), "clip": ["13", 1]},
+            "inputs": {"text": _negative_text(fmt, rating, sfw, ckpt_name, custom_negative), "clip": ["13", 1]},
         },
         "119": {
             "class_type": "EmptyLatentImage",
@@ -2213,6 +2257,13 @@ def _unet_family_label(name: str) -> str:
     return prompt_formats.LABELS.get(fmt, fmt)
 
 
+def _edit_negative(ckpt_name: str, rating, sfw: bool) -> str:
+    """放大、修臉的負面詞：跟以前一樣是 Illustrious 那一串，再套上這顆底模（或它那一家）的自訂。"""
+    arg = rating if rating is not None else sfw
+    fmt = prompt_formats.format_of(ckpt_name, model_format_overrides(), lookup_base_model(ckpt_name))
+    return custom_negative(negative_for(arg), NEGATIVE, fmt, ckpt_name)
+
+
 def refuse_anima_edit(ckpt) -> str:
     """Hires／修臉還是 CheckpointLoaderSimple。unet: 家族（Anima、Krea 2、Z-Image）就講清楚，不組圖。"""
     raw = str(ckpt or "").replace("/", "\\").strip()
@@ -2241,7 +2292,7 @@ def build_hires_workflow(
     """內建 Hires 圖。不管原來是不是 profile 工作流，放大一律走這張。"""
     ckpt_name = refuse_anima_edit(ckpt)
     steps, cfg_v, denoise = hires_sampler(mode, sampling)
-    negative = negative_for(rating if rating is not None else sfw)
+    negative = _edit_negative(ckpt_name, rating, sfw)
     wf = {
         "13": {
             "class_type": "CheckpointLoaderSimple",
@@ -2544,7 +2595,7 @@ def build_face_workflow(
     """內建修臉圖：原圖 → FaceDetailer（同一個底模、提示詞、LoRA）→ 存檔。sam 給了就只重畫臉的形狀。"""
     ckpt_name = refuse_anima_edit(ckpt)
     steps, cfg_v, denoise = hires_sampler("face", sampling)
-    negative = negative_for(rating if rating is not None else sfw)
+    negative = _edit_negative(ckpt_name, rating, sfw)
     wf = {
         "13": {"class_type": "CheckpointLoaderSimple", "inputs": {"ckpt_name": ckpt_name}},
         "36": {"class_type": "CLIPTextEncode", "inputs": {"text": positive, "clip": ["13", 1]}},
@@ -3356,7 +3407,7 @@ def _custom_bake_comfy(job: dict) -> tuple[bytes, bytes]:
     except Exception:  # noqa: BLE001
         names = []
     ckpt = pick_default_ckpt(names) if names else None
-    wf = build_workflow(job["positive"], 832, 1216, job["seed"], ckpt=ckpt or CKPT, rating=job["rating"])
+    wf = build_workflow(job["positive"], 832, 1216, job["seed"], ckpt=ckpt or CKPT, rating=job["rating"], custom_negative=False)
     if job.get("negative"):
         wf["37"]["inputs"]["text"] = wf["37"]["inputs"]["text"] + ", " + job["negative"]
     wf.pop("200", None)
@@ -3456,8 +3507,12 @@ def prepare_workflow(payload: dict):
     values = {"positive": positive}
     neg_spec = mapping.get("negative") if isinstance(mapping.get("negative"), dict) else {}
     if (neg_spec.get("mode") or "keep") == "control":
-        values["negative"] = negative_for(
-            payload.get("rating") if payload.get("rating") is not None else bool(payload.get("sfw"))
+        # 墨池寫進去的是 Illustrious 那一串；這套工作流程有自己的規則就用它的，沒有就跟著 Illustrious 家族。
+        values["negative"] = custom_negative(
+            negative_for(payload.get("rating") if payload.get("rating") is not None else bool(payload.get("sfw"))),
+            NEGATIVE,
+            prompt_formats.ILLUSTRIOUS,
+            workflow=wid,
         )
     seed_spec = mapping.get("seed") if isinstance(mapping.get("seed"), dict) else {}
     if (seed_spec.get("mode") or "keep") == "control":
@@ -6879,6 +6934,9 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/api/sampling":
             self._json(200, sampling_defaults())
             return
+        if path == "/api/negative-prompts":
+            self._json(200, negative_view(), cache_control="no-store")
+            return
         if path == "/api/face/status":
             # 成品上的「修臉」要不要停用：ComfyUI 有沒有 FaceDetailer、偵測器和臉部模型。
             self._json(200, {"ok": True, **face_status()}, cache_control="no-store")
@@ -7067,6 +7125,12 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/api/paths":
             try:
                 self._json(200, set_model_path(str(payload.get("kind") or ""), payload.get("path")))
+            except ValueError as exc:
+                self._json(400, {"ok": False, "error": str(exc)})
+            return
+        if path == "/api/negative-prompts":
+            try:
+                self._json(200, save_negative_rule(payload or {}))
             except ValueError as exc:
                 self._json(400, {"ok": False, "error": str(exc)})
             return
