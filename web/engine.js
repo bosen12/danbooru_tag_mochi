@@ -3912,6 +3912,59 @@ function chooseCast(lex, settings, pinned, banned, rand, ctx, heat) {
   return [...new Set(parts)];
 }
 
+/**
+ * 卡片群組也決定尺度（跟釘選一樣）：勾了群組的那一段，這張的尺度只從「群組裡至少一張抽得到」的尺度裡挑。
+ * 例：姿勢群組全是性愛的牌、尺度四個都開 —— 以前抽到誘惑、走光那幾張，群組一張都用不上，
+ * 那一格照常從詞庫補，冒出群組外的牌（2026-11-16 專案主：姿勢有時候出現不在群組的）。
+ * 沒有群組、或交集是空的（各段群組的尺度湊不起來）：照原本的設定。
+ */
+function groupHeatSettings(lex, settings) {
+  const pools = settings.groupPools;
+  if (!pools || typeof pools !== "object") return settings;
+  const rating = ratingOf(settings);
+  let allowed = HEATS.filter((h) => settings.heats.includes(h));
+  for (const section of QUOTA_SECTIONS) {
+    const items = (Array.isArray(pools[section]) ? pools[section] : []).map((t) => lex.byTag.get(t)).filter((it) => it && it.section === section && !ratingBlocked(it, rating));
+    if (!items.length) continue;
+    const fit = allowed.filter((h) => items.some((it) => heatOk(it, h)));
+    if (!fit.length) return settings;
+    allowed = fit;
+  }
+  if (allowed.length === settings.heats.length) return settings;
+  return { ...settings, heats: allowed };
+}
+
+/**
+ * 卡片群組也決定人數（跟釘選一樣）：某一段群組裡、這個尺度抽得到的牌全都要有對象（後入、傳教士要男生、要兩個人），
+ * 就用種子挑其中一張，照它要的人數、性別排卡司 —— 不然抽到「一個女生」，群組一張都用不上，
+ * 那一格照常補成自慰（2026-11-16 專案主：姿勢有時候出現不在群組的）。群組裡有一個人也行的牌就不管。
+ * 用種子派生的獨立亂數挑，主亂數不多吃。
+ */
+function groupCastCtx(lex, settings, ctx, heat, seed) {
+  const pools = settings.groupPools;
+  if (!pools || typeof pools !== "object") return ctx;
+  const rating = ratingOf(settings);
+  const rand = mulberry32(((Number(seed) >>> 0) ^ 0x5ca57a11) >>> 0);
+  let out = ctx;
+  for (const section of QUOTA_SECTIONS) {
+    const items = (Array.isArray(pools[section]) ? pools[section] : [])
+      .map((t) => lex.byTag.get(t))
+      .filter((it) => it && it.section === section && !ratingBlocked(it, rating) && heatOk(it, heat));
+    if (!items.length || items.some((it) => !(it.needs || []).length)) continue;
+    const needs = items[Math.floor(rand() * items.length)].needs || [];
+    out = {
+      ...out,
+      needMale: out.needMale || needs.includes("male"),
+      needFemale: out.needFemale || needs.includes("female"),
+      needPair: out.needPair || needs.includes("pair"),
+      needGroup: out.needGroup || needs.includes("group"),
+      needCrowd: out.needCrowd || needs.includes("crowd"),
+      needFive: out.needFive || needs.includes("five"),
+    };
+  }
+  return out;
+}
+
 function chooseHeat(settings, pinned, lex, rand, ctx) {
   const enabled = HEATS.filter((h) => settings.heats.includes(h));
   ctx = ctx || pinContext(lex, pinned);
@@ -5091,7 +5144,7 @@ function drawOneImpl(lex, settings, pinned, userBanned, rand, seed, opts) {
   const mPre = { idx: mIdx, taken: mutexTaken };
 
   const ctx = pinContext(lex, pinned);
-  const heat = chooseHeat(settings, pinned, lex, rand, ctx);
+  const heat = chooseHeat(groupHeatSettings(lex, settings), pinned, lex, rand, ctx);
   const era = chooseEra(settings, pinned, lex, rand, ctx);
   let allow = () => true;
   const rawCommit = makeCommit(lex, used, mutexTaken, banned, era, (item) => allow(item));
@@ -5194,7 +5247,7 @@ function drawOneImpl(lex, settings, pinned, userBanned, rand, seed, opts) {
         return ok;
       }
     : innerCommit;
-  let cast = chooseCast(lex, settings, pinned, banned, rand, ctx, heat);
+  let cast = chooseCast(lex, settings, pinned, banned, rand, groupCastCtx(lex, settings, ctx, heat, seed), heat);
   // 五人只在「兩邊性別都開、這一抽是性愛、沒有釘人數或特定多人」時，用另一條亂數
   // 低機率換掉卡司。不碰主 rand，沒升級的種子後面的衣服姿勢照舊。
   const countPinned = ["1girl", "2girls", "3girls", "4girls", "5girls", "6+girls", "1boy", "2boys", "3boys", "4boys", "6+boys"].some((t) =>

@@ -187,6 +187,33 @@ const sourceMap = (out) => new Map(out.trace.kept.map((k) => [k.tag, k.source]))
   }
 }
 
+// 4h. 尺度四個都開、姿勢群組全是性愛的體位、姿勢只亮「性愛」一格：尺度、人數都跟著群組，姿勢不冒出群組外的牌
+//（專案主 2026-11-16：抽到誘惑、走光那幾張，那一格補了「被綁」「捏乳頭」；只有一個女生時補成自慰）
+{
+  const sexTags = need(["doggystyle", "missionary", "cowgirl position", "mating press", "prone bone"]);
+  for (const boy of [false, true]) {
+    let s0 = base({ rating: "explicit", heats: ["activity", "tease", "flash", "sex"], girl: true, boy, counts: { ...base().counts, pose: 1 } });
+    s0 = sanitizeSettings({ ...s0, ...stepSkeleton(s0, "pose", 1) }, data);
+    s0 = sanitizeSettings({ ...s0, ...swapSkeleton(s0, "pose", "pose:sex", skeletonLit(s0, "pose")[0]) }, data);
+    const s = { ...s0, groupPools: { pose: sexTags } };
+    let outside = 0, notSex = 0, hit = 0;
+    for (const seed of SEEDS.slice(0, 80)) {
+      const out = draw(s, seed);
+      const src = sourceMap(out);
+      if (out.heat !== "sex") notSex++;
+      if (out.sections.pose.some((t) => sexTags.includes(t))) hit++;
+      if (out.sections.pose.some((t) => !sexTags.includes(t) && !["implies", "bind"].includes(src.get(t)))) outside++;
+    }
+    const who = boy ? "男女都開" : "只開女生";
+    ok(`${who}：尺度跟著群組，80 張都是性愛（不是的 ${notSex}）`, notSex === 0, notSex);
+    ok(`${who}：人數跟著群組，群組的體位抽到（${hit}/80）`, hit >= 76, hit);
+    ok(`${who}：姿勢沒有群組外的牌（附帶的不算；${outside}）`, outside === 0, outside);
+  }
+  const plain = base({ rating: "explicit", heats: ["activity", "tease", "flash", "sex"] });
+  const heats = new Set(SEEDS.slice(0, 80).map((seed) => draw(plain, seed).heat));
+  ok("沒有群組：尺度照舊四種都會抽到", heats.size >= 3, [...heats]);
+}
+
 // 5. 釘選照留：釘了群組外的同小類牌，照樣在
 {
   const s = { ...base({ rating: "general", heats: ["activity"] }), groupPools: { feature: need(["blonde hair"]) } };
