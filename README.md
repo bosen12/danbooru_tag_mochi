@@ -51,7 +51,7 @@ Mochi is the card interface of [danbooru_tag_random](https://github.com/bosen12/
 
 **Choose supplemental kinds.** At counts 1–4 for appearance, clothing and pose, or 1–3 for scene, choose the kinds to supplement. Each kind receives at most one random card; required dependencies may add related tags. Higher counts retain free drawing. **More kinds** includes species, makeup, nudity, garment state, sex, exposure, weather, props and lens effects. Selecting a content level permits candidates; it does not override your chosen kinds. Pinned cards, required draws and their necessary dependencies stay, subject to compatibility rules.
 
-**Keep cards for later.** Favorite cards are your long-term row of individual cards, as many as you like (Ink Pool and the Card Book share one set; Overprint keeps its own). In the Card Book, + always sends a card straight to the Ink Pool mix while you keep browsing; with favorite cards open, clicking a card adds it to the row. Decks save a full selection and its weights for reuse. The Gallery distinguishes recipe-only works from images that failed to load, and offers a retry for the latter.
+**Keep cards for later.** Favorite cards are your long-term row of individual cards, as many as you like (Ink Pool and the Card Book share one set; Overprint keeps its own). In the Card Book, + always sends a card straight to the Ink Pool mix while you keep browsing; with favorite cards open, clicking a card adds it to the row. Decks save a full selection and its weights for reuse. **Card groups** are pools to draw from: build several groups each for appearance, clothing, pose and scene on the shelf at the top of the Card Book (tap ＋, then tap cards to stamp them in), and next to each count under *Cards per category* in the Ink Pool choose which groups that category draws from. Only the slots a group covers are restricted; the rest draw as usual. With several groups checked, each image can use one whole group or mix them. The Gallery distinguishes recipe-only works from images that failed to load, and offers a retry for the latter.
 
 **Custom cards.** Bundle cards you use together, with weights, plus words the lexicon doesn't have, into one card of your own: **Custom** (last suit in the Card Book) → **New custom card**, or **Make custom card** on an Ink Pool / Fuse Bed image or a Gallery work, or **Save as custom card** in the Decks panel. Pick cards from a full card case (the same suits, sub-categories, search and hover preview as the Ink Pool, filtered by the card's rating; Enter adds the first match, and a word the lexicon lacks can be added with one click), or **Paste prompt** and Mochi splits it into lexicon cards and words *not in lexicon* (weights like `(tag:1.2)` are kept; near spellings get a “did you mean…”). The rating can't be lower than the cards inside. **Fill** is what gets generated; **Card art** is only for baking the card's picture (built automatically, editable). **Bake art preview** uses your seed or a random one, and the preview only replaces the art when you save. In the Ink Pool and the Fuse Bed the engine treats a custom card as the cards inside — other sections still fill and conflicts still apply — and words outside the lexicon are added after the cast. It never gets drawn at random. **Copy share code** gives one `mochi-card:` line to post on Discord; **Paste share code** in the Card Book imports it. Words about minors and banned characters are refused when pasted, saved or baked.
 
@@ -151,7 +151,7 @@ claude mcp add --scope user mochi -- node /path/to/danbooru_tag_mochi/mcp/mochi-
 
 ## Your data
 
-Everything you create stays in `data/` (git-ignored): card usage, decks, custom cards (`data/custom_cards.json`, their art in `data/custom_cards/`), the gallery, the generation history, imported workflows and a webp cache of results. To move to another machine, copy `data/` and `config.json`.
+Everything you create stays in `data/` (git-ignored): card usage, decks, card groups, custom cards (`data/custom_cards.json`, their art in `data/custom_cards/`), the gallery, the generation history, imported workflows and a webp cache of results. To move to another machine, copy `data/` and `config.json`.
 
 ## Layout
 
@@ -260,7 +260,7 @@ Mochi code is distributed under **GNU GPLv3 only (`GPL-3.0-only`)**, see [LICENS
 
 **選擇補抽種類**：長相、服裝、姿勢設 1–4，場景設 1–3 時，可指定補抽種類，每種最多一張隨機牌，必要附帶可能增加相關標籤；更高數字沿用自由補抽。「更多種類」可選種族、妝容、裸身、衣服狀態、性愛、走光、天氣、道具與鏡頭效果。尺度只決定候選是否允許，不會越過選格；釘選、指定必抽及必要附帶照樣保留，仍須符合相容規則。
 
-**保存牌**：偏好卡牌是長期常用的單張牌，不限張數（墨池、卡冊同一份，疊印台另一份）；卡冊牌上的「＋」一律把牌送去墨池合成池、人留在卡冊繼續挑，展開偏好卡牌時點牌就收進那一排；牌組保存整組選牌與權重，方便重複套用。作品冊會區分只有配方與圖片讀取失敗，後者可以重試。
+**保存牌**：偏好卡牌是長期常用的單張牌，不限張數（墨池、卡冊同一份，疊印台另一份）；卡冊牌上的「＋」一律把牌送去墨池合成池、人留在卡冊繼續挑，展開偏好卡牌時點牌就收進那一排；牌組保存整組選牌與權重，方便重複套用。**卡片群組**是抽牌的候選池：在卡冊上方的群組書架替長相、服裝、姿勢、場景各建好幾組（按 ＋ 再點牌蓋章加進去），墨池「每段抽幾個」每一段旁邊選要從哪幾組抽。群組只管它有放牌的格子，其他照常抽；勾了好幾組時，每張可以整組一起用，也可以混著抽。作品冊會區分只有配方與圖片讀取失敗，後者可以重試。
 
 **自製牌**：把常用的幾張牌（可以調權重）加上詞庫沒有的字，包成一張自己的牌。卡冊花色最後一格「自製」→「新增自製牌」，或從墨池、疊印台成品、作品冊的「做成自製牌」，牌組面板的「存成自製牌」帶著內容過來。「挑牌」就是完整的字盒（花色、細分類、搜尋、滑鼠停著的放大卡都跟墨池一樣，照這張的分級收牌，Enter 加第一張，字盒沒有的字一鍵加進來），也可以「貼提示詞」：詞庫有的自動變成牌、對不到的放進「詞庫外」（`(tag:1.2)` 的權重會讀進來，拼法很像的會問「是不是…」）。分級不能低於裡面的牌。「填入」是真的送去生圖的，「卡面」只拿來烤這張牌的插畫（自動產生、可以改）。「烤卡面預覽」照你填的種子（或隨機）烤一張，按存檔才換上。墨池、疊印台裡，引擎把它當成裡面那幾張牌（照樣補其他段、照樣檢查互斥），詞庫外的字接在人數後面；引擎隨機抽牌不會抽到它。「複製分享碼」是一行 `mochi-card:` 開頭的文字，貼到 Discord；卡冊的「貼上分享碼」就能匯入。未成年相關的字、禁用角色在貼上、存檔、烤卡面時都會擋。
 
@@ -319,7 +319,7 @@ LoRA 面板的「詳情」在 ComfyUI 的 LoRA Manager 直接打開那一個 LoR
 
 自己的 ComfyUI workflow：把 ComfyUI 用它畫的任何一張 PNG 拖進「工作流」面板（或用「匯出工作流 (API)」的 JSON）；種子每個取樣器都會換，LoRA 面板選的會接在底模後面，底模可以選跟著頂欄或保留工作流的。送到 Discord：頂欄的 Discord 按鈕貼上頻道 webhook；也可以另外開分頻道（最多 20 個），每個頻道有自己的 webhook 和條件（分級、角色 1～3 個、tag 1～5 個，「任一個／全部都要」），一張圖符合幾個就送幾個，都沒對到的送原本那條。成品詳情的「用這張開 Discord 頻道」會帶入那張的角色和分級。手機走 Tailscale，用黑窗印出的 `Tailscale http://100.x.x.x:8796/`。
 
-你的資料（使用次數、牌組、作品冊、出圖日誌、匯入的 workflow）都在 `data/`，搬家時連同 `config.json` 一起帶走。
+你的資料（使用次數、牌組、卡片群組、作品冊、出圖日誌、匯入的 workflow）都在 `data/`，搬家時連同 `config.json` 一起帶走。
 
 ## 讓 AI 來用（MCP）
 

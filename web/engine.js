@@ -5038,7 +5038,17 @@ function drawOneImpl(lex, settings, pinned, userBanned, rand, seed, opts) {
   const presetOwned = ownedTagSet(drawOpts.presetOwned);
   const requestedPins = new Set(pinned);
   const tagSources = tracer.enabled ? new Map() : null;
-  const commitMeta = { source: SOURCES.random, stage: STAGES.fill, parent: null };
+  const commitMeta = { source: SOURCES.random, stage: STAGES.fill, parent: null, safety: false };
+  // 安全修補（缺下著、只穿內衣要遮）：出處照舊，但不受卡片群組限制。
+  const asSafety = (fn) => {
+    const prev = commitMeta.safety;
+    commitMeta.safety = true;
+    try {
+      return fn();
+    } finally {
+      commitMeta.safety = prev;
+    }
+  };
   const rating = ratingOf(settings);
   // 分級「不限制」（settings.ratingFree）只解開牌的限制（上面的 rating 當色情）；
   // 這張圖標哪一級（提示詞尾巴、進度顯示）仍照使用者選的分級。
@@ -5103,7 +5113,26 @@ function drawOneImpl(lex, settings, pinned, userBanned, rand, seed, opts) {
     .map(section => [section, new Set(skeletonLit(settings, section))]));
   const offKeysOf = supplementKindKeys;
   const ENGINE_FILL = new Set([SOURCES.random, SOURCES.era_anchor, SOURCES.repair]);
-  const innerCommit = zeroSections.size || selectedSlots.size
+  // 卡片群組（web6/card-groups.js 抽牌前解析成 settings.groupPools）：某一段有群組時，群組有放牌的
+  // 小類只從群組挑；群組沒放的小類照常從整個詞庫補。閘門跟「不補」同一道，只擋引擎自己隨機補的
+  // （random、era_anchor）—— 安全修補（repair：分級要的最低限度衣服之類）、釘選、必抽、相依字都不擋。
+  const groupGate = groupGateOf(lex, settings.groupPools);
+  // 每一格（groupSlotKey）的狀態：claimed＝群組先上時放進了群組的牌，這一格之後只收群組的；
+  // failed＝群組先上時這一格群組的牌一張都放不進去（被尺度、分級、時代、性別、封鎖、互斥、相依字擋掉），
+  // 照常從詞庫補。其餘（名額不夠沒輪到）：群組還有抽得到的牌就歸群組，否則照常。
+  const groupSlotState = new Map();
+  const groupBlocks = (it) => {
+    const g = it && groupGate && groupGate.get(it.section);
+    if (!g || g.tags.has(it.tag)) return false;
+    const key = groupSlotKey(it);
+    const members = g.byKey.get(key);
+    if (!members) return false;
+    const state = groupSlotState.get(key);
+    if (state === "claimed") return true;
+    if (state === "failed") return false;
+    return members.some((m) => used.has(m.tag) || (!banned.has(m.tag) && !mutexBusy(lex, mutexTaken, m.tag) && allow(m)));
+  };
+  const innerCommit = zeroSections.size || selectedSlots.size || groupGate
     ? (tag) => {
         if (ENGINE_FILL.has(commitMeta.source)) {
           const it = lex.byTag.get(tag);
@@ -5119,10 +5148,18 @@ function drawOneImpl(lex, settings, pinned, userBanned, rand, seed, opts) {
               return existing?.section === it.section && offKeysOf(existing).includes(key);
             }))) return false;
           }
+          // 安全修補（分級要的最低限度衣服、遮住內衣、浴場救援）不受群組限制。
+          if (groupGate && commitMeta.source !== SOURCES.repair && !commitMeta.safety && groupBlocks(it)) return false;
         }
         return rawCommit(tag);
       }
     : rawCommit;
+  // 出處：引擎補的牌剛好是群組裡的，記成「群組」（畫面上標「來自群組 …」）。
+  const sourceOf = (t) => {
+    if (commitMeta.source !== SOURCES.random || !groupGate) return commitMeta.source;
+    const it = lex.byTag.get(t);
+    return it && groupGate.get(it.section)?.tags.has(t) ? SOURCES.group : commitMeta.source;
+  };
   const commit = tracer.enabled
     ? (tag) => {
         const before = new Set(used);
@@ -5131,8 +5168,9 @@ function drawOneImpl(lex, settings, pinned, userBanned, rand, seed, opts) {
           for (const t of used) {
             if (before.has(t)) continue;
             if (t === tag) {
-              tagSources.set(t, commitMeta.source);
-              tracer.keep({ tag: t, source: commitMeta.source, stage: commitMeta.stage, parent: commitMeta.parent });
+              const src = sourceOf(t);
+              tagSources.set(t, src);
+              tracer.keep({ tag: t, source: src, stage: commitMeta.stage, parent: commitMeta.parent });
             } else {
               const item = lex.byTag.get(tag);
               const bound = !!(item && (item.bind || []).includes(t));
@@ -7132,9 +7170,20 @@ function drawOneImpl(lex, settings, pinned, userBanned, rand, seed, opts) {
   const fill = (section, extraFilter) => {
     let want = Math.max(0, Math.min(10, Number(counts[section]) || 0));
     if (section === "clothing") want = clothingWant(want);
-    const need = want - countSection(section);
+    let need = want - countSection(section);
     if (need <= 0) return;
     const selected = selectedSlots.get(section);
+    // 這一段有群組：「每段抽幾個」剩下的名額先從群組裡抽（群組放襪子、鞋子、髮飾…各幾種，就從這些挑；
+    // 同一格互斥的一張圖只會有一個，十件連身裙還是只穿一件），群組抽不滿才輪到詞庫（群組沒放的格子、
+    // 或群組的牌被規則擋光）。只看詞庫整段的話，群組的牌要跟幾百張別的牌搶那幾個名額，幾乎輪不到。
+    const group = groupGate && groupGate.get(section);
+    if (group) {
+      const groupAllowed = selected ? (item) => offKeysOf(item).some((key) => selected.has(key)) && allow(item) : allow;
+      const own = mPool(group.items).filter((item) => (!extraFilter || extraFilter(item)) && groupAllowed(item));
+      takeFromPool(own, need, rand, commit, null, groupAllowed, mPre);
+      need = want - countSection(section);
+      if (need <= 0) return;
+    }
     const fillAllowed = selected ? (item) => {
       if (!offKeysOf(item).some((key) => selected.has(key) && !someUsed(
         (it) => it.section === section && offKeysOf(it).includes(key)
@@ -7448,6 +7497,73 @@ function drawOneImpl(lex, settings, pinned, userBanned, rand, seed, opts) {
   // 有角色就不再抽髮長、瞳色、髮色、髮型、胸部大小、人種：角色自己帶著，抽一個只會打架（約兒變金髮）。
   // 釘的照留，使用者明講要換髮色就換。
   const withCharacter = someUsed((it) => isCharacter(it));
+  // 卡片群組先上：群組有放牌的每一個小類，先從群組挑一張，再輪到骨架格和通用補牌。
+  // 不先放的話，詞庫先抽到的牌會讓群組的牌變不合法（髮長先抽到短髮，群組的雙馬尾就被擋掉、
+  // 整格退回詞庫），群組形同虛設。先放就跟釘選一樣，後面的格子會配合它。
+  // 每段最多放「每段抽幾個」那麼多張；有角色時長相交給角色（角色自己帶髮色瞳色）。
+  // 用種子派生的獨立亂數挑，主亂數不多吃。
+  if (groupGate) {
+    const groupRand = mulberry32(((Number(seed) >>> 0) ^ 0x6b1d3c9f) >>> 0);
+    for (const [section, g] of groupGate) {
+      if (zeroSections.has(section) || (section === "feature" && withCharacter)) continue;
+      const selected = selectedSlots.get(section);
+      const want = Math.max(0, Math.min(10, Number(counts[section]) || 0));
+      // 名額每放一張重算（放進去的牌帶出來的相依字也算這一段的張數）。
+      const room = () => want - countSection(section);
+      // 骨架格（照「每段抽幾個」亮著的那幾格：髮長、瞳色、髮色、髮型、胸部…）之後一定會補，所以先花名額，
+      // 而且沒被群組蓋到的骨架格要留位子：不然名額花在臉紅、鎖骨上，骨架格又從詞庫補，
+      // 張數就超過「每段抽幾個」（Grok 量到長相 5 張變 8 張）。群組其他的格子用剩下的名額。
+      const lit = skeletonLit(settings, section).slice(0, want);
+      // 骨架格真正補的是有互斥的那一格（胸部大小、瞳色…）；同一大類裡沒互斥的（鎖骨、雀斑）不算佔到骨架格。
+      const isLit = (key) => g.byKey.get(key).some((m) => m.mutex && offKeysOf(m).some((k) => lit.includes(k)));
+      const litOpen = () => lit.filter((k) => !someUsed((it) => it.section === section && it.mutex && offKeysOf(it).includes(k))).length;
+      const keys = shuffle([...g.byKey.keys()], groupRand);
+      keys.sort((a, b) => Number(isLit(b)) - Number(isLit(a)));
+      let placed = 0;
+      const bodyNow = () => {
+        const kinds = new Set();
+        for (const t of used) {
+          const k = bodyGarmentSlot(lex.byTag.get(t));
+          if (k) kinds.add(k);
+        }
+        return kinds;
+      };
+      for (const key of keys) {
+        if (room() <= 0) break;
+        // 骨架格以外的群組格：只用留給骨架之後還剩的名額。
+        if (!isLit(key) && room() - litOpen() <= 0) continue;
+        // 骨架選格關掉的格子不碰（那一格本來就不補）。
+        const members = g.byKey.get(key).filter((m) => !selected || offKeysOf(m).some((k) => selected.has(k)));
+        if (!members.length) continue;
+        if (members.some((m) => used.has(m.tag))) {
+          groupSlotState.set(key, "claimed");
+          continue;
+        }
+        // 連身和上衣／下著是同一個身體選擇：群組裡兩種都有時，這張只穿一套（先抽到哪套就哪套）。
+        // 不擋的話三件都放進去，收尾的 reconcile 看到連身就把上衣、下著拿掉，名額也不還。
+        // 被讓掉的那幾格算群組的（詞庫也不補：已經穿好了）。
+        if (section === "clothing") {
+          const kind = bodyGarmentSlot(members[0]);
+          const worn = bodyNow();
+          if ((kind === "onepiece" && (worn.has("top") || worn.has("bottom"))) || ((kind === "top" || kind === "bottom") && worn.has("onepiece"))) {
+            groupSlotState.set(key, "claimed");
+            continue;
+          }
+        }
+        const pool = mPool(members).filter((item) => allow(item));
+        if (takeFromPool(pool, 1, groupRand, commit, null, allow, mPre)) {
+          groupSlotState.set(key, "claimed");
+          placed += 1;
+        } else {
+          // 放不進去：這一段已經有群組的牌在場，多半是組內自己互擋（短髮擋雙馬尾）——這格留空，
+          // 不要打開詞庫（不然冒出群組外的髮型）。這一段一張群組牌都還沒放、整格被規則擋光，才照常補。
+          // 規則本身就不准（分級、尺度、性別、封鎖）的不算互擋：那幾張一律抽不到，這格照常補。
+          const fixedOut = members.every((m) => banned.has(m.tag) || blockedByRating(m) || !heatOk(m, heat) || !gateOk(m, female, male));
+          groupSlotState.set(key, placed > 0 && !fixedOut ? "claimed" : "failed");
+        }
+      }
+    }
+  }
   if (!withCharacter) {
     fillSlot("feature", "hair_length");
     fillSlot("feature", "eye_color");
@@ -8191,7 +8307,7 @@ function drawOneImpl(lex, settings, pinned, userBanned, rand, seed, opts) {
           (!kind || garmentOkForKind(item, kind, era)) &&
           allow(item)
       );
-      takeFromPool(pool, 1, rand, commit, clothingPrefer, allow, mPre);
+      asSafety(() => takeFromPool(pool, 1, rand, commit, clothingPrefer, allow, mPre));
     }
   };
   fillMissingBottom();
@@ -8770,7 +8886,7 @@ function drawOneImpl(lex, settings, pinned, userBanned, rand, seed, opts) {
     });
     if (!hasUnder && !covered) {
       const pool = lex.bySection.clothing.filter((item) => wornUw(item) && allow(item));
-      takeFromPool(pool, 1, rand, commit, null, allow, mPre);
+      asSafety(() => takeFromPool(pool, 1, rand, commit, null, allow, mPre));
     }
   }
 
@@ -9091,6 +9207,42 @@ export function supplementKindKeys(item) {
   return [`${item.section}:${item.group}`];
 }
 
+export function groupSlotKey(item) {
+  // 群組管的「一格」：有互斥的照互斥（一張圖只會有一個：瞳色、髮型、上衣、場地…），
+  // 沒有的照細分類（睫毛、眼妝、瀏海細節、髮飾…）。骨架選格用的 supplementKindKeys 太粗：
+  // 它把睫毛跟瞳色算同一格、髮帶跟眼鏡耳環算同一格，群組放了睫毛就會把瞳色整格鎖死。
+  return `${item.section}:${item.mutex ? "m:" + item.mutex : "s:" + (item.sub || item.group)}`;
+}
+
+/**
+ * 卡片群組（settings.groupPools：{ section: [tag...] }）整理成引擎用的樣子：
+ * Map(section → { tags: Set, items: [詞庫項目], byKey: Map(格子 groupSlotKey → [項目]) })。
+ * 只收詞庫裡、而且屬於那一段的牌；整段沒有可用的牌就不放（照舊抽）。沒有群組回 null。
+ */
+export function groupGateOf(lex, groupPools) {
+  if (!groupPools || typeof groupPools !== "object") return null;
+  let out = null;
+  for (const section of QUOTA_SECTIONS) {
+    const raw = groupPools[section];
+    if (!Array.isArray(raw) || !raw.length) continue;
+    const items = [];
+    const byKey = new Map();
+    const tags = new Set();
+    for (const t of raw) {
+      const item = typeof t === "string" ? lex.byTag.get(t) : null;
+      if (!item || item.section !== section || tags.has(item.tag)) continue;
+      tags.add(item.tag);
+      items.push(item);
+      const key = groupSlotKey(item);
+      if (!byKey.has(key)) byKey.set(key, []);
+      byKey.get(key).push(item);
+    }
+    if (!items.length) continue;
+    (out || (out = new Map())).set(section, { tags, items, byKey });
+  }
+  return out;
+}
+
 const skeletonKeys = (section) => (SKELETON[section] || []).map(([g]) => section + ":" + g);
 
 /**
@@ -9151,6 +9303,21 @@ export function sanitizeOffGroups(raw) {
 function mustMatcher(lex, key, section, id) {
   if (lex.bySub && lex.bySub.has(key)) return (it) => !!it && it.section === section && it.sub === id;
   return (it) => !!it && it.section === section && it.group === id;
+}
+
+/**
+ * 卡片群組的勾選（web6/card-groups.js）：{ section: { ids: [...], mode: "whole" | "mix" } }。
+ * 只留勾了東西的段落；全部沒勾是 undefined（舊設定一個字都不多）。群組本身存在伺服器，這裡只有 id。
+ */
+export function sanitizeGroupPick(raw) {
+  if (!raw || typeof raw !== "object") return undefined;
+  const out = {};
+  for (const section of QUOTA_SECTIONS) {
+    const v = raw[section];
+    const ids = Array.isArray(v?.ids) ? [...new Set(v.ids.filter((x) => typeof x === "string" && x && x.length <= 40))].slice(0, 50) : [];
+    if (ids.length) out[section] = { ids, mode: v.mode === "mix" ? "mix" : "whole" };
+  }
+  return Object.keys(out).length ? out : undefined;
 }
 
 // settings.mustDraw is keyed "section:sub" (or a legacy "section:group") -> how many it must contribute.
@@ -9264,6 +9431,7 @@ export function sanitizeSettings(raw, data) {
     sceneMode,
     lockScene: sceneMode !== "weird",
     mustDraw: sanitizeMustDraw(raw.mustDraw),
+    groups: sanitizeGroupPick(raw.groups),
     offGroups: sanitizeOffGroups(raw.offGroups),
   };
 }

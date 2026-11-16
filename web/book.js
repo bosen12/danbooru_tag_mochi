@@ -42,6 +42,7 @@ import { favChars, paintFavChar, favZone, dropToFav, flyToFav, heartIcon } from 
 import * as S from "./store.js";
 import { USAGE_KEY, loadUsage, seedUsage, fetchUsage, tagsOfPositive } from "./usage.js";
 import { weightsOfPositive } from "./weights.js";
+import { mountBookGroups } from "./book-groups.js";
 
 // 背後預先開好的這一頁（prerender.js）：點進去之前這個房間讀的存檔被別頁改過，就重新整理。
 guardPrerender("book");
@@ -123,6 +124,7 @@ let list = [];
 const cells = new Map();
 // 卡面用自訂提示詞的牌（/api/card-art/custom）：格子上標「自訂」。
 let customArt = new Set();
+let shelf = null;
 const ui = S.typedLike({ suit: "all", group: "", query: "", order: "desc", usedOnly: false, showBanned: false, charGender: "" }, readUi());
 // 搜尋字跟著這個分頁走（store.js 的 saveTab／loadTab，跟合成池同一套）：去墨池放一張牌再回來，剛才找的字還在，
 // 「回到剛才看的地方」（spotSig 裡有搜尋字）也對得上。重新整理照舊是空的；離開太久（半小時）不帶回來。
@@ -283,6 +285,28 @@ async function boot() {
   mountMiniBar();
   sizeCells($("book-grid"));
   wireGrid();
+  // 卡片群組的書架（book-groups.js）：所有群組都在這裡看、建、加牌。
+  shelf = mountBookGroups({
+    lib,
+    assets,
+    onChange: () => {
+      renderSuits({ groups: false });
+      renderGroups();
+      backToTop();
+      render();
+      renderSummary();
+    },
+    toMochi: (g) => {
+      // 墨池的那一段勾上這組：原本勾的照留、抽法照舊，寫進墨池的設定再換過去（墨池開的時候照存檔讀）。
+      const s = S.loadSettings() || {};
+      const cur = s.groups?.[g.section] || {};
+      const ids = [...new Set([...(Array.isArray(cur.ids) ? cur.ids : []), g.id])];
+      S.saveSettings({ ...s, groups: { ...(s.groups || {}), [g.section]: { ids, mode: cur.mode === "mix" ? "mix" : "whole" } } });
+      location.href = "./";
+    },
+    visible: (c) => visibleCard(c) && genderOk(c),
+    data,
+  });
   render({ animate: false, deal: true });
   restoreSpot();
   watchScroll();
@@ -342,6 +366,7 @@ async function boot() {
 /** 網址帶 #card=<tag>：打開那張牌的詳情（作品冊的牌名籤點過來的）。打開後把 #card 拿掉，重新整理不會又開。
  *  #custom-new：墨池、疊印台的成品、牌組、作品冊按「做成自製牌」過來 —— 帶著便條打開新增自製牌。 */
 function openFromHash() {
+  if (/^#groups?=/.test(location.hash)) return void shelf?.openFromHash(location.hash);
   if (location.hash === "#custom-new") {
     history.replaceState(null, "", location.pathname + location.search);
     if (ui.suit !== "custom") pickSuit("custom");
@@ -506,7 +531,8 @@ function renderSuits({ groups = true } = {}) {
   const usedIn = (s) => tally[s]?.used || 0;
   const totalIn = (s) => tally[s]?.total || 1;
   tabs.replaceChildren(
-    el("button", { class: "suit-tab pressable", type: "button", "aria-pressed": ui.suit === "all" ? "true" : "false", onclick: (e) => pickSuit("all", e.currentTarget) }, "全部"),
+    // 正在看一個群組：花色一個都不亮（現在照群組篩，不是照花色）。
+    el("button", { class: "suit-tab pressable", type: "button", "aria-pressed": ui.suit === "all" && !shelf?.active() ? "true" : "false", onclick: (e) => pickSuit("all", e.currentTarget) }, "全部"),
     ...BOOK_SUITS.map((s) =>
       el(
         "button",
@@ -515,7 +541,7 @@ function renderSuits({ groups = true } = {}) {
           type: "button",
           // --lit：這個花色點亮了幾成，畫成圖章外圈的一圈（book.css）。
           style: `--suit: var(--suit-${s}); --lit: ${(usedIn(s) / totalIn(s)).toFixed(3)}`,
-          "aria-pressed": ui.suit === s ? "true" : "false",
+          "aria-pressed": ui.suit === s && !shelf?.active() ? "true" : "false",
           title: `${CARD_SUIT_INFO[s].zh}：點亮 ${usedIn(s)} / ${totalIn(s)} 張`,
           onclick: (e) => pickSuit(s, e.currentTarget),
         },
@@ -573,6 +599,16 @@ function afterPaint(fn) {
 
 let suitWork = 0;
 function pickSuit(s, from) {
+  // 正在看一個群組：點花色就回到一般的卡冊（點的是同一個花色也一樣）。
+  if (shelf?.active()) {
+    shelf.clear();
+    if (ui.suit === s) {
+      renderSuits();
+      backToTop();
+      render();
+      return;
+    }
+  }
   if (ui.suit === s) return;
   const focused = document.activeElement === from;
   ui.suit = s;
@@ -621,7 +657,7 @@ function renderGroups() {
     b.hidden = true;
     b.replaceChildren();
   }
-  if (ui.suit === "all") return rowMove.done();
+  if (ui.suit === "all" || shelf?.active()) return rowMove.done();
   if (ui.suit === "custom") {
     sticky.hidden = false;
     sticky.replaceChildren(
@@ -961,9 +997,10 @@ function listNow() {
     (c) =>
       visibleCard(c) &&
       genderOk(c) &&
-      (ui.suit === "all" || c.suit === ui.suit) &&
-      (!ui.group || c.group === ui.group) &&
-      (!ui.usedOnly || countOf(c.tag) > 0) &&
+      // 看一個群組（或替它加牌）：照群組篩，不看花色和小分類。
+      (shelf?.active() ? shelf.keep(c) : (ui.suit === "all" || c.suit === ui.suit) && (!ui.group || c.group === ui.group)) &&
+      // 看一個群組時「只看用過的」不算：組員一律列出。
+      (!ui.usedOnly || shelf?.active() || countOf(c.tag) > 0) &&
       (!isWar() || warOf(c.tag)[0] >= WAR_MIN)
   );
   // 搜尋（cards.js 的 searchCards）：分別找到的、猜的照它的順序；每段都有的照下面的排序，
@@ -1040,6 +1077,8 @@ function wireGrid() {
     const node = e.target.closest?.(".book-cell > .card");
     const cell = node?.parentElement;
     if (!cell?._card || !grid.contains(cell)) return;
+    // 替群組加牌：點牌是加進／拿掉（蓋章），不開詳情。
+    if (shelf?.editing() && shelf.toggle(cell._card, node)) return;
     // 偏好卡牌展開著：點牌是挑牌（飛進托盤），不開詳情。
     if (picking()) return pickHand(cell._card, node);
     openCard(cell._card, node);
@@ -1056,6 +1095,8 @@ function paintCell(cell, card, rank) {
   const c = countOf(card.tag);
   cell.dataset.unused = c ? "false" : "true";
   cell.dataset.banned = card.banned ? "true" : "false";
+  // 替群組加牌時，已經在群組裡的牌蓋章（groups.css）。
+  cell.dataset.ingroup = shelf?.has(card.tag) ? "true" : "false";
   const n = cell.querySelector(".book-n");
   const unit = cell.querySelector(".book-unit");
   const when = cell.querySelector(".book-when");
@@ -1952,6 +1993,8 @@ function openCard(card, srcNode) {
           c ? el("i", { class: "book-bar-fill", "aria-hidden": "true" }) : null
         ),
         stats,
+        // 卡片群組：這張牌那一段的群組，點了加入／拿掉（book-groups.js）。
+        shelf?.detailRow(card),
         el("dl", {}, cardFacts(card, lexNow(), data).map(([k, v]) => [el("dt", {}, k), el("dd", {}, v)])),
         card.banned ? el("p", { class: "book-ban-note" }, "這張是禁用角色，不能帶去墨池，也不能加進偏好卡牌。") : null
       ),

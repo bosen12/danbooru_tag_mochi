@@ -43,6 +43,7 @@ if str(ROOT) not in sys.path:
 
 import card_usage
 import card_decks
+import card_groups
 import card_art_custom
 import custom_cards
 import discord_routes
@@ -6845,6 +6846,10 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/api/decks":
             self._json(200, {"ok": True, "decks": card_decks.load()})
             return
+        # 卡片群組：每一段（長相、服裝、姿勢、場景）可以有好幾組，抽牌時選要從哪幾組抽（card_groups.py）。
+        if path == "/api/card-groups":
+            self._json(200, {"ok": True, "groups": card_groups.load()}, cache_control="no-store")
+            return
         # 自製牌（custom_cards.py）：清單、正式卡面檔、預覽進度、預覽圖。
         if path == "/api/custom-cards":
             self._json(200, {"ok": True, "cards": custom_cards.load()}, cache_control="no-store")
@@ -7064,6 +7069,14 @@ class Handler(BaseHTTPRequestHandler):
             except card_decks.DeckError as exc:
                 self._json(400, {"ok": False, "error": str(exc), "code": "invalid"})
             return
+        if path == "/api/card-groups":
+            try:
+                self._json(200, {"ok": True, **card_groups.save(payload)})
+            except card_groups.GroupConflict as exc:
+                self._json(409, {"ok": False, "error": str(exc), "code": exc.code, "group": exc.current})
+            except card_groups.GroupError as exc:
+                self._json(400, {"ok": False, "error": str(exc), "code": "invalid", **({"bad": exc.bad} if getattr(exc, "bad", None) else {})})
+            return
         if path in ("/api/custom-cards", "/api/custom-cards/preview"):
             try:
                 if path == "/api/custom-cards":
@@ -7197,6 +7210,12 @@ class Handler(BaseHTTPRequestHandler):
         self.do_POST()
 
     def do_DELETE(self) -> None:
+        try:
+            self._do_delete()
+        except file_lock.StoreCorrupt as exc:
+            self._store_corrupt(exc)
+
+    def _do_delete(self) -> None:
         if not self._allowed():
             return
         path = urllib.parse.urlparse(self.path).path
@@ -7209,6 +7228,12 @@ class Handler(BaseHTTPRequestHandler):
             try:
                 self._json(200, {"ok": True, **card_decks.delete(urllib.parse.unquote(path[len("/api/decks/"):]))})
             except card_decks.DeckError as exc:
+                self._json(404, {"ok": False, "error": str(exc), "code": "missing"})
+            return
+        if path.startswith("/api/card-groups/"):
+            try:
+                self._json(200, {"ok": True, **card_groups.delete(urllib.parse.unquote(path[len("/api/card-groups/"):]))})
+            except card_groups.GroupError as exc:
                 self._json(404, {"ok": False, "error": str(exc), "code": "missing"})
             return
         if path.startswith("/api/custom-cards/preview/"):

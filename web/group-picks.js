@@ -1,0 +1,242 @@
+/**
+ * 墨池「每段抽幾個」旁邊的群組膠囊與勾選面板（卡片群組，資料在 card-groups.js）。
+ *
+ * 膠囊：沒勾是一顆淡淡的小疊牌；勾了亮那一段的花色，寫組名（兩組以上「A 等 2 組」）。
+ * 點開：這一段的群組一組一列，勾選要從哪幾組抽；勾兩組以上出現「整組一起｜混著抽」。
+ * 底下：把合成池裡這一段的牌存成一組（存好自動勾上）、到卡冊管理群組（編輯、加牌都在卡冊）。
+ *
+ * 用法：mountGroupPicks({ settings, setSettings, cardOf, poolTags, blocked }) → { pill(section) }
+ *   settings()：目前的墨池設定；setSettings(patch)：存設定（不重畫規則區）
+ *   cardOf(tag)：字盒那張牌（zh、item）；poolTags()：合成池現在的牌
+ *   blocked(tag)：這張牌在目前的設定下一定抽不到的原因（分級、性別…），沒有就 null
+ */
+import { el, openSheet, toast, friendlyError } from "./ui.js";
+import { reducedMotion, DUR, CURVE, css, swapIn, enter } from "./motion.js";
+import { cachedGroups, loadGroups, onGroupsChange, pickOf, saveGroup } from "./card-groups.js";
+
+export const SECTION_ZH = { feature: "長相", clothing: "服裝", pose: "姿勢", env: "場景" };
+export const SECTION_SUIT = { feature: "look", clothing: "wear", pose: "pose", env: "scene" };
+
+const STACK_ICON =
+  '<svg viewBox="0 0 16 16" aria-hidden="true" focusable="false"><rect x="4.75" y="1.75" width="6.5" height="9.5" rx="1.3" transform="rotate(-20 8 14)"/><rect x="4.75" y="1.75" width="6.5" height="9.5" rx="1.3" transform="rotate(20 8 14)"/><rect x="4.75" y="1.25" width="6.5" height="9.5" rx="1.3"/></svg>';
+
+export function mountGroupPicks({ settings, setSettings, cardOf, poolTags, blocked }) {
+  const pills = new Map();
+
+  const groupsOf = (section) => (cachedGroups() || []).filter((g) => g.section === section);
+
+  /** 勾了、而且還在的群組（群組清單還沒讀到：照設定裡的 id，不當成被刪掉）。 */
+  const pickedOf = (section) => {
+    const { ids, mode } = pickOf(settings(), section);
+    const all = cachedGroups();
+    if (!all) return { ids, groups: null, mode };
+    const groups = ids.map((id) => all.find((g) => g.id === id && g.section === section)).filter(Boolean);
+    return { ids: groups.map((g) => g.id), groups, mode };
+  };
+
+  const setPick = (section, ids, mode) => {
+    const next = { ...(settings().groups || {}) };
+    if (ids.length) next[section] = { ids, mode };
+    else delete next[section];
+    setSettings({ groups: next });
+    paint(section);
+  };
+
+  function paint(section) {
+    const p = pills.get(section);
+    if (!p) return;
+    const { ids, groups } = pickedOf(section);
+    const on = ids.length > 0;
+    p.btn.dataset.on = on ? "true" : "false";
+    // 組名可以被截短，「＋幾組」另一顆小章不截：手機上窄也看得出勾了幾組。
+    const text = on && groups ? groups[0].name : on ? `${ids.length} 組` : "";
+    const more = on && groups && groups.length > 1 ? `＋${groups.length - 1}` : "";
+    p.name.textContent = text;
+    p.name.hidden = !on;
+    p.more.textContent = more;
+    p.more.hidden = !more;
+    const label = on ? `${SECTION_ZH[section]}群組：${(groups || []).map((g) => g.name).join("、") || text}` : `${SECTION_ZH[section]}群組：沒有勾`;
+    p.btn.title = label;
+    p.btn.setAttribute("aria-label", label);
+    swapIn(p.name, text);
+    swapIn(p.more, more);
+  }
+
+  onGroupsChange(() => {
+    for (const section of pills.keys()) paint(section);
+  });
+
+  function pill(section) {
+    const name = el("span", { class: "gp-pill-name", hidden: true, dataset: { noI18n: "" } });
+    const more = el("span", { class: "gp-pill-more", hidden: true });
+    const btn = el(
+      "button",
+      { class: "gp-pill pressable", type: "button", dataset: { suit: SECTION_SUIT[section], on: "false" }, onclick: () => openPicker(section, btn) },
+      el("span", { class: "gp-pill-icon", html: STACK_ICON }),
+      name,
+      more
+    );
+    pills.set(section, { btn, name, more });
+    paint(section);
+    return btn;
+  }
+
+  function openPicker(section, from) {
+    const zh = SECTION_ZH[section];
+    const list = el("div", { class: "gp-list", role: "group", "aria-label": `${zh}群組` });
+    const seg = modeSeg(section);
+    const lead = el("p", { class: "gp-lead" }, `勾了的群組：${zh}只從這幾組裡抽。群組沒放到的格子照常抽。`);
+    const saveBox = el("div", { class: "gp-save" });
+    const sheetBody = el("div", { class: "gp-sheet", dataset: { suit: SECTION_SUIT[section] } }, lead, list, seg.box, saveBox);
+
+    const render = (fresh = null) => {
+      const groups = groupsOf(section);
+      const { ids } = pickedOf(section);
+      list.replaceChildren(
+        ...(groups.length
+          ? groups.map((g, i) => row(g, ids.includes(g.id), i, fresh === g.id))
+          : [el("p", { class: "gp-empty" }, cachedGroups() ? `還沒有${zh}群組。到卡冊挑牌建立，或把合成池裡的牌存成一組。` : "讀取群組…")])
+      );
+      seg.sync();
+      renderSave();
+    };
+
+    function row(g, on, i, fresh) {
+      const names = g.tags.map((t) => cardOf(t)?.zh || t);
+      const out = g.tags.filter((t) => blocked(t));
+      const box = el("input", { type: "checkbox", class: "gp-check", checked: on || null });
+      const r = el(
+        "label",
+        { class: "gp-row", dataset: { on: on ? "true" : "false" } },
+        box,
+        el("span", { class: "gp-mark", "aria-hidden": "true" }),
+        el(
+          "span",
+          { class: "gp-row-main" },
+          el("span", { class: "gp-row-name", dataset: { noI18n: "" } }, g.name),
+          el("span", { class: "gp-row-meta" }, g.tags.length ? `${g.tags.length} 張` : "空的"),
+          el("span", { class: "gp-row-tags", dataset: { noI18n: "" } }, names.slice(0, 8).join("、") + (names.length > 8 ? "…" : "")),
+          // 只說設定上一定抽不到的（分級、性別、時代）；抽牌途中才決定的（互斥、場景）不先保證。
+          out.length ? el("span", { class: "gp-row-warn" }, out.length === g.tags.length ? "這組的牌在現在的設定下都抽不到（分級、性別、時代）" : `${out.length} 張在現在的設定下抽不到（分級、性別、時代）`) : null
+        )
+      );
+      box.addEventListener("change", () => {
+        const { ids, mode } = pickedOf(section);
+        const next = box.checked ? [...ids, g.id] : ids.filter((x) => x !== g.id);
+        r.dataset.on = box.checked ? "true" : "false";
+        if (box.checked && !reducedMotion()) r.animate([{ backgroundPosition: "100% 0" }, { backgroundPosition: "0 0" }], { duration: DUR.long, easing: css(CURVE.out) });
+        setPick(section, next, mode);
+        seg.sync();
+      });
+      if (!reducedMotion()) enter(r, { delay: fresh ? 0 : Math.min(i, 8) * 35 });
+      return r;
+    }
+
+    function renderSave() {
+      const mine = poolTags().filter((t) => cardOf(t)?.item?.section === section);
+      if (!mine.length) {
+        saveBox.replaceChildren();
+        return;
+      }
+      const name = el("input", {
+        class: "gp-save-name",
+        type: "text",
+        maxlength: "40",
+        placeholder: "取個名字",
+        "aria-label": "群組名字",
+        value: mine.slice(0, 2).map((t) => cardOf(t)?.zh || t).join("・"),
+      });
+      const go = el("button", { class: "btn btn-primary gp-save-btn", type: "submit" }, "存成群組");
+      const form = el(
+        "form",
+        { class: "gp-save-form" },
+        el("p", { class: "gp-save-lead" }, `把合成池裡的 ${mine.length} 張${zh}牌存成一組：`),
+        el("div", { class: "gp-save-row" }, name, go)
+      );
+      form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        if (!name.value.trim()) return name.focus();
+        go.disabled = true;
+        try {
+          const g = await saveGroup({ name: name.value.trim(), section, tags: mine });
+          const { ids, mode } = pickedOf(section);
+          setPick(section, [...ids, g.id], mode);
+          toast(`存好了，已勾上「${g.name}」`);
+          render(g.id);
+        } catch (err) {
+          toast(friendlyError(err));
+          go.disabled = false;
+        }
+      });
+      saveBox.replaceChildren(form);
+    }
+
+    const toBook = el(
+      "a",
+      { class: "btn btn-ghost gp-to-book", href: `book.html#groups=${section}` },
+      el("span", { class: "gp-pill-icon", html: STACK_ICON }),
+      "到卡冊管理群組"
+    );
+    const stop = onGroupsChange(() => render());
+    openSheet(`${zh}群組`, sheetBody, { foot: [toBook], onClose: () => stop() });
+    render();
+    if (!cachedGroups()) loadGroups().then(() => render());
+    from?.blur?.();
+  }
+
+  /** 「整組一起｜混著抽」：勾兩組以上才出現，底下一塊會滑的底。 */
+  function modeSeg(section) {
+    const items = [
+      ["whole", "整組一起", "每張圖先挑一組，再從那組裡抽：同一張不會把兩組拆開來混。開「同一個人」時，第 2 張起長相沿用第 1 張那組。"],
+      ["mix", "混著抽", "勾到的組合在一起抽：變化最多，會跨組混搭。"],
+    ];
+    const thumb = el("span", { class: "gp-seg-thumb", "aria-hidden": "true" });
+    const btns = items.map(([v, label]) =>
+      el(
+        "button",
+        {
+          class: "gp-seg-btn",
+          type: "button",
+          role: "radio",
+          dataset: { v },
+          onclick: () => {
+            const { ids } = pickedOf(section);
+            setPick(section, ids, v);
+            sync();
+          },
+        },
+        label
+      )
+    );
+    const note = el("p", { class: "gp-seg-note" });
+    const seg = el("div", { class: "gp-seg", role: "radiogroup", "aria-label": "勾了好幾組時怎麼抽" }, thumb, ...btns);
+    const box = el("div", { class: "gp-mode", hidden: true }, el("span", { class: "gp-mode-label" }, "勾了好幾組時"), seg, note);
+    let placed = false;
+    const place = () => {
+      const on = btns.find((b) => b.getAttribute("aria-checked") === "true");
+      if (!on || !on.offsetWidth) return;
+      thumb.style.width = `${on.offsetWidth}px`;
+      thumb.style.transform = `translateX(${on.offsetLeft - 2}px)`;
+      if (!placed) {
+        placed = true;
+        requestAnimationFrame(() => (thumb.dataset.ready = "true"));
+      }
+    };
+    function sync() {
+      const { ids, mode } = pickedOf(section);
+      const show = ids.length > 1;
+      if (show && box.hidden) {
+        box.hidden = false;
+        if (!reducedMotion()) box.animate([{ opacity: 0, transform: "translateY(-6px)" }, { opacity: 1, transform: "none" }], { duration: DUR.medium, easing: css(CURVE.out) });
+      } else if (!show) box.hidden = true;
+      for (const b of btns) b.setAttribute("aria-checked", b.dataset.v === mode ? "true" : "false");
+      note.textContent = items.find(([v]) => v === mode)[2];
+      swapIn(note, mode);
+      requestAnimationFrame(place);
+    }
+    if (typeof ResizeObserver === "function") new ResizeObserver(() => place()).observe(seg);
+    return { box, sync };
+  }
+
+  return { pill, paint };
+}

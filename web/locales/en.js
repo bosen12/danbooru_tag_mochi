@@ -415,6 +415,9 @@ Python 3 · 標準函式庫，不用裝任何套件|Python 3 · Standard library
 方 1024²|Square 1024²
 直 832×1216|Portrait 832×1216
 橫 1216×832|Landscape 1216×832
+直 896×1152|Portrait 896×1152
+直 768×1344|Portrait 768×1344
+橫 1344×768|Landscape 1344×768
 聲音：開|Sound on
 聲音：開（點一下關掉）|Sound on · Click to mute
 聲音：關（點一下打開）|Sound off · Click to enable
@@ -2001,6 +2004,43 @@ ComfyUI 沒開：先用拼貼卡面，之後再回來烤。|ComfyUI isn’t runn
 選敏感時另外補：|Also added for Sensitive:
 防未成年的字本來就一定會加上。|Words that block minors are always added already.
 這些字已經在裡面了。|Those words are already in the list.
+群組|Groups
+卡片群組|Card groups
+勾了好幾組時|When several are checked
+勾了好幾組時怎麼抽|How to draw when several are checked
+整組一起|One group per image
+混著抽|Mix them
+每張圖先挑一組，再從那組裡抽：同一張不會把兩組拆開來混。開「同一個人」時，第 2 張起長相沿用第 1 張那組。|Each image picks one group first, then draws from it, so two groups never mix in one image. With “Same character” on, images 2 and on keep the first image’s appearance group.
+勾到的組合在一起抽：變化最多，會跨組混搭。|All checked groups are drawn as one pool: the most variety, mixing across groups.
+到卡冊管理群組|Manage groups in the Card Book
+存成群組|Save as group
+取個名字|Name it
+群組名字|Group name
+群組名字（直接改）|Group name (edit here)
+讀取群組…|Loading groups…
+空的|Empty
+空|Empty
+加牌|Add cards
+在墨池用這組|Use in Mochi
+這組還是空的：按「加牌」挑幾張進來。|This group is empty. Press “Add cards” to pick some.
+＋ 新群組|＋ New group
+卡片群組：長相、服裝、姿勢、場景各自可以建好幾組牌，墨池抽牌時選要從哪幾組抽。按「＋」建一組，再點牌加進去。|Card groups: build several groups each for appearance, clothing, pose and scene, then choose in Mochi which groups to draw from. Press “＋” to make one, then tap cards to add them.
+這組的牌在現在的設定下都抽不到（分級、性別、時代）|None of these cards can be drawn with the current settings (rating, gender, era)
+改好名字了|Renamed
+群組要有名字|A group needs a name
+不認得的類別|Unknown category
+這些牌不屬於這個類別|These cards don't belong to this category
+詞庫裡沒有這些牌（自製牌還不能放進群組）|These cards aren't in the lexicon (custom cards can't join groups yet)
+群組的類別不能改|A group's category can't be changed
+這個群組剛在別的地方改過，已經換成最新的那份|This group was just changed elsewhere; showing the latest version
+這個群組已經在別的地方刪掉了|This group was deleted elsewhere
+找不到這個群組|Group not found
+群組清單讀不到：勾了群組的這一輪先不抽。確認伺服器開著再試一次。|Couldn't load the group list, so this round with groups checked wasn't drawn. Check that the server is running and try again.
+展開|Expand
+回到全部的牌|Back to all cards
+改群組要先讀到最新的那份，請再試一次|Load the latest version of this group first, then try again
+管的格子：|Slots it controls: 
+（其他照常抽）| (the rest draw as usual)
 `;
 
 export const messages = Object.freeze(Object.fromEntries(copy.trim().split("\n").map((line) => {
@@ -2592,6 +2632,32 @@ ComfyUI 不收：{0}|ComfyUI rejected it: {0!}
 改這裡會改到所有跟著 {0} 家族的底模。|Changes here apply to every model that follows the {0!} family.
 改這裡會改到所有跟著 {0} 家族的底模和工作流程。|Changes here apply to every model and workflow that follows the {0!} family.
 拿掉 {0}|Remove {0!}
+{0}群組|{0} groups
+{0}群組：沒有勾|{0} groups: none checked
+{0}群組：{1!}|{0} groups: {1!}
+新增{0}群組|New {0} group
+{0} 組|{0} groups
+勾了的群組：{0}只從這幾組裡抽。群組沒放到的格子照常抽。|Checked groups: {0} is drawn only from them. Slots a group doesn't cover draw as usual.
+還沒有{0}群組。到卡冊挑牌建立，或把合成池裡的牌存成一組。|No {0} groups yet. Build one in the Card Book, or save the pool's cards as a group.
+把合成池裡的 {0} 張{1}牌存成一組：|Save the {0} {1} cards in the pool as a group:
+{0} 張在現在的設定下抽不到（分級、性別、時代）|{0} cards can't be drawn with the current settings (rating, gender, era)
+存好了，已勾上「{0!}」|Saved and checked “{0!}”
+{0} · {1} 張|{0} · {1} cards
+點{0}的牌加進「{1!}」，再點一次拿掉。|Tap {0} cards to add them to “{1!}”; tap again to remove.
+墨池的{0}勾上這組（原本勾的照留），然後換到墨池|Check this group for {0} in Mochi (keeping the others), then switch to Mochi
+{0} 張被目前的分級、性別收起來了|{0} cards hidden by the current rating or gender
+完成 · {0} 張|Done · {0} cards
+建好「{0!}」：點{1}的牌加進去，名字可以直接改|Created “{0!}”. Tap {1} cards to add them; rename it right here
+刪掉「{0!}」|Deleted “{0!}”
+從「{0!}」拿掉|Remove from “{0!}”
+加進「{0!}」|Add to “{0!}”
+從「{0!}」拿掉了|Removed from “{0!}”
+加進「{0!}」了|Added to “{0!}”
+建好「{0!}」，放進這張了|Created “{0!}” with this card
+「{0!}」不是{1}的牌|“{0!}” isn't a {1} card
+一個群組最多 {0} 張|A group holds up to {0} cards
+一個群組最多 {0} 張牌|A group holds up to {0} cards
+群組最多 {0} 組，先刪掉一些|Up to {0} groups; delete some first
 `;
 export const templates = parameterized.trim().split("\n").map((line) => {
   const split = line.indexOf("|");

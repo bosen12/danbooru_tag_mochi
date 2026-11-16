@@ -47,15 +47,11 @@ import { HARD_BANNED, artSources, CARD_SUITS, CARD_SUIT_INFO } from "./card-art.
 import { buildLibrary, searchCards, cardMatches, matchRank, cardFacts } from "./cards.js";
 import { ratingBlocked, ratingOf } from "./rules/rating.js";
 import { english, t, GLYPHS } from "./i18n.js";
+import { SIZES } from "./sizes.js";
 
 // 跟 app.js 同一份（成品上小牌的來源、尺寸、尺度的字）。
 const SRC_ZH = { implies: "附帶", bind: "附帶", era_anchor: "時代", repair: "補位", must_draw: "必抽", preset: "組合", fixed: "固定" };
 const SECTION_ORDER = ["subject", "feature", "clothing", "pose", "env", "style", "quality"];
-const SIZES = [
-  { id: "square", zh: "方 1024²", w: 1024, h: 1024 },
-  { id: "portrait", zh: "直 832×1216", w: 832, h: 1216 },
-  { id: "landscape", zh: "橫 1216×832", w: 1216, h: 832 },
-];
 const HEAT_ZH = { activity: "活動", tease: "誘惑", flash: "走光", sex: "性愛" };
 const COUNT_SECTIONS = [
   ["feature", "長相"],

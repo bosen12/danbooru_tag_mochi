@@ -216,6 +216,7 @@
     <link rel="stylesheet" href="styles.css" />
     <link rel="stylesheet" href="book.css" />
     <link rel="stylesheet" href="custom.css" />
+    <link rel="stylesheet" href="groups.css" />
     <link rel="stylesheet" href="locale.css" />
   </head>
   <body class="book-page">
@@ -255,9 +256,13 @@
         </div>
         <input class="book-q" id="book-q" type="search" placeholder="找牌：紅髮、kimono…" aria-label="找牌" autocomplete="off" />
       </div>
+      <!-- 卡片群組的書架（book-groups.js）：每段的群組一疊一疊排著，點一疊就看那組的牌。 -->
+      <section class="book-shelf" id="book-shelf" aria-label="卡片群組" hidden></section>
       <!-- 電腦上捲下去時黏在頂欄底下（book.css）：換花色、排序不必捲回最上面。 -->
       <div class="book-tools" id="book-tools">
         <div class="book-tools-in">
+          <!-- 正在看的群組：組名、加牌、在墨池用、刪除；黏在工具列裡，加牌捲到多下面都按得到「完成」。 -->
+          <div class="book-shelf-head" id="book-shelf-head" hidden></div>
           <div class="book-bar">
             <div class="suit-tabs book-suits" id="book-suits" role="group" aria-label="花色"></div>
             <div class="book-order">

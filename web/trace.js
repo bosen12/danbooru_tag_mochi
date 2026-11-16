@@ -7,6 +7,7 @@ export const SOURCES = Object.freeze({
   preset: "preset",
   must_draw: "must_draw",
   random: "random",
+  group: "group",
   implies: "implies",
   bind: "bind",
   era_anchor: "era_anchor",

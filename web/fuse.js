@@ -78,6 +78,7 @@ import { mountDiscord, openRouteFromShot } from "./discord-link.js";
 import { t as translate, takeLanguageState } from "./i18n.js";
 import { trialSummaries } from "./composition.js";
 import { pickStarters as chooseStarters, refreshStarters } from "./starters.js";
+import { SIZES } from "./sizes.js";
 
 // 背後預先開好的這一頁（prerender.js）：點進去之前這個房間讀的存檔被別頁改過，就重新整理。
 guardPrerender("fuse");
@@ -91,11 +92,6 @@ const PRINT_MAX = 40;
 const HISTORY_MAX = 60;
 const RATING_RANK = { general: 0, sensitive: 1, explicit: 2 };
 const HEAT_ZH = { activity: "活動", tease: "誘惑", flash: "走光", sex: "性愛" };
-const SIZES = [
-  { id: "square", zh: "方", w: 1024, h: 1024 },
-  { id: "portrait", zh: "直", w: 832, h: 1216 },
-  { id: "landscape", zh: "橫", w: 1216, h: 832 },
-];
 const SECTION_ORDER = ["subject", "feature", "clothing", "pose", "env", "style", "quality"];
 // 卡池、試印的種子、挑哪一張都不存：重新整理就是空白的版和一批新種子。
 // 晾紙繩（付印過的作品）留著，點「回到這一版」可以把當時的卡池叫回來。
@@ -3218,7 +3214,7 @@ function renderPrintBar() {
       const size = SIZES.find(s => s.id === e.currentTarget.value);
       setSettings({ width: size.w, height: size.h });
       if (hadFocus) $("print-bar").querySelector(".pb-size select")?.focus({ preventScroll: true });
-    } }, SIZES.map(s => el("option", { value: s.id, selected: s.id === sizeId }, `${translate(s.zh)} ${s.w}×${s.h}`)))),
+    } }, SIZES.map(s => el("option", { value: s.id, selected: s.id === sizeId }, `${translate(s.short)} ${s.w}×${s.h}`)))),
     el(
       "div",
       { class: "pb-acts" },
@@ -4210,7 +4206,7 @@ function openRules() {
         "尺寸",
         segmented(
           "尺寸",
-          SIZES.map((s) => [s.id, `${s.zh} ${s.w}×${s.h}`]),
+          SIZES.map((s) => [s.id, `${s.short} ${s.w}×${s.h}`]),
           size,
           (v) => {
             const s = SIZES.find((x) => x.id === v);

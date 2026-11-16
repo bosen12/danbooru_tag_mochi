@@ -57,6 +57,9 @@ import { mountScreensaver } from "./screensaver.js";
 import { mountGenStatus } from "./gen-status.js";
 import { currentPose, poseButton } from "./pose.js";
 import { openDecks } from "./decks.js";
+import { SIZES, ratioBox } from "./sizes.js";
+import { loadGroups, cachedGroups, withGroupPools } from "./card-groups.js";
+import { mountGroupPicks } from "./group-picks.js";
 import { handTools } from "./hand-tools.js";
 import { openPaste, listenPaste } from "./paste-prompt.js";
 import { paintWeight, wireWeightInput, weightRow, weightPositive } from "./weights.js";
@@ -96,12 +99,7 @@ for (const type of ["pointerdown", "keydown"]) {
 const LAND_SFX_MS = DUR.long;
 
 const HEAT_ZH = { activity: "活動", tease: "誘惑", flash: "走光", sex: "性愛" };
-const SIZES = [
-  { id: "square", zh: "方 1024²", w: 1024, h: 1024 },
-  { id: "portrait", zh: "直 832×1216", w: 832, h: 1216 },
-  { id: "landscape", zh: "橫 1216×832", w: 1216, h: 832 },
-];
-const SRC_ZH = { implies: "附帶", bind: "附帶", era_anchor: "時代", repair: "補位", must_draw: "必抽", preset: "組合", fixed: "固定" };
+const SRC_ZH = { implies: "附帶", bind: "附帶", era_anchor: "時代", repair: "補位", must_draw: "必抽", preset: "組合", fixed: "固定", group: "群組" };
 const SECTION_ORDER = ["subject", "feature", "clothing", "pose", "env", "style", "quality"];
 
 let data = null;
@@ -167,6 +165,8 @@ async function boot() {
   const lexUrl = document.querySelector('link[rel="preload"][href^="lexicon.json"]')?.href || "lexicon.json";
   // 自製牌（custom-cards.js）跟詞庫一起抓。
   const customP = loadCustom();
+  // 卡片群組（card-groups.js）：背景讀，抽牌時用；讀不到也照常開（勾選不會被清掉）。
+  loadGroups();
   try {
     const [lexicon, manifest] = await Promise.all([
       fetch(lexUrl).then((r) => r.json()),
@@ -2169,19 +2169,28 @@ function renderRules() {
       ["pose", "姿勢"],
       ["env", "場景"],
     ].map(([k, label]) =>
-      stepper(label, settings.counts[k], 0, 10, (v) => {
-        setSettings(stepSkeleton(settings, k, v));
-        picker.update(k);
-      })
+      el(
+        "span",
+        { class: "count-cell" },
+        stepper(label, settings.counts[k], 0, 10, (v) => {
+          setSettings(stepSkeleton(settings, k, v));
+          picker.update(k);
+        }),
+        // 卡片群組：這一段要從哪幾組抽（group-picks.js）。
+        groupPicks().pill(k)
+      )
     )
   );
   // 數字比骨架少時，那一段在這裡展開選格（skeleton-picker.js）。
   const picker = skeletonPicker({ settings: () => settings, save: (patch) => setSettings(patch) });
   const sizeSel = el("select", { class: "select", "aria-label": "尺寸" }, SIZES.map((s) => el("option", { value: s.id }, s.zh)));
   sizeSel.value = (SIZES.find((s) => s.w === settings.width && s.h === settings.height) || SIZES[0]).id;
+  // 選單旁一個小框照長寬比畫：換尺寸時框從舊的比例變形成新的，一眼看出直、橫、多長。
+  const sizeRatio = ratioBox(settings.width, settings.height);
   sizeSel.onchange = () => {
     const s = SIZES.find((x) => x.id === sizeSel.value);
     setSettings({ width: s.w, height: s.h });
+    sizeRatio.paint(s.w, s.h);
     seat(sizeSel);
   };
   const sceneSel = el("select", { class: "select", "aria-label": "場景合理度" }, SCENE_MODES.map((m) => el("option", { value: m }, SCENE_MODE_LABELS[m])));
@@ -2232,7 +2241,7 @@ function renderRules() {
     { class: "rule-quiet", id: "rule-quiet" },
     rulePair("時代", eraSel),
     rulePair("人物", whoRow),
-    rulePair("尺寸", sizeSel),
+    rulePair("尺寸", el("span", { class: "size-pick" }, sizeSel, sizeRatio.box)),
     rulePair("姿勢", poseBtn),
     rulePair("放牌", el("span", { class: "rule-pair" }, companions, mutex))
   );
@@ -2295,6 +2304,28 @@ function poseRecent() {
 
 function rulePair(label, control) {
   return el("span", { class: "rule-pair" }, el("span", { class: "rule-label" }, label), control);
+}
+
+let groupPicksApi = null;
+function groupPicks() {
+  return (groupPicksApi ||= mountGroupPicks({
+    settings: () => settings,
+    setSettings,
+    cardOf: (t) => lib.byTag.get(t),
+    poolTags: () => [...pool].filter((t) => !isCustomTag(t)),
+    // 這張牌在目前的設定下一定抽不到（抽牌途中才決定的，例如場景、互斥，不算）。
+    blocked: (t) => {
+      const it = lib.byTag.get(t)?.item;
+      if (!it) return "詞庫裡沒有";
+      if (ratingBlocked(it, ratingOf(settings))) return "分級";
+      if (it.gate === "female" && settings.girl === false) return "性別";
+      if (it.gate === "male" && !settings.boy) return "性別";
+      // 只開一個時代（不混合）：專屬別的時代的牌抽不到（例如只開現代時的和服）。
+      const eras = Array.isArray(it.era) ? it.era : [];
+      if (!settings.eraMix && settings.eras?.length && eras.length && !eras.includes("any") && !settings.eras.some((e) => eras.includes(e))) return "時代";
+      return null;
+    },
+  }));
 }
 
 function stepper(label, value, min, max, onChange) {
@@ -2748,6 +2779,8 @@ function drawBatch(gen, { auto = false } = {}) {
     settings: structuredClone(settings),
     pool: new Set([...pool].filter((t) => !isCustomTag(t))),
     bans: new Set([...bans, ...HARD_BANNED]),
+    // 按下去那一刻的群組內容：排隊中別處改了群組，這一輪照舊。還沒讀到是 null（抽之前再讀一次）。
+    groups: cachedGroups() ? structuredClone(cachedGroups()) : null,
     fixedSeed,
     shot: {
       width: settings.width, height: settings.height, rating: settings.rating,
@@ -2781,6 +2814,16 @@ function drawBatch(gen, { auto = false } = {}) {
 
 async function drawBatchNow(gen, intent, epoch) {
   stopAsked = false;
+  // 勾了群組、清單卻還沒讀到（伺服器慢、斷線）：先讀一次；讀不到就不抽 ——
+  // 不然這一輪靜靜變成沒勾群組的普通抽牌，看不出來。勾選照留。
+  if (!intent.groups && intent.settings.groups) {
+    const got = await loadGroups();
+    if (!got) {
+      toast("群組清單讀不到：勾了群組的這一輪先不抽。確認伺服器開著再試一次。");
+      return;
+    }
+    intent.groups = structuredClone(got);
+  }
   haptic(gen ? 18 : 12);
   // 先讓按下去的樣子（墨暈、按鈕壓下、「抽牌中」）畫出來再抽：抽一張在慢手機上要 300ms 以上，
   // 以前整段跟點擊在同一個任務裡，畫面要等抽完才動，像沒按到。無限抽自己接的那幾輪不用等。
@@ -2788,6 +2831,8 @@ async function drawBatchNow(gen, intent, epoch) {
   if (epoch !== drawEpoch) return;
   const n = intent.settings.n;
   let first = null;
+  // 同一個人＋整組一起：第 2 張起沿用第 1 張挑中的長相群組（不然可能 A 的髮色配 B 的妝容）。
+  let firstGroupIds = null;
   const made = [];
   let workStart = performance.now();
   for (let i = 0; i < n; i++) {
@@ -2799,15 +2844,19 @@ async function drawBatchNow(gen, intent, epoch) {
       for (const t of identityBans(lex, first)) if (!pins.has(t)) banned.add(t);
     }
     const seed = randomSeed();
-    const drawSettings = withFavChars(withEffectiveHeats(intent.settings));
+    const keepGroups = intent.settings.samePerson && firstGroupIds?.feature ? { feature: firstGroupIds.feature } : null;
+    const drawSettings = withGroupPools(withFavChars(withEffectiveHeats(intent.settings)), intent.groups, seed, keepGroups);
     // 背景執行緒抽（draw-pool.js）：抽的時候畫面照常動、按得到。抽不了才在這邊抽（結果一樣）。
     const viaWorker = hasDrawWorker() ? await drawInWorker({ settings: drawSettings, pins, banned, seeds: [seed], trace: true }) : null;
     if (epoch !== drawEpoch) break;
     const drawn = viaWorker?.[0] || drawWithSeed(lex, drawSettings, pins, banned, seed, { trace: true });
     if (drawn.positive && String(drawn.positive).trim()) {
-      if (!first) first = drawn.positive;
+      if (!first) {
+        first = drawn.positive;
+        firstGroupIds = drawSettings.groupIds || null;
+      }
       // 抽牌種子每張隨機；固定的生圖種子跟這輪其他設定一起保存。
-      made.push(makeShot(drawn, intent.fixedSeed ?? seed, intent.pool, intent.shot));
+      made.push(makeShot(drawn, intent.fixedSeed ?? seed, intent.pool, intent.shot, drawSettings));
     }
     if (i + 1 < n && performance.now() - workStart >= 8) {
       // 前景等一格，背景用 task；等的途中切到背景也有保底，不掛在 rAF 上。
@@ -2987,7 +3036,8 @@ function printKey(s) {
   return JSON.stringify([s.positive, s.seed, s.rating, s.width, s.height, s.ckpt, s.loras, s.workflowId, s.sampling, s.pose]);
 }
 
-function makeShot(drawn, seed, poolAtDraw, snapshot = null) {
+function makeShot(drawn, seed, poolAtDraw, snapshot = null, groupInfo = null) {
+  const groupNames = groupInfo?.groupNames;
   const source = new Map(((drawn.trace && drawn.trace.kept) || []).map((k) => [k.tag, k.source]));
   const inPos = new Set(String(drawn.positive).split(",").map((s) => s.trim()));
   const mine = [];
@@ -3024,6 +3074,8 @@ function makeShot(drawn, seed, poolAtDraw, snapshot = null) {
     note: "",
     image: null,
     at: new Date().toISOString(),
+    // 這張用了哪些群組：當時的名字（事後改名、刪掉也照舊）和 id（換掉一張重抽時照這幾組）。
+    ...(groupNames && Object.keys(groupNames).length ? { groups: groupNames, groupIds: groupInfo.groupIds } : {}),
   };
 }
 
@@ -3856,14 +3908,16 @@ function rerollCard(shot, tag, btn, closeCard) {
   const kept = [...shot.mine, ...shot.drawn.map((d) => d.tag)].filter((t) => t !== tag && lib.byTag.has(t));
   const era = shot.era === "mixed" ? { eras: [...ERAS], eraMix: true } : ERAS.includes(shot.era) ? { eras: [shot.era], eraMix: false } : {};
   const base = sanitizeSettings({ ...settings, rating: shot.rating || settings.rating, ...era }, data);
-  const drawn = drawWithSeed(lex, withFavChars(withEffectiveHeats(base)), new Set(kept), new Set([...bans, ...HARD_BANNED, tag]), shot.seed, { trace: true });
+  // 群組：照那張當時用的那幾組（還在的話）；那張沒用群組就照現在的勾選。
+  const rerollSettings = withGroupPools(withFavChars(withEffectiveHeats(base)), cachedGroups(), shot.seed, shot.groupIds || null);
+  const drawn = drawWithSeed(lex, rerollSettings, new Set(kept), new Set([...bans, ...HARD_BANNED, tag]), shot.seed, { trace: true });
   const snapshot = {
     width: shot.width, height: shot.height, rating: shot.rating, loras: structuredClone(shot.loras || []), ckpt: shot.ckpt,
     workflowId: shot.workflowId, sampling: shot.sampling || {}, pose: shot.pose || null,
     trigger: joinTriggerParts((shot.loras || []).map((l) => (l && l.strength > 0 ? l.trigger || "" : ""))),
     weights: shot.weights || {},
   };
-  const next = drawn.positive && String(drawn.positive).trim() ? makeShot(drawn, shot.seed, new Set(shot.mine), snapshot) : null;
+  const next = drawn.positive && String(drawn.positive).trim() ? makeShot(drawn, shot.seed, new Set(shot.mine), snapshot, rerollSettings) : null;
   // 只比牌（品質詞、分級詞不算）：換了哪幾張是給人看的。
   const before = new Set([...shot.mine, ...shot.drawn.map((d) => d.tag)].filter((t) => lib.byTag.has(t)));
   const after = next ? new Set([...next.mine, ...next.drawn.map((d) => d.tag)]) : before;

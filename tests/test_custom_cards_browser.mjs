@@ -26,7 +26,7 @@ const env = {
   NO_LORA_MANAGER_FETCH: '1', NO_UPSCALE_FETCH: '1', NO_POSE_FETCH: '1', NO_FACE_FETCH: '1', NO_OUTPUT_PRUNE: '1', NO_HIRES_PRUNE: '1',
   CUSTOM_CARD_FAKE_BAKE: '1', COMFY_API: 'http://127.0.0.1:1', OPEN_BROWSER: '0',
   CUSTOM_CARDS_PATH: resolve(tmp, 'custom_cards.json'), CUSTOM_CARDS_DIR: resolve(tmp, 'custom_cards'),
-  CARD_USAGE_PATH: resolve(tmp, 'usage.json'), CARD_DECKS_PATH: resolve(tmp, 'decks.json'), CARD_FAV_CHARS_PATH: resolve(tmp, 'fav.json'),
+  CARD_USAGE_PATH: resolve(tmp, 'usage.json'), CARD_DECKS_PATH: resolve(tmp, 'decks.json'), CARD_GROUPS_PATH: resolve(tmp, 'groups.json'), CARD_FAV_CHARS_PATH: resolve(tmp, 'fav.json'),
   GEN_LOG_PATH: resolve(tmp, 'gen_log.jsonl'), RECIPE_DATA_DIR: resolve(tmp, 'recipes'), APP_SETTINGS: resolve(tmp, 'settings.json'),
   WORKFLOW_DATA_DIR: resolve(tmp, 'workflows'), DISCORD_SECRETS_PATH: resolve(tmp, 'discord.json'),
 };

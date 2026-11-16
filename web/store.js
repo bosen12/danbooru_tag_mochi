@@ -252,6 +252,8 @@ function serShot(s) {
     weights: s.weights || null,
     // 成品詳情的「換掉這張重抽」換出來的：換了哪幾張（app.js 的 rerollCard），成品上標「換了：A → B」。
     swap: s.swap || null,
+    // 卡片群組：這張用了哪幾組（當時的名字、id；換掉一張重抽時照這幾組）。
+    ...(s.groups ? { groups: s.groups, groupIds: s.groupIds || null } : {}),
     // Hires 過的：image 是大圖，baseImage 是原圖（再 Hires 從原圖放大、也可以還原）。
     baseImage: s.baseImage || null,
     hires: s.hires || null,

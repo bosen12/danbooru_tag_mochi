@@ -108,7 +108,7 @@ def smoke(stage: Path) -> None:
     data = Path(tempfile.mkdtemp(prefix="mochi-portable-smoke-"))
     env = {**os.environ, "PORT": str(port), "HOST": "127.0.0.1", "PYTHONUTF8": "1", "NO_SETUP": "1", "NO_CARD_FETCH": "1",
            "NO_CARD_BAKE": "1", "COMFY_API": "http://127.0.0.1:1", "OPEN_BROWSER": "0", "APP_SETTINGS": str(data / "settings.json"),
-           "CARD_USAGE_PATH": str(data / "usage.json"), "CARD_DECKS_PATH": str(data / "decks.json"), "GEN_LOG_PATH": str(data / "log.jsonl"),
+           "CARD_USAGE_PATH": str(data / "usage.json"), "CARD_DECKS_PATH": str(data / "decks.json"), "CARD_GROUPS_PATH": str(data / "groups.json"), "GEN_LOG_PATH": str(data / "log.jsonl"),
            "RECIPE_DATA_DIR": str(data / "recipes"), "WORKFLOW_DATA_DIR": str(data / "workflows"), "CUSTOM_CARDS_PATH": str(data / "custom.json"),
            "CUSTOM_CARDS_DIR": str(data / "custom"), "CARD_FAV_CHARS_PATH": str(data / "fav.json")}
     env.pop("PYTHONPATH", None)

@@ -1948,6 +1948,36 @@ body #wf-pick-btn.has {
   white-space: nowrap;
 }
 
+/* 尺寸選單旁的小框：照長寬比畫（sizes.js ratioBox），換尺寸時從舊的比例彈到新的。 */
+.size-pick {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
+.size-ratio {
+  --box: 26px;
+  flex: none;
+  display: inline-grid;
+  place-items: center;
+  width: var(--box);
+  height: var(--box);
+}
+.size-ratio::before {
+  content: "";
+  width: calc(var(--box) * var(--rw, 1));
+  height: calc(var(--box) * var(--rh, 1));
+  border: 1.5px solid var(--color-ink-2);
+  border-radius: 3px;
+  background: linear-gradient(160deg, color-mix(in oklch, var(--color-pool) 30%, transparent), transparent 70%);
+  box-shadow: 0 0 10px -4px var(--color-pool);
+  transition: width var(--dur-medium) var(--ease-settle), height var(--dur-medium) var(--ease-settle);
+}
+@media (prefers-reduced-motion: reduce) {
+  .size-ratio::before {
+    transition: none;
+  }
+}
+
 .switch {
   display: inline-flex;
   align-items: center;
