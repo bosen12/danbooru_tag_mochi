@@ -1,5 +1,23 @@
 # Release notes
 
+## v1.6 — 2026-11-17
+
+Changes since [v1.5](https://github.com/bosen12/danbooru_tag_mochi/releases/tag/v1.5).
+
+- **Card groups.** Build several groups each for appearance, clothing, pose and scene (for example "Blonde twintails" and "Long black hair"), then pick in the Ink Pool which groups each category draws from: next to each count under **Cards per category** a small stack button opens the group panel. A group is a pool to draw from, not a deck: only the slots it has cards in are restricted, everything else draws as usual. With several groups checked, choose **One group per image** (an image never mixes two groups) or **Mix them**; with **Same character** on, images 2 and on keep the first image's appearance group. The panel lists each group's sub-categories and says how many slots the checked groups cover against the per-category count; the slot picker outlines those slots in the group's colour. Groups are stored on the server (`data/card_groups.json`), shared by phone and desktop, and the pool's cards for a category can be saved as a group in one click.
+- **Group shelf in the Card Book.** All groups sit at the top as fanned stacks, one row per category (collapsible, collapsed by default on phones). Tap a stack to see only its cards; the header shows the name (edit in place), every sub-category of the category (lit with a count where the group has cards, struck through where it doesn't), **Add cards**, **Use in Mochi**, **Delete** (with undo). In add mode, tapping a card stamps it into the group, with the sub-category chips still available; a card's details also toggle its groups.
+- How groups draw: group cards go in before the engine's own slots, a dress and a top + bottom count as one outfit, slots blocked by another card of the same group stay empty, and slots whose group cards are all ruled out by rating, content level, gender, era or bans fill as usual. A drawn character keeps its own hair and eyes; other appearance groups still apply. Safety repairs and the minor guard are never restricted. Without groups, draws are unchanged. Group cards are marked **Group** in an image's details, and rerolling one card reuses that image's groups.
+- **The Results wall is a masonry layout**: every image keeps its own aspect ratio and drops into the shortest column, with no blank space under landscape images. On desktop the status, seed, era and **Cards · N** appear over the bottom of the image on hover and the actions over the top; on phones there are two columns, the line is always visible and the actions live in the image details.
+- **While generating**, a light runs around the image's frame, with a large percentage, it/s and time left.
+- **Editable negative prompts** per model family, per checkpoint or per custom workflow: strike or add words on top of the default, or write your own. The rating words and the minor guard are always added.
+- **Model families** come from LoRA Manager's base model. Krea 2, Z-Image Turbo and MOSS-Image (ComfyUI v0.43+) run on their own workflows; each family keeps its own steps, CFG, sampler and scheduler. The LoRA picker shows LoRAs that match the checkpoint first and can sort by newest or most used. Diffusion models get their previews, and video previews play.
+- **More sizes**: 1024², 896×1152, 832×1216, 768×1344, 1216×832 and 1344×768, with a small box beside the menu showing the shape.
+- **Appearance** is one button that toggles dark and light (the ink spreads from the button as before).
+- **Rooms open faster**: the Ink Pool is prepared in the background from the Card Book and the Parse Pool too, and cards carried over always arrive.
+- iPhone: landscape keeps clear of the Dynamic Island, the tray keeps clear of the home bar in home-screen mode, and taps give haptic feedback.
+- Fixes from a deep review: holding G/P no longer queues a round per key repeat, undo can't overwrite changed weights, failed browser storage is announced, Esc stops generation from search boxes, screen-reader announcements don't clear the Undo button, IME composition no longer submits searches, and more. Smoother first scroll through the Card Book and less layout shift in the Ink Pool.
+- Phones: era, cast, size, pose and pin options fold into a one-line summary (tap to expand); top-bar links no longer steal taps from the room tabs. Card spines fit 6–8 character names without shrinking and split longer ones into two lines.
+
 ## v1.5 — 2026-11-09
 
 Changes since [v1.4.3](https://github.com/bosen12/danbooru_tag_mochi/releases/tag/v1.4.3).
