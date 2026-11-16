@@ -196,7 +196,8 @@ export function takePool() {
       /* 刪不了就算了：下一次還會再試 */
     }
   };
-  if (globalThis.document?.prerendering) whenActive(drop);
+  // 點進去時只撕「讀到的那一張」：讀完之後別頁又寫了新的（卡冊再按一張 ＋、解析池帶過來），新的留著。
+  if (globalThis.document?.prerendering) whenActive(() => read(KEY.handoff, null)?.at === note?.at && drop());
   else drop();
   if (!note || !Array.isArray(note.tags) || !(Date.now() - note.at < HANDOFF_MS)) return [];
   handoffFrom = typeof note.from === "string" ? note.from : "";

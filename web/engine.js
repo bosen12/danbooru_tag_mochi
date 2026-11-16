@@ -7500,12 +7500,13 @@ function drawOneImpl(lex, settings, pinned, userBanned, rand, seed, opts) {
   // 卡片群組先上：群組有放牌的每一個小類，先從群組挑一張，再輪到骨架格和通用補牌。
   // 不先放的話，詞庫先抽到的牌會讓群組的牌變不合法（髮長先抽到短髮，群組的雙馬尾就被擋掉、
   // 整格退回詞庫），群組形同虛設。先放就跟釘選一樣，後面的格子會配合它。
-  // 每段最多放「每段抽幾個」那麼多張；有角色時長相交給角色（角色自己帶髮色瞳色）。
+  // 每段最多放「每段抽幾個」那麼多張。有角色時，角色自己帶的長相（髮長、髮色、髮型、眼睛、種族）交給角色；
+  // 其他長相（胸部、體型、膚色、妝…）照群組 —— 群組是使用者明講要的（2026-11-16 專案主：有角色時體型群組完全沒抽到）。
   // 用種子派生的獨立亂數挑，主亂數不多吃。
   if (groupGate) {
     const groupRand = mulberry32(((Number(seed) >>> 0) ^ 0x6b1d3c9f) >>> 0);
     for (const [section, g] of groupGate) {
-      if (zeroSections.has(section) || (section === "feature" && withCharacter)) continue;
+      if (zeroSections.has(section)) continue;
       const selected = selectedSlots.get(section);
       const want = Math.max(0, Math.min(10, Number(counts[section]) || 0));
       // 名額每放一張重算（放進去的牌帶出來的相依字也算這一段的張數）。
@@ -7520,6 +7521,23 @@ function drawOneImpl(lex, settings, pinned, userBanned, rand, seed, opts) {
       const keys = shuffle([...g.byKey.keys()], groupRand);
       keys.sort((a, b) => Number(isLit(b)) - Number(isLit(a)));
       let placed = 0;
+      const charaOwns = (m) => withCharacter && m.section === "feature" && CHARACTER_LOOK_GROUPS.has(m.group);
+      // 選格（數字比骨架少）：亮著的每一格，從群組裡屬於那一格的牌平均挑一張（不分哪張有互斥），
+      // 不然「體型」一格永遠先被胸圍拿走，下乳、背乳輪不到。
+      if (selected) {
+        for (const lk of lit) {
+          if (room() <= 0) break;
+          if (someUsed((it) => it.section === section && offKeysOf(it).includes(lk))) continue;
+          const members = g.items.filter((m) => offKeysOf(m).includes(lk) && !charaOwns(m));
+          if (!members.length) continue;
+          const pool = mPool(members).filter((item) => allow(item));
+          const ok = takeFromPool(pool, 1, groupRand, commit, null, allow, mPre);
+          // 這一格放進群組的牌：群組在這格的每一種都算群組的（這格已經滿了）；放不進去：照常補。
+          for (const m of members) groupSlotState.set(groupSlotKey(m), ok ? "claimed" : groupSlotState.get(groupSlotKey(m)) || "failed");
+          if (ok) placed += 1;
+        }
+        continue;
+      }
       const bodyNow = () => {
         const kinds = new Set();
         for (const t of used) {
@@ -7532,8 +7550,8 @@ function drawOneImpl(lex, settings, pinned, userBanned, rand, seed, opts) {
         if (room() <= 0) break;
         // 骨架格以外的群組格：只用留給骨架之後還剩的名額。
         if (!isLit(key) && room() - litOpen() <= 0) continue;
-        // 骨架選格關掉的格子不碰（那一格本來就不補）。
-        const members = g.byKey.get(key).filter((m) => !selected || offKeysOf(m).some((k) => selected.has(k)));
+        // 骨架選格關掉的格子不碰（那一格本來就不補）；有角色時角色自己帶的長相不碰。
+        const members = g.byKey.get(key).filter((m) => !charaOwns(m));
         if (!members.length) continue;
         if (members.some((m) => used.has(m.tag))) {
           groupSlotState.set(key, "claimed");

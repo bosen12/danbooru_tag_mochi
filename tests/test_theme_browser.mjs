@@ -75,7 +75,7 @@ try {
     // 預設深色，切換放在語言地球左邊。
     const first = await page.evaluate(() => ({
       theme: document.documentElement.dataset.theme,
-      value: document.getElementById('theme-select').value,
+      value: document.getElementById('theme-select').dataset.pref,
       beforeLanguage: (() => {
         const lang = document.querySelector('.language-picker');
         const picker = document.querySelector('.theme-picker');
@@ -85,8 +85,8 @@ try {
     assert.deepEqual(first, { theme: 'dark', value: 'dark', beforeLanguage: true }, `${path}: dark by default, picker beside the globe`);
     assert.ok((await page.evaluate(paperLightness)) < 0.25, `${path}: dark paper`);
 
-    // 切淺色：馬上換、記住、meta theme-color 跟著換。
-    await page.selectOption('#theme-select', 'light');
+    // 按一下切淺色：記住、meta theme-color 跟著換。
+    await page.click('#theme-select');
     // 有 View Transitions 時新顏色從按鈕暈開：換色在轉場的回呼裡（下一格），暈完拿掉 theme-inking。
     await page.waitForFunction(() => document.documentElement.dataset.theme === 'light', null, { timeout: 3000 });
     await page.waitForFunction(() => !document.documentElement.classList.contains('theme-inking'), null, { timeout: 3000 });
@@ -112,7 +112,7 @@ try {
     await page.reload();
     await page.waitForSelector('#theme-select', { state: 'attached', timeout: 15000 });
     assert.equal(await page.evaluate(() => window.__themeAtParse), 'light', `${path}: light before first paint after reload`);
-    assert.equal(await page.inputValue('#theme-select'), 'light', `${path}: picker shows the saved choice`);
+    assert.equal(await page.getAttribute('#theme-select', 'data-pref'), 'light', `${path}: button shows the saved choice`);
     assert.deepEqual(errors, [], `${path}: no page errors`);
     await page.close();
   }
@@ -125,20 +125,21 @@ try {
     await b.goto(`${origin}/book.html`);
     await a.waitForSelector('#theme-select', { state: 'attached' });
     await b.waitForSelector('#theme-select', { state: 'attached' });
-    await a.selectOption('#theme-select', 'dark');
+    // 上一段留下的是淺色：按一下回深色。
+    await a.click('#theme-select');
     await b.waitForFunction(() => document.documentElement.dataset.theme === 'dark', null, { timeout: 5000 });
-    assert.equal(await b.inputValue('#theme-select'), 'dark', 'other tabs follow');
+    assert.equal(await b.getAttribute('#theme-select', 'data-pref'), 'dark', 'other tabs follow');
     await a.close();
     await b.close();
   }
 
-  // 跟系統：照作業系統的淺／深，系統換了跟著換。
+  // 以前存的「跟系統」照樣認：照作業系統的淺／深，系統換了跟著換。
   {
     const page = await ctx.newPage();
     await page.emulateMedia({ colorScheme: 'light' });
+    await page.addInitScript(() => localStorage.setItem('mochi.theme.v1', 'auto'));
     await page.goto(`${origin}/`);
     await page.waitForSelector('#theme-select', { state: 'attached' });
-    await page.selectOption('#theme-select', 'auto');
     await page.waitForFunction(() => document.documentElement.dataset.theme === 'light', null, { timeout: 3000 }).catch(() => {});
     assert.equal(await page.evaluate(() => document.documentElement.dataset.theme), 'light', 'auto follows a light system');
     await page.emulateMedia({ colorScheme: 'dark' });
@@ -169,9 +170,10 @@ try {
     assert.equal(await page.evaluate(() => document.documentElement.lang.slice(0, 2)), lang, `${lang} ${width}: language`);
     assert.ok(r.visible && r.slot !== 'none', `${lang} ${width}: picker visible (${r.slot})`);
     assert.ok(r.grew <= 1, `${lang} ${width}: masthead no taller with the picker (${r.slot}, +${r.grew}px)`);
-    await page.selectOption('#theme-select', 'light');
-    await page.waitForFunction(() => document.documentElement.dataset.theme === 'light', null, { timeout: 3000 }).catch(() => {});
-    assert.equal(await page.evaluate(() => document.documentElement.dataset.theme), 'light', `${lang} ${width}: switches from its phone spot`);
+    const was = await page.evaluate(() => document.documentElement.dataset.theme);
+    await page.click('#theme-select');
+    await page.waitForFunction((w) => document.documentElement.dataset.theme !== w, was, { timeout: 3000 }).catch(() => {});
+    assert.notEqual(await page.evaluate(() => document.documentElement.dataset.theme), was, `${lang} ${width}: switches from its phone spot`);
     await page.close();
   }
 
@@ -201,7 +203,7 @@ try {
       };
       requestAnimationFrame(grab);
     });
-    await page.selectOption('#theme-select', 'light');
+    await page.click('#theme-select');
     await page.waitForFunction(() => window.__ink, null, { timeout: 5000 });
     const ink = await page.evaluate(() => window.__ink);
     assert.equal(ink.named, 0, 'theme switch folds every named layer into root');
@@ -211,18 +213,18 @@ try {
     await page.close();
   }
 
-  // 英文版：選項是英文。
+  // 英文版：按鈕說換成哪一個。
   {
     const page = await ctx.newPage();
     await page.addInitScript(() => localStorage.setItem('mochi.language.v1', 'en'));
     await page.goto(`${origin}/`);
     await page.waitForSelector('#theme-select', { state: 'attached' });
     assert.equal(await page.evaluate(() => document.documentElement.lang), 'en');
-    assert.deepEqual(await page.$$eval('#theme-select option', (o) => o.map((x) => x.textContent)), ['Dark', 'Light', 'System']);
+    assert.match(await page.getAttribute('#theme-select', 'aria-label'), /^Switch to (light|dark)$/);
     await page.close();
   }
   await ctx.close();
-  console.log('theme (default dark, picker, persistence, before paint, tabs, system, ink reveal, phone spot, English): passed');
+  console.log('theme (default dark, button, persistence, before paint, tabs, system, ink reveal, phone spot, English): passed');
 } finally {
   await browser.close();
   server.close();

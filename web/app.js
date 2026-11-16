@@ -28,6 +28,7 @@ import {
   SKELETON,
   skeletonCap,
   stepSkeleton,
+  supplementKindKeys,
 } from "./engine.js";
 import { skeletonPicker } from "./skeleton-picker.js";
 import { compareThumb } from "./compare.js";
@@ -59,7 +60,7 @@ import { currentPose, poseButton } from "./pose.js";
 import { openDecks } from "./decks.js";
 import { SIZES, ratioBox } from "./sizes.js";
 import { mountMasonry } from "./wall-masonry.js";
-import { loadGroups, cachedGroups, withGroupPools } from "./card-groups.js";
+import { loadGroups, cachedGroups, withGroupPools, onGroupsChange } from "./card-groups.js";
 import { mountGroupPicks } from "./group-picks.js";
 import { handTools } from "./hand-tools.js";
 import { openPaste, listenPaste } from "./paste-prompt.js";
@@ -168,6 +169,7 @@ async function boot() {
   const customP = loadCustom();
   // 卡片群組（card-groups.js）：背景讀，抽牌時用；讀不到也照常開（勾選不會被清掉）。
   loadGroups();
+  onGroupsChange(() => skelPicker?.repaint());
   try {
     const [lexicon, manifest] = await Promise.all([
       fetch(lexUrl).then((r) => r.json()),
@@ -2183,7 +2185,8 @@ function renderRules() {
     )
   );
   // 數字比骨架少時，那一段在這裡展開選格（skeleton-picker.js）。
-  const picker = skeletonPicker({ settings: () => settings, save: (patch) => setSettings(patch) });
+  const picker = skeletonPicker({ settings: () => settings, save: (patch) => setSettings(patch), groupKeys: groupSkeletonKeys });
+  skelPicker = picker;
   const sizeSel = el("select", { class: "select", "aria-label": "尺寸" }, SIZES.map((s) => el("option", { value: s.id }, s.zh)));
   sizeSel.value = (SIZES.find((s) => s.w === settings.width && s.h === settings.height) || SIZES[0]).id;
   // 選單旁一個小框照長寬比畫：換尺寸時框從舊的比例變形成新的，一眼看出直、橫、多長。
@@ -2307,11 +2310,28 @@ function rulePair(label, control) {
   return el("span", { class: "rule-pair" }, el("span", { class: "rule-label" }, label), control);
 }
 
+// 選格那一排：勾了的群組管到哪幾格（用群組的顏色描出來）。
+let skelPicker = null;
+function groupSkeletonKeys(section) {
+  const out = new Set();
+  // 整組一起時每張只用一組，這裡把勾的每一組都算進來：哪一組被挑到都可能管到這幾格。
+  const ids = settings.groups?.[section]?.ids || [];
+  const tags = (cachedGroups() || []).filter((g) => ids.includes(g.id) && g.section === section).flatMap((g) => g.tags);
+  for (const t of tags) {
+    const item = lib.byTag.get(t)?.item;
+    if (item) for (const k of supplementKindKeys(item)) out.add(k);
+  }
+  return out;
+}
+
 let groupPicksApi = null;
 function groupPicks() {
   return (groupPicksApi ||= mountGroupPicks({
     settings: () => settings,
-    setSettings,
+    setSettings: (patch) => {
+      setSettings(patch);
+      skelPicker?.repaint();
+    },
     cardOf: (t) => lib.byTag.get(t),
     poolTags: () => [...pool].filter((t) => !isCustomTag(t)),
     // 這張牌在目前的設定下一定抽不到（抽牌途中才決定的，例如場景、互斥，不算）。
@@ -3192,7 +3212,7 @@ function shotNode(shot, deal, { printing = false } = {}) {
       { class: "shot-meta" },
       status,
       el("code", {}, seedUseButton(shot.seed)),
-      el("span", {}, [ERA_LABELS[shot.era] || "", heatBlockedByRating(shot.heat, shot.rating) ? "" : HEAT_ZH[shot.heat] || ""].filter(Boolean).join("・")),
+      el("span", { class: "shot-era" }, [ERA_LABELS[shot.era] || "", heatBlockedByRating(shot.heat, shot.rating) ? "" : HEAT_ZH[shot.heat] || ""].filter(Boolean).join("・")),
       // 「牌・N」放在圖底下這一行（一直看得到）；其他動作在 shot-actions（電腦上疊在圖的下緣，滑過才浮出來）。
       toggle
     ),
@@ -3464,11 +3484,41 @@ function paintShot(node, shot) {
       frame.append(bar);
     }
     bar.style.setProperty("--p", String(shot.progress || 0));
-  } else if (bar) bar.remove();
+    // 外框一圈光照進度走（照 obscura 的暗房：一條光沿著框走一圈當進度）。
+    frame.style.setProperty("--ring-p", String(shot.progress || 0));
+  } else {
+    bar?.remove();
+    frame.style.removeProperty("--ring-p");
+  }
   const status = node.querySelector(".shot-meta .status");
   status.dataset.kind = shot.status === "failed" ? "err" : "";
   settleText(status,
-    shot.status === "done" ? (shot.hires ? `Hires ${HIRES_MODES[shot.hires.mode]?.zh || ""} ${shot.hires.width}×${shot.hires.height}` : "印好了") + (faceDepth(shot) > 1 ? `・修過臉 ×${faceDepth(shot)}` : shot.face ? "・修過臉" : "") : shot.status === "running" ? shot.note || "印製中" : shot.status === "drawn" ? "只抽牌" : words[shot.status] || "");
+    shot.status === "done" ? (shot.hires ? `Hires ${HIRES_MODES[shot.hires.mode]?.zh || ""} ${shot.hires.width}×${shot.hires.height}` : "印好了") + (faceDepth(shot) > 1 ? `・修過臉 ×${faceDepth(shot)}` : shot.face ? "・修過臉" : "") : shot.status === "running" ? runningText(shot) : shot.status === "drawn" ? "只抽牌" : words[shot.status] || "");
+  status.dataset.pct = shot.status === "running" && /^\d+%$/.test(status.textContent) ? "true" : "false";
+  // 畫的時候狀態後面接速度、剩多久（照 obscura：3.21 it/s · 剩 6 秒）。
+  let rate = status.nextElementSibling?.classList.contains("shot-rate") ? status.nextElementSibling : null;
+  if (shot.status === "running" && shot.its) {
+    if (!rate) {
+      rate = el("span", { class: "shot-rate", dataset: { noI18n: "" } });
+      status.after(rate);
+    }
+    rate.textContent = rateText(shot.its, shot.eta);
+  } else rate?.remove();
+}
+
+/** 畫的時候：開始走步數了就寫百分比（照 obscura 的 64%）；還沒開始照舊寫「排隊中」「接回剛才那張…」這類說明。 */
+function runningText(shot) {
+  if (/^繪製 \d+\/\d+$/.test(shot.note || "")) return `${Math.round((shot.progress || 0) * 100)}%`;
+  return shot.note || "印製中";
+}
+
+/** 3.21 it/s · 剩 6 秒（慢於一步一秒寫 s/it）。 */
+function rateText(its, eta) {
+  const speed = its >= 1 ? `${its.toFixed(2)} it/s` : `${(1 / its).toFixed(1)} s/it`;
+  if (eta == null || !Number.isFinite(eta)) return speed;
+  const s = Math.max(0, Math.round(eta));
+  const left = s >= 60 ? (english ? `${Math.floor(s / 60)}m ${s % 60}s left` : `剩 ${Math.floor(s / 60)} 分 ${s % 60} 秒`) : english ? `${s}s left` : `剩 ${s} 秒`;
+  return `${speed} · ${left}`;
 }
 
 const REPRINTABLE = new Set(["drawn", "failed", "cancelled", "stopped"]);

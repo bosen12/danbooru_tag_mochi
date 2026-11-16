@@ -38,8 +38,8 @@ html[lang="en"] .language-picker::after { content: "EN"; }
  * source. A system symbol face prevents a hidden dialog fetching a web shard. */
 #dc-modal .tg-close { font-family: system-ui, sans-serif; }
 .gate-inner > .language-picker { margin: 20px auto 0; }
-/* 外觀（theme.js）：語言地球左邊一顆，同一種做法 —— 只畫圖示，透明的原生下拉選單蓋在上面。
- * 圖示的半月照現在的選擇轉：深色左半實心、淺色右半實心、跟系統斜一點。 */
+/* 外觀（theme.js）：語言地球左邊一顆按鈕，按一下在深色、淺色之間直接切。
+ * 圖示的半月照現在的顏色轉：深色左半實心、淺色右半實心。 */
 .theme-picker {
   position: relative;
   display: inline-flex;
@@ -53,14 +53,15 @@ html[lang="en"] .language-picker::after { content: "EN"; }
   border-radius: 6px;
   background: var(--color-paper-2);
   color: var(--color-ink-2);
+  padding: 0;
+  font: inherit;
+  cursor: pointer;
 }
 .theme-picker + .language-picker { margin-left: 0; }
-.theme-picker select { position: absolute; inset: 0; width: 100%; opacity: 0; cursor: pointer; }
-.theme-picker:focus-within { outline: 2px solid var(--color-focus); outline-offset: 2px; }
+.theme-picker:focus-visible { outline: 2px solid var(--color-focus); outline-offset: 2px; }
 .theme-picker:hover { color: var(--color-ink); }
-.theme-picker svg { transition: rotate var(--dur-medium) var(--ease-settle); }
+.theme-picker:active { transform: translateY(1px); }
 .theme-picker[data-pref="light"] svg { rotate: 180deg; }
-.theme-picker[data-pref="auto"] svg { rotate: 45deg; }
 .mast-primary { flex-wrap: wrap; }
 
 html[lang="en"] {

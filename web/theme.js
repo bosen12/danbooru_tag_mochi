@@ -3,7 +3,8 @@
  *
  *   深色（預設，墨池原本的樣子）、淺色（宣紙）、跟系統（照作業系統的淺／深）。存在 mochi.theme.v1，各頁、各分頁共用。
  *   <html data-theme="light|dark">：tokens.css 照它換一套顏色；color-scheme 讓捲軸、輸入框跟著換。
- *   頂欄語言地球旁邊一顆切換（圖示＋透明的原生下拉選單，跟語言那顆同一種做法），切了馬上換、不必重新整理。
+ *   頂欄語言地球旁邊一顆按鈕：按一下就在深色、淺色之間切（2026-11-16 專案主：不要選單），新顏色照舊從按鈕暈開。
+ *   以前存的「跟系統」照樣認（照作業系統），按一下就換成另一個顏色、從此固定。
  *   第一排擠不下的寬度（手機等）改放在工具列聲音鈕後面，見 fit()。
  * 影片頁（介紹影片、使用教學）不載這支：它們是電影，永遠深色。 */
 (() => {
@@ -29,10 +30,17 @@
     root.style.colorScheme = t;
     const meta = document.querySelector('meta[name="theme-color"]');
     if (meta && meta.content !== META[t]) meta.content = META[t];
-    const picker = document.getElementById("theme-select");
-    if (picker && picker.value !== pref()) picker.value = pref();
-    const label = picker?.parentElement;
-    if (label) label.dataset.pref = pref();
+    const btn = document.getElementById("theme-select");
+    if (btn) paintButton(btn, t);
+  }
+
+  function paintButton(btn, t = resolve()) {
+    const en = document.documentElement.lang === "en";
+    btn.dataset.pref = t;
+    btn.setAttribute("aria-pressed", t === "light" ? "true" : "false");
+    const next = t === "dark" ? (en ? "light" : "淺色") : en ? "dark" : "深色";
+    btn.setAttribute("aria-label", en ? `Switch to ${next}` : `換成${next}`);
+    btn.title = en ? `Appearance: ${t}. Click for ${next}.` : `外觀：${t === "dark" ? "深色" : "淺色"}，按一下換成${next}`;
   }
 
   /**
@@ -82,12 +90,14 @@
     });
   }
   const SOFT = 64;
+  /** 按一下：現在看到的是深色就換淺色，反之亦然；新的顏色從這顆按鈕暈開。 */
+  const toggle = (e) => set(resolve() === "dark" ? "light" : "dark", e?.currentTarget || null);
 
   apply();
   mq?.addEventListener?.("change", () => pref() === "auto" && apply());
   // 別的分頁換了：跟著換。
   addEventListener("storage", (e) => e.key === KEY && apply());
-  globalThis.MochiTheme = { pref, resolve, set };
+  globalThis.MochiTheme = { pref, resolve, set, toggle };
 
   const ICON = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 3.5a8.5 8.5 0 0 0 0 17z" fill="currentColor" stroke="none"/></svg>';
 
@@ -96,26 +106,14 @@
     if (document.getElementById("theme-select")) return;
     const host = document.querySelector(".mast-primary");
     if (!host) return;
-    const en = document.documentElement.lang === "en";
-    const label = document.createElement("label");
+    const label = document.createElement("button");
+    label.type = "button";
+    label.id = "theme-select";
     label.className = "theme-picker";
     label.dataset.noI18n = "";
     label.innerHTML = ICON;
-    const select = document.createElement("select");
-    select.id = "theme-select";
-    select.setAttribute("aria-label", en ? "Appearance" : "外觀");
-    select.title = en ? "Appearance: dark, light, or follow the system" : "外觀：深色、淺色，或跟著系統";
-    select.style.fontFamily = '"Segoe UI", "Microsoft JhengHei", sans-serif';
-    for (const [value, zh, enText] of [["dark", "深色", "Dark"], ["light", "淺色", "Light"], ["auto", "跟系統", "System"]]) {
-      const o = document.createElement("option");
-      o.value = value;
-      o.textContent = en ? enText : zh;
-      select.append(o);
-    }
-    select.value = pref();
-    label.dataset.pref = pref();
-    select.addEventListener("change", () => set(select.value, label));
-    label.append(select);
+    paintButton(label);
+    label.addEventListener("click", toggle);
     const place = () => {
       const lang = host.querySelector(".language-picker");
       if (lang) host.insertBefore(label, lang);
@@ -173,7 +171,7 @@
     const slot = ["beside", sound && "tool", "compact"].filter(Boolean).find((s) => (at(s), height() <= base + 1 && scrolling() <= baseScroll)) || (sound ? "beside" : "none");
     at(slot);
     label.dataset.slot = slot;
-    if (focused) label.querySelector("select")?.focus();
+    if (focused) label.focus();
   }
 
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", () => (apply(), mount()), { once: true });

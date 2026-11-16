@@ -31,7 +31,11 @@ const SECTION_ZH = { feature: "長相", clothing: "服裝", pose: "姿勢", env:
 const ORDER = ["feature", "clothing", "pose", "env"];
 const COMMON = { feature: 5, clothing: 8, pose: 5, env: 4 };
 
-export function skeletonPicker({ settings, save }) {
+/**
+ * groupKeys(section)：墨池勾了的卡片群組在這一段管到哪幾格（Set，格子的 key 跟這裡的一樣）。
+ * 那幾顆用群組的顏色（那一段的花色）描一圈、右上角一個小點：看得出哪幾格會從群組抽。疊印台沒有群組，不給。
+ */
+export function skeletonPicker({ settings, save, groupKeys = null }) {
   // 每段記住「亮起來的先後」：換格時熄掉最早亮的那一顆（數字 1 就是單選）。
   const recent = {};
   const rows = {};
@@ -80,6 +84,7 @@ export function skeletonPicker({ settings, save }) {
       recent[section] = keep;
     }
     const blockedLit = [];
+    const grouped = groupKeys?.(section) || new Set();
     for (const btn of row.querySelectorAll(".skel-chip")) {
       const on = lit.includes(btn.dataset.key);
       const before = btn.getAttribute("aria-pressed") === "true";
@@ -89,6 +94,10 @@ export function skeletonPicker({ settings, save }) {
       if (need) btn.dataset.needHeat = need;
       else delete btn.dataset.needHeat;
       btn.title = need ? `要先在上面的尺度選「${HEAT_ZH[need]}」才會補` : on ? `會補「${btn.dataset.zh}」` : `換成「${btn.dataset.zh}」`;
+      if (grouped.has(btn.dataset.key)) {
+        btn.dataset.group = "true";
+        btn.title += on ? "（從勾的群組抽）" : "（勾的群組有這格；亮起來才會從群組抽）";
+      } else delete btn.dataset.group;
       if (need && on) blockedLit.push(HEAT_ZH[need]);
       if (stamp && on && !before) seat(btn);
     }
@@ -170,6 +179,10 @@ export function skeletonPicker({ settings, save }) {
     /** 數字改過之後叫一次：展開／收起、亮哪幾格都跟著對齊。 */
     update(section) {
       for (const s of section ? [section] : ORDER) if (rows[s]) syncRow(s, { stamp: true });
+    },
+    /** 群組的勾選或內容換了：重描哪幾格歸群組（不蓋章）。 */
+    repaint() {
+      for (const s of ORDER) if (rows[s]) syncRow(s);
     },
   };
 }

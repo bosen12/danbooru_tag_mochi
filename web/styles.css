@@ -3200,11 +3200,77 @@ html[data-go-float] .wall-busy {
 .shot > .shot-meta code {
   color: #f1ead9;
 }
-/* 窄的那幾張（每排 5、6 張、手機兩欄）：下緣只留狀態和牌·N，種子、時代在詳情裡看。 */
+/* 窄的那幾張（每排 5、6 張、手機兩欄）：下緣只留狀態和牌·N，種子、時代在詳情裡看。
+ * 畫的時候也一樣：留位子給步數、速度、剩多久。 */
 @container shot (max-width: 250px) {
   .shot-meta > code,
-  .shot-meta > .status + code + span {
+  .shot-meta > .shot-era {
     display: none;
+  }
+  /* 畫的時候：牌·N 讓位，步數一行、速度和剩多久一行。 */
+  .shot-meta:has(> .shot-rate) {
+    flex-wrap: wrap;
+    row-gap: 0;
+  }
+  .shot-meta:has(> .shot-rate) > .shot-toggle {
+    display: none;
+  }
+  .shot-meta > .shot-rate {
+    flex-basis: 100%;
+  }
+}
+.shot[data-status="running"] > .shot-meta > :is(code, .shot-era) {
+  display: none;
+}
+.shot-meta > .status,
+.shot-meta > .shot-rate {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+.shot-meta > .shot-rate {
+  color: rgba(241, 234, 217, 0.72);
+  font-size: var(--text-2xs);
+}
+/* 畫到幾成：大大的百分比（照 obscura）。 */
+.shot-meta > .status[data-pct="true"] {
+  font-size: var(--text-lg);
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+
+/* 畫的時候：一條光沿著畫框走一圈當進度（照 obscura 的暗房），底下那條進度線收起來。 */
+@property --ring-p {
+  syntax: "<number>";
+  inherits: true;
+  initial-value: 0;
+}
+.shot-frame::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  padding: 2px;
+  border-radius: inherit;
+  background: conic-gradient(from 0deg, color-mix(in oklch, var(--color-accent) 55%, #fff), var(--color-accent) calc(var(--ring-p) * 360deg), transparent calc(var(--ring-p) * 360deg));
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--dur-long) var(--ease-out), --ring-p var(--dur-long) var(--ease-out);
+}
+.shot[data-status="running"] > .shot-frame::before {
+  opacity: 1;
+}
+.shot[data-status="running"] > .shot-frame > .shot-progress {
+  display: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .shot-frame::before {
+    transition: none;
   }
 }
 /* 疊在暗底上：淺色字、半透明的底。 */

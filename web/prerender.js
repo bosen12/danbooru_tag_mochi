@@ -48,9 +48,14 @@ const roomHere = () => {
 
 export const prerendering = () => !!document.prerendering;
 
-/** 現在就做；還在背後預先開著的話，等點進去才做。 */
+// 點進去那一刻發現存檔變了、要整頁重新整理（guardPrerender）：這一頁不再做任何「點進去才做」的事。
+// 以前照樣做：墨池背後開好時讀到「沒有便條」，點進去前卡冊、解析池才寫了便條 —— 重新整理的同一刻，
+// 「拿走便條」也照跑，把剛寫的便條撕掉，重新整理完合成池是空的（2026-11-16 專案主：卡冊、解析池都帶不進墨池）。
+let reloading = false;
+
+/** 現在就做；還在背後預先開著的話，等點進去才做（點進去時要重新整理就不做）。 */
 export function whenActive(fn) {
-  if (document.prerendering) document.addEventListener("prerenderingchange", () => fn(), { once: true });
+  if (document.prerendering) document.addEventListener("prerenderingchange", () => reloading || fn(), { once: true });
   else fn();
 }
 
@@ -68,11 +73,30 @@ function snapshot({ local, session }) {
 /** 預先開好之後、點進去之前，這個房間在意的存檔變了就重新整理。要在讀存檔之前呼叫（各頁主程式的第一行）。 */
 export function guardPrerender(room) {
   if (!document.prerendering || !KEYS[room]) return;
-  const before = snapshot(KEYS[room]);
+  let before = snapshot(KEYS[room]);
+  // 這一頁自己在背後開的時候寫的（開機時整理設定、記住分頁狀態）不算「存檔變了」：寫完就當新的基準。
+  // 以前算：墨池背後開好時自己存了一次設定，點進去就一定整頁重新整理（白開了，還撕掉剛帶過來的牌）。
+  for (const name of ["setItem", "removeItem"]) {
+    const original = Storage.prototype[name];
+    Storage.prototype[name] = function (...args) {
+      const out = original.apply(this, args);
+      if (document.prerendering) {
+        try {
+          before = snapshot(KEYS[room]);
+        } catch {
+          /* 比不了就算了 */
+        }
+      }
+      return out;
+    };
+  }
   document.addEventListener(
     "prerenderingchange",
     () => {
-      if (snapshot(KEYS[room]) !== before) location.reload();
+      if (snapshot(KEYS[room]) !== before) {
+        reloading = true;
+        location.reload();
+      }
     },
     { once: true }
   );

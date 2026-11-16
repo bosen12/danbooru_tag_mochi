@@ -873,3 +873,31 @@ html[data-book-group="edit"] .book-cell[data-ingroup="true"]::after {
   font-size: var(--text-xs);
   line-height: 1.55;
 }
+
+/* 墨池「每段抽幾個」的選格：勾了的群組管到的格子用群組的顏色（那一段的花色）描一圈、右上角一個小點。 */
+.skel-row[data-section="feature"] { --gp-suit: var(--suit-look); }
+.skel-row[data-section="clothing"] { --gp-suit: var(--suit-wear); }
+.skel-row[data-section="pose"] { --gp-suit: var(--suit-pose); }
+.skel-row[data-section="env"] { --gp-suit: var(--suit-scene); }
+.skel-chip[data-group="true"] {
+  position: relative;
+  border-color: color-mix(in oklch, var(--gp-suit) 70%, transparent);
+  color: color-mix(in oklch, var(--gp-suit) 75%, var(--color-ink));
+}
+.skel-chip[data-group="true"][aria-pressed="true"] {
+  background: color-mix(in oklch, var(--gp-suit) 24%, var(--color-paper-3));
+  border-color: var(--gp-suit);
+  color: var(--color-ink);
+  box-shadow: 0 0 0 2px color-mix(in oklch, var(--gp-suit) 18%, transparent);
+}
+.skel-chip[data-group="true"]::after {
+  content: "";
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--gp-suit);
+  box-shadow: 0 0 0 2px var(--color-paper);
+}

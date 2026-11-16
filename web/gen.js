@@ -212,8 +212,23 @@ export function createGenerator(hooks) {
               shot.note = "排隊中";
             } else if (event === "progress") {
               const max = data.max || 25;
-              shot.progress = Math.min(1, (data.value || 0) / max);
-              shot.note = `繪製 ${data.value || 0}/${max}`;
+              const value = data.value || 0;
+              shot.progress = Math.min(1, value / max);
+              shot.note = `繪製 ${value}/${max}`;
+              // 速度、剩多久（照 obscura）：最近八步的平均。換了一段（Hires 第二段、步數變回小的）重新算。
+              // 只放在記憶體裡（_steps、its、eta 不進存檔）。
+              const now = performance.now();
+              const steps = (shot._steps ||= []);
+              if (steps.length && value < steps[steps.length - 1][0]) steps.length = 0;
+              steps.push([value, now]);
+              if (steps.length > 8) steps.shift();
+              const [v0, t0] = steps[0];
+              const [v1, t1] = steps[steps.length - 1];
+              if (v1 > v0 && t1 > t0) {
+                const perStep = (t1 - t0) / 1000 / (v1 - v0);
+                shot.its = 1 / perStep;
+                shot.eta = perStep * Math.max(0, max - value);
+              } else if (!steps.length || value <= 1) shot.its = shot.eta = null;
             } else if (event === "preview" && data.image) {
               shot.preview = data.image;
               shot.note = shot.note || "預覽中";

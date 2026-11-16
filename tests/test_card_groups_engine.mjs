@@ -4,7 +4,7 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { indexLexicon, defaultSettings, sanitizeSettings, drawOne, mulberry32, groupSlotKey, ratingBlocked } from "../web/engine.js";
+import { indexLexicon, defaultSettings, sanitizeSettings, drawOne, mulberry32, groupSlotKey, ratingBlocked, stepSkeleton, swapSkeleton, skeletonLit } from "../web/engine.js";
 import { existsSync } from "node:fs";
 // 開源版把 web6/ 合進 web/：兩邊都跑得動。
 const groupsJs = existsSync(resolve(import.meta.dirname, "../web6/card-groups.js")) ? "../web6/card-groups.js" : "../web/card-groups.js";
@@ -166,6 +166,25 @@ const sourceMap = (out) => new Map(out.trace.kept.map((k) => [k.tag, k.source]))
     b += draw(s, seed).sections.feature.length;
   }
   ok(`長相張數（沒群組 ${(a / 60).toFixed(2)}、有群組 ${(b / 60).toFixed(2)}）差不到 1.5 張`, b / 60 - a / 60 < 1.5, [a / 60, b / 60]);
+}
+
+// 4g. 有角色、長相只選「體型」一格（專案主 2026-11-16 回報：抽到角色時體型群組完全沒抽）：照樣從群組抽，而且群組每張都輪得到
+{
+  const tags = need(["perky breasts", "underboob", "backboob", "huge breasts", "large breasts"]);
+  for (const chara of [false, true]) {
+    let s0 = base({ rating: "sensitive", heats: ["tease"], drawCharacter: chara, counts: { ...base().counts, feature: 1 } });
+    s0 = sanitizeSettings({ ...s0, ...stepSkeleton(s0, "feature", 1) }, data);
+    s0 = sanitizeSettings({ ...s0, ...swapSkeleton(s0, "feature", "feature:body_f", skeletonLit(s0, "feature")[0]) }, data);
+    const s = { ...s0, groupPools: { feature: tags } };
+    let hit = 0;
+    const seen = new Set();
+    for (const seed of SEEDS.slice(0, 60)) {
+      const f = draw(s, seed).sections.feature.filter((t) => tags.includes(t));
+      if (f.length) hit++;
+      f.forEach((t) => seen.add(t));
+    }
+    ok(`${chara ? "有角色" : "沒角色"}：體型那一格從群組抽（${hit}/60），群組 ${seen.size} 種都輪得到`, hit >= 57 && seen.size >= 4, [hit, [...seen]]);
+  }
 }
 
 // 5. 釘選照留：釘了群組外的同小類牌，照樣在
