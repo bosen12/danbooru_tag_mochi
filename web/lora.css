@@ -2419,6 +2419,9 @@
   font: inherit;
   font-size: 12px;
   line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
   cursor: pointer;
   transition: color var(--d-ui, 220ms) var(--ease-out, ease-out);
 }

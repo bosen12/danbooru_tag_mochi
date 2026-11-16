@@ -1981,8 +1981,8 @@ ComfyUI 沒開：先用拼貼卡面，之後再回來烤。|ComfyUI isn’t runn
 已存，下一張就用這串。|Saved. The next image uses it.
 連不上伺服器|Can’t reach the server
 要用哪一份|Which copy to use
-這顆底模自己一份|This model’s own copy
-這套工作流程自己一份|This workflow’s own copy
+只有這顆底模|Only this model
+只有這套工作流程|Only this workflow
 只有這套工作流程用這一份。|Only this workflow uses this copy.
 只有這顆底模用這一份；同一家的其他底模照樣跟著家族。|Only this model uses this copy. Other models in the family still follow the family.
 怎麼改|How to edit
@@ -2588,7 +2588,7 @@ ComfyUI 不收：{0}|ComfyUI rejected it: {0!}
 「{0}」不能用（未成年、禁用角色）|“{0!}” isn’t allowed (minors, banned characters)
 詞庫外的字最多 {0} 個|At most {0} words outside the lexicon
 {0} 張：{1}|{0} cards: {1}
-跟著 {0} 家族|Follow the {0!} family
+整個家族共用|Shared by the family
 改這裡會改到所有跟著 {0} 家族的底模。|Changes here apply to every model that follows the {0!} family.
 改這裡會改到所有跟著 {0} 家族的底模和工作流程。|Changes here apply to every model and workflow that follows the {0!} family.
 拿掉 {0}|Remove {0!}

@@ -558,8 +558,9 @@ export function negativeBlock({ scope, key, format } = {}) {
     }
     info = view.families[family] || view.families.illustrious;
     readRule();
-    const ownText = scope === "workflows" ? "這套工作流程自己一份" : "這顆底模自己一份";
-    scopeSeg = segmented("要用哪一份", [["family", `跟著 ${famName} 家族`], ["own", ownText]], own ? "own" : "family", pickScope);
+    // 家族名已經在標題上，按鈕只講「誰在用」，不然長名字（Illustrious／NoobAI）會把按鈕擠成兩行。
+    const ownText = scope === "workflows" ? "只有這套工作流程" : "只有這顆底模";
+    scopeSeg = segmented("要用哪一份", [["family", "整個家族共用"], ["own", ownText]], own ? "own" : "family", pickScope);
     modeSeg = segmented("怎麼改", [["edit", "在預設上加減"], ["replace", "整串自己寫"]], rule.mode, pickMode);
     note.textContent = noteText();
     stage.replaceChildren();
