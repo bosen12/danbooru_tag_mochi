@@ -41,6 +41,36 @@ ROOT = Path(__file__).resolve().parent
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
+# 對外連線被 Windows 擋掉時換一個來源埠重連（「Comfy 未連」、送不出去，一陣一陣、過一下又好）。
+# 開著 Hyper-V（WSL、Docker）時，連線共用（ICS）的 NAT 會在防火牆封一段約 2000 個本機埠（NatAlePortFilter），
+# 卻沒有登記成保留埠；Windows 依序發來源埠，發到那段時每一條新連線都吃 WinError 10013。
+# 這裡只在吃到 10013 時，改從 49152–59999 隨機挑一個埠綁著再連（那段通常在 60000 以上），其他情況照舊。
+# http.client（urllib）、websocket 都走 socket.create_connection，換這一個就全部涵蓋。
+_WINSOCK_ACCESS_DENIED = 10013
+_plain_create_connection = socket.create_connection
+
+
+def _dodge_blocked_port(address, timeout=socket._GLOBAL_DEFAULT_TIMEOUT, source_address=None, *args, **kwargs):
+    try:
+        return _plain_create_connection(address, timeout, source_address, *args, **kwargs)
+    except OSError as exc:
+        if source_address or getattr(exc, "winerror", None) != _WINSOCK_ACCESS_DENIED:
+            raise
+        last = exc
+    for _ in range(16):
+        try:
+            return _plain_create_connection(address, timeout, ("", random.randint(49152, 59999)), *args, **kwargs)
+        except OSError as exc:
+            # 挑到的也在擋區、或剛好有人在用：再挑一個。真的連不上（對方沒開）就照原本的錯報。
+            if getattr(exc, "winerror", None) not in (_WINSOCK_ACCESS_DENIED, 10048) and exc.errno not in (98, 10048):
+                raise
+            last = exc
+    raise last
+
+
+if sys.platform == "win32":
+    socket.create_connection = _dodge_blocked_port
+
 import card_usage
 import card_decks
 import card_groups

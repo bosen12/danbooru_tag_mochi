@@ -317,4 +317,41 @@ class PollLifecycle(unittest.TestCase):
         self.assertEqual(events[-1][0], "done")
 
 
+class BlockedSourcePort(unittest.TestCase):
+    """Windows 發到被防火牆封住的來源埠（WinError 10013）：換一個埠重連，不要報「Comfy 未連」。"""
+
+    class Denied(OSError):
+        winerror = 10013
+
+    def test_retries_on_a_bound_port_after_access_denied(self):
+        tries = []
+        def fake(address, timeout=None, source_address=None, *a, **k):
+            tries.append(source_address)
+            if source_address is None:
+                raise self.Denied(13, "denied")
+            return "sock"
+        with patch.object(server, "_plain_create_connection", side_effect=fake):
+            self.assertEqual(server._dodge_blocked_port(("127.0.0.1", 8188), 3), "sock")
+        self.assertIsNone(tries[0])
+        self.assertTrue(49152 <= tries[1][1] <= 59999, "the retry binds a port below the usual blocked range")
+
+    def test_other_errors_are_not_retried(self):
+        tries = []
+        def refused(address, timeout=None, source_address=None, *a, **k):
+            tries.append(source_address)
+            raise ConnectionRefusedError(10061, "refused")
+        with patch.object(server, "_plain_create_connection", side_effect=refused):
+            with self.assertRaises(ConnectionRefusedError):
+                server._dodge_blocked_port(("127.0.0.1", 8188), 3)
+        self.assertEqual(tries, [None], "ComfyUI really down: report it, do not spin")
+
+    def test_gives_up_after_a_few_blocked_ports(self):
+        def always(address, timeout=None, source_address=None, *a, **k):
+            raise self.Denied(13, "denied")
+        with patch.object(server, "_plain_create_connection", side_effect=always) as m:
+            with self.assertRaises(OSError):
+                server._dodge_blocked_port(("127.0.0.1", 8188), 3)
+        self.assertEqual(m.call_count, 17)
+
+
 if __name__ == "__main__": unittest.main()
