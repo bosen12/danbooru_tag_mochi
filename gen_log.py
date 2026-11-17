@@ -281,8 +281,47 @@ def tags_of(positive: str) -> list[str]:
 
 
 def fav_key(seed, tags) -> str:
-    """作品冊那一筆跟日誌那一張是不是同一張：種子一樣、用到的牌一樣（作品冊沒記工作編號）。"""
+    """作品冊那一筆跟日誌那一張是不是同一張：種子一樣、用到的牌一樣（舊的作品沒記是哪個檔，只能這樣認）。"""
     return f"{seed}|{','.join(sorted(tags))}"
+
+
+def src_of(url) -> tuple[str, str] | None:
+    """成品網址（/api/image?filename=…&subfolder=…&h=…）→ ("子資料夾/檔名", 內容指紋)。不是這種網址回 None。"""
+    q = urllib.parse.parse_qs(urllib.parse.urlsplit(str(url or "")).query)
+    name = (q.get("filename") or [""])[0]
+    if not name:
+        return None
+    return f"{(q.get('subfolder') or [''])[0]}/{name}", (q.get("h") or [""])[0]
+
+
+class FavIndex:
+    """作品冊的每一筆 → 日誌哪一張是它。
+
+    新收的作品記著原圖是哪個檔（image.src，"子資料夾/檔名#指紋"）：只認那個檔。以前只比種子＋牌，
+    同種子重印、只換 LoRA 的第二張也被當成已收藏，日誌上補收藏不了。
+    舊的作品沒記：照舊用種子＋牌（fav_key）。"""
+
+    def __init__(self) -> None:
+        self.by_src: dict[str, list] = {}
+        self.by_key: dict[str, object] = {}
+
+    def add(self, rec: dict, key: str, value) -> None:
+        img = rec.get("image") if isinstance(rec, dict) else None
+        src = str(img.get("src") or "") if isinstance(img, dict) else ""
+        if src:
+            path, _, h = src.partition("#")
+            self.by_src.setdefault(path, []).append((h, value))
+        else:
+            self.by_key[key] = value
+
+    def find(self, image, key):
+        s = src_of(image)
+        if s:
+            for h, value in self.by_src.get(s[0], ()):
+                # 檔名會被重用（ComfyUI 的 output 清掉後計數從頭來）：兩邊都有指紋時要一樣。
+                if not h or not s[1] or h == s[1]:
+                    return value
+        return self.by_key.get(key)
 
 
 def _recipe_image(rec) -> str:
@@ -304,10 +343,10 @@ def stats(known, favorites) -> dict:
     但算進模型的「印壞」。
     """
     known = known or frozenset()
-    favs = {}
+    favs = FavIndex()
     for r in favorites or []:
         cards = [t for t in tags_of(r.get("positive")) if t in known]
-        favs[fav_key(r.get("seed"), cards)] = r
+        favs.add(r, fav_key(r.get("seed"), cards), r)
     cards: dict[str, list[int]] = {}
     models: dict[str, dict] = {}
     total = 0
@@ -332,7 +371,7 @@ def stats(known, favorites) -> dict:
         first = at if first is None else min(first, at)
         tags = [t for t in tags_of(e.get("positive")) if t in known]
         ok = bool(e.get("ok"))
-        fav_rec = favs.get(fav_key(e.get("seed"), tags)) if ok else None
+        fav_rec = favs.find(e.get("image"), fav_key(e.get("seed"), tags)) if ok else None
         fav = fav_rec is not None
         drop = ok and e.get("mark") == "discard"
         ms = [model("ckpt", _model_name(e.get("ckpt")) or "預設")] + [model("lora", _model_name(l.get("file"))) for l in e.get("loras") or [] if l.get("file")]
@@ -403,7 +442,8 @@ def stats(known, favorites) -> dict:
 def by_tag(tag: str, favorites: dict, limit: int = 48, offset: int = 0, alive=None) -> dict:
     """卡冊「用它做過的圖」：日誌裡用到這張牌、印好的每一張（Hires 不重複算）。
 
-    favorites：fav_key → 作品冊那一筆（{"id", "thumb"}）。收藏過的排前面，再來一般的，撤下過的最後；同一類新的在前。
+    favorites：fav_key → 作品冊那一筆（{"id", "thumb"}），"_src" 是記著原圖檔的那些（FavIndex）。
+    收藏過的排前面，再來一般的，撤下過的最後；同一類新的在前。
     alive：image → 原圖還在不在（伺服器查得到 ComfyUI 的 output 時才給）。不在的不列、不算張數；
     收藏過的照列（作品冊自己存了一份）。以前全部列出來、卡冊讀圖 404 才一格格拿掉，面板一縮再縮、底下的按鈕跟著跳。
     """
@@ -421,7 +461,9 @@ def by_tag(tag: str, favorites: dict, limit: int = 48, offset: int = 0, alive=No
     out = []
     for e, tags in rows:
         known = favorites.get("_known", ())
-        fav = favorites.get(fav_key(e.get("seed"), [t for t in tags if t in known]))
+        key = fav_key(e.get("seed"), [t for t in tags if t in known])
+        index = favorites.get("_src")
+        fav = index.find(e.get("image"), key) if isinstance(index, FavIndex) else favorites.get(key)
         if alive is not None and not fav and not alive(e.get("image")):
             continue
         out.append({

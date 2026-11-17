@@ -87,6 +87,7 @@ const smallUrl = (ref) => {
   const u = fileUrl(ref);
   return u && `${u}?w=480`;
 };
+const phoneView = () => matchMedia("(max-width: 40rem)").matches;
 const cardsOf = (w) => tagsOfPositive(w.positive || "").filter((t) => lib.byTag.has(t));
 const mineOf = (w) => (Array.isArray(w.pinned) ? w.pinned : []).filter((t) => lib.byTag.has(t));
 // 沒有圖、但提示詞裡有詞庫牌：畫框改攤牌。有圖（含讀取失敗）不走這裡。
@@ -275,19 +276,28 @@ async function boot() {
 
 // 上一次讀作品冊失敗了：畫面要說「讀不到」，不能說「還沒有收藏的作品」（看起來像資料被刪了）。
 let loadFailed = false;
+// 讀作品冊的序號：切回分頁時讀的清單還在路上就刪了一件，舊清單晚到會把刪掉的那件又放回來。
+// 開始新的一次讀、刪掉一件都加一，過期的回應不寫進 works。
+let loadSeq = 0;
 
 async function load() {
+  const mine = ++loadSeq;
   try {
     const r = await fetch("/api/recipes", { cache: "no-store" });
     if (!r.ok) throw new Error(String(r.status));
     const j = await r.json();
+    if (mine !== loadSeq) return;
     works = (j.items || []).slice().sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
     for (const w of works) {
       const cards = cardsOf(w);
       w._text = [w.name, w.positive, ...cards.map(zh)].join(" ").toLowerCase();
     }
     loadFailed = false;
+    // 格子快取只留還在的作品（別的分頁刪掉的不要一直佔著）。
+    const ids = new Set(works.map((w) => w.id));
+    for (const id of tileCache.keys()) if (!ids.has(id)) tileCache.delete(id);
   } catch {
+    if (mine !== loadSeq) return;
     // 讀過的照舊留著（切回分頁時網路一閃，不要整面清空）。
     loadFailed = true;
     toast("讀不到作品冊：伺服器沒開，或連不到主機");
@@ -740,7 +750,9 @@ function openWork(w) {
     image.src = `${full}${full.includes("?") ? "&" : "?"}retry=${Date.now()}`;
   } }, "重試讀取圖片");
   const imageNote = el("p", { class: "album-image-note", role: "status", tabindex: "-1", hidden: true }, imageStatus, retryImage);
-  const image = full ? el("img", { src: full, alt: w.name, onerror: () => {
+  // 手機上詳情的圖拿 960 寬的（作品冊存的常是 1MB 多的 PNG，走 Tailscale 要等）；「開原圖」照舊連原檔。
+  const image = full ? el("img", { src: phoneView() && w.image?.file ? `${full}?w=960` : full, alt: w.name, onerror: () => {
+    if (image.getAttribute("src") !== full && !retrying) return void (image.src = full);
     retrying = false;
     retryImage.disabled = false;
     imageNote.removeAttribute("aria-busy");
@@ -792,7 +804,9 @@ function openWork(w) {
       return toast(`拿不掉：${friendlyError(err)}`);
     }
     sheet.close();
+    loadSeq++;
     works = works.filter((x) => x !== w);
+    tileCache.delete(w.id);
     const node = $("album-grid").querySelector(`.album-tile[data-id="${CSS.escape(w.id)}"]`);
     leave(node, () => render());
     toast(`「${w.name}」拿出作品冊了`);

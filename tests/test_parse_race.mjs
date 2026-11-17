@@ -152,6 +152,7 @@ function load(names, extra = {}) {
       return slot.done;
     },
     shrink: async (_blob, edge) => ({ url: "data:small:" + edge, w: 4, h: 4 }),
+    PARSE_TAB: "tab-test",
   };
   if (extra.shrink) ctx.shrink = extra.shrink;
   const parts = [];

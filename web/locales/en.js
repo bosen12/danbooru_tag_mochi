@@ -1545,6 +1545,7 @@ ComfyUI 的 WD14 Tagger 認得的模型。沒下載過的第一次用會先下�
 圖片太大（上限 3MB；網頁會先縮小，還是太大就換一張）|The image is too large (3 MB limit after shrinking). Try another one.
 ComfyUI 沒有裝 WD14 Tagger：在 ComfyUI Manager 搜「WD14 Tagger」（pysssss）安裝、重開 ComfyUI|ComfyUI does not have the WD14 Tagger. Install “WD14 Tagger” (pysssss) from ComfyUI Manager and restart ComfyUI.
 解析太久沒回來（ComfyUI 可能還在下載模型，等一下再試）|Parsing took too long (ComfyUI may still be downloading the model). Try again in a moment.
+換了一張圖，上一張不解析了|Switched to another image; the previous one won't be analyzed
 Tagger 出錯（ComfyUI 的主控台有詳細原因）|The tagger failed (details in the ComfyUI console)
 歡迎來到解析池|Welcome to the Parse Pool
 丟一張圖進來，ComfyUI 的 WD14 Tagger 認出畫面裡的字，詞庫有的變成牌。|Drop in an image. ComfyUI's WD14 Tagger reads its tags, and the ones in the vocabulary become cards.
@@ -2256,6 +2257,8 @@ Discord 設定（自動傳送{0}）|Discord settings (auto sharing {0})
 {0} 張不屬於這個時代|{0} cards from other eras
 {0} 張是{1}專用（{2}沒開）|{0} cards require {1} (disabled)
 找不到「{0}」|No results for “{0!}”
+最近 {0} 張裡找不到「{1}」，更早的還沒翻到|Nothing matches “{1!}” in the latest {0}; older images aren't loaded yet
+最近 {0} 張裡沒有符合的，更早的還沒翻到|No matches in the latest {0}; older images aren't loaded yet
 字盒裡沒有「{0}」。可能被分級、性別或時代收起來了。|No cards matching “{0}”. Check rating, characters and era filters.
 「{0}」已經在合成池裡|“{0}” is already pinned.
 「{0}」已經在版上|“{0}” is already in the layers.

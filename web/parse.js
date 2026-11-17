@@ -335,7 +335,11 @@ function showShot({ fresh = false } = {}) {
 
 /* ================= 解析 ================= */
 
-/** 換一張、或重跑：中止上一輪的請求。只中止這個分頁，不碰 ComfyUI 正在印的圖。 */
+// 這個分頁的編號：伺服器靠它認「同一頁換了一張」，把上一張還在 ComfyUI 排著、跑著的解析拿掉
+// （這裡中止得了的只有自己的請求；以前每一張 WD14 照樣跑完，還插隊排在生圖前面）。
+const PARSE_TAB = Math.random().toString(36).slice(2, 12);
+
+/** 換一張、或重跑：中止上一輪的請求（伺服器那邊照 PARSE_TAB 拿掉上一張解析）。不碰 ComfyUI 正在印的圖。 */
 function abortParse() {
   parseAbort?.abort();
   parseAbort = null;
@@ -382,7 +386,7 @@ async function run() {
     const r = await fetch("/api/parse", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ image: target.url, settings: tagger() }),
+      body: JSON.stringify({ image: target.url, settings: tagger(), tab: PARSE_TAB }),
       signal: ac.signal,
     });
     j = await r.json().catch(() => ({ ok: false, error: `伺服器回 ${r.status}` }));

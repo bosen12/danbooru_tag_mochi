@@ -121,11 +121,14 @@ try {
     // 搜尋：完全相符排第一、Enter 加第一張；點牌只改勾，捲動位置不跳。
     await page.click('.cce-suits .suit-tab[data-suit="all"]');
     await page.fill('.cce-q', '紅髮');
+    // 搜尋停一下才重畫（custom-editor.js 的 140ms）：等第一張換好再比。
+    await page.waitForFunction(() => document.querySelector('.cce-grid .is-enter-target')?.dataset.tag === 'red hair', null, { timeout: 3000 }).catch(() => {});
     assert.equal(await page.evaluate(() => document.querySelector('.cce-grid .is-enter-target')?.dataset.tag), 'red hair');
     await page.keyboard.press('Enter');
     await page.waitForSelector('.cce-chip[data-tag="red hair"]');
     assert.ok(await page.$eval('.cce-grid > .card[data-tag="red hair"]', (n) => n.classList.contains('is-in')));
     await page.fill('.cce-q', '');
+    await page.waitForTimeout(400);
     await page.evaluate(() => { document.querySelector('.cce-grid-box').scrollTop = 500; });
     const tag = await page.evaluate(() => { const top = document.querySelector('.cce-grid-box').getBoundingClientRect().top; return [...document.querySelectorAll('.cce-grid > .card')].find((n) => n.getBoundingClientRect().top > top + 20).dataset.tag; });
     await page.click(`.cce-grid > .card[data-tag="${tag}"]`);
@@ -256,6 +259,46 @@ try {
     assert.equal(await page.locator('#pool-well .pool-slot').count(), 0, 'removing it takes its cards out');
     assert.deepEqual(errors, []);
     await ctx.close();
+  }
+
+  // ---------- 墨池：分級擋掉的不送詞庫外字、兩張共用成員、別處改了內容 ----------
+  {
+    const post = async (body) => (await (await fetch(origin + '/api/custom-cards', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })).json()).card;
+    const A = await post({ name: '測試甲', rating: 'explicit', members: [{ tag: 'blue eyes', w: 1.5 }, { tag: 'smile', w: 1 }], extra: [{ text: 'glowing tattoo', w: 1 }] });
+    const B = await post({ name: '測試乙', rating: 'general', members: [{ tag: 'blue eyes', w: 1 }, { tag: 'long hair', w: 1 }], extra: [] });
+    const tagA = 'custom:' + A.id;
+    const tagB = 'custom:' + B.id;
+    const { page, ctx, errors, gen } = await open('');
+    await page.waitForSelector('#lib-grid .card');
+    // 色情的甲在敏感檔的字盒裡看不到：像卡冊送過來那樣交接（甲先、乙後），開頁時補成員。
+    await page.evaluate(([a, b]) => localStorage.setItem('mochi.pool.handoff.v1', JSON.stringify({ tags: [a, b], at: Date.now(), from: 'book', weights: {} })), [tagA, tagB]);
+    await page.reload();
+    await page.waitForFunction((t) => document.querySelector(`#pool-well .card[data-tag="${t}"]`), tagB, { timeout: 10000 });
+    await page.waitForTimeout(800);
+    const poolTags = () => page.evaluate(() => [...document.querySelectorAll('#pool-well .pool-slot > .card, #pool-well .pool-slot .card')].map((c) => c.dataset.tag));
+    const slotText = (t) => page.evaluate((t) => document.querySelector(`#pool-well .card[data-tag="${t}"]`)?.closest('.pool-slot')?.textContent || '', t);
+    assert.match(await slotText(tagA), /分級擋掉/, 'the explicit card is marked as blocked under sensitive');
+    await page.click('#go-bar button:has-text("只抽牌")');
+    await page.waitForSelector('#wall button:has-text("送去印這張")');
+    await page.click('#wall button:has-text("送去印這張")');
+    await page.waitForTimeout(800);
+    const pos = gen.find((g) => g.positive)?.positive || '';
+    assert.ok(pos.includes('blue eyes'), `members still go in: ${pos}`);
+    assert.ok(!pos.includes('glowing tattoo'), `a rating-blocked custom card's extra words stay out: ${pos}`);
+    // 拿走甲：乙也要的藍眼留著（以前跟著甲一起被拿掉）。
+    await page.click(`#pool-well .pool-slot:has(.card[data-tag="${tagA}"]) .pool-x`);
+    await page.waitForTimeout(700);
+    assert.match(await slotText(tagB), /2 張/, `the other custom card keeps the shared member: ${await slotText(tagB)}`);
+    // 別的分頁把乙改成只剩長髮：藍眼從合成池拿掉，不另外冒一張。
+    await post({ id: B.id, name: '測試乙', rating: 'general', members: [{ tag: 'long hair', w: 1 }], extra: [] });
+    const other = await ctx.newPage();
+    await other.goto(origin + '/api/custom-cards');
+    await other.evaluate(() => localStorage.setItem('mochi.custom.v1', String(Date.now())));
+    await page.waitForFunction((t) => /1 張/.test(document.querySelector(`#pool-well .card[data-tag="${t}"]`)?.closest('.pool-slot')?.textContent || ''), tagB, { timeout: 5000 });
+    assert.ok(!(await poolTags()).includes('blue eyes'), `a member dropped from the edited card leaves the pool: ${await poolTags()}`);
+    assert.deepEqual(errors, []);
+    await ctx.close();
+    for (const c of [A, B]) await fetch(origin + '/api/custom-cards/' + c.id, { method: 'DELETE' });
   }
 
   // ---------- 疊印台：成員上卡池（角色在人物那一層）、試印帶詞庫外的字 ----------

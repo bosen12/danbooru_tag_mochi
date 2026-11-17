@@ -1912,6 +1912,19 @@ ok("bytag: 分頁", _gl.by_tag("kimono", _fi, limit=1, offset=1)["items"][0]["id
 _dead = _gl.by_tag("kimono", _fi, alive=lambda src: False)
 ok("bytag: 原圖已被清掉的不列、不算張數；收藏過的照列（作品冊有自己的一份）", _dead["total"] == 1 and _dead["items"][0]["id"] == "s1", str(_dead))
 ok("bytag: 查不到 output（alive=None）就不過濾", _gl.by_tag("kimono", _fi, alive=None)["total"] == 2)
+# 同種子重印（牌一樣）：記著原圖檔的作品只認那個檔，第二張不算收藏；舊的沒記照舊比種子＋牌。
+_put(7, "1girl, kimono, (rain:1.2)", seed=1)
+_w_src = {"id": "w1", "seed": 1, "positive": "1girl, kimono, (rain:1.2)", "image": {"file": "w1.png", "src": "/1.png"}}
+_w_old = {"id": "w1", "seed": 1, "positive": "1girl, kimono, (rain:1.2)", "image": {"file": "w1.png"}}
+ok("stats: 記著原圖檔的作品只算那一張（同種子重印的不算收藏）", _gl.stats(_known, [_w_src])["cards"]["rain"][1] == 1)
+ok("stats: 舊作品沒記原圖檔，照舊比種子＋牌", _gl.stats(_known, [_w_old])["cards"]["rain"][1] == 2)
+_fx = _gl.FavIndex()
+_fx.add(_w_src, _gl.fav_key(1, ["1girl", "kimono", "rain"]), {"id": "w1", "thumb": None})
+_bt2 = _gl.by_tag("rain", {"_known": _known, "_src": _fx})
+ok("bytag: 同種子重印的那張不標收藏", {r["id"]: r["fav"] for r in _bt2["items"]} == {"s1": "w1", "s7": None}, str(_bt2["items"]))
+_fh = _gl.FavIndex()
+_fh.add({"image": {"src": "/1.png#aaaa"}}, "k", "w")
+ok("FavIndex: 檔名被重用（指紋不同）不算同一張；沒指紋的照檔名", _fh.find("/api/image?filename=1.png&h=bbbb", "x") is None and _fh.find("/api/image?filename=1.png&h=aaaa", "x") == "w" and _fh.find("/api/image?filename=1.png", "x") == "w")
 _oa_dir = Path(tempfile.mkdtemp())
 (_oa_dir / "danbooru_case").mkdir()
 (_oa_dir / "danbooru_case" / "here.png").write_bytes(b"x")
@@ -2753,6 +2766,29 @@ try:
        and _lm_items[0]["favorite"] is True and _lm_items[0]["base_model"] == "ZImageTurbo", str(_lm_items))
 finally:
     _ls.preferred_path, _ls.LORA_FOLDERS = _saved4
+
+# 解析池換圖：同一個分頁上一張還沒解析完的，從 ComfyUI 拿掉；等它的那條請求不再空等十分鐘。別的分頁的不動。
+_saved5 = (server.api, server.comfy_drop)
+_pq_ids = iter(["p1", "p2", "p3"])
+_pq_dropped = []
+server.api = lambda method, path, body=None, timeout=None: {"prompt_id": next(_pq_ids)} if path == "/prompt" else {}
+server.comfy_drop = lambda pid: _pq_dropped.append(pid)
+try:
+    _p1 = server._queue_parse({}, "tabA")
+    _p2 = server._queue_parse({}, "tabB")
+    _p3 = server._queue_parse({}, "tabA")
+    ok("parse: 同一頁換一張，上一張從 ComfyUI 拿掉；別的分頁的不動", _pq_dropped == ["p1"], str(_pq_dropped))
+    try:
+        server._wait_parse("p1", timeout=5)
+        ok("parse: 被換掉的那張不再等", False)
+    except server.image_parse.ParseError as exc:
+        ok("parse: 被換掉的那張不再等", exc.code == "replaced")
+    server._parse_done("p1", "tabA")
+    server._parse_done("p3", "tabA")
+    server._parse_done("p2", "tabB")
+    ok("parse: 做完就清掉記錄", not server._PARSE_BY_TAB and not server._PARSE_CANCELLED, str((server._PARSE_BY_TAB, server._PARSE_CANCELLED)))
+finally:
+    server.api, server.comfy_drop = _saved5
 
 if failed:
     print(f"\n{failed} failed")

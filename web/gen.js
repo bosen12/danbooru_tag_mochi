@@ -136,6 +136,9 @@ export function createGenerator(hooks) {
       shot.note = "";
       shot.result = data;
       if (data.seed !== undefined && data.seed !== null) shot.seed = data.seed;
+      // 自訂工作流的底模可以是工作流自己那顆（對照設「不改」）：記真的印這張的那顆（伺服器從送出去的圖讀的），
+      // 不然收藏、「照這張再印」帶的是頂欄當時選的、沒參與這張圖的底模。預設工作流送的就是頂欄那顆，不動。
+      if (shot.workflowId && data.ckpt) shot.ckpt = data.ckpt;
       hooks.update(shot);
     };
     // 伺服器重開過：先問出圖日誌，再問 ComfyUI 本身（/api/gen/recover）。還在畫就隔幾秒再問，畫完就拿成品。

@@ -78,7 +78,7 @@ import { pingLoop } from "./ping.js";
 import { genSeed, mountSeedControl, seedUseButton, useSeed } from "./seed-control.js";
 import { attachPeek, hidePeek } from "./card-peek.js";
 import { attachTilt } from "./card-tilt.js";
-import { loadCustom, addCustomToLib, withCustomArt, onCustomChange, setCharacterBan, isCustomTag, customOf, customList, extraText, handOffCustom, startFromPrompt, fillText, RATING_NAME } from "./custom-cards.js";
+import { loadCustom, addCustomToLib, withCustomArt, onCustomChange, setCharacterBan, isCustomTag, customOf, customTag, customList, extraText, handOffCustom, startFromPrompt, fillText, RATING_NAME } from "./custom-cards.js";
 // 牌庫裡現在放的是哪一份自製牌清單（onCustomChanged 用來判斷有沒有換）。
 let customShown = null;
 import { createHires, openHiresPicker, openFacePicker, paintHiresVeil, hiresBusy, faceBusy, faceDepth, HIRES_MODES } from "./hires.js";
@@ -227,8 +227,10 @@ async function boot() {
   function onCustomChanged(list = customList()) {
     // 同一份只處理一次（開頁那次讀回來，通知和 customP 都會叫到）。
     if (list === customShown) return;
+    const old = customShown;
     customShown = list;
     addCustomToLib(lib, list);
+    syncEditedCustoms(old);
     // 刪掉的自製牌：池子裡那一格拿掉（它帶進來的牌留著，照一般的牌畫）。
     for (const t of [...pool]) if (isCustomTag(t) && !lib.byTag.has(t)) pool.delete(t);
     ensureCustomMembers();
@@ -1385,6 +1387,51 @@ function customOwners() {
   return owner;
 }
 
+/** 池子裡其他自製牌（except 以外）要的牌：成員和它們帶進來的。拿掉一張、改了一張時，這些不能跟著拿掉。 */
+function customNeeds(except) {
+  const need = new Set();
+  for (const t of pool) {
+    if (!isCustomTag(t) || t === except) continue;
+    for (const m of customOf(t)?.members || []) {
+      need.add(m.tag);
+      const it = lex.byTag.get(m.tag);
+      for (const d of [...(it?.implies || []), ...(it?.bind || [])]) need.add(d);
+    }
+  }
+  return need;
+}
+
+/**
+ * 自製牌在別處改了（卡冊編輯、別的分頁）：池子裡那張照新的內容。
+ * 以前只補新成員：拿掉的成員、改過的份量留著舊的，詳情寫新的、抽出來是舊的。
+ * old：改之前的自製牌清單。拿掉的成員只在別張自製牌也不要時才拿掉；份量還是舊預設（你沒另外調）才換成新的。
+ */
+function syncEditedCustoms(old) {
+  if (!Array.isArray(old)) return;
+  const was = new Map(old.map((c) => [customTag(c.id), c]));
+  for (const t of [...pool]) {
+    if (!isCustomTag(t)) continue;
+    const before = was.get(t);
+    const now = customOf(t);
+    if (!before || !now) continue;
+    const nowW = new Map(now.members.map((m) => [m.tag, m.w]));
+    const need = customNeeds(t);
+    for (const m of before.members) {
+      if (nowW.has(m.tag)) {
+        const w = nowW.get(m.tag);
+        if (w !== m.w && pool.has(m.tag) && (weights.get(m.tag) ?? 1) === m.w) {
+          if (w === 1) weights.delete(m.tag);
+          else weights.set(m.tag, w);
+        }
+        continue;
+      }
+      if (need.has(m.tag) || !pool.has(m.tag)) continue;
+      pool.delete(m.tag);
+      for (const b of lex.byTag.get(m.tag)?.bind || []) if (!need.has(b)) pool.delete(b);
+    }
+  }
+}
+
 /** 池子裡的自製牌：成員沒釘上的補釘（交接過來、重新整理回來的只帶名字）。 */
 function ensureCustomMembers() {
   for (const t of [...pool]) {
@@ -1426,9 +1473,18 @@ function pinCustom(tag) {
   if (gone.length && pickerOpen) toast(poolNote.text);
 }
 
-/** 池子裡自製牌的詞庫外字（接進提示詞）。 */
-function poolExtras() {
-  return [...pool].filter(isCustomTag).map((t) => customOf(t)).filter(Boolean).map(extraText).filter(Boolean).join(", ");
+/** 池子裡自製牌的詞庫外字（接進提示詞）。這一檔分級擋掉的自製牌不算：畫面上標「分級擋掉」，字也不能偷偷送出去。 */
+function poolExtras(r = ratingOf(settings)) {
+  return [...pool]
+    .filter((t) => {
+      const card = isCustomTag(t) && lib.byTag.get(t);
+      return card && !ratingBlocked(card.item, r);
+    })
+    .map((t) => customOf(t))
+    .filter(Boolean)
+    .map(extraText)
+    .filter(Boolean)
+    .join(", ");
 }
 
 /** 池子裡的一格自製牌：右下角標裡面有幾張；裡面有牌跟別的牌相剋時，整格標相剋。 */
@@ -1716,7 +1772,9 @@ function unpin(tag, { viaDrag = false } = {}) {
   const before = new Set(pool);
   if (isCustomTag(tag)) {
     // 自製牌：它帶進來的牌一起拿掉（池子裡別張自製牌也有的留著）。
-    for (const [m, o] of customOwners()) if (o === tag) pool.delete(m);
+    // 畫在哪一格只認先放的那張（customOwners）：別張也要的牌另外算，不然拿走 A 會把 B 的藍眼一起帶走。
+    const need = customNeeds(tag);
+    for (const [m, o] of customOwners()) if (o === tag && !need.has(m)) pool.delete(m);
   }
   pool.delete(tag);
   for (const b of lex.byTag.get(tag)?.bind || []) pool.delete(b);
@@ -2844,6 +2902,8 @@ function drawBatch(gen, { auto = false } = {}) {
   // 固定的生圖種子：一次多張、無限抽時每張都用這一顆（跟疊印台一樣）。以前之後每張往後加一，
   // 「固定」卻不固定，想用同一顆種子比較不同提示詞的人用不了。
   const fixedSeed = genSeed(null);
+  // 自製牌的詞庫外字（這一檔分級擋掉的不算）：送出的提示詞一份，另外記一份給「換掉這張重抽」。
+  const extras = poolExtras();
   // 原本整輪同步完成，途中設定不會被改。讓出畫面後仍用點下去那刻的同一份意圖。
   const intent = {
     auto,
@@ -2856,7 +2916,9 @@ function drawBatch(gen, { auto = false } = {}) {
     shot: {
       width: settings.width, height: settings.height, rating: settings.rating,
       loras: structuredClone(currentLorasPayload()), ckpt: currentCkpt(), workflowId: currentWorkflowId(),
-      sampling: currentSampling(), pose: currentPose(), trigger: joinTriggerParts([currentTriggerText(), poolExtras()]),
+      sampling: currentSampling(), pose: currentPose(), trigger: joinTriggerParts([currentTriggerText(), extras]),
+      // 自製牌的詞庫外字另外記一份：成品「換掉這張重抽」照這張當時的接回去（不是現在合成池的）。
+      extra: extras,
       // 按下去那一刻合成池的份量：這一輪的每一張都用這一份。
       weights: Object.fromEntries(weights),
     },
@@ -3160,6 +3222,7 @@ function makeShot(drawn, seed, poolAtDraw, snapshot = null, groupInfo = null) {
     workflowId: snapshot?.workflowId ?? currentWorkflowId(),
     sampling: snapshot?.sampling ?? currentSampling(),
     pose: snapshot ? snapshot.pose ?? null : currentPose(),
+    ...(snapshot?.extra ? { extra: snapshot.extra } : {}),
     status: "drawn",
     note: "",
     image: null,
@@ -3437,11 +3500,12 @@ function resultCard(tag, src, flag, shot = null) {
 }
 
 // 成品牆的小圖：一般螢幕拿 480 寬的縮圖（/api/image 的 w=480；畫出來只有約 360px，整張是它的 5 倍像素，
-// 手機第一次開要多下載好幾 MB）。高解析度螢幕照舊拿整張 webp，不然會糊。詳情、開原圖照舊。
-const WALL_THUMB = (globalThis.devicePixelRatio || 1) <= 1.25;
+// 手機第一次開要多下載好幾 MB）。高解析度螢幕（手機幾乎都是）拿 960 寬：一欄最寬約 470px×2，夠清楚。
+// 以前高解析度照舊拿整張，偏偏擋掉了最需要省的手機。詳情、開原圖照舊。
+const WALL_W = (globalThis.devicePixelRatio || 1) <= 1.25 ? 480 : 960;
 const wallSrc = (image) => {
   const v = viewSrc(image);
-  return v && WALL_THUMB && v.startsWith("/api/image?") ? v + "&w=480" : v;
+  return v && v.startsWith("/api/image?") ? `${v}&w=${WALL_W}` : v;
 };
 
 function paintShot(node, shot) {
@@ -4032,7 +4096,9 @@ function rerollCard(shot, tag, btn, closeCard) {
   const snapshot = {
     width: shot.width, height: shot.height, rating: shot.rating, loras: structuredClone(shot.loras || []), ckpt: shot.ckpt,
     workflowId: shot.workflowId, sampling: shot.sampling || {}, pose: shot.pose || null,
-    trigger: joinTriggerParts((shot.loras || []).map((l) => (l && l.strength > 0 ? l.trigger || "" : ""))),
+    // 那張的 LoRA 觸發詞＋自製牌的詞庫外字（以前只接觸發詞，重抽出來那段描述就不見了）。
+    trigger: joinTriggerParts([...(shot.loras || []).map((l) => (l && l.strength > 0 ? l.trigger || "" : "")), shot.extra || ""]),
+    extra: shot.extra || "",
     weights: shot.weights || {},
   };
   const next = drawn.positive && String(drawn.positive).trim() ? makeShot(drawn, shot.seed, new Set(shot.mine), snapshot, rerollSettings) : null;
@@ -4817,8 +4883,21 @@ function applyCards(tags, { replace = true, label = "", weights: w = {} } = {}) 
   const before = { pool: [...pool], bans: [...bans], weights: new Map(weights) };
   let pinned = replace ? new Set() : new Set(pool);
   let banned = new Set(bans);
+  const customs = [];
   for (const t of tags) {
     if (HARD_BANNED.includes(t) || !lib.byTag.has(t)) continue;
+    // 自製牌（牌組、偏好卡牌存的）：跟手放一樣，成員逐張照規則釘上。以前只放了名字，重新整理後才補成員，
+    // 同一個牌組套上去馬上抽、和重新整理後再抽，抽出來的不一樣。
+    const c = isCustomTag(t) ? customOf(t) : null;
+    if (c) {
+      for (const m of c.members) {
+        if (!lib.byTag.has(m.tag) || HARD_BANNED.includes(m.tag)) continue;
+        ({ pinned, userBanned: banned } = applyPin(lex, pinned, banned, m.tag, pinOpts()));
+      }
+      pinned.add(t);
+      customs.push(c);
+      continue;
+    }
     const r = applyPin(lex, pinned, banned, t, pinOpts());
     pinned = r.pinned;
     banned = r.userBanned;
@@ -4826,6 +4905,7 @@ function applyCards(tags, { replace = true, label = "", weights: w = {} } = {}) 
   pool = pinned;
   bans = banned;
   if (replace) weights = new Map();
+  for (const c of customs) for (const m of c.members) if (pool.has(m.tag) && m.w !== 1 && !(m.tag in w)) weights.set(m.tag, m.w);
   for (const [t, v] of Object.entries(w)) if (pool.has(t) && v !== 1) weights.set(t, v);
   poolNote = null;
   const fresh = new Set([...pool].filter((t) => replace || !before.pool.includes(t)));

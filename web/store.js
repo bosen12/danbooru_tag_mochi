@@ -256,6 +256,8 @@ function serShot(s) {
     sampling: s.sampling || {},
     // 姿勢參考（pose.js）：這張用的那一份，重印照舊。
     pose: s.pose || null,
+    // 自製牌的詞庫外字（app.js 的 makeShot）：「換掉這張重抽」照這張當時的接回去。
+    ...(s.extra ? { extra: s.extra } : {}),
     image: s.image || null,
     // 收進作品冊的那一筆（album-save.js）：成品上顯示「已收藏」。
     albumId: s.albumId || null,

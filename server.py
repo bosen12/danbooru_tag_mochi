@@ -1596,10 +1596,42 @@ def parse_input_dir() -> Path | None:
     return hires.parent / image_parse.SUBFOLDER if hires is not None else None
 
 
+# 解析池換圖：同一個分頁上一張還在 ComfyUI 排著或跑著的解析拿掉（網頁那邊只中止得了自己的請求）。
+# 以前每一張 WD14 都照樣跑完，而且是插隊排在生圖前面。分頁編號是網頁自己給的（parse.js 的 PARSE_TAB）。
+_PARSE_LOCK = threading.Lock()
+_PARSE_BY_TAB: dict[str, str] = {}
+_PARSE_CANCELLED: set[str] = set()
+
+
+def _queue_parse(wf: dict, tab: str) -> str:
+    pid = api("POST", "/prompt", {"prompt": wf, "front": True}, timeout=60)["prompt_id"]
+    old = None
+    if tab:
+        with _PARSE_LOCK:
+            old = _PARSE_BY_TAB.get(tab)
+            _PARSE_BY_TAB[tab] = pid
+            if old:
+                _PARSE_CANCELLED.add(old)
+    if old:
+        comfy_drop(old)
+    return pid
+
+
+def _parse_done(pid: str, tab: str) -> None:
+    with _PARSE_LOCK:
+        _PARSE_CANCELLED.discard(pid)
+        if tab and _PARSE_BY_TAB.get(tab) == pid:
+            del _PARSE_BY_TAB[tab]
+
+
 def _wait_parse(prompt_id: str, timeout: float = 600) -> dict:
     """解析只要幾秒：問得勤一點（wait_done 一秒問一次，等於平白多等半秒）。第一次用某個模型要下載，所以上限放寬。"""
     t0 = time.time()
     while time.time() - t0 < timeout:
+        with _PARSE_LOCK:
+            dropped = prompt_id in _PARSE_CANCELLED
+        if dropped:
+            raise image_parse.ParseError("換了一張圖，上一張不解析了", "replaced")
         hist = api("GET", f"/history/{prompt_id}", timeout=30)
         if hist and prompt_id in hist:
             return hist[prompt_id]
@@ -1621,13 +1653,19 @@ def parse_image(payload: dict) -> dict:
         # 剛裝好、還沒重開的 ComfyUI 快取裡沒有：再問一次才說沒裝。
         if not tagger_models(fresh=True):
             raise image_parse.ParseError("ComfyUI 沒有裝 WD14 Tagger：在 ComfyUI Manager 搜「WD14 Tagger」（pysssss）安裝、重開 ComfyUI", "no_tagger")
+    tab = str((payload or {}).get("tab") or "")[:64]
+
+    def forget(pid: str) -> None:
+        _parse_done(pid, tab)
+        api("POST", "/history", {"delete": [pid]}, timeout=8)
+
     return image_parse.parse(
         payload,
         upload=lambda data, name, mime: comfy_upload_image(data, name, subfolder=image_parse.SUBFOLDER, mime=mime),
         # front：插到佇列最前面。墨池正在連抽的話，等目前這張印完就輪到解析，不必排在十幾張後面。
-        queue=lambda wf: api("POST", "/prompt", {"prompt": wf, "front": True}, timeout=60)["prompt_id"],
+        queue=lambda wf: _queue_parse(wf, tab),
         wait=_wait_parse,
-        forget=lambda pid: api("POST", "/history", {"delete": [pid]}, timeout=8),
+        forget=forget,
         prune=_prune_parse_inputs,
     )
 
@@ -4556,12 +4594,17 @@ def favorite_index() -> dict:
     if _FAV_CACHE["key"] == key and _FAV_CACHE["value"] is not None:
         return _FAV_CACHE["value"]
     known = card_usage._known_tags()
-    idx: dict = {"_known": known}
+    index = gen_log.FavIndex()
+    idx: dict = {"_known": known, "_src": index}
     for r in recipes.list_recipes():
         cards = [t for t in gen_log.tags_of(r.get("positive")) if t in known]
         ref = r.get("thumbnail") or r.get("image") or {}
         thumb = f"/api/recipes/files/{urllib.parse.quote(str(ref.get('file')))}" if isinstance(ref, dict) and ref.get("file") else None
-        idx[gen_log.fav_key(r.get("seed"), cards)] = {"id": r.get("id"), "thumb": thumb}
+        key = gen_log.fav_key(r.get("seed"), cards)
+        value = {"id": r.get("id"), "thumb": thumb}
+        index.add(r, key, value)
+        if not (isinstance(r.get("image"), dict) and r["image"].get("src")):
+            idx[key] = value
     _FAV_CACHE.update(key=key, value=idx)
     return idx
 
@@ -6375,7 +6418,9 @@ class Handler(BaseHTTPRequestHandler):
                     self._json(409, {"ok": False, "error": "這張圖在 ComfyUI 的輸出資料夾裡已經換成別張了（檔名被重用）", "code": "gone"})
                     return
                 ext = Path(fn).suffix.lower() or ".png"
-                rec = recipes.save_image_bytes(pid, bytes(raw), suffix=ext)
+                # 記下原圖是哪個檔（＋指紋）：日誌認收藏時比這個，同種子重印的第二張才不會被當成已收藏。
+                src = f"{str((payload or {}).get('subfolder') or '')}/{fn}" + (f"#{want}" if want else "")
+                rec = recipes.save_image_bytes(pid, bytes(raw), suffix=ext, src=src)
                 # 順便請 ComfyUI 轉一張 webp 當縮圖（作品冊的牆用）；轉不出來就算了，牆上用原圖。
                 try:
                     thumb = api("GET", f"/view?{q}&preview=" + urllib.parse.quote("webp;82"), timeout=60)

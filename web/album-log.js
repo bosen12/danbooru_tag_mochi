@@ -4,7 +4,7 @@ import { dateLocale } from "./i18n.js";
  * 成品牆只留 80 張、沒收藏的過一陣子就找不到了；這裡一直查得到，還能補收藏、把牌帶回墨池。
  *   - 依日期分段，新的在前；一次讀 300 張，底下「再往前翻」。
  *   - 每一列：縮圖、牌名、時間、哪一頁送的、耗時、狀態（★ 收藏、撤下、印壞、Hires）。
- *   - 收藏的認法：作品冊那一筆的種子＋用到的牌一樣（作品冊沒記工作編號）。
+ *   - 收藏的認法：新收的作品記著原圖是哪個檔（image.src），比檔；舊的沒記，比種子＋用到的牌。
  *   - ComfyUI 那邊的原圖刪掉了：縮圖換成「原圖不在了」，也就收藏不了。
  *   - 詳情的主鈕「照這張再印」：牌、份量、時代、種子、底模、LoRA 一起帶回墨池；其他動作手機上收進「⋯」。
  */
@@ -61,8 +61,19 @@ function dayLabel(at) {
 
 const clock = (at) => new Date(at).toLocaleTimeString(dateLocale, { hour: "2-digit", minute: "2-digit", hour12: false });
 
-/** 作品冊那一筆跟日誌那一張是不是同一張：種子一樣、用到的牌一樣。 */
+/** 作品冊那一筆跟日誌那一張是不是同一張（舊的作品沒記原圖檔）：種子一樣、用到的牌一樣。 */
 export const favKey = (seed, positive, isCard) => `${seed}|${tagsOfPositive(positive).filter(isCard).sort().join(",")}`;
+
+/** 成品網址 → ["子資料夾/檔名", 指紋]（跟伺服器 gen_log.src_of 同一個算法）。 */
+export function srcOf(url) {
+  try {
+    const q = new URL(url, location.href).searchParams;
+    const name = q.get("filename");
+    return name ? [`${q.get("subfolder") || ""}/${name}`, q.get("h") || ""] : null;
+  } catch {
+    return null;
+  }
+}
 
 /**
  * ctx：{ lib, zh, isCard, getWorks(), toMochi(tags, label, entry), reloadWorks() }
@@ -81,9 +92,27 @@ export function createLog(ctx) {
   const cards =(e) => tagsOfPositive(e.positive).filter(ctx.isCard);
 
   function index() {
-    favs = new Map(ctx.getWorks().map((w) => [favKey(w.seed, w.positive, ctx.isCard), w]));
+    // 記著原圖檔的作品只認那個檔：同種子重印、只換 LoRA 的第二張不會被當成已收藏（以前日誌上補收藏不了）。
+    favs = new Map();
+    const bySrc = new Map();
+    for (const w of ctx.getWorks()) {
+      const src = w.image?.src;
+      if (!src) {
+        favs.set(favKey(w.seed, w.positive, ctx.isCard), w);
+        continue;
+      }
+      const [path, h = ""] = String(src).split("#");
+      if (!bySrc.has(path)) bySrc.set(path, []);
+      bySrc.get(path).push({ h, w });
+    }
+    const find = (e) => {
+      const s = srcOf(e.image);
+      // 檔名會被重用（ComfyUI 的 output 清掉後從頭數）：兩邊都有指紋時要一樣。
+      const hit = s && (bySrc.get(s[0]) || []).find((x) => !x.h || !s[1] || x.h === s[1]);
+      return hit ? hit.w : favs.get(favKey(e.seed, e.positive, ctx.isCard));
+    };
     for (const e of items) {
-      const w = e.ok ? favs.get(favKey(e.seed, e.positive, ctx.isCard)) : null;
+      const w = e.ok ? find(e) : null;
       e._fav = w ? w.id : null;
       // 收藏過的作品冊另有一份：ComfyUI 的 output 清掉了（只留最近幾張）也看得到圖。
       e._favImg = w && w.image && w.image.file ? `/api/recipes/files/${encodeURIComponent(w.image.file)}` : null;
@@ -210,17 +239,32 @@ export function createLog(ctx) {
     const out = [];
     let day = "";
     let list = null;
+    // 每天幾張先數好：以前每個日期標題都把整份再濾一次，翻到上千張時每打一個字都要多做好幾萬次。
+    const perDay = new Map();
+    for (const e of shown) {
+      const k = dayKey(e.at);
+      perDay.set(k, (perDay.get(k) || 0) + 1);
+    }
     for (const e of shown) {
       const k = dayKey(e.at);
       if (k !== day) {
         day = k;
-        const n = shown.filter((x) => dayKey(x.at) === k).length;
+        const n = perDay.get(k);
         list = el("div", { class: "log-list", role: "list" });
         out.push(el("section", { class: "log-day" }, el("h3", { class: "log-day-head" }, dayLabel(e.at), el("small", {}, `${n} 張圖`)), list));
       }
       list.append(row(e));
     }
-    if (!shown.length) out.push(el("p", { class: "album-empty" }, query ? `找不到「${query}」` : "沒有符合的"));
+    // 搜尋、篩選只看讀進來的這幾頁：還有更早的時不說「找不到」（像是沒印過），說還沒翻到。
+    if (!shown.length) {
+      out.push(
+        el(
+          "p",
+          { class: "album-empty" },
+          more ? (query ? `最近 ${items.length} 張裡找不到「${query}」，更早的還沒翻到` : `最近 ${items.length} 張裡沒有符合的，更早的還沒翻到`) : query ? `找不到「${query}」` : "沒有符合的"
+        )
+      );
+    }
     if (more) {
       const b = el("button", { class: "btn btn-small log-more", type: "button" }, "再往前翻");
       b.addEventListener("click", async () => {

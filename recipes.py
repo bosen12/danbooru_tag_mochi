@@ -285,7 +285,12 @@ def _clean_image_ref(raw) -> dict | None:
     file = _safe_file_name(str(raw.get("file") or ""))
     if not file:
         return None
-    return {"file": file, "copied": bool(raw.get("copied"))}
+    out = {"file": file, "copied": bool(raw.get("copied"))}
+    # 原圖是 ComfyUI output 的哪一個檔（"子資料夾/檔名#指紋"）：日誌靠它認哪一張收藏過（gen_log.FavIndex）。
+    src = str(raw.get("src") or "")[:400]
+    if src:
+        out["src"] = src
+    return out
 
 
 def migrate_recipe(raw) -> dict:
@@ -471,16 +476,16 @@ def delete_recipe(rid: str) -> dict | None:
         return rec
 
 
-def save_image_bytes(rid: str, data: bytes, *, suffix: str = ".png") -> dict:
+def save_image_bytes(rid: str, data: bytes, *, suffix: str = ".png", src: str = "") -> dict:
     if not data or len(data) > MAX_IMAGE_BYTES:
         raise RecipeError("圖片太大或是空的。", "too_large")
     ext = suffix if suffix in {".png", ".jpg", ".jpeg", ".webp"} else ".png"
     # 讀、寫圖、寫回 JSON 整段拿著鎖：中間另一個分頁改了或刪了這件作品，舊的那份不會蓋回去（刪掉的也不會復活）。
     with _STORE_LOCK:
-        return _save_image_locked(rid, data, ext)
+        return _save_image_locked(rid, data, ext, src)
 
 
-def _save_image_locked(rid: str, data: bytes, ext: str) -> dict:
+def _save_image_locked(rid: str, data: bytes, ext: str, src: str = "") -> dict:
     rec = get_recipe(rid)
     if rec is None:
         raise RecipeError("找不到這個配方。", "missing")
@@ -499,7 +504,7 @@ def _save_image_locked(rid: str, data: bytes, ext: str) -> dict:
             temp_path.unlink()
         except FileNotFoundError:
             pass
-    rec["image"] = {"file": name, "copied": True}
+    rec["image"] = {"file": name, "copied": True, **({"src": str(src)[:400]} if src else {})}
     rec["updatedAt"] = _now()
     _write_json(_recipe_path(rec["id"]), rec)
     return rec

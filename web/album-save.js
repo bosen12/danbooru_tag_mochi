@@ -31,9 +31,38 @@ export function workName(item, zh) {
   return tags.length ? tags.map((tag) => english ? tag : zh(tag)).join(english ? " · " : "・") + ((item.mine || []).length > 3 ? "…" : "") : `seed ${item.seed}`;
 }
 
-/** 存進作品冊，回傳伺服器上的那一筆。圖片複製不成就把剛建的那筆刪掉（沒有圖的作品沒有意義）。 */
+/**
+ * 存進作品冊，回傳伺服器上的那一筆。圖片複製不成就把剛建的那筆刪掉（沒有圖的作品沒有意義）。
+ * 斷線時（手機走 Tailscale 常見）圖可能其實存好了、只是回應沒回來，刪也刪不掉：記著那一筆（item._albumPending），
+ * 再按一次先看它 —— 圖在就算收好了，沒圖就接著補圖。以前每按一次發一個新編號，作品冊裡多出一件一模一樣的。
+ */
 export async function saveToAlbum(item, name) {
   const s = item.sampling || {};
+  let id = null;
+  if (item._albumPending) {
+    const had = await fetch(`/api/recipes/${encodeURIComponent(item._albumPending)}`, { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .catch(() => null);
+    if (had?.recipe?.image?.file) {
+      item._albumPending = null;
+      return had.recipe;
+    }
+    if (had?.recipe) id = had.recipe.id;
+    else item._albumPending = null;
+  }
+  if (!id) id = (await createRecipe(item, name, s)).id;
+  item._albumPending = id;
+  try {
+    const j = await call(`/api/recipes/${encodeURIComponent(id)}/image`, "POST", imageRef(item.image));
+    item._albumPending = null;
+    return j.recipe;
+  } catch (err) {
+    await call(`/api/recipes/${encodeURIComponent(id)}`, "DELETE").then(() => (item._albumPending = null), () => {});
+    throw new Error(`圖存不下來：${friendlyError(err)}`);
+  }
+}
+
+async function createRecipe(item, name, s) {
   const { recipe } = await call("/api/recipes", "POST", {
     // 編號自己給、不重複：伺服器照名字轉的編號，中文名常常只剩幾個數字（「1個女性」→ 1），
     // 刪掉之後下一件可能又拿到同一個，舊成品上的「已收藏」就會指到別張。
@@ -53,13 +82,7 @@ export async function saveToAlbum(item, name) {
     era: item.era || "",
     pinned: item.mine || [],
   });
-  try {
-    const j = await call(`/api/recipes/${encodeURIComponent(recipe.id)}/image`, "POST", imageRef(item.image));
-    return j.recipe;
-  } catch (err) {
-    await call(`/api/recipes/${encodeURIComponent(recipe.id)}`, "DELETE").catch(() => {});
-    throw new Error(`圖存不下來：${friendlyError(err)}`);
-  }
+  return recipe;
 }
 
 export const removeFromAlbum = (id) => call(`/api/recipes/${encodeURIComponent(id)}`, "DELETE");
