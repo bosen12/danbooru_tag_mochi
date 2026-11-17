@@ -900,6 +900,25 @@ def natural_files(fmt: str) -> tuple[str, str, str]:
     return clip, vae, spec["clipType"]
 
 
+def workflow_model_sources(wf: dict):
+    """自訂工作流的底模從哪裡出來：(model 來源, clip 來源)，各是 (節點 id, 輸出編號)，找不到是 None。
+
+    CheckpointLoader 一個節點出 model、clip；Anima、Flux 這類 UNETLoader 出 model，文字編碼另外由 CLIPLoader 出
+    （DualCLIPLoader、TripleCLIPLoader 也是）。只有 model 沒有 clip 的，LoRA 只接 model。"""
+    for nid, n in wf.items():
+        if isinstance(n, dict) and n.get("class_type") in ("CheckpointLoaderSimple", "CheckpointLoader"):
+            return (str(nid), 0), (str(nid), 1)
+    model = clip = None
+    for nid, n in wf.items():
+        ct = str(n.get("class_type") or "") if isinstance(n, dict) else ""
+        low = ct.lower()
+        if model is None and "unet" in low and "loader" in low:
+            model = (str(nid), 0)
+        elif clip is None and "cliploader" in low:
+            clip = (str(nid), 0)
+    return model, (clip if model is not None else None)
+
+
 def inject_lora(wf: dict, lora_name: str, strength: float, model_src=None, clip_src=None) -> None:
     """插入一個 LoraLoader：把吃 model／clip 的節點改接到它。
 
@@ -1390,7 +1409,8 @@ def inject_pose(wf: dict, pose: dict, width: int, height: int) -> None:
 
 # 參考圖、編輯器畫的骨架都存在 Comfy 的 input/danbooru_pose：每改一次姿勢多一張，留最近這幾張。
 # 同一張再用一次會重傳（覆蓋、時間變新），常用的不會被清掉。佇列裡正用著的不刪。
-POSE_INPUT_KEEP = 60
+# 成品牆上的舊圖重印時還要用它：留 200 張（以前 60 張，多換幾次姿勢，舊成品重印就在 ComfyUI 那邊找不到圖）。
+POSE_INPUT_KEEP = 200
 POSE_FILE_RE = re.compile(r"^pose_[0-9a-f]{16}\.(png|jpg|webp)$")
 
 
@@ -1437,6 +1457,19 @@ def prune_pose_inputs(keep: int = POSE_INPUT_KEEP, folder: Path | None = None, p
         except OSError:
             continue
     return deleted
+
+
+def pose_missing(pose: dict | None) -> bool:
+    """這張要用的參考圖已經被清掉了（ComfyUI 在這台、資料夾看得到才判斷；看不到就當它還在）。"""
+    if not pose or not comfy_is_local():
+        return False
+    folder = pose_input_dir()
+    if folder is None or not folder.is_dir():
+        return False
+    return not (folder / pose["name"].split("/")[-1]).is_file()
+
+
+POSE_GONE_TEXT = "這張用的姿勢參考圖已經被清掉了（ComfyUI 那邊只留最近 200 張）：在「姿勢參考」重選一張，或拿掉姿勢再印"
 
 
 def pose_upload(payload: dict) -> dict:
@@ -3495,6 +3528,10 @@ def prepare_workflow(payload: dict):
     wid = str(payload.get("workflowId") or "").strip()
     if not wid:
         # 內建工作流才換格式。寫回同一個 payload：GenJob 和出圖日誌用的就是這份，日誌才記到真正送出的提示詞。
+        pose = parse_pose(payload.get("pose"))
+        # 參考圖被清掉了：以前照送，ComfyUI 的 LoadImage 報一串英文錯。先講清楚。
+        if pose_missing(pose):
+            raise PoseError(POSE_GONE_TEXT)
         ckpt_name = resolve_ckpt(payload.get("ckpt"))
         rating_arg = _rating_arg(payload.get("rating"), bool(payload.get("sfw")))
         fmt = prompt_formats.format_of(ckpt_name, model_format_overrides(), lookup_base_model(ckpt_name))
@@ -3512,7 +3549,7 @@ def prepare_workflow(payload: dict):
             rating=payload.get("rating"),
             steps=payload.get("steps"),
             cfg_scale=payload.get("cfg"),
-            pose=parse_pose(payload.get("pose")),
+            pose=pose,
             family_sampling=payload.get("familySampling"),
         )
         # 日誌記這次真正用的取樣（家族預設或 familySampling）。自訂工作流不走這裡。
@@ -3569,8 +3606,17 @@ def prepare_workflow(payload: dict):
     # 沒有指定要改哪個 LoRA 節點時，頂欄選的 LoRA 插在底模後面（跟內建一樣），不要默默丟掉。
     # 工作流自己的 LoRA 照留，接在這些後面。
     if not lora_mapped and mapping.get("loraInsert", True) is not False:
-        for name, strength in convert_loras(payload.get("loras")):
-            inject_lora(wf, name, strength)
+        picked = convert_loras(payload.get("loras"))
+        if picked:
+            model_src, clip_src = workflow_model_sources(wf)
+            if model_src is None:
+                # 以前找不到 CheckpointLoader 就默默不接，圖照印、LoRA 沒用上也不知道。
+                raise workflows.WorkflowError("這個工作流找不到底模節點，LoRA 接不上：在工作流程面板指定 LoRA 節點，或拿掉 LoRA 再印", "lora_no_model")
+            for name, strength in picked:
+                if clip_src is None:
+                    inject_lora_model_only(wf, name, strength, model_src)
+                else:
+                    inject_lora(wf, name, strength, model_src=model_src, clip_src=clip_src)
     meta["kind"] = "profile"
     meta["id"] = wid
     meta["name"] = prof.get("name") or wid

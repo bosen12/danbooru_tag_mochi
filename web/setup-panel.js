@@ -6,6 +6,7 @@
  * 伺服器端的 setup_tasks 只在這個檔存在的版面才會開（server.py main）。
  */
 import { el } from "./ui.js";
+import { t } from "./i18n.js";
 import { DUR, CURVE, css, reducedMotion } from "./motion.js";
 
 const POLL_MS = 2500;
@@ -76,15 +77,38 @@ function render(snap) {
   box.dataset.sig = sig;
   const done = shown.filter((it) => it.state === "done" || it.state === "skip").length;
   // 伺服器剛開、每一步都還沒動（全是 idle）：不寫「0/0」。
+  // 不用「準備好了」：導覽最後一步也是這句，英文版只能翻成同一句（Ready to create）。
   box.querySelector(".setup-title").textContent = !snap.active
-    ? "準備好了"
+    ? "準備完成"
     : waiting
       ? `第一次使用：${pending[0].text}（還有 ${pending.length} 項）`
       : shown.length
         ? `第一次使用：準備中 ${done}/${shown.length}`
         : "第一次使用：準備中…";
   box.dataset.collapsed = collapsed ? "true" : "false";
-  list.replaceChildren(...mergeWaits(shown).map(row));
+  // 一列一列比：只有進度字變了（卡面下載 40% → 45%）就只換那行字，不重做整列 ——
+  // 以前整個清單重建，旁邊詢問列的「安裝／這次不要」跟著換新，手指按下去的那顆已經不在了。
+  const old = new Map([...list.children].map((n) => [n.dataset.key, n]));
+  const nodes = mergeWaits(shown).map((it) => {
+    const key = it.titles.join("|");
+    const shape = JSON.stringify([it.id, it.state, it.titles]);
+    const prev = old.get(key);
+    if (prev && prev.dataset.shape === shape) {
+      const body = prev.querySelector(".setup-body");
+      let small = body.querySelector(":scope > small");
+      if (it.text) {
+        if (!small) body.insertBefore((small = el("small", {})), body.querySelector(".setup-answers"));
+        // 英文版畫面上是翻好的字：比的時候也要翻（web6 英文版是畫完再翻）。
+        if (small.textContent !== t(it.text)) small.textContent = it.text;
+      } else small?.remove();
+      return prev;
+    }
+    const li = row(it);
+    li.dataset.key = key;
+    li.dataset.shape = shape;
+    return li;
+  });
+  if (nodes.length !== list.children.length || nodes.some((n, i) => list.children[i] !== n)) list.replaceChildren(...nodes);
   const acts = [];
   if (snap.restart) acts.push(el("button", { class: "btn btn-small btn-primary", type: "button", onclick: restart }, "重開 ComfyUI"));
   if (reload) acts.push(el("button", { class: "btn btn-small", type: "button", onclick: () => location.reload() }, "重新整理看新圖"));

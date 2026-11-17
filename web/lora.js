@@ -1291,9 +1291,12 @@ export async function applyRecipeModels({ checkpoint, loras } = {}) {
   for (let i = 0; i < 2; i += 1) {
     const spec = (loras || [])[i];
     if (!spec) continue;
-    const hit = (GEN_LORAS || []).find(
-      (l) => l.file === spec.file || l.name === spec.name || l.name === spec.file,
-    );
+    // 先認資料夾＋檔名（兩個資料夾有同名的檔很常見：以前帶回來的可能換成另一個資料夾的那個）；
+    // 舊紀錄沒有資料夾，才退回只比檔名。
+    const pool = GEN_LORAS || [];
+    const hit =
+      (spec.folder != null && pool.find((l) => l.file === spec.file && (l.folder || "") === (spec.folder || ""))) ||
+      pool.find((l) => l.file === spec.file || l.name === spec.name || l.name === spec.file);
     if (hit) {
       GEN_LORA_SLOTS[i].lora = hit;
       GEN_LORA_SLOTS[i].strength = loraStrengthFromSpec(spec);

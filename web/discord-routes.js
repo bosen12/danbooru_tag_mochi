@@ -380,6 +380,12 @@ function editor() {
     const why = !e.name.trim() ? "要取個名字" : !hasHook ? "要貼上 webhook 網址" : !hasCond ? "至少設一種條件（分級、角色或 tag）" : "";
     save.disabled = !!why;
     need.textContent = t(why);
+    // 貼了新的 webhook 還沒存：測試送的是存著的那個舊網址，「送到了」會讓人以為新的對了。先存再測。
+    if (testBtn) {
+      const unsaved = !!hookIn.value.trim();
+      testBtn.disabled = unsaved;
+      testBtn.title = unsaved ? t("新的網址還沒存：先按「存頻道」再測試") : "";
+    }
   }
   save.addEventListener("click", async () => {
     save.disabled = true;

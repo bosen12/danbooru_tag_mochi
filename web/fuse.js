@@ -384,7 +384,7 @@ async function boot() {
   if (matchMedia("(hover: none)").matches) $("case-q").placeholder = $("case-q").placeholder.replace(/（按[^）]*）/, "");
   watchPoolPill();
   watchPrintBar();
-  setTimeout(sweepPrints, 1500);
+  whenActive(() => setTimeout(sweepPrints, 1500));
   settleMotion();
   // 開好了：左右相鄰的房間在背後先開好，換過去不用再等開頁（prerender.js）。
   whenActive(prerenderNeighbors);

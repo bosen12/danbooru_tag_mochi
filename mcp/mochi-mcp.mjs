@@ -30,7 +30,9 @@ const load = (p) => import(pathToFileURL(p).href);
 const E = await load(join(ROOT, "web", "engine.js"));
 const { formatTraceReason, sourceLabel } = await load(join(ROOT, "web", "trace-copy.js"));
 const { toSimplified } = await load(front("t2s.js"));
-const { isCard, cardSuit } = await load(join(ROOT, "web", "card-art.js"));
+const { isCard, cardSuit, HARD_BANNED } = await load(join(ROOT, "web", "card-art.js"));
+// 網頁抽牌時「全年齡＋預設混合尺度 → 活動」那一步（引擎自己不做）：照網頁一樣套，抽出來的才一樣。
+const { withEffectiveHeats } = await load(join(ROOT, "web", "draw-with-seed.js"));
 // 查牌跟字盒、iPhone 同一套（card-search.js 不碰 DOM）。開源版檔在 web/，這邊在 web6/。
 const { searchCards: findCards, indexSearchNames, isSynonymOnly } = await load(front("card-search.js"));
 const data = JSON.parse(readFileSync(join(ROOT, "web", "lexicon.json"), "utf8"));
@@ -56,6 +58,10 @@ const CHARACTERS = (() => {
 })();
 const bareTag = (t) => E.parseWeighted(String(t ?? "")).tag.toLowerCase().replace(/_/g, " ").trim();
 const isBanned = (t) => BANNED.has(bareTag(t));
+// 墨池一律不畫的字（引擎的 NEVER_DRAW、伺服器的 _HARD_BANNED 同一份）：extra 塞進來的也要擋，
+// 不然 draw_prompt 回成功、generate_image 才被伺服器退件。
+const HARD = new Set(HARD_BANNED.map((t) => String(t).toLowerCase().replace(/_/g, " ").trim()));
+const isHard = (t) => HARD.has(bareTag(t));
 const BANNED_TEXT = "禁用角色（年齡不明或看起來未成年），墨池不畫";
 
 const HEAT_ZH = { activity: "活動（全年齡的日常動作）", tease: "誘惑", flash: "走光", sex: "性愛" };
@@ -367,6 +373,8 @@ async function prepare(spec) {
     },
     data
   );
+  // 只給全年齡、尺度沒講：引擎補的預設是混合（誘惑＋走光＋性愛），網頁這時抽的是活動。
+  settings = withEffectiveHeats(settings);
   // focus：某段張數比格子少時，指定要補哪幾格（{"pose":["face","camera"]}）。沒指定照引擎的優先序。
   const focus = spec.focus && typeof spec.focus === "object" ? spec.focus : {};
   const off = [];
@@ -479,8 +487,8 @@ function finishTags(r, extras, weights = {}) {
   let tail = tags.findIndex((t) => TAIL.has(t));
   if (tail < 0) tail = tags.length;
   tags.splice(tail, 0, ...add);
-  const bad = tags.filter((t) => isMinor(t) || isBanned(t));
-  if (bad.length) throw new Error("抽出來的結果含未成年字或禁用角色，已停止：" + bad.join(", "));
+  const bad = tags.filter((t) => isMinor(t) || isBanned(t) || isHard(t));
+  if (bad.length) throw new Error("抽出來的結果含未成年字、禁用角色或墨池不畫的字，已停止：" + bad.join(", "));
   return tags.map((t) => (weights[t] && weights[t] !== 1 ? E.formatWeighted(t, weights[t]) : t));
 }
 
@@ -607,6 +615,8 @@ function guard(positive) {
   if (minor.length) throw new Error("不能畫未成年角色，這些字被擋下：" + minor.join(", "));
   const banned = parts.filter((t) => BANNED.has(t));
   if (banned.length) throw new Error(`${banned.join(", ")}：${BANNED_TEXT}。`);
+  const hard = parts.filter((t) => HARD.has(t));
+  if (hard.length) throw new Error(`${hard.join(", ")}：墨池不畫這些字（伺服器也會擋）。`);
 }
 
 /**

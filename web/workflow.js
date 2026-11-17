@@ -862,7 +862,7 @@ async function putMapping(mapping, note) {
   current = { ...(current || {}), mapping };
   renderCurrent();
   mappingWrite = mappingWrite.then(async () => {
-    if (requestedId !== WORKFLOW_ID) return;
+    // 已經換到別套也照存（畫面上已經改了）：以前換過去就不送，回來看那一筆改動不見了。回來的結果只在還是這套時才畫。
     const j = await getJson("/api/workflows/" + encodeURIComponent(requestedId), {
       method: "PUT",
       headers: { "Content-Type": "application/json" },

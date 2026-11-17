@@ -12,13 +12,14 @@
  */
 
 // 每個房間開機時讀、讀了就決定畫面長相的存檔。語言每個房間都讀。
+// 姿勢參考（mochi.pose.v1）：墨池、疊印台送印時帶的那張；預開之後在別頁換了，點進去要是新的。
 const KEYS = {
   index: {
-    local: ["mochi.pool.handoff.v1", "mochi.bans.v1", "mochi.settings.v1", "mochi.ui.v1", "mochi.hand.v1", "mochi.fav.chars.v1"],
+    local: ["mochi.pool.handoff.v1", "mochi.bans.v1", "mochi.settings.v1", "mochi.ui.v1", "mochi.hand.v1", "mochi.fav.chars.v1", "mochi.pose.v1"],
     session: ["mochi.tab.pool.v1"],
   },
   fuse: {
-    local: ["mochi.fuse.handoff.v1", "mochi.bans.v1", "mochi.fuse.settings.v1", "mochi.settings.v1", "mochi.fuse.tab.v1", "mochi.fuse.hand.v1", "mochi.fav.chars.v1"],
+    local: ["mochi.fuse.handoff.v1", "mochi.bans.v1", "mochi.fuse.settings.v1", "mochi.settings.v1", "mochi.fuse.tab.v1", "mochi.fuse.hand.v1", "mochi.fav.chars.v1", "mochi.pose.v1"],
     session: ["mochi.tab.fuse.v1"],
   },
   book: { local: ["mochi.settings.v1", "mochi.bans.v1", "mochi.book.v1", "mochi.hand.v1", "mochi.pool.handoff.v1", "mochi.fav.chars.v1"], session: [] },

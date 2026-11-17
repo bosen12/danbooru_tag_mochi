@@ -799,6 +799,7 @@ POS 複製好了|Prompt copied
 伺服器重開過：ComfyUI 還在畫這張，等它畫完…|Server restarted · ComfyUI is still drawing this one, waiting…
 伺服器重開過，問 ComfyUI 這張怎麼了…|Server restarted · Checking with ComfyUI…
 伺服器重開過，連不上它，等一下再問…|Server restarted but unreachable · Retrying shortly…
+新的網址還沒存：先按「存頻道」再測試|New webhook not saved yet · Save the channel before testing
 排隊中|Queued
 預覽中|Previewing
 Comfy 報錯|ComfyUI error
@@ -1140,6 +1141,10 @@ ComfyUI 沒開：下次啟動再檢查|ComfyUI is not running. It will be checke
 現在不用回答這一項|Nothing to answer for this item now
 ComfyUI 還有圖在畫，畫完再重開|ComfyUI is still generating. Restart it when it finishes.
 ComfyUI-Manager 不讓重開（或沒裝）：請自己重開 ComfyUI|ComfyUI-Manager cannot restart ComfyUI here. Restart ComfyUI yourself.
+連不到 ComfyUI，重開的請求沒送到：請自己開（或重開）ComfyUI|Could not reach ComfyUI, so the restart request was not sent. Start or restart ComfyUI yourself.
+裝好了，ComfyUI 卻一直沒載入：重開 ComfyUI；還是不行，看 ComfyUI 啟動時這個節點的錯誤訊息|Installed, but ComfyUI has not loaded it. Restart ComfyUI; if it still fails, check this node’s errors in the ComfyUI startup log.
+這張用的姿勢參考圖已經被清掉了（ComfyUI 那邊只留最近 200 張）：在「姿勢參考」重選一張，或拿掉姿勢再印|This image’s pose reference was cleaned up (ComfyUI keeps the latest 200). Pick a pose again, or remove the pose and generate.
+這個工作流找不到底模節點，LoRA 接不上：在工作流程面板指定 LoRA 節點，或拿掉 LoRA 再印|This workflow has no model loader to attach LoRA to. Map a LoRA node in the Workflow panel, or remove the LoRA.
 LoRA：ComfyUI 沒有回報任何 LoRA|LoRA: ComfyUI reported no LoRAs.
 底模清單載入失敗：|Could not load checkpoints:
 找不到底模|No checkpoints found
@@ -1337,6 +1342,7 @@ ComfyUI 沒有回報 checkpoint|ComfyUI returned no checkpoints.
 底模與 LoRA|Checkpoint and LoRA
 其他房間|Explore the workbench
 準備好了|Ready to create
+準備完成|Setup complete
 歡迎來到疊印台|Welcome to Fuse Bed
 疊一張牌上去|Add your first layer
 點字盒裡的牌，它就疊上中間的卡池。|Click a library card to add it to the layers.

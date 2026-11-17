@@ -156,6 +156,12 @@ try {
   const randomZero = (zr?.cards["隨機抽取"] || []).filter((x) => !x.includes("（solo）"));
   ok("不要抽（四段 0）：只有釘的牌和附帶的，不隨機補", zr && randomZero.length === 0 && zr.cards["暗示帶入"]?.some((x) => x.includes("（ring）")) && /sfw, general, masterpiece/.test(zr.positive), JSON.stringify(zr?.cards));
   ok("說明書教 AI：不要抽就 counts 全 0、照樣用 draw_prompt", /不要抽/.test(guide.text) && /counts 四段都給 0/.test(guide.text));
+  // 只給全年齡、沒講尺度：跟網頁一樣抽「活動」（以前照引擎預設的混合抽，抽到走光、性愛的尺度）。
+  const gOnly = await tool("draw_prompt", { rating: "general", seed: 11 });
+  ok("只給全年齡：尺度跟網頁一樣是活動", JSON.stringify(gOnly.data.settings?.heats) === '["activity"]', JSON.stringify(gOnly.data.settings?.heats));
+  // 墨池不畫的字從 extra 塞進來：當場擋，不要等到生圖才被伺服器退件。
+  const hard = await tool("draw_prompt", { rating: "general", heats: ["activity"], extra: ["pacifier"], seed: 2 });
+  ok("extra 帶墨池不畫的字：draw_prompt 就擋下", !!hard.error && /pacifier/.test(hard.text), hard.text?.slice(0, 120));
   const two = await tool("draw_prompt", { pins: ["2girls"], seed: 3, heats: ["activity"], rating: "general" });
   ok("抽牌：釘了人數就不再補 1girl", two.data.defaultedPeople === null && two.data.results[0].positive.startsWith("2girls"), two.data.results?.[0]?.positive);
   const extra = await tool("draw_prompt", { pins: ["park"], extra: ["made-up tag"], seed: 1, heats: ["activity"], rating: "general" });

@@ -571,6 +571,14 @@ export function negativeBlock({ scope, key, format } = {}) {
   };
 
   build();
-  if (!view) load().then(() => box.isConnected && !box.contains(document.activeElement) && build());
+  // 每次打開都問伺服器最新的：另一台裝置（手機）可能剛改過，用舊的那份再加一個字會把它蓋掉。
+  // 這邊還有存檔排著的話，等它們送完再問（不然問回來的是存之前的，剛改的看起來像沒存到）。
+  const before = view ? JSON.stringify(view.rules) : "";
+  writes
+    .then(() => load(true))
+    .then(() => {
+      if (!box.isConnected || box.contains(document.activeElement)) return;
+      if (!before || JSON.stringify(view?.rules) !== before) build();
+    });
   return box;
 }

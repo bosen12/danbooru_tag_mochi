@@ -138,7 +138,15 @@ def apply_mapping(workflow: dict, mapping: dict | None, values: dict | None) -> 
                 continue
             if (spec.get("mode") or "keep") == "keep":
                 continue
+            node = _node(runtime, str(spec.get("node") or ""))
+            inputs = node.get("inputs") if isinstance(node, dict) else None
             if i >= len(lora_vals):
+                # 交給面板管、面板這一格卻沒選（或強度 0）：這個節點不起作用。以前照留工作流原本的 LoRA，
+                # 畫面上明明沒選，印出來卻套著它。
+                if isinstance(inputs, dict):
+                    for key in ("strength_model", "strength_clip"):
+                        if key in inputs and not _is_link(inputs.get(key)):
+                            inputs[key] = 0.0
                 continue
             pair = lora_vals[i]
             name, strength = (pair[0], pair[1]) if isinstance(pair, (list, tuple)) and len(pair) >= 2 else (pair, None)
@@ -146,6 +154,9 @@ def apply_mapping(workflow: dict, mapping: dict | None, values: dict | None) -> 
             strength_input = spec.get("strengthInput")
             if strength_input and strength is not None:
                 patch("lora-strength", float(strength), {**spec, "input": strength_input})
+                # LoraLoader 的文字編碼端也照同一個強度（內建流程也是兩邊一樣）：以前只改 model 端，clip 端停在原本的值。
+                if strength_input == "strength_model" and isinstance(inputs, dict) and "strength_clip" in inputs and not _is_link(inputs.get("strength_clip")):
+                    inputs["strength_clip"] = float(strength)
     return runtime
 
 

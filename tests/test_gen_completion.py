@@ -354,4 +354,20 @@ class BlockedSourcePort(unittest.TestCase):
         self.assertEqual(m.call_count, 17)
 
 
+class CustomWorkflowLora(unittest.TestCase):
+    """自訂工作流沒指定 LoRA 節點：頂欄選的 LoRA 要接得上（UNET 的也是），接不上要明說，不能默默丟掉。"""
+
+    def test_checkpoint_loader(self):
+        wf = {"4": {"class_type": "CheckpointLoaderSimple", "inputs": {}}}
+        self.assertEqual(server.workflow_model_sources(wf), (("4", 0), ("4", 1)))
+
+    def test_unet_with_separate_clip(self):
+        wf = {"1": {"class_type": "UNETLoader", "inputs": {}}, "2": {"class_type": "CLIPLoader", "inputs": {}}}
+        self.assertEqual(server.workflow_model_sources(wf), (("1", 0), ("2", 0)))
+
+    def test_unet_only_and_none(self):
+        self.assertEqual(server.workflow_model_sources({"1": {"class_type": "UnetLoaderGGUF", "inputs": {}}}), (("1", 0), None))
+        self.assertEqual(server.workflow_model_sources({"9": {"class_type": "KSampler", "inputs": {}}}), (None, None))
+
+
 if __name__ == "__main__": unittest.main()

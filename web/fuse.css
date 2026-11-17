@@ -3126,7 +3126,8 @@ body.fuse {
     position: fixed;
     left: 0;
     right: 0;
-    bottom: 0;
+    /* 軟鍵盤起來時抬到鍵盤上面（ui.js 的 --kb）。 */
+    bottom: var(--kb, 0px);
     top: max(44px, 6dvh, calc(env(safe-area-inset-top) + 8px));
     z-index: 85;
     display: flex;

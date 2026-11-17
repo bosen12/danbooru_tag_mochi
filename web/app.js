@@ -266,7 +266,9 @@ async function boot() {
   // 還排著沒送出去的：接在後面照原本的順序印（牆上新的在前面，所以倒過來）。
   const waiting = shots.filter((s) => S.stillWaiting(s)).reverse();
   for (const s of waiting) s.status = "queued";
-  if (shots.length !== saved.length) S.saveShots(shots);
+  // 寫回存檔等點進去才做：背後預開的墨池（prerender.js）沒被點開的話，不能把印壞的從存檔刪掉 ——
+  // 另一個開著的墨池分頁會跟著把它們從牆上拿掉，人卻沒重新整理過。
+  if (shots.length !== saved.length) whenActive(() => S.saveShots(shots));
 
   buildHand();
   buildTrashPanel();
@@ -299,7 +301,8 @@ async function boot() {
   renderRules();
   renderGoBar();
   renderWall();
-  setTimeout(sweepShots, 1500);
+  // 問原圖還在不在：等點進去才問（預開的頁問了也記不住，點進去又得問一輪）。
+  whenActive(() => setTimeout(sweepShots, 1500));
   $("wall-start").addEventListener("click", () => $("go-bar").querySelector(".btn-primary")?.click());
   renderTrash();
   // 別的墨池分頁收藏、Hires、印好了：這邊那張跟著換（tab-sync.js 的三方比對，這邊沒動過的才換）。
@@ -1891,7 +1894,9 @@ function greetRecipe() {
   const sizeBit = size ? size.zh : r.width && r.height && nowSize ? `尺寸 ${r.width}×${r.height} 墨池沒有，照現在的 ${nowSize.zh}` : "";
   const bits = [r.era ? `時代：${ERA_LABELS[r.era] || r.era}` : "", sizeBit, r.seed != null ? `種子固定 ${r.seed}` : ""].filter(Boolean);
   // 權重也比：同一個 LoRA 從 1.0 改成 0.6 印出來不一樣，不能說「跟現在選的一樣」（舊紀錄沒有權重的只比名字）。
-  const loraKey = (l, withStrength) => modelName(l.file) + (withStrength ? `@${Number(l.strength).toFixed(2)}` : "");
+  // 資料夾也比（兩個資料夾裡同名的檔是不同的 LoRA）；舊紀錄沒有資料夾的只比檔名。
+  const sameFolders = !!r.loras?.length && r.loras.every((l) => l.folder != null);
+  const loraKey = (l, withStrength) => (sameFolders ? `${l.folder || ""}/` : "") + modelName(l.file) + (withStrength ? `@${Number(l.strength).toFixed(2)}` : "");
   const strengths = !!r.loras?.length && r.loras.every((l) => Number.isFinite(Number(l.strength)) && l.strength != null);
   const nowLoras = currentLorasPayload().map((l) => loraKey(l, strengths)).sort().join("|");
   const wantLoras = r.loras ? r.loras.map((l) => loraKey(l, strengths)).sort().join("|") : nowLoras;

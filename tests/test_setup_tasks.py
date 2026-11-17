@@ -463,6 +463,34 @@ ok("有速度就說還要多久（卡面包很慢的時候）", pt("43%   57.2/1
 ok("剩不到一分鐘：快好了", pt("99%  132.0/133.0 MB  0.50 MB/s") == "下載中 99%（132.0/133.0 MB，快好了）")
 ok("速度還沒量到（0）：照舊只寫進度", pt("0%    0.0/133.0 MB  0.00 MB/s") == "下載中 0%（0.0/133.0 MB）")
 
+# 8. 重開 ComfyUI：連不上時不能說「重開中」；裝好卻一直沒載入，面板不能永遠掛著等。
+import urllib.error as _ue  # noqa: E402
+_real_get, _real_open = st._get, st.urllib.request.urlopen
+st._get = lambda path, *a, **k: {}
+def _refused(*a, **k):
+    raise _ue.URLError(ConnectionRefusedError(10061, "refused"))
+st.urllib.request.urlopen = _refused
+r_ok, r_msg = st.restart_comfy()
+ok("ComfyUI 連不上：重開回失敗、請人自己開", r_ok is False and "連不到" in r_msg, r_msg)
+def _dropped(*a, **k):
+    raise ConnectionResetError(10054, "reset")
+st.urllib.request.urlopen = _dropped
+ok("送出去之後連線被拆：照舊算重開成功", st.restart_comfy()[0] is True)
+st._get, st.urllib.request.urlopen = _real_get, _real_open
+_calls = {"n": 0}
+def _late():
+    _calls["n"] += 1
+    return _calls["n"] > 3
+_real_sleep, _real_wait = st.time.sleep, st.WAIT_LOADED_SEC
+_seen = []
+_real_set = st._set
+st._set = lambda key, state, text="": _seen.append((key, state))
+st.time.sleep = lambda s: None
+st.WAIT_LOADED_SEC = -1
+st._wait_loaded("pose", _late)
+st.time.sleep, st.WAIT_LOADED_SEC, st._set = _real_sleep, _real_wait, _real_set
+ok("等太久先改成略過（面板收得起來），之後載入了照樣標好", _seen[:1] == [("pose", "skip")] and _seen[-1] == ("pose", "done"), str(_seen))
+
 print()
 print("ok" if not failed else f"{failed} failed")
 sys.exit(1 if failed else 0)

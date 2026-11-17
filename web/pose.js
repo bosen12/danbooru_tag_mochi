@@ -49,6 +49,15 @@ function changed() {
   write(state);
   for (const f of listeners) f(state);
 }
+// 每換一次（選圖、存骨架、拿掉）加一：上傳還沒回來就按了「不用姿勢」，回來的那張不能再套回去。
+let epoch = 0;
+// 別的分頁（或背後預開的那頁）換了姿勢：這邊跟著換，送去印的才是剛選的那張。
+globalThis.addEventListener?.("storage", (e) => {
+  if (e.key !== POSE_KEY) return;
+  epoch++;
+  state = read();
+  for (const f of listeners) f(state);
+});
 
 /** 換了（或拿掉）姿勢參考時通知：疊印台用它重畫付印鈕（換了姿勢就是另一張圖）。 */
 export function onPoseChange(fn) {
@@ -195,10 +204,12 @@ export function openPosePicker({ recent = () => [], rating = () => "general", si
   async function choose(source, from) {
     if (busy) return refuse(from);
     busy = true;
+    const mine = ++epoch;
     status.textContent = "處理參考圖…";
     try {
       const { image, thumb } = await shrink(source);
       const { name } = await post("/api/pose/upload", { image });
+      if (mine !== epoch) return;
       state = { name, thumb, strength: state?.strength ?? DEFAULT_LEVEL, skeleton: null };
       changed();
       paintNow();
@@ -217,9 +228,11 @@ export function openPosePicker({ recent = () => [], rating = () => "general", si
   const saveDrawn = async ({ image, thumb, draft }) => {
         if (busy) return;
         busy = true;
+        const mine = ++epoch;
         status.textContent = "存姿勢…";
         try {
           const { name } = await post("/api/pose/upload", { image });
+          if (mine !== epoch) return;
           state = { name, thumb, strength: state?.strength ?? DEFAULT_LEVEL, kind: "skeleton", skeleton: thumb, draft };
           changed();
           paintNow();
@@ -264,6 +277,7 @@ export function openPosePicker({ recent = () => [], rating = () => "general", si
       class: "btn btn-small pressable",
       type: "button",
       onclick: () => {
+        epoch++;
         state = null;
         changed();
         paintNow();

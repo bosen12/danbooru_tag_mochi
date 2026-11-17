@@ -335,6 +335,11 @@ def restart_comfy() -> tuple[bool, str]:
         if exc.code in (403, 404):
             return False, "ComfyUI-Manager 不讓重開（或沒裝）：請自己重開 ComfyUI"
         return False, f"重開失敗（{exc.code}）：請自己重開 ComfyUI"
+    except urllib.error.URLError:
+        # urllib 只把「連線、送出請求」那一段的錯包成 URLError：請求根本沒送到（ComfyUI 沒開、被拒），
+        # 不是重開中。以前照樣說「重開中」，剛裝的節點一直等不到。
+        # 送出去之後連線被拆（重開的時候本來就會斷）是原樣的 OSError，走下面那條，算成功。
+        return False, "連不到 ComfyUI，重開的請求沒送到：請自己開（或重開）ComfyUI"
     except Exception:
         pass  # 重開的時候連線本來就會斷
     _log("restart: asked ComfyUI-Manager to restart ComfyUI")
@@ -467,10 +472,20 @@ def _lora_install(action: str) -> None:
     _wait_loaded("lora", lora_manager_running)
 
 
+# 等重開最多等這麼久（秒）。過了還沒載入：多半是節點自己壞了（套件沒裝好），重開幾次都一樣。
+# 面板不能一直掛著「等重開」收不起來：改說一聲，背後慢慢再看，哪天載入了照樣標好。
+WAIT_LOADED_SEC = 600
+
+
 def _wait_loaded(key: str, loaded) -> None:
     """等 ComfyUI 重開（自己重開或按畫面上的鈕）。載入了就算好。"""
+    start = time.time()
+    told = False
     while not loaded():
-        time.sleep(5)
+        if not told and time.time() - start > WAIT_LOADED_SEC:
+            told = True
+            _set(key, "skip", "裝好了，ComfyUI 卻一直沒載入：重開 ComfyUI；還是不行，看 ComfyUI 啟動時這個節點的錯誤訊息")
+        time.sleep(30 if told else 5)
     _set(key, "done", "已載入")
     if key == "lora" and _on_lora_ready:
         _on_lora_ready()

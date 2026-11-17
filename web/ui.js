@@ -399,6 +399,28 @@ export function hideTip() {
 }
 
 /**
+ * 軟鍵盤擋住的高度放進 --kb。iPhone Safari 的鍵盤蓋在畫面底部，position: fixed; bottom: 0 的東西不會讓位：
+ * 手機挑牌抽屜點了搜尋框，底下「合成池 N 張・完成」整條在鍵盤後面按不到。抽屜用它把底邊抬到鍵盤上面。
+ * 放大縮小（雙指）時 visualViewport 也會變小，那不是鍵盤：只在沒放大時算。小於 80px 的是網址列伸縮。
+ */
+function watchKeyboard() {
+  const vv = globalThis.visualViewport;
+  if (!vv || typeof document === "undefined") return;
+  let frame = 0;
+  const put = () => {
+    frame = 0;
+    const kb = Math.abs(vv.scale - 1) < 0.01 ? Math.round(innerHeight - vv.height - vv.offsetTop) : 0;
+    const v = kb > 80 ? `${kb}px` : "0px";
+    const root = document.documentElement;
+    if (root.style.getPropertyValue("--kb") !== v) root.style.setProperty("--kb", v);
+  };
+  const soon = () => (frame ||= requestAnimationFrame(put));
+  vv.addEventListener("resize", soon);
+  vv.addEventListener("scroll", soon);
+}
+watchKeyboard();
+
+/**
  * 連線錯誤講人話：瀏覽器的「Failed to fetch」這類換成「連不到主機…」，其他的照原樣。
  * 收藏、存牌組、讀詞庫這些地方共用（以前直接把 err.message 貼在提示上）。
  */
