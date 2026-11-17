@@ -16,6 +16,8 @@ export const GROUP_MODES = ["whole", "mix"];
 let cache = null;
 let revision = 0;
 let loadRequest = 0;
+let loading = null;
+let loadedAt = 0;
 let writeQueue = Promise.resolve();
 const listeners = new Set();
 
@@ -36,21 +38,36 @@ export function onGroupsChange(fn) {
 }
 
 export async function loadGroups({ strict = false } = {}) {
+  if (!loading) loading = readGroups().finally(() => { loading = null; });
+  try { return await loading; }
+  catch (err) { if (strict) throw err; return cache; }
+}
+
+async function readGroups() {
   const request = ++loadRequest, startedAt = revision;
-  try {
-    const r = await fetch("/api/card-groups", { cache: "no-store" });
-    if (!r.ok) throw new Error(String(r.status));
-    const groups = (await r.json()).groups || [];
-    // 較晚開始的讀取，或已完成的增刪，才代表目前的群組。
-    if (request === loadRequest && startedAt === revision) {
-      cache = groups;
-      notify();
-    }
-  } catch (err) {
-    if (strict) throw err;
+  const r = await fetch("/api/card-groups", { cache: "no-store" });
+  if (!r.ok) throw new Error(String(r.status));
+  const groups = (await r.json()).groups || [];
+  // 較晚開始的讀取，或已完成的增刪，才代表目前的群組。
+  if (request === loadRequest && startedAt === revision) {
+    cache = groups;
+    loadedAt = Date.now();
+    notify();
   }
   return cache;
 }
+
+export async function freshGroups(maxAgeMs) {
+  if (cache !== null && Date.now() - loadedAt <= maxAgeMs) return cache;
+  return loadGroups();
+}
+
+const refresh = () => { if (cache !== null) void loadGroups(); };
+if (typeof document !== "undefined") {
+  document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") refresh(); });
+  document.addEventListener("prerenderingchange", refresh);
+}
+if (typeof addEventListener === "function") addEventListener("pageshow", e => { if (e.persisted) refresh(); });
 
 /** 上一次讀到的群組（還沒讀過是 null）。 */
 export const cachedGroups = () => cache;
@@ -69,9 +86,14 @@ async function requestWrite(url, method, body) {
     body: body ? JSON.stringify(body) : undefined,
   });
   const j = await r.json().catch(() => ({}));
-  if (!r.ok || !j.ok) throw new Error(j.error || `伺服器回 ${r.status}`);
+  if (!r.ok || !j.ok) {
+    const err = Object.assign(new Error(j.error || `伺服器回 ${r.status}`), { bad: j.bad || [], code: j.code, status: r.status });
+    if (r.status === 404 || r.status === 409) await loadGroups();
+    throw err;
+  }
   revision++;
   cache = j.groups || cache;
+  loadedAt = Date.now();
   notify();
   return j.group;
 }
@@ -103,19 +125,26 @@ const SECTION_SALT = { feature: 0x0c4a7d11, clothing: 0x1b93e5a7, pose: 0x2f6c0b
  * 勾了但已經刪掉、或是空的群組略過；一段整個沒有東西就不放那一段（引擎照舊抽）。
  * 整組一起：每一段各自用 (seed ^ 段落的鹽) 挑一組，同一顆種子永遠挑同一組。
  * keep（{ section: [id] }）：這幾段直接用這幾組，不再挑 —— 「同一個人」第 2 張起沿用第 1 張挑中的長相群組。
+ * options.only：只用該張圖原本的群組，忽略目前勾選；沒列的段落不使用群組。
+ * options.usable：整組一起先排除沒有任何可用牌的群組；舊的第四參數仍可直接傳 keep。
  */
-export function resolveGroupPools(settings, groups, seed, keep = null) {
+export function resolveGroupPools(settings, groups, seed, options = null) {
+  const { keep, only, usable } = options && ["keep", "only", "usable"].some(k => k in options) ? options : { keep: options };
   const byId = new Map((groups || []).map((g) => [g.id, g]));
   const groupPools = {};
   const groupNames = {};
   const groupIds = {};
   for (const section of GROUP_SECTIONS) {
-    const { ids, mode } = pickOf(settings, section);
-    const chosen = ids.map((id) => byId.get(id)).filter((g) => g && g.section === section && g.tags?.length);
+    const pick = pickOf(settings, section);
+    const ids = only != null ? only[section] || [] : pick.ids;
+    const mode = pick.mode;
+    let chosen = ids.map((id) => byId.get(id)).filter((g) => g && g.section === section && g.tags?.length);
+    if (mode === "whole" && usable) chosen = chosen.filter(g => g.tags.some(usable));
     if (!chosen.length) continue;
     let use = chosen;
     const kept = keep?.[section] ? chosen.filter((g) => keep[section].includes(g.id)) : [];
-    if (kept.length) use = kept;
+    if (only != null) use = chosen;
+    else if (kept.length) use = kept;
     else if (mode === "whole" && chosen.length > 1) {
       const rand = mulberry32((((Number(seed) >>> 0) ^ SECTION_SALT[section]) >>> 0));
       use = [chosen[Math.floor(rand() * chosen.length)]];
@@ -128,9 +157,9 @@ export function resolveGroupPools(settings, groups, seed, keep = null) {
 }
 
 /** 給引擎的 settings：多了這一張的 groupPools／groupNames／groupIds。沒勾群組就原封不動回傳同一個物件。 */
-export function withGroupPools(settings, groups, seed, keep = null) {
-  if (!settings?.groups) return settings;
-  const { groupPools, groupNames, groupIds } = resolveGroupPools(settings, groups, seed, keep);
-  if (!Object.keys(groupPools).length) return settings;
+export function withGroupPools(settings, groups, seed, options = null) {
+  if (!settings?.groups && options?.only == null) return settings;
+  const { groupPools, groupNames, groupIds } = resolveGroupPools(settings, groups, seed, options);
+  if (!Object.keys(groupPools).length && options?.only == null) return settings;
   return { ...settings, groupPools, groupNames, groupIds };
 }

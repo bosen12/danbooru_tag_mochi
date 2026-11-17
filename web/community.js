@@ -6,6 +6,9 @@
  *   - 宣傳頁（about.html）也用這裡的連結。
  */
 import { el, openSheet, toast } from "./ui.js";
+import { copyText } from "./copy-text.js";
+
+export { copyText };
 
 export const DISCORD_URL = "https://discord.gg/UtDK9w3Hw";
 export const GITHUB_URL = "https://github.com/bosen12/danbooru_tag_mochi";
@@ -38,27 +41,6 @@ function markAsked() {
     localStorage.setItem(ASKED_KEY, "1");
   } catch {
     /* 存不了就算了 */
-  }
-}
-
-/** 複製文字：http（例如手機走 Tailscale 連回來）沒有 navigator.clipboard，退回選取再複製。 */
-export async function copyText(text) {
-  try {
-    await navigator.clipboard.writeText(text);
-    return true;
-  } catch {
-    const area = el("textarea", { class: "sr-only", readonly: "" });
-    area.value = text;
-    document.body.append(area);
-    area.select();
-    let ok = false;
-    try {
-      ok = document.execCommand("copy");
-    } catch {
-      ok = false;
-    }
-    area.remove();
-    return ok;
   }
 }
 

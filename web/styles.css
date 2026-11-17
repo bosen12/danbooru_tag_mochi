@@ -3260,7 +3260,8 @@ html[data-go-float] .wall-busy {
   mask-composite: exclude;
   opacity: 0;
   pointer-events: none;
-  transition: opacity var(--dur-long) var(--ease-out), --ring-p var(--dur-long) var(--ease-out);
+  /* 光跟百分比同一拍：以前 420ms 慢慢追，一步快過 0.4 秒時字寫 64%、光還在後面。 */
+  transition: opacity var(--dur-long) var(--ease-out), --ring-p var(--dur-short) var(--ease-out);
 }
 .shot[data-status="running"] > .shot-frame::before {
   opacity: 1;
@@ -3335,7 +3336,7 @@ html[data-go-float] .wall-busy {
     opacity: 0;
   }
   /* 一次只亮一張：滑鼠在牆上時，只有滑鼠底下那張（Hires／修臉的面板開著的那張照樣亮，面板跟著它）。 */
-  .wall:hover > .shot:not(:hover):not(:has(> .shot-actions [aria-expanded="true"])) > .shot-actions {
+  .wall:hover > .shot:not(:hover):not(:has(> .shot-actions [aria-expanded="true"])):not(:has(:focus-visible)) > .shot-actions {
     opacity: 0;
     translate: 0 -6px;
   }
@@ -4106,6 +4107,18 @@ body[data-dragging="true"] .library[data-over="true"] {
   grid-template-columns: minmax(0, 1fr);
   gap: var(--space-lg);
   min-width: 0;
+}
+
+/* 成品詳情：印壞、中斷的原因寫完整（有預覽圖時左邊只看得到半成品）。 */
+.sd-fail {
+  margin: 0;
+  padding: var(--space-xs) var(--space-sm);
+  border-left: 3px solid var(--color-warn);
+  border-radius: 4px;
+  background: color-mix(in oklch, var(--color-warn) 10%, var(--color-paper-2));
+  color: var(--color-ink);
+  font-size: var(--text-sm);
+  overflow-wrap: anywhere;
 }
 
 .sd-meta {

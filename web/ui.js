@@ -224,7 +224,14 @@ function hideToast() {
   t.dataset.show = "false";
   // 收起來只是變透明，「復原」鈕還在：以前 Tab 走得到、按 Enter 照樣復原，會把後來做的事蓋掉。
   t.inert = true;
+  // 等「復原」收掉才輪到的背景消息（見 toast 的 later）。
+  const next = toastLater;
+  toastLater = null;
+  if (next) setTimeout(() => toast(next.text, { ms: next.ms }), 180);
 }
+
+/** 背景來的消息（Hires 好了、網路回來了…）碰上還掛著「復原」的那則：先排著，等它收掉再出；只留最新一則。 */
+let toastLater = null;
 
 function wireToast(t) {
   if (toastWired) return;
@@ -266,10 +273,16 @@ function watchOverlays() {
  * 可以點；按了就收起來。底下一條線倒數還剩多久；key 是鍵盤上也能按的那個字（見 runToastAction）。
  * 沒帶 action 的跟以前一樣 2.6 秒自己消失。
  */
-export function toast(text, { action = null, ms = action ? 5200 : 2600 } = {}) {
+export function toast(text, { action = null, ms = action ? 5200 : 2600, later = false } = {}) {
   const t = document.getElementById("toast");
   if (!t) return;
   wireToast(t);
+  // later：不是使用者剛按的、是背景自己發生的事。現在掛著一則帶「復原」的，就別把它擠掉 ——
+  // 以前無限抽、Hires 跑著時撤下一張，「復原」幾秒內就被「Hires 好了」蓋掉，按 Z 也沒用了。
+  if (later && !action && toastNow && t.dataset.show === "true") {
+    toastLater = { text, ms };
+    return;
+  }
   // 上一則還掛著就換下一則（複製完馬上撤下一張）：字和寬度不要一格就換掉，蓋一下章表示是新的一則。
   const replacing = t.dataset.show === "true";
   t.replaceChildren(document.createTextNode(text));

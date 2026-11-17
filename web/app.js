@@ -42,6 +42,7 @@ import { mountRatingFree, overreachLine } from "./rating-free.js";
 import { whenPrinter, settingsToWrite, onOtherTab } from "./tab-sync.js";
 import { createLibWindow } from "./lib-window.js";
 import { warmDrawWorker, drawInWorker, hasDrawWorker } from "./draw-pool.js";
+import { copyText } from "./copy-text.js";
 import { footMore } from "./foot-more.js";
 import { searchMiss, searchAlso } from "./lib-hint.js";
 import { HEATS, toggleHeat } from "./heats.js";
@@ -59,8 +60,9 @@ import { mountGenStatus } from "./gen-status.js";
 import { currentPose, poseButton } from "./pose.js";
 import { openDecks } from "./decks.js";
 import { SIZES, ratioBox } from "./sizes.js";
+import { pickTrim } from "./wall-trim.js";
 import { mountMasonry } from "./wall-masonry.js";
-import { loadGroups, cachedGroups, withGroupPools, onGroupsChange } from "./card-groups.js";
+import { loadGroups, freshGroups, cachedGroups, withGroupPools, onGroupsChange } from "./card-groups.js";
 import { mountGroupPicks } from "./group-picks.js";
 import { handTools } from "./hand-tools.js";
 import { openPaste, listenPaste } from "./paste-prompt.js";
@@ -241,7 +243,7 @@ async function boot() {
     const prev = settings;
     if (era === "mixed") settings = sanitizeSettings({ ...settings, eras: [...ERAS], eraMix: true }, data);
     else if (ERAS.includes(era)) settings = sanitizeSettings({ ...settings, eras: [era], eraMix: false }, data);
-    // 尺寸：墨池有的那三種才換（作品冊記的是 Hires 之後的大小時就照現在的）。
+    // 尺寸：墨池有的那幾種（sizes.js）才換；作品冊記的是 Hires 之後的大小時就照現在的（招呼語會說一聲）。
     const size = SIZES.find((s) => s.w === handoffRecipe.width && s.h === handoffRecipe.height);
     if (size) settings = sanitizeSettings({ ...settings, width: size.w, height: size.h }, data);
     if (settings !== prev) saveSettings(prev);
@@ -556,12 +558,31 @@ function openPicker() {
     $("picker-scrim").animate([{ opacity: 0 }, { opacity: 1 }], { duration: DUR.medium, easing: css(CURVE.out) });
   }
   lib.querySelector(".picker-done")?.focus({ preventScroll: true });
+  lib.addEventListener("keydown", pickerTrap);
+}
+
+/** 挑牌抽屜是對話框：Tab 在抽屜裡繞，不要走進被暗幕蓋住的合成池、成品牆（外接鍵盤、輔助使用）。 */
+function pickerTrap(e) {
+  if (e.key !== "Tab" || !pickerOpen) return;
+  const lib = $("library");
+  const items = [...lib.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])')].filter((n) => !n.disabled && !n.closest("[inert]") && n.getClientRects().length);
+  if (!items.length) return;
+  const first = items[0];
+  const last = items[items.length - 1];
+  if (e.shiftKey && document.activeElement === first) {
+    e.preventDefault();
+    last.focus();
+  } else if (!e.shiftKey && document.activeElement === last) {
+    e.preventDefault();
+    first.focus();
+  }
 }
 
 function closePicker({ fromHistory = false } = {}) {
   if (!pickerOpen) return;
   pickerOpen = false;
   const lib = $("library");
+  lib.removeEventListener("keydown", pickerTrap);
   const done = () => {
     if (pickerOpen) return;
     delete document.body.dataset.picker;
@@ -1850,7 +1871,10 @@ function greetRecipe() {
   handoffRecipe = null;
   if (!r) return;
   const size = SIZES.find((s) => s.w === r.width && s.h === r.height);
-  const bits = [r.era ? `時代：${ERA_LABELS[r.era] || r.era}` : "", size ? size.zh : "", r.seed != null ? `種子固定 ${r.seed}` : ""].filter(Boolean);
+  // 原圖的尺寸墨池沒有（多半是 Hires 之後的大小）：照現在的印，要說一聲，不然構圖不一樣也不知道為什麼。
+  const nowSize = SIZES.find((s) => s.w === settings.width && s.h === settings.height);
+  const sizeBit = size ? size.zh : r.width && r.height && nowSize ? `尺寸 ${r.width}×${r.height} 墨池沒有，照現在的 ${nowSize.zh}` : "";
+  const bits = [r.era ? `時代：${ERA_LABELS[r.era] || r.era}` : "", sizeBit, r.seed != null ? `種子固定 ${r.seed}` : ""].filter(Boolean);
   // 權重也比：同一個 LoRA 從 1.0 改成 0.6 印出來不一樣，不能說「跟現在選的一樣」（舊紀錄沒有權重的只比名字）。
   const loraKey = (l, withStrength) => modelName(l.file) + (withStrength ? `@${Number(l.strength).toFixed(2)}` : "");
   const strengths = !!r.loras?.length && r.loras.every((l) => Number.isFinite(Number(l.strength)) && l.strength != null);
@@ -2335,18 +2359,21 @@ function groupPicks() {
     cardOf: (t) => lib.byTag.get(t),
     poolTags: () => [...pool].filter((t) => !isCustomTag(t)),
     // 這張牌在目前的設定下一定抽不到（抽牌途中才決定的，例如場景、互斥，不算）。
-    blocked: (t) => {
-      const it = lib.byTag.get(t)?.item;
-      if (!it) return "詞庫裡沒有";
-      if (ratingBlocked(it, ratingOf(settings))) return "分級";
-      if (it.gate === "female" && settings.girl === false) return "性別";
-      if (it.gate === "male" && !settings.boy) return "性別";
-      // 只開一個時代（不混合）：專屬別的時代的牌抽不到（例如只開現代時的和服）。
-      const eras = Array.isArray(it.era) ? it.era : [];
-      if (!settings.eraMix && settings.eras?.length && eras.length && !eras.includes("any") && !settings.eras.some((e) => eras.includes(e))) return "時代";
-      return null;
-    },
+    blocked: (t) => groupCardBlocked(t, settings),
   }));
+}
+
+/** 群組裡這張牌在這份設定下一定抽不到的原因（抽牌途中才決定的，例如場景、互斥，不算）；抽得到回 null。 */
+function groupCardBlocked(t, s) {
+  const it = lib.byTag.get(t)?.item;
+  if (!it) return "詞庫裡沒有";
+  if (ratingBlocked(it, ratingOf(s))) return "分級";
+  if (it.gate === "female" && s.girl === false) return "性別";
+  if (it.gate === "male" && !s.boy) return "性別";
+  // 只開一個時代（不混合）：專屬別的時代的牌抽不到（例如只開現代時的和服）。
+  const eras = Array.isArray(it.era) ? it.era : [];
+  if (!s.eraMix && s.eras?.length && eras.length && !eras.includes("any") && !s.eras.some((e) => eras.includes(e))) return "時代";
+  return null;
 }
 
 function stepper(label, value, min, max, onChange) {
@@ -2454,7 +2481,7 @@ const generator = createGenerator({
     // 無限抽印到設定的張數：這一輪印完就停，不接下一輪。
     if (infinite && !stopAsked && ui.loopMax && loopSent >= ui.loopMax) {
       infinite = false;
-      toast(`無限抽印完 ${loopSent} 張，到了設定的張數，停下了`);
+      toast(`無限抽印完 ${loopSent} 張，到了設定的張數，停下了`, { later: true });
     }
     looping = infinite && !stopAsked;
     renderGoBar();
@@ -2471,9 +2498,9 @@ const generator = createGenerator({
     renderGoBar();
   },
   // 網路斷了：佇列停在原地等，回來就接著印（見 gen.js waitOnline）。
-  waiting: (on) => toast(on ? "連不到主機，網路回來就接著印…" : "網路回來了，接著印"),
+  waiting: (on) => toast(on ? "連不到主機，網路回來就接著印…" : "網路回來了，接著印", { later: true }),
   // ComfyUI 沒開、重開中：一樣停在原地等，燈號回綠就接著印（見 gen.js waitComfy）。無限抽不會因此停掉。
-  comfyWaiting: (on) => toast(on ? "ComfyUI 連不上，等它開好就接著印…" : "ComfyUI 回來了，接著印"),
+  comfyWaiting: (on) => toast(on ? "ComfyUI 連不上，等它開好就接著印…" : "ComfyUI 回來了，接著印", { later: true }),
 });
 
 // Hires：印好的那張放大、重畫細節，做好直接換掉牆上那張（見 hires.js）。
@@ -2489,11 +2516,11 @@ const hiresRun = createHires({
     sfx.hiresDone();
     if (kind === "face") {
       discord?.face(shot);
-      toast("修好臉了：不滿意可以再修一次，或拿掉修臉");
+      toast("修好臉了：不滿意可以再修一次，或拿掉修臉", { later: true });
       return;
     }
     discord?.hires(shot);
-    toast(`Hires 好了：${shot.hires.width}×${shot.hires.height}`);
+    toast(`Hires 好了：${shot.hires.width}×${shot.hires.height}`, { later: true });
   },
 });
 
@@ -2828,19 +2855,31 @@ function drawBatch(gen, { auto = false } = {}) {
     });
   drawQueue = pending.catch((err) => {
     console.error(err);
-    toast("這一輪抽牌失敗，請再試一次");
+    toast(endLoop() ? "這一輪抽牌失敗，無限抽先停下了。請再試一次" : "這一輪抽牌失敗，請再試一次");
   });
   return pending;
+}
+
+/** 這一輪沒送東西去印：佇列不會再叫下一輪，無限抽的開關也要關，不然看起來還開著、其實停了。回傳剛剛是不是開著。 */
+function endLoop() {
+  const was = infinite;
+  infinite = false;
+  looping = false;
+  renderGoBar();
+  return was;
 }
 
 async function drawBatchNow(gen, intent, epoch) {
   stopAsked = false;
   // 勾了群組、清單卻還沒讀到（伺服器慢、斷線）：先讀一次；讀不到就不抽 ——
   // 不然這一輪靜靜變成沒勾群組的普通抽牌，看不出來。勾選照留。
-  if (!intent.groups && intent.settings.groups) {
-    const got = await loadGroups();
+  // 讀過了但有點舊（半分鐘以上，例如剛在手機或卡冊改過）也重讀一次：不然這一輪照舊的群組抽。
+  if (intent.settings.groups) {
+    const got = intent.groups ? await freshGroups(30_000) : await loadGroups();
     if (!got) {
-      toast("群組清單讀不到：勾了群組的這一輪先不抽。確認伺服器開著再試一次。");
+      toast(endLoop()
+        ? "群組清單讀不到：勾了群組的這一輪先不抽，無限抽也先停下。確認伺服器開著再試一次。"
+        : "群組清單讀不到：勾了群組的這一輪先不抽。確認伺服器開著再試一次。");
       return;
     }
     intent.groups = structuredClone(got);
@@ -2851,6 +2890,7 @@ async function drawBatchNow(gen, intent, epoch) {
   if (!intent.auto) await new Promise((resolve) => afterPaint(resolve));
   if (epoch !== drawEpoch) return;
   const n = intent.settings.n;
+  const groupUsable = (t) => !groupCardBlocked(t, intent.settings);
   let first = null;
   // 同一個人＋整組一起：第 2 張起沿用第 1 張挑中的長相群組（不然可能 A 的髮色配 B 的妝容）。
   let firstGroupIds = null;
@@ -2866,9 +2906,11 @@ async function drawBatchNow(gen, intent, epoch) {
     }
     const seed = randomSeed();
     const keepGroups = intent.settings.samePerson && firstGroupIds?.feature ? { feature: firstGroupIds.feature } : null;
-    const drawSettings = withGroupPools(withFavChars(withEffectiveHeats(intent.settings)), intent.groups, seed, keepGroups);
+    // usable：整組一起時，跳過在這份設定下一張都抽不到的組（不然那一段靜靜變回一般抽法）。
+    const drawSettings = withGroupPools(withFavChars(withEffectiveHeats(intent.settings)), intent.groups, seed, { keep: keepGroups, usable: groupUsable });
     // 背景執行緒抽（draw-pool.js）：抽的時候畫面照常動、按得到。抽不了才在這邊抽（結果一樣）。
-    const viaWorker = hasDrawWorker() ? await drawInWorker({ settings: drawSettings, pins, banned, seeds: [seed], trace: true }) : null;
+    // ifReady：背景執行緒的詞庫還沒建好（慢手機剛開頁）就直接在這邊抽，不乾等。
+    const viaWorker = hasDrawWorker() ? await drawInWorker({ settings: drawSettings, pins, banned, seeds: [seed], trace: true, ifReady: true }) : null;
     if (epoch !== drawEpoch) break;
     const drawn = viaWorker?.[0] || drawWithSeed(lex, drawSettings, pins, banned, seed, { trace: true });
     if (drawn.positive && String(drawn.positive).trim()) {
@@ -2931,7 +2973,9 @@ async function drawBatchNow(gen, intent, epoch) {
   if (!made.length) {
     if (epoch !== drawEpoch) return;
     refuse(document.activeElement?.closest?.("button") || $("go-bar"));
-    toast("這一輪抽不出東西：合成池的字可能互相卡住，換一兩張試試");
+    toast(gen && endLoop()
+      ? "這一輪抽不出東西，無限抽先停下：合成池的字可能互相卡住，換一兩張試試"
+      : "這一輪抽不出東西：合成池的字可能互相卡住，換一兩張試試");
     return;
   }
   sfx.deal(made.length > 1 ? made.length + 3 : 5);
@@ -2956,6 +3000,8 @@ async function drawBatchNow(gen, intent, epoch) {
     // 先記張數再排進佇列：排進去就會重畫狀態字，那時「無限抽 4 / 10」才對得上。
     if (infinite) loopSent += made.length;
     for (const shot of made) if (shots.includes(shot)) generator.enqueue(shot);
+    // 排進去之後算印過的那一堆：超過 80 張就裁掉最舊的（在跑的不裁）。
+    trimWall();
     // 排進佇列之後再存一次：存檔才知道它們還排著（去別頁晃一下回來接著印）。
     S.saveShots(shots);
   }
@@ -3101,14 +3147,11 @@ function makeShot(drawn, seed, poolAtDraw, snapshot = null, groupInfo = null) {
 }
 
 function trimWall() {
-  if (shots.length <= S.SHOT_MAX) return;
-  // 先裁沒印出來的（失敗、取消、停掉的），從最舊的開始；還超過才裁印好的。
-  // 以前一律裁最舊的：斷網時一陣「印壞了」就把前面印好的整面擠掉。
-  const over = shots.length - S.SHOT_MAX;
-  const waste = new Set(shots.filter((s) => s.status === "failed" || s.status === "cancelled" || s.status === "stopped").slice(-over));
-  const drop = [...waste];
-  for (let i = shots.length - 1; i >= 0; i--) if (waste.has(shots[i])) shots.splice(i, 1);
-  if (shots.length > S.SHOT_MAX) drop.push(...shots.splice(S.SHOT_MAX));
+  // 裁哪幾張見 wall-trim.js：只抽牌的和印過的各算各的 80 張，在跑的不裁。
+  const drop = pickTrim(shots, S.SHOT_MAX);
+  if (!drop.length) return;
+  const gone = new Set(drop);
+  for (let i = shots.length - 1; i >= 0; i--) if (gone.has(shots[i])) shots.splice(i, 1);
   for (const s of drop) hiresRun.cancel(s);
   for (const s of drop) document.querySelector(`.shot[data-id="${s.id}"]`)?.remove();
   generator.drop(new Set(drop.map((s) => s.id)));
@@ -3391,7 +3434,8 @@ function paintShot(node, shot) {
   if (src) {
     if (!img) {
       // lazy：牆上 80 張不必一開頁就全部下載，捲到附近才抓。
-      img = el("img", { alt: "成品", decoding: "async", loading: "lazy" });
+      // 替代文字寫這張畫了什麼（牌名），不是八十張都叫「成品」：讀屏才分得出是哪一張。
+      img = el("img", { alt: shotTitle(shot), decoding: "async", loading: "lazy" });
       frame.prepend(img);
     }
     watchGone(img, (s) => {
@@ -3480,10 +3524,13 @@ function paintShot(node, shot) {
   let bar = frame.querySelector(".shot-progress");
   if (shot.status === "running") {
     if (!bar) {
-      bar = el("div", { class: "shot-progress" }, el("i"));
+      // 讀屏也要知道畫到哪：進度條標成 progressbar，數字每 10% 才換一次（不要每一步都唸）。
+      bar = el("div", { class: "shot-progress", role: "progressbar", "aria-label": "印製進度", "aria-valuemin": "0", "aria-valuemax": "100" }, el("i"));
       frame.append(bar);
     }
     bar.style.setProperty("--p", String(shot.progress || 0));
+    const tenth = String(Math.floor((shot.progress || 0) * 10) * 10);
+    if (bar.getAttribute("aria-valuenow") !== tenth) bar.setAttribute("aria-valuenow", tenth);
     // 外框一圈光照進度走（照 obscura 的暗房：一條光沿著框走一圈當進度）。
     frame.style.setProperty("--ring-p", String(shot.progress || 0));
   } else {
@@ -3738,7 +3785,7 @@ function goneNote() {
 }
 
 function detailImg(shot, src) {
-  const img = el("img", { src, alt: "成品" });
+  const img = el("img", { src, alt: shotTitle(shot) });
   watchGone(img, (s) => {
     if (s !== viewSrc(shot.image)) return;
     img.replaceWith(goneNote());
@@ -3915,12 +3962,12 @@ function goToDone() {
 }
 
 async function copyPos(shot, btn) {
-  try {
-    await navigator.clipboard.writeText(shot.positive);
+  // copyText：手機走 Tailscale 的 http 沒有 navigator.clipboard，退回選取再複製（copy-text.js）。
+  if (await copyText(shot.positive)) {
     // 按鈕自己說「已複製」—— 眼睛本來就在按鈕上，右下角的提示常常沒被看到。
     if (btn) confirmButton(btn);
     else toast("POS 複製好了");
-  } catch {
+  } else {
     refuse(btn);
     toast("複製不了，請點圖打開後手動選取");
   }
@@ -3928,7 +3975,11 @@ async function copyPos(shot, btn) {
 
 function reprint(shot) {
   // 重印的是原本的尺寸、原本的圖；Hires、修臉的結果不跟著過去。
-  const copy = { ...shot, id: "s" + shotSeq++, status: "drawn", image: null, preview: null, note: "", hi: null, hires: null, face: null, baseImage: null, at: new Date().toISOString() };
+  // 收藏（albumId）也不跟：新的一張還沒收藏，以前會一出來就顯示「已收藏」、點下去開的是舊的那張。
+  const copy = { ...shot, id: "s" + shotSeq++, status: "drawn", image: null, preview: null, note: "", hi: null, hires: null, face: null, baseImage: null, albumId: null, at: new Date().toISOString() };
+  // 舊那張畫的時候記在身上的工作編號、進度和暫存（_steps、_savedJob、_goneSrc…）也不跟。
+  for (const k of ["job", "hiresJob", "progress", "its", "eta"]) delete copy[k];
+  for (const k of Object.keys(copy)) if (k.startsWith("_")) delete copy[k];
   shots.unshift(copy);
   noteUses([copy]);
   const node = shotNode(copy, true, { printing: true });
@@ -3951,8 +4002,9 @@ function rerollCard(shot, tag, btn, closeCard) {
   const kept = [...shot.mine, ...shot.drawn.map((d) => d.tag)].filter((t) => t !== tag && lib.byTag.has(t));
   const era = shot.era === "mixed" ? { eras: [...ERAS], eraMix: true } : ERAS.includes(shot.era) ? { eras: [shot.era], eraMix: false } : {};
   const base = sanitizeSettings({ ...settings, rating: shot.rating || settings.rating, ...era }, data);
-  // 群組：照那張當時用的那幾組（還在的話）；那張沒用群組就照現在的勾選。
-  const rerollSettings = withGroupPools(withFavChars(withEffectiveHeats(base)), cachedGroups(), shot.seed, shot.groupIds || null);
+  // 群組：照那張當時用的那幾組（還在的話），現在勾的不管 —— 以前只在「現在勾著的」裡找，改勾別組後換牌會從別組抽。
+  // 那張沒用群組就照現在的勾選。
+  const rerollSettings = withGroupPools(withFavChars(withEffectiveHeats(base)), cachedGroups(), shot.seed, shot.groupIds ? { only: shot.groupIds, usable: (t) => !groupCardBlocked(t, base) } : { usable: (t) => !groupCardBlocked(t, base) });
   const drawn = drawWithSeed(lex, rerollSettings, new Set(kept), new Set([...bans, ...HARD_BANNED, tag]), shot.seed, { trace: true });
   const snapshot = {
     width: shot.width, height: shot.height, rating: shot.rating, loras: structuredClone(shot.loras || []), ckpt: shot.ckpt,
@@ -4142,6 +4194,8 @@ function shotDetailBody(shot, { deal = true } = {}) {
     el(
       "div",
       { class: "sd-side" },
+      // 印壞了、中斷了但有預覽圖：左邊畫的是半成品，原因以前只在牆上那行（手機兩欄只看得到十個字）。寫完整。
+      src && (shot.status === "failed" || shot.status === "stopped") ? el("p", { class: "sd-fail", role: "note" }, shotWords(shot)[shot.status]) : null,
       el("p", { class: "sd-meta" }, chips.map((c) => el("span", {}, c)), el("span", { class: "sd-seed" }, seedUseButton(shot.seed))),
       el(
         "section",
@@ -4190,8 +4244,21 @@ function showShot(shot, { focus } = {}) {
       const node = shotNodeOf(s);
       const btn = node?.querySelector(sel);
       if (!btn) return;
+      // 手機（沒有懸停）牆上那排鈕整排藏著，量不到位置：以前選單掛到畫面左上角。改掛在那張圖的畫框上。
+      const anchor = btn.getClientRects().length ? btn : node.querySelector(".shot-frame") || node;
+      const r = node.getBoundingClientRect();
+      if (r.top >= 0 && r.bottom <= innerHeight) return open(s, anchor);
+      // 捲完才開：以前固定等 320ms，手機上還在滑，選單一開就被「捲了一段就收」收掉。
+      let opened = false;
+      const go = () => {
+        if (opened) return;
+        opened = true;
+        removeEventListener("scrollend", go);
+        open(s, anchor);
+      };
+      addEventListener("scrollend", go, { once: true });
       node.scrollIntoView({ block: "center", behavior: reducedMotion() ? "auto" : "smooth" });
-      setTimeout(() => open(s, btn), reducedMotion() ? 0 : DUR.medium);
+      setTimeout(go, reducedMotion() ? 0 : DUR.xl * 2);
     }, reducedMotion() ? 0 : DUR.short);
   };
   const footFor = (s) => {

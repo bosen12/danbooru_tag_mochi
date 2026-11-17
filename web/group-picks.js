@@ -14,6 +14,7 @@ import { el, openSheet, toast, friendlyError } from "./ui.js";
 import { reducedMotion, DUR, CURVE, css, swapIn, enter } from "./motion.js";
 import { cachedGroups, loadGroups, onGroupsChange, pickOf, saveGroup } from "./card-groups.js";
 import { groupSlotKey } from "./engine.js";
+import { english } from "./i18n.js";
 
 export const SECTION_ZH = { feature: "長相", clothing: "服裝", pose: "姿勢", env: "場景" };
 export const SECTION_SUIT = { feature: "look", clothing: "wear", pose: "pose", env: "scene" };
@@ -62,13 +63,17 @@ export function mountGroupPicks({ settings, setSettings, cardOf, poolTags, block
     const on = ids.length > 0;
     p.btn.dataset.on = on ? "true" : "false";
     // 組名可以被截短，「＋幾組」另一顆小章不截：手機上窄也看得出勾了幾組。
+    const empty = on && groups && groups.every(g => !g.tags.length);
     const text = on && groups ? groups[0].name : on ? `${ids.length} 組` : "";
     const more = on && groups && groups.length > 1 ? `＋${groups.length - 1}` : "";
     p.name.textContent = text;
     p.name.hidden = !on;
-    p.more.textContent = more;
-    p.more.hidden = !more;
-    const label = on ? `${SECTION_ZH[section]}群組：${(groups || []).map((g) => g.name).join("、") || text}` : `${SECTION_ZH[section]}群組：沒有勾`;
+    // 勾的組全是空的：小章寫「空」，完整的話在 title。
+    p.more.textContent = empty ? "空" : more;
+    p.more.hidden = !more && !empty;
+    const label = empty
+      ? `${SECTION_ZH[section]}群組：空的，本輪不使用`
+      : on ? `${SECTION_ZH[section]}群組：${(groups || []).map((g) => g.name).join("、") || text}` : `${SECTION_ZH[section]}群組：沒有勾`;
     p.btn.title = label;
     p.btn.setAttribute("aria-label", label);
     swapIn(p.name, text);
@@ -149,8 +154,9 @@ export function mountGroupPicks({ settings, setSettings, cardOf, poolTags, block
     };
 
     function row(g, on, i, fresh) {
-      const names = g.tags.map((t) => cardOf(t)?.zh || t);
-      const out = g.tags.filter((t) => blocked(t));
+      const names = g.tags.map((t) => english ? t.replaceAll("_", " ") : cardOf(t)?.zh || t);
+      const missing = g.tags.filter(t => !cardOf(t));
+      const out = g.tags.filter((t) => cardOf(t) && blocked(t));
       const box = el("input", { type: "checkbox", class: "gp-check", checked: on || null });
       const r = el(
         "label",
@@ -166,9 +172,11 @@ export function mountGroupPicks({ settings, setSettings, cardOf, poolTags, block
           subsOf(g.tags).length
             ? el("span", { class: "gp-row-subs" }, subsOf(g.tags).map(([zh, n]) => el("span", { class: "gp-sub" }, zh, el("b", {}, String(n)))))
             : null,
-          el("span", { class: "gp-row-tags", dataset: { noI18n: "" } }, names.slice(0, 8).join("、") + (names.length > 8 ? "…" : "")),
+          el("span", { class: "gp-row-tags" }, names.slice(0, 8).join(english ? ", " : "、") + (names.length > 8 ? "…" : "")),
           // 只說設定上一定抽不到的（分級、性別、時代）；抽牌途中才決定的（互斥、場景）不先保證。
-          out.length ? el("span", { class: "gp-row-warn" }, out.length === g.tags.length ? "這組的牌在現在的設定下都抽不到（分級、性別、時代）" : `${out.length} 張在現在的設定下抽不到（分級、性別、時代）`) : null
+          out.length ? el("span", { class: "gp-row-warn" }, out.length === g.tags.length ? "這組的牌在現在的設定下都抽不到（分級、性別、時代）" : `${out.length} 張在現在的設定下抽不到（分級、性別、時代）`) : null,
+          missing.length ? el("span", { class: "gp-row-warn" }, `${missing.length} 張已不在詞庫中，存檔時會移除`) : null,
+          !g.tags.length ? el("span", { class: "gp-row-warn" }, "空的，本輪不使用") : null
         )
       );
       box.addEventListener("change", () => {
@@ -263,6 +271,19 @@ export function mountGroupPicks({ settings, setSettings, cardOf, poolTags, block
     );
     const note = el("p", { class: "gp-seg-note" });
     const seg = el("div", { class: "gp-seg", role: "radiogroup", "aria-label": "勾了好幾組時怎麼抽" }, thumb, ...btns);
+    seg.addEventListener("keydown", e => {
+      const index = btns.indexOf(e.target);
+      if (index < 0) return;
+      let next;
+      if (["ArrowRight", "ArrowDown"].includes(e.key)) next = (index + 1) % btns.length;
+      else if (["ArrowLeft", "ArrowUp"].includes(e.key)) next = (index + btns.length - 1) % btns.length;
+      else if (e.key === "Home") next = 0;
+      else if (e.key === "End") next = btns.length - 1;
+      else return;
+      e.preventDefault();
+      btns[next].click();
+      btns[next].focus();
+    });
     const box = el("div", { class: "gp-mode", hidden: true }, el("span", { class: "gp-mode-label" }, "勾了好幾組時"), seg, note);
     let placed = false;
     const place = () => {
@@ -282,7 +303,10 @@ export function mountGroupPicks({ settings, setSettings, cardOf, poolTags, block
         box.hidden = false;
         if (!reducedMotion()) box.animate([{ opacity: 0, transform: "translateY(-6px)" }, { opacity: 1, transform: "none" }], { duration: DUR.medium, easing: css(CURVE.out) });
       } else if (!show) box.hidden = true;
-      for (const b of btns) b.setAttribute("aria-checked", b.dataset.v === mode ? "true" : "false");
+      for (const b of btns) {
+        b.setAttribute("aria-checked", b.dataset.v === mode ? "true" : "false");
+        b.tabIndex = b.dataset.v === mode ? 0 : -1;
+      }
       note.textContent = items.find(([v]) => v === mode)[2];
       swapIn(note, mode);
       requestAnimationFrame(place);

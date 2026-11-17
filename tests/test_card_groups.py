@@ -60,7 +60,9 @@ raises("不認得的類別不收", lambda: card_groups.save({"name": "x", "secti
 raises("tags 不是陣列不收", lambda: card_groups.save({"name": "x", "section": "env", "tags": "beach"}))
 raises("不是物件不收", lambda: card_groups.save(["x"]))
 raises("別段的牌整筆拒絕、列出是哪幾張", lambda: card_groups.save({"name": "x", "section": "feature", "tags": ["blonde hair", "beach"]}), check=lambda e: e.bad == ["beach"])
-raises("詞庫沒有的牌（含自製牌）整筆拒絕", lambda: card_groups.save({"name": "x", "section": "feature", "tags": ["custom:abc", "nope"]}), check=lambda e: e.bad == ["custom:abc", "nope"])
+dropped = card_groups.save({**empty, "tags": ["custom:abc", "nope", "blue eyes"]})
+ok("詞庫外的牌略過並回報", dropped["dropped"] == ["custom:abc", "nope"] and dropped["group"]["tags"] == ["blue eyes"])
+empty = dropped["group"]
 raises("超過上限明講，不偷偷截掉", lambda: card_groups.save({"name": "x", "section": "clothing", "tags": [f"acc {i}" for i in range(card_groups.MAX_TAGS + 1)]}))
 raises("壞 id 不收", lambda: card_groups.save({"id": "BAD ID", "name": "x", "section": "feature", "tags": []}))
 
@@ -96,12 +98,18 @@ a = card_groups.save({"name": "A", "section": "feature", "tags": ["twintails"]})
 
 # 舊名寫在檔案裡：讀出來就換新名；讀不懂的那幾筆略過
 raw = json.loads(PATH.read_text(encoding="utf-8"))
-raw["groups"][0]["tags"] = ["old blonde", "twintails"]
+raw["groups"][0]["tags"] = ["old blonde", "twintails", "removed tag"]
 raw["groups"].append({"id": "bad id!", "name": "x", "section": "feature", "tags": []})
 raw["groups"].append({"id": "g-weird", "name": "x", "section": "nope", "tags": []})
 raw["groups"].append({"id": "g-ok2", "name": "x", "section": "env", "tags": "beach", "createdAt": "壞"})
 PATH.write_text(json.dumps(raw), encoding="utf-8")
+before_read = PATH.read_bytes()
 loaded = card_groups.load()
+ok("讀取不重寫存檔", PATH.read_bytes() == before_read)
+original_sections = card_groups._tag_sections
+card_groups._tag_sections = lambda: {}
+ok("詞庫不可用時不刪牌", "removed tag" in next(g for g in card_groups.load() if g["id"] == a["id"])["tags"])
+card_groups._tag_sections = original_sections
 byid = {g["id"]: g for g in loaded}
 ok("檔案裡的舊名讀出來換新名", byid[a["id"]]["tags"] == ["blonde hair", "twintails"], byid[a["id"]]["tags"])
 ok("壞 id、壞類別的略過；壞的 tags、時間不讓整份讀不了", set(byid) == {a["id"], "g-ok2"} and byid["g-ok2"]["tags"] == [] and byid["g-ok2"]["createdAt"] == 0, loaded)

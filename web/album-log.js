@@ -9,6 +9,7 @@ import { dateLocale } from "./i18n.js";
  *   - 詳情的主鈕「照這張再印」：牌、份量、時代、種子、底模、LoRA 一起帶回墨池；其他動作手機上收進「⋯」。
  */
 import { el, openSheet } from "./ui.js";
+import { copyText } from "./copy-text.js";
 import { zoomFromThumb } from "./zoom.js";
 import { refuse, enter, reducedMotion, DUR, CURVE, css } from "./motion.js";
 import { viewSrc } from "./gen.js";
@@ -303,11 +304,11 @@ export function createLog(ctx) {
             type: "button",
             onclick: async (ev) => {
               const b = ev.currentTarget;
-              try {
-                await navigator.clipboard.writeText(e.positive || "");
+              const ok = await copyText(e.positive || "");
+              if (ok) {
                 b.textContent = "已複製";
                 setTimeout(() => (b.textContent = "複製 POS"), 1400);
-              } catch {
+              } else {
                 refuse(b);
               }
             },

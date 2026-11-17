@@ -20,6 +20,7 @@ import { mountRatingFree } from "./rating-free.js";
 import { buildLibrary, createAssets, ERA_ZH } from "./cards.js";
 import { artFallback, bindArt } from "./card-images.js";
 import { el, openSheet, toast, syncChoices, bootFailed, friendlyError, isNetError } from "./ui.js";
+import { copyText } from "./copy-text.js";
 import { zoomFromThumb } from "./zoom.js";
 import { mountKeysHelp } from "./keys-help.js";
 import { mountTour } from "./tour.js";
@@ -835,11 +836,11 @@ function openWork(w) {
           type: "button",
           onclick: async (e) => {
             const b = e.currentTarget;
-            try {
-              await navigator.clipboard.writeText(w.positive || "");
+            const ok = await copyText(w.positive || "");
+            if (ok) {
               b.textContent = "已複製";
               setTimeout(() => (b.textContent = "複製 POS"), 1400);
-            } catch {
+            } else {
               refuse(b);
             }
           },

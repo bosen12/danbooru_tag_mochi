@@ -245,6 +245,8 @@
     <script>window.__mastSpace?.();</script>
 
     <main class="parse" id="parse" aria-labelledby="parse-title">
+      <!-- 讀螢幕的只聽狀態（開始、等太久、完成、失敗）。秒數在畫面上跳，不要每秒唸一次。 -->
+      <div class="sr-only" id="parse-live" role="status" aria-live="polite"></div>
       <div class="parse-head">
         <div class="parse-title">
           <h2 id="parse-title">解析池</h2>
@@ -268,7 +270,7 @@
               <span class="parse-scan" aria-hidden="true"></span>
               <span class="parse-grain" aria-hidden="true"></span>
             </div>
-            <div class="parse-status" id="parse-status" role="status" aria-live="polite"></div>
+            <div class="parse-status" id="parse-status"></div>
             <div class="parse-shot-tools">
               <button class="btn btn-small pressable" id="parse-again" type="button" hidden>用新設定重新解析</button>
               <label class="btn btn-small pressable parse-swap" for="parse-file">換一張圖</label>

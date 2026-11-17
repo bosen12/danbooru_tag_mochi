@@ -13,6 +13,7 @@ import { guardPrerender, prerenderNeighbors, whenActive } from "./prerender.js";
  *   - 帶走：選好的牌飛進按鈕，再換版過去（合成池：store.js 的 handOffPool；疊印台：handOffFuse）。
  *   - 解析設定（模型、最低信心、角色門檻、不要的字）存在這個瀏覽器（mochi.parse.v1），每次解析一起送。
  *   - 剛才解析的那一張跟著這個分頁（sessionStorage）30 分鐘：帶去合成池、再回來，還在。重新整理就清掉。
+ *     換語言也是重新整理，但換之前先把這一張交給 i18n.js，載回來再還原。
  */
 import { ratingBlocked, RATING_LABEL } from "./rules/rating.js";
 import { mountRatingFree } from "./rating-free.js";
@@ -28,6 +29,8 @@ import { getSfx } from "./sfx.js";
 import { attachTilt } from "./card-tilt.js";
 import { cloneCard } from "./card-images.js";
 import { parsePrompt } from "./paste-prompt.js";
+import { takeLanguageState } from "./i18n.js";
+import { copyText } from "./copy-text.js";
 import { reviewFuseTransfer } from "./fuse-transfer.js";
 import { transferLabel, reviewTransfer } from "./transfer.js";
 import * as S from "./store.js";
@@ -68,6 +71,14 @@ let trust = "all";
 let busy = false;
 let job = 0;
 let tick = 0;
+// 連著丟圖：每一張一個編號。縮圖是非同步的，慢的那張回來時不能蓋掉後來的。
+let pick = 0;
+// 這一輪解析請求。換圖就中止它（只中止這個分頁的請求，不碰 ComfyUI 正在印的圖）。
+let parseAbort = null;
+// 存檔也是非同步：後一次存的要蓋過前一次還在縮的。
+let savedGen = 0;
+// 讀螢幕的上次聽到的那句。秒數在跳不要重複念。
+let liveText = "";
 
 const zh = (tag) => lib?.byTag.get(tag)?.zh || tag;
 const seeRating = () => (free ? "explicit" : rating);
@@ -273,12 +284,26 @@ async function shrink(blob, edge) {
 
 async function take(blob) {
   if (!blob.type.startsWith("image/")) return toast("要一張圖（PNG、JPEG、WebP）");
+  const mine = ++pick;
+  // 先停掉上一張還在飛的請求。縮圖還沒好，不能等它回來才停。
+  abortParse();
+  clearInterval(tick);
   let img;
   try {
     img = await shrink(blob, SEND_EDGE);
   } catch {
+    if (mine !== pick) return;
+    busy = false;
+    // 這張打不開：上一張如果已經有結果，把狀態放回去，不要停在「解析中」。
+    if (shot?.tags) {
+      setState("done");
+      paintStatus();
+    } else {
+      status();
+    }
     return toast("這張圖打不開，換一張試試");
   }
+  if (mine !== pick) return;
   shot = { url: img.url, w: img.w, h: img.h, name: blob.name || "" };
   parsed = null;
   off = new Set();
@@ -310,52 +335,81 @@ function showShot({ fresh = false } = {}) {
 
 /* ================= 解析 ================= */
 
+/** 換一張、或重跑：中止上一輪的請求。只中止這個分頁，不碰 ComfyUI 正在印的圖。 */
+function abortParse() {
+  parseAbort?.abort();
+  parseAbort = null;
+}
+
+/** 讀螢幕的：同一句不重複念（秒數在畫面上跳，不在這裡）。 */
+function announce(text) {
+  if (text === liveText) return;
+  liveText = text;
+  const node = $("parse-live");
+  if (node) node.textContent = text;
+}
+
 async function run() {
-  if (!shot) return;
+  const target = shot;
+  if (!target) return;
   const mine = ++job;
+  abortParse();
+  const ac = new AbortController();
+  parseAbort = ac;
   busy = true;
   setState("loading");
   const t0 = performance.now();
   clearInterval(tick);
+  // 新的一輪要再念一次「解析中」，即使上一輪也是這句。
+  liveText = "";
+  const why = "ComfyUI 可能正在印別張（等那張印完就輪到），或第一次用這個模型、正在下載。";
   const say = () => {
+    if (mine !== job || shot !== target) return;
     const s = (performance.now() - t0) / 1000;
+    const slow = s * 1000 >= SLOW_MS;
     status(
-      s * 1000 < SLOW_MS
-        ? el("span", { class: "parse-run" }, el("span", {}, "解析中…"), el("b", { class: "parse-secs" }, `${s.toFixed(1)} 秒`))
-        : el("span", { class: "parse-run" }, el("span", {}, "還在解析…"), el("b", { class: "parse-secs" }, `${s.toFixed(0)} 秒`), el("span", { class: "parse-why" }, "ComfyUI 可能正在印別張（等那張印完就輪到），或第一次用這個模型、正在下載。"))
+      slow
+        ? el("span", { class: "parse-run" }, el("span", {}, "還在解析…"), el("b", { class: "parse-secs" }, `${s.toFixed(0)} 秒`), el("span", { class: "parse-why" }, why))
+        : el("span", { class: "parse-run" }, el("span", {}, "解析中…"), el("b", { class: "parse-secs" }, `${s.toFixed(0)} 秒`))
     );
+    announce(slow ? why : "解析中…");
   };
   say();
-  tick = setInterval(say, 100);
+  tick = setInterval(say, 1000);
   let j = null;
   let err = null;
   try {
     const r = await fetch("/api/parse", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ image: shot.url, settings: tagger() }),
+      body: JSON.stringify({ image: target.url, settings: tagger() }),
+      signal: ac.signal,
     });
     j = await r.json().catch(() => ({ ok: false, error: `伺服器回 ${r.status}` }));
     if (!r.ok || !j.ok) err = j;
   } catch (e) {
+    // 換圖中止的：不要清掉新的那一輪的計時，也不要畫成失敗。
+    if (ac.signal.aborted || mine !== job || shot !== target) return;
     err = { error: friendlyError(e) };
   }
-  if (mine !== job) return;
+  if (ac.signal.aborted || mine !== job || shot !== target) return;
   clearInterval(tick);
   busy = false;
   if (err) {
     setState("error");
     const retry = el("button", { class: "link-btn pressable", type: "button", onclick: () => run() }, "再試一次");
     status(el("span", { class: "parse-err" }, err.error || "解析失敗"), " ", err.code === "no_tagger" ? null : retry);
+    announce("解析失敗");
     sfx.fail?.();
     return;
   }
-  shot.tags = j.tags || [];
-  shot.settings = j.settings || tagger();
-  shot.secs = (performance.now() - t0) / 1000;
+  target.tags = j.tags || [];
+  target.settings = j.settings || tagger();
+  target.secs = (performance.now() - t0) / 1000;
   digest();
   setState("done");
   paintStatus();
+  announce(`認出 ${target.tags.length} 個字`);
   render({ deal: true });
   keep();
 }
@@ -664,11 +718,11 @@ function renderExtra() {
         type: "button",
         onclick: async (e) => {
           const b = e.currentTarget;
-          try {
-            await navigator.clipboard.writeText(unknown.map((u) => u.raw.replace(/_/g, " ")).join(", "));
+          const ok = await copyText(unknown.map((u) => u.raw.replace(/_/g, " ")).join(", "));
+          if (ok) {
             b.textContent = "複製了";
             setTimeout(() => (b.textContent = "複製"), 1400);
-          } catch {
+          } else {
             refuse(b);
           }
         },
@@ -767,22 +821,66 @@ addEventListener("pageshow", (e) => {
 
 /* ================= 跟著分頁的那一張 ================= */
 
-function keep() {
-  if (!shot?.tags) return;
-  // 存小一張：sessionStorage 只有幾 MB。
-  const save = (url) => S.saveTab(TAB_KEY, { url, w: shot.w, h: shot.h, tags: shot.tags, settings: shot.settings, secs: shot.secs, off: [...off], trust, at: Date.now() });
-  if (shot.small) return save(shot.small);
-  fetch(shot.url)
-    .then((r) => r.blob())
-    .then((b) => shrink(b, KEEP_EDGE))
-    .then((s) => {
-      shot.small = s.url;
-      save(s.url);
-    })
-    .catch(() => {});
+async function keep() {
+  const target = shot;
+  if (!target?.tags) return;
+  const gen = ++savedGen;
+  // 縮圖要等。先把這一刻的牌、關掉的、尺度記下來，不要等縮完再去讀（那時候可能已經是下一張）。
+  const snap = {
+    w: target.w,
+    h: target.h,
+    tags: target.tags,
+    settings: target.settings,
+    secs: target.secs,
+    off: [...off],
+    trust,
+  };
+  const save = (url) => {
+    if (gen !== savedGen || shot !== target) return;
+    S.saveTab(TAB_KEY, { url, ...snap, at: Date.now() });
+  };
+  // 已經是小圖：同步寫回去。換語言的重載剛把分頁紀錄刪掉，不能再等一輪縮圖。
+  if (target.small) {
+    save(target.small);
+    return;
+  }
+  try {
+    const r = await fetch(target.url);
+    if (gen !== savedGen || shot !== target) return;
+    const b = await r.blob();
+    if (gen !== savedGen || shot !== target) return;
+    const s = await shrink(b, KEEP_EDGE);
+    if (gen !== savedGen || shot !== target) return;
+    target.small = s.url;
+    save(s.url);
+  } catch {
+    /* 縮不了：這一張不進分頁紀錄 */
+  }
+}
+
+/** 換語言前交給 i18n.js 的那一份。沒有圖就交 null。 */
+function languageSnapshot() {
+  if (!shot?.url) return null;
+  return {
+    url: shot.small || shot.url,
+    w: shot.w,
+    h: shot.h,
+    tags: Array.isArray(shot.tags) ? shot.tags : null,
+    settings: shot.settings,
+    secs: shot.secs,
+    off: [...off],
+    trust,
+  };
+}
+
+function onLanguageChange(event) {
+  if (!event?.detail) return;
+  event.detail.state = languageSnapshot();
 }
 
 function restore() {
+  // 換語言也是重新整理（i18n.js 存好再 location.reload）。那一份要還原；使用者自己按重新整理仍清掉。
+  const languageState = takeLanguageState();
   // 重新整理＝不要了：連存著的那份一起刪掉。以前只是這次不讀，之後換到合成池再回來，舊的那張又冒出來。
   if (S.reloaded()) {
     try {
@@ -790,6 +888,29 @@ function restore() {
     } catch {
       /* 刪不了：下面照樣不讀 */
     }
+  }
+  if (languageState && typeof languageState.url === "string") {
+    const was = languageState;
+    shot = { url: was.url, small: was.url, w: was.w || 1, h: was.h || 1 };
+    off = new Set(Array.isArray(was.off) ? was.off : []);
+    trust = was.trust === "sure" ? "sure" : "all";
+    showShot();
+    if (Array.isArray(was.tags)) {
+      shot.tags = was.tags;
+      shot.settings = was.settings;
+      shot.secs = was.secs;
+      digest();
+      setState("done");
+      paintStatus();
+      announce(`認出 ${shot.tags.length} 個字`);
+      render();
+      // 上面把分頁紀錄刪了：寫回去，換去合成池再回來還在。
+      keep();
+      return;
+    }
+    // 換語言時這張還沒解析完：圖還在，接著解析。
+    run();
+    return;
   }
   const was = S.loadTab(TAB_KEY);
   // 只留 30 分鐘（跟卡冊的搜尋字一樣）：帶去合成池、看一下再回來還在，隔太久就是新的一頁。
@@ -871,4 +992,5 @@ async function openSettings() {
   });
 }
 
+addEventListener("mochi:before-language-change", onLanguageChange);
 boot();

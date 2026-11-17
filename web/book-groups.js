@@ -44,15 +44,43 @@ export function mountBookGroups({ lib, assets, onChange, toMochi, visible, data 
   // 看一組時，標頭的小分類籤挑的那一格（只看這組裡那一格的牌）；空字串是整組。
   let sub = "";
   let saving = Promise.resolve();
+  let saveError = null;
+  const pending = [];
   let folded = readFold();
   // 加牌時浮在畫面底下的「完成」：手機上工具列不黏，捲到多下面都按得到。
   const float = el("button", { class: "btn btn-primary bsh-float pressable", type: "button", hidden: true, onclick: () => setEditing(false) });
   document.body.append(float);
 
-  const groups = () => cachedGroups() || [];
+  // 回應只更新底稿，尚未完成的操作疊在上面，舊回應不會抹掉新蓋的章。
+  const groups = () => (cachedGroups() || []).map(g => pending.filter(p => p.id === g.id).reduce((cur, p) => p.change(cur), g));
   const active = () => (activeId && groups().find((g) => g.id === activeId)) || null;
   const sectionOf = (card) => card?.item?.section;
   const zhOf = (t) => lib.byTag.get(t)?.zh || t;
+  const errorText = err => {
+    const names = (err.bad || []).slice(0, 3).map(t => english ? t.replaceAll("_", " ") : zhOf(t)).join(english ? ", " : "、");
+    return friendlyError(err) + (names ? `：${names}` + (err.bad.length > 3 ? ` ${tr(`等 ${err.bad.length} 張`)}` : "") : "");
+  };
+  const nextName = section => {
+    const names = new Set(groups().filter(g => g.section === section).map(g => g.name));
+    for (let n = 0; ; n++) {
+      const suffix = String.fromCharCode(65 + n % 26) + (n < 26 ? "" : Math.floor(n / 26) + 1);
+      const name = `${tr(SECTION_ZH[section])} ${suffix}`;
+      if (!names.has(name)) return name;
+    }
+  };
+  async function waitSaved() {
+    try {
+      // 等待期間仍可繼續加牌，必須等到最後一次排隊的操作。
+      let last;
+      do {
+        last = saving;
+        try { await last; }
+        catch (err) { if (pending.length || saveError) throw err; }
+      } while (last !== saving);
+      if (saveError) throw saveError;
+      return true;
+    } catch { return false; }
+  }
 
   function changed({ grid = true } = {}) {
     renderShelf();
@@ -207,9 +235,14 @@ export function mountBookGroups({ lib, assets, onChange, toMochi, visible, data 
         type: "button",
         title: `墨池的${SECTION_ZH[g.section]}勾上這組（原本勾的照留），然後換到墨池`,
         // 剛點進去的牌還在存：等存完再換頁，墨池讀到的才是最新的那組。
-        onclick: (e) => {
-          e.currentTarget.disabled = true;
-          saving.then(() => toMochi(g));
+        onclick: async (e) => {
+          const btn = e.currentTarget;
+          btn.disabled = true;
+          if (await waitSaved()) {
+            const current = active();
+            if (current?.id === g.id) toMochi(current);
+          }
+          btn.disabled = false;
         },
       },
       "在墨池用這組"
@@ -246,7 +279,12 @@ export function mountBookGroups({ lib, assets, onChange, toMochi, visible, data 
     // 沒放的劃掉 ——那幾格抽牌時照常從整個詞庫抽。加牌時籤在工具列那一排（點了只看那一格的牌）。
     const subRow = editing ? null : subChips(g);
     const hiddenNote = hidden && !editing ? el("p", { class: "bsh-hint bsh-hidden" }, `${hidden} 張被目前的分級、性別收起來了`) : null;
-    head.replaceChildren(...[el("div", { class: "bsh-row", dataset: { suit: SECTION_SUIT[g.section] } }, name, count, el("span", { class: "bsh-acts" }, edit, use, del, close)), subRow, slotNote, hint, hiddenNote].filter(Boolean));
+    // 存檔狀態只在加牌時、或還在存／存失敗時露出來：平常看一組不必一直掛著「已儲存」。
+    const status = !editing && !saveError && !pending.length ? null : el("button", {
+      class: "bsh-save", type: "button", disabled: !saveError,
+      "aria-live": "polite", title: saveError ? errorText(saveError) : "", onclick: retry,
+    }, saveError ? "存檔失敗 · 重試" : pending.length ? "儲存中…" : "已儲存");
+    head.replaceChildren(...[el("div", { class: "bsh-row", dataset: { suit: SECTION_SUIT[g.section] } }, name, count, status, el("span", { class: "bsh-acts" }, edit, use, del, close)), subRow, slotNote, hint, hiddenNote].filter(Boolean));
     head.hidden = false;
     head.dataset.suit = SECTION_SUIT[g.section];
     swapIn(head, g.id + (editing ? ":e" : ""), { firstToo: true });
@@ -296,7 +334,8 @@ export function mountBookGroups({ lib, assets, onChange, toMochi, visible, data 
     );
   }
 
-  function pick(id, from) {
+  async function pick(id, from) {
+    if (!(await waitSaved())) return;
     activeId = id;
     editing = false;
     sub = "";
@@ -306,7 +345,8 @@ export function mountBookGroups({ lib, assets, onChange, toMochi, visible, data 
     if (from && document.activeElement === from) sel?.focus({ preventScroll: true });
   }
 
-  function setEditing(on) {
+  async function setEditing(on) {
+    if (!on && !(await waitSaved())) return;
     editing = on;
     sub = "";
     changed();
@@ -317,32 +357,56 @@ export function mountBookGroups({ lib, assets, onChange, toMochi, visible, data 
    * 連點好幾張牌時，第二筆不會拿第一筆存好之前的舊版去存（那樣會被當成別台改過、409）。
    */
   function write(id, change, done) {
-    const job = saving.then(() => {
-      const cur = groups().find((g) => g.id === id);
-      if (!cur) throw new Error("這個群組已經在別的地方刪掉了");
-      return saveGroup(change(cur));
+    const entry = { id, change, done };
+    pending.push(entry);
+    saving = saving.catch(() => {}).then(() => {
+      if (saveError) throw saveError;
+      return send(entry);
     });
-    saving = job.catch(() => {});
-    return job.then(
-      (g) => {
-        if (done) toast(done);
-        return g;
-      },
-      async (err) => {
-        // 別台改過或刪掉（409）：換成伺服器上那份重畫，說一聲。
-        toast(friendlyError(err));
-        await loadGroups();
-        changed();
-        throw err;
+    saving.catch(() => {});
+    changed({ grid: false });
+    return saving;
+  }
+
+  async function send(entry) {
+    // 重試也可能已經送過這筆；等在佇列後面的工作不要重送。
+    if (!pending.includes(entry)) return;
+    try {
+      const cur = (cachedGroups() || []).find(g => g.id === entry.id);
+      if (!cur) throw new Error("這個群組已經在別的地方刪掉了");
+      const g = await saveGroup(entry.change(cur));
+      pending.splice(pending.indexOf(entry), 1);
+      if (entry.done) toast(entry.done);
+      changed();
+      return g;
+    } catch (err) {
+      saveError = err;
+      // 別台刪掉的組沒有重試對象，也不能讓失敗佇列擋住其他群組。
+      if (!(cachedGroups() || []).some(g => g.id === entry.id)) {
+        for (let i = pending.length - 1; i >= 0; i--) if (pending[i].id === entry.id) pending.splice(i, 1);
+        if (!pending.length) saveError = null;
       }
-    );
+      toast(errorText(err));
+      changed();
+      throw err;
+    }
+  }
+
+  function retry() {
+    saving = saving.catch(() => {}).then(async () => {
+      saveError = null;
+      changed({ grid: false });
+      await loadGroups();
+      for (const entry of [...pending]) await send(entry);
+    });
+    saving.catch(() => {});
   }
 
   async function create(section, from) {
+    if (!(await waitSaved())) return;
     const zh = SECTION_ZH[section];
-    const n = groups().filter((g) => g.section === section).length;
     // 預設名字：段落＋A、B、C（英文版是 Appearance A）；建好就能在標頭直接改。
-    const name = `${tr(zh)} ${String.fromCharCode(65 + (n % 26))}`;
+    const name = nextName(section);
     try {
       const g = await saveGroup({ name, section, tags: [] });
       activeId = g.id;
@@ -354,11 +418,13 @@ export function mountBookGroups({ lib, assets, onChange, toMochi, visible, data 
       toast(`建好「${g.name}」：點${zh}的牌加進去，名字可以直接改`);
     } catch (err) {
       refuse(from);
-      toast(friendlyError(err));
+      toast(errorText(err));
     }
   }
 
-  function remove(g) {
+  async function remove(g) {
+    if (!(await waitSaved())) return;
+    g = groups().find(cur => cur.id === g.id) || g;
     const before = { ...g };
     deleteGroup(g.id).then(
       () => {
@@ -376,12 +442,12 @@ export function mountBookGroups({ lib, assets, onChange, toMochi, visible, data 
                   activeId = back.id;
                   changed();
                 },
-                (err) => toast(friendlyError(err))
+                (err) => toast(errorText(err))
               ),
           },
         });
       },
-      (err) => toast(friendlyError(err))
+      (err) => toast(errorText(err))
     );
   }
 
@@ -400,17 +466,13 @@ export function mountBookGroups({ lib, assets, onChange, toMochi, visible, data 
       toast(`一個群組最多 ${MAX_TAGS} 張`);
       return true;
     }
-    const tags = had ? g.tags.filter((t) => t !== card.tag) : [...g.tags, card.tag];
-    // 先在畫面上改（樂觀），伺服器回來再對一次。
-    g.tags = tags;
+    // 先蓋章，待存操作會疊在伺服器底稿上。
     const cell = node?.closest?.(".book-cell");
     if (cell) {
       cell.dataset.ingroup = had ? "false" : "true";
       // 章是 CSS 畫的（groups.css：加牌模式裡 data-ingroup 的牌）；蓋上去的那一下牌也被壓一下。
       if (!had && !reducedMotion()) node.animate([{ transform: "scale(0.96)" }, { transform: "none" }], { duration: DUR.short, easing: css(CURVE.out) });
     }
-    renderHead();
-    renderShelf();
     const tag = card.tag;
     write(g.id, (cur) => ({ ...cur, tags: had ? cur.tags.filter((t) => t !== tag) : cur.tags.includes(tag) ? cur.tags : [...cur.tags, tag] })).catch(() => {});
     return true;
@@ -457,15 +519,14 @@ export function mountBookGroups({ lib, assets, onChange, toMochi, visible, data 
             class: "bs-chip bs-chip-new pressable",
             type: "button",
             onclick: async (e) => {
-              const n = mine.length;
               try {
-                const g = await saveGroup({ name: `${tr(SECTION_ZH[section])} ${String.fromCharCode(65 + (n % 26))}`, section, tags: [card.tag] });
+                const g = await saveGroup({ name: nextName(section), section, tags: [card.tag] });
                 toast(`建好「${g.name}」，放進這張了`);
                 changed();
                 paint();
               } catch (err) {
                 refuse(e.currentTarget);
-                toast(friendlyError(err));
+                toast(errorText(err));
               }
             },
           },
@@ -477,7 +538,8 @@ export function mountBookGroups({ lib, assets, onChange, toMochi, visible, data 
     return box;
   }
 
-  function clear() {
+  async function clear() {
+    if (!(await waitSaved())) return;
     if (!activeId) return;
     activeId = "";
     editing = false;
@@ -492,7 +554,7 @@ export function mountBookGroups({ lib, assets, onChange, toMochi, visible, data 
     await loadGroups();
     const v = decodeURIComponent(m[1]);
     const byId = groups().find((g) => g.id === v);
-    if (byId) pick(byId.id);
+    if (byId) await pick(byId.id);
     else changed({ grid: false });
     shelf?.scrollIntoView({ behavior: reducedMotion() ? "auto" : "smooth", block: "start" });
     const lane = GROUP_SECTIONS.includes(v) ? shelf?.querySelector(`.bs-lane[data-suit="${SECTION_SUIT[v]}"]`) : null;

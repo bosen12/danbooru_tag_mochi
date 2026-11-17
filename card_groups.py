@@ -128,6 +128,7 @@ def _read() -> list[dict]:
     if not _shape_ok(data):
         data = _recover_shape()
     out = []
+    sections = _tag_sections()
     for g in data["groups"]:
         if not isinstance(g, dict) or not _ID_RE.match(str(g.get("id") or "")) or g.get("section") not in SECTIONS:
             print(f"[卡片群組] 略過一筆讀不懂的群組：{str(g)[:120]}", flush=True)
@@ -136,7 +137,7 @@ def _read() -> list[dict]:
             "id": g["id"],
             "name": str(g.get("name") or "")[:MAX_NAME] or "未命名",
             "section": g["section"],
-            "tags": _rename_all(g.get("tags") if isinstance(g.get("tags"), list) else [])[:MAX_TAGS],
+            "tags": [t for t in _rename_all(g.get("tags") if isinstance(g.get("tags"), list) else []) if not sections or t in sections][:MAX_TAGS],
             "createdAt": _int(g.get("createdAt")),
             "updatedAt": _int(g.get("updatedAt")),
         })
@@ -158,22 +159,22 @@ def load() -> list[dict]:
         return _sorted(_read())
 
 
-def _clean_tags(raw, section: str) -> list[str]:
-    """只收詞庫裡、屬於這一段的牌。有不合的就整筆拒絕（列出是哪幾張），不要存成看起來有、抽牌卻沒作用的群組。"""
+def _clean_tags(raw, section: str) -> tuple[list[str], list[str]]:
+    """詞庫外的牌略過並回報；別段的牌仍整筆拒絕。"""
     if not isinstance(raw, list):
         raise GroupError("tags 要是陣列")
     tags = _rename_all(raw)
     sections = _tag_sections()
+    unknown = []
     if sections:
         unknown = [t for t in tags if t not in sections]
-        if unknown:
-            raise GroupError("詞庫裡沒有這些牌（自製牌還不能放進群組）", unknown[:20])
+        tags = [t for t in tags if t in sections]
         wrong = [t for t in tags if sections[t] != section]
         if wrong:
             raise GroupError("這些牌不屬於這個類別", wrong[:20])
     if len(tags) > MAX_TAGS:
         raise GroupError(f"一個群組最多 {MAX_TAGS} 張牌")
-    return tags
+    return tags, unknown
 
 
 def save(payload: dict) -> dict:
@@ -190,7 +191,7 @@ def save(payload: dict) -> dict:
     section = payload.get("section")
     if section not in SECTIONS:
         raise GroupError("不認得的類別")
-    tags = _clean_tags(payload.get("tags"), section)
+    tags, dropped = _clean_tags(payload.get("tags"), section)
     rid = str(payload.get("id") or "")
     if rid and not _ID_RE.match(rid):
         raise GroupError("群組 id 不對")
@@ -226,7 +227,7 @@ def save(payload: dict) -> dict:
             }
             groups.append(group)
         _write(groups)
-        return {"group": dict(group), "groups": _sorted(groups)}
+        return {"group": dict(group), "groups": _sorted(groups), "dropped": dropped}
 
 
 def delete(rid: str) -> dict:

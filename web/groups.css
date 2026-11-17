@@ -854,6 +854,18 @@ html[data-book-group="edit"] .book-cell[data-ingroup="true"]::after {
   font-family: var(--font-mono);
   font-weight: 500;
 }
+.bsh-save {
+  border: 0;
+  background: transparent;
+  color: var(--color-muted);
+  font: inherit;
+  font-size: var(--text-xs);
+}
+.bsh-save:not(:disabled) {
+  cursor: pointer;
+  text-decoration: underline;
+  color: var(--color-ink);
+}
 .gp-sum {
   display: grid;
   gap: 6px;

@@ -12,6 +12,7 @@
  *   - 其他：詞庫沒有。
  */
 import { el, openSheet, toast } from "./ui.js";
+import { copyText } from "./copy-text.js";
 import { HARD_BANNED } from "./card-art.js";
 import { enter, refuse, reducedMotion, DUR } from "./motion.js";
 import { snapWeight } from "./weights.js";
@@ -161,12 +162,9 @@ export function openPaste({ where, text = "", lexTags, isCard, zh, banned = [], 
             class: "link-btn pressable",
             type: "button",
             onclick: async (e) => {
-              try {
-                await navigator.clipboard.writeText(parsed.unknown.join(", "));
-                e.currentTarget.textContent = "複製了";
-              } catch {
-                refuse(e.currentTarget);
-              }
+              const ok = await copyText(parsed.unknown.join(", "));
+              if (ok) e.currentTarget.textContent = "複製了";
+              else refuse(e.currentTarget);
             },
           },
           "複製"

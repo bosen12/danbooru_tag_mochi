@@ -47,6 +47,7 @@ import { initWorkflow, currentWorkflowId, currentSampling, wfHandleKeys } from "
 import { HARD_BANNED, applyArtSources } from "./card-art.js";
 import { buildLibrary, sizeCards, groupChips, genderChips, chipRun, seriesRun, groupNow, cardMatches, searchCards, searchNote, createAssets, cardNode, cardFacts, setEnterTarget, eagerArt, CARD_SUIT_INFO, CARD_SUITS, RATING_ZH, ERA_ZH } from "./cards.js";
 import { el, openSheet, anyOverlay, toast, dropToastAction, syncChoices, bootFailed, friendlyError, isNetError } from "./ui.js";
+import { copyText } from "./copy-text.js";
 import { zoomFromThumb } from "./zoom.js";
 import { mountKeysHelp } from "./keys-help.js";
 import { mountTour } from "./tour.js";
@@ -3299,12 +3300,8 @@ function showPos() {
             class: "btn btn-small",
             type: "button",
             onclick: async (e) => {
-              try {
-                await navigator.clipboard.writeText(trialPositive(t));
-                e.target.textContent = "複製好了";
-              } catch {
-                e.target.textContent = "複製不了，請手動選取";
-              }
+              const ok = await copyText(trialPositive(t));
+              e.target.textContent = ok ? "複製好了" : "複製不了，請手動選取";
             },
           },
           "複製提示詞"

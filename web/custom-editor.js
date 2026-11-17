@@ -8,6 +8,7 @@
  * 卡面預覽：按「烤卡面預覽」照卡面提示詞和種子烤一張到伺服器的暫存區；按存檔才轉正，沒存就丟掉。
  */
 import { el, openSheet, toast } from "./ui.js";
+import { copyText } from "./copy-text.js";
 import { suggestName } from "./decks.js";
 import { cardNode, searchCards, searchNote, cardMatches, groupChips, chipRun, genderChips, seriesRun, setEnterTarget, sizeCards, cardFacts, CARD_SUIT_INFO } from "./cards.js";
 import { searchMiss } from "./lib-hint.js";
@@ -764,12 +765,8 @@ export function openCustomEditor({ card = null, start = null, lib, lex, assets, 
   }
 
   async function copy(text) {
-    try {
-      await navigator.clipboard.writeText(text);
-      toast(tr("複製好了"));
-    } catch {
-      toast(tr("複製不了：請自己選起來複製"));
-    }
+    const ok = await copyText(text);
+    toast(ok ? tr("複製好了") : tr("複製不了：請自己選起來複製"));
   }
 
   setMode("pick");

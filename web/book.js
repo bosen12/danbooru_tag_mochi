@@ -21,6 +21,7 @@ import { ratingBlocked, RATING_LABEL } from "./rules/rating.js";
 import { mountRatingFree } from "./rating-free.js";
 import { buildLibrary, sizeCards, groupChips, genderChips, chipRun, seriesRun, createAssets, cardNode, quietArt, spineFace, cardFacts, setCardFlag, cardMatches, searchCards, searchNote, matchRank, CARD_SUIT_INFO, CARD_SUITS } from "./cards.js";
 import { el, openSheet, toast, syncChoices, bootFailed, friendlyError, isNetError } from "./ui.js";
+import { copyText } from "./copy-text.js";
 import { zoomFromThumb } from "./zoom.js";
 import { mountKeysHelp } from "./keys-help.js";
 import { mountTour } from "./tour.js";
@@ -1901,12 +1902,9 @@ function openCustomCard(card, srcNode) {
             type: "button",
             title: "一行文字，貼到 Discord 給別人；對方在卡冊「自製」按「貼上分享碼」就拿到同一張",
             onclick: async () => {
-              try {
-                await navigator.clipboard.writeText(shareCode(c));
-                toast("分享碼複製好了：貼給別人，對方在卡冊「自製」按「貼上分享碼」");
-              } catch {
-                prompt(t("複製這段分享碼"), shareCode(c));
-              }
+              const ok = await copyText(shareCode(c));
+              if (ok) toast("分享碼複製好了：貼給別人，對方在卡冊「自製」按「貼上分享碼」");
+              else prompt(t("複製這段分享碼"), shareCode(c));
             },
           },
           "複製分享碼"

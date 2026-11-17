@@ -561,7 +561,9 @@ ComfyUI 沒開：可以先只抽牌、挑牌，開了再生圖。|ComfyUI is not
 無限抽・下一輪…|Continuous · Next batch…
 池子是空的，全靠抽|No pinned cards · All cards are random
 這一輪抽牌失敗，請再試一次|This draw failed. Try again.
+這一輪抽牌失敗，無限抽先停下了。請再試一次|This draw failed, so Continuous stopped. Try again.
 這一輪抽不出東西：合成池的字可能互相卡住，換一兩張試試|No combination found. Try replacing one or two pinned cards.
+這一輪抽不出東西，無限抽先停下：合成池的字可能互相卡住，換一兩張試試|No combination found, so Continuous stopped. Try replacing one or two pinned cards.
 固定種子下抽不出新的組合，無限抽先停下：換幾張牌，或把種子改回隨機|Continuous stopped: with a fixed seed, no new combination came up. Swap a few cards or switch the seed back to random.
 這幾張跟印過的一模一樣（固定種子），沒有再送：換幾張牌，或把種子改回隨機|Not sent: identical to images already printed with this fixed seed. Swap a few cards or switch the seed back to random.
 全部展開|Expand all
@@ -1981,6 +1983,9 @@ ComfyUI 沒開：先用拼貼卡面，之後再回來烤。|ComfyUI isn’t runn
 詞庫外的字太多了（最多 12 個、300 字）|Too many words outside the lexicon (at most 12, 300 characters)
 分級要是全年齡、敏感或色情|Rating must be all-ages, sensitive or explicit
 儲存中…|Saving…
+已儲存|Saved
+存檔失敗 · 重試|Save failed · Retry
+空的，本輪不使用|Empty · not used this round
 已存，下一張就用這串。|Saved. The next image uses it.
 連不上伺服器|Can’t reach the server
 要用哪一份|Which copy to use
@@ -2036,6 +2041,8 @@ ComfyUI 沒開：先用拼貼卡面，之後再回來烤。|ComfyUI isn’t runn
 這個群組已經在別的地方刪掉了|This group was deleted elsewhere
 找不到這個群組|Group not found
 群組清單讀不到：勾了群組的這一輪先不抽。確認伺服器開著再試一次。|Couldn't load the group list, so this round with groups checked wasn't drawn. Check that the server is running and try again.
+群組清單讀不到：勾了群組的這一輪先不抽，無限抽也先停下。確認伺服器開著再試一次。|Couldn't load the group list, so this round with groups checked wasn't drawn and Continuous stopped. Check that the server is running and try again.
+印製進度|Generation progress
 展開|Expand
 回到全部的牌|Back to all cards
 改群組要先讀到最新的那份，請再試一次|Load the latest version of this group first, then try again
@@ -2225,6 +2232,7 @@ Discord 設定（自動傳送{0}）|Discord settings (auto sharing {0})
 {0}以上才有，或打開分級左邊的「不限制」。|Appears at {0} and above, or turn on No limit next to the rating.
 {0} 件作品在{1}看不到|{0} works are hidden at {1}
 種子固定 {0}|Seed fixed {0}
+尺寸 {0}×{1} 墨池沒有，照現在的 {2}|Mochi has no {0}×{1} size; using {2}
 {0} 張會一定進圖|{0} pinned cards
 合成池 {0} 張|{0} pinned cards
 點牌＝加進偏好卡牌 {0}/{1}|Tap a card = add to Favorite cards {0}/{1}
@@ -2635,6 +2643,9 @@ ComfyUI 不收：{0}|ComfyUI rejected it: {0!}
 拿掉 {0}|Remove {0!}
 {0}群組|{0} groups
 {0}群組：沒有勾|{0} groups: none checked
+{0}群組：空的，本輪不使用|{0} groups: empty, not used this round
+等 {0} 張|and {0} in all
+{0} 張已不在詞庫中，存檔時會移除|{0} cards are no longer in the lexicon and will be removed on save
 {0}群組：{1!}|{0} groups: {1!}
 新增{0}群組|New {0} group
 {0} 組|{0} groups
