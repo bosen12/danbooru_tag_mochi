@@ -965,15 +965,24 @@ export function heightChange(node) {
 
 // heightChange 用：第一次被叫到就開始看它在不在畫面上（上下各多看半屏，快捲進來的照樣演）。
 // 還沒回報過的當作在畫面上，照舊量。
+// 看過的都記著：已經拿掉的（關掉的卡冊詳情、裡面整片作品圖）下次就不看了，不然觀察器一直抱著整棵舊的樹。
 let viewIO = null;
+const viewed = new Set();
 function offscreen(node) {
   if (typeof IntersectionObserver !== "function") return false;
   if (!node._view) {
     viewIO ||= new IntersectionObserver((entries) => {
       for (const e of entries) e.target._view = e.isIntersecting ? "in" : "out";
     }, { rootMargin: "50% 0px" });
+    for (const old of viewed) {
+      if (old.isConnected) continue;
+      viewIO.unobserve(old);
+      viewed.delete(old);
+      old._view = undefined;
+    }
     node._view = "unknown";
     viewIO.observe(node);
+    viewed.add(node);
   }
   return node._view === "out";
 }

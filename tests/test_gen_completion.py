@@ -273,6 +273,20 @@ class Lifecycle(unittest.TestCase):
             server.comfy_drop(None)
         self.assertEqual(calls, [("POST", "/queue", {"delete": ["a-job"]}), ("POST", "/interrupt", {"prompt_id": "a-job"})], "never a global interrupt, never twice")
 
+    def test_drop_that_never_reached_comfy_is_sent_again(self):
+        # ComfyUI 一下子連不上：兩個都沒送到，不算拿掉過，下一個來收拾的再送一次。
+        calls = []
+        server._DROPPED.clear()
+        def down(m, p, d=None, timeout=None):
+            calls.append((m, p, d))
+            raise OSError("refused")
+        with patch.object(server, "api", side_effect=down):
+            server.comfy_drop("b-job")
+        with patch.object(server, "api", side_effect=lambda m, p, d=None, timeout=None: calls.append((m, p, d))):
+            server.comfy_drop("b-job")
+            server.comfy_drop("b-job")
+        self.assertEqual(len(calls), 4, "two failed tries, then one real drop, then nothing")
+
 
 class PollLifecycle(unittest.TestCase):
     def test_poll_reports_deleted_prompt(self):

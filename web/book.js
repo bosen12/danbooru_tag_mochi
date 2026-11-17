@@ -121,6 +121,8 @@ let free = false;
 const seeRating = () => (free ? "explicit" : rating);
 let ratingFreePaint = null;
 let list = [];
+// 搜尋框按 Enter：打開這次排第一的那張（wireSearch 接上；小工具列也用）。
+let openTopMatch = () => {};
 // 牌的節點留著重用：換排序時同一張牌是同一個節點，才滑得過去，圖也不必重載。
 const cells = new Map();
 // 卡面用自訂提示詞的牌（/api/card-art/custom）：格子上標「自訂」。
@@ -557,13 +559,21 @@ function renderSuits({ groups = true } = {}) {
 /**
  * 篩選、排序換了：捲過頭的話捲回來，換好的牌從第一張開始看。
  *   電腦（工具列黏在頂欄底下）：捲到牌格頂端剛好貼著工具列；還沒捲到牌格就不動。
- *   手機（工具列不黏，跟著捲走）：只有換排序（always）才回卡冊頂端，跟以前一樣。
+ *   手機（工具列不黏，跟著捲走）：換排序（always）回卡冊頂端，跟以前一樣。
+ *     捲到很下面、用跟著頂欄的小工具列找牌：結果從第一張開始看（捲到牌格頂端、讓開小工具列）。
+ *     以前畫面停在原本的深度，看到的是排很後面的牌，最相符的那張在畫面外。
  */
 function backToTop({ always = false } = {}) {
   const tools = $("book-tools");
   if (getComputedStyle(tools).position === "sticky") {
     const below = tools.getBoundingClientRect().height + (parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--mast-h")) || 0);
     const top = $("book-grid").getBoundingClientRect().top + scrollY - below - 8;
+    if (scrollY > top) scrollTo({ top, behavior: "instant" });
+    return;
+  }
+  const mini = $("book-mini");
+  if (!always && mini?.dataset.show === "true") {
+    const top = $("book-grid").getBoundingClientRect().top + scrollY - mini.getBoundingClientRect().bottom - 8;
     if (scrollY > top) scrollTo({ top, behavior: "instant" });
     return;
   }
@@ -806,6 +816,14 @@ function wireSearch() {
     timer = setTimeout(apply, 140);
   });
   q.addEventListener("compositionend", apply);
+  // 按 Enter：打開這次搜尋排第一的那張（完全相符、開頭相符的在最前面）。
+  // 以前點的是畫面上第一張牌：打完馬上按（清單還沒換）開到舊的；人捲在中間開到那一段的第一張。
+  openTopMatch = (from) => {
+    apply();
+    const card = list[0];
+    if (card) openCard(card, $("book-grid").querySelector(`.book-cell[data-tag="${CSS.escape(card.tag)}"] .card`) || undefined);
+    else refuse(from);
+  };
   q.addEventListener("keydown", (e) => {
     // 注音、倉頡選字的 Enter 是在選字：以前直接打開第一張牌（墨池字盒的搜尋框一樣這樣擋）。
     if (e.isComposing || e.keyCode === 229) return;
@@ -813,11 +831,7 @@ function wireSearch() {
       q.value = "";
       ui.query = "";
       render();
-    } else if (e.key === "Enter") {
-      const first = $("book-grid").querySelector(".card");
-      if (first) first.click();
-      else refuse(q);
-    }
+    } else if (e.key === "Enter") openTopMatch(q);
   });
   addEventListener("keydown", (e) => {
     if (e.key === "/" && document.activeElement?.tagName !== "INPUT" && !document.querySelector(".overlay")) {
@@ -836,6 +850,20 @@ const MINI_MQ = "(max-width: 40rem)";
 
 function filtersOn() {
   return ui.suit !== "all" || !!ui.group || !!ui.query || ui.usedOnly || ui.showBanned || !!ui.charGender;
+}
+
+/** 搜尋字留著，其他篩選（花色、小分類、性別、只看用過的）拿掉：找的那張在別的花色時用。 */
+function showAllKeepQuery() {
+  ui.suit = "all";
+  ui.group = "";
+  ui.usedOnly = false;
+  ui.charGender = "";
+  saveUi();
+  renderSuits();
+  renderUsedToggle();
+  render();
+  renderSummary();
+  $("book-mini")?._sync?.();
 }
 
 function clearFilters() {
@@ -906,7 +934,7 @@ function mountMiniBar() {
               shutMenu();
               orig.click();
               // 換了花色、排序：從第一張開始看（手機的工具列不黏，回到牌格頂端）。
-              const top = $("book-grid").getBoundingClientRect().top + scrollY - bar.offsetHeight - 8;
+              const top = $("book-grid").getBoundingClientRect().top + scrollY - bar.getBoundingClientRect().bottom - 8;
               if (scrollY > top) scrollTo({ top, behavior: "instant" });
               sync();
             },
@@ -936,7 +964,12 @@ function mountMiniBar() {
   });
   q.addEventListener("compositionend", () => $("book-q").dispatchEvent(new Event("compositionend")));
   q.addEventListener("keydown", (e) => {
-    if (e.key === "Enter") q.blur();
+    if (e.isComposing || e.keyCode === 229) return;
+    // 跟上面的搜尋框一樣打開排第一的那張（先收鍵盤）。
+    if (e.key === "Enter") {
+      q.blur();
+      openTopMatch(q);
+    }
     else if (e.key === "Escape" && q.value) {
       q.value = "";
       q.dispatchEvent(new Event("input"));
@@ -952,7 +985,8 @@ function mountMiniBar() {
     if (!mq.matches) return show(false);
     const mastH = parseFloat(getComputedStyle(root).getPropertyValue("--mast-h")) || 0;
     const past = $("book-tools").getBoundingClientRect().bottom < mastH;
-    if (shown && past && (document.activeElement === q || !menu.hidden)) return;
+    // 正在這裡打字、選單開著：不收（找牌時捲回牌格頂端，原本那排工具列可能露出來；收掉的話焦點被拿走、鍵盤跟著收）。
+    if (shown && (document.activeElement === q || !menu.hidden)) return;
     show(past && root.dataset.mast === "peek");
   };
   new MutationObserver(update).observe(root, { attributes: true, attributeFilter: ["data-mast"] });
@@ -1677,6 +1711,20 @@ function emptyNote() {
   const q = ui.query.toLowerCase();
   const hidden = q ? lib.cards.filter((c) => !c.banned && blocked(c, seeRating()) && cardMatches(c, q)) : [];
   const bannedHits = q && !ui.showBanned ? lib.cards.filter((c) => c.banned && cardMatches(c, q)) : [];
+  // 整本找得到、只是被花色、小分類、性別、「只看用過的」篩掉：說在哪一格，給「看全部」（搜尋字留著）。
+  // 以前只寫「沒有符合的牌」，看起來像詞庫裡沒有這張。別的花色看得到的優先講（不然一張露骨的和服敞開，
+  // 就說「kimono 在全年齡看不到」，明明服裝裡一整排和服）。
+  const elsewhere = q && !shelf?.active() ? lib.cards.filter((c) => visibleCard(c) && cardMatches(c, q)) : [];
+  if (elsewhere.length) {
+    const first = elsewhere[0];
+    return el(
+      "div",
+      { class: "book-empty" },
+      el("b", {}, `「${first.zh || first.tag}」在「${CARD_SUIT_INFO[first.suit]?.zh || first.suit}」裡`),
+      el("span", {}, "換個花色、清掉搜尋，或關掉「只看用過的」。"),
+      el("div", { class: "book-empty-acts" }, el("button", { class: "btn btn-small", type: "button", onclick: showAllKeepQuery }, "看全部"))
+    );
+  }
   if (!hidden.length && bannedHits.length) {
     const first = bannedHits[0];
     return el(
@@ -2068,7 +2116,8 @@ async function refreshArt(tag) {
     .then((r) => (r.ok ? r.json() : null))
     .catch(() => null);
   if (!m) return null;
-  assets = createAssets(m);
+  // 自製牌的圖要包回去（跟開頁同一行）：以前重烤一張之後，自製牌的卡面全變成字牌。
+  assets = withCustomArt(createAssets(m));
   cells.delete(tag);
   render({ animate: false });
   return assets.art(tag);

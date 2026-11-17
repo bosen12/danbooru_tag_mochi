@@ -475,6 +475,12 @@ def save_image_bytes(rid: str, data: bytes, *, suffix: str = ".png") -> dict:
     if not data or len(data) > MAX_IMAGE_BYTES:
         raise RecipeError("圖片太大或是空的。", "too_large")
     ext = suffix if suffix in {".png", ".jpg", ".jpeg", ".webp"} else ".png"
+    # 讀、寫圖、寫回 JSON 整段拿著鎖：中間另一個分頁改了或刪了這件作品，舊的那份不會蓋回去（刪掉的也不會復活）。
+    with _STORE_LOCK:
+        return _save_image_locked(rid, data, ext)
+
+
+def _save_image_locked(rid: str, data: bytes, ext: str) -> dict:
     rec = get_recipe(rid)
     if rec is None:
         raise RecipeError("找不到這個配方。", "missing")
@@ -503,6 +509,11 @@ def save_thumbnail(rid: str, data: bytes) -> dict:
     """作品冊牆上用的小檔（webp，ComfyUI 轉的）：原圖動輒 1～2 MB，一面牆幾十張太重。"""
     if not data or len(data) > MAX_IMAGE_BYTES or data[:4] != b"RIFF":
         raise RecipeError("縮圖不是 webp。", "bad_thumb")
+    with _STORE_LOCK:
+        return _save_thumbnail_locked(rid, data)
+
+
+def _save_thumbnail_locked(rid: str, data: bytes) -> dict:
     rec = get_recipe(rid)
     if rec is None:
         raise RecipeError("找不到這個配方。", "missing")

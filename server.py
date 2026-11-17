@@ -4202,14 +4202,23 @@ def comfy_drop(prompt_id) -> None:
         if prompt_id in _DROPPED:
             return
         _DROPPED[prompt_id] = now
+    reached = False
     try:
         api("POST", "/queue", {"delete": [prompt_id]}, timeout=8)
+        reached = True
     except Exception:
         pass
     try:
         comfy_interrupt(prompt_id)
+        reached = True
     except Exception:
         pass
+    if not reached:
+        # 兩個都沒送到（ComfyUI 一下子連不上）：不算拿掉過。下一個來收拾的（按停、沒人接回來）還會再送一次，
+        # 不然 ComfyUI 回來之後照樣畫完這張、佔著 GPU。
+        with _DROPPED_LOCK:
+            if _DROPPED.get(prompt_id) == now:
+                del _DROPPED[prompt_id]
 
 
 def gen_via_ws(width: int, height: int, seed: int, positive: str, wf: dict, hires: dict | None = None):

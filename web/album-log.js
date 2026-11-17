@@ -74,8 +74,11 @@ export function createLog(ctx) {
   let loaded = false;
   let failed = false;
   let favs = new Map();
+  // 最近一次畫的條件（搜尋字、篩選、分級）：「再往前翻」讀回來時照現在的條件重畫，
+  // 不照按下去那一刻的（等的時候換了全年齡，舊條件會把露骨的又畫出來）。
+  let lastView = null;
 
-  const cards = (e) => tagsOfPositive(e.positive).filter(ctx.isCard);
+  const cards =(e) => tagsOfPositive(e.positive).filter(ctx.isCard);
 
   function index() {
     favs = new Map(ctx.getWorks().map((w) => [favKey(w.seed, w.positive, ctx.isCard), w]));
@@ -187,6 +190,7 @@ export function createLog(ctx) {
   }
 
   function render(container, { query = "", filter = "all", rating = "general" } = {}, { deal = false } = {}) {
+    lastView = { container, view: { query, filter, rating } };
     if (!loaded) {
       container.replaceChildren(el("p", { class: "album-empty" }, "讀取日誌…"));
       return { shown: 0, hidden: 0 };
@@ -224,7 +228,7 @@ export function createLog(ctx) {
         b.textContent = "讀取中…";
         try {
           await loadMore();
-          render(container, { query, filter, rating });
+          render(container, lastView?.container === container ? lastView.view : { query, filter, rating });
         } catch {
           b.disabled = false;
           b.textContent = "再往前翻";

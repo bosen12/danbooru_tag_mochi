@@ -218,8 +218,17 @@ export const saveUi = (u) => write(KEY.ui, u);
 /** 做到一半的 Hires 要存的那一點（墨池、疊印台共用）。 */
 export function hiresJobOf(t) {
   const hi = t && t.hi;
-  return hi && hi.job && (hi.status === "queued" || hi.status === "running")
-    ? { job: hi.job, mode: hi.mode, scale: hi.scale, sampling: hi.sampling || {}, ...(hi.mode === "face" ? { from: hi.from, stack: !!hi.stack } : {}) }
+  // job：送出去了，接回去；只有 reserved：還排著，用同一個編號重排（hires.js 的 resume）。
+  // promptId：ComfyUI 的編號，伺服器重開過還能問它做完了沒。
+  return hi && (hi.job || hi.reserved) && (hi.status === "queued" || hi.status === "running")
+    ? {
+        job: hi.job || null,
+        ...(hi.job ? { promptId: hi.promptId || null } : { reserved: hi.reserved, seed: hi.seed }),
+        mode: hi.mode,
+        scale: hi.scale,
+        sampling: hi.sampling || {},
+        ...(hi.mode === "face" ? { from: hi.from, stack: !!hi.stack } : {}),
+      }
     : null;
 }
 
@@ -269,6 +278,8 @@ function serShot(s) {
     live: !!s.job && (s.status === "running" || s.status === "queued"),
     waiting: isWaiting(s),
     waitedAt: isWaiting(s) ? Date.now() : 0,
+    // 排著的那張自己取的工作編號（gen.js 的 enqueue）：接著印時沿用，兩個分頁都接也只畫一次。
+    reserved: isWaiting(s) ? s._reserved || null : null,
     status: s.status === "done" ? "done" : s.status === "drawn" ? "drawn" : s.status === "failed" ? "failed" : "stopped",
     note: s.status === "done" || s.status === "drawn" ? "" : s.note || "",
     at: s.at,
@@ -292,14 +303,22 @@ export function applyStored(s, t) {
 // 照時間新到舊排（兩個分頁交錯印的），超過上限的裁掉。
 const shotWhen = (s) => Number(s.at) || Date.parse(s.at) || 0;
 // 兩個墨池分頁一起開：三方比對合併，不互相蓋（tab-sync.js）。
-const shotShelf = makeShelf({ read: () => read(KEY.shots, []).filter(keeps), write: (v) => write(KEY.shots, v), max: SHOT_MAX, when: shotWhen });
-// 墨池給的：現在記憶體裡的成品、把別的分頁改過的幾張換進來重畫。
+const shotShelf = makeShelf({
+  read: () => read(KEY.shots, []).filter(keeps),
+  write: (v) => write(KEY.shots, v),
+  max: SHOT_MAX,
+  when: shotWhen,
+  gone: (ids) => goneShots?.(ids),
+});
+// 墨池給的：現在記憶體裡的成品、把別的分頁改過的幾張換進來重畫、別的分頁撤下的從牆上拿掉。
 let shotsNow = () => [];
 let adoptShots = null;
-/** 墨池開機時接上：別的分頁收藏、Hires、印好了，這邊的畫面跟著換。 */
-export function syncShots({ list, adopt }) {
+let goneShots = null;
+/** 墨池開機時接上：別的分頁收藏、Hires、印好了、撤下了，這邊的畫面跟著換。 */
+export function syncShots({ list, adopt, gone }) {
   shotsNow = list;
   adoptShots = adopt;
+  goneShots = gone;
 }
 
 export function saveShots(shots) {

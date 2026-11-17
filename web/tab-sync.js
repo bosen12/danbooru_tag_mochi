@@ -10,10 +10,15 @@
  *   開兩個墨池分頁，排著的四張有三張 ComfyUI 畫兩次、Discord 也送兩次。
  */
 
-// waitedAt 每次存檔都更新成現在（store.js），不算「改過」。
+// waitedAt 每次存檔都更新成現在（store.js），不算「改過」。欄位順序、沒有跟 null 也不算
+// （舊版存的少幾個新欄位，換新版之後第一次存檔前，不要整批被當成「這邊改過」）。
+const canon = (_k, v) =>
+  v && typeof v === "object" && !Array.isArray(v)
+    ? Object.fromEntries(Object.keys(v).sort().filter((k) => v[k] !== null && v[k] !== undefined).map((k) => [k, v[k]]))
+    : v;
 const fpOf = (o) => {
   try {
-    return JSON.stringify({ ...o, waitedAt: 0 });
+    return JSON.stringify({ ...o, waitedAt: 0 }, canon);
   } catch {
     return "";
   }
@@ -21,14 +26,32 @@ const fpOf = (o) => {
 
 /**
  * read()：存檔裡的那份（陣列，每筆有 id）；write(list)：整份寫回；max：存幾筆；when(item)：排序用的時間。
+ * gone(ids)：別的分頁撤下了、這邊沒動過的那幾張（這邊也從畫面拿掉）。
  */
-export function makeShelf({ read, write, max, when }) {
+export function makeShelf({ read, write, max, when, gone = () => {} }) {
   // 這個分頁讀過、存過的編號。存檔裡多出來、這裡沒見過的，是另一個分頁新印的：一起留著。
   // 這個分頁自己撤下、裁掉的見過，不會被撿回來。
   const here = new Set();
   const seen = new Map();
+  // 這個分頁上一次讀到、寫入時，存檔裡有哪幾張。之後存檔裡少了的，是別的分頁撤下的：
+  // 這邊沒動過就跟著拿掉，不要把它存回去（以前 B 撤下一張，A 隨便收藏一張就把它救回來）。
+  // 這邊自己撤下又復原的不在這裡面（撤下那次寫入時已經不在了），照樣存。
+  let lastIds = new Set();
   const remember = (list) => {
     for (const s of list) seen.set(s.id, fpOf(s));
+    lastIds = new Set(list.map((s) => s.id));
+  };
+  const goneSince = (stored) => {
+    const now = new Set(stored.map((s) => s.id));
+    return new Set([...lastIds].filter((id) => !now.has(id)));
+  };
+  // 跟著別的分頁拿掉的：當作這邊沒見過。那邊又按了復原、放回存檔時，算「別的分頁的」留著，不會被這邊的存檔刪掉。
+  const forget = (ids) => {
+    for (const id of ids) {
+      here.delete(id);
+      seen.delete(id);
+    }
+    gone(ids);
   };
   return {
     /** 讀檔：list 是存檔裡的那份（開頁時讀一次）。 */
@@ -42,6 +65,14 @@ export function makeShelf({ read, write, max, when }) {
       const stored = read();
       const byId = new Map(stored.map((s) => [s.id, s]));
       const adopted = [];
+      const away = goneSince(stored);
+      const dropped = [];
+      if (away.size)
+        mine = mine.filter((m) => {
+          if (!away.has(m.id) || seen.get(m.id) !== fpOf(m)) return true;
+          dropped.push(m.id);
+          return false;
+        });
       const out = mine.map((m) => {
         here.add(m.id);
         const t = byId.get(m.id);
@@ -57,6 +88,7 @@ export function makeShelf({ read, write, max, when }) {
       const kept = all.slice(0, max);
       write(kept);
       remember(kept);
+      if (dropped.length) forget(dropped);
       return adopted;
     },
     /**
@@ -65,6 +97,12 @@ export function makeShelf({ read, write, max, when }) {
      */
     changed(stored, serOf) {
       const out = [];
+      const away = [...goneSince(stored)].filter((id) => {
+        const mine = serOf(id);
+        return mine && fpOf(mine) === seen.get(id);
+      });
+      lastIds = new Set(stored.map((s) => s.id));
+      if (away.length) forget(away);
       for (const t of stored) {
         if (!t || !here.has(t.id)) continue;
         const was = seen.get(t.id);

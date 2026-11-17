@@ -346,7 +346,8 @@ async function boot() {
     // 還排著沒送出去的（去別頁晃一下回來）：照原本的順序接著印（繩上新的在左邊，所以倒過來）。
     const waiting = prints.filter((p) => (stored ? S.stillWaiting(stored.get(p.id)) : p._waiting)).reverse();
     for (const p of prints) delete p._waiting;
-    for (const p of waiting) generator.enqueue(p);
+    // 沿用存檔裡排著時取的編號（gen.js 的 enqueue）：手機走 http 兩個分頁都接著印，伺服器只畫一次。
+    for (const p of waiting) generator.enqueue(p, { reserved: (stored ? stored.get(p.id) : p)?.reserved });
     if (waiting.length) toast(`接著印剛才排著的 ${waiting.length} 張`);
     for (const p of prints) if (p.status === "done" && p.hiresJob) hiresRun.resume(p, p.hiresJob);
   }));
@@ -1256,6 +1257,15 @@ const printShelf = makeShelf({
   write: (v) => writeJ(FK.prints, v),
   max: PRINT_MAX,
   when: (p) => Number(p.at) || Date.parse(p.at) || 0,
+  // 另一個分頁撤下的（這邊沒動過）：這邊也從繩上拿掉，不存回去。在這邊排著、在印的不動。
+  gone: (ids) =>
+    setTimeout(() => {
+      const away = new Set(ids);
+      const keep = prints.filter((p) => !away.has(p.id) || p.status === "queued" || p.status === "running" || hiresBusy(p));
+      if (keep.length === prints.length) return;
+      prints = keep;
+      renderLine();
+    }, 0),
 });
 
 function loadPrints() {
@@ -1329,6 +1339,7 @@ function serPrint(p) {
     live: !!p.job && (p.status === "running" || p.status === "queued"),
     waiting: S.isWaiting(p),
     waitedAt: S.isWaiting(p) ? Date.now() : 0,
+    reserved: S.isWaiting(p) ? p._reserved || null : null,
     note: p.status === "done" ? "" : p.note || "",
     at: p.at,
   };

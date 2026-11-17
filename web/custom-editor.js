@@ -120,10 +120,27 @@ export function openCustomEditor({ card = null, start = null, lib, lex, assets, 
   let shown = [];
   let rendered = 0;
   const BATCH = 96;
-  q.addEventListener("input", () => paintPick({ top: true }));
+  // 跟卡冊的搜尋框同一套：注音、倉頡組字中不排（每按一鍵就用半個字整格重畫、先閃「找不到」），
+  // 選完字立刻排；其他等打字停一下（140ms）再排。
+  let typing = 0;
+  q.addEventListener("input", (e) => {
+    clearTimeout(typing);
+    if (e.isComposing) return;
+    typing = setTimeout(() => paintPick({ top: true }), 140);
+  });
+  q.addEventListener("compositionend", () => {
+    clearTimeout(typing);
+    paintPick({ top: true });
+  });
   q.addEventListener("keydown", (e) => {
     if (e.key !== "Enter" || e.isComposing) return;
     e.preventDefault();
+    // 打完馬上按 Enter：還沒排的先排，加進來的才是這次搜到的第一張。
+    if (typing) {
+      clearTimeout(typing);
+      typing = 0;
+      paintPick({ top: true });
+    }
     const first = grid.querySelector(".card[data-tag]");
     if (first) toggleMember(first.dataset.tag, first);
   });
@@ -451,9 +468,18 @@ export function openCustomEditor({ card = null, start = null, lib, lex, assets, 
     );
   }
 
+  let pasteOver = "false|false";
   function applyPaste() {
     const r = parsePrompt(paste.value, { lib, renamed });
-    st.members = bySuit(r.members, lib).slice(0, MAX_MEMBERS);
+    const members = bySuit(r.members, lib);
+    // 超過上限的以前悄悄截掉：說一聲（跟一張張加時同一句）。同一段貼上只說一次。
+    const over = `${members.length > MAX_MEMBERS}|${r.extra.length > MAX_EXTRA}`;
+    if (over !== pasteOver) {
+      pasteOver = over;
+      if (members.length > MAX_MEMBERS) toast(tr(`一張自製牌最多 ${MAX_MEMBERS} 張牌`));
+      else if (r.extra.length > MAX_EXTRA) toast(tr(`詞庫外的字最多 ${MAX_EXTRA} 個`));
+    }
+    st.members = members.slice(0, MAX_MEMBERS);
     st.extra = r.extra.slice(0, MAX_EXTRA);
     st.banned = r.banned;
     st.suggest = r.suggest;

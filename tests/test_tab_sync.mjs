@@ -49,6 +49,70 @@ test("another tab's new item is kept, and an item this tab removed stays removed
   assert.deepEqual(box.get().map((s) => s.id), ["new", "x"]);
 });
 
+test("an item another tab removed is not saved back, and this tab is told to drop it", () => {
+  const box = storage();
+  box.write([{ id: "s1", at: 1 }, { id: "s2", at: 2 }]);
+  const goneA = [];
+  const a = makeShelf({ read: box.read, write: box.write, max: 5, when: (s) => s.at, gone: (ids) => goneA.push(...ids) });
+  const b = shelfOn(box);
+  const aMem = a.load(box.read());
+  const bMem = b.load(box.read());
+  b.save(bMem.filter((s) => s.id !== "s1"));
+  // A never touched s1; it saves its whole (old) list after collecting s2.
+  a.save(aMem.map((s) => (s.id === "s2" ? { ...s, albumId: "r2" } : s)));
+  assert.deepEqual(box.get().map((s) => s.id), ["s2"]);
+  assert.equal(box.get()[0].albumId, "r2");
+  assert.deepEqual(goneA, ["s1"]);
+});
+
+test("an item this tab changed after another tab removed it stays (this tab wins)", () => {
+  const box = storage();
+  box.write([{ id: "s1", at: 1, albumId: null }]);
+  const a = shelfOn(box);
+  const b = shelfOn(box);
+  const aMem = a.load(box.read());
+  b.load(box.read());
+  b.save([]);
+  a.save([{ ...aMem[0], albumId: "r1" }]);
+  assert.deepEqual(box.get().map((s) => s.id), ["s1"]);
+});
+
+test("undoing this tab's own removal brings the item back", () => {
+  const box = storage();
+  box.write([{ id: "s1", at: 1 }, { id: "s2", at: 2 }]);
+  const a = shelfOn(box);
+  const mem = a.load(box.read());
+  a.save(mem.filter((s) => s.id !== "s1"));
+  a.save(mem);
+  assert.deepEqual(box.get().map((s) => s.id).sort(), ["s1", "s2"]);
+});
+
+test("a storage event that removed an untouched item reports it gone", () => {
+  const box = storage();
+  box.write([{ id: "x", at: 1 }, { id: "y", at: 2 }]);
+  const gone = [];
+  const b = makeShelf({ read: box.read, write: box.write, max: 5, when: (s) => s.at, gone: (ids) => gone.push(...ids) });
+  const mem = new Map(b.load(box.read()).map((s) => [s.id, s]));
+  mem.get("y").image = "local-edit.png";
+  b.changed([], (id) => mem.get(id) || null);
+  assert.deepEqual(gone, ["x"], "y was edited here, so it stays");
+});
+
+test("the other tab undoing its removal is not erased by this tab's next save", () => {
+  const box = storage();
+  box.write([{ id: "s1", at: 1 }, { id: "s2", at: 2 }]);
+  const a = shelfOn(box);
+  const b = shelfOn(box);
+  let aMem = a.load(box.read());
+  const bMem = b.load(box.read());
+  b.save(bMem.filter((s) => s.id !== "s1"));
+  a.changed(box.read(), (id) => aMem.find((s) => s.id === id) || null);
+  aMem = aMem.filter((s) => s.id !== "s1"); // A took it off its wall too
+  b.save(bMem); // B pressed undo
+  a.save(aMem);
+  assert.deepEqual(box.get().map((s) => s.id).sort(), ["s1", "s2"]);
+});
+
 test("waitedAt alone does not count as a change", () => {
   const box = storage();
   box.write([{ id: "x", at: 1, waiting: true, waitedAt: 100, job: null }]);

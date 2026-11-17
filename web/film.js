@@ -2154,12 +2154,13 @@ let drawnAt = -1;
 function frame() {
   const t = clock();
   // 暫停時同一格不用一直重畫（停在星河那幾秒，WebGL 每一幀重畫會一直吃 GPU）。
+  // 進度條、時間也一樣：停著的時候不用每一幀寫一次。
   if (t !== drawnAt) {
     render(t);
     drawnAt = t;
+    $("fill").style.transform = `scaleX(${(t / LENGTH).toFixed(4)})`;
+    $("time").textContent = `${fmt(t)} / ${fmt(LENGTH)}`;
   }
-  $("fill").style.transform = `scaleX(${(t / LENGTH).toFixed(4)})`;
-  $("time").textContent = `${fmt(t)} / ${fmt(LENGTH)}`;
   if (t >= LENGTH - 0.01 && score?.playing) {
     score.pause();
     tPaused = LENGTH;

@@ -60,7 +60,7 @@ import { mountGenStatus } from "./gen-status.js";
 import { currentPose, poseButton } from "./pose.js";
 import { openDecks } from "./decks.js";
 import { SIZES, ratioBox } from "./sizes.js";
-import { pickTrim } from "./wall-trim.js";
+import { pickTrim, shotBusy } from "./wall-trim.js";
 import { mountMasonry } from "./wall-masonry.js";
 import { loadGroups, freshGroups, cachedGroups, withGroupPools, onGroupsChange } from "./card-groups.js";
 import { mountGroupPicks } from "./group-picks.js";
@@ -322,6 +322,20 @@ async function boot() {
         if (s) updateShot(S.applyStored(s, t));
       }
     },
+    // 另一個分頁撤下的（這邊沒動過）：這邊也從牆上拿掉。在這邊排著、在印的不動。
+    // 存檔中途叫到的：等這一輪做完再動牆。
+    gone: (ids) =>
+      setTimeout(() => {
+        const away = new Set(ids);
+        const drop = new Set(shots.filter((s) => away.has(s.id) && !shotBusy(s)));
+        if (!drop.size) return;
+        wallFlip(() => {
+          for (let i = shots.length - 1; i >= 0; i--) if (drop.has(shots[i])) shots.splice(i, 1);
+          for (const s of drop) document.querySelector(`.shot[data-id="${s.id}"]`)?.remove();
+        });
+        syncWallEmpty(shots.length > 0);
+        renderGoBar();
+      }, 0),
   });
   // 接著印、接回 Hires：背後預先開好的頁（prerender.js）等點進去才做，沒點進去的頁會被丟掉，那時送出去就白印了。
   // 只有一個墨池分頁接（tab-sync.js 的 whenPrinter）：另一個分頁也開著的話，排著的那幾張由它印，這邊只看。
@@ -339,9 +353,10 @@ async function boot() {
         return true;
       });
       waitNow = shots.filter((s) => S.stillWaiting(stored.get(s.id))).reverse();
+      for (const s of waitNow) s.reserved = stored.get(s.id).reserved;
     }
     for (const s of resumeNow) generator.resume(s);
-    for (const s of waitNow) generator.enqueue(s);
+    for (const s of waitNow) generator.enqueue(s, { reserved: s.reserved });
     if (waitNow.length) toast(`接著印剛才排著的 ${waitNow.length} 張`);
     // Hires 做到一半就重新整理的：接回去。
     for (const s of shots) if (s.status === "done" && s.hiresJob) hiresRun.resume(s, s.hiresJob);
@@ -2474,7 +2489,10 @@ const generator = createGenerator({
     // 拿到伺服器的工作編號就先存一次：畫到一半重新整理也接得回來。
     const newJob = shot.job && shot._savedJob !== shot.job;
     if (newJob) shot._savedJob = shot.job;
-    if (newJob || shot.status === "done" || shot.status === "failed" || shot.status === "cancelled") S.saveShots(shots);
+    // ComfyUI 的編號也是：工作編號先到、它晚一點才到。中間重新整理、伺服器又剛好重開，只剩它問得到這張畫完了沒。
+    const newPrompt = shot.job && shot.promptId && shot._savedPrompt !== shot.promptId;
+    if (newPrompt) shot._savedPrompt = shot.promptId;
+    if (newJob || newPrompt || shot.status === "done" || shot.status === "failed" || shot.status === "cancelled") S.saveShots(shots);
     renderGoBar();
   },
   idle: () => {

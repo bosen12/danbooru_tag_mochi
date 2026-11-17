@@ -137,6 +137,11 @@ export function createHires(hooks) {
         t.hi = { ...t.hi, job: task.job };
         hooks.save && hooks.save(t);
       }
+      // ComfyUI 的編號晚一點才到：也存起來，伺服器重開過還能拿它去問這張做完了沒（gen.js 的 recover）。
+      if (task.promptId && t.hi.promptId !== task.promptId) {
+        t.hi = { ...t.hi, promptId: task.promptId };
+        hooks.save && hooks.save(t);
+      }
       if (task.status === "done" && task.mode === "face") {
         tasks.delete(task.id);
         // 原圖只記第一次：Hires 過的，baseImage 早就是原圖了。
@@ -186,6 +191,15 @@ export function createHires(hooks) {
     stopped: () => {},
   });
 
+  // 排進印表機，順手記下這次的編號和種子：前面還有一張在做、還沒輪到就重新整理，也存得到、接得回來
+  // （store.js 的 hiresJobOf）。以前要等送出去拿到工作編號才存，排著的那張重新整理就不見了。
+  const queueTask = (t, task, reserved = null) => {
+    gen.enqueue(task, { reserved });
+    if (t.hi?.task !== task.id) return;
+    t.hi = { ...t.hi, reserved: task._reserved, seed: task.seed };
+    hooks.save && hooks.save(t);
+  };
+
   return {
     start(t, mode, scale) {
       if (hiresBusy(t) || !(t.baseImage || t.image)) return false;
@@ -201,7 +215,7 @@ export function createHires(hooks) {
       tasks.set(task.id, task);
       t.hi = { task: task.id, mode, scale, sampling: task.sampling, status: "queued", progress: 0, note: "" };
       hooks.update(t);
-      gen.enqueue(task);
+      queueTask(t, task);
       return true;
     },
     /** 修臉，尺寸不變。stack：在現在這張（修過的）上再疊一層；不然從沒修過的原圖重修。 */
@@ -222,7 +236,7 @@ export function createHires(hooks) {
       tasks.set(task.id, task);
       t.hi = { task: task.id, mode: "face", scale: 1, from, stack: task.stack, sampling: task.sampling, status: "queued", progress: 0, note: "" };
       hooks.update(t);
-      gen.enqueue(task);
+      queueTask(t, task);
       return true;
     },
     /** 拿掉一層修臉：換回這一層修之前那張；拿到沒有了就回到沒修過的（Hires 過的就是 Hires 的大圖）。 */
@@ -238,7 +252,26 @@ export function createHires(hooks) {
     /** 重新整理之前做到一半的那張（存檔裡有 hiresJob）：用工作編號接回去，從頭重播進度。 */
     resume(t, saved) {
       const face = saved?.mode === "face";
-      if (!saved || !saved.job || !(HIRES_MODES[saved.mode] || (face && saved.from)) || hiresBusy(t)) return false;
+      if (!saved || !(saved.job || saved.reserved) || !(HIRES_MODES[saved.mode] || (face && saved.from)) || hiresBusy(t)) return false;
+      // 還排著、沒送出去的（前面有一張在做）：用同一個編號重新排進來。
+      if (!saved.job) {
+        const task = {
+          id: "h" + Date.now().toString(36) + Math.random().toString(36).slice(2, 5),
+          target: t,
+          mode: saved.mode,
+          scale: face ? 1 : saved.scale,
+          from: face ? saved.from : undefined,
+          stack: face && !!saved.stack,
+          sampling: saved.sampling || {},
+          positive: t.positive,
+          seed: Number.isFinite(saved.seed) ? saved.seed : Math.floor(Math.random() * 2 ** 32),
+        };
+        tasks.set(task.id, task);
+        t.hi = { task: task.id, mode: saved.mode, scale: task.scale, from: task.from, stack: task.stack, sampling: task.sampling, status: "queued", progress: 0, note: "" };
+        hooks.update(t);
+        queueTask(t, task, saved.reserved);
+        return true;
+      }
       const task = {
         id: "h" + Date.now().toString(36) + Math.random().toString(36).slice(2, 5),
         target: t,
@@ -250,6 +283,7 @@ export function createHires(hooks) {
         positive: t.positive,
         seed: 0,
         job: saved.job,
+        promptId: saved.promptId || null,
       };
       tasks.set(task.id, task);
       t.hi = { task: task.id, mode: saved.mode, scale: task.scale, from: task.from, stack: task.stack, sampling: task.sampling, status: "queued", progress: 0, note: "接回剛才那張…", job: saved.job };

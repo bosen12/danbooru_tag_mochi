@@ -549,16 +549,22 @@ export function openFavChars({ cards, assets, tab: firstTab, onClose } = {}) {
   prev.addEventListener("click", () => go(-1));
   next.addEventListener("click", () => go(1));
   let typing = 0;
-  search.addEventListener("input", () => {
+  const applySearch = () => {
     clearTimeout(typing);
-    typing = setTimeout(() => {
-      swap(() => {
-        query = search.value;
-        page = 0;
-        if (tab === "mine") mineOrder = favChars.list();
-      }, 0);
-    }, 140);
+    if (query === search.value) return;
+    swap(() => {
+      query = search.value;
+      page = 0;
+      if (tab === "mine") mineOrder = favChars.list();
+    }, 0);
+  };
+  // 注音、倉頡組字中不排（選字停一下就先用半個字去找、閃「找不到」）；選完字立刻排。
+  search.addEventListener("input", (e) => {
+    clearTimeout(typing);
+    if (e.isComposing) return;
+    typing = setTimeout(applySearch, 140);
   });
+  search.addEventListener("compositionend", applySearch);
   // 鍵盤：左右鍵換頁（打字的時候不搶）。
   sheet.sheet.addEventListener("keydown", (e) => {
     if (e.target === search) return;

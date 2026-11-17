@@ -145,11 +145,29 @@ export function createGenerator(hooks) {
       const until = Date.now() + RECOVER_MS;
       while (Date.now() < until && shot.status !== "cancelled" && !ctrl.signal.aborted) {
         let r = null;
+        // 每問一次最多等 20 秒（伺服器那邊問 ComfyUI 各 8 秒）：手機換網路、Tailscale 半斷時，
+        // 這一問可能永遠不回來，佇列就卡在這張、後面的都不動。問不到（斷線、逾時）隔幾秒再問；
+        // 伺服器明確回錯（舊版沒有這條路）才放棄。
+        const ask = new AbortController();
+        const giveUp = () => ask.abort();
+        ctrl.signal.addEventListener("abort", giveUp, { once: true });
+        const timer = setTimeout(giveUp, 20_000);
+        let lost = false;
         try {
           const q = `job=${encodeURIComponent(current.job || "")}&prompt_id=${encodeURIComponent(current.promptId || "")}`;
-          r = await fetch(`/api/gen/recover?${q}`, { signal: ctrl.signal }).then((x) => (x.ok ? x.json() : null));
+          r = await fetch(`/api/gen/recover?${q}`, { signal: ask.signal }).then((x) => (x.ok ? x.json() : null));
         } catch {
           r = null;
+          lost = true;
+        } finally {
+          clearTimeout(timer);
+          ctrl.signal.removeEventListener("abort", giveUp);
+        }
+        if (lost && !ctrl.signal.aborted && shot.status !== "cancelled") {
+          shot.note = "伺服器重開過，連不上它，等一下再問…";
+          hooks.update(shot);
+          await wait(3000);
+          continue;
         }
         const st = r && r.state;
         if (st === "done" && r.image) {
@@ -379,9 +397,13 @@ export function createGenerator(hooks) {
   }
 
   return {
-    enqueue(shot) {
-      // Fresh retry/reprint creates a server job; only resume() retains one.
-      Object.assign(shot, { job: null, live: false, _savedJob: null, _reserved: null, promptId: null, progress: 0, preview: null, result: null, netFail: false });
+    /**
+     * 排進來。重印、再試一次：新的工作（新的編號）。reserved：重新整理前就排著、還沒送出去的那張，
+     * 沿用存檔裡的編號 —— 手機走 http 沒有 Web Locks，兩個分頁都會接著印，同一個編號伺服器只畫一次。
+     */
+    enqueue(shot, { reserved = null } = {}) {
+      // 編號排進來就取好（不是送出去才取）：存檔才存得到，重新整理之後用同一個。
+      Object.assign(shot, { job: null, live: false, _savedJob: null, _reserved: reserved || newJobId(), promptId: null, progress: 0, preview: null, result: null, netFail: false });
       shot.status = "queued";
       shot.note = "等前面的印完";
       queue.push(shot);
