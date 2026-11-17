@@ -280,9 +280,8 @@ html[lang="en"] .tseg span { font-size: 12px; letter-spacing: -0.02em; }
   html[lang="en"] .mast .segmented button { padding-inline: 5px; }
   html[lang="en"] .page-switch a { padding-inline: 6px; }
 }
-/* 英文的「Any」看不出是什麼開關：英文版一律只留那顆小開關（說明在滑鼠提示）。 */
-html[lang="en"] .rating-free { padding-inline: 6px; }
-html[lang="en"] .rating-free-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+/* 英文版開關寫「No limit」（rating-free.js；「不限」一般翻成 Any，看不出是什麼開關，以前乾脆藏起來只留一顆沒字的小圓鈕）。
+   英文頂欄在這些寬度本來就排成兩行，工具那一行放得下。 */
 @media (max-width: 1400px) {
   html[lang="en"] .mast-tools #ckpt-pick-btn .gen-pick-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
   html[lang="en"] .mast-tools #ckpt-pick-btn { min-width: 36px; padding-inline: var(--space-xs); }

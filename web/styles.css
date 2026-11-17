@@ -1822,6 +1822,14 @@ body #wf-pick-btn.has {
   min-width: 0;
 }
 
+/* 「抽角色」底下的條件（只抽偏好角色、只抽同系列）：抽角色關著時畫淡，點了連抽角色一起打開（app.js）。 */
+.chara-sub {
+  display: contents;
+}
+.chara-sub[data-off="true"] > .switch {
+  opacity: 0.5;
+}
+
 .rule-field {
   display: inline-flex;
   flex-wrap: wrap;
@@ -3309,6 +3317,37 @@ html[data-go-float] .wall-busy {
   overflow: visible;
   white-space: normal;
 }
+/* 窄的那幾張（手機兩欄、每排 5、6 張）還沒有圖的（排著、等網路、印壞、取消）：畫框裡攤著一手牌、底下寫狀態，
+ * 下緣那一行疊上去會把字和「連不到主機…」蓋掉（2026-11-18 截圖審查）。跟只抽牌一樣排到畫框下面。 */
+@container shot (max-width: 250px) {
+  .shot[data-bare="true"] > .shot-meta {
+    position: static;
+    grid-area: 2 / 1;
+    max-height: none;
+    margin-top: var(--space-2xs);
+    padding: 0 var(--space-2xs);
+    flex-wrap: wrap;
+    background: none;
+    color: var(--color-muted);
+    opacity: 1;
+    translate: none;
+  }
+  .shot[data-bare="true"] > .shot-meta > * {
+    overflow: visible;
+    white-space: normal;
+  }
+  .shot[data-bare="true"] > .shot-meta .status {
+    color: var(--color-ink-2);
+  }
+  .shot[data-bare="true"] > .shot-meta .status[data-kind="err"] {
+    color: var(--color-accent-text);
+  }
+  /* 攤著一手牌的（排著、等網路、還沒開始畫）：畫框矮，那手牌會壓住底下的字；同一句已經寫在畫框下面了。 */
+  .shot[data-bare="true"]:not([data-status="drawn"]) .shot-empty:has(> .hand) > p {
+    display: none;
+  }
+}
+
 /* 換了哪張的籤在左上：按鈕浮上來時讓開。 */
 .shot > .shot-swap {
   transition: opacity var(--dur-short) var(--ease-out);
@@ -6071,6 +6110,16 @@ html {
   }
   .sheet h2 {
     font-size: var(--text-lg);
+  }
+  /* 關閉鈕黏在上緣：往下捲看提示詞、相似作品之後，不必捲回最上面找關閉（2026-11-18 截圖審查）。
+   * 鈕排在標題後面：浮到右邊、往上拉回標題那一行，捲動時 sticky 黏住。 */
+  .sheet-close {
+    position: sticky;
+    top: 0;
+    float: right;
+    z-index: 3;
+    margin: calc(-36px - var(--space-md)) 0 0 var(--space-sm);
+    box-shadow: 0 4px 14px var(--color-shade);
   }
   .sheet-foot {
     bottom: calc((var(--space-md) + env(safe-area-inset-bottom)) * -1);

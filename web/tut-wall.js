@@ -112,7 +112,7 @@ export function buildWall(m) {
     Object.assign(toggle.style, { left: "0", top: "574px" });
     const hiresBtn = mk("div", "tb tbtn ghost sm", el, "Hires");
     Object.assign(hiresBtn.style, { left: "126px", top: "574px", width: "62px", height: "34px" });
-    const copyBtn = mk("div", "tb tbtn ghost sm", el, "複製 POS");
+    const copyBtn = mk("div", "tb tbtn ghost sm", el, "複製提示詞");
     Object.assign(copyBtn.style, { left: "196px", top: "574px", width: "88px", height: "34px" });
     const reBtn = mk("div", "tb tbtn ghost sm", el, "同種子重印");
     Object.assign(reBtn.style, { left: "0", top: "616px", width: "112px", height: "34px" });
@@ -286,7 +286,7 @@ export function buildWall(m) {
       press(sh.toggle, sh.pressToggle);
       const copied = (sh.pressCopy || []).some((a) => t >= a && t < a + 1.3);
       press(sh.copyBtn, sh.pressCopy);
-      setHTML(sh.copyBtn, copied ? "已複製 ✓" : "複製 POS");
+      setHTML(sh.copyBtn, copied ? "已複製 ✓" : "複製提示詞");
       sh.copyBtn.style.color = copied ? "var(--color-good)" : "";
       const open = (sh.toggleOn || []).some(([a, b2]) => t >= a && t < b2);
       sh.toggle.classList.toggle("on", open);

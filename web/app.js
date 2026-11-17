@@ -2304,8 +2304,21 @@ function renderRules() {
   sceneSel.onchange = () => { setSettings({ sceneMode: sceneSel.value }); seat(sceneSel); };
   const job = switchBox("抽職業", settings.drawJob, (v) => setSettings({ drawJob: v }));
   // 抽角色遵從人物設定的性別；手動釘選的角色照留。一張最多隨機抽三個。
-  const chara = switchBox("抽角色", settings.drawCharacter, (v) => setSettings({ drawCharacter: v }), "只替「人物」選中的性別抽角色，一張最多三個；手動釘的角色照留");
-  const sameSeries = switchBox("只抽同系列", settings.characterSameSeries, (v) => setSettings({ characterSameSeries: v }), "抽的角色都跟釘的角色同一部作品；沒釘就先挑一部人數、性別湊得齊的");
+  // 「只抽偏好角色」「只抽同系列」是「抽角色」底下的條件：抽角色關著時畫淡（還是點得到，點了連抽角色一起打開），
+  // 不然看起來像各自獨立的開關，調完了才發現沒作用。「加入系列名」釘的角色也會接，不受抽角色影響。
+  const charaSub = el("span", { class: "chara-sub" });
+  const paintCharaSub = () => (charaSub.dataset.off = settings.drawCharacter ? "false" : "true");
+  const chara = switchBox("抽角色", settings.drawCharacter, (v) => (setSettings({ drawCharacter: v }), paintCharaSub()), "只替「人物」選中的性別抽角色，一張最多三個；手動釘的角色照留");
+  const charaOn = () => {
+    if (chara.querySelector("input").checked) return;
+    chara.querySelector("input").checked = true;
+    toast("「抽角色」也一起打開了");
+  };
+  const sameSeries = switchBox("只抽同系列", settings.characterSameSeries, (v) => {
+    setSettings(v && !settings.drawCharacter ? { characterSameSeries: true, drawCharacter: true } : { characterSameSeries: v });
+    if (v) charaOn();
+    paintCharaSub();
+  }, "抽的角色都跟釘的角色同一部作品；沒釘就先挑一部人數、性別湊得齊的（要開「抽角色」）");
   const series = switchBox("加入系列名", settings.characterSeries, (v) => setSettings({ characterSeries: v }), "角色後面接作品名（例：yor briar, spy x family）；釘的角色也一樣");
   // 只抽偏好角色：名單是空的就先打開名單去挑（開關彈回去）；開了它、「抽角色」還關著就一起打開。
   const favOnly = switchBox(
@@ -2319,14 +2332,14 @@ function renderRules() {
         return;
       }
       setSettings(v && !settings.drawCharacter ? { characterFavOnly: true, drawCharacter: true } : { characterFavOnly: v });
-      if (v && !chara.querySelector("input").checked) {
-        chara.querySelector("input").checked = true;
-        toast("「抽角色」也一起打開了");
-      }
+      if (v) charaOn();
+      paintCharaSub();
     },
     "抽角色時只從你的偏好角色裡抽；名單裡沒有那個性別的角色，那個人就照舊是一般人物"
   );
   const favOnlyInput = favOnly.querySelector("input");
+  charaSub.append(favOnly, sameSeries);
+  paintCharaSub();
   const favBtn = favCharsButton((btn) => manageFavChars(btn));
   const eraOnly = switchBox("字盒只看這個時代", ui.eraOnly, (v) => {
     ui.eraOnly = v;
@@ -2397,7 +2410,7 @@ function renderRules() {
         el("div", { class: "rule-row" }, el("span", { class: "rule-label" }, "每段抽幾個"), counts),
         picker.node,
         el("div", { class: "rule-row" }, rulePair("場景", sceneSel), job, eraOnly),
-        el("div", { class: "rule-row" }, rulePair("角色", el("span", { class: "rule-pair" }, chara, favOnly, sameSeries, series, favBtn)))
+        el("div", { class: "rule-row" }, rulePair("角色", el("span", { class: "rule-pair" }, chara, charaSub, series, favBtn)))
       )
     )
   );
@@ -2765,6 +2778,7 @@ function renderGoBar() {
       // 只把「印幾張停」露出來／收起來，不整列重畫（開關的鍵盤焦點會丟掉）。
       const pick = $("go-bar").querySelector(".loop-max");
       if (pick) pick.hidden = !v;
+      syncGoCount(settings.n);
     }, "抽完一輪自動接著抽下一輪，一直到按「停」，或印到右邊設定的張數"),
     loopMaxPicker(),
     switchBox("同一個人", settings.samePerson, (v) => {
@@ -2779,7 +2793,7 @@ function renderGoBar() {
       // 「停」和「印製中，還有 N 張」不放這排，放在底下「成品」那列（renderWallBusy）：以前「停」冒出來，
       // 1440 寬整組按鈕被擠到下一行、剛按的「抽並生圖」往下跳 48px、整面成品牆跟著被推，狀態字也把種子欄推走；印完又跳回來。
       el("button", { class: "btn btn-ghost", type: "button", onclick: () => drawBatch(false), title: "只抽牌，不送 Comfy（P）" }, "只抽牌"),
-      el("button", { class: "btn btn-primary", type: "button", onclick: () => drawBatch(true), title: "抽並生圖（G）" }, "抽並生圖", el("span", { class: "count" }, `×${n}`))
+      el("button", { class: "btn btn-primary", type: "button", onclick: () => drawBatch(true), title: "抽並生圖（G）" }, "抽並生圖", el("span", { class: "count" }, goCount(n)))
     ),
     // 自己一行，放在按鈕底下：不要把「抽並生圖」擠到下一行去。
     seedNode || (seedNode = mountSeedControl(null, { compact: true, fixedNote: "固定：每張都用這顆種子（一次多張、無限抽也一樣）。抽牌照樣每張隨機" })),
@@ -2812,14 +2826,18 @@ function renderWallBusy() {
   wallBusy.replaceChildren(el("span", { class: "wall-busy-text" }, goStatusText(true)), stop);
 }
 
+/** 主按鈕上的張數：無限抽開著時多一個 ∞（以前只寫 ×1，看不出會一輪接一輪抽下去）。 */
+const goCount = (n) => (infinite ? `×${n} ∞` : `×${n}`);
+
 /**
  * 張數換了：主按鈕（和底部浮動列）上的 ×N 當場跟著換，跟步進器同方向滾進來。
  * 以前只換步進器自己的數字，主按鈕要等下一次整排重畫才更新；整排也不能在這裡重畫（步進器正被按著）。
+ * 無限抽開關切換時也叫一次（數字不變、不播動畫，只換 ∞）。
  */
 function syncGoCount(was) {
   const n = settings.n;
   for (const cnt of document.querySelectorAll("#go-bar .btn-primary .count, #go-float .btn-primary .count")) {
-    cnt.textContent = `×${n}`;
+    cnt.textContent = goCount(n);
     if (!reducedMotion() && was !== n) cnt.animate([{ opacity: 0, transform: `translateY(${n > was ? 6 : -6}px)` }], { duration: DUR.short, easing: css(CURVE.out) });
   }
 }
@@ -2842,7 +2860,7 @@ function renderGoFloat() {
   // 印的時候：手機上浮動列放不下那行狀態字，改浮在浮動列上方（styles.css 的 .go-float[data-busy]）。
   float.toggleAttribute("data-busy", busy);
   // 同上：狀態沒變就不換掉底下那排按鈕（不然「停」會閃、按不到）。
-  const key = [busy, generator.pending, pool.size, settings.n].join("|");
+  const key = [busy, generator.pending, pool.size, settings.n, infinite].join("|");
   if (float.dataset.key === key && float.childElementCount) return;
   float.dataset.key = key;
   float.replaceChildren(
@@ -2850,7 +2868,7 @@ function renderGoFloat() {
       el("span", { class: "go-float-state" }, busy ? (generator.pending ? `印製中・還有 ${generator.pending} 張` : "無限抽・下一輪…") : pool.size ? `池裡 ${pool.size} 張` : "池子是空的，全靠抽"),
       busy ? el("button", { class: "btn btn-small go-stop", type: "button", onclick: stopAll }, "停") : null,
       el("button", { class: "btn btn-small btn-ghost", type: "button", onclick: () => drawBatch(false), title: "只抽牌（P）" }, "只抽牌"),
-      el("button", { class: "btn btn-small btn-primary", type: "button", onclick: () => drawBatch(true), title: "抽並生圖（G）" }, "抽並生圖", el("span", { class: "count" }, `×${settings.n}`)),
+      el("button", { class: "btn btn-small btn-primary", type: "button", onclick: () => drawBatch(true), title: "抽並生圖（G）" }, "抽並生圖", el("span", { class: "count" }, goCount(settings.n))),
     ].filter(Boolean)
   );
   // 浮動列看得到時狀態換了（池裡幾張、印製中…）：那行字淡進來，「停」也是。
@@ -2875,9 +2893,32 @@ function watchGoBar() {
     const r = main && main.getBoundingClientRect();
     goBarVisible = !!(r && r.width && r.top >= 56 && r.bottom <= innerHeight - 8);
     renderGoFloat();
+    liftTrash();
   };
   new IntersectionObserver(update, { threshold: Array.from({ length: 11 }, (_, i) => i / 10) }).observe(bar);
   addEventListener("resize", update, { passive: true });
+  addEventListener("scroll", liftTrash, { passive: true });
+}
+
+/**
+ * 右下角的廢字簍是固定的：「抽並生圖」捲到畫面最底下那一段時，它正好蓋在主按鈕上（2026-11-18 截圖審查）。
+ * 那時候把它往上推到按鈕上面（margin-bottom，不碰 translate：手機底部浮動列、偏好卡牌都在用 translate 推它）。
+ */
+let trashLift = 0;
+function liftTrash() {
+  const trash = $("trash");
+  const main = $("go-bar")?.querySelector(".btn-primary");
+  if (!trash || !main) return;
+  const r = main.getBoundingClientRect();
+  const t = trash.getBoundingClientRect();
+  // 量的是沒推之前的位置（推了的話把推的那段加回來）。
+  const bottom = t.bottom + trashLift;
+  const top = bottom - t.height;
+  const hit = r.width > 0 && r.right > t.left && r.left < t.right && r.bottom > top && r.top < bottom;
+  const lift = hit ? Math.ceil(bottom - r.top + 8) : 0;
+  if (lift === trashLift) return;
+  trashLift = lift;
+  trash.style.marginBottom = lift ? `${lift}px` : "";
 }
 
 /** 停下來。say：用 Esc 停的（沒按到「停」那顆鈕、看不到它變化）：說一句停了什麼，無限抽也關了就一起講。 */
@@ -3571,6 +3612,8 @@ function paintShot(node, shot) {
     }
   } else if (img) img.remove();
   node.dataset.shown = shot.status;
+  // 還沒有圖：窄欄時下緣那一行排到畫框下面，不蓋住畫框裡的狀態字（styles.css 的 data-bare）。
+  node.dataset.bare = src ? "false" : "true";
   let empty = frame.querySelector(".shot-empty");
   const words = shotWords(shot);
   const handNow = !src && holdsHand(shot);

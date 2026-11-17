@@ -242,7 +242,7 @@ function syncThumbs(root = document) {
     }
     thumb.dataset.v = on.dataset.v || "";
     const at = thumbAt.get(key);
-    if (fresh || !at || at.x !== to.x || at.w !== to.w) place(thumb, to, !reducedMotion());
+    if (fresh || !at || at.x !== to.x || at.y !== to.y || at.w !== to.w) place(thumb, to, !reducedMotion());
     thumbAt.set(key, to);
   }
 }

@@ -1572,6 +1572,31 @@ body.fuse {
   }
 }
 
+/* 電腦螢幕不高（1440×900 這類）還沒付印：空的紙也收成兩行字。不然右欄被它、試印、付印三塊分掉，
+   四張試印只看得到 A、B，C、D 被付印那塊切掉（英文換行多更明顯；2026-11-18 截圖審查）。 */
+@media (min-width: 40.01rem) and (max-height: 1000px) {
+  #preview[data-empty="true"] {
+    padding-block: var(--space-xs);
+  }
+  #preview[data-empty="true"] .pv-sheet {
+    min-height: 0;
+  }
+  #preview[data-empty="true"] .pv-blank {
+    position: static;
+    padding: var(--space-sm) var(--space-md);
+  }
+  #preview[data-empty="true"] .pv-cap {
+    display: none;
+  }
+  /* 浮水印那個大大的 A 也收掉（試印區、付印區都標著是哪一張），說明放寬成一兩行。 */
+  #preview[data-empty="true"] .pv-letter {
+    display: none;
+  }
+  #preview[data-empty="true"] .pv-hint {
+    max-width: 24em;
+  }
+}
+
 .preview[data-empty="true"] .crop {
   display: none;
 }
@@ -2630,6 +2655,11 @@ body.fuse {
     grid-auto-flow: column;
     grid-auto-columns: minmax(0, 1fr);
     width: 100%;
+  }
+  /* 尺寸有六種：一排擺不下（「1024×1024」不會斷行，跟隔壁的數字疊在一起），手機排成三欄兩列。 */
+  .rules-sheet .segmented[data-kind="size"] {
+    grid-auto-flow: row;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
   .rules-sheet .segmented button {
     min-width: 0;

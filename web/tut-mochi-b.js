@@ -401,7 +401,7 @@ export function buildMochiPartB(P) {
       wall.panelDrag.push({ tag, t0: tGrab, t1: tDrop + 0.55 });
     }
 
-    // ③ Hires、複製 POS
+    // ③ Hires、複製提示詞
     {
       const tHi = at(54, 0);
       cam(at(53, 2), 0, 20, 1.25);
@@ -414,7 +414,7 @@ export function buildMochiPartB(P) {
       sh.pressCopy = [tCp];
       clickM(tCp, wall.anchor(sh, "copy", tCp), { dur: 0.8 });
       S.cue({ t: tCp, kind: "click", gain: 0.14 }, { t: tCp + 0.05, kind: "tick", gain: 0.1 });
-      text.say("*複製 POS*：整組提示詞帶走，*同種子重印*：一樣的圖再來一張", "Copy the prompt · reprint with the same seed", at(55, 1), at(57, 0));
+      text.say("*複製提示詞*：整組帶走，*同種子重印*：一樣的圖再來一張", "Copy the prompt · reprint with the same seed", at(55, 1), at(57, 0));
     }
 
     // ④ 撤下 → 提示條 → Z 復原

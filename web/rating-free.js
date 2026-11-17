@@ -10,6 +10,7 @@
 import { toast, el } from "./ui.js";
 import { heatBlockedByRating } from "./scene-policy.js";
 import { RATING_LABEL } from "./rules/rating.js";
+import { english } from "./i18n.js";
 const TITLE_ON = "不限制開著：所有牌都不受全年齡／敏感／色情限制，右邊選的分級是圖本身標的分級";
 const TITLE_OFF = "不限制：打開後所有牌都不受全年齡／敏感／色情限制";
 // 按下去說一句：筆電、手機上開關旁邊常常沒有字，也沒有滑鼠提示，不說的話看不出它做了什麼。
@@ -47,6 +48,12 @@ export function mountRatingFree({ get, set }) {
   const btn = document.getElementById("rating-free");
   const box = document.getElementById("rating");
   if (!btn || !box) return () => {};
+  // 英文的「不限」在別處是 Any（人物不限、時代不限）：這顆開關另外寫，不走整頁翻譯。
+  const label = btn.querySelector(".rating-free-label");
+  if (english && label) {
+    label.dataset.noI18n = "";
+    label.textContent = "No limit";
+  }
   const paint = () => {
     const on = !!get();
     btn.setAttribute("aria-checked", on ? "true" : "false");

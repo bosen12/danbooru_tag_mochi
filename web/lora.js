@@ -1102,7 +1102,7 @@ function renderLmCurrent() {
   if (!lora) {
     const none = document.createElement("div");
     none.className = GALLERY ? "lm-none lg-slot-empty" : "lm-none";
-    none.textContent = GALLERY ? `LoRA ${GEN_ACTIVE_SLOT + 1} 空著——從中間挑一張` : `LoRA ${GEN_ACTIVE_SLOT + 1} 尚未選擇——從左邊清單點一個`;
+    none.textContent = GALLERY ? `LoRA ${GEN_ACTIVE_SLOT + 1} 空著——點一張卡片放進來` : `LoRA ${GEN_ACTIVE_SLOT + 1} 尚未選擇——從左邊清單點一個`;
     box.appendChild(none);
     return;
   }
@@ -2193,7 +2193,7 @@ function renderCkptCurrent() {
   if (!cur) {
     const none = document.createElement("div");
     none.className = GALLERY ? "lm-none lg-slot-empty" : "lm-none";
-    none.textContent = !(GEN_CKPTS || []).length ? "這個資料夾沒有 checkpoint" : GALLERY ? "還沒選底模——從中間挑一張" : "還沒選底模——從左邊清單點一個";
+    none.textContent = !(GEN_CKPTS || []).length ? "這個資料夾沒有 checkpoint" : GALLERY ? "還沒選底模——點一張卡片" : "還沒選底模——從左邊清單點一個";
     box.appendChild(none);
     return;
   }

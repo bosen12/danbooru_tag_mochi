@@ -36,7 +36,7 @@ const copy = String.raw`
 帶牌去墨池|Take cards to Ink Pool
 無法交接選牌，請檢查瀏覽器儲存空間。|Could not transfer cards. Check browser storage.
 更多規則：每段張數與選格、場景、職業、角色|More rules: counts and slots, scene, jobs, characters
-這是候選提示詞，尚未生成圖片。按「付印」才會生圖。|This is a candidate prompt, with no image yet. Print to generate it.
+這是候選提示詞，尚未生成圖片。按「付印」才會生圖。|This is a candidate prompt, with no image yet. Press Generate to make it.
 四組候選提示詞，還不是圖片。≠ 表示與已選試印不同。|Four candidate prompts, with no images yet. ≠ marks differences from the selected proof.
 與已選試印不同|Different from the selected proof
 髮色|Hair color
@@ -1463,7 +1463,7 @@ ComfyUI 沒有回報 checkpoint|ComfyUI returned no checkpoints.
 好|OK
 隨機抽幾個 LoRA 攤開來看（點一張直接選中）|Spread out a few random LoRAs · Click one to select it
 清單來自 ComfyUI。點一張換過去，之後生圖都用它。|Models come from ComfyUI. Click one to switch; new images use it.
-還沒選底模——從中間挑一張|Pick a checkpoint from the grid.
+還沒選底模——點一張卡片|Pick a checkpoint from the grid.
 ComfyUI 連線|ComfyUI connection
 已連上|Connected
 連不到|Not reachable
@@ -2353,7 +2353,7 @@ Discord 設定（自動傳送{0}）|Discord settings (auto sharing {0})
 {0} 張用過|{0} cards used
 ／ {0} 張用過|/ {0} cards used
 沒有{0}的牌|No {0} cards
-…（{0} 張）|… ({0} cards)
+…（共 {0} 張牌）|… ({0} cards)
 {0}（畫 {1}，前面排隊 {2}）|{0} (generation {1}, queue {2})
 卡盒清空了（{0} 張）|Cleared {0} cards from the box
 剛剛又記了 {0} 張牌的使用次數|Usage updated for {0} cards
@@ -2549,7 +2549,7 @@ LoRA：沒設定偏好路徑，改問 ComfyUI 也失敗了：{0}|LoRA: no prefer
 一圈一圈轉成一朵花，中間是你最近印的 {0} 張|Ring by ring into a flower, with your {0} latest images at its heart
 共 {0} 個|{0} items
 再顯示 {0} 個|Show {0} more
-LoRA {0} 空著——從中間挑一張|LoRA {0} is empty. Pick one from the grid.
+LoRA {0} 空著——點一張卡片放進來|LoRA {0} is empty. Pick one from the grid.
 已連上 {0}|Connected to {0!}
 連不到 {0}|Cannot reach {0!}
 印好 {0} 張了|{0} images ready

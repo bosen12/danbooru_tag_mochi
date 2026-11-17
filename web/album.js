@@ -8,7 +8,7 @@ import { dateLocale, english } from "./i18n.js";
  *     存了配方還沒生圖的，畫框裡攤這件的牌（最多七張），底下仍寫「只有配方，尚無圖片」。
  *   - 找作品：作品名、牌的中文名、提示詞。
  *   - 點一張：大圖、你選的牌、全部的牌、尺寸／種子／底模。主鈕「照這張再印」：牌、份量、時代、種子、底模、LoRA
- *     一起交給墨池；其他（只帶牌、複製 POS、開原圖、從作品冊拿掉）手機上收進「⋯」（foot-more.js）。
+ *     一起交給墨池；其他（只帶牌、複製提示詞、開原圖、從作品冊拿掉）手機上收進「⋯」（foot-more.js）。
  *   - 牌名是可以點的籤：打開卡冊那張牌的詳情（book.html#card=…）。
  *   - 網址帶 #作品編號（收藏完按「打開作品冊」過來）：直接打開那一張。
  *   - 「日誌」分頁：印過的每一張，不只收藏的（album-log.js）。網址帶 ?tab=log 直接開在日誌。
@@ -853,13 +853,13 @@ function openWork(w) {
             const ok = await copyText(w.positive || "");
             if (ok) {
               b.textContent = "已複製";
-              setTimeout(() => (b.textContent = "複製 POS"), 1400);
+              setTimeout(() => (b.textContent = "複製提示詞"), 1400);
             } else {
               refuse(b);
             }
           },
         },
-        "複製 POS"
+        "複製提示詞"
       ),
       full ? el("a", { class: "btn btn-small", href: full, target: "_blank", rel: "noopener" }, "開原圖") : null,
       del,

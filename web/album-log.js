@@ -194,7 +194,7 @@ export function createLog(ctx) {
     if (!c.length) return `seed ${e.seed ?? "—"}`;
     const telling = c.filter((t) => ctx.lib.byTag.get(t)?.item?.section !== "subject");
     const pick = (telling.length ? telling : c).slice(0, 4);
-    return pick.map(ctx.zh).join("・") + (c.length > pick.length ? `…（${c.length} 張）` : "");
+    return pick.map(ctx.zh).join("・") + (c.length > pick.length ? `…（共 ${c.length} 張牌）` : "");
   }
 
   function row(e) {
@@ -355,13 +355,13 @@ export function createLog(ctx) {
               const ok = await copyText(e.positive || "");
               if (ok) {
                 b.textContent = "已複製";
-                setTimeout(() => (b.textContent = "複製 POS"), 1400);
+                setTimeout(() => (b.textContent = "複製提示詞"), 1400);
               } else {
                 refuse(b);
               }
             },
           },
-          "複製 POS"
+          "複製提示詞"
         ),
         full ? el("a", { class: "btn btn-small", href: e.image, target: "_blank", rel: "noopener" }, "開原圖") : null,
       ]),

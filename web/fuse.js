@@ -4108,6 +4108,12 @@ function renderRating() {
 
 let ratingFreePaint = null;
 
+/** 規則裡的尺寸那一排：六種，手機排成三欄兩列（fuse.css 的 data-kind="size"）。 */
+function sizeKind(seg) {
+  seg.dataset.kind = "size";
+  return seg;
+}
+
 function segmented(label, options, current, onPick) {
   return el(
     "div",
@@ -4212,14 +4218,16 @@ function openRules() {
       el("p", { class: "rules-note" }, "疊印台自己的規則，跟墨池分開。改了之後四張試印會立刻重抽。"),
       row(
         "尺寸",
-        segmented(
-          "尺寸",
-          SIZES.map((s) => [s.id, `${s.short} ${s.w}×${s.h}`]),
-          size,
-          (v) => {
-            const s = SIZES.find((x) => x.id === v);
-            setSettings({ width: s.w, height: s.h });
-          }
+        sizeKind(
+          segmented(
+            "尺寸",
+            SIZES.map((s) => [s.id, `${s.short} ${s.w}×${s.h}`]),
+            size,
+            (v) => {
+              const s = SIZES.find((x) => x.id === v);
+              setSettings({ width: s.w, height: s.h });
+            }
+          )
         )
       ),
       row(
