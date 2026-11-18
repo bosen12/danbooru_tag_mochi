@@ -5170,6 +5170,10 @@ function drawOneImpl(lex, settings, pinned, userBanned, rand, seed, opts) {
   // 小類只從群組挑；群組沒放的小類照常從整個詞庫補。閘門跟「不補」同一道，只擋引擎自己隨機補的
   // （random、era_anchor）—— 安全修補（repair：分級要的最低限度衣服之類）、釘選、必抽、相依字都不擋。
   const groupGate = groupGateOf(lex, settings.groupPools);
+  // 勾了群組的牌跟釘選一樣是使用者明講要的：不受場景的服裝限制（臥室裡的比基尼、浴場裡的群組衣服）。
+  // 分級、尺度、性別、廢字簍、互斥、時代照擋 —— 只放寬「這個場合不該穿」那一類（2026-11-19 專案主選的）。
+  const groupWanted = groupGate ? new Set([...groupGate.values()].flatMap((g) => [...g.tags])) : null;
+  const sceneFree = (tag) => pinned.has(tag) || (groupWanted !== null && groupWanted.has(tag));
   // 每一格（groupSlotKey）的狀態：claimed＝群組先上時放進了群組的牌，這一格之後只收群組的；
   // failed＝群組先上時這一格群組的牌一張都放不進去（被尺度、分級、時代、性別、封鎖、互斥、相依字擋掉），
   // 照常從詞庫補。其餘（名額不夠沒輪到）：群組還有抽得到的牌就歸群組，否則照常。
@@ -6954,7 +6958,7 @@ function drawOneImpl(lex, settings, pinned, userBanned, rand, seed, opts) {
         }
       }
       if (item.mutex === "activity" && !actFitsPlaces(item.tag, places, real)) return false;
-      if (item.section === "clothing" && isBathScene(used) && isBathBadCloth(item.tag)) return false;
+      if (item.section === "clothing" && isBathScene(used) && isBathBadCloth(item.tag) && !sceneFree(item.tag)) return false;
       {
         const kind = sceneClothLocked(used, pinned, lex, era, true);
         if (
@@ -6962,7 +6966,7 @@ function drawOneImpl(lex, settings, pinned, userBanned, rand, seed, opts) {
           item.section === "clothing" &&
           (item.layer === "garment" || item.layer === "accessory") &&
           !garmentOkForKind(item, kind, era) &&
-          !pinned.has(item.tag)
+          !sceneFree(item.tag)
         ) {
           return false;
         }
@@ -8222,6 +8226,8 @@ function drawOneImpl(lex, settings, pinned, userBanned, rand, seed, opts) {
         );
       for (const t of [...used]) {
         if (guard.has(t) || pinRel.has(t)) continue;
+        // 群組的牌：場地後來才選到臥室、浴場，也不因為「這裡不該穿」被脫掉（跟釘選一樣）。
+        if (groupWanted !== null && groupWanted.has(t)) continue;
         const it = lex.byTag.get(t);
         if (!it || it.section !== "clothing") continue;
         // 正在洗時，內衣會把「只裹毛巾」擋掉：naked towel 跟任何內衣互斥

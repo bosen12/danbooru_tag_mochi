@@ -257,5 +257,30 @@ const sourceMap = (out) => new Map(out.trace.kept.map((k) => [k.tag, k.source]))
   ok("沒勾群組：設定裡沒有 groups", sanitizeSettings(defaultSettings(data), data).groups === undefined);
 }
 
+// 8. 群組不受場景的服裝限制（2026-11-19：勾了比基尼群組、釘臥室＋床上，以前比基尼被「臥室不穿泳裝」擋光、
+//    改從整個詞庫補一件水手服／和服；群組跟釘選一樣是明講要的）。分級、尺度照擋。
+{
+  const bikini = ["bikini", "micro bikini", "string bikini", "black bikini", "white bikini", "bikini armor"].filter((t) => lex.byTag.has(t));
+  const groups = [{ id: "g-bk", name: "比基尼", section: "clothing", tags: bikini }];
+  const off = skeletonLit({ counts: { clothing: 10 } }, "clothing").filter((k) => k !== "clothing:onepiece");
+  const s = base({ counts: { ...base().counts, feature: 0, clothing: 1, pose: 0, env: 0 }, offGroups: off, heats: ["sex"], rating: "explicit", girl: true, boy: true, groups: { clothing: { ids: ["g-bk"], mode: "whole" } } });
+  const pins = ["1girl", "1boy", "hetero", "sex", "missionary", "on back", "indoors", "bedroom", "on bed"];
+  let hit = 0;
+  for (const seed of SEEDS.slice(0, 60)) {
+    const out = draw(withGroupPools(s, groups, seed), seed, pins);
+    const tags = out.positive.split(",").map((t) => t.trim());
+    if (tags.some((t) => bikini.includes(t))) hit++;
+  }
+  ok("臥室＋床上：勾了比基尼群組，60 張都穿比基尼（不被場景擋、不換成群組外的衣服）", hit === 60, `${hit}/60`);
+  // 沒勾群組：場景規則照舊（臥室不會自己冒出比基尼）
+  const plain = base({ counts: { ...base().counts, feature: 0, clothing: 1, pose: 0, env: 0 }, offGroups: off, heats: ["sex"], rating: "explicit", girl: true, boy: true });
+  let stray = 0;
+  for (const seed of SEEDS.slice(0, 60)) {
+    const tags = draw(plain, seed, pins).positive.split(",").map((t) => t.trim());
+    if (tags.some((t) => t.includes("bikini"))) stray++;
+  }
+  ok("沒勾群組：臥室照舊不補比基尼", stray === 0, `${stray}/60`);
+}
+
 console.log(failed ? `${failed} failed` : "all ok");
 process.exit(failed ? 1 : 0);
