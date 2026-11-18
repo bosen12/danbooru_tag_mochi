@@ -294,11 +294,13 @@ export function createHires(hooks) {
     /** 停這一張的 Hires。 */
     cancel(t) {
       if (!t.hi) return;
-      const id = t.hi.task;
+      const { task: id, job, promptId } = t.hi;
       t.hi = null;
       hooks.update(t);
       const task = tasks.get(id);
-      if (!task) return;
+      // 別的分頁開的 Hires（跨分頁同步過來，這頁手上沒有那個工作）：照伺服器的工作編號停掉。
+      // 以前只清掉這邊的狀態，GPU 照畫，開它的那頁又收不到結果（第五輪 Astra 找到）。
+      if (!task) return void gen.cancelRemote(job, promptId);
       tasks.delete(id);
       gen.cancelOne(task);
     },

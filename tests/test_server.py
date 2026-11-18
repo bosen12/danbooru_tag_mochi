@@ -1085,6 +1085,10 @@ ok("profile injects positive", user_wf["6"]["inputs"]["text"] == "1girl, from pr
 ok("profile keeps negative", user_wf["7"]["inputs"]["text"] == "OLD NEG")
 ok("profile keeps seed", user_wf["3"]["inputs"]["seed"] == 1)
 ok("profile keeps checkpoint", user_wf["4"]["inputs"]["ckpt_name"] == "kept.safetensors")
+# 第五輪 Astra：種子設「不改」：完成資料、日誌記工作流裡真的那顆（1），不是墨池要求的 99。
+ok("profile kept seed is what the log records", user_meta.get("seed") == 1, str(user_meta.get("seed")))
+_latent = next((n for n in user_wf.values() if isinstance(n, dict) and n.get("class_type") == "EmptyLatentImage"), None)
+ok("profile kept size is what the log records", _latent is None or (user_meta.get("width"), user_meta.get("height")) == (_latent["inputs"].get("width"), _latent["inputs"].get("height")), str((user_meta.get("width"), user_meta.get("height"), _latent and _latent["inputs"])))
 ok("profile keeps ControlNet", user_wf["40"]["inputs"]["control_net_name"] == "keep_me.safetensors")
 ok("profile does not grow builtin node 200", "200" not in user_wf)
 ok(
@@ -2379,6 +2383,14 @@ try:
     server.api = lambda method, path, *a, **k: (_hist if path.startswith("/history/") else _queue)
     _r = server.recover_gen("gone0000001", "pid-done-01")
     ok("recover: ComfyUI 畫完了就給成品", _r["state"] == "done" and "b.png" in _r["image"], str(_r))
+    # 多輸出工作流：PreviewImage（temp）排在 SaveImage 前面，照送出去的工作流認成品（第五輪 Astra）。
+    _wf = {"5": {"class_type": "PreviewImage", "inputs": {}}, "9": {"class_type": "SaveImage", "inputs": {}}}
+    _hist["pid-multi-01"] = {"prompt": [0, "pid-multi-01", _wf, {}, ["5", "9"]], "outputs": {"5": {"images": [{"filename": "mid.png", "subfolder": "", "type": "temp"}]}, "9": {"images": [{"filename": "final.png", "subfolder": "", "type": "output"}]}}, "status": {"completed": True}}
+    _r = server.recover_gen("gone0000001", "pid-multi-01")
+    ok("recover: 多輸出工作流挑 SaveImage 的成品，不是排在前面的預覽", "final.png" in (_r.get("image") or ""), str(_r))
+    _hist["pid-multi-02"] = {"outputs": {"5": {"images": [{"filename": "mid.png", "subfolder": "", "type": "temp"}]}, "9": {"images": [{"filename": "final.png", "subfolder": "", "type": "output"}]}}, "status": {"completed": True}}
+    _r = server.recover_gen("gone0000001", "pid-multi-02")
+    ok("recover: 認不出工作流時 output 的圖先於 temp", "final.png" in (_r.get("image") or ""), str(_r))
     ok("recover: 還在 ComfyUI 佇列裡就等", server.recover_gen("gone0000001", "pid-run-001")["state"] == "pending")
     ok("recover: 兩邊都沒有就是不見了", server.recover_gen("gone0000001", "pid-none-01")["state"] == "gone")
     ok("recover: prompt_id 格式不對不去問 ComfyUI", server.recover_gen("gone0000001", "../x")["state"] == "gone")
@@ -2387,8 +2399,45 @@ try:
 finally:
     server.gen_log.all_items, server.api = _saved_rec
 
+# ---------- 收藏索引的快取（第五輪 Astra：快取鍵在迴圈裡被蓋掉，卡冊每查一張牌就重讀整本作品冊） ----------
+_calls = {"n": 0}
+_real_list = server.recipes.list_recipes
+def _counting_list(*a, **k):
+    _calls["n"] += 1
+    return [{"id": "fav1", "seed": 7, "positive": "1girl, red hair", "image": {"file": "a.png"}}]
+server.recipes.list_recipes = _counting_list
+try:
+    server._FAV_CACHE.update(key=None, value=None)
+    server.favorite_index()
+    server.favorite_index()
+    server.favorite_index()
+    ok("收藏索引：作品冊沒變，連查三次只讀一次", _calls["n"] == 1, str(_calls["n"]))
+finally:
+    server.recipes.list_recipes = _real_list
+    server._FAV_CACHE.update(key=None, value=None)
+
 # ---------- 卡面自訂提示詞（卡冊的「提示詞」視窗，2026-10-26） ----------
 import card_art_custom as _cac  # noqa: E402
+
+# 存檔讀壞：存一張不能把其他的自訂整份蓋掉（第五輪 Astra 找到）。有 .bak 就從備份接著存；沒備份就不存、壞檔留著。
+_cac.save("cardA", "1girl, a", "")
+_cac.save("cardB", "1girl, b", "")
+_good = _cac.PATH.read_text(encoding="utf-8")
+_cac.PATH.write_text(_good[: len(_good) // 2], encoding="utf-8")
+_cac.save("cardC", "1girl, c", "")
+ok("卡面自訂：正本讀壞、有備份：從備份接著存，三張都在", set(_cac.load()) >= {"cardA", "cardB", "cardC"}, str(sorted(_cac.load())))
+_cac.PATH.write_text("{broken", encoding="utf-8")
+_cac.backup_bak = _cac.PATH.with_name(_cac.PATH.name + ".bak")
+_cac.backup_bak.write_text("{also broken", encoding="utf-8")
+try:
+    _cac.save("cardD", "1girl, d", "")
+    ok("卡面自訂：正本、備份都壞：不存、說出來（StoreCorrupt）", False)
+except server.file_lock.StoreCorrupt:
+    ok("卡面自訂：正本、備份都壞：不存、說出來（StoreCorrupt）", True)
+ok("卡面自訂：壞掉的那份改名留著", any(p.name.startswith(_cac.PATH.name + ".corrupt-") for p in _cac.PATH.parent.iterdir()))
+for _p in list(_cac.PATH.parent.iterdir()):
+    if _p.name.startswith(_cac.PATH.name):
+        _p.unlink()
 
 _job_tag = next(iter(server.card_job_defaults()), "")
 ok("卡面自訂：預設提示詞讀 card_jobs.json", bool(_job_tag) and server.card_art_prompt_info(_job_tag)["default"]["positive"])

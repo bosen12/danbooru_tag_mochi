@@ -55,6 +55,13 @@ async function requestWrite(url, method, body) {
 export const saveDeck = (deck) => call("/api/decks", "POST", deck);
 export const deleteDeck = (id) => call(`/api/decks/${encodeURIComponent(id)}`, "DELETE");
 
+/** 預設名撞到已經有的牌組：接「（2）」「（3）」…，不要蓋掉那一組。 */
+export function freeName(base, decks) {
+  const used = new Set(decks.map((d) => d.name));
+  if (!used.has(base)) return base;
+  for (let i = 2; ; i++) if (!used.has(`${base}（${i}）`)) return `${base}（${i}）`;
+}
+
 /** 沒取名時的預設名字：前三張牌的中文名。 */
 export function suggestName(tags, zh) {
   const names = tags.slice(0, 3).map(zh);
@@ -250,10 +257,13 @@ export function openDecks({ where, current, has, zh, apply, paste, weightsNow = 
     saveBtn.disabled = true;
     saveBtn.setAttribute("aria-busy", "true");
     const tags = current().filter(has);
-    const n = name.value.trim() || suggestName(tags, zh);
+    // 沒取名：按鈕寫的是「存成牌組」，就是要多一組。預設名（前三張牌）撞到舊的時接編號，
+    // 以前直接拿舊的那組的 id 送出去，整組被換掉（第五輪 Astra 找到）。有取名、撞名才是更新那一組。
+    const typed = name.value.trim();
+    let n = typed || suggestName(tags, zh);
     try {
       // 舊快取還沒有這個名字時，先等面板這次讀取，避免把別處新增的同名牌組另存一份。
-      if (!decks.some((d) => d.name === n)) {
+      if (!typed || !decks.some((d) => d.name === n)) {
         const fresh = await initialLoad;
         if (fresh === null) {
           try {
@@ -266,7 +276,8 @@ export function openDecks({ where, current, has, zh, apply, paste, weightsNow = 
         }
       }
       decks = cache || decks;
-      const hit = decks.find((d) => d.name === n);
+      if (!typed) n = freeName(n, decks);
+      const hit = typed ? decks.find((d) => d.name === n) : null;
       const w = weightsNow();
       const weights = Object.fromEntries(tags.filter((t) => w[t] && w[t] !== 1).map((t) => [t, w[t]]));
       const deck = await saveDeck({ id: hit?.id, name: n, tags, weights });

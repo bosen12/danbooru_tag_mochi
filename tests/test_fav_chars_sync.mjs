@@ -58,7 +58,10 @@ function world({ local, synced, file }) {
   };
   const answer = async (url, opts) => {
     if (!String(url).startsWith("/api/fav-chars")) return { ok: false, json: async () => ({}) };
-    if (!opts.method) return { ok: true, json: async () => (server.file ? { tags: server.file, saved: true, at: 1 } : { tags: [], saved: false, at: 0 }) };
+    if (!opts.method) {
+      if (server.gate) await server.gate;
+      return { ok: true, json: async () => (server.file ? { tags: server.file, saved: true, at: 1 } : { tags: [], saved: false, at: 0 }) };
+    }
     const p = JSON.parse(opts.body);
     let fresh = false;
     if (Array.isArray(p.add) || Array.isArray(p.remove)) {
@@ -95,6 +98,21 @@ test("server file disappears while the page is open: adding still keeps the whol
   fav.add("hado nejire");
   await settle();
   assert.deepEqual(new Set(w.server.file), new Set(["hado nejire", "yor briar", "tatsumaki"]));
+  assert.deepEqual(new Set(w.local()), new Set(w.server.file));
+});
+
+test("tapping a heart before the first pull returns does not wipe what another device added", async () => {
+  // 手機上次只對到 A；電腦後來加了 B。手機重開卡冊、名單還在路上就替 C 按愛心（第五輪 Astra 找到：以前整份 [C, A] 蓋掉 B）。
+  const w = world({ local: ["yor briar"], synced: true, file: ["yor briar", "frieren"] });
+  let open;
+  w.server.gate = new Promise((r) => (open = r));
+  const fav = await load();
+  fav.add("tatsumaki");
+  await sleep(50);
+  open();
+  w.server.gate = null;
+  await settle();
+  assert.deepEqual(new Set(w.server.file), new Set(["tatsumaki", "yor briar", "frieren"]));
   assert.deepEqual(new Set(w.local()), new Set(w.server.file));
 });
 

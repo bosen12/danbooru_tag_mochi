@@ -631,6 +631,24 @@ function tile(w) {
 
 /* ================= 一張作品 ================= */
 
+/**
+ * 照這張再印：作品冊清單裡的 LoRA 只有檔名（/api/recipes 的摘要），強度、選過的觸發詞在完整那一份裡。
+ * 先讀這一件的完整配方再交給墨池；以前直接拿清單那一列，墨池用預設強度 0.8 和第一個觸發詞重印（第五輪 Astra 找到）。
+ * 讀不到（舊作品、斷線）照舊用清單那一列。
+ */
+async function reprintWork(all, w, btn) {
+  let src = w;
+  if (w.loras?.length) {
+    btn.setAttribute("aria-busy", "true");
+    const full = await fetch(`/api/recipes/${encodeURIComponent(w.id)}`, { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .catch(() => null);
+    btn.removeAttribute("aria-busy");
+    if (Array.isArray(full?.recipe?.loras)) src = { ...w, loras: full.recipe.loras };
+  }
+  toMochi(all, `全部 ${all.length} 張牌`, w, btn, { recipe: S.recipeOf(src) });
+}
+
 /** 詳情底下「相似的作品」：用到的牌重疊多的幾件（這一級分級看得到的），點一下換過去看。 */
 function similarBox(w, sheetOf) {
   const list = similarWorks(w, works.filter(visible), tellingOf);
@@ -828,7 +846,7 @@ function openWork(w) {
   );
   // 主鈕：照這張再印（全部的牌＋份量＋時代＋種子＋底模＋LoRA）。只帶牌的是次要的，手機上收進「⋯」。
   const again = all.length
-    ? el("button", { class: "btn btn-small btn-primary reprint-btn", type: "button", title: "牌、份量、時代、種子、底模、LoRA 一起帶去墨池", onclick: (e) => toMochi(all, `全部 ${all.length} 張牌`, w, e.currentTarget, { recipe: S.recipeOf(w) }) }, transferLabel("pool", "照這張再印"))
+    ? el("button", { class: "btn btn-small btn-primary reprint-btn", type: "button", title: "牌、份量、時代、種子、底模、LoRA 一起帶去墨池", onclick: (e) => reprintWork(all, w, e.currentTarget) }, transferLabel("pool", "照這張再印"))
     : null;
   const s = openSheet(w.name, body, {
     translateTitle: false,

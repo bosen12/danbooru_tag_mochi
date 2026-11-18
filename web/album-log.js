@@ -176,6 +176,8 @@ export function createLog(ctx) {
         onerror: (ev) => {
           // output 裡的原圖清掉了：收藏過的換成作品冊那一份，沒收藏的才說不在了。
           if (e._favImg && ev.currentTarget.getAttribute("src") !== e._favImg) {
+            // 記著：點開詳情、「開原圖」也用這一份（以前縮圖換過來了，詳情還連到不在的原圖）。
+            e._useFav = true;
             ev.currentTarget.src = e._favImg;
             return;
           }
@@ -288,7 +290,18 @@ export function createLog(ctx) {
 
   function openEntry(e, from) {
     const c = cards(e);
-    const full = e.ok && e.image && !e._gone ? viewSrc(e.image) : e._favImg || null;
+    // 原圖不在了（縮圖已經換成作品冊那份、或確定不在）：大圖和「開原圖」都用作品冊另存的那份（第五輪 Astra 找到）。
+    const useFav = !!e._favImg && (e._useFav || e._gone);
+    const full = useFav ? e._favImg : e.ok && e.image && !e._gone ? viewSrc(e.image) : e._favImg || null;
+    const href = useFav || !e.image ? e._favImg : e.image;
+    // 縮圖還沒載完就點開：大圖自己載不到時也換成作品冊那份，連結跟著換。
+    const swapToFav = (ev) => {
+      const img = ev.currentTarget;
+      if (!e._favImg || img.getAttribute("src") === e._favImg) return;
+      e._useFav = true;
+      img.src = e._favImg;
+      for (const a of img.closest(".sheet")?.querySelectorAll("a[data-orig]") || []) a.href = e._favImg;
+    };
     const loras = (e.loras || []).map((l) => `${shortName(l.file)}${l.strength !== 1 ? ` ${l.strength}` : ""}`).join("、");
     const facts = [
       ["時間", `${dayLabel(e.at)} ${clock(e.at)}`],
@@ -326,7 +339,7 @@ export function createLog(ctx) {
       "div",
       { class: "album-detail" },
       full
-        ? el("a", { class: "album-big", href: e.image, target: "_blank", rel: "noopener", style: e.width && e.height ? `aspect-ratio: ${e.width} / ${e.height}` : "" }, el("img", { src: full, alt: "" }))
+        ? el("a", { class: "album-big", href, target: "_blank", rel: "noopener", dataset: { orig: "" }, style: e.width && e.height ? `aspect-ratio: ${e.width} / ${e.height}` : "" }, el("img", { src: full, alt: "", onerror: swapToFav }))
         : el("span", { class: "album-big album-noimg" }, e.ok ? "原圖不在了（ComfyUI 那邊刪掉了）" : "這張沒印成"),
       el(
         "div",
@@ -363,7 +376,7 @@ export function createLog(ctx) {
           },
           "複製提示詞"
         ),
-        full ? el("a", { class: "btn btn-small", href: e.image, target: "_blank", rel: "noopener" }, "開原圖") : null,
+        full ? el("a", { class: "btn btn-small", href, target: "_blank", rel: "noopener", dataset: { orig: "" } }, "開原圖") : null,
       ]),
     });
     // 圖從那一列的小縮圖長大到彈窗、關掉時縮回去（zoom.js）；沒有縮圖可以接的照舊淡進來。

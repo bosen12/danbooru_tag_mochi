@@ -139,6 +139,8 @@ export function createGenerator(hooks) {
       // 自訂工作流的底模可以是工作流自己那顆（對照設「不改」）：記真的印這張的那顆（伺服器從送出去的圖讀的），
       // 不然收藏、「照這張再印」帶的是頂欄當時選的、沒參與這張圖的底模。預設工作流送的就是頂欄那顆，不動。
       if (shot.workflowId && data.ckpt) shot.ckpt = data.ckpt;
+      // 尺寸也一樣：工作流設「不改」寬高時，伺服器回的是工作流自己的那組（server.py 的 workflow_literal）。
+      if (shot.workflowId && data.width > 0 && data.height > 0 && !shot.hires) Object.assign(shot, { width: data.width, height: data.height });
       hooks.update(shot);
     };
     // 伺服器重開過：先問出圖日誌，再問 ComfyUI 本身（/api/gen/recover）。還在畫就隔幾秒再問，畫完就拿成品。
@@ -400,6 +402,10 @@ export function createGenerator(hooks) {
   }
 
   return {
+    /** 停一個不在這一頁手上的工作（別的分頁開的 Hires）：只有伺服器的工作編號、ComfyUI 的 prompt_id。 */
+    cancelRemote(job, promptId) {
+      if (job || promptId) cancelJob(job, promptId);
+    },
     /**
      * 排進來。重印、再試一次：新的工作（新的編號）。reserved：重新整理前就排著、還沒送出去的那張，
      * 沿用存檔裡的編號 —— 手機走 http 沒有 Web Locks，兩個分頁都會接著印，同一個編號伺服器只畫一次。

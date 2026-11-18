@@ -32,6 +32,12 @@ const fake = createServer((req, res) => {
       }
       res.writeHead(200, { "Content-Type": "text/event-stream", "X-Gen-Job": p.job });
       const ev = (event, data) => res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
+      // 連線中途斷掉（墨池那邊照樣畫完）：只送到排隊和 prompt_id 就收線。
+      if (p.positive.includes("dropme")) {
+        ev("queued", { seed: 1 });
+        ev("ping", { stage: "queued", prompt_id: "pid-drop-0001" });
+        return res.end();
+      }
       ev("queued", { prompt_id: "pid-12345678" });
       ev("progress", { value: 10, max: 20 });
       setTimeout(() => {
@@ -51,7 +57,11 @@ const fake = createServer((req, res) => {
   if (url.pathname === "/api/checkpoints") return json({ ok: true, current: "il\waiIllustriousSDXL_v170.safetensors", items: [{ file: "waiIllustriousSDXL_v170.safetensors", ckpt_name: "il\waiIllustriousSDXL_v170.safetensors" }] });
   if (url.pathname === "/api/loras") return json({ items: [{ folder: "style", category: "style", file: "detail.safetensors", name: "detail", title: "Detail Tweaker", trainedWords: ["detailed"] }, { folder: "Character", category: "Character", file: "x.safetensors", name: "x", title: "X", trainedWords: ["alpha trigger", "beta trigger"] }], counts: { style: 1, Character: 1 } });
   if (url.pathname === "/api/genlog") return json({ ok: true, items: [{ ok: true, origin: "mcp", positive: "1girl, solo", seed: 1, image: "/api/image?filename=a.png&type=output" }] });
-  if (url.pathname === "/api/gen/recover") return json({ ok: true, state: "gone" });
+  if (url.pathname === "/api/gen/recover") {
+    got.push({ recover: url.search });
+    if (url.searchParams.get("prompt_id") === "pid-drop-0001") return json({ ok: true, state: "done", image: "/api/image?filename=dropped_00001_.png&type=output" });
+    return json({ ok: true, state: "gone" });
+  }
   if (url.pathname === "/api/decks") return json({ ok: true, decks: [{ id: "d-1", name: "書房午後", tags: ["library", "reading", "glasses"], weights: { glasses: 1.2 } }] });
   if (url.pathname === "/api/custom-cards") return json({ ok: true, cards: [{ id: "abc", name: "我的女僕", rating: "general", members: [{ tag: "maid", w: 1.2 }, { tag: "smile", w: 1 }], extra: [{ text: "made up thing", w: 1 }] }, { id: "hot", name: "辣的", rating: "explicit", members: [{ tag: "smile", w: 1 }], extra: [] }] });
   if (url.pathname === "/api/fav-chars") return json({ ok: true, tags: ["hatsune miku", "yor briar"] });
@@ -320,6 +330,23 @@ try {
   ok("修圖沿用 LoRA：已指定的觸發詞不改插成預設的第一個", !fxKeep.error && kb?.positive.includes("beta trigger") && !kb.positive.includes("alpha trigger"), kb?.positive);
 
   ok("list_models：觸發詞自動插，不再叫人自己加", /自動/.test(m.data.note) && !/自己加/.test(m.data.note || ""), m.data.note);
+
+  // ---- 第五輪 Astra ----
+  await tool("generate_image", { positive: "1girl, solo, smile", seed: 4294967297, wait_seconds: 0 });
+  ok("生圖種子：超過 32 位元照原數送（以前 >>> 0 變成 1）", got.filter((x) => x.body).at(-1)?.body.seed === 4294967297, JSON.stringify(got.filter((x) => x.body).at(-1)?.body.seed));
+  await tool("generate_image", { positive: "1girl, solo, smile", seed: "18446744073709551615", wait_seconds: 0 });
+  ok("生圖種子：JavaScript 裝不下的用十進位字串送，不四捨五入", got.filter((x) => x.body).at(-1)?.body.seed === "18446744073709551615");
+  const badSeed = await tool("generate_image", { positive: "1girl, solo, smile", seed: -3 });
+  ok("生圖種子：負數、亂打的明講不收", badSeed.error);
+  ok("預覽：帶 fmt=webp&w=480（伺服器才會縮，不是整張 PNG）", got.some((x) => x.image && x.image.includes("fmt=webp") && x.image.includes("w=480")), got.filter((x) => x.image).map((x) => x.image).join(" "));
+  const favA = await tool("draw_prompt", { favoriteCharacter: true, rating: "general", heats: ["activity"] });
+  const favSeed = favA.data.results?.[0]?.drawSeed;
+  const favB = await tool("draw_prompt", { favoriteCharacter: true, rating: "general", heats: ["activity"], seed: favSeed });
+  ok("偏好角色：沒給種子抽的，帶回傳的 drawSeed 重抽一模一樣", !favA.error && favA.data.results[0].positive === favB.data.results[0].positive, `${favA.data.results?.[0]?.positive} / ${favB.data?.results?.[0]?.positive}`);
+  const lost = await tool("generate_image", { positive: "1girl, solo, smile, dropme", wait_seconds: 5 });
+  ok("連線中途斷了：不記成印壞", !lost.error && lost.data.state !== "error", JSON.stringify(lost.data));
+  const back = await tool("image_status", { job: lost.data.job, wait_seconds: 0 });
+  ok("連線中途斷了：image_status 去問墨池、拿到成品", !back.error && back.data.state === "done" && /dropped_00001_/.test(back.data.imageUrl || "") && got.some((x) => x.recover && x.recover.includes("pid-drop-0001")), JSON.stringify(back.data));
 
   const none = await tool("沒有這個", {});
   ok("不認得的工具回 isError", none.error);

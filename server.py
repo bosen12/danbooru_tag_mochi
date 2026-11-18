@@ -370,6 +370,9 @@ def sampling_value(raw, kind: str, default):
     v = min(hi, max(lo, v))
     return int(round(v)) if kind == "steps" else round(v, 2)
 SEED_MAX = 0xFFFFFFFFFFFFFFFF
+# 沒給種子時自己挑的：落在 JavaScript 數字裝得下的範圍（2^53-1）。以前挑滿 64 位元，網頁、MCP 用 JSON 讀回來
+# 會四捨五入（9007199254740993 變 …992），拿這顆「照這張再印」印出來是別張（第五輪 Astra 找到）。手動給的照收到 SEED_MAX。
+RANDOM_SEED_MAX = 2**53 - 1
 
 # LoRA Manager（獨立埠 7861）點「送到 workflow」時 POST /api/lora-push。
 # 單一格、版本號遞增、最新覆蓋前一個。epoch 每次啟動都換，避免瀏覽器記住的舊 ver
@@ -3090,7 +3093,7 @@ def prepare_hires(payload: dict) -> tuple[dict, dict]:
         raise ValueError("missing positive")
     seed = payload.get("seed")
     if seed is None or seed == "":
-        seed = random.randint(0, SEED_MAX)
+        seed = random.randint(0, RANDOM_SEED_MAX)
     seed = int(seed) & SEED_MAX
     try:
         raw = api("GET", "/view?" + spec["view"], timeout=120)
@@ -3554,7 +3557,7 @@ def prepare_workflow(payload: dict):
     height = max(256, min(int(payload.get("height") or 1024), 2048))
     seed = payload.get("seed")
     if seed is None or seed == "":
-        seed = random.randint(0, SEED_MAX)
+        seed = random.randint(0, RANDOM_SEED_MAX)
     seed = int(seed) & SEED_MAX
     meta = {
         "kind": "builtin",
@@ -3655,10 +3658,40 @@ def prepare_workflow(payload: dict):
                     inject_lora_model_only(wf, name, strength, model_src)
                 else:
                     inject_lora(wf, name, strength, model_src=model_src, clip_src=clip_src)
+    # 種子、寬高設「不改」（工作流用自己的）：完成資料、日誌記工作流裡真的那個值，不是墨池要求的
+    # （以前記成 1024×1024／123，實際畫的是 832×1216／42；第五輪 Astra 找到）。讀不出來（接線、沒指定節點）的種子記成 None。
+    if "seed" not in values:
+        meta["seed"] = workflow_literal(wf, seed_spec, ("seed", "noise_seed"), ("KSampler", "KSamplerAdvanced", "SamplerCustom", "RandomNoise"))
+    for key, spec in (("width", w_spec), ("height", h_spec)):
+        if key not in values:
+            got = workflow_literal(wf, spec, (key,), ("EmptyLatentImage", "EmptySD3LatentImage", "EmptyHunyuanLatentVideo"))
+            if isinstance(got, int) and got > 0:
+                meta[key] = got
     meta["kind"] = "profile"
     meta["id"] = wid
     meta["name"] = prof.get("name") or wid
     return wf, meta
+
+
+def workflow_literal(wf: dict, spec: dict, inputs: tuple, classes: tuple):
+    """工作流裡某個值（不是接線的）：先看 mapping 指定的那個節點，沒指定就找第一個這類節點。讀不出來回 None。"""
+    def literal(node, names):
+        ins = node.get("inputs") if isinstance(node, dict) else None
+        if not isinstance(ins, dict):
+            return None
+        for name in names:
+            v = ins.get(name)
+            if isinstance(v, (int, float)) and not isinstance(v, bool):
+                return int(v)
+        return None
+    if isinstance(spec, dict) and spec.get("node"):
+        return literal(wf.get(str(spec.get("node"))), (str(spec.get("input") or ""),) + tuple(inputs))
+    for node in wf.values():
+        if isinstance(node, dict) and node.get("class_type") in classes:
+            got = literal(node, inputs)
+            if got is not None:
+                return got
+    return None
 
 
 def comfy_interrupt(prompt_id=None) -> None:
@@ -3997,6 +4030,28 @@ def first_image_src(history: dict, preferred_nodes=None) -> str | None:
             )
             if q:
                 return "/api/image?" + q
+    return None
+
+
+def recovered_image_src(entry: dict) -> str | None:
+    """伺服器重開後從 ComfyUI history 找回成品：跟正常印完同一套挑法（gen_via_ws 的 image_output_nodes）。
+    history 的 prompt 欄位裡就是當時送出去的工作流，從那裡認 SaveImage 節點；以前直接拿第一個有圖的節點，
+    多輸出工作流會把排在前面的 PreviewImage（temp 中間圖）當成品放上牆（第五輪 Astra 找到）。
+    認不出工作流時，output 的圖先於 temp 的。"""
+    prompt = entry.get("prompt")
+    wf = prompt[2] if isinstance(prompt, (list, tuple)) and len(prompt) > 2 and isinstance(prompt[2], dict) else None
+    if wf:
+        image = first_image_src(entry, workflows.image_output_nodes(wf))
+        if image:
+            return image
+    outputs = entry.get("outputs") or {}
+    for want_output in (True, False):
+        for nid, node_out in outputs.items():
+            imgs = [i for i in (node_out or {}).get("images") or [] if ((i.get("type") or "output") == "output") == want_output]
+            if imgs:
+                picked = first_image_src({"outputs": {nid: {"images": imgs}}})
+                if picked:
+                    return picked
     return None
 
 
@@ -4590,8 +4645,10 @@ def _recipes_stamp() -> tuple:
 def favorite_index() -> dict:
     """作品冊每一筆的 fav_key → {"id", "thumb"}（gen_log 用種子＋牌認收藏）。作品冊沒變就用上一次的。
     "_known" 放詞庫的牌（算 fav_key 時只看牌）。"""
-    key = (_recipes_stamp(), card_usage.LEXICON_PATH.stat().st_mtime_ns if card_usage.LEXICON_PATH.exists() else 0)
-    if _FAV_CACHE["key"] == key and _FAV_CACHE["value"] is not None:
+    # 快取鍵和迴圈裡每一件的 fav_key 分開取名：以前同一個變數 key 在迴圈裡被蓋成最後一件的 fav_key、存進快取，
+    # 下一次比對永遠不一樣 —— 卡冊每查一張牌的作品就把整本作品冊重讀一次（第五輪 Astra 找到）。
+    cache_key = (_recipes_stamp(), card_usage.LEXICON_PATH.stat().st_mtime_ns if card_usage.LEXICON_PATH.exists() else 0)
+    if _FAV_CACHE["key"] == cache_key and _FAV_CACHE["value"] is not None:
         return _FAV_CACHE["value"]
     known = card_usage._known_tags()
     index = gen_log.FavIndex()
@@ -4600,12 +4657,12 @@ def favorite_index() -> dict:
         cards = [t for t in gen_log.tags_of(r.get("positive")) if t in known]
         ref = r.get("thumbnail") or r.get("image") or {}
         thumb = f"/api/recipes/files/{urllib.parse.quote(str(ref.get('file')))}" if isinstance(ref, dict) and ref.get("file") else None
-        key = gen_log.fav_key(r.get("seed"), cards)
+        fav_key = gen_log.fav_key(r.get("seed"), cards)
         value = {"id": r.get("id"), "thumb": thumb}
-        index.add(r, key, value)
+        index.add(r, fav_key, value)
         if not (isinstance(r.get("image"), dict) and r["image"].get("src")):
-            idx[key] = value
-    _FAV_CACHE.update(key=key, value=idx)
+            idx[fav_key] = value
+    _FAV_CACHE.update(key=cache_key, value=idx)
     return idx
 
 
@@ -4837,7 +4894,7 @@ def recover_gen(job_id: str, prompt_id: str) -> dict:
         hist = api("GET", f"/history/{pid}", timeout=8)
         entry = hist.get(pid) if isinstance(hist, dict) else None
         if isinstance(entry, dict):
-            image = first_image_src(entry)
+            image = recovered_image_src(entry)
             if image:
                 return {"ok": True, "state": "done", "image": image}
             try:

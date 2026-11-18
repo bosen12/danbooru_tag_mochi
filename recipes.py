@@ -352,8 +352,10 @@ def normalize_recipe(raw, *, rid: str | None = None, existing: dict | None = Non
         "positiveWeighted": str(src.get("positiveWeighted") or (existing or {}).get("positiveWeighted") or ""),
         "negative": str(src.get("negative") or (existing or {}).get("negative") or ""),
         "seed": seed,
-        "width": num("width", 256, 2048, 1024),
-        "height": num("height", 256, 2048, 1024),
+        # 成品的大小，不是要送去生圖的大小：Hires 2× 之後一邊會超過 2048（1664×2432）。以前照生圖的上限 2048 截掉，
+        # 作品冊詳情的尺寸、畫框比例都錯（第五輪 Astra 找到）。生圖那邊另外照 2048 擋（server.py 的 /api/gen）。
+        "width": num("width", 256, 8192, 1024),
+        "height": num("height", 256, 8192, 1024),
         "checkpoint": str(src.get("checkpoint") or (existing or {}).get("checkpoint") or "").replace("/", "\\"),
         "loras": _clean_loras(src.get("loras") if src.get("loras") is not None else (existing or {}).get("loras")),
         "workflowId": str(src.get("workflowId") if src.get("workflowId") is not None else (existing or {}).get("workflowId") or ""),

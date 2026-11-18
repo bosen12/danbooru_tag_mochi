@@ -222,7 +222,8 @@ async function boot() {
   // 卡冊送來、偏好卡牌、上次留著的自製牌：裡面的牌補釘上（交接只帶自製牌本身那個名字）。
   ensureCustomMembers();
   // 開頁時自製牌還沒讀回來：回來了照「換了」處理（牌庫補上、池子裡的補成員、重畫）。
-  customP.then(onCustomChanged);
+  // 第一次就讀不到（loadCustom 回空陣列、不記下來）：不當成「自製牌都沒了」—— 池裡上次留著的自製牌不拿掉，等下次讀到。
+  customP.then((list) => list === customList() && onCustomChanged(list));
   onCustomChange(onCustomChanged);
   function onCustomChanged(list = customList()) {
     // 同一份只處理一次（開頁那次讀回來，通知和 customP 都會叫到）。

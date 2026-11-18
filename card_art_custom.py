@@ -15,7 +15,7 @@ import os
 import time
 from pathlib import Path
 
-from file_lock import locked
+from file_lock import locked, read_json, write_text
 
 ROOT = Path(__file__).resolve().parent
 PATH = Path(os.environ.get("CARD_ART_CUSTOM_PATH") or ROOT / "data" / "card_art_custom.json")
@@ -45,10 +45,25 @@ def guard_negative(negative: str) -> str:
 
 
 def load() -> dict:
+    """讀來用（烘卡、卡冊顯示）：讀不懂就當沒有自訂，照預設烘。要寫回去的請用 _load_for_write。"""
     try:
         data = json.loads(PATH.read_text(encoding="utf-8"))
     except (OSError, ValueError):
         return {}
+    return _clean(data)
+
+
+def _load_for_write() -> dict:
+    """存檔前讀：讀不懂不能當成空的（以前存一張，整份其他的自訂就被蓋掉；第五輪 Astra 找到）。
+    跟牌組、使用次數同一套（file_lock.read_json）：有 .bak 就換回來接著用；也壞了就把壞檔改名留著、
+    丟 StoreCorrupt（伺服器回 503 說清楚），這次不存。"""
+    data = read_json(PATH, label="卡面自訂提示詞")
+    if data is not None and not isinstance(data, dict):
+        raise CustomError("卡面自訂提示詞的存檔樣子不對，沒有存（原檔沒動）")
+    return _clean(data or {})
+
+
+def _clean(data) -> dict:
     if not isinstance(data, dict):
         return {}
     out = {}
@@ -59,10 +74,8 @@ def load() -> dict:
 
 
 def _write(data: dict) -> None:
-    PATH.parent.mkdir(parents=True, exist_ok=True)
-    tmp = PATH.with_suffix(".tmp")
-    tmp.write_text(json.dumps(data, ensure_ascii=False, indent=1, sort_keys=True), encoding="utf-8")
-    os.replace(tmp, PATH)
+    # 寫正本也寫一份 .bak（file_lock.write_text）：正本壞了 _load_for_write 從備份救回來。
+    write_text(PATH, json.dumps(data, ensure_ascii=False, indent=1, sort_keys=True))
 
 
 def save(tag: str, positive: str, negative: str) -> dict:
@@ -75,7 +88,7 @@ def save(tag: str, positive: str, negative: str) -> dict:
     if len(positive) > MAX_LEN or len(negative) > MAX_LEN:
         raise CustomError(f"提示詞太長（上限 {MAX_LEN} 字）")
     with locked(PATH):
-        data = load()
+        data = _load_for_write()
         data[tag] = {"positive": positive, "negative": negative, "at": int(time.time() * 1000)}
         _write(data)
     return data[tag]
@@ -83,7 +96,7 @@ def save(tag: str, positive: str, negative: str) -> dict:
 
 def remove(tag: str) -> bool:
     with locked(PATH):
-        data = load()
+        data = _load_for_write()
         if tag not in data:
             return False
         del data[tag]

@@ -170,6 +170,9 @@ function pull() {
     .then((j) => {
       if (!j || !Array.isArray(j.tags)) return;
       server = true;
+      // 名單回來之前就按了愛心（手機剛開卡冊）：那幾下已經記在 ops 裡。伺服器有存過的話照 ops 送／先合併，
+      // 不要拿這台的整份去蓋 —— 以前會把別台後來加的角色洗掉（第五輪 Astra 找到）。只有伺服器沒存過才整份搬上去。
+      if (dirty && j.saved) dirty = false;
       if (dirty) return push();
       // 伺服器說沒存過（換了一份資料夾跑、檔案被刪掉）：這台的整份搬上去，不管以前對過沒有。
       // 以前這台已經對過一次（synced）就只送改動：伺服器建了一份只有新加那幾位的名單，回來把這台整份蓋掉（2026-10-21）。

@@ -515,15 +515,21 @@ async function checkCards(spec) {
 }
 
 async function drawPrompt(spec) {
-  const p = await prepare(spec);
   const n = Math.max(1, Math.min(4, Math.floor(Number(spec.n) || 1)));
   const base = spec.seed !== undefined && spec.seed !== null && spec.seed !== "" ? Number(spec.seed) >>> 0 : null;
+  // 每一組的抽牌種子先決定好。偏好角色要用「那一組的」種子挑：以前沒給種子時固定用 1 挑（每次都同一位），
+  // 回傳的 drawSeed 帶回來重抽又挑到別人（第五輪 Astra 找到）。
+  const seeds = Array.from({ length: n }, (_, i) => (base === null ? E.randomSeed() : (base + i) >>> 0));
+  const shared = spec.favoriteCharacter ? null : await prepare(spec);
+  let p = shared;
   const results = [];
   for (let i = 0; i < n; i++) {
-    const seed = base === null ? E.randomSeed() : (base + i) >>> 0;
-    const r = E.drawOne(lex, p.settings, p.pinned, p.banned, E.mulberry32(seed), seed, { trace: true });
-    const tags = finishTags(r, p.extras, p.weights);
-    const { kept, removed } = traceOf(r, p);
+    const seed = seeds[i];
+    const pi = shared || (await prepare({ ...spec, seed }));
+    p ||= pi;
+    const r = E.drawOne(lex, pi.settings, pi.pinned, pi.banned, E.mulberry32(seed), seed, { trace: true });
+    const tags = finishTags(r, pi.extras, pi.weights);
+    const { kept, removed } = traceOf(r, pi);
     results.push({
       positive: tags.join(", "),
       tagCount: tags.length,
@@ -531,7 +537,7 @@ async function drawPrompt(spec) {
       era: r.era,
       cards: kept,
       removed,
-      droppedPins: p.pinsIn.filter((t) => lex.byTag.has(t) && !tags.some((x) => bareTag(x) === t)),
+      droppedPins: pi.pinsIn.filter((t) => lex.byTag.has(t) && !tags.some((x) => bareTag(x) === t)),
     });
   }
   return {
@@ -769,6 +775,7 @@ async function startJob(body, meta) {
     try {
       for await (const { event, data: d } of sse(res)) {
         if (event === "queued") job.state = "queued";
+        else if (event === "ping" && d?.prompt_id) job.promptId = d.prompt_id;
         else if (event === "progress") {
           job.state = "running";
           job.progress = Math.min(1, (d?.value || 0) / (d?.max || 25));
@@ -780,14 +787,27 @@ async function startJob(body, meta) {
           return;
         }
       }
-      if (job.state !== "done") Object.assign(job, { state: "error", error: "跟墨池的連線中途斷了（墨池或 ComfyUI 關掉了？）" });
+      // 連線斷了不等於印壞：墨池那邊可能照樣畫完。記成 lost，image_status 會去問墨池（/api/gen/recover）。
+      // 以前直接記成 error，之後怎麼問都是失敗，明明圖已經印好了（第五輪 Astra 找到）。
+      if (job.state !== "done" && job.state !== "error") Object.assign(job, { state: "lost", error: "跟墨池的連線中途斷了" });
     } catch (err) {
-      Object.assign(job, { state: "error", error: String(err?.message || err) });
+      if (job.state !== "done" && job.state !== "error") Object.assign(job, { state: "lost", error: String(err?.message || err) });
     } finally {
       settle();
     }
   })();
   return job;
+}
+
+/**
+ * 生圖、修圖的種子：ComfyUI 收 0～2^64-1。以前一律 >>> 0 砍成 32 位元，4294967297 送出去變成 1（第五輪 Astra 找到）。
+ * JavaScript 數字裝得下的照數字送；更大的用十進位字串送（伺服器 int() 照收），不會被四捨五入。
+ * 抽牌引擎的 drawSeed 是另一回事（32 位元），不走這裡。
+ */
+function imageSeed(v) {
+  const s = String(v).trim();
+  if (!/^\d{1,20}$/.test(s) || BigInt(s) > 0xffffffffffffffffn) throw new Error("seed 要是 0 到 18446744073709551615 的整數");
+  return Number.isSafeInteger(Number(s)) ? Number(s) : s;
 }
 
 async function generateImage(args) {
@@ -803,7 +823,7 @@ async function generateImage(args) {
     rating,
     width: checkSize(args.width, "width") ?? 1024,
     height: checkSize(args.height, "height") ?? 1024,
-    ...(args.seed !== undefined && args.seed !== null && args.seed !== "" ? { seed: Number(args.seed) >>> 0 } : {}),
+    ...(args.seed !== undefined && args.seed !== null && args.seed !== "" ? { seed: imageSeed(args.seed) } : {}),
     ...(args.ckpt ? { ckpt: String(args.ckpt) } : {}),
     ...(dressed.loras ? { loras: dressed.loras } : {}),
     ...(args.era ? { era: String(args.era) } : {}),
@@ -842,7 +862,7 @@ async function fixImage(args) {
     positive: E.escapeForComfy(positive),
     rating,
     ...(from?.width ? { width: from.width, height: from.height } : {}),
-    ...(args.seed !== undefined && args.seed !== null && args.seed !== "" ? { seed: Number(args.seed) >>> 0 } : {}),
+    ...(args.seed !== undefined && args.seed !== null && args.seed !== "" ? { seed: imageSeed(args.seed) } : {}),
     ...((args.ckpt || from?.ckpt) ? { ckpt: String(args.ckpt || from.ckpt) } : {}),
     ...(dressed.loras ? { loras: dressed.loras } : {}),
     hires: mode === "face" ? { mode, image } : { mode, scale, image },
@@ -898,7 +918,8 @@ async function report(job) {
   const result = { ...out, seed: job.seed, imageUrl: url, positive: job.positive, note: "已記進墨池的出圖日誌（作品冊「日誌」，來源寫 AI）。" };
   // 附一張 480 寬的縮圖（墨池的 ?w=480），對話裡直接看得到。原圖看 imageUrl。
   try {
-    const r = await fetch(url + (url.includes("?") ? "&" : "?") + "w=480");
+    // 伺服器只有 fmt=webp 時才縮（server.py 的 /api/image）；只帶 w=480 會把整張 PNG 傳過來（第五輪 Astra 找到）。
+    const r = await fetch(url + (url.includes("?") ? "&" : "?") + "fmt=webp&w=480");
     if (r.ok) {
       const buf = Buffer.from(await r.arrayBuffer());
       if (buf.length < 4_000_000) result._image = { data: buf.toString("base64"), mimeType: (r.headers.get("content-type") || "image/png").split(";")[0] };
@@ -911,6 +932,16 @@ async function report(job) {
 
 async function imageStatus({ job, wait_seconds }) {
   const j = jobs.get(String(job ?? ""));
+  if (j?.state === "lost") {
+    // 連線中途斷了：問墨池這張後來怎樣（出圖日誌、ComfyUI 的 history／佇列）。
+    const q = `job=${encodeURIComponent(j.id)}${j.promptId ? `&prompt_id=${encodeURIComponent(j.promptId)}` : ""}`;
+    const d = await mochi(`/api/gen/recover?${q}`).then((r) => r.json()).catch(() => ({}));
+    if (d.state === "done" && d.image) Object.assign(j, { state: "done", progress: 1, image: d.image, ...(d.seed !== undefined ? { seed: d.seed } : {}) });
+    else if (d.state === "failed") Object.assign(j, { state: "error", error: d.error || "ComfyUI 報錯" });
+    else if (d.state === "gone") Object.assign(j, { state: "error", error: "墨池和 ComfyUI 都找不到這張了（可能被取消，或伺服器重開過）" });
+    else return { ...(await report(j)), state: "running", note: "跟墨池的連線斷過；墨池那邊還在畫（或一時問不到），等一下再用 image_status 問。" };
+    return report(j);
+  }
   if (!j) {
     // 這個 MCP 程式重開過：問墨池（出圖日誌、ComfyUI）這張後來怎樣。
     const r = await mochi(`/api/gen/recover?job=${encodeURIComponent(String(job ?? ""))}`);
@@ -1070,7 +1101,7 @@ const TOOLS = [
         rating: { type: "string", enum: E.RATINGS, description: "分級（決定負向提示詞）。不給就看 positive 尾巴的 general／sensitive／explicit" },
         width: { type: "integer", description: "直圖 832×1216、橫圖 1216×832、方圖 1024×1024" },
         height: { type: "integer" },
-        seed: { type: "integer", description: "生圖種子（同提示詞＋同種子＝同構圖）；不給就隨機" },
+        seed: { type: ["integer", "string"], description: "生圖種子 0～18446744073709551615（同提示詞＋同種子＝同構圖）；不給就隨機。超過 9007199254740991 的請用字串給，數字會被四捨五入" },
         ckpt: { type: "string", description: "底模檔名（list_models 查）；不給用墨池預設" },
         loras: loraSchema,
         era: { type: "string", enum: E.ERAS, description: "記進日誌用（作品冊照這張再印時帶回時代）" },
@@ -1093,7 +1124,7 @@ const TOOLS = [
         positive: { type: "string", description: "沒有 job 時要給：那張圖的提示詞" },
         scale: { type: "number", minimum: 1.25, maximum: 3, description: "放大倍數（face 不用）" },
         rating: drawSchema.rating,
-        seed: { type: "integer" },
+        seed: { type: ["integer", "string"], description: "生圖種子（大的用字串給）" },
         loras: loraSchema,
         wait_seconds: { type: "integer", minimum: 0, maximum: 110, description: "最多等幾秒（預設 50）" },
       },

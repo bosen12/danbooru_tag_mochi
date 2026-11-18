@@ -25,14 +25,19 @@ let cache = null;
 let loading = null;
 const listeners = new Set();
 
-/** 讀伺服器上的自製牌（同一頁只讀一次；force 再讀）。讀不到回空陣列。 */
+/**
+ * 讀伺服器上的自製牌（同一頁只讀一次；force 再讀）。
+ * 讀不到（503、斷線、回來的樣子不對）：不當成「沒有自製牌」通知大家 —— 以前別的分頁存了一張、這頁重讀剛好 503，
+ * 收到空清單的墨池把池裡還在的自製牌拿掉存檔（第五輪 Astra 找到）。有讀過就照舊用上一次的；
+ * 第一次就讀不到回空陣列但不記下來，下一次照樣再讀。
+ */
 export function loadCustom({ force = false } = {}) {
   if (cache && !force) return Promise.resolve(cache);
   if (loading && !force) return loading;
   loading = fetch("/api/custom-cards", { cache: "no-store" })
-    .then((r) => (r.ok ? r.json() : { cards: [] }))
-    .then((j) => set(Array.isArray(j.cards) ? j.cards : []))
-    .catch(() => cache || set([]))
+    .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
+    .then((j) => (Array.isArray(j?.cards) ? set(j.cards) : Promise.reject(new Error("bad list"))))
+    .catch(() => cache || [])
     .finally(() => (loading = null));
   return loading;
 }
