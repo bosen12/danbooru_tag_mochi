@@ -20,6 +20,7 @@ import os
 import queue
 import random
 import re
+import select
 import socket
 import ssl
 import struct
@@ -71,6 +72,7 @@ def _dodge_blocked_port(address, timeout=socket._GLOBAL_DEFAULT_TIMEOUT, source_
 if sys.platform == "win32":
     socket.create_connection = _dodge_blocked_port
 
+import assistant
 import card_usage
 import card_decks
 import card_groups
@@ -7018,7 +7020,146 @@ class Handler(BaseHTTPRequestHandler):
         except file_lock.StoreCorrupt as exc:
             self._store_corrupt(exc)
 
+    def _serve_assistant(self, path: str, *, post: bool) -> None:
+        """先限制來源再讀 POST，遠端裝置不能藉 API 偵測主機或更改助理設定。"""
+        addr = self.client_address[0]
+        local = assistant.is_local(addr)
+        action = path.removeprefix("/api/assistant/")
+        body_pending = post
+        try:
+            if not local and (not allowed_client(addr) or action not in ("status", "chat")):
+                raise assistant.AssistantError("local_only", status=403)
+            if local:
+                # 瀏覽器經 DNS 重綁仍會送外部 Host。只信本機網址上的 loopback 連線。
+                host = urllib.parse.urlsplit("//" + (self.headers.get("Host") or "")).hostname
+                if host and host.rstrip(".").lower() != "localhost" and not assistant.is_local(host):
+                    raise assistant.AssistantError("local_only", status=403)
+            if not post and action == "status":
+                self._json(200, assistant.status(local=local))
+                return
+            if not post and action == "config":
+                self._json(200, assistant.get_config())
+                return
+            if not post or action not in ("config", "detect", "models", "test", "chat"):
+                raise assistant.AssistantError("unavailable", "找不到這個助理功能。", status=404)
+            if action == "chat" and not local and not assistant.status(local=False)["allowRemote"]:
+                raise assistant.AssistantError("local_only", status=403)
+            if not self._mutation_allowed(path):
+                return
+            payload = self._assistant_body()
+            body_pending = False
+            if action == "chat":
+                self._assistant_sse(payload)
+                return
+            if action == "config":
+                result = assistant.save_config(payload)
+            elif action == "detect":
+                result = assistant.detect()
+            elif action == "models":
+                result = assistant.models(payload)
+            else:
+                result = assistant.test_connection()
+            self._json(200, result)
+        except assistant.AssistantError as exc:
+            self.close_connection = True
+            self._json(exc.status, exc.payload())
+        except file_lock.StoreCorrupt as exc:
+            self._store_corrupt(exc)
+        except TimeoutError:
+            self.close_connection = True
+            self._json(408, assistant.AssistantError("timeout", "等待資料逾時，請重新送出。").payload())
+        except ValueError:
+            self.close_connection = True
+            self._json(400, assistant.AssistantError("format", "助理請求的網址或標頭格式有誤。").payload())
+        except OSError:
+            self.close_connection = True
+            try:
+                self._json(503, assistant.AssistantError("unavailable", "讀寫助理設定失敗，請稍後再試。").payload())
+            except OSError:
+                pass  # 客戶端可能已斷線，無法再回錯誤。
+        finally:
+            if body_pending and self.close_connection:
+                self._assistant_finish_rejection()
+
+    def _assistant_finish_rejection(self) -> None:
+        """先送出 FIN 再丟掉程度有限的剩餘內容，避免 Windows 用 RST 把 403 一起丟掉。"""
+        try:
+            self.connection.shutdown(socket.SHUT_WR)
+            remaining = assistant.MAX_CHAT_BYTES
+            deadline = time.monotonic() + 0.1
+            while remaining > 0:
+                ready, _, _ = select.select([self.connection], [], [], max(0, deadline - time.monotonic()))
+                if not ready:
+                    return
+                data = self.connection.recv(min(remaining, 8192))
+                if not data:
+                    return
+                remaining -= len(data)
+                if time.monotonic() >= deadline:
+                    return
+        except OSError:
+            pass
+
+    def _assistant_body(self) -> dict:
+        """助理的上限比工作流小，超量先關連線，剩下的請求主體不能當下一個請求。"""
+        lengths = self.headers.get_all("Content-Length") or []
+        try:
+            length = int(lengths[0]) if lengths else 0
+        except ValueError:
+            length = -1
+        if length < 0 or len(lengths) > 1 or self.headers.get("Transfer-Encoding") is not None:
+            raise assistant.AssistantError("format", "助理請求的資料長度不正確。")
+        if length > assistant.MAX_CHAT_BYTES:
+            raise assistant.AssistantError("too_large", status=413)
+        previous = self.connection.gettimeout()
+        self.connection.settimeout(15)
+        try:
+            raw = self.rfile.read(length) if length else b"{}"
+        finally:
+            self.connection.settimeout(previous)
+        if length and len(raw) != length:
+            raise assistant.AssistantError("format", "助理請求的資料還沒傳完。")
+        try:
+            payload = json.loads(raw.decode("utf-8"))
+        except (ValueError, RecursionError):
+            payload = None
+        if not isinstance(payload, dict):
+            raise assistant.AssistantError("format", "請送出有效的 JSON 物件。")
+        return payload
+
+    def _assistant_sse(self, payload: dict) -> None:
+        """助理斷線要立即收掉該模型連線。生圖的 _sse 另外有自己的中斷行為。"""
+        self.close_connection = True
+
+        def disconnected():
+            try:
+                ready, _, _ = select.select([self.connection], [], [], 0)
+                return bool(ready) and not self.connection.recv(1, socket.MSG_PEEK)
+            except OSError:
+                return True
+
+        events = assistant.chat_events(payload, disconnected=disconnected)
+        try:
+            self.send_response(200)
+            self.send_header("Content-Type", "text/event-stream; charset=utf-8")
+            self.send_header("Cache-Control", "no-cache")
+            self.send_header("Connection", "close")
+            self.send_header("X-Accel-Buffering", "no")
+            self.end_headers()
+            self.connection.settimeout(10)
+            for event, data in events:
+                self.wfile.write(sse(event, data))
+                self.wfile.flush()
+        except OSError:
+            pass  # 最後一筆寫出去前關頁也會進 finally，立即中止仍在跑的模型。
+        finally:
+            events.close()
+
     def _do_get(self) -> None:
+        assistant_path = urllib.parse.urlparse(self.path).path
+        if assistant_path.startswith("/api/assistant/"):
+            self._serve_assistant(assistant_path, post=False)
+            return
         if not self._allowed():
             return
         path = urllib.parse.urlparse(self.path).path
@@ -7170,6 +7311,10 @@ class Handler(BaseHTTPRequestHandler):
         self._serve_static(True)
 
     def _do_post(self) -> None:
+        assistant_path = urllib.parse.urlparse(self.path).path
+        if assistant_path.startswith("/api/assistant/"):
+            self._serve_assistant(assistant_path, post=True)
+            return
         if not self._allowed():
             return
         path = urllib.parse.urlparse(self.path).path

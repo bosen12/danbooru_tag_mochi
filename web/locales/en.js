@@ -2059,6 +2059,129 @@ ComfyUI 沒開：先用拼貼卡面，之後再回來烤。|ComfyUI isn’t runn
 管的格子：|Slots it controls: 
 （其他照常抽）| (the rest draw as usual)
 勾了的組管：|Checked groups cover: 
+墨池伺服器還沒有 AI 助手：請把墨池伺服器的視窗關掉再重開|Ink Pool's server doesn't have the AI assistant yet. Close the server window and start it again.
+理解中|Understanding
+查詢中|Looking up
+操作中|Working
+等待確認|Waiting for you
+操作完成|Done
+已回覆|Answered
+部分完成|Partly done
+操作失敗|Failed
+實驗功能|Experimental features
+AI 助手設定|AI assistant settings
+實驗功能關了：聊天室收起，還沒執行的助手操作都取消|Experimental features off: the chat is closed and pending assistant actions were cancelled
+實驗功能開了：頂欄多了一顆朱色印章（墨池助手），字盒、合成池多了「問助理」|Experimental features on: a red seal (Ink Pool assistant) is in the header, and the library and pool have “Ask the assistant”
+墨池助手（Ctrl+/）|Ink Pool assistant (Ctrl+/)
+AI 助手（聊天室）|AI assistant (chat)
+打開後頂欄多一顆朱色印章（墨池助手），可以用一句話交代助手查牌、配牌、改規則、抽一輪。關掉就跟原本一模一樣，還沒執行的助手操作都會取消。|When on, a red seal (Ink Pool assistant) appears in the header: tell the assistant in one sentence to look up cards, pick cards, change rules or draw a round. When off, everything is exactly as before, and pending assistant actions are cancelled.
+問助理|Ask the assistant
+選一條連線讓助手用：這台電腦上的 Claude Code、Grok Build、Codex，或自己的 API 金鑰。|Choose a connection for the assistant: Claude Code, Grok Build or Codex on this computer, or your own API key.
+就算是本機的 CLI，對話內容也會送到該家公司的雲端處理。金鑰只放在墨池伺服器上，網頁看不到。|Even with a local CLI, the conversation is processed in that company's cloud. API keys stay on the Ink Pool server; the page never sees them.
+正在偵測這台電腦上的 CLI…|Looking for CLIs on this computer…
+本機 CLI|Local CLIs
+自己的 API|Your own API
+相容 OpenAI 的自訂端點|Custom OpenAI-compatible endpoint
+供應商|Provider
+模型 ID（例如 gpt-5、claude-opus-5-5）|Model ID (e.g. gpt-5, claude-opus-5-5)
+API Key（只送到墨池伺服器）|API key (sent only to the Ink Pool server)
+Base URL（例如 https://example.com/v1）|Base URL (e.g. https://example.com/v1)
+讀模型清單|Load models
+用這組 API|Use this API
+已存一把金鑰（留空就沿用）|A key is saved (leave empty to keep it)
+讓手機、別台裝置也能用聊天室|Let phones and other devices use the chat
+（用這台設定的帳號和額度。設定只有在這台電腦上能改）|(Uses this computer's account and quota. Settings can only be changed on this computer.)
+重新偵測|Detect again
+已登入|Signed in
+沒登入|Not signed in
+登入待確認|Sign-in unconfirmed
+CLI 預設模型|CLI default model
+用這個|Use this
+已安裝|Installed
+沒找到|Not found
+不能用來聊天|Can't be used for chat
+先存下這組設定，再送一則固定的小測試（可能用到一點額度）…|Saving these settings, then sending a fixed small test (may use a little quota)…
+自訂 API|Custom API
+預設模型|default model
+新對話|New conversation
+收起聊天室（Esc）|Close the chat (Esc)
+收起聊天室|Close the chat
+墨池助手|Ink Pool assistant
+實驗|Beta
+對話|Conversation
+交代墨池助手…（Enter 送出，Shift+Enter 換行）|Ask the assistant… (Enter to send, Shift+Enter for a new line)
+給助手的訊息|Message to the assistant
+問意見只回答；說「幫我加入」「改成」「建立」「抽」才會動工作台。|Questions only get answers. Say “add”, “change to”, “create” or “draw” to change your workspace.
+還沒選連線|No connection chosen
+交代一件事，或問一個問題|Ask for something, or ask a question
+助手讀的是你現在的合成池和規則，動手前會照你的話做，做了什麼都會列出來。|The assistant reads your current pool and rules, only acts when you ask, and lists everything it changed.
+我現在有哪些牌？會抽幾張？|What cards do I have? How many will be drawn?
+你覺得還可以加入哪些牌？|What other cards would you add?
+幫我把適合海邊的服裝建立一個群組|Make a group of beach outfits for me
+長相改成 3 張，這次只抽牌|Set appearance to 3 and just draw cards this time
+看變更|Show change
+保留原狀|Keep as is
+已套用|Applied
+還沒選連線：先到「AI 助手設定」選一條。|No connection yet: choose one in “AI assistant settings”.
+助手的工具層還沒準備好（assistant-tools.js 讀不到）。|The assistant's tools aren't ready (assistant-tools.js couldn't be loaded).
+讀你的訊息|Reading your message
+連線中|Connecting
+想一想|Thinking
+這一輪的步驟太多，先停在這裡；要繼續就再交代一次。|Too many steps in one go, so it stopped here. Ask again to continue.
+已停止。|Stopped.
+上面打勾的步驟已經做了。|The checked steps above were already done.
+已復原|Undone
+那一塊現在不在畫面上|That part isn't on screen right now
+重新整理時這一輪停了。|This turn stopped when the page reloaded.
+設定：聲音、螢幕保護、實驗功能|Settings: sound, screensaver, experimental features
+抽牌、放牌、印好時的音效|Sound effects when drawing, pinning and finishing prints
+看螢幕保護|Preview screensaver
+聲音|Sound
+可讀檔、不能改|Can read files, can't change them
+隔離：不能動電腦|Isolated: can't touch this computer
+正在查看合成池和目前規則|Looking at the pool and the current rules
+正在試算這幾張牌|Checking these cards
+正在調整合成池|Updating the pool
+正在調整各段補牌數|Updating the fill for each category
+正在查看群組|Looking at card groups
+正在抽這一輪|Drawing this round
+正在處理|Working
+墨池還沒準備好|Ink Pool isn't ready yet
+沒有找到|No matches
+搜尋字不能是空的|The search text is empty
+搜尋筆數要介於 1 到 20|The result count has to be from 1 to 20
+類別不對|That category isn't valid
+一次要介於 1 到 50|Batch size has to be from 1 to 50
+補牌數沒有要改的|The fills are already set that way
+補牌數要介於 0 到 10|A fill has to be from 0 to 10
+份量要介於 0.6 到 1.5|Weight has to be from 0.6 to 1.5
+份量要是數字|Weight has to be a number
+這幾張會動到已經釘上的牌。要套用嗎？|These cards would change cards that are already pinned. Apply it?
+廢字簍裡的牌不能自動復原|Cards brought back from blocked cards can't be restored automatically
+加入和移掉不能是同一張|Can't add and remove the same card
+移掉和調份量不能是同一張|Can't remove a card and change its weight
+沒有要改的項目|Nothing to change
+未成年，墨池不畫|Underage: Ink Pool doesn't draw this
+禁用角色，墨池不畫|Blocked character: Ink Pool doesn't draw this
+合成池沒有要改的|The pool is already like that
+調整了合成池|Updated the pool
+這項確認已經失效|This confirmation is no longer valid
+工作台已經變了，請先重新查看|The workspace changed. Look it up again first
+墨池還沒準備好，這步先不做|Ink Pool isn't ready, so this step was skipped
+已取消|Cancelled
+不認識這個工具|Unknown tool
+參數不對|Those arguments aren't valid
+這一步沒有完成|This step didn't finish
+這輪沒有抽到牌|Drew nothing this round
+沒有生圖|No image was generated
+群組名稱最長 40 字|A group name can be at most 40 characters
+請寫群組名稱|Enter a group name
+請至少放一張牌|Add at least one card
+抽法不對|That draw mode isn't valid
+這個類別沒有這組|That group isn't in this category
+這些牌都不屬於這個類別|None of these cards belong in this category
+群組勾選沒有要改的|The group selection is already like that
+一次已經被改過，沒有復原|The batch size was changed since, so it wasn't restored
 `;
 
 export const messages = Object.freeze(Object.fromEntries(copy.trim().split("\n").map((line) => {
@@ -2686,6 +2809,61 @@ ComfyUI 不收：{0}|ComfyUI rejected it: {0!}
 共 {0} 格；{1}每張抽 {2} 個，名額先給群組的格子，可能輪不到群組外的。|{0} slots in all; {1} draws {2} per image, and group slots come first, so there may be no room for others.
 共 {0} 格；{1}每張抽 {2} 個：群組的 {0} 格從群組抽，其他 {3} 個照常抽。|{0} slots in all; {1} draws {2} per image: {0} come from the groups, the other {3} draw as usual.
 每張只用其中一組（一組管 {0} 格）；{1}每張抽 {2} 個，其他照常抽。|Each image uses one group ({0} slots per group); {1} draws {2} per image, the rest as usual.
+{0}：打開 AI 聊天室，帶上這一塊|{0}: open the AI chat with this attached
+字盒搜尋「{0}」|Library search “{0!}”
+讀到 {0} 個模型|Found {0} models
+{0} 的模型|{0} model
+選了：{0}（按「儲存」才生效）|Selected: {0!} (press Save to use it)
+AI 助手用：{0}|AI assistant uses {0!}
+測試成功（{0} 秒）|Test passed ({0} s)
+正在搜尋「{0}」|Searching for “{0!}”
+正在看「{0}」|Looking at “{0!}”
+正在加入「{0}」|Adding “{0!}”
+正在移掉「{0}」|Removing “{0!}”
+正在調整「{0}」的份量|Changing the weight of “{0!}”
+正在把一次改成 {0}|Setting the batch size to {0}
+正在把{0}補牌數改成 {1}|Setting the {0} fill to {1}
+正在套用{0}的群組|Applying {0} groups
+正在建立群組「{0}」|Creating the group “{0!}”
+正在抽 {0} 張|Drawing {0} this round
+合成池 {0} 張，一次 {1}|Pool has {0} cards, batch {1}
+合成池是空的，一次 {0}|The pool is empty, batch {0}
+長相 {0}、服裝 {1}、姿勢 {2}、場景 {3}|Appearance {0}, clothing {1}, pose {2}, scene {3}
+找到 {0} 張|Found {0}
+詞庫沒有「{0}」|“{0!}” isn't in the library
+「{0}」被{1}擋著|“{0!}” is blocked by {1}
+一次 {0} → {1}|Batch {0} → {1}
+一次已經是 {0}|The batch size is already {0}
+{0}補牌數 {1} → {2}|{0} fill {1} → {2}
+「{0}」的份量 {1} → {2}|Weight of “{0!}” {1} → {2}
+加入「{0}」|Added “{0!}”
+加入「{0}」；附帶「{1}」|Added “{0!}”; also “{1!}”
+附帶「{0}」|Also added “{0!}”
+移掉「{0}」|Removed “{0!}”
+會拿掉已釘的「{0}」|Would remove pinned “{0!}”
+加入「{0}」會拿掉已釘的「{1}」。要套用嗎？|Adding “{0!}” would remove pinned “{1!}”. Apply it?
+「{0}」在廢字簍裡，加入會把它撿回來。要套用嗎？|“{0!}” is in blocked cards. Adding it would bring it back. Apply it?
+會拿掉已釘的「{0}」，並從廢字簍撿回「{1}」。要套用嗎？|Would remove pinned “{0!}” and bring “{1!}” back from blocked cards. Apply it?
+合成池會有 {0} 張，超過 40 張上限|The pool would have {0} cards, over the limit of 40
+可換掉：{0}|Could swap out: {0!}
+還有 {0} 張可換|{0} more could be swapped
+還有 {0} 項|{0} more
+合成池裡沒有「{0}」|“{0!}” isn't in the pool
+「{0}」不在詞庫|“{0!}” isn't in the library
+「{0}」不能用（{1}）|“{0!}” can't be used ({1})
+「{0}」是附帶的，移掉還是會跟著回來|“{0!}” is added along with another card, so removing it brings it back
+這輪抽到 {0}／{1} 組|Drew {0}/{1} this round
+一組最多 {0} 張牌|A group can have at most {0} cards
+一次最多勾 {0} 組|At most {0} groups can be selected
+已有同名群組「{0}」|A group named “{0!}” already exists
+「{0}」不屬於這個類別|“{0!}” doesn't belong in this category
+已建立「{0}」|Created “{0!}”
+{0}改成抽「{1}」|{0} now draws “{1!}”
+{0}不再用群組|{0} no longer uses groups
+{0}有 {1} 組|{0} has {1} groups
+群組共 {0} 組|{0} groups in total
+「{0}」已經被改過，沒有復原|“{0!}” was changed since, so it wasn't restored
+「{0}」是{1}|“{0!}” is {1}
 `;
 export const templates = parameterized.trim().split("\n").map((line) => {
   const split = line.indexOf("|");

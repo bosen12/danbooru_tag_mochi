@@ -8,6 +8,7 @@
  *   - 設定（閒置多久、範圍、模糊）在頂欄的月亮鈕；只存在這台瀏覽器。
  * 墨池、疊印台、卡冊、作品冊都掛（mountScreensaver）；介紹影片、教學不掛。
  */
+import { labSection } from "./lab.js";
 import { el, openSheet } from "./ui.js";
 import { english, t } from "./i18n.js";
 import { reducedMotion, DUR, CURVE, css } from "./motion.js";
@@ -42,8 +43,6 @@ const ACT_NO = ["第一幕", "第二幕", "第三幕", "第四幕"];
 const ACT_TITLE = { river: "牌河", mandala: "牌陣", wave: "牌浪", rain: "墨雨" };
 const SUIT_LETTER = { cast: "C", chara: "R", look: "A", wear: "W", pose: "P", scene: "S", style: "F" };
 const SUIT_FALLBACK = { cast: "#8ea6c9", chara: "#7fb7c2", look: "#d07f8e", wear: "#a58bcf", pose: "#5fb096", scene: "#c9a45e", style: "#a9b76a" };
-const MOON =
-  '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/><path d="M17 3v3M15.5 4.5h3"/></svg>';
 
 export function loadSaver() {
   try {
@@ -355,6 +354,31 @@ export function stopScreensaver(now = false) {
 }
 
 /** 設定：閒置多久、範圍、模糊。三排選項，換了馬上存。 */
+const GEAR =
+  '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-1.8-.3 1.6 1.6 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.6 1.6 0 0 0-1-1.5 1.6 1.6 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.6 1.6 0 0 0 .3-1.8 1.6 1.6 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.6 1.6 0 0 0 1.5-1 1.6 1.6 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.6 1.6 0 0 0 1.8.3H9a1.6 1.6 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.6 1.6 0 0 0 1 1.5 1.6 1.6 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0-.3 1.8V9a1.6 1.6 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.6 1.6 0 0 0-1.5 1z"/></svg>';
+
+/**
+ * 「設定」（頂欄的齒輪，五個房間都有）：聲音、螢幕保護、實驗功能三區。
+ * 以前頂欄一顆月亮（螢幕保護）、一顆喇叭（聲音）各佔一格；常用的工具才留在頂欄，偶爾調一次的收在這裡。
+ * 聲音：每個房間原本那顆 #sound-btn 的開關程式照舊（藏起來不顯示），這裡的開關按的就是它，不另外管一份設定。
+ */
+function soundSection() {
+  const btn = document.getElementById("sound-btn");
+  if (!btn) return null;
+  const input = el("input", { type: "checkbox", role: "switch" });
+  input.checked = btn.getAttribute("aria-pressed") !== "false";
+  input.addEventListener("change", () => {
+    if ((btn.getAttribute("aria-pressed") !== "false") !== input.checked) btn.click();
+    input.checked = btn.getAttribute("aria-pressed") !== "false";
+  });
+  return el(
+    "section",
+    { class: "settings-section" },
+    el("h3", {}, "聲音"),
+    el("label", { class: "switch" }, input, "抽牌、放牌、印好時的音效")
+  );
+}
+
 function openSettings() {
   let conf = loadSaver();
   const row = (label, items, key, help) => {
@@ -383,40 +407,46 @@ function openSettings() {
   };
   let sheet;
   sheet = openSheet(
-    "螢幕保護",
+    "設定",
     el(
       "div",
-      { class: "saver-settings" },
+      { class: "saver-settings settings-sheet" },
+      soundSection(),
+      el("h3", { class: "settings-h3" }, "螢幕保護"),
       el("p", { class: "saver-lead" }, "閒置一陣子就飛進一條無盡的牌河，你最近生成的圖晾在中間，剛印好的會飛到眼前顯影。按 Enter 或空白鍵（或點一下）回來；滑鼠不小心動到不會關掉。"),
       row("閒置多久出現", IDLE, "idle"),
       row("放哪些牌和圖", SCOPE, "scope", "跟頂端分級：頂端選到哪一級，那一級以下的牌和圖都會出現。"),
-      row("要模糊的圖", BLUR, "blur", "生成的圖和牌的插畫都算；模糊的只看得到顏色，牌名照樣看得到。")
+      row("要模糊的圖", BLUR, "blur", "生成的圖和牌的插畫都算；模糊的只看得到顏色，牌名照樣看得到。"),
+      // 實驗功能的開關（lab.js）：只有掛了實驗功能的房間（墨池主頁）才有這一區
+      labSection()
     ),
     {
       foot: [
-        el("button", { class: "btn", type: "button", onclick: () => sheet.close() }, "好"),
         el(
           "button",
           {
-            class: "btn btn-primary",
+            class: "btn",
             type: "button",
             onclick: () => {
               sheet.close();
               setTimeout(startScreensaver, 250);
             },
           },
-          "現在看看"
+          "看螢幕保護"
         ),
+        el("button", { class: "btn btn-primary", type: "button", onclick: () => sheet.close() }, "好"),
       ],
     }
   );
 }
 
-/** 每一頁開好之後叫一次：頂欄掛月亮鈕、開始看有沒有閒置。 */
+/** 每一頁開好之後叫一次：頂欄掛「設定」齒輪（聲音收進去）、開始看有沒有閒置。 */
 export function mountScreensaver() {
   const sound = document.getElementById("sound-btn");
-  if (sound && !document.getElementById("saver-btn")) {
-    sound.before(el("button", { class: "ghost icon-btn", id: "saver-btn", type: "button", title: "螢幕保護", "aria-label": "螢幕保護設定", html: MOON, onclick: openSettings }));
+  if (sound && !document.getElementById("settings-btn")) {
+    sound.before(el("button", { class: "ghost icon-btn", id: "settings-btn", type: "button", title: "設定：聲音、螢幕保護、實驗功能", "aria-label": "設定", html: GEAR, onclick: openSettings }));
+    // 喇叭不放頂欄了（在「設定」裡切）。節點留著、只是不顯示：各房間的開關程式、別的鈕排位置都還認它。
+    sound.hidden = true;
   }
   // 滑鼠動到、按了別的鍵：左下「點一下或按 Enter 回來」亮一下，告訴人怎麼回去（游標看得到之後，點一下也會回來）。
   let eatClickUntil = 0;

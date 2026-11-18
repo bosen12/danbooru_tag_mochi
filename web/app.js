@@ -62,7 +62,8 @@ import { openDecks } from "./decks.js";
 import { SIZES, ratioBox } from "./sizes.js";
 import { pickTrim, shotBusy } from "./wall-trim.js";
 import { mountMasonry } from "./wall-masonry.js";
-import { loadGroups, freshGroups, cachedGroups, withGroupPools, onGroupsChange } from "./card-groups.js";
+import { loadGroups, freshGroups, cachedGroups, withGroupPools, onGroupsChange, saveGroup, pickOf, GROUP_SECTIONS } from "./card-groups.js";
+import { mountAssistant } from "./assistant.js";
 import { mountGroupPicks } from "./group-picks.js";
 import { syncGroupPicks, picksKey } from "./group-picks-sync.js";
 import { handTools } from "./hand-tools.js";
@@ -129,6 +130,10 @@ const parkedWeights = new Map();
 let bans = new Set();
 let shots = [];
 let infinite = false;
+// 工作台的版本：合成池、規則每變一次加一（AI 助手用它認「模型想事情的時候，使用者自己動過了」，舊的操作不照做）。
+let workVersion = 0;
+// 最近一輪抽出來的成品（AI 助手的「最近一輪」）。
+let lastBatch = null;
 // 群組勾選跟伺服器同步（group-picks-sync.js；開頁讀完設定後才建）。
 let groupPicksSync = null;
 // 連線狀態（ping.js）：ok／comfy（ComfyUI 沒開）／net（連不到主機）。抽牌列的狀態字用，跟疊印台付印鈕底下那行一樣先說。
@@ -312,6 +317,8 @@ async function boot() {
   whenActive(() => setTimeout(sweepShots, 1500));
   $("wall-start").addEventListener("click", () => $("go-bar").querySelector(".btn-primary")?.click());
   renderTrash();
+  // AI 助手（實驗功能，預設關）：聊天室透過 assistantCtx() 讀寫這一頁的工作台，跟手動操作走同一條路。
+  mountAssistant({ ctx: assistantCtx() });
   // 群組勾選：所有裝置共用一份（存在伺服器）。別台改了：換成那一份、規則區重畫。
   groupPicksSync = syncGroupPicks({
     get: () => settings.groups,
@@ -409,6 +416,7 @@ function setSettings(patch) {
   // Heat selection has automatic weights; inherited weights belong to the old selection.
   settings = sanitizeSettings({ ...settings, ...(patch.heats ? { weights: undefined } : {}), ...patch }, data);
   saveSettings(prev);
+  workVersion++;
   // 群組勾選所有裝置共用（group-picks-sync.js）：這台改了就送上去。
   if (picksKey(prev.groups) !== picksKey(settings.groups)) groupPicksSync?.push();
   // 規則換了（分級…）：托盤上出不了的牌要重新蓋章／拿掉章。
@@ -1882,6 +1890,7 @@ function poolUndoToast(text, action) {
 }
 
 function commitPins(fresh) {
+  workVersion++;
   if (poolUndo && poolKey() !== poolUndo.pool) {
     dropToastAction(poolUndo.action);
     poolUndo = null;
@@ -2955,7 +2964,191 @@ let drawEpoch = 0;
 let drawingRounds = 0;
 
 /** 抽一輪。合成池的字一定進；同一個人時，第二張起鎖住第一張的長相。 */
-function drawBatch(gen, { auto = false } = {}) {
+/* ================= AI 助手的工作台介面（assistant-tools.js 的 ctx） =================
+ * 聊天室的每一個操作都走手動按鈕的那條路（pin、unpin、setSettings、stepSkeleton、drawBatch…）：
+ * 動畫、聲音、存檔、跨分頁同步都跟手動一樣，助手不會繞過任何規則。這裡只負責把狀態讀成資料、把結果算清楚。 */
+function assistantCtx() {
+  const zhOf = (t) => (isCustomTag(t) ? customOf(t)?.name : lib.byTag.get(t)?.zh) || t;
+  const countPool = (set) => [...set].filter((t) => lib.byTag.has(t) && !isCustomTag(t)).length;
+  const ratingName = (item) => (!ratingBlocked(item, "general") ? "general" : !ratingBlocked(item, "sensitive") ? "sensitive" : "explicit");
+  const banned = new Set((data.characterBan || []).map((t) => String(t).toLowerCase()));
+  // 這張牌現在放不放得進來、為什麼（字盒會把它藏起來的那些原因）。
+  const blockedOf = (card) => {
+    if (HARD_BANNED.includes(card.tag) || banned.has(card.tag)) return "banned";
+    if (bans.has(card.tag)) return "trash";
+    if (ratingHides(card)) return "rating";
+    if ((card.gate === "male" && !settings.boy) || (card.gate === "female" && !settings.girl)) return "gender";
+    return null;
+  };
+  /** 一串牌照順序釘上會怎樣（不寫入）：跟 pin() 同一個 applyPin。 */
+  const simulate = (tags) => {
+    let p = new Set(pool);
+    let b = new Set(bans);
+    for (const t of tags) {
+      if (!lib.byTag.has(t) || HARD_BANNED.includes(t)) continue;
+      ({ pinned: p, userBanned: b } = applyPin(lex, p, b, t, pinOpts()));
+    }
+    return { p, b };
+  };
+  const diff = (tags, p, b, before = pool, bansBefore = bans) => ({
+    added: tags.filter((t) => p.has(t) && !before.has(t)),
+    companions: [...p].filter((t) => !before.has(t) && !tags.includes(t)),
+    displaced: [...before].filter((t) => !p.has(t)),
+    unbanned: [...bansBefore].filter((t) => !b.has(t)),
+    total: countPool(p),
+  });
+  return {
+    version: () => workVersion,
+    state: () => ({
+      room: "mochi",
+      ready: !!lib,
+      lang: english ? "en" : "zh",
+      pool: [...pool].map((t) => ({
+        tag: t,
+        zh: zhOf(t),
+        weight: weights.get(t) ?? 1,
+        ...(isCustomTag(t) ? { custom: true, members: (customOf(t)?.members || []).map((m) => m.tag) } : {}),
+      })),
+      poolCount: countPool(pool),
+      bans: [...bans],
+      settings: {
+        n: settings.n,
+        counts: { ...settings.counts },
+        rating: settings.rating,
+        ratingFree: !!settings.ratingFree,
+        heats: [...(settings.heats || [])],
+        eras: [...(settings.eras || [])],
+        girl: settings.girl,
+        boy: settings.boy,
+        samePerson: !!settings.samePerson,
+        drawCharacter: !!settings.drawCharacter,
+        groups: structuredClone(settings.groups || {}),
+      },
+      infinite,
+      lastBatch,
+    }),
+    search(query, { limit = 12, section } = {}) {
+      const res = searchCards(lib.cards, String(query || ""));
+      let list = res.list || [];
+      if (section) list = list.filter((c) => c.item?.section === section);
+      return list.slice(0, Math.max(1, Math.min(40, limit))).map((c) => ({
+        tag: c.tag,
+        zh: c.zh,
+        en: c.tag,
+        suit: c.suit,
+        section: c.item?.section || null,
+        group: c.groupZh || null,
+        match: res.mode === "guess" ? "near" : "exact",
+        blocked: blockedOf(c),
+        inPool: pool.has(c.tag),
+      }));
+    },
+    cardInfo(tag) {
+      const c = lib.byTag.get(tag);
+      if (!c) return null;
+      const it = c.item || {};
+      const mutex = it.mutex ? (lex.byMutex?.get(`${it.section}:${it.mutex}`) || []).map((x) => x.tag).filter((x) => x !== tag).slice(0, 24) : [];
+      return {
+        tag,
+        zh: c.zh,
+        en: tag,
+        suit: c.suit,
+        section: it.section || null,
+        sub: c.groupZh || null,
+        rating: ratingName(it),
+        companions: [...new Set([...(it.implies || []), ...(it.bind || [])])],
+        mutex,
+        minor: false,
+        bannedChar: banned.has(tag) || HARD_BANNED.includes(tag),
+        blocked: blockedOf(c),
+        inPool: pool.has(tag),
+        weight: weights.get(tag) ?? 1,
+      };
+    },
+    previewPins(tags) {
+      const { p, b } = simulate(tags);
+      return diff(tags, p, b);
+    },
+    pin(tags) {
+      const before = new Set(pool);
+      const bansBefore = new Set(bans);
+      for (const t of tags) if (lib.byTag.has(t) || isCustomTag(t)) pin(t);
+      return diff(tags, pool, bans, before, bansBefore);
+    },
+    unpin(tags) {
+      const removed = [];
+      for (const t of tags) {
+        if (!pool.has(t)) continue;
+        unpin(t);
+        if (!pool.has(t)) removed.push(t);
+      }
+      return { removed, total: countPool(pool) };
+    },
+    setWeight(tag, w) {
+      const from = weights.get(tag) ?? 1;
+      setWeight(tag, w);
+      workVersion++;
+      return { tag, from, to: weights.get(tag) ?? 1 };
+    },
+    setN(n) {
+      const from = settings.n;
+      const was = settings.n;
+      setSettings({ n });
+      renderGoBar();
+      syncGoCount(was);
+      return { from, to: settings.n };
+    },
+    setSectionCounts(map) {
+      const changes = [];
+      for (const section of ["feature", "clothing", "pose", "env"]) {
+        if (!Number.isInteger(map?.[section])) continue;
+        const from = settings.counts[section];
+        setSettings(stepSkeleton(settings, section, map[section]));
+        changes.push({ section, from, to: settings.counts[section] });
+      }
+      renderRules();
+      return { changes };
+    },
+    groups: () =>
+      (cachedGroups() || []).map((g) => {
+        const pick = pickOf(settings, g.section);
+        return { id: g.id, name: g.name, section: g.section, tags: [...(g.tags || [])], picked: pick.ids.includes(g.id), mode: pick.mode };
+      }),
+    setGroupPicks(section, ids, mode) {
+      const from = pickOf(settings, section);
+      const next = { ...(settings.groups || {}) };
+      if (ids.length) next[section] = { ids: [...ids], mode: mode === "mix" ? "mix" : "whole" };
+      else delete next[section];
+      setSettings({ groups: next });
+      renderRules();
+      const to = pickOf(settings, section);
+      return { section, from: { ids: from.ids, mode: from.mode }, to: { ids: to.ids, mode: to.mode } };
+    },
+    async saveGroup({ name, section, tags }) {
+      const ok = [];
+      const skipped = [];
+      for (const t of tags) {
+        const c = lib.byTag.get(t);
+        if (!c) skipped.push({ tag: t, why: "not_found" });
+        else if (c.item?.section !== section) skipped.push({ tag: t, why: "section" });
+        else if (blockedOf(c) === "banned") skipped.push({ tag: t, why: "banned" });
+        else ok.push(t);
+      }
+      const j = await saveGroup({ name, section, tags: ok });
+      await loadGroups().catch(() => {});
+      skelPicker?.repaint();
+      return { group: j.group, skipped: [...skipped, ...(j.skipped || []).map((x) => (typeof x === "string" ? { tag: x, why: "server" } : x))] };
+    },
+    async draw({ n } = {}) {
+      const requested = Number.isInteger(n) && n >= 1 ? Math.min(50, n) : settings.n;
+      const made = (await drawBatch(false, { n: requested })) || [];
+      return { requested, made: made.length, shotIds: made.map((s) => s.id), warnings: made.length < requested ? ["short"] : [] };
+    },
+    sections: GROUP_SECTIONS,
+  };
+}
+
+function drawBatch(gen, { auto = false, n = null } = {}) {
   // 固定的生圖種子：一次多張、無限抽時每張都用這一顆（跟疊印台一樣）。以前之後每張往後加一，
   // 「固定」卻不固定，想用同一顆種子比較不同提示詞的人用不了。
   const fixedSeed = genSeed(null);
@@ -2980,6 +3173,8 @@ function drawBatch(gen, { auto = false } = {}) {
       weights: Object.fromEntries(weights),
     },
   };
+  // 只這一輪的張數（AI 助手「這次只抽 3 張」）：畫面上的「一次」不動。
+  if (Number.isInteger(n) && n >= 1) intent.settings.n = Math.min(50, n);
   // 無限抽有設張數：自己按的那一下從 0 算起；最後一輪只抽剩下的張數（設 10 張、一次 4 張：4、4、2）。
   if (gen && infinite) {
     if (!auto) loopSent = 0;
@@ -3118,8 +3313,9 @@ async function drawBatchNow(gen, intent, epoch) {
     toast(gen && endLoop()
       ? "這一輪抽不出東西，無限抽先停下：合成池的字可能互相卡住，換一兩張試試"
       : "這一輪抽不出東西：合成池的字可能互相卡住，換一兩張試試");
-    return;
+    return made;
   }
+  lastBatch = { ids: made.map((s) => s.id), at: Date.now() };
   sfx.deal(made.length > 1 ? made.length + 3 : 5);
   if (gen && epoch === drawEpoch) setTimeout(() => sfx.roll(), 160);
   const wall = $("wall");
@@ -3158,6 +3354,8 @@ async function drawBatchNow(gen, intent, epoch) {
     const top = fresh.find(([s]) => s === made[0]);
     if (top) dealInto(top[0], top[1]);
   }
+  // 回傳這一輪的成品：AI 助手要回報實際抽到幾張、哪幾張（手動按的沒人接，照舊）。
+  return made;
 }
 
 /**
