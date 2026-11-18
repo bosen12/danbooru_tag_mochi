@@ -364,7 +364,8 @@ def _grok_models(out):
         return _model_items(value)
     ids = []
     for line in out.splitlines():
-        fields = re.split(r"[\s│|]+", line.strip(" \t│|*•"))
+        # grok 1.0.77：預設那個寫「* grok-4.7 (default)」，其他寫「- grok-4.6」：兩種項目符號都要剝掉。
+        fields = re.split(r"[\s│|]+", line.strip(" \t│|*•-"))
         if fields and re.fullmatch(r"grok-[a-zA-Z0-9_.:-]+", fields[0]):
             ids.append(fields[0])
     return _model_items(ids)
@@ -463,7 +464,15 @@ def _probe_cli(provider):
                     result["login"] = "no"
                 elif code == 0:
                     result["models"] = _grok_models(out) or result["models"]
-                    result["loginNote"] = "已查詢模型目錄，登入狀態仍待確認。"
+                    # grok models 第一行就說登入狀態：「You are logged in with grok.com.」（1.0.77 實測）。
+                    # 以前沒讀這一行，明明登入了還寫「登入待確認」。
+                    log = (out + "\n" + err).lower()
+                    if "not logged in" in log or "not signed in" in log:
+                        result["login"] = "no"
+                    elif re.search(r"\b(logged|signed) in\b", log):
+                        result["login"] = "ok"
+                    else:
+                        result["loginNote"] = "已查詢模型目錄，登入狀態仍待確認。"
             if result["login"] != "unknown":
                 result["loginNote"] = "已登入。" if result["login"] == "ok" else "尚未登入。"
     except subprocess.TimeoutExpired:

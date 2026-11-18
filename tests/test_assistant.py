@@ -43,7 +43,10 @@ elif args[:2] == ["login", "status"]:
     print("Not logged in" if mode == "login" else "Logged in using ChatGPT")
     sys.exit(int(mode == "login"))
 elif args[0] == "models":
-    print("Available models:\\n  grok-fake  Fake Grok")
+    if mode == "login":
+        print("You are not logged in. Run grok login.")
+    else:
+        print("You are logged in with grok.com.\\n\\nDefault model: grok-fake\\n\\nAvailable models:\\n  * grok-fake (default)\\n  - grok-fake-fast\\n  - grok-old")
 elif args[0] == "app-server":
     for line in sys.stdin:
         req = json.loads(line)
@@ -162,7 +165,9 @@ def detection():
     assert results["claude"]["installed"] and results["claude"]["version"] == "9.8.7"
     assert results["claude"]["login"] == "no"
     assert "secret@example.invalid" not in json.dumps(results)
-    assert results["grok"]["models"][0]["id"] == "grok-fake"
+    assert [m["id"] for m in results["grok"]["models"]] == ["grok-fake", "grok-fake-fast", "grok-old"]
+    # grok models 第一行就說登入了：要認得（以前一律「登入待確認」）
+    assert results["grok"]["login"] == "ok" and results["grok"]["loginNote"] == "已登入。"
     assert results["codex"]["models"][0]["id"] == "fake-codex"
     assert all(cli["usable"] and cli["isolation"]["note"] for cli in results.values())
     assert [cli["isolation"]["level"] for cli in results.values()] == ["strict", "strict", "readonly"]
