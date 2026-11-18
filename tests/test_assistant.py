@@ -72,6 +72,9 @@ elif args[0] in ("--print", "--prompt-file", "exec"):
     def emit(**event):
         print(json.dumps(event), flush=True)
     if mode == "wait":
+        import subprocess
+        marker = Path(os.environ["ASSISTANT_CONFIG_PATH"]).with_name("grandchild.done")
+        subprocess.Popen([sys.executable, "-c", "import sys, time; time.sleep(3); open(sys.argv[1], 'w').write('x')", str(marker)])
         Path(os.environ["ASSISTANT_CONFIG_PATH"]).with_name("cli.pid").write_text(
             str(os.getpid()), encoding="ascii"
         )
@@ -153,6 +156,13 @@ def config_storage():
     with patch.dict(os.environ, {"MOCHI_CUSTOM_API_KEY": KEY}):
         assert config("custom", baseUrl="http://127.0.0.1:8123/v1")["connection"]["hasKey"]
         assert not config("custom", baseUrl="http://127.0.0.1:8124/v1")["connection"]["hasKey"]
+        # 伺服器重開（記憶體清空）：環境金鑰還是只認原本那個端點，不會變成給重開後第一個讀到的 8124
+        stored_text = Path(os.environ["ASSISTANT_CONFIG_PATH"]).read_text(encoding="utf-8")
+        assert KEY not in stored_text and "8123" in stored_text
+        assistant._custom_env_bases.clear()
+        assistant._keys.clear()
+        assert not assistant.get_config()["connection"]["hasKey"]
+        assert config("custom", baseUrl="http://127.0.0.1:8123/v1")["connection"]["hasKey"]
     # 推理強度：每家接受的值不一樣；空字串＝預設（不送）
     assert config("claude", effort="max")["connection"]["effort"] == "max"
     assert assistant.status(local=True)["connection"]["label"] == "Claude Code · fake-model · max"
@@ -497,6 +507,13 @@ def routes():
         origin[0] = "100.64.1.2"
         assert request("POST", "chat", json.dumps(CHAT))[0] == 200
         assert request("GET", "config")[0] == 403
+        # 遠端也擋 DNS 重綁：允許的網段、但 Host 是別人的網域，在叫模型之前就拒絕
+        status, result = request("POST", "chat", json.dumps(CHAT), {
+            "Content-Type": "application/json", "Host": "rebind.example.com", "Origin": "http://rebind.example.com",
+        })
+        assert status == 403 and json.loads(result)["code"] == "local_only", result
+        assert request("GET", "status", None, {"Host": "rebind.example.com"})[0] == 403
+        assert request("GET", "status", None, {"Host": "mypc.tail1234.ts.net:8796"})[0] == 200
         origin[0] = "192.0.2.1"
         status, result = request("POST", "chat", json.dumps(CHAT))
         assert status == 403 and json.loads(result)["code"] == "local_only"
@@ -532,6 +549,10 @@ def cli_cancel():
                 conn.close()
             assert child[0].wait(timeout=3) != 0
             pidfile.unlink()
+            # CLI 自己開的下一層程序也要一起收：不然它照樣跑完（花模型額度）。
+            marker = pidfile.with_name("grandchild.done")
+            time.sleep(4)
+            assert not marker.exists(), "取消後孫程序還在跑"
             with patch.object(assistant, "CHAT_TIMEOUT", 0.6):
                 assert list(assistant.chat_events(CHAT))[-1][1]["code"] == "timeout"
 

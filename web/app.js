@@ -482,6 +482,11 @@ function renderLibraryChrome() {
   const q = $("lib-q");
   q.value = ui.query;
   q.oninput = () => {
+    // 助手正借著搜尋框找字：你一打字，框就是你的了（它不再接著找、這一輪結束也不收回）。
+    if (libPeekSaved) {
+      libPeekSaved = null;
+      libPeekTaken = true;
+    }
     ui.query = q.value.trim();
     // 手機上字盒收著只露一排：開始找字就展開，找到的牌才看得到。
     if (ui.query) expandLibrary();
@@ -1399,24 +1404,24 @@ function pin(tag) {
  * 自製牌本身那個名字也留在池子裡，畫成一格（成員收在裡面）、抽的時候拿掉，詞庫外的字接在提示詞裡。 */
 
 /** 池子裡每張被自製牌帶進來的牌 → 是哪張自製牌（先放的算）。 */
-function customOwners() {
+function customOwners(p = pool) {
   const owner = new Map();
-  for (const t of pool) {
+  for (const t of p) {
     if (!isCustomTag(t)) continue;
-    for (const m of customOf(t)?.members || []) if (pool.has(m.tag) && !owner.has(m.tag)) owner.set(m.tag, t);
+    for (const m of customOf(t)?.members || []) if (p.has(m.tag) && !owner.has(m.tag)) owner.set(m.tag, t);
   }
   // 成員帶進來的牌（和服帶出和服類）也收在那一格：它們是跟著自製牌來的，不該在池子裡另外冒一張。
   for (const [m, t] of [...owner]) {
     const it = lex.byTag.get(m);
-    for (const d of [...(it?.implies || []), ...(it?.bind || [])]) if (pool.has(d) && !owner.has(d)) owner.set(d, t);
+    for (const d of [...(it?.implies || []), ...(it?.bind || [])]) if (p.has(d) && !owner.has(d)) owner.set(d, t);
   }
   return owner;
 }
 
 /** 池子裡其他自製牌（except 以外）要的牌：成員和它們帶進來的。拿掉一張、改了一張時，這些不能跟著拿掉。 */
-function customNeeds(except) {
+function customNeeds(except, p = pool) {
   const need = new Set();
-  for (const t of pool) {
+  for (const t of p) {
     if (!isCustomTag(t) || t === except) continue;
     for (const m of customOf(t)?.members || []) {
       need.add(m.tag);
@@ -1917,6 +1922,8 @@ function setWeight(tag, w) {
   if ((weights.get(tag) || 1) === w) return;
   if (w === 1) weights.delete(tag);
   else weights.set(tag, w);
+  // 份量也是工作台的一部分：助手想到一半你調了份量，它的寫入要知道（stale），不能把你的蓋掉。
+  workVersion++;
   paintWeight(poolNode(tag), w, { pop: true });
   sfx.stamp?.();
 }
@@ -2971,6 +2978,8 @@ let drawingRounds = 0;
  * 動畫、聲音、存檔、跨分頁同步都跟手動一樣，助手不會繞過任何規則。這裡只負責把狀態讀成資料、把結果算清楚。 */
 // 助手偷看字盒之前的搜尋（ctx.libPeek／libRestore）：mine 是助手打上去的字，使用者改過就不收回。
 let libPeekSaved = null;
+// 借用途中你自己打了字：這一輪剩下的找字都不再借搜尋框（libRestore 時放開）。
+let libPeekTaken = false;
 function assistantCtx() {
   // 英文介面的牌面寫的是 tag：助手說的牌名也照牌面（不然英文介面的明細冒出中文名）。
   const cardName = (c) => (english ? String(c.tag).replace(/_/g, " ") : c.zh);
@@ -2986,15 +2995,40 @@ function assistantCtx() {
     if ((card.gate === "male" && !settings.boy) || (card.gate === "female" && !settings.girl)) return "gender";
     return null;
   };
-  /** 一串牌照順序釘上會怎樣（不寫入）：跟 pin() 同一個 applyPin。 */
-  const simulate = (tags) => {
+  /**
+   * 先拿掉 removes、再照順序釘上 tags 會怎樣（不寫入）。跟真的做的同一套：拿掉照 unpin()（自製牌連它帶進來、
+   * 別張不要的成員）、釘照 pin()／pinCustom()（自製牌拆成員逐張 applyPin）。以前預覽把自製牌當一張、
+   * 又先加後減：自製牌擠掉黑髮不會先問，「拿掉帽子、加草帽」會超過 40 張。
+   */
+  const simulate = (tags, removes = []) => {
     let p = new Set(pool);
     let b = new Set(bans);
+    for (const t of removes) {
+      if (!p.has(t)) continue;
+      if (isCustomTag(t)) {
+        const need = customNeeds(t, p);
+        for (const [m, o] of customOwners(p)) if (o === t && !need.has(m)) p.delete(m);
+      }
+      p.delete(t);
+      for (const x of lex.byTag.get(t)?.bind || []) p.delete(x);
+    }
+    const afterRemove = new Set(p);
     for (const t of tags) {
-      if (!lib.byTag.has(t) || HARD_BANNED.includes(t)) continue;
+      if (HARD_BANNED.includes(t)) continue;
+      if (isCustomTag(t)) {
+        const c = customOf(t);
+        if (!c) continue;
+        for (const m of c.members) {
+          if (!lib.byTag.has(m.tag) || HARD_BANNED.includes(m.tag)) continue;
+          ({ pinned: p, userBanned: b } = applyPin(lex, p, b, m.tag, pinOpts()));
+        }
+        p.add(t);
+        continue;
+      }
+      if (!lib.byTag.has(t)) continue;
       ({ pinned: p, userBanned: b } = applyPin(lex, p, b, t, pinOpts()));
     }
-    return { p, b };
+    return { p, b, afterRemove };
   };
   const diff = (tags, p, b, before = pool, bansBefore = bans) => ({
     added: tags.filter((t) => p.has(t) && !before.has(t)),
@@ -3071,9 +3105,10 @@ function assistantCtx() {
         weight: weights.get(tag) ?? 1,
       };
     },
-    previewPins(tags) {
-      const { p, b } = simulate(tags);
-      return diff(tags, p, b);
+    // removes：同一步要先拿掉的牌。total 是做完之後真正的張數；displaced 只算「拿掉之後還在、被釘上的牌擠掉」的。
+    previewPins(tags, removes = []) {
+      const { p, b, afterRemove } = simulate(tags, removes);
+      return { ...diff(tags, p, b, afterRemove), final: true };
     },
     /** 一段提示詞拆成牌：跟「貼上提示詞」同一套（paste-prompt.js），詞庫有的才是牌。 */
     parse(text) {
@@ -3129,7 +3164,9 @@ function assistantCtx() {
      * 字盒偷看一下（助手去找相近的牌）：搜尋框打上這個字、候選那幾張亮起來（照順序編號）。
      * 回傳 false＝字盒現在看不到（手機收著），不演。libRestore 收回原本的搜尋；使用者自己動過搜尋框就不收。
      */
+    libFree: () => !libPeekTaken,
     libPeek(query, tags = []) {
+      if (libPeekTaken) return false;
       const q = $("lib-q");
       const grid = $("lib-grid");
       const r = grid.getBoundingClientRect();
@@ -3155,6 +3192,7 @@ function assistantCtx() {
     libRestore() {
       const saved = libPeekSaved;
       libPeekSaved = null;
+      libPeekTaken = false;
       $("lib-grid").querySelectorAll(".card.ai-cand").forEach((n) => (n.classList.remove("ai-cand"), delete n.dataset.aiCand));
       if (!saved) return;
       const q = $("lib-q");
@@ -3177,7 +3215,6 @@ function assistantCtx() {
     setWeight(tag, w) {
       const from = weights.get(tag) ?? 1;
       setWeight(tag, w);
-      workVersion++;
       return { tag, from, to: weights.get(tag) ?? 1 };
     },
     setN(n) {

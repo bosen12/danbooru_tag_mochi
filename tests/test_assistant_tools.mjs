@@ -776,6 +776,56 @@ console.log("ok: schemas and phrase list");
   // 標籤：數有幾個字
   assert.equal(createToolRunner(ctx7).label({ name: "paste_prompt", args: { prompt: "a, b, c" } }).zh, fill(TEXT.labPaste, 3));
   console.log("ok: paste_prompt typesets, pins with flights, looks up unknown words");
+  // ---- 深度檢查（Astra）的回歸 ----
+  // 排字動畫期間按了停止：不能照樣寫
+  {
+    const ctrl = new AbortController();
+    const w = withParse(world({ cards: beachCards }));
+    const t0 = w.typeset;
+    w.typeset = (id, sorts) => (ctrl.abort(), t0(id, sorts));
+    const r = await createToolRunner(w).run({ id: "a1", name: "paste_prompt", args: { prompt: "beach, smile" } }, { turn: turn(1), signal: ctrl.signal });
+    assert.equal(r.forModel.code, "aborted");
+    assert.deepEqual(names(w.log, "pin"), [], "停止之後不能再釘牌");
+  }
+  // 排字動畫期間自己動了合成池：回 stale，replace 不能把剛放的牌當成舊的拿掉
+  {
+    const w = withParse(world({ cards: beachCards, pool: [{ tag: "hat", zh: "帽子", weight: 1 }] }));
+    const t0 = w.typeset;
+    w.typeset = (id, sorts) => (w.bump(), t0(id, sorts));
+    const r = await createToolRunner(w).run({ id: "a2", name: "paste_prompt", args: { prompt: "beach", replace: true } }, { turn: turn(1) });
+    assert.equal(r.forModel.code, "stale");
+    assert.deepEqual(names(w.log, "unpin"), []);
+    assert.deepEqual(names(w.log, "pin"), []);
+  }
+  // 整組換成、一張都對不上：池子不能被清空
+  {
+    const w = withParse(world({ cards: beachCards, pool: [{ tag: "hat", zh: "帽子", weight: 1 }] }));
+    const r = await createToolRunner(w).run({ id: "a3", name: "paste_prompt", args: { prompt: "masterpiece, nothing_here", replace: true } }, { turn: turn(1) });
+    assert.equal(r.status, "skipped");
+    assert.deepEqual(names(w.log, "unpin"), []);
+    assert.ok(w._pool().some((p) => p.tag === "hat"));
+  }
+  // 整組換成：份量照這串寫的（沒寫就是 1），跟「貼上」的換成一樣，舊的 1.4 不留
+  {
+    const w = withParse(world({ cards: beachCards, pool: [{ tag: "smile", zh: "微笑", weight: 1.4 }, { tag: "hat", zh: "帽子", weight: 1 }] }));
+    const r = await createToolRunner(w).run({ id: "a4", name: "paste_prompt", args: { prompt: "smile, beach", replace: true } }, { turn: turn(1) });
+    assert.equal(r.status, "done");
+    assert.equal(w._pool().find((p) => p.tag === "smile").weight, 1);
+    assert.ok(!w._pool().some((p) => p.tag === "hat"));
+  }
+  // 復原舊的「移掉洋裝」：後來放了泳裝（同一格），釘回洋裝會擠掉它 → 保留現況、說為什麼
+  {
+    const w = world({ cards: beachCards, pool: [{ tag: "dress", zh: "洋裝", weight: 1 }] });
+    const runner = createToolRunner(w);
+    const rm = await runner.run({ id: "u1", name: "change_pool", args: { remove: ["dress"] } }, { turn: turn(1) });
+    assert.ok(rm.undo);
+    await runner.run({ id: "u2", name: "change_pool", args: { add: ["swimsuit"] } }, { turn: turn(w.version()) });
+    const undone = await rm.undo();
+    assert.equal(undone.ok, false);
+    assert.equal(undone.reason, fill(TEXT.undoClash, "泳裝"));
+    assert.ok(w._pool().some((p) => p.tag === "swimsuit") && !w._pool().some((p) => p.tag === "dress"));
+  }
+  console.log("ok: round-6 regressions (stop/stale during typeset, replace, undo clash)");
 }
 
 // 推理強度：頁面選單跟伺服器接受的值要一樣（不然選了存不進去）

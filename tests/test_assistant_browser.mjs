@@ -41,6 +41,9 @@ function script(body) {
   const tools = msgs.slice(lastUserIdx).filter((m) => m.role === "tool").length;
   const end = (text) => sse([["text", { delta: text }], ["done", { reason: "end" }]]);
   const call = (...calls) => sse([["tool_calls", { calls }], ["done", { reason: "tool_calls" }]]);
+  const convo = msgs.map((m) => (m.role === "user" ? String(m.content) : "")).join("\n");
+  // 按了確認卡之後接著做（decide → hops）：最後一句是「［使用者按了…］」，不是新的交代
+  if (/^［使用者/.test(said) && !/換紅髮再抽一張/.test(convo)) return end("好。");
   if (/海邊/.test(said)) {
     if (tools === 0) return call({ id: "c1", name: "get_workspace", args: {} }, { id: "c2", name: "find_cards", args: { query: "海邊" } });
     if (tools === 2) return call({ id: "c3", name: "change_pool", args: { add: ["beach", "sunset"] } }, { id: "c4", name: "set_draw_count", args: { n: 4 } });
@@ -56,6 +59,20 @@ function script(body) {
     }
     return end("排進微笑、草帽；字盒找到相近的，加進去了。");
   }
+  // 停在確認卡：同一批後面的抽牌不能先做；按了套用之後才接著抽
+  if (/換紅髮再抽一張/.test(said)) {
+    if (tools === 0) return call({ id: "c1", name: "paste_prompt", args: { prompt: "red hair" } }, { id: "c2", name: "draw_cards", args: { n: 1 } });
+    return end("要換紅髮會擠掉黑髮，等你確認。");
+  }
+  if (/按了「套用」/.test(said) && /換紅髮再抽一張/.test(convo)) return tools === 0 ? call({ id: "c2", name: "draw_cards", args: { n: 1 } }) : end("換好紅髮，抽了一張。");
+  // 連線中途斷了（沒有 done）
+  // 40 張上限：拿掉帽子、加草帽（草帽會帶回帽子）
+  if (/拿掉帽子加草帽/.test(said)) return tools === 0 ? call({ id: "x1", name: "change_pool", args: { remove: ["hat"], add: ["straw hat"] } }) : end("好。");
+  if (/斷線測試/.test(said)) return sse([["text", { delta: "這是半截" }]]);
+  // 長回答：一個字一個字串流
+  if (/長回答/.test(said)) return sse([...Array.from({ length: 120 }, (_, k) => ["text", { delta: k % 10 === 9 ? "。\n" : "字" }]), ["done", { reason: "end" }]]);
+  // 慢的回答：中途按新對話
+  if (/慢一點/.test(said)) return new Promise((r) => setTimeout(() => r(end("慢慢回來了")), 1500));
   if (/抽兩張/.test(said)) return tools === 0 ? call({ id: "d1", name: "draw_cards", args: { n: 2 } }) : end("這輪抽到 2 組。");
   if (/黑髮/.test(said)) {
     if (tools === 0) return call({ id: "m1", name: "change_pool", args: { add: ["red hair"] } });
@@ -79,7 +96,7 @@ const server = createServer(async (req, res) => {
       let raw = "";
       for await (const c of req) raw += c;
       res.writeHead(200, { "Content-Type": "text/event-stream" });
-      return res.end(script(JSON.parse(raw || "{}")));
+      return res.end(await script(JSON.parse(raw || "{}")));
     }
     return json({ ok: true });
   }
@@ -239,6 +256,68 @@ try {
   const pSent = chats.at(-1);
   ok("送給模型：paste_prompt 在工具清單、系統提示詞叫它先用這支", pSent.tools.some((t) => t.name === "paste_prompt") && /paste_prompt/.test(pSent.system));
 
+  // 5d. 停在確認卡：後面的抽牌先不做，按套用之後才接著抽
+  {
+    const shots0 = await page.locator("#wall .shot").count();
+    await send(page, "換紅髮再抽一張");
+    ok("確認：先停下來問", (await page.locator(".ai-confirm[data-state='open']").count()) === 1, await page.locator(".ai-confirm").evaluateAll((ns) => ns.map((n) => n.closest(".ai-msg")?.dataset.id + "/" + n.dataset.state + ":" + n.textContent.slice(0, 30)).join(" | ")));
+    ok("確認：同一批後面的抽牌沒有先做", (await page.locator("#wall .shot").count()) === shots0);
+    await page.locator(".ai-confirm[data-state='open'] .btn-primary").click();
+    await page.waitForFunction((n) => document.querySelectorAll("#wall .shot").length > n, shots0, { timeout: 8000 }).catch(() => {});
+    await page.waitForFunction(() => document.querySelector(".ai-send")?.dataset.running !== "true");
+    ok("確認：按套用之後換成紅髮、接著抽了一張", (await poolTags(page)).includes("red hair") && (await page.locator("#wall .shot").count()) === shots0 + 1);
+    const resumed = chats.find((c) => (c.messages || []).some((m) => m.role === "tool" && m.name === "draw_cards" && /waiting_confirm/.test(m.content)));
+    ok("確認：模型看到的是「等確認、這一步沒做」，接著看到你按了套用", !!resumed && /按了「套用」/.test(resumed.messages.at(-1).content));
+  }
+
+  // 5e. 連線中途斷了：半截的不能當成完整回覆
+  await send(page, "斷線測試");
+  ok("斷線：寫出「中途斷了」", /中途斷了/.test((await page.locator(".ai-msg.ai-bot").last().locator(".ai-error").textContent().catch(() => "")) || ""));
+
+  // 5f. 串流：只更新正在寫的那一段，不是每個字整則重畫
+  {
+    await page.evaluate(() => {
+      window.__swaps = [];
+      window.__obs = new MutationObserver((ms) => {
+        for (const m of ms) for (const n of m.removedNodes) if (n.classList?.contains("ai-bot")) window.__swaps.push(n.dataset.id);
+      });
+      window.__obs.observe(document.querySelector(".ai-log"), { childList: true });
+    });
+    await send(page, "長回答");
+    // 只算正在串流的這一則被整則換掉幾次（開新一輪時整串重畫、換掉舊的那幾則不算）
+    const swaps = await page.evaluate(() => {
+      window.__obs.disconnect();
+      const id = [...document.querySelectorAll(".ai-msg.ai-bot")].at(-1).dataset.id;
+      return window.__swaps.filter((x) => x === id).length;
+    });
+    ok("串流：120 個字只整則重畫幾次", swaps <= 6, `整則換了 ${swaps} 次`);
+    ok("串流：字全部到了", ((await page.locator(".ai-msg.ai-bot").last().textContent()) || "").split("字").length - 1 === 108);
+  }
+
+  // 5g. 回答到一半按「新對話」：舊的那一輪不能寫進新的對話
+  {
+    await page.locator(".ai-input").fill("慢一點");
+    await page.keyboard.press("Enter");
+    await page.waitForTimeout(300);
+    await page.locator(".ai-panel button[aria-label='新對話']").click();
+    await page.waitForTimeout(2200);
+    ok("新對話：舊的那一輪沒寫回來", (await page.locator(".ai-msg").count()) === 0 && (await page.locator(".ai-empty").count()) === 1);
+    const stored = await page.evaluate(() => JSON.parse(sessionStorage.getItem("mochi.assistant.chat.v1") || "{}"));
+    ok("新對話：存下來的也是空的", (stored.messages || []).length === 0, JSON.stringify(stored).slice(0, 200));
+    await send(page, "我現在有哪些牌");
+    const first = chats.at(-1).messages;
+    ok("新對話：下一句送出去只有自己一則", first.length === 1 && first[0].role === "user", JSON.stringify(first.map((m) => m.role)));
+  }
+
+  // 5h. 助手借著字盒搜尋框找字時，你自己打字：框就是你的，這一輪結束也不收回
+  {
+    await send(page, "排一組微笑戴草帽的");
+    await page.locator("#lib-q").fill("smile");
+    await page.waitForTimeout(3200);
+    ok("借字盒：你打的字留著", (await page.locator("#lib-q").inputValue()) === "smile");
+    await page.locator("#lib-q").fill("");
+  }
+
   // 6. 再關掉
   await page.locator("#settings-btn").click();
   await page.locator(".lab-section input").click();
@@ -248,6 +327,36 @@ try {
   ok("關掉：聊天室收起", await page.evaluate(() => !document.querySelector(".ai-panel") || document.querySelector(".ai-panel").hidden));
   ok("關掉：<html> 沒有 data-ai", !(await page.evaluate(() => "ai" in document.documentElement.dataset)));
   await context.close();
+
+  // 預覽跟真的做同一套順序（先拿掉、再釘，附帶的照算）：滿 40 張時「拿掉帽子、加草帽」會變 41 張，要擋下來
+  {
+    const { context, page } = await newPage({ width: 1440, height: 900 });
+    await page.addInitScript(() => localStorage.setItem("mochi.assistant.v1", JSON.stringify({ enabled: true, open: true })));
+    await page.goto(origin + "/index.html?debug");
+    await page.waitForFunction(() => document.querySelectorAll("#lib-grid .card").length > 0 && window.mochi);
+    const filled = await page.evaluate(() => {
+      const m = window.mochi;
+      m.pin("hat");
+      const count = () => [...m.pool].filter((t) => !t.startsWith("custom:")).length;
+      for (const c of m.lib().cards) {
+        if (count() >= 40) break;
+        if (c.suit === "chara" || c.tag.startsWith("custom:") || /hat|headwear/.test(c.tag)) continue;
+        const before = new Set(m.pool);
+        m.pin(c.tag);
+        if ([...before].some((t) => !m.pool.has(t)) || count() > 40) {
+          for (const t of [...m.pool]) if (!before.has(t)) m.pool.delete(t);
+          for (const t of before) m.pool.add(t);
+        }
+      }
+      m.pin("hat");
+      return count();
+    });
+    await page.locator(".ai-input").waitFor();
+    await send(page, "拿掉帽子加草帽");
+    const after = await page.evaluate(() => ({ n: [...window.mochi.pool].filter((t) => !t.startsWith("custom:")).length, straw: window.mochi.pool.has("straw hat") }));
+    ok("40 張上限：拿掉帽子、加草帽（會帶回帽子）擋下來，不會變 41 張", filled === 40 && after.n === 40 && !after.straw, `${filled} → ${JSON.stringify(after)}`);
+    await context.close();
+  }
 
   // 手機：聊天室是底部拉上來的面板
   {

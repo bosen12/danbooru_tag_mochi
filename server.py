@@ -7029,6 +7029,9 @@ class Handler(BaseHTTPRequestHandler):
         try:
             if not local and (not allowed_client(addr) or action not in ("status", "chat")):
                 raise assistant.AssistantError("local_only", status=403)
+            if not local and not assistant.trusted_host(self.headers.get("Host")):
+                # 遠端也擋 DNS 重綁：手機上別的網站把自己的網域指到這台，不能借用聊天室和模型額度。
+                raise assistant.AssistantError("local_only", status=403)
             if local:
                 # 瀏覽器經 DNS 重綁仍會送外部 Host。只信本機網址上的 loopback 連線。
                 host = urllib.parse.urlsplit("//" + (self.headers.get("Host") or "")).hostname
@@ -7058,7 +7061,7 @@ class Handler(BaseHTTPRequestHandler):
             elif action == "models":
                 result = assistant.models(payload)
             else:
-                result = assistant.test_connection()
+                result = assistant.test_connection(disconnected=self._client_gone)
             self._json(200, result)
         except assistant.AssistantError as exc:
             self.close_connection = True
@@ -7127,18 +7130,18 @@ class Handler(BaseHTTPRequestHandler):
             raise assistant.AssistantError("format", "請送出有效的 JSON 物件。")
         return payload
 
+    def _client_gone(self) -> bool:
+        """瀏覽器那端關了（關頁、按停）：socket 可讀但讀到 0 個位元組。"""
+        try:
+            ready, _, _ = select.select([self.connection], [], [], 0)
+            return bool(ready) and not self.connection.recv(1, socket.MSG_PEEK)
+        except OSError:
+            return True
+
     def _assistant_sse(self, payload: dict) -> None:
         """助理斷線要立即收掉該模型連線。生圖的 _sse 另外有自己的中斷行為。"""
         self.close_connection = True
-
-        def disconnected():
-            try:
-                ready, _, _ = select.select([self.connection], [], [], 0)
-                return bool(ready) and not self.connection.recv(1, socket.MSG_PEEK)
-            except OSError:
-                return True
-
-        events = assistant.chat_events(payload, disconnected=disconnected)
+        events = assistant.chat_events(payload, disconnected=self._client_gone)
         try:
             self.send_response(200)
             self.send_header("Content-Type", "text/event-stream; charset=utf-8")

@@ -152,6 +152,8 @@ export const TEXT = {
   undoN: "一次已經被改過，沒有復原",
   undoTag: "「{0}」已經被改過，沒有復原",
   restored: "已復原",
+  undoClash: "復原會擠掉後來放的「{0}」，先保留現況",
+  undoOver: "復原後會超過 40 張，先保留現況",
   cardIs: "「{0}」是{1}",
 };
 
@@ -672,6 +674,16 @@ export function createToolRunner(ctx) {
           return { ok: false, reason, summary: reason };
         }
       }
+      // 釘回去會擠掉這一步以外的牌（後來才放的黑髮），或超過 40 張：保留現況，說清楚為什麼。
+      if (restore.repin.length) {
+        const pv = await ctx.previewPins(restore.repin.map((x) => x.tag), restore.unpin);
+        const clash = (pv?.displaced || []).filter((t) => !restore.unpin.includes(t));
+        if (clash.length) {
+          const reason = fill(TEXT.undoClash, joinZh(clash));
+          return { ok: false, reason, summary: reason };
+        }
+        if (pv?.final && Number(pv.total) > POOL_CAP) return { ok: false, reason: TEXT.undoOver, summary: TEXT.undoOver };
+      }
       if (restore.unpin.length) await ctx.unpin(restore.unpin);
       if (restore.repin.length) await ctx.pin(restore.repin.map((x) => x.tag));
       for (const item of [...restore.repin, ...restore.reweight]) {
@@ -727,6 +739,8 @@ export function createToolRunner(ctx) {
   // 預覽的 total 已含加入和被擠掉的結果。再扣掉這次點名移走、而且沒有被附帶加回來的牌。
   // 自製牌的外殼本身不算張數，移走時改扣它的成員。
   function projectTotal(state, preview, removes) {
+    // 頁面的預覽已經照真的順序（先拿掉、再釘）算好最後張數。
+    if (preview?.final && Number.isFinite(Number(preview.total))) return Number(preview.total);
     const counted = new Set((state.pool || []).filter((p) => !p.custom).map((p) => p.tag));
     const dropping = [];
     for (const tag of removes) {
@@ -1112,9 +1126,7 @@ export function createToolRunner(ctx) {
         return fail(target, "missing", fill(TEXT.notInPool, zhOf(tag)), { model: { tag } });
       }
     }
-    const preview = add.length
-      ? await ctx.previewPins(add)
-      : null;
+    const preview = add.length || remove.length ? await ctx.previewPins(add, remove) : null;
     const total = projectTotal(state, preview, remove);
     if (total > POOL_CAP) {
       const lim = limitLines(total, state);
@@ -1302,10 +1314,15 @@ export function createToolRunner(ctx) {
     };
     const lookups = [];
     for (const s of sorts.filter((x) => x.kind === "unknown").slice(0, 6)) lookups.push({ i: s.i, ...(await lookupWord(s.raw)) });
+    // 排字動畫最長一秒多：這段時間按了停止、或自己動了合成池，就不能照舊的狀態寫（replace 會把你剛放的牌當成舊的拿掉）。
+    if (opts.signal?.aborted) return skip(target, TEXT.aborted, { ok: false, code: "aborted" });
+    if (isStale(base)) return fail(target, "stale", TEXT.stale, { model: { message: "排字時工作台被改過，請先 get_workspace 再寫入。" } });
     const st = await ctx.state();
     const add = [...new Set(cards.map((c) => c.tag))];
-    const weightsObj = Object.fromEntries(cards.filter((c) => c.w && c.w !== 1).map((c) => [c.tag, c.w]));
-    const remove = args.replace ? (st.pool || []).map((p) => p.tag).filter((t) => !add.includes(t)) : [];
+    // 整組換掉：跟「貼上」的「換成這些牌」一樣，份量照這串寫的（沒寫就是 1，舊的 1.4 不留）；加進去的才保留原本的份量。
+    const weightsObj = Object.fromEntries(cards.filter((c) => (args.replace ? true : c.w && c.w !== 1)).map((c) => [c.tag, c.w || 1]));
+    // 一張都對不上時不能照樣清池子（手動貼上這時「換成」是按不下去的）。
+    const remove = args.replace && add.length ? (st.pool || []).map((p) => p.tag).filter((t) => !add.includes(t)) : [];
     const ignored = sorts.filter((x) => x.kind === "muted").map((x) => x.raw);
     const unknownForModel = lookups.map((l) => ({ word: l.raw, candidates: l.candidates }));
     const lookLines = lookups.map((l) => (l.candidates.length ? fill(TEXT.pasteCands, l.raw, l.candidates.map((c) => c.zh).join(sep())) : fill(TEXT.pasteNoCand, l.raw)));
@@ -1316,7 +1333,7 @@ export function createToolRunner(ctx) {
     const already = new Set((st.pool || []).map((p) => p.tag));
     if (!add.length && !remove.length) {
       res = skip(target, parsed.cards?.length ? TEXT.pasteHave : TEXT.pasteNone, { model: { code: "nothing_to_add" } });
-    } else if (!remove.length && add.every((t) => already.has(t)) && !Object.keys(weightsObj).length) {
+    } else if (!remove.length && add.every((t) => already.has(t)) && Object.entries(weightsObj).every(([t, w]) => sameW((st.pool || []).find((p) => p.tag === t)?.weight ?? 1, w))) {
       res = skip(target, TEXT.pasteHave, { model: { code: "already_in_pool" } });
     } else {
       res = await changePool({ add, ...(remove.length ? { remove } : {}), ...(Object.keys(weightsObj).length ? { weights: weightsObj } : {}) }, { ...opts, from: rectOf }, base);
@@ -1370,7 +1387,7 @@ export function createToolRunner(ctx) {
     }
     if (blocked.length) return fail(plan.target, "blocked", cannot(blocked[0].tag, blocked[0].reason), { model: { blocked } });
     const state = await ctx.state();
-    const preview = plan.add.length ? await ctx.previewPins(plan.add) : null;
+    const preview = plan.add.length || plan.remove.length ? await ctx.previewPins(plan.add, plan.remove) : null;
     const total = projectTotal(state, preview, plan.remove);
     if (total > POOL_CAP) {
       const lim = limitLines(total, state);

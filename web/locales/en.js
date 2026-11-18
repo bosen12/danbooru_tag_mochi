@@ -2831,6 +2831,8 @@ AI 助手用：{0}|AI assistant uses {0!}
 「{0}」字盒裡也沒有相近的|Nothing close to “{0!}” in the library
 引擎自己處理：{0}|Handled by the engine: {0!}
 沒放進：{0}（跟同一串裡的牌互斥，留了後面那張）|Not added: {0!} (conflicts with a later card in the same prompt, which was kept)
+復原會擠掉後來放的「{0}」，先保留現況|Undoing would push out “{0!}”, added later, so nothing changed
+復原後會超過 40 張，先保留現況|Undoing would go over 40 cards, so nothing changed
 提示詞不能是空的|The prompt can't be empty
 提示詞太長（最多 2000 字）|The prompt is too long (2000 characters max)
 正在看「{0}」|Looking at “{0!}”

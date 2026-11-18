@@ -10,6 +10,7 @@ import os
 import queue
 import re
 import shutil
+import signal
 import socket
 import subprocess
 import sys
@@ -120,6 +121,21 @@ def is_local(addr):
     return str(ip) in ("127.0.0.1", "::1")
 
 
+def trusted_host(host_header):
+    """遠端裝置連進來時，Host 要是這台機器本來會被叫的名字：IP、MagicDNS 的單字名、*.ts.net、*.local。
+    DNS 重綁的網頁會帶它自己的網域（有點、不是 ts.net），在叫模型、花額度之前就擋掉。"""
+    host = urllib.parse.urlsplit("//" + (host_header or "")).hostname
+    if not host:
+        return False
+    host = host.rstrip(".").lower()
+    try:
+        ipaddress.ip_address(host)
+        return True
+    except ValueError:
+        pass
+    return host == "localhost" or "." not in host or host.endswith((".ts.net", ".local"))
+
+
 def _config_path():
     """測試及各實例可指定不同存檔，金鑰也跟著該實例的設定路徑分開。"""
     override = os.environ.get("ASSISTANT_CONFIG_PATH")
@@ -181,6 +197,10 @@ def _stored(path):
     if not isinstance(raw, dict) or not isinstance(raw.get("allowRemote", False), bool):
         raise AssistantError("format", "助理設定檔的格式有誤，請先檢查存檔。", status=503)
     conn = raw.get("connection")
+    # 環境金鑰（MOCHI_CUSTOM_API_KEY）上次綁的自訂端點：重開之後照舊只給它，不會變成「重開後第一個讀到的」。
+    bound = raw.get("customEnvBase")
+    if isinstance(bound, str) and bound:
+        _custom_env_bases.setdefault(path, bound)
     return {"connection": _connection(conn) if conn is not None else None, "allowRemote": raw.get("allowRemote", False)}
 
 
@@ -262,6 +282,9 @@ def save_config(payload):
         if "connection" not in payload:
             conn = old["connection"]
         data = {"connection": conn, "allowRemote": old["allowRemote"] if allow_remote is None else allow_remote}
+        if os.environ.get("MOCHI_CUSTOM_API_KEY") and _custom_env_bases.get(path):
+            # 只存端點網址（不是金鑰）：伺服器重開後，環境金鑰還是只給原本那個端點。
+            data["customEnvBase"] = _custom_env_bases[path]
         file_lock.write_text(path, json.dumps(data, ensure_ascii=False, indent=2) + "\n")
         identity = _identity(conn)
         if clear or identity != _identity(old["connection"]):
@@ -1042,6 +1065,21 @@ def _cli_invocation(conn, chat):
         yield command + args, cwd, prompt_file
 
 
+def _kill_tree(proc):
+    """CLI 會再開子程序（node、模型的工具程序）：只殺最外層，底下那層照樣跑完、花額度。整棵一起收。"""
+    if proc.poll() is not None:
+        return
+    if os.name == "nt":
+        with contextlib.suppress(OSError, subprocess.SubprocessError):
+            subprocess.run(["taskkill", "/PID", str(proc.pid), "/T", "/F"], stdout=subprocess.DEVNULL,
+                           stderr=subprocess.DEVNULL, timeout=10, creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
+    else:
+        with contextlib.suppress(OSError):
+            os.killpg(proc.pid, signal.SIGKILL)
+    with contextlib.suppress(OSError):
+        proc.kill()
+
+
 def _cli_process(argv, cwd, cancel, *, prompt_file, timeout, on_start=None):
     """用檔案收取輸出，取消時直接終止 CLI，不等待繼承管線的其他程序。"""
     cancel.check()
@@ -1051,9 +1089,11 @@ def _cli_process(argv, cwd, cancel, *, prompt_file, timeout, on_start=None):
         err_file = stack.enter_context(tempfile.TemporaryFile())
         proc = stack.enter_context(subprocess.Popen(
             argv, cwd=cwd, stdin=stdin, stdout=out_file, stderr=err_file, env=_cli_env(),
+            # POSIX：自己一個程序群組，取消時 killpg 收整棵；Windows 用 taskkill /T。
+            **({} if os.name == "nt" else {"start_new_session": True}),
         ))
         timed_out = False
-        with cancel.interrupt_with(proc.kill):
+        with cancel.interrupt_with(lambda: _kill_tree(proc)):
             try:
                 if on_start is not None:
                     on_start(proc)
@@ -1064,8 +1104,7 @@ def _cli_process(argv, cwd, cancel, *, prompt_file, timeout, on_start=None):
                 cancel.stop()
             finally:
                 if proc.poll() is None:
-                    with contextlib.suppress(OSError):
-                        proc.kill()
+                    _kill_tree(proc)
                     proc.wait()
         out_file.seek(0)
         err_file.seek(0)
@@ -1251,7 +1290,7 @@ def _stream_chat(chat, disconnected, timeout, force_tool):
         cancel.stop()
 
 
-def test_connection():
+def test_connection(disconnected=None):
     """只送固定的最小測試，不附工作台內容，也不執行模型提出的操作。"""
     name = "check_connection"
     chat = {
@@ -1263,7 +1302,8 @@ def test_connection():
     started = time.monotonic()
     passed = False
     failure = AssistantError("format", "模型沒有回傳預期的測試工具呼叫，請換一個模型再試。")
-    for event, data in chat_events(chat, timeout=TEST_TIMEOUT, force_tool=name):
+    # 關掉設定視窗、離開頁面：跟聊天一樣立刻收掉，不要跑滿 25 秒。
+    for event, data in chat_events(chat, timeout=TEST_TIMEOUT, force_tool=name, disconnected=disconnected):
         if event == "error":
             failure = AssistantError(data["code"], data["error"])
         elif event == "tool_calls":
