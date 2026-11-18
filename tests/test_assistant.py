@@ -153,6 +153,15 @@ def config_storage():
     with patch.dict(os.environ, {"MOCHI_CUSTOM_API_KEY": KEY}):
         assert config("custom", baseUrl="http://127.0.0.1:8123/v1")["connection"]["hasKey"]
         assert not config("custom", baseUrl="http://127.0.0.1:8124/v1")["connection"]["hasKey"]
+    # 推理強度：每家接受的值不一樣；空字串＝預設（不送）
+    assert config("claude", effort="max")["connection"]["effort"] == "max"
+    assert assistant.status(local=True)["connection"]["label"] == "Claude Code · fake-model · max"
+    assert config("claude", effort="")["connection"]["effort"] is None
+    assert assistant.status(local=True)["connection"]["label"] == "Claude Code · fake-model"
+    expect_error("format", lambda: config("grok", effort="max"))
+    expect_error("format", lambda: config("xai", effort="medium"))
+    expect_error("format", lambda: config("codex", effort="--yolo"))
+    assert config("codex", effort="xhigh")["connection"]["effort"] == "xhigh"
 
 
 def detection():
@@ -185,6 +194,24 @@ def fake_command(provider, mode):
     return [sys.executable, str(Path(os.environ["ASSISTANT_CONFIG_PATH"]).with_name("fake_cli.py")), provider, mode]
 
 
+def cli_efforts():
+    flags = {"claude": ["--effort", "high"], "grok": ["--reasoning-effort", "high"],
+             "codex": ["-c", 'model_reasoning_effort="high"']}
+    for provider, pair in flags.items():
+        with patch.object(assistant, "find_cli", return_value=[provider]):
+            with assistant._cli_invocation({"provider": provider, "model": None, "effort": "high"}, CHAT) as (argv, *_):
+                i = argv.index(pair[0]) if provider != "codex" else argv.index(pair[1]) - 1
+                assert argv[i:i + 2] == pair, argv
+                if provider == "codex":
+                    assert argv[-1] == "-"
+            # 存檔被手改成怪值也不能變成 CLI 參數
+            try:
+                with assistant._cli_invocation({"provider": provider, "model": None, "effort": "--x"}, CHAT):
+                    raise AssertionError("應該擋掉")
+            except assistant.AssistantError as exc:
+                assert exc.code == "format"
+
+
 def cli_commands():
     for provider in ("claude", "grok", "codex"):
         conn = {"provider": provider, "model": None}
@@ -192,6 +219,7 @@ def cli_commands():
             with assistant._cli_invocation(conn, CHAT) as (argv, cwd, prompt_file):
                 assert not list(Path(cwd).iterdir())
                 assert "--model" not in argv
+                assert not any("effort" in a for a in argv)
 
                 def option(flag):
                     return argv[argv.index(flag) + 1]
@@ -345,9 +373,10 @@ def api_provider(provider):
                 self.wfile.write(json.dumps({"error": {"message": state["message"] + " " + KEY}}).encode())
                 return
             frames = anthropic_frames(state["broken"]) if anth else openai_frames(state["broken"])
-            if body.get("tool_choice"):
+            names = [t.get("name") or t.get("function", {}).get("name") for t in body.get("tools", [])]
+            if names == ["check_connection"]:
                 if anth:
-                    assert body["tool_choice"] == {"type": "tool", "name": "check_connection"}
+                    assert "tool_choice" not in body
                     frames[4]["content_block"]["name"] = "check_connection"
                     frames = frames[:5] + frames[7:8] + frames[-2:]
                 else:
@@ -390,10 +419,12 @@ def api_provider(provider):
             headers = {k.lower(): v for k, v in headers.items()}
             if anth:
                 assert path == "/v1/messages" and headers["x-api-key"] == KEY
+                assert "output_config" not in body and body["max_tokens"] == 16000
                 assert body["system"] == CHAT["system"] and body["tools"] == TOOLS
                 assert [b["tool_use_id"] for b in body["messages"][-1]["content"]] == ["c1", "c2"]
             else:
                 assert path == "/v1/chat/completions" and headers["authorization"] == "Bearer " + KEY
+                assert "reasoning_effort" not in body
                 assert body["tools"][0]["function"]["parameters"] == TOOLS[0]["input_schema"]
                 assert [m["tool_call_id"] for m in body["messages"][-2:]] == ["c1", "c2"]
             partial = history[:-1] + [{"role": "user", "content": "上輪按停，開始新一輪。"}]
@@ -402,6 +433,10 @@ def api_provider(provider):
             result = sent[-2]["content"][-1]["content"] if anth else sent[-2]["content"]
             assert json.loads(result)["code"] == "aborted"
             assert assistant.test_connection()["ok"]
+            config(provider, effort="high", **({"baseUrl": url} if provider == "custom" else {}))
+            assert list(assistant.chat_events(CHAT))[-1][0] == "done"
+            body = state["seen"][-1][2]
+            assert (body["output_config"] == {"effort": "high"}) if anth else (body["reasoning_effort"] == "high")
             state["broken"] = True
             events = dict(assistant.chat_events(CHAT))
             assert "tool_calls" not in events and events["error"]["code"] == "format"
@@ -576,7 +611,7 @@ def main():
 
             cases = [
                 ("設定存讀與金鑰", config_storage), ("CLI 偵測與模型目錄", detection),
-                ("CLI 指令與隔離旗標", cli_commands), ("CLI 結構化回應與錯誤", cli_chat),
+                ("CLI 指令與隔離旗標", cli_commands), ("CLI 推理強度參數", cli_efforts), ("CLI 結構化回應與錯誤", cli_chat),
                 ("三套 CLI 的串流格式", cli_output_formats),
                 *((f"{p} 原生工具串流、壞 JSON 與錯誤分類", lambda p=p: api_provider(p))
                   for p in ("openai", "anthropic", "xai", "custom")),

@@ -2813,6 +2813,11 @@ ComfyUI 不收：{0}|ComfyUI rejected it: {0!}
 字盒搜尋「{0}」|Library search “{0!}”
 讀到 {0} 個模型|Found {0} models
 {0} 的模型|{0} model
+{0} 的推理強度|{0} reasoning effort
+API 的推理強度|API reasoning effort
+推理：預設|Reasoning: default
+推理強度|Reasoning effort
+推理強度：越高想得越久、越慢、用量越多|Reasoning effort: higher thinks longer, runs slower and uses more quota
 選了：{0}（按「儲存」才生效）|Selected: {0!} (press Save to use it)
 AI 助手用：{0}|AI assistant uses {0!}
 測試成功（{0} 秒）|Test passed ({0} s)

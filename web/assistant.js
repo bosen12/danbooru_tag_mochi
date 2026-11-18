@@ -352,7 +352,7 @@ export function mountAssistant({ ctx }) {
     body.append(intro, el("h3", { class: "ai-h3" }, "本機 CLI"), cliBox, el("h3", { class: "ai-h3" }, "自己的 API"), apiBox, remoteBox, testLine);
 
     let cfg = null;
-    let pick = null; // { kind, provider, model, baseUrl }
+    let pick = null; // { kind, provider, model, effort, baseUrl }
     const saveBtn = el("button", { class: "btn btn-primary", type: "button" }, "儲存");
     const testBtn = el("button", { class: "btn btn-ghost", type: "button" }, "測試連線");
     const s = openSheet("AI 助手設定", body, { wide: true, foot: [testBtn, saveBtn] });
@@ -377,13 +377,14 @@ export function mountAssistant({ ctx }) {
     const provSel = el("select", { class: "select", "aria-label": "供應商" }, PROVIDERS.map(([v, l]) => el("option", { value: v }, l)));
     const modelList = el("datalist", { id: "ai-model-list" });
     const modelIn = el("input", { class: "ai-field", type: "text", list: "ai-model-list", placeholder: "模型 ID（例如 gpt-5、claude-opus-5-5）", "aria-label": "模型", autocomplete: "off", spellcheck: "false" });
+    const apiEffort = effortSelect(cfg.connection?.kind === "api" ? cfg.connection.provider : "openai", cfg.connection?.kind === "api" ? cfg.connection.effort : null, "API 的推理強度");
     const keyIn = el("input", { class: "ai-field", type: "password", placeholder: "API Key（只送到墨池伺服器）", "aria-label": "API Key", autocomplete: "off" });
     const keyState = el("small", { class: "ai-muted" });
     const baseIn = el("input", { class: "ai-field", type: "url", placeholder: "Base URL（例如 https://example.com/v1）", "aria-label": "Base URL", autocomplete: "off", hidden: true });
     const listBtn = el("button", { class: "btn btn-small btn-ghost", type: "button" }, "讀模型清單");
     const useApi = el("button", { class: "btn btn-small", type: "button" }, "用這組 API");
     apiBox.append(
-      el("div", { class: "ai-api-row" }, el("label", {}, el("span", {}, "供應商"), provSel), el("label", { class: "ai-grow" }, el("span", {}, "模型"), modelIn, modelList)),
+      el("div", { class: "ai-api-row" }, el("label", {}, el("span", {}, "供應商"), provSel), el("label", { class: "ai-grow" }, el("span", {}, "模型"), modelIn, modelList), el("label", {}, el("span", {}, "推理強度"), apiEffort)),
       el("div", { class: "ai-api-row" }, el("label", { class: "ai-grow" }, el("span", {}, "API Key"), keyIn, keyState)),
       baseIn,
       el("div", { class: "ai-api-row ai-api-actions" }, listBtn, useApi)
@@ -399,7 +400,17 @@ export function mountAssistant({ ctx }) {
       baseIn.value = cfg.connection.baseUrl || "";
     }
     paintApi();
-    provSel.addEventListener("change", paintApi);
+    provSel.addEventListener("change", () => {
+      paintApi();
+      fillEffort(apiEffort, provSel.value, apiEffort.value);
+      if (pick?.kind === "api") pick = { ...pick, provider: provSel.value, effort: apiEffort.value || null };
+    });
+    apiEffort.addEventListener("change", () => {
+      if (pick?.kind === "api") {
+        pick = { ...pick, effort: apiEffort.value || null };
+        paintPick();
+      }
+    });
     listBtn.addEventListener("click", async () => {
       listBtn.disabled = true;
       listBtn.textContent = "讀取中…";
@@ -418,7 +429,7 @@ export function mountAssistant({ ctx }) {
       }
     });
     useApi.addEventListener("click", () => {
-      pick = { kind: "api", provider: provSel.value, model: modelIn.value.trim() || null, baseUrl: baseIn.value.trim() || undefined };
+      pick = { kind: "api", provider: provSel.value, model: modelIn.value.trim() || null, effort: apiEffort.value || null, baseUrl: baseIn.value.trim() || undefined };
       paintPick();
     });
 
@@ -456,14 +467,25 @@ export function mountAssistant({ ctx }) {
         ...(c.models || []).map((m) => el("option", { value: m.id }, m.label || m.id))
       );
       const isPicked = () => pick?.kind === "cli" && pick.provider === c.id;
+      const effortSel = effortSelect(c.id, isPicked() ? pick.effort : null, `${c.name} 的推理強度`);
+      if (!c.usable) effortSel.disabled = true;
       if (isPicked()) modelSel.value = pick.model || "";
       const use = el("button", { class: "btn btn-small", type: "button", disabled: !c.usable }, "用這個");
       use.addEventListener("click", () => {
-        pick = { kind: "cli", provider: c.id, model: modelSel.value || null };
+        pick = { kind: "cli", provider: c.id, model: modelSel.value || null, effort: effortSel.value || null };
         paintPick();
       });
       modelSel.addEventListener("change", () => {
-        if (isPicked()) pick = { ...pick, model: modelSel.value || null };
+        if (isPicked()) {
+          pick = { ...pick, model: modelSel.value || null };
+          paintPick();
+        }
+      });
+      effortSel.addEventListener("change", () => {
+        if (isPicked()) {
+          pick = { ...pick, effort: effortSel.value || null };
+          paintPick();
+        }
       });
       return el(
         "div",
@@ -478,7 +500,7 @@ export function mountAssistant({ ctx }) {
         ),
         // 這條連線的模型能碰到什麼（伺服器照實回報）：使用者選之前要看得到
         c.isolation?.note || c.note || c.loginNote ? el("p", { class: "ai-cli-note" }, [c.isolation?.note, c.note, c.loginNote].filter(Boolean).join("　")) : null,
-        el("div", { class: "ai-cli-actions" }, modelSel, use)
+        el("div", { class: "ai-cli-actions" }, modelSel, effortSel, use)
       );
     }
     function paintPick() {
@@ -533,10 +555,33 @@ export function mountAssistant({ ctx }) {
     });
   }
 
+  // 推理強度：各家接受的值不一樣，跟 assistant.py 的 EFFORTS 同一份（測試會比對）
+  const EFFORTS = {
+    claude: ["low", "medium", "high", "xhigh", "max"],
+    grok: ["low", "medium", "high", "xhigh"],
+    codex: ["low", "medium", "high", "xhigh"],
+    openai: ["low", "medium", "high", "xhigh"],
+    anthropic: ["low", "medium", "high", "xhigh", "max"],
+    xai: ["low", "high"],
+    custom: ["low", "medium", "high"],
+  };
+  // 選單：第一項「預設」＝不帶參數，用 CLI／模型自己的預設
+  function effortSelect(provider, value, label) {
+    const sel = el("select", { class: "select ai-effort", "aria-label": label, title: "推理強度：越高想得越久、越慢、用量越多" });
+    fillEffort(sel, provider, value);
+    return sel;
+  }
+  function fillEffort(sel, provider, value) {
+    const list = EFFORTS[provider] || [];
+    sel.replaceChildren(el("option", { value: "" }, "推理：預設"), ...list.map((e) => el("option", { value: e, dataset: { noI18n: "" } }, e)));
+    sel.value = list.includes(value) ? value : "";
+    sel.disabled = !list.length;
+  }
+
   function labelOf(c) {
     if (!c) return "";
     const names = { claude: "Claude Code", grok: "Grok Build", codex: "Codex", openai: "OpenAI API", anthropic: "Anthropic API", xai: "xAI API", custom: "自訂 API" };
-    return `${names[c.provider] || c.provider}${c.kind === "cli" ? " CLI" : ""} · ${c.model || t("預設模型")}`;
+    return `${names[c.provider] || c.provider}${c.kind === "cli" ? " CLI" : ""} · ${c.model || t("預設模型")}${c.effort ? ` · ${c.effort}` : ""}`;
   }
 
   /* ---------- 聊天面板 ---------- */

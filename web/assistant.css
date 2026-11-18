@@ -909,6 +909,12 @@
   flex: 1;
   max-width: 22rem;
 }
+/* 推理強度：短選單，跟模型選單擺同一行 */
+.ai-effort {
+  flex: none;
+  width: auto;
+  min-width: 7.5rem;
+}
 .ai-api {
   display: grid;
   gap: var(--space-xs);

@@ -38,6 +38,16 @@ API_BASES = {
 }
 CLI_NAMES = {"claude": "Claude Code", "grok": "Grok Build", "codex": "Codex CLI"}
 API_NAMES = {"openai": "OpenAI API", "anthropic": "Anthropic API", "xai": "xAI API", "custom": "自訂 API"}
+# 推理強度：各家接受的值不一樣（CLI 的 --help／錯誤訊息、API 文件）。None＝不送，用 CLI／模型自己的預設。
+EFFORTS = {
+    "claude": ("low", "medium", "high", "xhigh", "max"),
+    "grok": ("low", "medium", "high", "xhigh"),
+    "codex": ("low", "medium", "high", "xhigh"),
+    "openai": ("low", "medium", "high", "xhigh"),
+    "anthropic": ("low", "medium", "high", "xhigh", "max"),
+    "xai": ("low", "high"),
+    "custom": ("low", "medium", "high"),
+}
 BUILTINS = {
     "claude": ("sonnet", "opus", "haiku"),
     "grok": ("grok-build",),
@@ -152,7 +162,12 @@ def _connection(raw, *, require_base=True):
         if not _clean_text(model, 256):
             raise AssistantError("model")
         model = model.strip() or None
-    conn = {"kind": kind, "provider": provider, "model": model}
+    effort = raw.get("effort")
+    if effort in (None, ""):
+        effort = None
+    elif effort not in EFFORTS[provider]:
+        raise AssistantError("format", "推理強度只能選：" + "、".join(EFFORTS[provider]) + "，或留預設。")
+    conn = {"kind": kind, "provider": provider, "model": model, "effort": effort}
     if provider == "custom" and (require_base or raw.get("baseUrl") not in (None, "")):
         conn["baseUrl"] = _base_url(raw.get("baseUrl"))
     return conn
@@ -264,10 +279,10 @@ def status(*, local):
     conn = data["connection"]
     public = None
     if conn:
-        kind, provider, model = conn["kind"], conn["provider"], conn["model"]
+        kind, provider, model, effort = conn["kind"], conn["provider"], conn["model"], conn["effort"]
         name = (CLI_NAMES if kind == "cli" else API_NAMES)[provider]
-        public = {"kind": kind, "provider": provider, "model": model,
-                  "label": f"{name} · {model or '預設模型'}"}
+        public = {"kind": kind, "provider": provider, "model": model, "effort": effort,
+                  "label": f"{name} · {model or '預設模型'}" + (f" · {effort}" if effort else "")}
     return {"ok": True, "configured": public is not None, "connection": public,
             "allowRemote": data["allowRemote"], "local": local}
 
@@ -765,15 +780,21 @@ def _api_body(conn, chat, force_tool):
             ]
         messages.append(message)
     body = {"model": conn["model"], "messages": messages, "stream": True}
+    effort = conn.get("effort")
     if anthropic:
-        body["max_tokens"] = 4096
+        # 新模型的思考算在 max_tokens 裡，4096 在 high 以上會切掉；串流送出不怕逾時。
+        body["max_tokens"] = 16000
+        if effort:
+            body["output_config"] = {"effort": effort}
         if system:
             body["system"] = system
         if tools:
             body["tools"] = tools
-        if force_tool:
-            body["tool_choice"] = {"type": "tool", "name": force_tool}
+        # Opus 5.5、Sonnet 5.5、Fable 5.1 以後指定工具（type tool／any）會回 400。
+        # 測試連線的 system 已經說只呼叫這個工具，用 auto 讓新舊模型都能過。
     else:
+        if effort:
+            body["reasoning_effort"] = effort
         if tools:
             body["tools"] = [{"type": "function", "function": {"name": tool["name"],
                              "description": tool["description"], "parameters": tool["input_schema"]}}
@@ -961,6 +982,9 @@ def _cli_invocation(conn, chat):
     if model and model.startswith("-"):
         raise AssistantError("model")
     model_args = ["--model", model] if model else []
+    effort = conn.get("effort")
+    if effort and effort not in EFFORTS[provider]:
+        raise AssistantError("format", "推理強度的值不對，請到助手設定重選。")
     with tempfile.TemporaryDirectory(prefix="mochi-assistant-") as directory:
         scratch = Path(directory)
         cwd = scratch / "work"
@@ -982,6 +1006,8 @@ def _cli_invocation(conn, chat):
                     "--setting-sources", "user", "--no-chrome", "--no-session-persistence",
                     "--verbose", "--output-format", "stream-json", "--include-partial-messages",
                     "--json-schema", schema, *model_args]
+            if effort:
+                args += ["--effort", effort]
         elif provider == "grok":
             # 空白 --tools 可能沿用預設值，先只選一項再由 denylist 剔除。
             args = ["--prompt-file", str(prompt_file), "--tools", "read_file",
@@ -990,6 +1016,8 @@ def _cli_invocation(conn, chat):
                     "--sandbox", "strict", "--no-subagents", "--disable-web-search", "--no-plan",
                     "--no-memory", "--no-auto-update", "--output-format", "streaming-json",
                     "--json-schema", schema, *model_args]
+            if effort:
+                args += ["--reasoning-effort", effort]
             prompt_file = None
         else:
             # Codex 的 strict schema 不接受任意物件鍵。args 在 CLI 內用 JSON 字串傳輸。
@@ -1002,6 +1030,9 @@ def _cli_invocation(conn, chat):
                          "features.plugins=false", "features.multi_agent=false", "features.multi_agent_v2=false"]
             if os.name == "nt":
                 overrides.append('windows.sandbox="unelevated"')
+            if effort:
+                # --ignore-user-config 之後 config.toml 的強度不算數，要另外帶。
+                overrides.append(f'model_reasoning_effort="{effort}"')
             args = ["exec", "--sandbox", "read-only", "--ignore-user-config", "--ignore-rules",
                     "--skip-git-repo-check", "--ephemeral", "--output-schema", str(schema_file),
                     "--json", *model_args]

@@ -195,6 +195,21 @@ try {
   ok("抽一輪：成品牆多兩組", (await page.locator("#wall .shot").count()) === shotsBefore + 2);
   ok("抽一輪：畫面上的「一次」還是 4", (await page.locator("#go-bar .btn-primary .count").textContent()).includes("4"));
 
+  // 5b. 助手設定：每個 CLI 有推理強度選單，選了會一起存
+  await page.locator(".ai-panel button[aria-label='AI 助手設定']").click();
+  await page.locator(".ai-cli .ai-effort").waitFor();
+  const opts = await page.locator(".ai-cli .ai-effort option").evaluateAll((ns) => ns.map((n) => n.value));
+  ok("設定：Codex 的推理強度選單（預設＋四級）", opts.join(",") === ",low,medium,high,xhigh", opts.join(","));
+  await page.locator(".ai-cli .btn-small").click();
+  await page.locator(".ai-cli .ai-effort").selectOption("high");
+  ok("設定：選了強度，「選了」那行寫出來", /Codex CLI · .+ · high/.test(await page.locator(".ai-test-line").textContent()));
+  const saveReq = page.waitForRequest((r) => r.url().endsWith("/api/assistant/config") && r.method() === "POST");
+  await page.getByRole("button", { name: "儲存" }).click();
+  const saved = JSON.parse((await saveReq).postData() || "{}");
+  ok("設定：存檔帶 effort", saved.connection?.effort === "high", JSON.stringify(saved));
+  await page.keyboard.press("Escape");
+  await page.waitForTimeout(300);
+
   // 6. 再關掉
   await page.locator("#settings-btn").click();
   await page.locator(".lab-section input").click();

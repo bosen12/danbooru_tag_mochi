@@ -681,4 +681,18 @@ console.log("ok: schemas and phrase list");
   console.log("ok: system prompt");
 }
 
+// 推理強度：頁面選單跟伺服器接受的值要一樣（不然選了存不進去）
+{
+  const pageSrc = readFileSync(new URL(front + "assistant.js", import.meta.url), "utf8");
+  const pySrc = readFileSync(new URL("../assistant.py", import.meta.url), "utf8");
+  const pageBlock = pageSrc.match(/const EFFORTS = \{([\s\S]*?)\};/)[1];
+  const pyBlock = pySrc.match(/EFFORTS = \{([\s\S]*?)\r?\n\}/)[1];
+  const parse = (s) => Object.fromEntries([...s.matchAll(/"?(\w+)"?:\s*[\[(]([^\])]*)[\])]/g)].map((m) => [m[1], [...m[2].matchAll(/"(\w+)"/g)].map((x) => x[1])]));
+  const page = parse(pageBlock);
+  const py = parse(pyBlock);
+  assert.ok(Object.keys(py).length === 7, JSON.stringify(py));
+  assert.deepEqual(page, py);
+  console.log("ok: effort lists match server");
+}
+
 console.log("all ok");
