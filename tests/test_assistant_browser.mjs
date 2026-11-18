@@ -46,6 +46,16 @@ function script(body) {
     if (tools === 2) return call({ id: "c3", name: "change_pool", args: { add: ["beach", "sunset"] } }, { id: "c4", name: "set_draw_count", args: { n: 4 } });
     return end("加入海邊、日落；一次 1 → 4。");
   }
+  // 排一組：助手直接寫好提示詞貼進來（paste_prompt）；詞庫沒有的字，下一步從字盒找到的候選挑一張
+  if (/排一組/.test(said)) {
+    if (tools === 0) return call({ id: "p1", name: "paste_prompt", args: { prompt: "masterpiece, (smile:1.2), straw_hat, glowing_sea" } });
+    if (tools === 1) {
+      const r = JSON.parse(msgs.at(-1).content);
+      const pick = r.pasted?.unknown?.[0]?.candidates?.[0]?.tag;
+      if (pick) return call({ id: "p2", name: "change_pool", args: { add: [pick] } });
+    }
+    return end("排進微笑、草帽；字盒找到相近的，加進去了。");
+  }
   if (/抽兩張/.test(said)) return tools === 0 ? call({ id: "d1", name: "draw_cards", args: { n: 2 } }) : end("這輪抽到 2 組。");
   if (/黑髮/.test(said)) {
     if (tools === 0) return call({ id: "m1", name: "change_pool", args: { add: ["red hair"] } });
@@ -209,6 +219,25 @@ try {
   ok("設定：存檔帶 effort", saved.connection?.effort === "high", JSON.stringify(saved));
   await page.keyboard.press("Escape");
   await page.waitForTimeout(300);
+
+  // 5c. 排一組：一次排進去，沒有的字到字盒找、挑一張；字盒的搜尋最後收回原樣
+  await page.locator(".ai-input").waitFor();
+  await page.evaluate(() => document.querySelector(".ai-panel").hidden || 0);
+  if (!(await page.locator(".ai-panel").isVisible())) await page.locator("#ai-chat-btn").click();
+  const pBefore = await poolTags(page);
+  await send(page, "排一組微笑戴草帽的");
+  const pTags = await poolTags(page);
+  ok("排一組：認得的字一次排進合成池（微笑、草帽）", pTags.includes("smile") && pTags.includes("straw hat") && pBefore.every((t) => pTags.includes(t)), pTags.join(","));
+  const sorts = await page.locator(".ai-sort").evaluateAll((ns) => ns.map((n) => `${n.dataset.kind}/${n.dataset.state}`));
+  ok("排一組：排字盤照順序、畫質詞淡掉、牌打勾、沒有的去字盒", sorts.join(" ") === "muted/ card/set card/set unknown/look", sorts.join(" "));
+  const pSteps = await page.locator(".ai-step").evaluateAll((ns) => ns.slice(-2).map((n) => n.dataset.status));
+  ok("排一組：兩步（排字、從候選挑一張）都做完", pSteps.join(",") === "done,done", pSteps.join(","));
+  const picked = chats.flatMap((c) => c.messages || []).filter((m) => m.role === "assistant").flatMap((m) => m.toolCalls || []).find((c) => c.id === "p2")?.args?.add?.[0];
+  ok("排一組：從字盒候選挑的那張也進了合成池", !!picked && pTags.includes(picked), `${picked} / ${pTags.join(",")}`);
+  await page.waitForFunction(() => document.getElementById("lib-q").value === "", null, { timeout: 8000 }).catch(() => {});
+  ok("排一組：字盒的搜尋收回原樣", (await page.locator("#lib-q").inputValue()) === "");
+  const pSent = chats.at(-1);
+  ok("送給模型：paste_prompt 在工具清單、系統提示詞叫它先用這支", pSent.tools.some((t) => t.name === "paste_prompt") && /paste_prompt/.test(pSent.system));
 
   // 6. 再關掉
   await page.locator("#settings-btn").click();

@@ -312,16 +312,10 @@
   gap: var(--space-md);
   outline: none;
 }
+/* 進場由 assistant.js 演（rise／riseLast）：串流時整則一直重畫，CSS 的進場會每個字重播一次、一直閃。 */
 .ai-msg {
   display: flex;
   gap: var(--space-xs);
-  animation: ai-msg-in var(--dur-medium) var(--ease-out);
-}
-@keyframes ai-msg-in {
-  from {
-    opacity: 0;
-    transform: translateY(6px);
-  }
 }
 .ai-user {
   flex-direction: column;
@@ -1046,5 +1040,177 @@
   .ai-chat-seal {
     animation: none !important;
     transition: none !important;
+  }
+}
+
+/* ---------- 排字盤（paste_prompt）：助手寫的提示詞排成一排鉛字 ----------
+ * 剛排出來是原文（灰的鉛字），認得的墨成牌名（朱色），牌飛走後留一個空框；
+ * 詞庫沒有的是虛線框，飛去字盒找；畫質詞、LoRA 這類引擎自己處理的淡掉。 */
+/* 排字盤在明細欄（直排的 flex）裡，自己橫排、換行。 */
+.ai-step .ai-sorts {
+  display: flex;
+  align-self: stretch;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 5px 0 3px;
+  padding: 6px;
+  border-radius: var(--radius-sm);
+  background:
+    linear-gradient(180deg, oklch(0% 0 0 / 0.2), oklch(0% 0 0 / 0.05)),
+    var(--color-paper-3);
+  box-shadow: inset 0 1px 3px oklch(0% 0 0 / 0.38), 0 1px 0 var(--color-shine);
+}
+.ai-sort {
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  padding: 1px 7px;
+  border: 1px solid var(--color-rule);
+  border-radius: 4px;
+  overflow: hidden;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 1.6;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--color-ink-2);
+  background: linear-gradient(180deg, var(--color-paper), var(--color-paper-2));
+  box-shadow: 0 1px 0 oklch(0% 0 0 / 0.3), inset 0 1px 0 var(--color-shine);
+  transition:
+    color var(--dur-medium) var(--ease-out),
+    background var(--dur-medium) var(--ease-out),
+    border-color var(--dur-medium) var(--ease-out),
+    box-shadow var(--dur-medium) var(--ease-out),
+    opacity var(--dur-medium) var(--ease-out);
+}
+/* 認得的字：墨成牌名 */
+.ai-sort[data-kind="card"][data-inked="true"] {
+  font-family: inherit;
+  font-weight: 600;
+  color: var(--ai-ink);
+  border-color: oklch(70% 0.17 35 / 0.55);
+  background: linear-gradient(180deg, oklch(70% 0.17 35 / 0.16), oklch(70% 0.17 35 / 0.06));
+}
+/* 牌飛進合成池了：留下空框＋一個勾 */
+.ai-sort[data-kind="card"][data-state="set"] {
+  color: var(--color-ink-2);
+  background: transparent;
+  border-color: oklch(70% 0.17 35 / 0.35);
+  box-shadow: inset 0 0 0 1px oklch(0% 0 0 / 0.2);
+}
+.ai-sort[data-kind="card"][data-state="set"]::after {
+  content: "✓";
+  margin-left: 4px;
+  font-size: 10px;
+  color: var(--ai-ink);
+}
+.ai-sort[data-state="wait"] {
+  border-color: oklch(78% 0.14 80 / 0.7);
+  box-shadow: 0 0 0 2px oklch(78% 0.14 80 / 0.16);
+}
+.ai-sort[data-state="miss"] {
+  opacity: 0.5;
+  text-decoration: line-through;
+}
+/* 詞庫沒有：虛線框，去字盒找 */
+.ai-sort[data-kind="unknown"] {
+  border-style: dashed;
+  border-color: var(--color-muted);
+  background: transparent;
+  box-shadow: none;
+  font-style: italic;
+}
+.ai-sort[data-kind="unknown"][data-state="away"] {
+  opacity: 0.28;
+}
+.ai-sort[data-kind="unknown"][data-state="look"] {
+  color: var(--ai-glow);
+  border-color: var(--ai-glow);
+  box-shadow: 0 0 0 3px var(--ai-glow-soft);
+}
+.ai-sort[data-kind="unknown"][data-state="look"]::before {
+  content: "→ 字盒 ";
+  margin-right: 3px;
+  font-style: normal;
+  font-size: 10px;
+  opacity: 0.8;
+}
+html[lang^="en"] .ai-sort[data-kind="unknown"][data-state="look"]::before {
+  content: "→ library ";
+}
+/* 引擎自己處理的（畫質詞、LoRA）、不收的 */
+.ai-sort[data-kind="muted"][data-inked="true"] {
+  opacity: 0.42;
+  box-shadow: none;
+}
+.ai-sort[data-kind="blocked"] {
+  color: var(--color-danger, oklch(65% 0.2 25));
+  text-decoration: line-through;
+  opacity: 0.7;
+}
+/* 飛去字盒的那顆字 */
+.ai-sort-ghost {
+  box-shadow:
+    0 10px 24px var(--color-shade),
+    0 0 0 3px var(--ai-glow-soft);
+  color: var(--ai-glow);
+  border-color: var(--ai-glow);
+  will-change: transform, opacity;
+}
+
+/* ---------- 字盒裡的候選（助手找相近的牌）：一張接一張亮起、牌角編號 ---------- */
+#lib-grid .card.ai-cand {
+  z-index: 2;
+  outline: 2px solid var(--ai-glow);
+  outline-offset: 3px;
+  box-shadow: 0 0 0 6px var(--ai-glow-soft), 0 12px 28px var(--color-shade);
+  animation:
+    ai-cand-in 560ms var(--ease-out) calc(var(--ai-cand-i, 0) * 120ms) backwards,
+    ai-cand-breathe 2.2s var(--ease-in-out) calc(560ms + var(--ai-cand-i, 0) * 120ms) infinite;
+}
+#lib-grid .card.ai-cand::after {
+  content: attr(data-ai-cand);
+  position: absolute;
+  right: 5px;
+  bottom: 5px;
+  z-index: 4;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font: 700 11px/1 var(--font-mono);
+  color: oklch(18% 0.02 230);
+  background: var(--ai-glow);
+  box-shadow: 0 2px 6px var(--color-shade);
+  animation: ai-badge-in 420ms var(--ease-settle, var(--ease-out)) calc(260ms + var(--ai-cand-i, 0) * 120ms) backwards;
+}
+@keyframes ai-cand-in {
+  from {
+    outline-color: transparent;
+    box-shadow: 0 0 0 0 transparent;
+    transform: translateY(8px) scale(0.95);
+    filter: brightness(1.6) saturate(0.4);
+  }
+}
+@keyframes ai-cand-breathe {
+  50% {
+    box-shadow: 0 0 0 10px transparent, 0 12px 28px var(--color-shade);
+  }
+}
+@keyframes ai-badge-in {
+  from {
+    transform: scale(0);
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  #lib-grid .card.ai-cand,
+  #lib-grid .card.ai-cand::after {
+    animation: none;
+  }
+  .ai-sort {
+    transition: none;
   }
 }

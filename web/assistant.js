@@ -18,7 +18,7 @@
  * 模型的回覆、牌名一律不翻譯（data-no-i18n）；介面上的字照 i18n.js 畫完再翻。
  */
 import { el, openSheet, toast, friendlyError } from "./ui.js";
-import { reducedMotion, DUR, CURVE, css } from "./motion.js";
+import { reducedMotion, DUR, CURVE, css, travelTime } from "./motion.js";
 import { english, t } from "./i18n.js";
 import { registerLab } from "./lab.js";
 
@@ -103,6 +103,14 @@ async function streamChat(body, signal, on) {
       on(event, parsed || {});
     }
   }
+}
+
+/** 字換掉時淡進來（狀態列、測試結果那行）；字一樣就不動，免得每次重畫都閃一下。 */
+function swapText(node, text) {
+  const s = String(text ?? "");
+  if (!node || node.textContent === s) return;
+  node.textContent = s;
+  if (s && !reducedMotion()) node.animate([{ opacity: 0, transform: "translateY(3px)" }, { opacity: 1, transform: "none" }], { duration: DUR.short, easing: css(CURVE.out) });
 }
 
 /* ================= 工作台光暈 ================= */
@@ -259,16 +267,31 @@ export function mountAssistant({ ctx }) {
   chatBtn.addEventListener("click", () => (panel?.isOpen() ? panel.close() : openPanel()));
 
   /** 開著：頂欄放上兩顆、字盒和合成池放「問助理」。關著：全部拿掉（不是藏起來：DOM 跟原本一樣）。 */
-  function paintEntry() {
+  function paintEntry({ motion = false } = {}) {
     if (prefs.enabled) {
       if (!group.isConnected) {
         const sound = document.getElementById("sound-btn");
         tools.insertBefore(group, sound && sound.parentElement === tools ? sound : tools.firstChild);
+        // 像蓋一枚印：從大一點、斜一點壓下來，落定時略過頭再回來。
+        if (motion && !reducedMotion())
+          group.animate(
+            [
+              { opacity: 0, transform: "scale(1.9) rotate(-18deg)" },
+              { opacity: 1, transform: "scale(0.9) rotate(3deg)", offset: 0.7 },
+              { opacity: 1, transform: "none" },
+            ],
+            { duration: DUR.xl, easing: css(CURVE.out) }
+          );
       }
       document.documentElement.dataset.ai = "on";
     } else {
-      group.remove();
       delete document.documentElement.dataset.ai;
+      if (!group.isConnected) return;
+      if (!motion || reducedMotion()) return void group.remove();
+      const a = group.animate([{ opacity: 1, transform: "none" }, { opacity: 0, transform: "scale(0.4) rotate(14deg)" }], { duration: DUR.short, easing: css(CURVE.exit) });
+      a.onfinish = () => {
+        if (!prefs.enabled) group.remove();
+      };
     }
   }
 
@@ -284,8 +307,8 @@ export function mountAssistant({ ctx }) {
       toast("實驗功能開了：頂欄多了一顆朱色印章（墨池助手），字盒、合成池多了「問助理」");
       refreshStatus();
     }
-    paintEntry();
-    paintAskButtons();
+    paintEntry({ motion: true });
+    paintAskButtons({ motion: true });
   }
 
   /** 收起時，印章上的光點說目前一步（設計稿 §12）：顏色看狀態，字在滑鼠提示和讀屏（不佔頂欄的寬）。 */
@@ -317,9 +340,12 @@ export function mountAssistant({ ctx }) {
     ],
   ];
   let askBtns = [];
-  function paintAskButtons() {
+  function paintAskButtons({ motion = false } = {}) {
     if (!prefs.enabled) {
-      for (const b of askBtns) b.remove();
+      for (const b of askBtns) {
+        if (!motion || reducedMotion()) b.remove();
+        else b.animate([{ opacity: 1, transform: "none" }, { opacity: 0, transform: "scale(0.6)" }], { duration: DUR.short, easing: css(CURVE.exit) }).onfinish = () => b.remove();
+      }
       askBtns = [];
       return;
     }
@@ -331,6 +357,8 @@ export function mountAssistant({ ctx }) {
       const b = el("button", { class: "btn btn-small btn-ghost ai-ask", type: "button", title: `${label}：打開 AI 聊天室，帶上這一塊`, "aria-label": label, html: ICON.seal });
       b.addEventListener("click", () => openPanel({ ref: ref() }));
       host.append(b);
+      if (motion && !reducedMotion())
+        b.animate([{ opacity: 0, transform: "scale(0.5) rotate(-12deg)" }, { opacity: 1, transform: "none" }], { duration: DUR.long, delay: 120 + askBtns.length * 90, easing: css(CURVE.out), fill: "backwards" });
       askBtns.push(b);
     }
   }
@@ -417,11 +445,11 @@ export function mountAssistant({ ctx }) {
       try {
         const j = await api("/api/assistant/models", { kind: "api", provider: provSel.value, apiKey: keyIn.value.trim() || undefined, baseUrl: baseIn.value.trim() || undefined });
         modelList.replaceChildren(...(j.models || []).map((m) => el("option", { value: m.id }, m.label || m.id)));
-        testLine.textContent = t(`讀到 ${(j.models || []).length} 個模型`);
+        swapText(testLine, t(`讀到 ${(j.models || []).length} 個模型`));
         testLine.dataset.kind = "ok";
         if (!modelIn.value && j.models?.[0]) modelIn.value = j.models[0].id;
       } catch (err) {
-        testLine.textContent = err.message;
+        swapText(testLine, err.message);
         testLine.dataset.kind = "err";
       } finally {
         listBtn.disabled = false;
@@ -453,6 +481,10 @@ export function mountAssistant({ ctx }) {
       try {
         const j = await api("/api/assistant/detect", {});
         cliBox.replaceChildren(...(j.clis || []).map(cliRow), el("button", { class: "link-btn ai-redetect", type: "button", onclick: detect }, "重新偵測"));
+        if (!reducedMotion())
+          [...cliBox.children].forEach((n, k) =>
+            n.animate([{ opacity: 0, transform: "translateY(8px)" }, { opacity: 1, transform: "none" }], { duration: DUR.medium, delay: k * 70, easing: css(CURVE.out), fill: "backwards" })
+          );
       } catch (err) {
         cliBox.replaceChildren(el("p", { class: "ai-error" }, err.message), el("button", { class: "link-btn", type: "button", onclick: detect }, "再試一次"));
       }
@@ -506,7 +538,7 @@ export function mountAssistant({ ctx }) {
     function paintPick() {
       for (const row of cliBox.querySelectorAll(".ai-cli")) row.dataset.picked = pick?.kind === "cli" && pick.provider === row.dataset.id ? "true" : "false";
       apiBox.dataset.picked = pick?.kind === "api" ? "true" : "false";
-      testLine.textContent = pick ? t(`選了：${labelOf(pick)}（按「儲存」才生效）`) : "";
+      swapText(testLine, pick ? t(`選了：${labelOf(pick)}（按「儲存」才生效）`) : "");
       testLine.dataset.kind = "";
     }
     detect().then(paintPick);
@@ -531,7 +563,7 @@ export function mountAssistant({ ctx }) {
         s.close();
         if (thenChat || prefs.open) openPanel();
       } catch (err) {
-        testLine.textContent = err.message;
+        swapText(testLine, err.message);
         testLine.dataset.kind = "err";
       } finally {
         saveBtn.disabled = false;
@@ -544,10 +576,10 @@ export function mountAssistant({ ctx }) {
       try {
         await save();
         const j = await api("/api/assistant/test", {});
-        testLine.textContent = t(`測試成功（${Math.round((j.ms || 0) / 100) / 10} 秒）`);
+        swapText(testLine, t(`測試成功（${Math.round((j.ms || 0) / 100) / 10} 秒）`));
         testLine.dataset.kind = "ok";
       } catch (err) {
-        testLine.textContent = err.message;
+        swapText(testLine, err.message);
         testLine.dataset.kind = "err";
       } finally {
         testBtn.disabled = false;
@@ -620,11 +652,15 @@ export function mountAssistant({ ctx }) {
     document.body.append(root);
     let pendingRefs = [];
 
-    newBtn.addEventListener("click", () => {
+    newBtn.addEventListener("click", async () => {
       if (running) stopTurn("cancelled");
       chat = { messages: [], log: [] };
       saveChat();
+      if (!reducedMotion() && log.firstElementChild && !log.querySelector(".ai-empty")) {
+        await log.animate([{ opacity: 1, transform: "none" }, { opacity: 0, transform: "translateY(-14px)" }], { duration: DUR.short, easing: css(CURVE.exit) }).finished.catch(() => {});
+      }
       renderLog();
+      rise(log.querySelector(".ai-empty"));
       input.focus();
     });
     gearBtn.addEventListener("click", () => openSettings());
@@ -684,8 +720,8 @@ export function mountAssistant({ ctx }) {
 
     function setState(kind, text = "", step = "") {
       stateBar.dataset.kind = kind;
-      stateText.textContent = text || STATUS_ZH[kind] || "";
-      stepText.textContent = step ? `· ${step}` : "";
+      swapText(stateText, text || STATUS_ZH[kind] || "");
+      swapText(stepText, step ? `· ${step}` : "");
       sendBtn.innerHTML = running ? ICON.stop : ICON.send;
       sendBtn.title = running ? t("停止") : t("送出");
       sendBtn.setAttribute("aria-label", sendBtn.title);
@@ -698,7 +734,12 @@ export function mountAssistant({ ctx }) {
     function addRef(ref) {
       if (!ref || pendingRefs.some((r) => r.kind === ref.kind && r.label === ref.label)) return;
       pendingRefs.push(ref);
+      const wasHidden = refs.hidden;
       paintRefs();
+      if (!reducedMotion()) {
+        refs.lastElementChild?.animate([{ opacity: 0, transform: "translateY(6px) scale(0.9)" }, { opacity: 1, transform: "none" }], { duration: DUR.medium, easing: css(CURVE.out) });
+        if (wasHidden) refs.animate([{ opacity: 0 }, { opacity: 1 }], { duration: DUR.short, easing: css(CURVE.out) });
+      }
       input.focus();
     }
     function paintRefs() {
@@ -709,7 +750,18 @@ export function mountAssistant({ ctx }) {
             "span",
             { class: "ai-ref" },
             el("span", r.kind === "search" ? { dataset: { noI18n: "" } } : {}, r.label),
-            el("button", { type: "button", class: "ai-ref-x", "aria-label": t(`拿掉「${r.label}」`), html: ICON.close, onclick: () => (pendingRefs.splice(i, 1), paintRefs()) })
+            el("button", {
+              type: "button",
+              class: "ai-ref-x",
+              "aria-label": t(`拿掉「${r.label}」`),
+              html: ICON.close,
+              onclick: (e) => {
+                const chip = e.currentTarget.closest(".ai-ref");
+                const drop = () => (pendingRefs.splice(i, 1), paintRefs());
+                if (!chip || reducedMotion()) return drop();
+                chip.animate([{ opacity: 1, transform: "none" }, { opacity: 0, transform: "scale(0.85)" }], { duration: DUR.short, easing: css(CURVE.exit) }).onfinish = drop;
+              },
+            })
           )
         )
       );
@@ -762,14 +814,17 @@ export function mountAssistant({ ctx }) {
       for (const s of steps) {
         const li = el(
           "li",
-          { class: "ai-step", dataset: { status: s.status } },
+          { class: "ai-step", dataset: { status: s.status, id: s.id || "" } },
           el("i", { class: "ai-step-dot", "aria-hidden": "true" }),
           // 進行中寫「正在…」；做完了直接寫結果（摘要），明細裡跟摘要一樣的那行不重複
           el(
             "div",
             {},
             el("b", {}, s.status === "running" || !s.summary ? s.label : s.summary),
-            ...(s.lines || []).filter((l) => l && l !== s.summary).map((l) => el("span", { class: "ai-step-line" }, l))
+            // 排字盤緊接在標題底下：做完之後明細行加在它下面，字不會被往下推。
+            s.sorts?.length ? sortsNode(s) : null,
+            // 標題已經寫了的（「加入海邊；附帶戶外」底下又一行「加入海邊」）不再列一次。
+            ...(s.lines || []).filter((l) => l && !(s.summary || "").includes(l)).map((l) => el("span", { class: "ai-step-line" }, l))
           )
         );
         if (s.target && s.status !== "running") {
@@ -781,6 +836,25 @@ export function mountAssistant({ ctx }) {
         ol.append(li);
       }
       return ol;
+    }
+    // 排字盤：助手寫的提示詞一顆一顆排出來。認得的字是牌名（剛排出來那一下先是原文，再墨成牌名），
+    // 詞庫沒有的是虛線框（去字盒找），引擎自己處理的淡掉。
+    function sortsNode(s) {
+      return el(
+        "div",
+        { class: "ai-sorts", dataset: { noI18n: "" } },
+        ...s.sorts.map((x) =>
+          el(
+            "span",
+            {
+              class: "ai-sort",
+              dataset: { kind: x.kind, state: x.state || "", i: String(x.i), ...(!s.sortsFresh && (x.kind === "card" || x.kind === "muted") ? { inked: "true" } : {}) },
+              title: x.kind === "card" ? `${x.raw} → ${sortName(x)}` : x.raw,
+            },
+            s.sortsFresh || x.kind !== "card" ? x.raw : sortName(x)
+          )
+        )
+      );
     }
     function confirmNode(item, c) {
       const box = el("div", { class: "ai-confirm", dataset: { state: c.state || "open" } }, el("p", {}, c.prompt));
@@ -811,13 +885,67 @@ export function mountAssistant({ ctx }) {
     }
     function repaint(item) {
       const old = log.querySelector(`.ai-msg[data-id="${item.id}"]`);
+      const before = old ? snapshot(old) : null;
       const fresh = renderItem(item);
       if (old) old.replaceWith(fresh);
       else {
         log.querySelector(".ai-empty")?.remove();
         log.append(fresh);
+        rise(fresh);
       }
+      if (before) morph(before, fresh);
       scrollDown();
+    }
+    // 整則重畫（串流、步驟換狀態）之前的樣子：哪幾步、各在什麼狀態、排字盤每顆的下場、確認框。
+    function snapshot(node) {
+      const steps = new Map();
+      for (const li of node.querySelectorAll(".ai-step[data-id]")) {
+        steps.set(li.dataset.id, { status: li.dataset.status, sorts: [...li.querySelectorAll(".ai-sort")].map((x) => x.dataset.state) });
+      }
+      return {
+        steps,
+        confirms: [...node.querySelectorAll(".ai-confirm")].map((c) => c.dataset.state),
+        error: !!node.querySelector(".ai-error"),
+      };
+    }
+    // 重畫完只演變了的：新的一步滑進來、換狀態的那一步圓點彈一下＋字淡進、確認框長出來或收起。
+    function morph(before, node) {
+      if (reducedMotion()) return;
+      const ease = css(CURVE.out);
+      for (const li of node.querySelectorAll(".ai-step[data-id]")) {
+        const was = before.steps.get(li.dataset.id);
+        if (!was) {
+          li.animate([{ opacity: 0, transform: "translateX(-8px)" }, { opacity: 1, transform: "none" }], { duration: DUR.medium, easing: ease });
+          continue;
+        }
+        if (was.status !== li.dataset.status) {
+          li.querySelector(".ai-step-dot")?.animate([{ transform: "scale(0.5)" }, { transform: "scale(1.22)", offset: 0.55 }, { transform: "none" }], { duration: DUR.medium, easing: ease });
+          li.querySelector("b")?.animate([{ opacity: 0, transform: "translateY(4px)", filter: "blur(2px)" }, { opacity: 1, transform: "none", filter: "none" }], { duration: DUR.medium, easing: ease });
+          li.querySelectorAll(".ai-step-line, .ai-step-look, .ai-step-undo").forEach((n, k) =>
+            n.animate([{ opacity: 0, transform: "translateY(3px)" }, { opacity: 1, transform: "none" }], { duration: DUR.medium, delay: 90 + k * 40, easing: ease, fill: "backwards" })
+          );
+        }
+        li.querySelectorAll(".ai-sort").forEach((x, k) => {
+          if (was.sorts[k] !== undefined && was.sorts[k] !== x.dataset.state) x.animate([{ transform: "scale(0.9)" }, { transform: "scale(1.06)", offset: 0.6 }, { transform: "none" }], { duration: DUR.medium, delay: Math.min(k, 12) * 18, easing: ease });
+        });
+      }
+      node.querySelectorAll(".ai-confirm").forEach((c, k) => {
+        const was = before.confirms[k];
+        if (was === undefined) c.animate([{ opacity: 0, transform: "translateY(8px) scale(0.98)" }, { opacity: 1, transform: "none" }], { duration: DUR.long, easing: ease });
+        else if (was !== c.dataset.state) c.animate([{ opacity: 0.4, filter: "saturate(0.4)" }, { opacity: 1, filter: "none" }], { duration: DUR.medium, easing: ease });
+      });
+      const err = node.querySelector(".ai-error");
+      if (err && !before.error) err.animate([{ opacity: 0, transform: "translateY(4px)" }, { opacity: 1, transform: "none" }], { duration: DUR.medium, easing: ease });
+    }
+    function rise(node) {
+      if (reducedMotion() || !node) return;
+      node.animate([{ opacity: 0, transform: "translateY(10px)" }, { opacity: 1, transform: "none" }], { duration: DUR.long, easing: css(CURVE.out) });
+    }
+    // 新的一輪：使用者那則和助手的那則浮上來（renderLog 是整串重畫，不會自己演）。
+    function riseLast(n) {
+      [...log.querySelectorAll(".ai-msg")].slice(-n).forEach((m, k) => {
+        if (!reducedMotion()) m.animate([{ opacity: 0, transform: "translateY(12px)" }, { opacity: 1, transform: "none" }], { duration: DUR.long, delay: k * 70, easing: css(CURVE.out), fill: "backwards" });
+      });
     }
 
     async function send() {
@@ -871,6 +999,7 @@ export function mountAssistant({ ctx }) {
       setState,
       repaint,
       renderLog,
+      riseLast,
       log,
     };
     renderLog();
@@ -921,13 +1050,21 @@ export function mountAssistant({ ctx }) {
       panel.renderLog();
       return;
     }
-    runner ||= toolMod.createToolRunner({ ...ctx, highlight: (target, phase, label) => highlight(target, phase, label) });
+    runner ||= toolMod.createToolRunner({
+      ...ctx,
+      highlight: (target, phase, label) => highlight(target, phase, label),
+      typeset: (id, sorts) => typeset(id, sorts),
+      typesetDone: (id, sorts) => typesetDone(id, sorts),
+      lookup: (id, list) => lookup(id, list),
+    });
     const refText = refs.length ? `［使用者指著］${refs.map((r) => r.label).join("、")}\n` : "";
     chat.messages.push({ role: "user", content: `${workspaceNote()}\n${refText}${text}` });
     chat.log.push({ role: "user", text, refs });
     const item = { role: "bot", id: `t${Date.now().toString(36)}`, segs: [], steps: [], confirms: [], pending: true };
     chat.log.push(item);
     panel.renderLog();
+    panel.riseLast(2);
+    lookTok++;
     const ctrl = new AbortController();
     running = { ctrl, item };
     // 這則訊息送出那一刻的工作台版本：整輪的工具共用同一個物件。之後使用者自己動了合成池、規則，
@@ -967,6 +1104,7 @@ export function mountAssistant({ ctx }) {
             res = { ok: false, status: "failed", summary: friendlyError(err), forModel: { ok: false, error: String(err?.message || err) } };
           }
           Object.assign(step, { status: res.status || (res.ok ? "done" : "failed"), summary: res.summary || "", lines: res.lines || [], target: res.target || null, undoable: !!res.undo });
+          if (res.sorts) step.sorts = res.sorts.map((x) => ({ ...x }));
           if (res.undo) undos.set(`${item.id}:${call.id}`, res.undo);
           if (res.status === "needs_confirm" && res.confirm) item.confirms.push({ ...res.confirm, callId: call.id, state: "open" });
           if (lab.kind !== "read" && res.ok) wrote = true;
@@ -990,11 +1128,169 @@ export function mountAssistant({ ctx }) {
       item.pending = false;
       running = null;
       halo.clear();
+      // 字盒被助手借去找字：這一輪結束、讓人看一眼候選之後，收回原本的搜尋（使用者自己動過就不收）。
+      const tok = lookTok;
+      setTimeout(() => {
+        if (running || tok !== lookTok) return;
+        lookTok++;
+        peeking = false;
+        try { ctx.libRestore?.(); } catch { /* 收不回就留著，使用者自己清 */ }
+      }, peeking ? 2600 : 0);
       saveChat();
       panel.repaint(item);
       const last = item.steps.filter((s) => s.status === "done").at(-1);
       panel.setState(finalKind === "answered" ? "idle" : finalKind, finalKind === "answered" ? "" : STATUS_ZH[finalKind], finalKind === "done" ? last?.summary || "" : "");
       if (!panel.isOpen() && finalKind !== "answered") paintChatState(finalKind === "done" ? last?.summary || STATUS_ZH.done : STATUS_ZH[finalKind], finalKind);
+    }
+  }
+
+  /* ---------- 排字盤（paste_prompt）：字排出來 → 認得的墨成牌名、飛進合成池 → 沒有的飛去字盒找 ---------- */
+
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+  const sortName = (x) => (english ? String(x.tag || x.raw).replace(/_/g, " ") : x.zh || x.raw);
+  let lookTok = 0;
+  let peeking = false;
+
+  function sortAt(id, i) {
+    return panel?.log.querySelector(`.ai-step[data-id="${CSS.escape(String(id))}"] .ai-sort[data-i="${i}"]`) || null;
+  }
+  // 那顆字現在的位置：聊天室開著、而且那顆在對話框看得到的範圍裡才算（不然牌就在池裡冒出來）。
+  function sortRect(id, i) {
+    const n = sortAt(id, i);
+    if (!n || !panel?.isOpen()) return null;
+    const r = n.getBoundingClientRect();
+    const box = panel.log.getBoundingClientRect();
+    if (!r.width || r.bottom < box.top || r.top > box.bottom) return null;
+    return r;
+  }
+
+  async function typeset(id, sorts) {
+    const item = running?.item;
+    const step = item?.steps.find((s) => s.id === id);
+    if (!step || !panel) return null;
+    step.sorts = sorts.map((x) => ({ ...x }));
+    step.sortsFresh = true;
+    panel.repaint(item);
+    step.sortsFresh = false;
+    const row = panel.log.querySelector(`.ai-step[data-id="${CSS.escape(String(id))}"] .ai-sorts`);
+    const handle = { rect: (i) => sortRect(id, i) };
+    if (!row) return handle;
+    const chips = [...row.children];
+    const ink = (c) => {
+      const x = step.sorts[Number(c.dataset.i)];
+      if (x?.kind === "card") c.textContent = sortName(x);
+    };
+    if (reducedMotion() || !panel.isOpen()) {
+      chips.forEach(ink);
+      return handle;
+    }
+    // 一顆一顆排上去（像撿字排進排字盒），整排不超過半秒多；認得的字隨後墨成牌名。
+    const gap = Math.max(12, Math.min(34, 560 / Math.max(1, chips.length)));
+    chips.forEach((c, k) => {
+      c.animate(
+        [
+          { opacity: 0, transform: "translateY(7px) scale(0.82)", filter: "blur(3px)" },
+          { opacity: 1, transform: "translateY(-1px) scale(1.04)", filter: "none", offset: 0.7 },
+          { opacity: 1, transform: "none" },
+        ],
+        { duration: DUR.medium, delay: k * gap, easing: css(CURVE.out), fill: "backwards" }
+      );
+      if (c.dataset.kind === "card") {
+        setTimeout(() => {
+          ink(c);
+          c.dataset.inked = "true";
+          c.animate([{ filter: "blur(1.5px)", opacity: 0.4 }, { filter: "none", opacity: 1 }], { duration: DUR.short, easing: css(CURVE.out) });
+        }, k * gap + DUR.short + 120);
+      } else if (c.dataset.kind === "muted") {
+        setTimeout(() => (c.dataset.inked = "true"), k * gap + DUR.short + 120);
+      }
+    });
+    await sleep(Math.min(1150, chips.length * gap + DUR.short + 260));
+    return handle;
+  }
+
+  function typesetDone(id, sorts) {
+    const item = running?.item;
+    const step = item?.steps.find((s) => s.id === id);
+    if (!step) return;
+    step.sorts = sorts.map((x) => ({ ...x }));
+    // 就地換狀態（不整則重畫）：牌剛從這幾顆字飛出去，字留下一個空的框。
+    for (const x of step.sorts) {
+      const n = sortAt(id, x.i);
+      if (!n || n.dataset.state === (x.state || "")) continue;
+      n.dataset.state = x.state || "";
+      if (!reducedMotion()) n.animate([{ transform: "scale(1.08)" }, { transform: "scale(0.94)", offset: 0.5 }, { transform: "none" }], { duration: DUR.medium, delay: Math.min(x.i, 16) * 22, easing: css(CURVE.out) });
+    }
+  }
+
+  // 一顆字飛到字盒的搜尋框（弧線、途中微微放大），落地時散開。
+  function hop(chip, to) {
+    const from = chip.getBoundingClientRect();
+    const ghost = chip.cloneNode(true);
+    ghost.classList.add("ai-sort-ghost");
+    // 字離開排字盤：原地留一個空的框（影子帶著字飛走）。
+    chip.dataset.state = "away";
+    Object.assign(ghost.style, { position: "fixed", left: `${from.left}px`, top: `${from.top}px`, width: `${from.width}px`, margin: "0", zIndex: "95", pointerEvents: "none" });
+    document.body.append(ghost);
+    const dx = to.left + 14 - from.left;
+    const dy = to.top + to.height / 2 - from.top - from.height / 2;
+    const dur = travelTime(Math.hypot(dx, dy)) + 80;
+    const lift = Math.min(80, 30 + Math.abs(dx) * 0.06);
+    const a = ghost.animate(
+      [
+        { transform: "translate(0, 0) scale(1)", opacity: 1 },
+        { transform: `translate(${dx * 0.5}px, ${dy * 0.5 - lift}px) scale(1.18) rotate(-4deg)`, opacity: 1, offset: 0.5 },
+        { transform: `translate(${dx}px, ${dy}px) scale(0.9)`, opacity: 0.9, offset: 0.92 },
+        { transform: `translate(${dx}px, ${dy}px) scale(0.6)`, opacity: 0 },
+      ],
+      { duration: dur, easing: css(CURVE.travel) }
+    );
+    return a.finished.catch(() => {}).then(() => ghost.remove());
+  }
+
+  // 搜尋框裡一個字一個字打出來（不觸發搜尋，打完才一次搜：中途不重畫字盒）。
+  async function typeInto(input, text, tok) {
+    const s = String(text);
+    const step = Math.max(10, Math.min(28, 280 / Math.max(1, s.length)));
+    input.value = "";
+    for (let k = 1; k <= s.length; k++) {
+      if (tok !== lookTok) return false;
+      input.value = s.slice(0, k);
+      await sleep(step);
+    }
+    return true;
+  }
+
+  async function lookup(id, list) {
+    const tok = ++lookTok;
+    const input = document.getElementById("lib-q");
+    if (!input || typeof ctx.libPeek !== "function") return;
+    for (let k = 0; k < list.length; k++) {
+      const l = list[k];
+      if (tok !== lookTok) return;
+      const chip = sortAt(id, l.i);
+      const to = input.getBoundingClientRect();
+      const grid = document.getElementById("lib-grid")?.getBoundingClientRect();
+      // 字盒看不到（手機收著、捲走了）就不借字盒：結果照樣寫在步驟裡。
+      if (!to.width || to.bottom < 0 || to.top > innerHeight || !grid?.width || grid.bottom < 0 || grid.top > innerHeight) return;
+      const typedBefore = input.value;
+      peeking = true;
+      if (!reducedMotion()) {
+        if (chip && sortRect(id, l.i)) await hop(chip, to);
+        if (tok !== lookTok) return;
+        input.closest(".lib-search")?.animate([{ boxShadow: "0 0 0 0 var(--ai-glow)" }, { boxShadow: "0 0 0 6px transparent" }], { duration: DUR.long, easing: css(CURVE.out) });
+        if (!(await typeInto(input, l.query, tok))) {
+          if (input.value !== typedBefore && l.query.startsWith(input.value)) input.value = typedBefore;
+          return;
+        }
+      }
+      if (!ctx.libPeek(l.query, l.tags)) {
+        input.value = typedBefore;
+        return;
+      }
+      if (chip) chip.dataset.state = "look";
+      // 好幾個字要找：每個停一下讓人看到候選，再換下一個（助手這時候正在想下一步，不耽誤時間）。
+      if (k < list.length - 1) await sleep(1500);
     }
   }
 

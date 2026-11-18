@@ -2822,6 +2822,17 @@ API 的推理強度|API reasoning effort
 AI 助手用：{0}|AI assistant uses {0!}
 測試成功（{0} 秒）|Test passed ({0} s)
 正在搜尋「{0}」|Searching for “{0!}”
+正在排 {0} 個字|Typesetting {0} words
+排進 {0} 張牌|Set {0} cards
+排進 {0} 張牌；{1} 個字到字盒找相近的|Set {0} cards; looking up {1} words in the library
+一張牌都對不上|No words matched a card
+這些牌都已經在合成池|These cards are already in the pool
+「{0}」可能是：{1}|“{0!}” might be: {1!}
+「{0}」字盒裡也沒有相近的|Nothing close to “{0!}” in the library
+引擎自己處理：{0}|Handled by the engine: {0!}
+沒放進：{0}（跟同一串裡的牌互斥，留了後面那張）|Not added: {0!} (conflicts with a later card in the same prompt, which was kept)
+提示詞不能是空的|The prompt can't be empty
+提示詞太長（最多 2000 字）|The prompt is too long (2000 characters max)
 正在看「{0}」|Looking at “{0!}”
 正在加入「{0}」|Adding “{0!}”
 正在移掉「{0}」|Removing “{0!}”

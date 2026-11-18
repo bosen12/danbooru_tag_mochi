@@ -67,7 +67,7 @@ import { mountAssistant } from "./assistant.js";
 import { mountGroupPicks } from "./group-picks.js";
 import { syncGroupPicks, picksKey } from "./group-picks-sync.js";
 import { handTools } from "./hand-tools.js";
-import { openPaste, listenPaste } from "./paste-prompt.js";
+import { openPaste, listenPaste, parsePrompt } from "./paste-prompt.js";
 import { paintWeight, wireWeightInput, weightRow, weightPositive } from "./weights.js";
 import { favButton } from "./album-save.js";
 import { createDrag, inkRing } from "./drag.js";
@@ -1359,6 +1359,8 @@ function pinOpts(extra = {}) {
   return { eraMix: settings.eraMix, keepMutex: settings.pinMutex === false, ...extra };
 }
 
+// 助手一次釘好幾張（ctx.pin）時設成 true：落牌聲由它照每張落地的時間排，不要同一刻響十聲。
+let pinQuiet = false;
 function pin(tag) {
   if (HARD_BANNED.includes(tag)) return;
   if (isCustomTag(tag)) return pinCustom(tag);
@@ -1378,7 +1380,7 @@ function pin(tag) {
   // 後果寫在池子底下，不是右下角的提示：發生在哪裡就說在哪裡，旁邊給「換回」。
   poolNote = gone.length ? replaceNote(tag, gone) : null;
   const carriedIn = [...pool].filter((t) => t !== tag && !before.has(t));
-  setTimeout(() => sfx.stamp(), LAND_SFX_MS);
+  if (!pinQuiet) setTimeout(() => sfx.stamp(), LAND_SFX_MS);
   // 附帶的牌 200ms 起一張張跳出來（見下面 popCarried）：一張一個音，照音階往上。
   carriedIn.forEach((_, i) => setTimeout(() => sfx.carry(0), 200 + i * 90));
   if (gone.length) setTimeout(() => sfx.lift(), 90);
@@ -2967,8 +2969,12 @@ let drawingRounds = 0;
 /* ================= AI 助手的工作台介面（assistant-tools.js 的 ctx） =================
  * 聊天室的每一個操作都走手動按鈕的那條路（pin、unpin、setSettings、stepSkeleton、drawBatch…）：
  * 動畫、聲音、存檔、跨分頁同步都跟手動一樣，助手不會繞過任何規則。這裡只負責把狀態讀成資料、把結果算清楚。 */
+// 助手偷看字盒之前的搜尋（ctx.libPeek／libRestore）：mine 是助手打上去的字，使用者改過就不收回。
+let libPeekSaved = null;
 function assistantCtx() {
-  const zhOf = (t) => (isCustomTag(t) ? customOf(t)?.name : lib.byTag.get(t)?.zh) || t;
+  // 英文介面的牌面寫的是 tag：助手說的牌名也照牌面（不然英文介面的明細冒出中文名）。
+  const cardName = (c) => (english ? String(c.tag).replace(/_/g, " ") : c.zh);
+  const zhOf = (t) => (isCustomTag(t) ? customOf(t)?.name : lib.byTag.has(t) ? cardName(lib.byTag.get(t)) : null) || t;
   const countPool = (set) => [...set].filter((t) => lib.byTag.has(t) && !isCustomTag(t)).length;
   const ratingName = (item) => (!ratingBlocked(item, "general") ? "general" : !ratingBlocked(item, "sensitive") ? "sensitive" : "explicit");
   const banned = new Set((data.characterBan || []).map((t) => String(t).toLowerCase()));
@@ -3033,7 +3039,7 @@ function assistantCtx() {
       if (section) list = list.filter((c) => c.item?.section === section);
       return list.slice(0, Math.max(1, Math.min(40, limit))).map((c) => ({
         tag: c.tag,
-        zh: c.zh,
+        zh: cardName(c),
         en: c.tag,
         suit: c.suit,
         section: c.item?.section || null,
@@ -3050,7 +3056,7 @@ function assistantCtx() {
       const mutex = it.mutex ? (lex.byMutex?.get(`${it.section}:${it.mutex}`) || []).map((x) => x.tag).filter((x) => x !== tag).slice(0, 24) : [];
       return {
         tag,
-        zh: c.zh,
+        zh: cardName(c),
         en: tag,
         suit: c.suit,
         section: it.section || null,
@@ -3069,11 +3075,95 @@ function assistantCtx() {
       const { p, b } = simulate(tags);
       return diff(tags, p, b);
     },
-    pin(tags) {
+    /** 一段提示詞拆成牌：跟「貼上提示詞」同一套（paste-prompt.js），詞庫有的才是牌。 */
+    parse(text) {
+      const r = parsePrompt(String(text || ""), { lexTags: data.tags.map((x) => x.tag), isCard: (x) => lib.byTag.has(x), zh, banned: data.characterBan || [] });
+      return { ...r, cards: r.cards.map((c) => ({ ...c, zh: zhOf(c.tag) })) };
+    },
+    /**
+     * 釘牌，看得到的就飛進來：from(tag) 給出發點（助手排字盤上那顆字的位置），沒有就從字盒裡那張起飛
+     * （助手從候選裡挑的），都沒有就在池裡冒出來。一張接一張落，落牌聲照每張落地的時間響。
+     */
+    pin(tags, { from = null } = {}) {
       const before = new Set(pool);
       const bansBefore = new Set(bans);
-      for (const t of tags) if (lib.byTag.has(t) || isCustomTag(t)) pin(t);
+      const desk = !matchMedia("(max-width: 40rem)").matches && !reducedMotion();
+      const flights = [];
+      pinQuiet = tags.length > 1;
+      try {
+        for (const t of tags) {
+          if (!(lib.byTag.has(t) || isCustomTag(t))) continue;
+          let start = null;
+          if (desk && !pool.has(t) && !isCustomTag(t)) {
+            const chip = from?.(t) || null;
+            if (chip?.width) start = { chip };
+            else {
+              const r = libCardNode(t)?.getBoundingClientRect();
+              if (r && r.width && r.bottom > 0 && r.top < innerHeight) start = { rect: r };
+            }
+          }
+          pin(t);
+          if (start && pool.has(t)) flights.push([t, start]);
+        }
+      } finally {
+        pinQuiet = false;
+      }
+      flights.forEach(([t, s], i) => {
+        const delay = i * 70;
+        if (s.chip) {
+          // 從一顆字裡長出一張牌：影子是正常大小的牌、置中在那顆字上，縮到字的寬度出發（flight 的 startScale）。
+          const cw = poolNode(t)?.offsetWidth || $("lib-grid").querySelector(".card")?.offsetWidth || 84;
+          const ch = cw * 1.4625;
+          const cx = s.chip.left + s.chip.width / 2;
+          const cy = s.chip.top + s.chip.height / 2;
+          flyInto(t, { left: cx - cw / 2, top: cy - ch / 2, width: cw, height: ch }, { delay, startScale: Math.max(0.18, Math.min(0.6, s.chip.width / cw)) });
+        } else flyInto(t, s.rect, { delay });
+      });
+      if (tags.length > 1) {
+        const n = Math.min(8, Math.max(1, flights.length || 1));
+        for (let i = 0; i < n; i++) setTimeout(() => sfx.stamp(), (flights.length ? i * 70 + LAND_SFX_MS + 140 : LAND_SFX_MS));
+      }
       return diff(tags, pool, bans, before, bansBefore);
+    },
+    /**
+     * 字盒偷看一下（助手去找相近的牌）：搜尋框打上這個字、候選那幾張亮起來（照順序編號）。
+     * 回傳 false＝字盒現在看不到（手機收著），不演。libRestore 收回原本的搜尋；使用者自己動過搜尋框就不收。
+     */
+    libPeek(query, tags = []) {
+      const q = $("lib-q");
+      const grid = $("lib-grid");
+      const r = grid.getBoundingClientRect();
+      if (!r.width || r.bottom < 0 || r.top > innerHeight) return false;
+      if (!libPeekSaved) libPeekSaved = { query: ui.query };
+      libPeekSaved.mine = String(query || "");
+      q.value = libPeekSaved.mine;
+      ui.query = libPeekSaved.mine.trim();
+      q.closest(".lib-search").dataset.typing = ui.query ? "true" : "false";
+      libBackToTop();
+      renderLibrary();
+      grid.querySelectorAll(".card.ai-cand").forEach((n) => (n.classList.remove("ai-cand"), delete n.dataset.aiCand));
+      // 候選照順序編號（牌角一個小號碼），一張接一張亮起來。
+      tags.forEach((t, i) => {
+        const n = libCardNode(t);
+        if (!n) return;
+        n.classList.add("ai-cand");
+        n.dataset.aiCand = String(i + 1);
+        n.style.setProperty("--ai-cand-i", String(i));
+      });
+      return true;
+    },
+    libRestore() {
+      const saved = libPeekSaved;
+      libPeekSaved = null;
+      $("lib-grid").querySelectorAll(".card.ai-cand").forEach((n) => (n.classList.remove("ai-cand"), delete n.dataset.aiCand));
+      if (!saved) return;
+      const q = $("lib-q");
+      if (q.value !== saved.mine) return;
+      q.value = saved.query;
+      ui.query = saved.query;
+      q.closest(".lib-search").dataset.typing = ui.query ? "true" : "false";
+      libBackToTop();
+      renderLibrary();
     },
     unpin(tags) {
       const removed = [];

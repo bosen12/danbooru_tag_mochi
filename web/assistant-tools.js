@@ -65,6 +65,17 @@ export const TEXT = {
   labDrawN: "正在抽 {0} 張",
   labDraw: "正在抽這一輪",
   labGeneric: "正在處理",
+  labPaste: "正在排 {0} 個字",
+  pasteSum: "排進 {0} 張牌",
+  pasteSumLook: "排進 {0} 張牌；{1} 個字到字盒找相近的",
+  pasteNone: "一張牌都對不上",
+  pasteHave: "這些牌都已經在合成池",
+  pasteCands: "「{0}」可能是：{1}",
+  pasteNoCand: "「{0}」字盒裡也沒有相近的",
+  pasteIgnored: "引擎自己處理：{0}",
+  pasteDropped: "沒放進：{0}（跟同一串裡的牌互斥，留了後面那張）",
+  promptEmpty: "提示詞不能是空的",
+  promptLong: "提示詞太長（最多 2000 字）",
   poolSum: "合成池 {0} 張，一次 {1}",
   poolEmpty: "合成池是空的，一次 {0}",
   notReady: "墨池還沒準備好",
@@ -233,9 +244,23 @@ export const TOOL_DEFS = [
     input_schema: { type: "object", additionalProperties: false, properties: {} },
   },
   {
+    name: "paste_prompt",
+    kind: "write",
+    description: "使用者描述想要的畫面、要你配牌、加一組東西時，優先用這支：直接寫出完整的 Danbooru 提示詞（英文 tag，逗號分隔，可寫 (tag:1.2) 權重），一次排進合成池，跟使用者按「貼上」一樣。不要先用 find_cards 一張張找。詞庫有的字變成牌放進去（附帶、互斥照規則）；詞庫沒有的字，頁面會到字盒找相近的牌放在 unknown[].candidates —— 重要的再挑一張用 change_pool 加入，不重要或沒有合適的就略過，不要再搜一次。互斥的（同一格只能一張，例如 beach 和 ocean、兩種髮色）只寫一個，寫兩個會留後面那張，回在 pasted.dropped。畫質詞、LoRA、評分詞不用寫。replace=true 會先拿掉合成池原本的牌（使用者說換成、重配、整組換掉時）；不傳就是加進去。會擠掉已釘的牌時一樣先停下來等確認。使用者只是問「你覺得」時不要呼叫。",
+    input_schema: {
+      type: "object",
+      additionalProperties: false,
+      required: ["prompt"],
+      properties: {
+        prompt: { ...str, description: "Danbooru 提示詞，英文 tag 逗號分隔，最多 2000 字" },
+        replace: { type: "boolean", description: "true 先清掉合成池原本的牌再放；預設 false 加進去" },
+      },
+    },
+  },
+  {
     name: "find_cards",
     kind: "read",
-    description: "用中文或英文在詞庫找牌。準備加入、不確定 tag 怎麼寫、或使用者用說法描述時先呼叫。回傳裡被擋著的牌不要接著加入。不要把搜尋結果當成已經放進合成池。limit 預設 8、最多 20，不要為了湊數重複搜同一句。",
+    description: "用中文或英文在詞庫找牌。只有使用者要你列出、比較有哪些牌，或點名一張不確定怎麼寫的牌時才用；要配一組牌用 paste_prompt。回傳裡被擋著的牌不要接著加入。不要把搜尋結果當成已經放進合成池。limit 預設 8、最多 20，不要為了湊數重複搜同一句。",
     input_schema: {
       type: "object",
       additionalProperties: false,
@@ -416,14 +441,25 @@ export function createToolRunner(ctx) {
     return String(tag ?? "");
   }
 
+  // 英文介面用逗號分隔（「、」在英文裡是怪字）。
+  function sep() {
+    try {
+      const st = ctx.state();
+      return st && typeof st.then !== "function" && /^en/.test(String(st.lang || "")) ? ", " : "、";
+    } catch {
+      return "、";
+    }
+  }
+
   function joinZh(tags) {
-    return (tags || []).map((t) => zhOf(t)).join("、");
+    return (tags || []).map((t) => zhOf(t)).join(sep());
   }
 
   function targetFor(name, args = {}) {
     switch (name) {
       case "get_workspace":
       case "change_pool":
+      case "paste_prompt":
         return { area: "pool" };
       case "find_cards":
       case "suggest_check":
@@ -551,6 +587,10 @@ export function createToolRunner(ctx) {
           if (st && typeof st.then !== "function" && isInt(st.settings?.n)) return { zh: fill(TEXT.labDrawN, st.settings.n), area: "wall" };
         } catch { /* 沒讀到就用籠統的那句 */ }
         return { zh: TEXT.labDraw, area: "wall" };
+      }
+      if (name === "paste_prompt") {
+        const n = typeof args.prompt === "string" ? args.prompt.split(/[,，、\n]+/).filter((s) => s.trim()).length : 0;
+        return { zh: fill(TEXT.labPaste, n), area: "pool" };
       }
       if (name === "change_pool") {
         const add = Array.isArray(args.add) ? args.add.filter((t) => typeof t === "string" && t.trim()) : [];
@@ -735,7 +775,7 @@ export function createToolRunner(ctx) {
     return TEXT.confirmGeneric;
   }
 
-  async function mutatePool(state, add, removes, weights) {
+  async function mutatePool(state, add, removes, weights, from = null) {
     const before = new Map((state.pool || []).map((p) => [p.tag, p]));
     const toUnpin = removes.filter((t) => before.has(t));
     let removedNow = [];
@@ -745,7 +785,7 @@ export function createToolRunner(ctx) {
         const r = await ctx.unpin(toUnpin);
         removedNow = r?.removed || [...toUnpin];
       }
-      if (add.length) pinned = await ctx.pin(add) || pinned;
+      if (add.length) pinned = (await (from ? ctx.pin(add, { from }) : ctx.pin(add))) || pinned;
       const weightResult = [];
       const afterPin = await ctx.state();
       const have = new Map((afterPin.pool || []).map((p) => [p.tag, p]));
@@ -825,7 +865,7 @@ export function createToolRunner(ctx) {
     const state = await ctx.state();
     await hi(target, "write", labelText);
     try {
-      const mut = await mutatePool(state, planLike.add, planLike.remove, planLike.weights);
+      const mut = await mutatePool(state, planLike.add, planLike.remove, planLike.weights, planLike.from || null);
       note(base);
       await hi(target, "done", labelText);
       const story = poolStory(mut);
@@ -1117,6 +1157,7 @@ export function createToolRunner(ctx) {
         add,
         remove,
         weights,
+        from: opts.from || null,
         applied: null,
         pending: null,
       };
@@ -1147,7 +1188,171 @@ export function createToolRunner(ctx) {
         },
       });
     }
-    return commitPool({ add, remove, weights }, base, target, label({ name: "change_pool", args }).zh);
+    return commitPool({ add, remove, weights, from: opts.from || null }, base, target, label({ name: "change_pool", args }).zh);
+  }
+
+  /* ---------- 貼上提示詞（助手直接寫好一整串） ---------- */
+
+  // 一段的原樣去掉權重、括號、底線：拿去字盒搜。
+  function plainWord(raw) {
+    let s = String(raw || "").trim();
+    for (let i = 0; i < 4; i++) {
+      const next = s.replace(/^[([{]+/, "").replace(/:\s*-?[\d.]+\s*[)\]}]*$/, "").replace(/(?<!\\)[)\]}]+$/, "").trim();
+      if (next === s) break;
+      s = next;
+    }
+    return s.replace(/\\([()[\]{}])/g, "$1").replace(/_/g, " ").replace(/\s+/g, " ").trim();
+  }
+
+  // 照提示詞原本的順序排出每一顆字（排字盤）：哪顆變成牌、哪顆詞庫沒有、哪顆引擎自己處理。
+  function sortsOf(text, parsed) {
+    const cardByRaw = new Map(parsed.cards.map((c) => [c.raw, c]));
+    const sets = {
+      unknown: new Set(parsed.unknown),
+      muted: new Set([...(parsed.quality || []), ...(parsed.engine || [])]),
+      blocked: new Set(parsed.blocked || []),
+    };
+    const out = [];
+    const pieces = String(text).split(/(<\s*lora\s*:[^>]*>)|[,，、\n]+|\bBREAK\b/i);
+    for (const piece of pieces) {
+      const raw = (piece || "").trim();
+      if (!raw) continue;
+      if (/^<\s*lora\s*:/i.test(raw)) {
+        out.push({ raw, kind: "muted" });
+        continue;
+      }
+      const card = cardByRaw.get(raw);
+      if (card) {
+        cardByRaw.delete(raw);
+        out.push({ raw, kind: "card", tag: card.tag, zh: card.zh || zhOf(card.tag), w: card.w });
+      } else if (sets.unknown.has(raw)) {
+        sets.unknown.delete(raw);
+        out.push({ raw, kind: "unknown" });
+      } else if (sets.blocked.has(raw)) {
+        sets.blocked.delete(raw);
+        out.push({ raw, kind: "blocked" });
+      } else if (sets.muted.has(raw)) {
+        sets.muted.delete(raw);
+        out.push({ raw, kind: "muted" });
+      }
+      // 其餘是重複的字（拆的時候已經算過一次）：不再排一顆。
+      if (out.length >= 48) break;
+    }
+    return out.map((s, i) => ({ ...s, i, state: "" }));
+  }
+
+  // 詞庫沒有的字：到字盒找相近的（同一個搜尋），整串找不到就拿最長的那個詞再找一次。
+  async function lookupWord(raw) {
+    const q = plainWord(raw);
+    if (!q) return { raw, query: q, candidates: [] };
+    let list = [];
+    let used = q;
+    try { list = (await ctx.search(q, { limit: 8 })) || []; } catch { list = []; }
+    if (!list.length && q.includes(" ")) {
+      for (const w of q.split(" ").filter((x) => x.length >= 3).sort((a, b) => b.length - a.length)) {
+        try { list = (await ctx.search(w, { limit: 8 })) || []; } catch { list = []; }
+        if (list.length) {
+          used = w;
+          break;
+        }
+      }
+    }
+    const candidates = [];
+    for (const c of list) {
+      if (!c?.tag || c.blocked === "banned" || c.inPool) continue;
+      if (await blockReason(c.tag)) continue;
+      candidates.push({ tag: c.tag, zh: c.zh || zhOf(c.tag), section: c.section || null, ...(c.blocked ? { blocked: c.blocked } : {}) });
+      if (candidates.length >= 4) break;
+    }
+    return { raw, query: used, candidates };
+  }
+
+  async function stage(fn, ...a) {
+    try {
+      if (typeof ctx[fn] === "function") return await ctx[fn](...a);
+    } catch { /* 畫面演不了不能讓這一步失敗 */ }
+    return null;
+  }
+
+  async function pastePrompt(args, opts, base) {
+    const target = { area: "pool" };
+    const text = typeof args.prompt === "string" ? args.prompt.trim() : "";
+    if (!text) return fail(target, "bad_args", TEXT.promptEmpty);
+    if (text.length > 2000) return fail(target, "bad_args", TEXT.promptLong);
+    if (Object.prototype.hasOwnProperty.call(args, "replace") && typeof args.replace !== "boolean") return fail(target, "bad_args", TEXT.badArgs);
+    // 底線：整串裡有未成年的說法就整串不收（不是只略過那一個字）。
+    if (MINOR_RE.test(text.replace(/_/g, " "))) {
+      return fail(target, "blocked", fill(TEXT.cannotUse, text.length > 24 ? text.slice(0, 24) + "…" : text, TEXT.whyMinor), { model: { blocked: [{ reason: "minor" }] } });
+    }
+    if (typeof ctx.parse !== "function") return fail(target, "failed", TEXT.failed, { model: { error: "parse unavailable" } });
+    const parsed = await ctx.parse(text);
+    const blocked = [];
+    const cards = [];
+    for (const c of parsed.cards || []) {
+      const reason = await blockReason(c.tag);
+      if (reason) blocked.push({ tag: c.tag, reason });
+      else cards.push(c);
+    }
+    const sorts = sortsOf(text, { ...parsed, cards, blocked: [...(parsed.blocked || []), ...blocked.map((x) => (parsed.cards.find((c) => c.tag === x.tag) || {}).raw)] });
+    // 排字盤先排出來（聊天室裡那一步）：等字排好、看得到每一顆的位置，牌才從字裡飛出去。
+    const tray = await stage("typeset", opts.callId || null, sorts);
+    const rectOf = (tag) => {
+      const s = sorts.find((x) => x.kind === "card" && x.tag === tag);
+      return s && tray?.rect ? tray.rect(s.i) : null;
+    };
+    const lookups = [];
+    for (const s of sorts.filter((x) => x.kind === "unknown").slice(0, 6)) lookups.push({ i: s.i, ...(await lookupWord(s.raw)) });
+    const st = await ctx.state();
+    const add = [...new Set(cards.map((c) => c.tag))];
+    const weightsObj = Object.fromEntries(cards.filter((c) => c.w && c.w !== 1).map((c) => [c.tag, c.w]));
+    const remove = args.replace ? (st.pool || []).map((p) => p.tag).filter((t) => !add.includes(t)) : [];
+    const ignored = sorts.filter((x) => x.kind === "muted").map((x) => x.raw);
+    const unknownForModel = lookups.map((l) => ({ word: l.raw, candidates: l.candidates }));
+    const lookLines = lookups.map((l) => (l.candidates.length ? fill(TEXT.pasteCands, l.raw, l.candidates.map((c) => c.zh).join(sep())) : fill(TEXT.pasteNoCand, l.raw)));
+    const extra = {
+      pasted: { cards: add.length, unknown: unknownForModel, ignored, blocked },
+    };
+    let res;
+    const already = new Set((st.pool || []).map((p) => p.tag));
+    if (!add.length && !remove.length) {
+      res = skip(target, parsed.cards?.length ? TEXT.pasteHave : TEXT.pasteNone, { model: { code: "nothing_to_add" } });
+    } else if (!remove.length && add.every((t) => already.has(t)) && !Object.keys(weightsObj).length) {
+      res = skip(target, TEXT.pasteHave, { model: { code: "already_in_pool" } });
+    } else {
+      res = await changePool({ add, ...(remove.length ? { remove } : {}), ...(Object.keys(weightsObj).length ? { weights: weightsObj } : {}) }, { ...opts, from: rectOf }, base);
+    }
+    // 排字盤上每一顆的下場照放完之後真的池子：同一串裡互斥的（beach 跟 ocean），後面那張會把前面那張擠掉。
+    let inPool = already;
+    try { inPool = new Set(((await ctx.state()).pool || []).map((p) => p.tag)); } catch { /* 讀不到就照原本的 */ }
+    const dropped = res.status === "done" ? add.filter((t) => !inPool.has(t)) : [];
+    for (const s of sorts) {
+      if (s.kind === "card") s.state = res.status === "needs_confirm" ? "wait" : inPool.has(s.tag) ? "set" : "miss";
+      else if (s.kind === "unknown") s.state = "look";
+    }
+    if (dropped.length) extra.pasted.dropped = dropped.map((t) => ({ tag: t, why: "mutex_in_prompt" }));
+    await stage("typesetDone", opts.callId || null, sorts);
+    if (lookups.length) stage("lookup", opts.callId || null, lookups.map((l) => ({ i: l.i, raw: l.raw, query: l.query, tags: l.candidates.map((c) => c.tag) })));
+    const n = (res.forModel?.added || []).filter((t) => inPool.has(t)).length;
+    if (res.status === "done") {
+      res.summary = lookups.length ? fill(TEXT.pasteSumLook, n, lookups.length) : fill(TEXT.pasteSum, n);
+    }
+    // 每張「加入」排字盤上已經打勾了，明細只寫排字盤看不到的：附帶、拿掉的、字盒找到的、引擎處理的。
+    // （等確認、失敗的照原本的明細，那幾行說的是要決定的事。）
+    const fm = res.forModel || {};
+    const own = res.status === "done"
+      ? [
+          ...(fm.companions?.length ? [fill(TEXT.companion, joinZh(fm.companions))] : []),
+          ...(fm.removed || []).filter((t) => !(fm.displaced || []).includes(t)).map((t) => fill(TEXT.removed, zhOf(t))),
+          ...(fm.displaced || []).map((t) => fill(TEXT.wouldRemove, zhOf(t))),
+          ...(dropped.length ? [fill(TEXT.pasteDropped, joinZh(dropped))] : []),
+        ]
+      : res.lines || [];
+    const tail = [...lookLines, ...(ignored.length ? [fill(TEXT.pasteIgnored, ignored.slice(0, 6).join(sep()))] : [])];
+    // 字盒找到的那幾行最重要：明細太長時先收「拿掉」那些，不收它們。
+    res.lines = [...capLines(own).slice(0, Math.max(1, LINE_CAP - tail.length)), ...tail].slice(0, LINE_CAP);
+    res.forModel = { ...(res.forModel || {}), ...extra };
+    res.sorts = sorts;
+    return res;
   }
 
   async function applyConfirmed(plan) {
@@ -1435,6 +1640,7 @@ export function createToolRunner(ctx) {
     card_info: (args) => cardInfo(args),
     suggest_check: (args) => suggestCheck(args),
     change_pool: (args, opts, base) => changePool(args, opts, base),
+    paste_prompt: (args, opts, base) => pastePrompt(args, opts, base),
     set_draw_count: (args, opts, base) => setDrawCount(args, opts, base),
     set_section_counts: (args, opts, base) => setSectionCounts(args, opts, base),
     list_groups: (args) => listGroups(args),

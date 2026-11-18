@@ -4,7 +4,7 @@ import { clampTagWeight } from "../web/engine.js";
 import { HARD_BANNED } from "../web/card-art.js";
 // 這邊在 web6/，開源版（danbooru_tag_mochi）在 web/：同一支測試兩邊都能跑。
 const front = existsSync(new URL("../web6/assistant-tools.js", import.meta.url)) ? "../web6/" : "../web/";
-const { TEXT, TOOL_DEFS, toolSchemas, createToolRunner } = await import(new URL(front + "assistant-tools.js", import.meta.url));
+const { TEXT, TOOL_DEFS, toolSchemas, createToolRunner, fill } = await import(new URL(front + "assistant-tools.js", import.meta.url));
 const { buildSystemPrompt } = await import(new URL(front + "assistant-prompt.js", import.meta.url));
 
 // 假的工作台：互斥、附帶、廢字簍只做測試要的那一點，規則本身仍以 runner 的判斷為準。
@@ -215,7 +215,7 @@ function plain(n, extra = {}) {
 const turn = (version = 1) => ({ version });
 
 // ---------- 工具表 ----------
-const namesExpected = ["get_workspace", "find_cards", "card_info", "suggest_check", "change_pool", "set_draw_count", "set_section_counts", "list_groups", "set_group_picks", "save_card_group", "draw_cards"];
+const namesExpected = ["get_workspace", "paste_prompt", "find_cards", "card_info", "suggest_check", "change_pool", "set_draw_count", "set_section_counts", "list_groups", "set_group_picks", "save_card_group", "draw_cards"];
 assert.deepEqual(TOOL_DEFS.map((t) => t.name), namesExpected);
 assert.deepEqual(toolSchemas().map((t) => t.name), namesExpected);
 for (const tool of TOOL_DEFS) {
@@ -679,6 +679,103 @@ console.log("ok: schemas and phrase list");
   const bare = buildSystemPrompt({});
   assert.match(bare, /墨池/);
   console.log("ok: system prompt");
+}
+
+// ---------- 貼上提示詞（paste_prompt）：一次排進去、沒有的到字盒找 ----------
+{
+  // 頁面上真的那支 parsePrompt 要 DOM；這裡照它的結果長相做一個小的：詞庫有的是牌，(tag:1.2) 帶份量，畫質詞另列。
+  const withParse = (w) => {
+    w.parse = (text) => {
+      const res = { cards: [], quality: [], loras: [], engine: [], blocked: [], unknown: [] };
+      const seen = new Set();
+      for (const raw0 of String(text).split(/[,，、\n]+/)) {
+        const raw = raw0.trim();
+        if (!raw) continue;
+        const m = raw.match(/^\((.+):([\d.]+)\)$/);
+        const word = (m ? m[1] : raw).replace(/_/g, " ").trim().toLowerCase();
+        if (seen.has(word)) continue;
+        seen.add(word);
+        const tag = [...Object.keys(beachCards)].find((t) => t === word.replace(/ /g, "_") || t === word);
+        if (tag) res.cards.push({ tag, raw, w: m ? Number(m[2]) : 1, zh: beachCards[tag].zh });
+        else if (/^(masterpiece|best quality)$/.test(word)) res.quality.push(raw);
+        else res.unknown.push(raw);
+      }
+      return res;
+    };
+    const pin0 = w.pin;
+    w.pin = (tags, o) => {
+      const r = pin0(tags);
+      w.log.push(["pinFrom", typeof o?.from === "function"]);
+      return r;
+    };
+    w.stages = [];
+    w.typeset = (id, sorts) => {
+      w.stages.push(["typeset", id, sorts.map((s) => `${s.kind}:${s.raw}`)]);
+      return { rect: (i) => ({ left: i * 10, top: 0, width: 40, height: 18 }) };
+    };
+    w.typesetDone = (id, sorts) => w.stages.push(["done", id, sorts.map((s) => s.state)]);
+    w.lookup = (id, list) => w.stages.push(["lookup", id, list.map((l) => `${l.query}>${l.tags.join("+")}`)]);
+    return w;
+  };
+  const search = (q) =>
+    q === "sunset glow"
+      ? [{ tag: "smile", zh: "微笑", section: "feature", inPool: true }, { tag: "outdoors", zh: "戶外", section: "env" }, { tag: "hat", zh: "帽子", section: "clothing", blocked: "trash" }]
+      : [];
+  const ctx = withParse(world({ cards: beachCards, pool: [{ tag: "smile", zh: "微笑", weight: 1 }], search }));
+  const runner = createToolRunner(ctx);
+  const res = await runner.run({ id: "p1", name: "paste_prompt", args: { prompt: "masterpiece, (beach:1.2), dress, sunset_glow" } }, { turn: turn(1) });
+  assert.equal(res.status, "done", JSON.stringify(res));
+  assert.deepEqual(names(ctx.log, "pin")[0][1], ["beach", "dress"]);
+  assert.deepEqual(names(ctx.log, "pinFrom")[0], ["pinFrom", true], "牌要從排字盤上那顆字飛出去");
+  assert.equal(ctx._pool().find((p) => p.tag === "beach").weight, 1.2);
+  assert.ok(ctx._pool().some((p) => p.tag === "smile"), "不傳 replace 是加進去，原本的牌留著");
+  // 排字盤照原本順序：畫質詞淡掉、認得的是牌、沒有的去字盒
+  assert.deepEqual(ctx.stages[0], ["typeset", "p1", ["muted:masterpiece", "card:(beach:1.2)", "card:dress", "unknown:sunset_glow"]]);
+  assert.deepEqual(ctx.stages[1], ["done", "p1", ["", "set", "set", "look"]]);
+  // 字盒找相近的：已經在池裡的不算候選；在廢字簍的照列但標著
+  assert.deepEqual(ctx.stages[2], ["lookup", "p1", ["sunset glow>outdoors+hat"]]);
+  assert.deepEqual(res.forModel.pasted.unknown, [{ word: "sunset_glow", candidates: [{ tag: "outdoors", zh: "戶外", section: "env" }, { tag: "hat", zh: "帽子", section: "clothing", blocked: "trash" }] }]);
+  assert.deepEqual(res.forModel.pasted.ignored, ["masterpiece"]);
+  assert.equal(res.summary, fill(TEXT.pasteSumLook, 2, 1));
+  assert.ok(res.lines.includes(fill(TEXT.pasteCands, "sunset_glow", "戶外、帽子")), res.lines.join("|"));
+  assert.ok(res.undo, "跟 change_pool 一樣可以復原");
+  assert.equal(res.sorts.length, 4);
+
+  // replace：先拿掉原本的牌
+  const ctx2 = withParse(world({ cards: beachCards, pool: [{ tag: "smile", zh: "微笑", weight: 1 }, { tag: "hat", zh: "帽子", weight: 1 }] }));
+  const r2 = await createToolRunner(ctx2).run({ id: "p2", name: "paste_prompt", args: { prompt: "beach, smile", replace: true } }, { turn: turn(1) });
+  assert.equal(r2.status, "done");
+  assert.deepEqual(ctx2._pool().map((p) => p.tag).sort(), ["beach", "outdoors", "smile"]);
+
+  // 會擠掉已釘的牌：一樣先停下來問，排字盤上那幾顆標「等確認」
+  const ctx3 = withParse(world({ cards: beachCards, pool: [{ tag: "dress", zh: "洋裝", weight: 1 }] }));
+  const r3 = await createToolRunner(ctx3).run({ id: "p3", name: "paste_prompt", args: { prompt: "swimsuit, beach" } }, { turn: turn(1) });
+  assert.equal(r3.status, "needs_confirm");
+  assert.deepEqual(names(ctx3.log, "pin"), [], "還沒按套用就不能釘");
+  assert.deepEqual(ctx3.stages.find((s) => s[0] === "done")[2], ["wait", "wait"]);
+  assert.equal(r3.forModel.pasted.cards, 2);
+
+  // 底線：整串有未成年的說法就整串不收
+  const ctx4 = withParse(world({ cards: beachCards }));
+  const r4 = await createToolRunner(ctx4).run({ id: "p4", name: "paste_prompt", args: { prompt: "beach, loli, smile" } }, { turn: turn(1) });
+  assert.equal(r4.status, "failed");
+  assert.equal(r4.forModel.code, "blocked");
+  assert.deepEqual(names(ctx4.log, "pin"), []);
+  assert.equal(ctx4.stages.length, 0, "不收的連排字盤都不排");
+
+  // 參數
+  const r5 = await createToolRunner(withParse(world({ cards: beachCards }))).run({ name: "paste_prompt", args: { prompt: "  " } }, { turn: turn(1) });
+  assert.equal(r5.forModel.code, "bad_args");
+  const r6 = await createToolRunner(withParse(world({ cards: beachCards }))).run({ name: "paste_prompt", args: { prompt: "beach", replace: "yes" } }, { turn: turn(1) });
+  assert.equal(r6.forModel.code, "bad_args");
+  // 全部都已經在池裡：不寫入
+  const ctx7 = withParse(world({ cards: beachCards, pool: [{ tag: "smile", zh: "微笑", weight: 1 }] }));
+  const r7 = await createToolRunner(ctx7).run({ name: "paste_prompt", args: { prompt: "smile" } }, { turn: turn(1) });
+  assert.equal(r7.status, "skipped");
+  assert.deepEqual(names(ctx7.log, "pin"), []);
+  // 標籤：數有幾個字
+  assert.equal(createToolRunner(ctx7).label({ name: "paste_prompt", args: { prompt: "a, b, c" } }).zh, fill(TEXT.labPaste, 3));
+  console.log("ok: paste_prompt typesets, pins with flights, looks up unknown words");
 }
 
 // 推理強度：頁面選單跟伺服器接受的值要一樣（不然選了存不進去）
