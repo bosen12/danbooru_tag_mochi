@@ -24,6 +24,7 @@ import { el, openSheet, toast } from "./ui.js";
 import { cardNode, cardMatches } from "./cards.js";
 import { cloneCard } from "./card-images.js";
 import { DUR, CURVE, css, reducedMotion, flight } from "./motion.js";
+import { createSyncedList } from "./synced-list.js";
 
 const HEART =
   '<svg viewBox="0 0 24 24" width="1em" height="1em" fill="currentColor" aria-hidden="true"><path d="M12 20.6 10.6 19.3C5.5 14.7 2.2 11.7 2.2 8 2.2 5 4.6 2.6 7.6 2.6c1.7 0 3.3.8 4.4 2.1 1.1-1.3 2.7-2.1 4.4-2.1 3 0 5.4 2.4 5.4 5.4 0 3.7-3.3 6.7-8.4 11.3L12 20.6z"/></svg>';
@@ -38,216 +39,33 @@ export function heartIcon(cls = "") {
   return box;
 }
 
-const KEY = "mochi.fav.chars.v1";
-const listeners = new Set();
-
-function read() {
-  try {
-    const v = JSON.parse(localStorage.getItem(KEY) || "[]");
-    return Array.isArray(v) ? [...new Set(v.filter((x) => typeof x === "string" && x))] : [];
-  } catch {
-    return [];
-  }
-}
-
-function write(list) {
-  try {
-    localStorage.setItem(KEY, JSON.stringify(list));
-  } catch {
-    /* 無痕模式、空間滿了：這一頁照樣用，下次開就沒有 */
-  }
-}
-
-let tags = read();
-const emit = () => listeners.forEach((f) => f(tags));
-// 另一個分頁（墨池、疊印台同時開著）改了名單：這一頁跟著換。
-addEventListener("storage", (e) => {
-  if (e.key === KEY) {
-    tags = read();
-    emit();
-  }
+// 名單本身、跟伺服器同步：synced-list.js（偏好卡牌也用同一套）。新加的在前。
+const store = createSyncedList({
+  key: "mochi.fav.chars.v1",
+  syncedKey: "mochi.fav.chars.synced",
+  opsKey: "mochi.fav.chars.ops",
+  url: "/api/fav-chars",
 });
 
-/* ---------- 伺服器那份（所有裝置共用） ---------- */
-
-// 這台有沒有跟伺服器對過一次：還沒的話，這台的名單要先併進伺服器那份，不能被蓋掉。
-const SYNCED_KEY = "mochi.fav.chars.synced";
-let server = false; // 伺服器有這個功能（舊伺服器、測試的假伺服器沒有：只用這台的）
-let dirty = false; // 伺服器那份還沒回來之前，這頁就改過了：以這頁的為準
-let pushT = 0;
-let pulling = null;
-
-function synced() {
-  try {
-    return localStorage.getItem(SYNCED_KEY) === "1";
-  } catch {
-    return false;
-  }
-}
-function markSynced() {
-  try {
-    localStorage.setItem(SYNCED_KEY, "1");
-  } catch {
-    /* 存不了：下次開還會再併一次，結果一樣 */
-  }
-}
-
-// 還沒送到伺服器的改動（加了誰、拿掉誰）：存在這台，送成功才清掉。
-// 以前斷網時加的、送失敗就算了，網路回來切回分頁時被伺服器那份蓋回去，那一筆沒有任何提示就不見了。
-// 送的是改動、不是整份名單：手機和電腦同時改，伺服器把兩邊的都套上（以前後送的整份蓋掉先送的）。
-const OPS_KEY = "mochi.fav.chars.ops";
-function readOps() {
-  try {
-    const v = JSON.parse(localStorage.getItem(OPS_KEY) || "null");
-    const list = (x) => (Array.isArray(x) ? x.filter((t) => typeof t === "string" && t) : []);
-    return { add: list(v?.add), remove: list(v?.remove) };
-  } catch {
-    return { add: [], remove: [] };
-  }
-}
-function writeOps(ops) {
-  try {
-    if (ops.add.length || ops.remove.length) localStorage.setItem(OPS_KEY, JSON.stringify(ops));
-    else localStorage.removeItem(OPS_KEY);
-  } catch {
-    /* 存不了：這一頁照樣送，送不出去下次開就沒有 */
-  }
-}
-function noteOp(kind, t) {
-  const ops = readOps();
-  ops.add = ops.add.filter((x) => x !== t);
-  ops.remove = ops.remove.filter((x) => x !== t);
-  ops[kind].push(t);
-  writeOps(ops);
-}
-
-function push() {
-  if (!server) return;
-  clearTimeout(pushT);
-  pushT = setTimeout(() => {
-    pushT = 0;
-    const sent = readOps();
-    // 第一次跟伺服器對（或這台在伺服器那份回來之前就改過）：整份搬上去；之後只送改動。
-    const body = dirty || !synced() ? { tags } : sent;
-    if (!dirty && synced() && !sent.add.length && !sent.remove.length) return;
-    fetch("/api/fav-chars", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) })
-      .then((r) => (r.ok ? r.json() : null))
-      .then((j) => {
-        if (!j || !Array.isArray(j.tags)) return;
-        // 只送了改動、伺服器那邊卻是剛建的（原本沒有檔案）：它不知道這台原本的名單。
-        // 兩邊合起來整份再送一次，不要拿只有新加那幾位的名單蓋掉這台。
-        if (j.fresh && !body.tags) {
-          adopt([...new Set([...j.tags, ...tags])]);
-          dirty = true;
-          return push();
-        }
-        dirty = false;
-        markSynced();
-        // 送出去的這批清掉；送的途中又改的留著，下一次再送。
-        const now = readOps();
-        writeOps({ add: now.add.filter((t) => !sent.add.includes(t)), remove: now.remove.filter((t) => !sent.remove.includes(t)) });
-        const left = readOps();
-        adopt([...left.add, ...j.tags.filter((t) => !left.remove.includes(t) && !left.add.includes(t))]);
-        if (left.add.length || left.remove.length) push();
-      })
-      .catch(() => {});
-  }, 250);
-}
-
-function adopt(list) {
-  const next = [...new Set(list.filter((x) => typeof x === "string" && x))];
-  if (next.length === tags.length && next.every((t, i) => t === tags[i])) return;
-  tags = next;
-  write(tags);
-  emit();
-}
-
-/** 跟伺服器對一次：開頁、切回這個分頁、網路回來時（別台裝置可能改過）。 */
-function pull() {
-  if (pulling || pushT) return pulling;
-  pulling = fetch("/api/fav-chars", { cache: "no-store" })
-    .then((r) => (r.ok ? r.json() : null))
-    .then((j) => {
-      if (!j || !Array.isArray(j.tags)) return;
-      server = true;
-      // 名單回來之前就按了愛心（手機剛開卡冊）：那幾下已經記在 ops 裡。伺服器有存過的話照 ops 送／先合併，
-      // 不要拿這台的整份去蓋 —— 以前會把別台後來加的角色洗掉（第五輪 Astra 找到）。只有伺服器沒存過才整份搬上去。
-      if (dirty && j.saved) dirty = false;
-      if (dirty) return push();
-      // 伺服器說沒存過（換了一份資料夾跑、檔案被刪掉）：這台的整份搬上去，不管以前對過沒有。
-      // 以前這台已經對過一次（synced）就只送改動：伺服器建了一份只有新加那幾位的名單，回來把這台整份蓋掉（2026-10-21）。
-      if (!j.saved) {
-        if (!tags.length) return markSynced();
-        dirty = true;
-        return push();
-      }
-      if (!synced()) {
-        // 第一次：伺服器的在前，這台多出來的接在後面（兩邊都不丟）。
-        const merged = [...new Set([...j.tags, ...tags])];
-        adopt(merged);
-        return merged.length !== j.tags.length ? push() : markSynced();
-      }
-      // 這台還有沒送出去的：先送（伺服器套上去之後回完整名單），不要被伺服器那份蓋掉。
-      const ops = readOps();
-      if (ops.add.length || ops.remove.length) return push();
-      adopt(j.tags);
-    })
-    .catch(() => {})
-    .finally(() => {
-      pulling = null;
-    });
-  return pulling;
-}
-// 在瀏覽器裡才連伺服器（引擎測試在 Node 裡載這個檔，那邊只用名單本身）。
-if (typeof document !== "undefined") {
-  pull();
-  document.addEventListener("visibilitychange", () => {
-    if (!document.hidden) pull();
-  });
-  addEventListener("online", () => pull());
-}
-
-function changed() {
-  write(tags);
-  if (!server) dirty = true;
-  push();
-  emit();
-}
-
 export const favChars = {
-  list: () => [...tags],
-  has: (t) => tags.includes(t),
+  list: () => store.list(),
+  has: (t) => store.has(t),
   get size() {
-    return tags.length;
+    return store.size;
   },
-  add(t) {
-    if (!t || tags.includes(t)) return false;
-    tags = [t, ...tags];
-    noteOp("add", t);
-    changed();
-    return true;
-  },
-  remove(t) {
-    if (!tags.includes(t)) return false;
-    tags = tags.filter((x) => x !== t);
-    noteOp("remove", t);
-    changed();
-    return true;
-  },
+  add: (t) => store.add(t),
+  remove: (t) => store.remove(t),
   /** 回傳換完之後是不是偏好。 */
   toggle(t) {
-    if (tags.includes(t)) {
-      this.remove(t);
+    if (store.has(t)) {
+      store.remove(t);
       return false;
     }
-    this.add(t);
+    store.add(t);
     return true;
   },
   /** 名單變了就叫 f；回傳取消訂閱的函式。 */
-  onChange(f) {
-    listeners.add(f);
-    return () => listeners.delete(f);
-  },
+  onChange: (f) => store.onChange(f),
 };
 
 /** 抽牌用的規則：「只抽偏好角色」開著才把名單帶進去（引擎看 characterFavorites）。 */

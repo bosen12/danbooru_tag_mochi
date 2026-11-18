@@ -110,7 +110,8 @@ def smoke(stage: Path) -> None:
            "NO_CARD_BAKE": "1", "COMFY_API": "http://127.0.0.1:1", "OPEN_BROWSER": "0", "APP_SETTINGS": str(data / "settings.json"),
            "CARD_USAGE_PATH": str(data / "usage.json"), "CARD_DECKS_PATH": str(data / "decks.json"), "CARD_GROUPS_PATH": str(data / "groups.json"), "GEN_LOG_PATH": str(data / "log.jsonl"),
            "RECIPE_DATA_DIR": str(data / "recipes"), "WORKFLOW_DATA_DIR": str(data / "workflows"), "CUSTOM_CARDS_PATH": str(data / "custom.json"),
-           "CUSTOM_CARDS_DIR": str(data / "custom"), "CARD_FAV_CHARS_PATH": str(data / "fav.json")}
+           "CUSTOM_CARDS_DIR": str(data / "custom"), "CARD_FAV_CHARS_PATH": str(data / "fav.json"),
+           "CARD_FAV_HAND_PATH": str(data / "hand.json"), "CARD_GROUP_PICKS_PATH": str(data / "picks.json")}
     env.pop("PYTHONPATH", None)
     proc = subprocess.Popen([str(py), "server.py"], cwd=stage, env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     try:

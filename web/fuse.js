@@ -61,6 +61,7 @@ import { favButton } from "./album-save.js";
 import { initMotion, settleMotion, flip, flipBy, leave, gatherHome, flight, enter, seat, refuse, swapIn, rowChange, heightChange, CURVE, DUR, css } from "./motion.js";
 import { cloneCard, fixedSizes } from "./card-images.js";
 import { createHand } from "./hand.js";
+import { handStore, mergeLegacyHand } from "./hand-store.js";
 import { createDrag, inkRing } from "./drag.js";
 import { createGenerator, comfyOnline, viewSrc, tabTitle, markGenLog } from "./gen.js";
 import { pingLoop } from "./ping.js";
@@ -4294,10 +4295,13 @@ function handAct(tag, anchor) {
   );
 }
 
-/** 偏好卡牌（hand.js）：疊印台自己一份，跟墨池分開。 */
+/** 偏好卡牌（hand.js）：跟墨池、卡冊同一份，所有裝置也同一份（hand-store.js，存在伺服器）。
+ *  疊印台以前自己一份（mochi.fuse.hand.v1）：第一次開時併進共用那份（接在後面）。 */
 function buildHand() {
+  mergeLegacyHand("mochi.fuse.hand.v1");
   hand = createHand({
     key: "mochi.fuse.hand.v1",
+    store: handStore,
     makeNode: (t) => cardNode(cardOf(t), assets),
     blocked: (t) => (cardOf(t) && !rankOk(cardOf(t)) ? "分級擋掉" : null),
     // 托盤的牌大小照墨池（hand.js 存的 mochi.fav.size），這裡不量自己的字盒：兩個房間切換時托盤不會跳。

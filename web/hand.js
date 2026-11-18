@@ -1,5 +1,5 @@
 /**
- * 偏好卡牌（手牌）：墨池、疊印台、卡冊共用。墨池和卡冊同一份，疊印台自己一份（key 不同）；不限張數。
+ * 偏好卡牌（手牌）：墨池、疊印台、卡冊共用同一份，所有裝置也是同一份（存在伺服器，hand-store.js）；不限張數。
  *
  * 樣子：視窗底部一條托盤，牌就是左邊字盒那一張 —— 同一個元件、量字盒上那張的寬度和字級，
  * 看起來一模一樣。整張攤開排成一道很淺的弧；指到的那張浮起來。擺不下就不疊：平平一排、
@@ -14,7 +14,8 @@
  *   拿掉：指到牌，右上角的 ×（隨時都有）；或拖回字盒；鍵盤 Delete。
  *
  * 房間要給的：
- *   key            localStorage 的鑰匙（兩個房間分開）
+ *   key            這個房間自己的 localStorage 鑰匙開頭（托盤開著沒：key + ".open"）
+ *   store          牌放在哪（hand-store.js 的 handStore：伺服器那份，所有裝置、房間共用）
  *   makeNode(t)    畫一張牌（cards.js 的 cardNode，跟字盒同一個）
  *   sample()       字盒上隨便一張牌（量它的寬度、字級；托盤的牌跟它一樣大）
  *   inPool(t)      這張現在在卡池裡嗎
@@ -50,6 +51,7 @@ addEventListener("resize", () => (vw = innerWidth), { passive: true });
 
 export function createHand({
   key,
+  store,
   max = Infinity,
   makeNode,
   sample = noSample,
@@ -68,7 +70,9 @@ export function createHand({
   openKey = key + ".open",
   startOpen = null,
 }) {
-  let tags = read(key, []).filter(known).slice(0, max);
+  let tags = store.list().filter(known).slice(0, max);
+  // 存回去：這個房間現在不認得的牌（被封鎖、詞庫改了、自製牌還沒讀到）照留在共用那份裡，不要因為這裡看不到就刪掉。
+  const save = () => store.set([...tags, ...store.list().filter((t) => !tags.includes(t) && !known(t))]);
   // 第一次來、手牌是空的：托盤不出來，等按了「偏好卡牌」或加了第一張（keepTab：收成標籤）。
   let open = read(openKey, startOpen ?? tags.length > 0) === true;
   let editing = false;
@@ -348,7 +352,7 @@ export function createHand({
       if (e.shiftKey && (e.key === "ArrowLeft" || e.key === "ArrowRight")) {
         if (j === i) return;
         insertAt(tag, j);
-        write(key, tags);
+        save();
         layout(true);
         onChange();
         focusCard(node);
@@ -488,7 +492,7 @@ export function createHand({
     delete el.dataset.full;
     if (tags.includes(tag)) {
       if (at != null) insertAt(tag, at);
-      write(key, tags);
+      save();
       layout(true);
       snap(tag);
       onChange();
@@ -742,7 +746,7 @@ export function createHand({
       return false;
     }
     insertAt(tag, at);
-    write(key, tags);
+    save();
     layout(true);
     if (quiet) snap(tag);
     else reveal0(tag);
@@ -787,7 +791,7 @@ export function createHand({
     // × 很小、就在要點的牌旁邊，手滑很常見：給一次反悔的機會（挑牌模式是故意點掉的，不問）。
     if (!quiet && !editing) onRemoved(tag, () => restore(tag, was));
     tags = tags.filter((t) => t !== tag);
-    write(key, tags);
+    save();
     slots.delete(tag);
     pendingArrive.delete(tag);
     hot = -1;
@@ -818,7 +822,7 @@ export function createHand({
     if (tags.includes(tag) || tags.length >= max || !known(tag)) return;
     if (!open) setOpen(true);
     tags.splice(Math.min(at, tags.length), 0, tag);
-    write(key, tags);
+    save();
     layout(true);
     reveal0(tag);
     onChange();
@@ -1014,7 +1018,7 @@ export function createHand({
     replace(list) {
       const was = [...tags];
       tags = [...new Set(list)].filter(known).slice(0, max);
-      write(key, tags);
+      save();
       for (const t of [...slots.keys()]) if (!tags.includes(t)) slots.delete(t);
       if (!open) setOpen(true);
       layout(true);
@@ -1024,7 +1028,9 @@ export function createHand({
     },
     /** 別的分頁改了同一份（墨池、卡冊開在不同分頁）：照存檔重讀。 */
     reload() {
-      tags = read(key, []).filter(known).slice(0, max);
+      const next = store.list().filter(known).slice(0, max);
+      if (next.length === tags.length && next.every((t, i) => t === tags[i])) return;
+      tags = next;
       for (const t of [...slots.keys()]) if (!tags.includes(t)) slots.delete(t);
       layout(false);
       onChange();

@@ -5,6 +5,9 @@
 
 偏好角色（web6/fav-chars.js 的名單）也存在這裡（data/fav_chars.json）：以前只存在瀏覽器，
 清掉瀏覽器資料、換台電腦就沒了。
+偏好卡牌（web6/hand.js 的托盤，data/fav_hand.json）也一樣：所有裝置、墨池／卡冊／疊印台共用一份
+（2026-11-18 以前只存在瀏覽器，而且疊印台自己一份）。跟偏好角色同一套存法（_load_list／_save_list），
+多記一個順序（托盤可以排順序）。
 """
 
 from __future__ import annotations
@@ -24,6 +27,7 @@ ROOT = Path(__file__).resolve().parent
 DECKS_PATH = Path(os.environ.get("CARD_DECKS_PATH") or ROOT / "data" / "card_decks.json")
 
 FAV_CHARS_PATH = Path(os.environ.get("CARD_FAV_CHARS_PATH") or ROOT / "data" / "fav_chars.json")
+FAV_HAND_PATH = Path(os.environ.get("CARD_FAV_HAND_PATH") or ROOT / "data" / "fav_hand.json")
 
 MAX_DECKS = 200
 MAX_FAV_CHARS = 3000
@@ -152,13 +156,11 @@ def _clean_fav(raw) -> list[str]:
     return out[:MAX_FAV_CHARS]
 
 
-def load_fav_chars() -> dict:
-    """{"tags": [...新加的在前], "saved": 伺服器上有沒有存過, "at": 最後存的時間（毫秒）}。
-    沒存過（或檔案壞了）saved 是 False：瀏覽器會把它自己那份搬上來。"""
-    with _LOCK, file_lock.locked(FAV_CHARS_PATH):
+def _load_list(path: Path, label: str) -> dict:
+    with _LOCK, file_lock.locked(path):
         # 讀不懂：先試 .bak。也不行就當成沒存過（壞的那份 read_json 已經改名留著），瀏覽器那份會補上來。
         try:
-            data = file_lock.read_json(FAV_CHARS_PATH, label="偏好角色")
+            data = file_lock.read_json(path, label=label)
         except (OSError, file_lock.StoreCorrupt):
             return {"tags": [], "saved": False, "at": 0}
         if not isinstance(data, dict):
@@ -166,23 +168,24 @@ def load_fav_chars() -> dict:
         return {"tags": _clean_fav(data.get("tags")), "saved": True, "at": int(data.get("at") or 0)}
 
 
-def save_fav_chars(payload: dict) -> dict:
+def _save_list(path: Path, label: str, payload: dict) -> dict:
     """兩種：
-    - {"add": [...], "remove": [...]}：套在伺服器現在那份上（新加的放最前面）。手機、電腦同時改，兩邊的都留著；
-      以前只有整份換掉，後送的那台把先送的那台加的蓋掉。
+    - {"add": [...], "remove": [...], "order": [...]?}：套在伺服器現在那份上（新加的放最前面）。手機、電腦同時改，
+      兩邊的都留著；以前只有整份換掉，後送的那台把先送的那台加的蓋掉。
+      order（偏好卡牌：托盤排過順序）：照它排，它裡面沒有的（別台剛加的）留在最前面。
     - {"tags": [...]}：整份名單換掉（空陣列＝清空，也算存過）。舊版網頁、第一次把這台的搬上來用。
     """
     if not isinstance(payload, dict):
         raise DeckError("要是物件")
-    ops = isinstance(payload.get("add"), list) or isinstance(payload.get("remove"), list)
+    ops = isinstance(payload.get("add"), list) or isinstance(payload.get("remove"), list) or isinstance(payload.get("order"), list)
     if not ops and not isinstance(payload.get("tags"), list):
         raise DeckError("tags 要是陣列")
     now = int(time.time() * 1000)
     fresh = False
-    with _LOCK, file_lock.locked(FAV_CHARS_PATH):
+    with _LOCK, file_lock.locked(path):
         if ops:
             try:
-                current = file_lock.read_json(FAV_CHARS_PATH, label="偏好角色")
+                current = file_lock.read_json(path, label=label)
             except (OSError, file_lock.StoreCorrupt):
                 current = None
             # 原本沒有名單（換了一份資料夾、檔案被刪掉）卻只收到改動：回 fresh，網頁會把它那整份合起來再送一次。
@@ -191,10 +194,34 @@ def save_fav_chars(payload: dict) -> dict:
             gone = set(_clean_fav(payload.get("remove")))
             added = [t for t in _clean_fav(payload.get("add")) if t not in gone]
             tags = _clean_fav(added + [t for t in have if t not in gone])
+            order = _clean_fav(payload.get("order")) if isinstance(payload.get("order"), list) else None
+            if order:
+                rank = {t: i for i, t in enumerate(order)}
+                tags = [t for t in tags if t not in rank] + sorted((t for t in tags if t in rank), key=rank.get)
         else:
             tags = _clean_fav(payload["tags"])
-        file_lock.write_text(FAV_CHARS_PATH, json.dumps({"v": 1, "at": now, "tags": tags}, ensure_ascii=False, separators=(",", ":")))
+        file_lock.write_text(path, json.dumps({"v": 1, "at": now, "tags": tags}, ensure_ascii=False, separators=(",", ":")))
     return {"tags": tags, "saved": True, "at": now, **({"fresh": True} if fresh else {})}
+
+
+def load_fav_chars() -> dict:
+    """{"tags": [...新加的在前], "saved": 伺服器上有沒有存過, "at": 最後存的時間（毫秒）}。
+    沒存過（或檔案壞了）saved 是 False：瀏覽器會把它自己那份搬上來。"""
+    return _load_list(FAV_CHARS_PATH, "偏好角色")
+
+
+def load_fav_hand() -> dict:
+    """偏好卡牌（托盤上的牌，照托盤的順序）。樣子跟 load_fav_chars 一樣。"""
+    return _load_list(FAV_HAND_PATH, "偏好卡牌")
+
+
+def save_fav_hand(payload: dict) -> dict:
+    return _save_list(FAV_HAND_PATH, "偏好卡牌", payload)
+
+
+def save_fav_chars(payload: dict) -> dict:
+    """偏好角色：照增減套上去，或整份換掉（_save_list）。"""
+    return _save_list(FAV_CHARS_PATH, "偏好角色", payload)
 
 
 def delete(rid: str) -> dict:

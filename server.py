@@ -7048,6 +7048,13 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/api/fav-chars":
             self._json(200, {"ok": True, **card_decks.load_fav_chars()}, cache_control="no-store")
             return
+        # 偏好卡牌、群組勾選：所有裝置、所有房間共用一份（2026-11-18 以前只存在瀏覽器）。
+        if path == "/api/fav-hand":
+            self._json(200, {"ok": True, **card_decks.load_fav_hand()}, cache_control="no-store")
+            return
+        if path == "/api/group-picks":
+            self._json(200, {"ok": True, **card_groups.load_picks()}, cache_control="no-store")
+            return
         # 出圖日誌（作品冊的「日誌」）：新的在前，before＝從這個時間（毫秒）之前接著翻。
         # 牌的戰績（卡冊）、模型成績單（作品冊）：從日誌和作品冊算。
         # 卡冊「用它做過的圖」：日誌裡用到這張牌的每一張。
@@ -7248,6 +7255,18 @@ class Handler(BaseHTTPRequestHandler):
             try:
                 self._json(200, {"ok": True, **card_decks.save_fav_chars(payload)})
             except card_decks.DeckError as exc:
+                self._json(400, {"ok": False, "error": str(exc), "code": "invalid"})
+            return
+        if path == "/api/fav-hand":
+            try:
+                self._json(200, {"ok": True, **card_decks.save_fav_hand(payload)})
+            except card_decks.DeckError as exc:
+                self._json(400, {"ok": False, "error": str(exc), "code": "invalid"})
+            return
+        if path == "/api/group-picks":
+            try:
+                self._json(200, {"ok": True, **card_groups.save_picks(payload)})
+            except card_groups.GroupError as exc:
                 self._json(400, {"ok": False, "error": str(exc), "code": "invalid"})
             return
         if path == "/api/decks":

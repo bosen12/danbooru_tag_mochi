@@ -19,7 +19,7 @@ const KEYS = {
     session: ["mochi.tab.pool.v1"],
   },
   fuse: {
-    local: ["mochi.fuse.handoff.v1", "mochi.bans.v1", "mochi.fuse.settings.v1", "mochi.settings.v1", "mochi.fuse.tab.v1", "mochi.fuse.hand.v1", "mochi.fav.chars.v1", "mochi.pose.v1"],
+    local: ["mochi.fuse.handoff.v1", "mochi.bans.v1", "mochi.fuse.settings.v1", "mochi.settings.v1", "mochi.fuse.tab.v1", "mochi.hand.v1", "mochi.fav.chars.v1", "mochi.pose.v1"],
     session: ["mochi.tab.fuse.v1"],
   },
   book: { local: ["mochi.settings.v1", "mochi.bans.v1", "mochi.book.v1", "mochi.hand.v1", "mochi.pool.handoff.v1", "mochi.fav.chars.v1"], session: [] },

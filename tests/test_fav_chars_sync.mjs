@@ -125,3 +125,142 @@ test("normal sync still sends only the change and adopts the server list", async
   await settle();
   assert.deepEqual(w.server.file, ["tatsumaki", "yor briar", "frieren"]);
 });
+
+// ---------- 偏好卡牌（hand-store.js，2026-11-18 改成伺服器共用）：同一套同步，多一個順序 ----------
+/** 跟 card_decks._save_list 一樣的規則（add／remove／order，或整份 tags）。 */
+function handWorld({ local, synced, file, fuse }) {
+  const w = world({ local: [], synced: false, file: null });
+  w.store.delete("mochi.fav.chars.v1");
+  w.store.set("mochi.hand.v1", JSON.stringify(local));
+  if (synced) w.store.set("mochi.hand.synced", "1");
+  if (fuse) w.store.set("mochi.fuse.hand.v1", JSON.stringify(fuse));
+  const server = { file, posts: [] };
+  const plain = globalThis.fetch;
+  globalThis.fetch = async (url, opts = {}) => {
+    if (!String(url).startsWith("/api/fav-hand")) return plain(url, opts);
+    lastActivity = Date.now();
+    inflight++;
+    try {
+      if (!opts.method) return { ok: true, json: async () => (server.file ? { tags: server.file, saved: true, at: 1 } : { tags: [], saved: false, at: 0 }) };
+      const p = JSON.parse(opts.body);
+      server.posts.push(p);
+      let fresh = false;
+      if (Array.isArray(p.add) || Array.isArray(p.remove) || Array.isArray(p.order)) {
+        fresh = !server.file;
+        const have = server.file || [];
+        const gone = new Set(p.remove || []);
+        const added = (p.add || []).filter((t) => !gone.has(t));
+        let tags = [...new Set([...added, ...have.filter((t) => !gone.has(t))])];
+        if (Array.isArray(p.order) && p.order.length) {
+          const rank = new Map(p.order.map((t, i) => [t, i]));
+          tags = [...tags.filter((t) => !rank.has(t)), ...tags.filter((t) => rank.has(t)).sort((a, b) => rank.get(a) - rank.get(b))];
+        }
+        server.file = tags;
+      } else server.file = [...new Set(p.tags)];
+      return { ok: true, json: async () => ({ tags: server.file, saved: true, at: 2, ...(fresh ? { fresh: true } : {}) }) };
+    } finally {
+      inflight--;
+      lastActivity = Date.now();
+    }
+  };
+  return { ...w, server, hand: () => JSON.parse(w.store.get("mochi.hand.v1") || "[]") };
+}
+const loadHand = async () => await import(new URL(dir + "hand-store.js?case=" + ++n, import.meta.url));
+
+test("hand: the first sync merges this browser's cards into the server list (both kept)", async () => {
+  const w = handWorld({ local: ["red hair", "kimono"], synced: false, file: ["smile"] });
+  await loadHand();
+  await settle();
+  assert.deepEqual(w.server.file, ["smile", "red hair", "kimono"]);
+  assert.deepEqual(w.hand(), ["smile", "red hair", "kimono"]);
+});
+
+test("hand: reordering sends the order; a card another device just added stays (first)", async () => {
+  const w = handWorld({ local: ["a1", "b1", "c1"], synced: true, file: ["a1", "b1", "c1"] });
+  const { handStore } = await loadHand();
+  await settle();
+  w.server.file = ["d1", "a1", "b1", "c1"]; // 手機剛加了 d1，這台還不知道
+  handStore.set(["c1", "a1", "b1"]);
+  await settle();
+  assert.deepEqual(w.server.file, ["d1", "c1", "a1", "b1"]);
+  assert.deepEqual(w.hand(), ["d1", "c1", "a1", "b1"], "this browser picks up d1 too");
+});
+
+test("hand: a new card goes to the end, the same on the server", async () => {
+  const w = handWorld({ local: ["a1", "b1"], synced: true, file: ["a1", "b1"] });
+  const { handStore } = await loadHand();
+  await settle();
+  handStore.add("e1");
+  await settle();
+  assert.deepEqual(w.hand(), ["a1", "b1", "e1"]);
+  assert.deepEqual(w.server.file, ["a1", "b1", "e1"]);
+});
+
+test("hand: the Fuse Bed's old separate list is merged in once and its key removed", async () => {
+  const w = handWorld({ local: ["a1"], synced: true, file: ["a1"], fuse: ["a1", "z1"] });
+  const { handStore, mergeLegacyHand } = await loadHand();
+  await settle();
+  assert.equal(mergeLegacyHand("mochi.fuse.hand.v1"), 1);
+  await settle();
+  assert.deepEqual(handStore.list(), ["a1", "z1"]);
+  assert.deepEqual(w.server.file, ["a1", "z1"]);
+  assert.equal(w.store.has("mochi.fuse.hand.v1"), false);
+});
+
+// ---------- 群組勾選（group-picks-sync.js）：所有裝置共用一份，最後存的算 ----------
+function picksWorld({ file, saved = !!file }) {
+  world({ local: [], synced: false, file: null });
+  const server = { file, saved, posts: [] };
+  globalThis.fetch = async (url, opts = {}) => {
+    lastActivity = Date.now();
+    inflight++;
+    try {
+      if (!String(url).startsWith("/api/group-picks")) return { ok: false, json: async () => ({}) };
+      if (!opts.method) return { ok: true, json: async () => ({ picks: server.file || {}, saved: server.saved, at: 1 }) };
+      const p = JSON.parse(opts.body);
+      server.posts.push(p);
+      server.file = p.picks;
+      server.saved = true;
+      return { ok: true, json: async () => ({ picks: server.file, saved: true, at: 2 }) };
+    } finally {
+      inflight--;
+      lastActivity = Date.now();
+    }
+  };
+  return server;
+}
+const loadPicks = async () => await import(new URL(dir + "group-picks-sync.js?case=" + ++n, import.meta.url));
+
+test("group picks: another device's ticks replace this browser's", async () => {
+  const server = picksWorld({ file: { feature: { ids: ["g-aaaa"], mode: "whole" } } });
+  const { syncGroupPicks } = await loadPicks();
+  let local;
+  syncGroupPicks({ get: () => local, apply: (p) => (local = p) });
+  await settle();
+  assert.deepEqual(local, { feature: { ids: ["g-aaaa"], mode: "whole" } });
+  assert.equal(server.posts.length, 0, "nothing sent back");
+});
+
+test("group picks: the server never saved any: this browser's ticks go up", async () => {
+  const server = picksWorld({ file: null });
+  const { syncGroupPicks } = await loadPicks();
+  const local = { clothing: { ids: ["g-bbbb", "g-cccc"], mode: "mix" } };
+  syncGroupPicks({ get: () => local, apply: () => assert.fail("must not replace") });
+  await settle();
+  assert.deepEqual(server.file, local);
+});
+
+test("group picks: ticking here sends the whole set; ticking before the server answered wins", async () => {
+  const server = picksWorld({ file: { env: { ids: ["g-old1"], mode: "whole" } } });
+  const { syncGroupPicks } = await loadPicks();
+  let local = { pose: { ids: ["g-new1"], mode: "whole" } };
+  const sync = syncGroupPicks({ get: () => local, apply: (p) => (local = p) });
+  sync.push(); // 伺服器那份還沒回來就勾了
+  await settle();
+  assert.deepEqual(server.file, { pose: { ids: ["g-new1"], mode: "whole" } });
+  assert.deepEqual(local, { pose: { ids: ["g-new1"], mode: "whole" } }, "not flipped back to the old server copy");
+  local = {};
+  sync.push();
+  await settle();
+  assert.deepEqual(server.file, {}, "unticking everything is saved too");
+});

@@ -64,6 +64,7 @@ import { pickTrim, shotBusy } from "./wall-trim.js";
 import { mountMasonry } from "./wall-masonry.js";
 import { loadGroups, freshGroups, cachedGroups, withGroupPools, onGroupsChange } from "./card-groups.js";
 import { mountGroupPicks } from "./group-picks.js";
+import { syncGroupPicks, picksKey } from "./group-picks-sync.js";
 import { handTools } from "./hand-tools.js";
 import { openPaste, listenPaste } from "./paste-prompt.js";
 import { paintWeight, wireWeightInput, weightRow, weightPositive } from "./weights.js";
@@ -72,6 +73,7 @@ import { createDrag, inkRing } from "./drag.js";
 import { initMotion, settleMotion, replayDeal, flip, flipBy, leave, enter, confirmButton, gatherHome, flight, seat, refuse, reducedMotion, swapIn, rowChange, CURVE, DUR, css, cropFlipStart, cropFlipEnd } from "./motion.js";
 import { cloneCard } from "./card-images.js";
 import { createHand } from "./hand.js";
+import { handStore } from "./hand-store.js";
 import { createTrashPanel } from "./trash-panel.js";
 import { createGenerator, comfyOnline, viewSrc, tabTitle, markGenLog } from "./gen.js";
 import { pingLoop } from "./ping.js";
@@ -127,6 +129,8 @@ const parkedWeights = new Map();
 let bans = new Set();
 let shots = [];
 let infinite = false;
+// 群組勾選跟伺服器同步（group-picks-sync.js；開頁讀完設定後才建）。
+let groupPicksSync = null;
 // 連線狀態（ping.js）：ok／comfy（ComfyUI 沒開）／net（連不到主機）。抽牌列的狀態字用，跟疊印台付印鈕底下那行一樣先說。
 let linkNow = "ok";
 let stopAsked = false;
@@ -308,6 +312,16 @@ async function boot() {
   whenActive(() => setTimeout(sweepShots, 1500));
   $("wall-start").addEventListener("click", () => $("go-bar").querySelector(".btn-primary")?.click());
   renderTrash();
+  // 群組勾選：所有裝置共用一份（存在伺服器）。別台改了：換成那一份、規則區重畫。
+  groupPicksSync = syncGroupPicks({
+    get: () => settings.groups,
+    apply: (picks) => {
+      const prev = settings;
+      settings = sanitizeSettings({ ...settings, groups: picks }, data);
+      saveSettings(prev);
+      renderRules();
+    },
+  });
   // 別的墨池分頁收藏、Hires、印好了：這邊那張跟著換（tab-sync.js 的三方比對，這邊沒動過的才換）。
   // 別的分頁（卡冊、作品冊、另一個墨池）改了分級、不限制、時代…：這邊跟著換、重畫，不然之後一存又寫回舊的。
   onOtherTab(S.SETTINGS_KEY, (v) => {
@@ -395,6 +409,8 @@ function setSettings(patch) {
   // Heat selection has automatic weights; inherited weights belong to the old selection.
   settings = sanitizeSettings({ ...settings, ...(patch.heats ? { weights: undefined } : {}), ...patch }, data);
   saveSettings(prev);
+  // 群組勾選所有裝置共用（group-picks-sync.js）：這台改了就送上去。
+  if (picksKey(prev.groups) !== picksKey(settings.groups)) groupPicksSync?.push();
   // 規則換了（分級…）：托盤上出不了的牌要重新蓋章／拿掉章。
   hand?.update();
   // 分級、尺度、不限制換了：抽牌列上面那行提醒跟著換。
@@ -1113,10 +1129,11 @@ function pickGender(g, from) {
 
 let hand = null;
 
-/** 偏好卡牌（hand.js）：墨池自己一份，跟疊印台分開。 */
+/** 偏好卡牌（hand.js）：所有房間、所有裝置同一份（hand-store.js，存在伺服器）。 */
 function buildHand() {
   hand = createHand({
     key: "mochi.hand.v1",
+    store: handStore,
     makeNode: (t) => cardNode(lib.byTag.get(t), assets),
     blocked: (t) => (lib.byTag.get(t) && ratingBlocked(lib.byTag.get(t).item, ratingOf(settings)) ? "分級擋掉" : null),
     // 托盤的牌跟字盒的一樣大：量字盒上的一張。
@@ -1140,10 +1157,8 @@ function buildHand() {
     // 牌組、貼上（hand-tools.js；跟卡冊同一套）。
     tools: handTools({ hand: () => hand, data: () => data, isCard: (t) => lib.byTag.has(t) && !bans.has(t), zh }),
   });
-  // 卡冊也改同一份偏好卡牌（mochi.hand.v1）：那邊開在另一個分頁時，這邊照存檔重讀。
-  addEventListener("storage", (e) => {
-    if (e.key === "mochi.hand.v1") hand.reload();
-  });
+  // 別的分頁、別的裝置改了偏好卡牌（hand-store.js 收到）：托盤照新的那份重擺。
+  handStore.onChange(() => hand.reload());
 }
 
 function libCard(card) {

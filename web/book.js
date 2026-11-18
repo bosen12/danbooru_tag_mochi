@@ -28,6 +28,7 @@ import { mountTour } from "./tour.js";
 import { mountScreensaver } from "./screensaver.js";
 import { mountGenStatus } from "./gen-status.js";
 import { createHand, HAND_ICON } from "./hand.js";
+import { handStore } from "./hand-store.js";
 import { handTools } from "./hand-tools.js";
 import { measure, evaluate, announce, openWall } from "./achievements.js";
 import { initMotion, settleMotion, seat, refuse, flight, reducedMotion, swapIn, rowChange, heightChange, holdWidth, CURVE, DUR, css, cropFlipStart, cropFlipEnd } from "./motion.js";
@@ -2796,6 +2797,7 @@ function buildHand() {
   mergeOldBox();
   hand = createHand({
     key: HAND_KEY,
+    store: handStore,
     where: "卡冊",
     openPicks: true,
     keepTab: true,
@@ -2837,9 +2839,10 @@ function buildHand() {
     }
     if (e.key === "Escape" && picking() && !document.querySelector(".overlay")) hand.setOpen(false);
   });
-  // 墨池（或另一個卡冊分頁）改了偏好卡牌、拿走了便條：照存檔重讀。
+  // 別的房間、分頁、裝置改了偏好卡牌（hand-store.js 收到）：托盤照新的那份重擺。
+  handStore.onChange(() => hand.reload());
+  // 墨池（或另一個卡冊分頁）拿走了便條：照存檔重讀。
   addEventListener("storage", (e) => {
-    if (e.key === HAND_KEY) hand.reload();
     if (e.key === S.POOL_HANDOFF_KEY) refreshSending();
   });
   // 便條會過期、會被墨池拿走：回到這一頁時重讀一次。
@@ -2868,10 +2871,9 @@ function mergeOldBox() {
   old = old.filter((t) => typeof t === "string" && lib.byTag.has(t) && !lib.byTag.get(t).banned);
   try {
     if (old.length) {
-      const now = JSON.parse(localStorage.getItem(HAND_KEY) || "[]");
-      const mine = Array.isArray(now) ? now.filter((t) => typeof t === "string") : [];
+      const mine = handStore.list();
       const add = old.filter((t) => !mine.includes(t));
-      localStorage.setItem(HAND_KEY, JSON.stringify([...mine, ...add]));
+      if (add.length) handStore.set([...mine, ...add]);
       if (add.length) setTimeout(() => toast(`卡盒改成偏好卡牌了：原本卡盒裡的 ${add.length} 張已經放進偏好卡牌`), 600);
     }
     localStorage.removeItem(OLD_BOX_KEY);

@@ -9,6 +9,7 @@ from pathlib import Path
 
 tmp = Path(tempfile.mkdtemp())
 os.environ["CARD_GROUPS_PATH"] = str(tmp / "groups.json")
+os.environ["CARD_GROUP_PICKS_PATH"] = str(tmp / "group_picks.json")
 lex = tmp / "lexicon.json"
 lex.write_text(
     json.dumps({
@@ -138,6 +139,19 @@ card_groups.save({"name": "第二筆", "section": "env", "tags": []})  # 這一�
 PATH.write_text("[]", encoding="utf-8")
 names = [g["name"] for g in card_groups.load()]
 ok("樣子不對、有備份：用備份換回", "留著" in names, names)
+
+# 勾選（2026-11-18 改成所有裝置共用）。
+ok("勾選：沒存過", card_groups.load_picks() == {"picks": {}, "saved": False, "at": 0})
+_p = card_groups.save_picks({"picks": {"feature": {"ids": ["g-abcd", "g-abcd", "bad id!"], "mode": "mix"}, "clothing": {"ids": []}, "nope": {"ids": ["g-x123"]}}})
+ok("勾選：去重、壞 id 丟掉、空的段落和不認得的段落丟掉", _p["picks"] == {"feature": {"ids": ["g-abcd"], "mode": "mix"}}, _p)
+ok("勾選：讀回一樣、記得存過", card_groups.load_picks()["picks"] == _p["picks"] and card_groups.load_picks()["saved"] is True)
+card_groups.save_picks({"picks": {}})
+ok("勾選：全部取消也算存過（別台打開是全沒勾）", card_groups.load_picks() == {"picks": {}, "saved": True, "at": card_groups.load_picks()["at"]})
+try:
+    card_groups.save_picks({"picks": "x"})
+    ok("勾選：不是物件不收", False)
+except card_groups.GroupError:
+    ok("勾選：不是物件不收", True)
 
 print("all ok" if not failed else f"{failed} failed")
 sys.exit(1 if failed else 0)

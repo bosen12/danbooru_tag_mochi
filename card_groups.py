@@ -239,3 +239,51 @@ def delete(rid: str) -> dict:
         groups = [g for g in groups if g["id"] != rid]
         _write(groups)
         return {"group": gone, "groups": _sorted(groups)}
+
+
+# ---------- 勾選：每一段要從哪幾組抽（墨池規則的 settings.groups） ----------
+# 2026-11-18 以前存在每台瀏覽器的設定裡（手機勾了、電腦看不到）。改成所有裝置共用一份：
+# 最後存的那份算（勾選是一整組設定，不是名單，不必合併兩邊）。
+PICKS_PATH = Path(os.environ.get("CARD_GROUP_PICKS_PATH") or ROOT / "data" / "group_picks.json")
+PICK_SECTIONS = ("feature", "clothing", "pose", "env")
+MAX_PICK_IDS = 50  # 跟 engine.js 的 sanitizeGroupPick 一樣
+
+
+def _clean_picks(raw) -> dict:
+    out = {}
+    if not isinstance(raw, dict):
+        return out
+    for section in PICK_SECTIONS:
+        v = raw.get(section)
+        if not isinstance(v, dict):
+            continue
+        ids = []
+        for gid in v.get("ids") if isinstance(v.get("ids"), list) else []:
+            if isinstance(gid, str) and _ID_RE.match(gid) and gid not in ids:
+                ids.append(gid)
+        if not ids:
+            continue
+        out[section] = {"ids": ids[:MAX_PICK_IDS], "mode": "mix" if v.get("mode") == "mix" else "whole"}
+    return out
+
+
+def load_picks() -> dict:
+    """{"picks": {...}, "saved": 存過沒有, "at": 毫秒}。沒存過：網頁把它自己的勾選搬上來。"""
+    with file_lock.locked(PICKS_PATH):
+        try:
+            data = file_lock.read_json(PICKS_PATH, label="群組勾選")
+        except (OSError, file_lock.StoreCorrupt):
+            return {"picks": {}, "saved": False, "at": 0}
+    if not isinstance(data, dict):
+        return {"picks": {}, "saved": False, "at": 0}
+    return {"picks": _clean_picks(data.get("picks")), "saved": True, "at": int(data.get("at") or 0)}
+
+
+def save_picks(payload) -> dict:
+    if not isinstance(payload, dict) or not isinstance(payload.get("picks"), dict):
+        raise GroupError("picks 要是物件")
+    picks = _clean_picks(payload["picks"])
+    now = int(time.time() * 1000)
+    with file_lock.locked(PICKS_PATH):
+        file_lock.write_text(PICKS_PATH, json.dumps({"v": 1, "at": now, "picks": picks}, ensure_ascii=False, separators=(",", ":")))
+    return {"picks": picks, "saved": True, "at": now}
