@@ -811,9 +811,15 @@ export function mountAssistant({ ctx }) {
       const col = el("div", { class: "ai-col" });
       node.append(col);
       for (const seg of item.segs || []) {
-        if (seg.text) col.append(segNode(seg));
         const steps = (item.steps || []).filter((st) => st.seg === seg.n);
-        if (steps.length) col.append(stepsNode(item, steps));
+        // 這一段有叫工具：模型那句話說的是做完的結果，排在步驟後面、等工具做完才出現（不然話說完了牌還沒進來）。
+        if (seg.calls) {
+          if (steps.length) col.append(stepsNode(item, steps));
+          if (seg.text && !seg.held) col.append(segNode(seg));
+        } else {
+          if (seg.text) col.append(segNode(seg));
+          if (steps.length) col.append(stepsNode(item, steps));
+        }
       }
       if (item.error) col.append(el("p", { class: "ai-error" }, item.error));
       for (const c of item.confirms || []) col.append(confirmNode(item, c));
@@ -863,6 +869,7 @@ export function mountAssistant({ ctx }) {
       if (streaming.size > 1) return;
       requestAnimationFrame(() => {
         for (const [it, sg] of streaming.values()) {
+          if (sg.held) continue;
           const host = log.querySelector(`.ai-msg[data-id="${it.id}"]`);
           const old = host?.querySelector(`.ai-rich[data-seg="${sg.n}"]`);
           if (!host || !old) repaint(it);
@@ -972,6 +979,11 @@ export function mountAssistant({ ctx }) {
       const err = node.querySelector(".ai-error");
       if (err && !before.error) err.animate([{ opacity: 0, transform: "translateY(4px)" }, { opacity: 1, transform: "none" }], { duration: DUR.medium, easing: ease });
     }
+    // 收著的那句話放出來：淡進、往上浮一點（話在步驟後面，像是做完才說）。
+    function riseText(item, seg) {
+      const n = log.querySelector(`.ai-msg[data-id="${item.id}"] .ai-rich[data-seg="${seg.n}"]`);
+      if (n && !reducedMotion()) n.animate([{ opacity: 0, transform: "translateY(6px)", filter: "blur(2px)" }, { opacity: 1, transform: "none", filter: "none" }], { duration: DUR.long, easing: css(CURVE.out) });
+    }
     function rise(node) {
       if (reducedMotion() || !node) return;
       node.animate([{ opacity: 0, transform: "translateY(10px)" }, { opacity: 1, transform: "none" }], { duration: DUR.long, easing: css(CURVE.out) });
@@ -1034,6 +1046,7 @@ export function mountAssistant({ ctx }) {
       setState,
       repaint,
       streamText,
+      riseText,
       renderLog,
       riseLast,
       log,
@@ -1136,7 +1149,10 @@ export function mountAssistant({ ctx }) {
           else if (event === "text") {
             seg.text += data.delta || "";
             panel.streamText(item, seg);
-          } else if (event === "tool_calls") calls = Array.isArray(data.calls) ? data.calls : [];
+          } else if (event === "tool_calls") {
+            calls = Array.isArray(data.calls) ? data.calls : [];
+            if (calls.length) Object.assign(seg, { calls: true, held: true });
+          }
           else if (event === "error") throw Object.assign(new Error(data.error || "模型出錯"), { code: data.code });
         });
         if (!live()) throw Object.assign(new Error("aborted"), { name: "AbortError" });
@@ -1146,6 +1162,7 @@ export function mountAssistant({ ctx }) {
         // 同一個 id 不能撞到前面的步驟、復原、或工具層「同一個 id 不做第二次」的快取。
         const batch = `${item.id}:${item.segs.length}`;
         let waiting = null;
+        const results = [];
         for (const call of calls) {
           if (ctrl.signal.aborted || !live()) throw Object.assign(new Error("aborted"), { name: "AbortError" });
           if (waiting) {
@@ -1173,21 +1190,29 @@ export function mountAssistant({ ctx }) {
             waiting = lab.zh;
           }
           if (lab.kind !== "read" && res.ok) wrote = true;
+          results.push({ write: lab.kind !== "read", res });
           // 重讀了工作台：之後的寫入照這一版判斷 stale（不然重讀完還是一直說「工作台已經變了」）。
           if (call.name === "get_workspace" && res.ok && Number.isFinite(res.forModel?.version)) turn.version = res.forModel.version;
           conv.messages.push({ role: "tool", toolCallId: call.id, name: call.name, content: JSON.stringify(res.forModel ?? { ok: !!res.ok, status: res.status }) });
           panel.repaint(item);
         }
+        seg.held = false;
+        panel.repaint(item);
+        panel.riseText(item, seg);
         if (waiting) {
           item.paused = true;
           break;
         }
+        // 做完就收：這一批全是寫入、都成功，沒有字盒候選要挑、沒有被互斥擠掉的，而且模型已經寫好結果的那句話 ——
+        // 再問一輪只會換來一句重複的總結（CLI 每輪 3～8 秒）。查詢類（要看結果再決定）照舊接著問。
+        if (seg.text.trim() && results.length && results.every((r) => r.write && r.res.status === "done" && !r.res.forModel?.pasted?.unknown?.length && !r.res.forModel?.pasted?.dropped?.length)) break;
         if (hop === MAX_HOPS - 1) item.error = t("這一輪的步驟太多，先停在這裡；要繼續就再交代一次。");
       }
       const st = item.steps.map((s) => s.status);
       finalKind = item.confirms.some((c) => c.state === "open") ? "confirm" : st.includes("failed") ? (st.includes("done") ? "partial" : "failed") : wrote ? "done" : "answered";
     } catch (err) {
       item.paused = null;
+      for (const s of item.segs) if (s.held) s.text = "";
       if (err?.name === "AbortError" || ctrl.signal.aborted) {
         finalKind = "cancelled";
         item.error = t("已停止。") + (item.steps.some((s) => s.status === "done") ? t("上面打勾的步驟已經做了。") : "");
@@ -1279,7 +1304,7 @@ export function mountAssistant({ ctx }) {
       return handle;
     }
     // 一顆一顆排上去（像撿字排進排字盒），整排不超過半秒多；認得的字隨後墨成牌名。
-    const gap = Math.max(12, Math.min(34, 560 / Math.max(1, chips.length)));
+    const gap = Math.max(8, Math.min(24, 300 / Math.max(1, chips.length)));
     chips.forEach((c, k) => {
       c.animate(
         [
@@ -1294,12 +1319,13 @@ export function mountAssistant({ ctx }) {
           ink(c);
           c.dataset.inked = "true";
           c.animate([{ filter: "blur(1.5px)", opacity: 0.4 }, { filter: "none", opacity: 1 }], { duration: DUR.short, easing: css(CURVE.out) });
-        }, k * gap + DUR.short + 120);
+        }, k * gap + 160);
       } else if (c.dataset.kind === "muted") {
-        setTimeout(() => (c.dataset.inked = "true"), k * gap + DUR.short + 120);
+        setTimeout(() => (c.dataset.inked = "true"), k * gap + 160);
       }
     });
-    await sleep(Math.min(1150, chips.length * gap + DUR.short + 260));
+    // 等字排好就放牌（約半秒）：牌從字裡飛出去時，後面幾顆還在墨成牌名，兩件事疊著演，不另外等。
+    await sleep(Math.min(520, chips.length * gap + 200));
     return handle;
   }
 

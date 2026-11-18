@@ -68,6 +68,8 @@ function script(body) {
   // 連線中途斷了（沒有 done）
   // 40 張上限：拿掉帽子、加草帽（草帽會帶回帽子）
   if (/拿掉帽子加草帽/.test(said)) return tools === 0 ? call({ id: "x1", name: "change_pool", args: { remove: ["hat"], add: ["straw hat"] } }) : end("好。");
+  // 話＋寫入一起回、寫入成功：不再多問一輪
+  if (/一次改成三張/.test(said)) return sse([["text", { delta: "一次 → 3。" }], ["tool_calls", { calls: [{ id: "n1", name: "set_draw_count", args: { n: 3 } }] }], ["done", { reason: "tool_calls" }]]);
   if (/斷線測試/.test(said)) return sse([["text", { delta: "這是半截" }]]);
   // 長回答：一個字一個字串流
   if (/長回答/.test(said)) return sse([...Array.from({ length: 120 }, (_, k) => ["text", { delta: k % 10 === 9 ? "。\n" : "字" }]), ["done", { reason: "end" }]]);
@@ -268,6 +270,16 @@ try {
     ok("確認：按套用之後換成紅髮、接著抽了一張", (await poolTags(page)).includes("red hair") && (await page.locator("#wall .shot").count()) === shots0 + 1);
     const resumed = chats.find((c) => (c.messages || []).some((m) => m.role === "tool" && m.name === "draw_cards" && /waiting_confirm/.test(m.content)));
     ok("確認：模型看到的是「等確認、這一步沒做」，接著看到你按了套用", !!resumed && /按了「套用」/.test(resumed.messages.at(-1).content));
+  }
+
+  // 5d2. 話跟寫入一起回來：話等做完才出現、排在步驟後面；寫入成功就收，不再多問模型一輪
+  {
+    const before = chats.length;
+    await send(page, "一次改成三張");
+    ok("做完就收：只問了模型一次", chats.length === before + 1, `${chats.length - before} 次`);
+    const order = await page.locator(".ai-msg.ai-bot").last().evaluate((m) => [...m.querySelectorAll(".ai-steps, .ai-rich")].map((n) => (n.classList.contains("ai-steps") ? "steps" : "text")).join(","));
+    ok("做完就收：話排在步驟後面", order === "steps,text", order);
+    ok("做完就收：一次真的改成 3", (await page.locator("#go-bar .btn-primary .count").textContent()).includes("3"));
   }
 
   // 5e. 連線中途斷了：半截的不能當成完整回覆
