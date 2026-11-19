@@ -82,7 +82,9 @@ elif args[0] in ("--print", "--prompt-file", "exec"):
     elif mode == "format":
         print('{"type":"result","structured_output":{"say":"bad","calls":[{"name":"find_cards","args":[]}]}}')
     else:
-        tool = body["tools"][0]["name"]
+        # 墨池工具在 mochi_tools（不叫 tools：CLI 模型會跟自己被關掉的工具清單搞混）
+        assert "tools" not in body and "不要說沒有墨池工具" in body["instruction"]
+        tool = body["mochi_tools"][0]["name"]
         params = {} if tool == "check_connection" else {"query": "海邊"}
         result = {"say": "找到", "calls": [{"name": tool, "args": params}]}
         if provider == "claude":
@@ -270,7 +272,10 @@ def cli_commands():
                 args_type = schema["properties"]["calls"]["items"]["properties"]["args"]["type"]
                 assert args_type == ("string" if provider == "codex" else "object")
                 if prompt_file is not None:
-                    assert json.loads(prompt_file.read_text(encoding="utf-8"))["messages"] == CHAT["messages"]
+                    prompt = json.loads(prompt_file.read_text(encoding="utf-8"))
+                    assert prompt["messages"] == CHAT["messages"]
+                assert list(prompt) == ["instruction", "system", "mochi_tools", "messages"]
+                assert prompt["mochi_tools"] == CHAT["tools"] and prompt["system"] == CHAT["system"]
         assert not Path(cwd).exists()
 
 

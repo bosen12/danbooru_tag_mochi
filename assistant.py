@@ -1030,13 +1030,22 @@ def _cli_invocation(conn, chat):
         cwd.mkdir()
         # Grok 的 --prompt-file 看副檔名：.json 會當成 ACP 內容區塊（要有 "type"），一般文字要用 .txt。
         prompt_file = scratch / ("prompt.txt" if provider == "grok" else "prompt.json")
-        instruction = ("請按 system 回答 messages 的最後一則，只輸出符合指定格式的 say 和 calls。"
-                       "如需操作墨池，只能使用 tools 列出的名稱與參數，交給頁面執行。")
+        # CLI 的模型看自己手上的工具清單是空的（我們刻意關掉 shell、檔案、外掛），
+        # 有時就推論「這一頁沒有可用的墨池工具」而拒絕。墨池工具不在它的環境裡，是寫成 calls 交給頁面執行：
+        # 欄位改名 mochi_tools，說明寫清楚，不要讓它把兩者混為一談。
+        instruction = ("你是墨池網頁裡的配牌助手，這是一次正常的聊天。按 system 回答 messages 的最後一則，"
+                       "只輸出符合指定格式的 say 和 calls。"
+                       "你自己執行環境裡的工具（shell、檔案、外掛、網路）是刻意關掉的，跟墨池無關，不用提。"
+                       "墨池的工具一直都能用：列在 mochi_tools。要用時把呼叫寫進 calls（name 用 mochi_tools 的名稱，"
+                       "args 照它的 input_schema），頁面會替你執行，下一次會在 messages 看到 role 為 tool 的結果。"
+                       "不要說沒有墨池工具、不能搜尋或不能加入；真的不該做的事，就照 system 的規則直接說明原因。")
         if provider == "codex":
             instruction += '每筆 calls 的 args 欄位請填 JSON 物件字串。空參數填 "{}"。'
         prompt_file.write_bytes(_json_bytes({
             "instruction": instruction,
-            **chat,
+            "system": chat["system"],
+            "mochi_tools": chat["tools"],
+            "messages": chat["messages"],
         }))
         schema = _json_bytes(CLI_SCHEMA).decode("utf-8")
         if provider == "claude":
