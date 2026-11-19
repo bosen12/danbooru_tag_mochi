@@ -3085,7 +3085,7 @@ html[data-go-float] .wall-busy {
   align-items: center;
   gap: var(--space-xs);
   max-width: calc(100vw - 2 * var(--space-md) - 96px);
-  padding: var(--space-xs) var(--space-xs) var(--space-xs) var(--space-md);
+  padding: var(--space-xs);
   border: 1px solid var(--color-rule);
   border-radius: 999px;
   background: color-mix(in oklch, var(--color-paper-2) 94%, transparent);
@@ -3104,17 +3104,34 @@ html[data-go-float] .wall-busy {
   pointer-events: auto;
 }
 
+/* 2026-11-19 專案主：「太長了，而且太小」。按鈕放大一點（38px；44px 又太大）、字跟著大；
+ * 平常那行狀態字（池子是空的，全靠抽／池裡 N 張）不放：它不是動作，只是把整條拉長。
+ * 印的時候才寫出來（捲去看舊圖時也知道還有幾張）。 */
 .go-float .btn {
+  height: 38px;
+  padding-inline: var(--space-md);
   border-radius: 999px;
+  font-size: var(--text-sm);
+}
+
+.go-float .btn-primary {
+  padding-inline: var(--space-lg);
 }
 
 .go-float-state {
+  display: none;
   font-size: var(--text-xs);
   color: var(--color-muted);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   min-width: 0;
+}
+
+/* 印的時候才寫在左邊（印製中・還有幾張）：浮在上方會被「偏好卡牌」那顆擋住。 */
+.go-float[data-busy] .go-float-state {
+  display: block;
+  padding-inline: var(--space-sm) var(--space-2xs);
 }
 
 @media (max-width: 640px) {
@@ -3132,11 +3149,13 @@ html[data-go-float] .wall-busy {
   .go-float-state {
     display: none;
   }
+  /* 「偏好卡牌」那顆就在浮動列正上方：小標籤疊在它更上面、置中，不被它蓋掉（以前在左邊，被切成「印製中・還有」）。 */
   .go-float[data-busy] .go-float-state {
     display: block;
     position: absolute;
-    left: var(--space-sm);
-    bottom: calc(100% + var(--space-2xs));
+    left: 50%;
+    translate: -50% 0;
+    bottom: calc(100% + 58px);
     max-width: calc(100% - 2 * var(--space-sm));
     padding: 2px var(--space-sm);
     border: 1px solid var(--color-rule);
