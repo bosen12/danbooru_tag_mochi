@@ -30,12 +30,19 @@ addEventListener("pageshow", refresh);
 document.addEventListener("prerenderingchange", refresh);
 
 // 目的地有會被移除的牌或改寫的份量才多一步。取消、Esc 都不會留下交接便條。
-export function reviewTransfer(room, tags, weights, zh, proceed, { merge = false } = {}) {
+// 同類確認窗一次只開一層：作品冊雙擊、卡冊再按一次，都不要在還沒關掉的那層上面再疊一層。
+let transferReview = null;
+
+export function reviewTransfer(room, tags, weights, zh, proceed, { merge = false, onClose } = {}) {
   const old = destination(room);
   const next = new Set(tags);
   const lost = old.tags.filter(tag => !next.has(tag));
   const changed = old.tags.filter(tag => next.has(tag) && (old.weights[tag] ?? 1) !== (weights[tag] ?? 1));
-  if (!lost.length && !changed.length) return proceed();
+  if (!lost.length && !changed.length) {
+    proceed();
+    return false;
+  }
+  if (transferReview) return false;
   const name = tag => english && !tag.startsWith("custom:") ? tag : zh(tag);
   const list = values => el("span", { "data-no-i18n": "" }, values.join(english ? ", " : "、"));
   const body = el("div", { class: "sheet-body" },
@@ -43,10 +50,18 @@ export function reviewTransfer(room, tags, weights, zh, proceed, { merge = false
     changed.length > 0 && el("p", {}, el("b", {}, "份量變更"), " · ", list(changed.map(tag => `${name(tag)} ${old.weights[tag] ?? 1} → ${weights[tag] ?? 1}`)))
   );
   const title = merge ? "加入合成池時會換牌" : room === "fuse" ? "替換疊印台的選牌" : "替換合成池的選牌";
+  transferReview = true;
+  const done = () => {
+    transferReview = null;
+    onClose?.();
+  };
   const sheet = openSheet(title, body, {
+    onClose: done,
     foot: [
       el("button", { type: "button", class: "btn btn-small", onclick: () => sheet.close() }, "取消"),
       el("button", { type: "button", class: "btn btn-small btn-primary", onclick: () => { sheet.close(); proceed(); } }, merge ? "確認加入" : "確認替換"),
     ],
   });
+  sheet.sheet.dataset.transferReview = room;
+  return true;
 }

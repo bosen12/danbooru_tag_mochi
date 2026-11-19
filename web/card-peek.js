@@ -300,6 +300,20 @@ export function attachPeek(root, selector, getInfo) {
   });
   if (!scrollWired) {
     scrollWired = true;
+    // Esc 收起放大卡（2026-11-20 外部檢查：放大卡蓋住右邊四張，按 Esc 還在，只能挪滑鼠）。
+    // 收掉那張在滑鼠離開之前不再浮出來（跟按下去一樣，pressedEl）；這一下 Esc 只做這件事，
+    // 不會順手停掉正在生圖的工作、也不會關掉底下的視窗（window 的捕獲階段最先收到）。
+    window.addEventListener(
+      "keydown",
+      (e) => {
+        if (e.key !== "Escape" || e.isComposing || !peek || peek.dataset.show !== "true") return;
+        pressedEl = current;
+        hidePeek();
+        e.preventDefault();
+        e.stopImmediatePropagation();
+      },
+      true
+    );
     window.addEventListener(
       "scroll",
       () => {

@@ -113,6 +113,12 @@ let bans = new Set();
 let bed = emptyBed();
 let seeds = [];
 let picked = 0;
+/** 真正會送出的試印。滑鼠停在別張上只是暫看（peekTrial），付印鈕和快捷鍵 G 都只認這一個。 */
+function committedTrial() {
+  return trials[picked] || null;
+}
+// 上一顆畫在付印鈕上的字母：換過去時從這顆滾到新的，不要整顆鈕重畫才有過渡。
+let shownGoLetter = "";
 // 滑鼠停在另一張試印上：卡池的影子先換成那一張補的（只是看看，沒有換過去）。
 let peekTrial = null;
 let peekTimer = 0;
@@ -1152,7 +1158,7 @@ function openHires(p, btn) {
 }
 
 function printNow({ fresh = false } = {}) {
-  const t = trials[picked];
+  const t = committedTrial();
   if (!t) return;
   // fresh：印好的那張再印一張，換一顆生圖種子（同一顆種子印出來一模一樣，再印沒有意義）。
   const freshSeed = fresh ? randomSeed() : null;
@@ -1630,7 +1636,7 @@ function renderPreview({ develop = false } = {}) {
       pv.blank,
       el("b", { class: "pv-letter", "aria-hidden": "true" }, t.letter),
       el("span", { class: "pv-state" }, p ? previewState(p) : `已選試印 ${t.letter}`),
-      !p ? el("span", { class: "pv-hint" }, "這是候選提示詞，尚未生成圖片。按「付印」才會生圖。", otherPrinting() ? el("span", {}, "晾紙繩上還有一張在印；這一版也可以先付印。") : null) : null,
+      !p && otherPrinting() ? el("span", { class: "pv-hint" }, "晾紙繩上還有一張在印；這一版也可以先付印。") : null,
       p && p.status === "failed" && p.note ? el("span", { class: "pv-hint" }, p.note) : null,
       p && p._gone ? el("span", { class: "pv-hint" }, "ComfyUI 的輸出資料夾裡找不到這張，可能被刪掉了。按「再印一次」照原樣重印。") : null
     );
@@ -2426,7 +2432,7 @@ function plateCard(tag) {
   node.append(inkDots(tag));
   paintInk(node, tag);
   node.addEventListener("click", () => openPop(node, tag, "plate"));
-  // 份量：右下角的數字；電腦上滑鼠停著滾滾輪、或 +／− 調（weights.js）。點開的選單裡也有一排。
+  // 份量：右下角的數字。滾輪只在指著角標時調（weights.js）；鍵盤 +／− 照舊。點開的選單裡也有一排。
   paintWeight(node, (bed.weights || {})[tag]);
   wireWeightInput(node, { get: () => (bed.weights || {})[tag] || 1, set: (w) => setPlateWeight(tag, w) });
   node.addEventListener("keydown", (e) => {
@@ -3101,6 +3107,59 @@ function printAction(btn) {
 let printBarSeen = true;
 const narrowFuse = matchMedia("(max-width: 68.74rem)");
 
+/** 主鈕只有「付印」這個動作帶上真正會送出的字母。排隊、印製中、再印一次不帶。 */
+function goFace(label, letter) {
+  const show = label === "付印" && !!letter;
+  // 「付印」自己一個節點（尾端空格讓英文版 trim 對得上、空格還留著），字母另放一格才滾得動。
+  const verb = el("span", { class: "pb-go-verb" }, show ? "付印 " : label);
+  return show ? [verb, el("span", { class: "pb-go-letter" }, el("b", {}, letter))] : [verb];
+}
+
+/** 字母換了才滾。減少動態直接換字，不要求人等它滾完才看得懂。 */
+function rollLetter(go, letter) {
+  const slot = go.querySelector(":scope > .pb-go-letter");
+  if (!slot) {
+    shownGoLetter = "";
+    return;
+  }
+  const cur = slot.querySelector("b");
+  if (cur?.textContent === letter) {
+    shownGoLetter = letter;
+    return;
+  }
+  const next = el("b", {}, letter);
+  shownGoLetter = letter;
+  if (reduced() || !cur) {
+    slot.replaceChildren(next);
+    return;
+  }
+  cur.animate([{ transform: "translateY(0)" }, { transform: "translateY(120%)" }], { duration: DUR.short, easing: css(CURVE.out), fill: "forwards" }).onfinish = () => cur.remove();
+  slot.append(next);
+  next.animate([{ transform: "translateY(-120%)" }, { transform: "translateY(0)" }], { duration: DUR.short, easing: css(CURVE.out), fill: "both" });
+}
+
+function paintGo(go, label, letter) {
+  if (!go) return;
+  const show = label === "付印" && !!letter;
+  const verbText = show ? "付印 " : label;
+  const verb = go.querySelector(":scope > .pb-go-verb");
+  const slot = go.querySelector(":scope > .pb-go-letter");
+  // 整顆重畫時先放上一顆字母，下一拍再滾到新的：付印列常常整排換掉，不能每次都跳。
+  const broken = !verb || (show && !slot) || (!show && slot);
+  if (broken) {
+    const seed = show && shownGoLetter && shownGoLetter !== letter ? shownGoLetter : letter;
+    go.replaceChildren(...goFace(label, show ? seed : ""));
+    if (show && seed && seed !== letter) queueMicrotask(() => { if (go.isConnected) rollLetter(go, letter); });
+    else shownGoLetter = show ? letter : "";
+  } else if (verb.textContent !== translate(verbText)) {
+    verb.textContent = verbText;
+  }
+  if (!broken && show) rollLetter(go, letter);
+  if (!show) shownGoLetter = "";
+  // 印章字距只留給「付印」兩個字；長的狀態（印製中 40%）照舊收緊。
+  go.dataset.wide = label === "付印" ? "true" : "false";
+}
+
 function syncPrintFloat() {
   const float = $("print-float");
   if (!float) return;
@@ -3111,7 +3170,10 @@ function syncPrintFloat() {
   if (!show) return;
   float.querySelector(".pf-letter").textContent = t.letter;
   const label = float.querySelector(".pf-label");
-  if (label.textContent !== go.textContent) label.textContent = go.textContent;
+  // 浮動鈕左邊已經有一枚字母章，字只抄動詞，不要再寫一次字母。
+  const verb = go.querySelector(":scope > .pb-go-verb");
+  const face = verb ? verb.textContent : go.textContent;
+  if (label.textContent !== face) label.textContent = face;
   float.disabled = go.disabled;
   float.dataset.busy = go.dataset.busy || "false";
   float.dataset.wide = go.dataset.wide || "false";
@@ -3191,11 +3253,11 @@ function renderPrintBar() {
     setText(".pb-title", `試印 ${t.letter}`);
     setText(".pb-sum", summary.join("・"));
     setText(".pb-detail", detail.join("・"));
-    if (go.textContent !== translate(label)) go.textContent = label;
+    paintGo(go, label, t.letter);
     return syncPrintFloat();
   }
   if (bar.dataset.key === key && go) {
-    if (go.textContent !== translate(label)) go.textContent = label;
+    paintGo(go, label, t.letter);
     if (busy) go.style.setProperty("--p", String(p.status === "running" ? p.progress || 0 : 0));
     if (hiBusy) go.style.setProperty("--p", String(p.hi.status === "running" ? p.hi.progress || 0 : 0));
     return syncPrintFloat();
@@ -3242,8 +3304,7 @@ function renderPrintBar() {
           "aria-haspopup": p && p.status === "done" && !p._gone && isFixedSeed() ? "dialog" : undefined,
           onclick: (e) => printAction(e.currentTarget),
           title: p && p.status === "done" && !p._gone ? (isFixedSeed() ? "放大並重畫細節（快速／深度）" : "同一組牌換一顆生圖種子，再印一張（G）") : "付印（G）",
-        },
-        label
+        }
       ),
       busy ? el("button", { class: "btn", type: "button", onclick: stopPrinting }, "停") : null,
       // 印好了、沒在忙：Hires（主鈕換成「換種子再印」時）、修臉放在旁邊。
@@ -3289,6 +3350,7 @@ function renderPrintBar() {
   if (moreOpen) bar.querySelector(".pb-more").open = true;
   const hint = bar.querySelector('.pb-hint[data-fresh="1"]');
   if (hint) enter(hint);
+  paintGo(bar.querySelector(".pb-go"), label, t.letter);
   syncPrintFloat();
 }
 

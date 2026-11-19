@@ -130,7 +130,8 @@
 }
 
 /* ---------- 操作紀錄：做完的寫入排成「加入　日落、走路」「長相　2 → 3」 ---------- */
-.ai-ops {
+.ai-ops,
+.ai-change-list {
   display: grid;
   grid-template-columns: max-content minmax(0, 1fr);
   gap: 2px var(--space-sm);
@@ -384,4 +385,97 @@
 }
 .ai-found-ghost .card {
   --card-w: 80px;
+}
+.ai-shot-ref {
+  white-space: nowrap;
+}
+
+.ai-input[data-work-drop="true"] {
+  outline: 2px solid var(--ai-glow);
+  outline-offset: -2px;
+}
+
+.ai-ref[data-work-id] {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.ai-ref[data-work-id] > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ai-ref[data-work-id] .ai-ref-x {
+  flex: none;
+}
+
+.ai-ref-thumb,
+.ai-work-thumb {
+  flex: none;
+  width: 24px;
+  aspect-ratio: 1;
+  object-fit: cover;
+  border-radius: 4px;
+}
+
+.ai-work-results {
+  display: grid;
+  gap: var(--space-xs);
+  margin: var(--space-xs) 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ai-work-result {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-xs);
+}
+
+.ai-work-title {
+  flex: 1;
+  overflow-wrap: anywhere;
+}
+
+.ai-step-changes {
+  grid-column: 2 / -1;
+}
+
+.ai-trace {
+  display: grid;
+  gap: var(--space-xs);
+  min-width: 0;
+}
+
+.ai-trace p {
+  margin: 0;
+}
+
+.ai-trace-path {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.ai-trace-path .card {
+  --card-w: 56px;
+  pointer-events: none;
+}
+
+.ai-trace-path .ai-sugg-blank {
+  width: 56px;
+}
+
+.ai-trace-via,
+.ai-trace-note {
+  color: var(--color-muted);
+  font-size: var(--text-xs);
+}
+
+.ai-trace-note {
+  margin-inline-start: var(--space-xs);
 }

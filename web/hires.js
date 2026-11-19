@@ -21,6 +21,45 @@ import { t as translate } from "./i18n.js";
 import { createGenerator } from "./gen.js";
 import { currentHiresSampling } from "./workflow.js";
 import { seat, refuse, reducedMotion, DUR, CURVE, css } from "./motion.js";
+import { insertTriggerAfterCast } from "./engine.js";
+
+/*
+ * 「用目前模型」（2026-11-20 專案主要的）：Hires 改用頂欄現在選的底模和 LoRA 重畫，
+ * 例如先用快的模型抽、滿意了再用好的模型 Hires。原圖 LoRA 的觸發詞拿掉、換上新 LoRA 的觸發詞。
+ * 關著跟以前一樣：照原圖的底模和 LoRA。
+ */
+const fileStem = (f) => String(f || "").split(/[\\/]/).pop().replace(/\.(safetensors|ckpt|pt|gguf)$/i, "");
+const splitTags = (s) => String(s || "").split(",").map((x) => x.trim()).filter(Boolean);
+const normTag = (s) => s.trim().toLowerCase().replace(/_/g, " ");
+
+/**
+ * 換 LoRA 的觸發詞：原圖 LoRA 的觸發詞拿掉（新的那組也有的、或本來就是這張用的牌的留著），
+ * 新的觸發詞照墨池平常的位置（人數那幾個字後面）插進去。
+ */
+export function swapLoraTriggers(positive, oldLoras, newTrigger, keepTags = []) {
+  const fresh = splitTags(newTrigger);
+  // keepTags：這張用的牌（字串或 { tag }）。
+  const keep = new Set([...fresh, ...keepTags.map((x) => (typeof x === "string" ? x : x?.tag || ""))].filter(Boolean).map(normTag));
+  const drop = new Set(
+    (oldLoras || [])
+      .flatMap((l) => (l && Number(l.strength) > 0 ? splitTags(l.trigger) : []))
+      .map(normTag)
+      .filter((x) => !keep.has(x))
+  );
+  const rest = splitTags(positive).filter((x) => !drop.has(normTag(x)));
+  const have = new Set(rest.map(normTag));
+  return insertTriggerAfterCast(rest.join(", "), fresh.filter((x) => !have.has(normTag(x))).join(", "));
+}
+
+/** 一行字說這組模型：底模名稱 · LoRA 幾個（沒記到底模的寫「預設底模」）。 */
+export function modelLine(m) {
+  const loras = (m?.loras || []).filter((l) => l && (l.file || l.name) && Number(l.strength ?? 1) > 0);
+  return `${fileStem(m?.ckpt) || "預設底模"} · ${loras.length ? `LoRA ${loras.length} 個` : "沒有 LoRA"}`;
+}
+
+const sameModel = (a, b) =>
+  String(a?.ckpt || "") === String(b?.ckpt || "") &&
+  JSON.stringify((a?.loras || []).map((l) => [l.file, Number(l.strength)])) === JSON.stringify((b?.loras || []).map((l) => [l.file, Number(l.strength)]));
 
 export const HIRES_MODES = {
   quick: { zh: "快速", def: 1.5, note: "在原圖上放大，再重畫一次細節。快，構圖不動。" },
@@ -55,6 +94,7 @@ function loadPrefs() {
       mode: p.mode === "deep" ? "deep" : "quick",
       quick: Number(p.quick) >= MIN && Number(p.quick) <= MAX ? Number(p.quick) : HIRES_MODES.quick.def,
       deep: Number(p.deep) >= MIN && Number(p.deep) <= MAX ? Number(p.deep) : HIRES_MODES.deep.def,
+      useCurrent: p.useCurrent === true,
     };
   } catch {
     return { mode: "quick", quick: HIRES_MODES.quick.def, deep: HIRES_MODES.deep.def };
@@ -120,8 +160,9 @@ export function createHires(hooks) {
       return {
         width: t.width,
         height: t.height,
-        loras: t.loras,
-        ckpt: t.ckpt,
+        // 「用目前模型」：這一次的底模、LoRA 記在 task.model（不改成品本身的紀錄）。
+        loras: task.model ? task.model.loras : t.loras,
+        ckpt: task.model ? task.model.ckpt : t.ckpt,
         rating: t.rating,
         // 工作流面板裡這一種 Hires 改過的 steps／CFG／denoise。修臉從 task.from（修之前那張）開始。
         hires: task.mode === "face"
@@ -164,7 +205,7 @@ export function createHires(hooks) {
         // 最後一幀預覽墊在底下，新圖從它上面由上往下顯影（不會先跳回舊圖再顯影）。
         t._hiresUnder = t.hi?.preview || null;
         t.image = task.image;
-        t.hires = { mode: task.mode, scale: task.scale, width: r.width || W, height: r.height || H, seed: task.seed, sampling: task.sampling || {} };
+        t.hires = { mode: task.mode, scale: task.scale, width: r.width || W, height: r.height || H, seed: task.seed, sampling: task.sampling || {}, ...(task.model ? { model: { ckpt: task.model.ckpt, loras: task.model.loras } } : {}) };
         // 新的大圖是從原圖放大的，之前修的臉不在上面了。
         t.face = null;
         t.hi = null;
@@ -201,19 +242,28 @@ export function createHires(hooks) {
   };
 
   return {
-    start(t, mode, scale) {
+    /** model：{ ckpt, loras, trigger }（「用目前模型」）；沒給就照原圖的。 */
+    start(t, mode, scale, model = null) {
       if (hiresBusy(t) || !(t.baseImage || t.image)) return false;
+      const use = model
+        ? {
+            ckpt: model.ckpt || null,
+            loras: model.loras || [],
+            positive: swapLoraTriggers(t.positive, t.loras, model.trigger, [...(t.mine || []), ...(t.drawn || [])]),
+          }
+        : null;
       const task = {
         id: "h" + Date.now().toString(36) + Math.random().toString(36).slice(2, 5),
         target: t,
         mode,
         scale,
         sampling: currentHiresSampling(mode),
-        positive: t.positive,
+        positive: use ? use.positive : t.positive,
+        model: use,
         seed: Math.floor(Math.random() * 2 ** 32),
       };
       tasks.set(task.id, task);
-      t.hi = { task: task.id, mode, scale, sampling: task.sampling, status: "queued", progress: 0, note: "" };
+      t.hi = { task: task.id, mode, scale, sampling: task.sampling, status: "queued", progress: 0, note: "", ...(use ? { model: use } : {}) };
       hooks.update(t);
       queueTask(t, task);
       return true;
@@ -263,11 +313,12 @@ export function createHires(hooks) {
           from: face ? saved.from : undefined,
           stack: face && !!saved.stack,
           sampling: saved.sampling || {},
-          positive: t.positive,
+          positive: saved.model?.positive || t.positive,
+          model: saved.model || null,
           seed: Number.isFinite(saved.seed) ? saved.seed : Math.floor(Math.random() * 2 ** 32),
         };
         tasks.set(task.id, task);
-        t.hi = { task: task.id, mode: saved.mode, scale: task.scale, from: task.from, stack: task.stack, sampling: task.sampling, status: "queued", progress: 0, note: "" };
+        t.hi = { task: task.id, mode: saved.mode, scale: task.scale, from: task.from, stack: task.stack, sampling: task.sampling, status: "queued", progress: 0, note: "", ...(saved.model ? { model: saved.model } : {}) };
         hooks.update(t);
         queueTask(t, task, saved.reserved);
         return true;
@@ -280,13 +331,14 @@ export function createHires(hooks) {
         from: face ? saved.from : undefined,
         stack: face && !!saved.stack,
         sampling: saved.sampling || {},
-        positive: t.positive,
+        positive: saved.model?.positive || t.positive,
+        model: saved.model || null,
         seed: 0,
         job: saved.job,
         promptId: saved.promptId || null,
       };
       tasks.set(task.id, task);
-      t.hi = { task: task.id, mode: saved.mode, scale: task.scale, from: task.from, stack: task.stack, sampling: task.sampling, status: "queued", progress: 0, note: "接回剛才那張…", job: saved.job };
+      t.hi = { task: task.id, mode: saved.mode, scale: task.scale, from: task.from, stack: task.stack, sampling: task.sampling, status: "queued", progress: 0, note: "接回剛才那張…", job: saved.job, ...(saved.model ? { model: saved.model } : {}) };
       hooks.update(t);
       gen.resume(task);
       return true;
@@ -351,9 +403,10 @@ export function closeHiresPicker({ focus = false } = {}) {
 
 /**
  * 從 anchor 那顆鈕彈出 Hires 選單。
- * opts.onStart(mode, scale)；opts.onRestore()（有 Hires 過才出現「還原原圖」）。
+ * opts.onStart(mode, scale, model)；opts.onRestore()（有 Hires 過才出現「還原原圖」）。
+ * opts.current()：頂欄現在的 { ckpt, loras, trigger }；有給才出現「用目前模型」（疊印台沒給，照舊）。
  */
-export function openHiresPicker(anchor, t, { onStart, onRestore }) {
+export function openHiresPicker(anchor, t, { onStart, onRestore, current }) {
   if (openPicker && openPicker.anchor === anchor) return closeHiresPicker({ focus: true });
   closeHiresPicker();
   const prefs = loadPrefs();
@@ -418,6 +471,32 @@ export function openHiresPicker(anchor, t, { onStart, onRestore }) {
     )
   );
 
+  // 「用目前模型」：開關＋一行寫會用哪組（關著寫原圖那組），跟原圖一樣時直接說。
+  const cur = current ? current() : null;
+  let useCurrent = !!(cur && prefs.useCurrent);
+  let modelBox = null;
+  if (cur) {
+    const input = el("input", { type: "checkbox", role: "switch" });
+    input.checked = useCurrent;
+    const line = el("span", { class: "hp-model-line" });
+    const why = el("span", { class: "hp-model-why" });
+    const paint = () => {
+      line.textContent = modelLine(useCurrent ? cur : t);
+      line.title = useCurrent ? String(cur.ckpt || "") : String(t.ckpt || "");
+      why.textContent = !useCurrent ? "照原圖的底模和 LoRA" : sameModel(cur, t) ? "跟原圖一樣" : "換掉原圖 LoRA 的觸發詞";
+      modelBox.dataset.on = useCurrent ? "true" : "false";
+    };
+    input.onchange = () => {
+      useCurrent = input.checked;
+      prefs.useCurrent = useCurrent;
+      savePrefs(prefs);
+      paint();
+      if (!reducedMotion()) line.animate([{ opacity: 0, transform: "translateY(3px)" }, { opacity: 1, transform: "none" }], { duration: DUR.short, easing: css(CURVE.out) });
+    };
+    modelBox = el("div", { class: "hp-model" }, el("label", { class: "switch" }, input, "用目前模型"), el("p", { class: "hp-model-note" }, line, why));
+    paint();
+  }
+
   const done = t.hires;
   const node = el(
     "div",
@@ -426,6 +505,7 @@ export function openHiresPicker(anchor, t, { onStart, onRestore }) {
     modes,
     el("div", { class: "hp-row" }, el("span", { class: "stepper hp-scale" }, el("span", { class: "stepper-label" }, "倍率"), minus, out, plus)),
     note,
+    modelBox,
     top < MIN ? el("p", { class: "hp-note", dataset: { kind: "err" } }, "這張已經太大，不能再放大。") : null,
     done
       ? el(
@@ -451,7 +531,7 @@ export function openHiresPicker(anchor, t, { onStart, onRestore }) {
   go.disabled = top < MIN;
   go.onclick = () => {
     closeHiresPicker({ focus: true });
-    onStart(mode, scale);
+    onStart(mode, scale, useCurrent && cur ? cur : null);
   };
   sync();
   mountPop(anchor, node, {
@@ -595,7 +675,9 @@ function mountPop(anchor, node, { focus, onKey: extraKey } = {}) {
  * （「這一段還沒重畫」），左下角一行狀態和一顆停。沒在做就拿掉。
  */
 export function paintHiresVeil(frame, t, { onCancel, onDismiss }) {
-  let veil = frame.querySelector(":scope > .hires-veil");
+  // 只找還沒在收的那層：剛停又馬上開（收的動畫還沒播完），以前找到的是正在收的舊層，
+  // 每畫一次就再疊一層新的，停掉時又只收舊的那層，圖上留著好幾層收不掉的進度。
+  let veil = frame.querySelector(":scope > .hires-veil:not(.is-leaving)");
   const hi = t.hi;
   if (!hi) {
     if (veil && !veil.classList.contains("is-leaving")) {

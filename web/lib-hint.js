@@ -50,11 +50,16 @@ export function searchAlso({ cards, shown, q, reasons }) {
   }
   if (!best) return null;
   const { card, reason } = best;
+  // 藏起來的那張比列出來的第一張（Enter 會放的那張）更像搜尋字：說清楚按 Enter 會放哪一張
+  // （2026-11-20 外部檢查：搜 kimono，最像的「和服」被時代藏著，Enter 標在「和服裙」上，使用者以為會放和服）。
+  const first = shown[0];
+  const closer = first && best.rank < matchRank(first, q);
   return el(
     "span",
-    { class: "search-also", dataset: { key: `${n}|${card.tag}|${reasons.indexOf(reason)}` } },
-    el("span", {}, n > 1 ? `另有 ${n} 張沒列出，例如` : "另有 1 張沒列出："),
+    { class: "search-also", dataset: { key: `${n}|${card.tag}|${reasons.indexOf(reason)}|${closer ? first.tag : ""}` } },
+    el("span", {}, closer ? "最符合的" : n > 1 ? `另有 ${n} 張沒列出，例如` : "另有 1 張沒列出："),
     el("span", {}, reason.text(card)),
+    closer ? el("span", { class: "search-also-enter" }, `Enter 會加入「${first.zh}」`) : null,
     reason.run ? el("button", { class: "btn btn-small", type: "button", onclick: () => reason.run(card) }, reason.label(card)) : null
   );
 }

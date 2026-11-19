@@ -8,6 +8,69 @@ const front = existsSync(new URL("../web6/assistant-tools.js", import.meta.url))
 const { TEXT, TOOL_DEFS, toolSchemas, createToolRunner, fill } = await import(new URL(front + "assistant-tools.js", import.meta.url));
 const { buildSystemPrompt } = await import(new URL(front + "assistant-prompt.js", import.meta.url));
 
+test("引用作品走互斥確認和復原，原作份量照帶，沒選的段不進池", async () => {
+  const ctx = world({
+    cards: {
+      "black hair": { section: "feature", mutex: "hair" },
+      "blonde hair": { section: "feature", mutex: "hair" },
+      shirt: { section: "clothing" },
+      street: { section: "env" },
+    },
+    pool: [{ tag: "black hair", weight: 1.3 }, { tag: "shirt", weight: 1.4 }],
+  });
+  const reference = {
+    id: "s-1",
+    cards: [
+      { tag: "blonde hair", section: "feature", weight: 1.2 },
+      { tag: "shirt", section: "clothing", weight: 1 },
+      { tag: "street", section: "env", weight: 1 },
+    ],
+  };
+  const runner = createToolRunner(ctx);
+  const options = { turn: { version: ctx.version(), referenceOf: (id) => id === reference.id ? reference : null } };
+  const result = await runner.run({ name: "use_reference", args: { id: reference.id, exclude: ["env"] } }, options);
+  assert.equal(result.status, "needs_confirm");
+  assert.deepEqual(ctx.state().pool.map((p) => p.tag), ["black hair", "shirt"]);
+  const applied = await runner.confirm(result.confirm.token);
+  assert.equal(applied.status, "applied");
+  assert.deepEqual(applied.forModel.reference, { id: "s-1", sections: ["feature", "clothing"], count: 2 });
+  assert.deepEqual(applied.changes, { added: ["blonde hair"], removed: ["black hair"], weights: [{ tag: "blonde hair", from: 1, to: 1.2 }, { tag: "shirt", from: 1.4, to: 1 }] });
+  assert.deepEqual(Object.fromEntries(ctx.state().pool.map((p) => [p.tag, p.weight])), { shirt: 1, "blonde hair": 1.2 });
+  assert.equal((await applied.undo()).ok, true);
+  assert.deepEqual(Object.fromEntries(ctx.state().pool.map((p) => [p.tag, p.weight])), { shirt: 1.4, "black hair": 1.3 });
+});
+
+test("引用工具拒絕不明作品、無效的段與禁牌，而且不寫入", async () => {
+  const ctx = world({ cards: { loli: { section: "feature" } } });
+  const runner = createToolRunner(ctx);
+  const options = { turn: { version: ctx.version(), referenceOf: (id) => id === "s-1" ? { id, cards: [{ tag: "loli", section: "feature", weight: 1 }] } : null } };
+  const use = (args) => runner.run({ name: "use_reference", args }, options);
+  assert.equal((await use({ id: "gone" })).forModel.code, "reference_missing");
+  assert.equal((await use({ id: "s-1", include: [] })).forModel.code, "bad_args");
+  assert.equal((await use({ id: "s-1", include: ["feature"], exclude: ["clothing"] })).forModel.code, "bad_args");
+  assert.equal((await use({ id: "s-1" })).forModel.code, "blocked");
+  assert.deepEqual(ctx.state().pool, []);
+});
+
+test("引用作品擠牌或撿回廢字時先確認，復原也還原廢字簍", async () => {
+  const ctx = world({
+    cards: { street: { section: "env", companions: ["outdoors"] }, outdoors: { section: "env" } },
+    bans: ["outdoors"],
+  });
+  const runner = createToolRunner(ctx);
+  const reference = { id: "s-1", cards: [{ tag: "street", section: "env", weight: 1.2 }] };
+  const options = { turn: { version: ctx.version(), referenceOf: () => reference } };
+  const pending = await runner.run({ name: "use_reference", args: { id: reference.id } }, options);
+  assert.equal(pending.status, "needs_confirm");
+  assert.deepEqual(ctx.state().bans, ["outdoors"]);
+  const applied = await runner.confirm(pending.confirm.token);
+  assert.equal(applied.status, "applied");
+  assert.deepEqual(ctx.state().bans, []);
+  assert.equal((await applied.undo()).ok, true);
+  assert.deepEqual(ctx.state().pool, []);
+  assert.deepEqual(ctx.state().bans, ["outdoors"]);
+});
+
 // 假的工作台：互斥、附帶、廢字簍只做測試要的那一點，規則本身仍以 runner 的判斷為準。
 function world(opts = {}) {
   const cards = new Map(Object.entries(opts.cards || {}));
@@ -83,6 +146,11 @@ function world(opts = {}) {
   const api = {
     log,
     highlights,
+    restoreReferenceBans(tags) {
+      pool = pool.filter((p) => !tags.includes(p.tag));
+      for (const tag of tags) bans.add(tag);
+      return { version: ++version };
+    },
     version: () => version,
     bump: () => { version += 1; },
     state: () => ({
@@ -214,7 +282,7 @@ function plain(n, extra = {}) {
 const turn = (version = 1) => ({ version });
 
 // ---------- 工具表 ----------
-const namesExpected = ["get_workspace", "paste_prompt", "find_cards", "suggest_cards", "card_info", "suggest_check", "change_pool", "set_draw_count", "set_section_counts", "list_groups", "set_group_picks", "save_card_group", "draw_cards"];
+const namesExpected = ["use_reference", "find_works", "trace_card", "get_workspace", "paste_prompt", "find_cards", "suggest_cards", "card_info", "suggest_check", "change_pool", "set_draw_count", "set_section_counts", "list_groups", "set_group_picks", "save_card_group", "draw_cards"];
 assert.deepEqual(TOOL_DEFS.map((t) => t.name), namesExpected);
 assert.deepEqual(toolSchemas().map((t) => t.name), namesExpected);
 for (const tool of TOOL_DEFS) {
@@ -225,7 +293,7 @@ for (const tool of TOOL_DEFS) {
   assert.ok(tool.kind === "read" || tool.kind === "write");
 }
 for (const tool of toolSchemas()) assert.equal("kind" in tool, false);
-assert.deepEqual(TOOL_DEFS.filter((t) => t.kind === "read").map((t) => t.name), ["get_workspace", "find_cards", "suggest_cards", "card_info", "suggest_check", "list_groups"]);
+assert.deepEqual(TOOL_DEFS.filter((t) => t.kind === "read").map((t) => t.name), ["find_works", "trace_card", "get_workspace", "find_cards", "suggest_cards", "card_info", "suggest_check", "list_groups"]);
 // 每一句給人看的字（TEXT）都要在英文版的詞表裡（web6/locales/en.js；開源版在 web/），不然英文介面會冒出中文。
 const enFile = ["../web6/locales/en.js", "../web/locales/en.js"].map((p) => new URL(p, import.meta.url)).find((u) => existsSync(u));
 const enLines = readFileSync(enFile, "utf8").split(/\r?\n/).filter((l) => l.includes("|") && !l.startsWith("  ") && !l.startsWith("/"));

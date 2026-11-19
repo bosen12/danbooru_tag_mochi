@@ -5,7 +5,7 @@ import { guardPrerender, prerenderNeighbors, whenActive } from "./prerender.js";
  * 解析池：丟一張圖進來，ComfyUI 的 WD14 Tagger 認出畫面裡的字（server.py 的 /api/parse、image_parse.py），
  * 詞庫有的變成牌，挑好帶去墨池的合成池或疊印台。
  *
- *   - 放圖：拖進來、貼上（Ctrl+V）、點一下選圖。網頁先縮到長邊 1024 再送（Tagger 本來就縮成 448 才看）。
+ *   - 放圖：電腦拖進來或選檔案，觸控是「選一張圖片」；貼上（Ctrl+V）兩邊都可以。網頁先縮到長邊 1024 再送（Tagger 本來就縮成 448 才看）。
  *   - 解析中：圖上一道朱光從上掃到下，底下數秒數；等太久說可能是 ComfyUI 在忙或第一次下載模型。
  *   - 牌從圖裡飛出來，照花色落進各自那一格。每張標「確定」（≥ 0.7）或「可能」（≥ 最低信心）：
  *     Tagger 不回分數，所以伺服器跑兩層門檻，兩層都有的就是確定。上面可以切換只要確定的，不必重跑。
@@ -458,7 +458,7 @@ function paintStatus() {
       "span",
       { class: "parse-done" },
       el("span", {}, `認出 ${shot.tags.length} 個字`),
-      el("b", {}, `${parsed.cards.length} 張是牌`),
+      shot.tags.length ? el("b", {}, `${parsed.cards.length} 張是牌`) : el("span", {}, "換一張輪廓清楚的圖"),
       shot.secs ? el("span", {}, `${shot.secs.toFixed(1)} 秒`) : null
     ),
     el("span", { class: "parse-model", title: "解析用的模型（解析設定裡換）" }, model)
@@ -546,7 +546,8 @@ function render({ deal = false } = {}) {
     );
   }).filter(Boolean);
   groups.replaceChildren(...sections);
-  if (!parsed.cards.length) groups.append(el("p", { class: "parse-none" }, "一張牌都對不上：詞庫沒有這些字。下面列出認出來的字，可以複製去別處用。"));
+  // 一個字都沒有：上面狀態列已經說換一張。這裡的「詞庫沒有」是有字、但對不上牌的時候才講。
+  if (!parsed.cards.length && shot.tags.length) groups.append(el("p", { class: "parse-none" }, "一張牌都對不上：詞庫沒有這些字。下面列出認出來的字，可以複製去別處用。"));
   for (const g of groups.querySelectorAll(".parse-grid")) sizeCards(g);
   attachTilt(groups);
   renderTrust();

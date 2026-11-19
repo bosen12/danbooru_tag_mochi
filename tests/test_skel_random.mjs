@@ -44,6 +44,31 @@ test("changing the count keeps candidates; turning random off trims to the count
   assert.deepEqual(s.skelRandom, []);
 });
 
+test("turning random off then on brings the candidates back; removed ones stay removed", () => {
+  const s = base();
+  apply(s, E.setSkelRandom(s, "clothing", true));
+  apply(s, E.toggleSkeleton(s, "clothing", "clothing:top"));
+  const cands = E.skeletonLit(s, "clothing");
+  assert.equal(cands.length, 2);
+  for (let i = 0; i < 2; i++) {
+    apply(s, E.setSkelRandom(s, "clothing", false));
+    assert.equal(E.skeletonLit(s, "clothing").length, 1, "off: back to the count");
+    apply(s, E.setSkelRandom(s, "clothing", true));
+    assert.deepEqual(E.skeletonLit(s, "clothing"), cands, `round ${i + 1}: same candidates`);
+  }
+  // 開著時明確拿掉一格：再關、再開也不能加回來
+  apply(s, E.toggleSkeleton(s, "clothing", "clothing:top"));
+  apply(s, E.setSkelRandom(s, "clothing", false));
+  apply(s, E.setSkelRandom(s, "clothing", true));
+  assert.deepEqual(E.skeletonLit(s, "clothing"), ["clothing:onepiece"]);
+  // 存檔整理過也還記得
+  apply(s, E.toggleSkeleton(s, "clothing", "clothing:outer"));
+  apply(s, E.setSkelRandom(s, "clothing", false));
+  const saved = E.sanitizeSettings(JSON.parse(JSON.stringify(s)), data);
+  assert.deepEqual(saved.skelCands, { clothing: ["clothing:onepiece", "clothing:outer"] });
+  assert.deepEqual(E.sanitizeSettings({ skelCands: { clothing: ["bogus"], nope: ["x"] } }, data).skelCands, {});
+});
+
 test("skeletonDraw picks the count from the candidates, reproducibly", () => {
   const s = base();
   apply(s, E.setSkelRandom(s, "clothing", true));

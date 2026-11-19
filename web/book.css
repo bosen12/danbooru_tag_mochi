@@ -1759,3 +1759,42 @@ html[data-mast="peek"] .book-mini {
     width: 140px;
   }
 }
+
+/* 一個群組都沒有：書架收成一行。groups.css 的 .book-shelf 有框和底，這裡用更高的選擇器拿掉，牌才不會被空書架推下去。 */
+.book-shelf[data-empty-line="true"] {
+  gap: 0;
+  margin-bottom: var(--space-sm);
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+.bs-empty {
+  display: flex;
+  align-items: baseline;
+  gap: 0;
+  width: 100%;
+  min-height: 44px;
+  padding: 4px 2px;
+  border: 0;
+  background: transparent;
+  color: var(--color-ink-2);
+  font: inherit;
+  font-size: var(--text-sm);
+  text-align: left;
+  cursor: pointer;
+}
+
+.bs-empty b {
+  color: var(--color-ink);
+  font-family: var(--font-heading);
+  font-size: var(--text-lg);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bs-empty {
+    transition: none;
+  }
+}

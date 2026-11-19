@@ -715,22 +715,74 @@ function tile(w) {
 
 /* ================= 一張作品 ================= */
 
+// 同一件作品的「照這張再印」處理中（讀配方，或確認窗還沒關）：再點、再按 Enter 都不另讀、不另開窗。
+const reprintBusy = new Set();
+
+/**
+ * 等配方時把鈕上的字換成「讀取作品配方…」，寬度先量好釘住。
+ * 字變長變短都會把這一排的其他鈕擠開；量的是邊框外寬，按鈕本來就是 border-box。
+ */
+function holdReprint(btn) {
+  // offsetWidth 是排版寬，不受彈窗進場的縮放影響。再設 minWidth、flexShrink：
+  // 這顆鈕在彈性列裡，overflow:hidden 會讓最小內容寬變成 0，列一緊它就被壓窄。
+  const width = btn.offsetWidth;
+  const kids = [...btn.childNodes];
+  btn.style.width = `${width}px`;
+  btn.style.minWidth = `${width}px`;
+  btn.style.flexShrink = "0";
+  btn.style.overflow = "hidden";
+  btn.setAttribute("aria-busy", "true");
+  btn.replaceChildren("讀取作品配方…");
+  return () => {
+    btn.style.width = "";
+    btn.style.minWidth = "";
+    btn.style.flexShrink = "";
+    btn.style.overflow = "";
+    btn.removeAttribute("aria-busy");
+    if (kids.length) btn.replaceChildren(...kids);
+  };
+}
+
 /**
  * 照這張再印：作品冊清單裡的 LoRA 只有檔名（/api/recipes 的摘要），強度、選過的觸發詞在完整那一份裡。
  * 先讀這一件的完整配方再交給墨池；以前直接拿清單那一列，墨池用預設強度 0.8 和第一個觸發詞重印（第五輪 Astra 找到）。
- * 讀不到（舊作品、斷線）照舊用清單那一列。
+ * 讀不到（舊作品、斷線）照舊用清單那一列。讀取中鎖住這一筆，雙擊不會疊兩層確認窗。
  */
 async function reprintWork(all, w, btn) {
-  let src = w;
-  if (w.loras?.length) {
-    btn.setAttribute("aria-busy", "true");
-    const full = await fetch(`/api/recipes/${encodeURIComponent(w.id)}`, { cache: "no-store" })
-      .then((r) => (r.ok ? r.json() : null))
-      .catch(() => null);
-    btn.removeAttribute("aria-busy");
-    if (Array.isArray(full?.recipe?.loras)) src = { ...w, loras: full.recipe.loras };
+  if (!btn || reprintBusy.has(w.id)) return;
+  reprintBusy.add(w.id);
+  let held = true;
+  const release = () => {
+    if (!held) return;
+    held = false;
+    reprintBusy.delete(w.id);
+  };
+  let restore = () => {};
+  try {
+    let src = w;
+    if (w.loras?.length) {
+      restore = holdReprint(btn);
+      let full = null;
+      let failed = false;
+      try {
+        const r = await fetch(`/api/recipes/${encodeURIComponent(w.id)}`, { cache: "no-store" });
+        full = r.ok ? await r.json() : null;
+        if (!r.ok || full == null) failed = true;
+      } catch {
+        failed = true;
+      }
+      restore();
+      restore = () => {};
+      if (!failed && Array.isArray(full?.recipe?.loras)) src = { ...w, loras: full.recipe.loras };
+      // 讀不到就放掉這把鎖，鈕回到原字，可以立刻重按；確認窗若已經開著，不會再疊一層。
+      if (failed) release();
+    }
+    const opened = toMochi(all, `全部 ${all.length} 張牌`, w, btn, { recipe: S.recipeOf(src), onClose: release });
+    if (!opened) release();
+  } catch {
+    restore();
+    release();
   }
-  toMochi(all, `全部 ${all.length} 張牌`, w, btn, { recipe: S.recipeOf(src) });
 }
 
 /** 詳情底下「相似的作品」：用到的牌重疊多的幾件（這一級分級看得到的），點一下換過去看。 */
@@ -822,10 +874,10 @@ function customFromWork(w, mine, rest) {
  * 牌交給墨池。recipe（照這張再印）：時代、種子、底模、LoRA 一起帶過去（store.js 的 recipeOf），
  * 墨池收到後套好牌和時代、固定種子，底模、LoRA 問一聲要不要換。
  */
-function toMochi(tags, label, w, button = document.activeElement, { recipe = null } = {}) {
+function toMochi(tags, label, w, button = document.activeElement, { recipe = null, onClose } = {}) {
   // 份量（weights.js）從提示詞讀回來：收藏時調過的牌，帶回去還是那個份量。
   const all = weightsOfPositive(w?.positive);
-  reviewTransfer("pool", tags, all, zh, () => sendToMochi(tags, label, all, recipe, button));
+  return reviewTransfer("pool", tags, all, zh, () => sendToMochi(tags, label, all, recipe, button), { onClose });
 }
 
 function sendToMochi(tags, label, all, recipe, button) {

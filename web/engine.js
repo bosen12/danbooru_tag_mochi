@@ -9375,18 +9375,42 @@ export function toggleSkeleton(settings, section, key) {
   return { offGroups: sanitizeOffGroups([...others, ...keys.filter((k) => !keep.has(k))]) };
 }
 
-/** 開關隨機：關掉時亮著的照優先序只留「數字」那麼多格（跟以前一樣）。回傳 { skelRandom, offGroups }。 */
+/**
+ * 開關隨機：關掉時亮著的照優先序只留「數字」那麼多格（跟以前一樣）。回傳 { skelRandom, offGroups, skelCands }。
+ * 關掉前的候選記在 skelCands（2026-11-20 外部檢查：關掉再打開，原本點亮的第二格不見了，得自己記是哪一格）；
+ * 再打開時把那組候選亮回來（加上關著時亮著的）。開著時自己拿掉的格子不會進這份，所以不會被加回來。
+ */
 export function setSkelRandom(settings, section, on) {
   const now = new Set(sanitizeSkelRandom(settings?.skelRandom));
   if (on) now.add(section);
   else now.delete(section);
   const skelRandom = sanitizeSkelRandom([...now]);
   const keys = skeletonKeys(section);
-  // 打開：先把畫面上亮著的那幾格寫死（offGroups 空的時候 skeletonLit 是「前 n 格」，一開隨機會變成全亮）。
-  // 關掉：照優先序只留「數字」那麼多格。
-  const keep = new Set(on ? skeletonLit({ ...settings, skelRandom: [] }, section) : skeletonLit({ ...settings, skelRandom }, section));
+  const cands = { ...sanitizeSkelCands(settings?.skelCands) };
+  // 打開：先把畫面上亮著的那幾格寫死（offGroups 空的時候 skeletonLit 是「前 n 格」，一開隨機會變成全亮），再補回上次的候選。
+  // 關掉：照優先序只留「數字」那麼多格，關掉前的候選先記下來。
+  let keep;
+  if (on) {
+    keep = new Set([...skeletonLit({ ...settings, skelRandom: [] }, section), ...(cands[section] || [])]);
+    delete cands[section];
+  } else {
+    if (skelRandomOn(settings, section)) cands[section] = skeletonLit(settings, section);
+    keep = new Set(skeletonLit({ ...settings, skelRandom }, section));
+  }
   const others = (settings.offGroups || []).filter((k) => !keys.includes(k));
-  return { skelRandom, offGroups: sanitizeOffGroups([...others, ...keys.filter((k) => !keep.has(k))]) };
+  return { skelRandom, offGroups: sanitizeOffGroups([...others, ...keys.filter((k) => !keep.has(k))]), skelCands: sanitizeSkelCands(cands) };
+}
+
+/** 關掉隨機時記下的候選：{ 段: [格…] }，只留真的格子。 */
+export function sanitizeSkelCands(raw) {
+  const out = {};
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return out;
+  for (const section of Object.keys(SKELETON)) {
+    const keys = skeletonKeys(section);
+    const list = Array.isArray(raw[section]) ? [...new Set(raw[section].filter((k) => keys.includes(k)))] : [];
+    if (list.length) out[section] = list;
+  }
+  return out;
 }
 
 export function sanitizeSkelRandom(raw) {
@@ -9503,6 +9527,7 @@ export function defaultSettings(data) {
     offGroups: [],
     // 選格的「隨機」開關（2026-11-19 專案主要的）：開著的段可以亮好幾格，每張從裡面隨機挑「每段抽幾個」那麼多格。
     skelRandom: [],
+    skelCands: {},
   };
 }
 
@@ -9568,6 +9593,7 @@ export function sanitizeSettings(raw, data) {
     groups: sanitizeGroupPick(raw.groups),
     offGroups: sanitizeOffGroups(raw.offGroups),
     skelRandom: sanitizeSkelRandom(raw.skelRandom),
+    skelCands: sanitizeSkelCands(raw.skelCands),
   };
 }
 

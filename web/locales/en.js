@@ -347,7 +347,7 @@ Python 3 · 標準函式庫，不用裝任何套件|Python 3 · Standard library
 找牌|Search cards
 找作品|Search gallery
 搜尋字盒|Search card library
-搜尋：紅髮、kimono…（按 / 跳到這裡）|Search red hair, kimono… (press /)
+搜尋：紅髮、red hair…（按 / 跳到這裡）|Search red hair, smile… (press /)
 找牌：紅髮、kimono…（按 /）|Search red hair, kimono… (press /)
 找牌：紅髮、kimono…|Search red hair, kimono…
 找作品：牌名、提示詞…|Search cards or prompts…
@@ -590,6 +590,10 @@ ComfyUI 沒開：可以先只抽牌、挑牌，開了再生圖。|ComfyUI is not
 上次中斷了|Previous generation interrupted
 送去印這張|Generate this image
 再印一次|Generate again
+重試這張|Retry this one
+再印這張|Generate this one again
+照這手牌送去印|Send this hand to generate
+在這一格重印，不會另外多一張|Regenerates in this slot; no extra image is added
 同種子重印|Regenerate with same seed
 同樣的 POS、同一顆種子再送一次|Generate again with the same prompt and seed
 照原樣再印|Regenerate original
@@ -611,7 +615,7 @@ ComfyUI 的輸出資料夾裡找不到這張，可能被刪掉了。|This file i
 這張正在印，先按「停」|This image is generating. Press Stop first.
 另一個墨池分頁在印這張，到那邊撤下|Another Mochi tab is printing this one. Remove it from that tab.
 這張正在 Hires，先在圖上按「停」|This image is being upscaled. Press Stop on the image first.
-這張正在 Hires，圖上可以停|Upscaling · Press Stop on the image to cancel.
+這張正在 Hires：按「停」或 Esc 可以停|Upscaling · Press Stop or Esc to cancel.
 換回原圖了|Original restored
 複製 POS|Copy prompt
 POS 複製好了|Prompt copied
@@ -805,6 +809,8 @@ POS 複製好了|Prompt copied
 Comfy 報錯|ComfyUI error
 Hires 中|Upscaling
 修臉中|Fixing faces
+Hires 中，還有 {0} 張|Upscaling · {0} images
+修臉中，還有 {0} 張|Fixing faces · {0} images
 去看|View
 收起偏好卡牌|Collapse favorites
 打開偏好卡牌|Open favorites
@@ -865,7 +871,7 @@ ComfyUI 現在做不了修臉|ComfyUI cannot fix faces right now
 找到臉、只重畫臉（FaceDetailer）|Find faces and redraw only them (FaceDetailer)
 修好臉了：不滿意可以再修一次，或拿掉修臉|Faces fixed. Not happy? Fix again or remove the face fix.
 這張正在修臉，先在圖上按「停」|Faces are being fixed. Press Stop on the image first.
-這張正在修臉，圖上可以停|Fixing faces · Press Stop on the image to cancel.
+這張正在修臉：按「停」或 Esc 可以停|Fixing faces · Press Stop or Esc to cancel.
 修臉 排隊中…|Face fix queued…
 連不到 ComfyUI|Cannot reach ComfyUI
 Impact Pack 的 FaceDetailer 節點|the FaceDetailer node (Impact Pack)
@@ -1497,6 +1503,12 @@ LoRA 面板：換到 LoRA 1／LoRA 2 那一槽|LoRA panel: switch to slot LoRA 1
 換模型中…|Switching models…
 換成這張的底模和 LoRA 了|Switched to this image's checkpoint and LoRA
 預設底模|Default checkpoint
+沒有 LoRA|No LoRA
+LoRA {0} 個|{0} LoRA
+用目前模型|Use current model
+照原圖的底模和 LoRA|Uses this image's checkpoint and LoRA
+跟原圖一樣|Same as this image
+換掉原圖 LoRA 的觸發詞|Swaps this image's LoRA trigger words
 換掉這張重抽|Swap this card and redraw
 這張成品的其他牌不動，只把這張換掉、同一顆種子重抽一次|Keep the other cards, swap only this one, and redraw once with the same seed
 換一張|Swap this one
@@ -2456,6 +2468,51 @@ Discord 設定（自動傳送{0}）|Discord settings (auto sharing {0})
 找不到「{0}」，照「{1}」找到這些|No match for “{0!}”; showing cards with “{1!}”
 另有 {0} 張沒列出，例如|{0} more not shown, e.g.
 另有 1 張沒列出：|1 more not shown:
+最符合的|Best match:
+Enter 會加入「{0}」|Enter adds “{0}”
+點開看詳情；+／− 或在右下角的份量上滾滾輪：調份量|Click for details. Use + / − or scroll on the weight in the corner to change it.
+{0}（+／− 或在右下角的份量上滾滾輪：調份量）|{0} (use + / − or scroll on the weight in the corner to change it)
+讀取作品配方…|Loading recipe…
+選一組牌，再付印。≠ 表示與已選試印不同。|Pick a set, then generate. ≠ marks what differs from the selected proof.
+選一組牌，再付印|Pick a set, then generate
+≠ 表示與已選試印不同。|≠ marks what differs from the selected proof.
+選牌與規則和墨池各自獨立。|Card choices and rules are separate from the Ink Pool.
+拖入圖片|Drop an image here
+或選擇檔案|or choose a file
+選一張圖片|Choose an image
+從相簿或檔案選取|From your photos or files
+換一張輪廓清楚的圖|Try an image with clearer outlines
+群組 · 建立第一組|Groups · Create the first one
+建立第一組|Create the first one
+交給助手|Send to assistant
+引用這件作品|Reference this work
+一次最多引用兩件作品|You can reference up to two works
+用這張，保留長相和服裝，背景換成雨夜車站。|Use this one. Keep the appearance and clothing, and change the background to a train station on a rainy night.
+這張作品的場景牌是怎麼來的？|Where did the scene cards in this work come from?
+正在帶入引用作品的牌|Bringing in cards from the reference
+正在找作品|Looking for works
+正在查看牌的來歷|Tracing the card
+找不到這件引用作品|Couldn't find this referenced work
+這件作品在指定的段落沒有可帶入的牌|This work has no cards in the selected categories
+照作品 #{0} 帶入|Brought in from work #{0!}
+{0}（{1} 張）|{0} ({1} cards)
+未留在合成池的引用牌：{0}|Reference cards that didn't stay in the pool: {0}
+找到 {0} 件作品|Found {0} works
+讀不到作品冊|Couldn't load the gallery
+牌的來歷|Card origin
+這裡沒有這張牌|This card isn't here
+依規則推斷|Inferred from the rules
+釘選|Pinned
+隨機抽取|Random draw
+綁定帶入|Brought in by a linked card
+群組帶入|Brought in by a group
+來源未記錄|Origin not recorded
+重新套用相關牌的規則時會帶回這張|Reapplying the related cards' rules brings this card back
+目前未找到會帶回這張的牌|No current card would bring this one back
+時代錨|Era anchor
+場景補救|Scene repair
+固定品質|Fixed quality
+LoRA 觸發詞|LoRA trigger
 印製中 {0}%|Printing {0}%
 修臉 {0}%|Face fix {0}%
 排隊 {0} 張|{0} queued
@@ -2630,9 +2687,9 @@ Comfy 靜默超過 {0} 秒，這張放棄|ComfyUI did not respond for {0} second
 「{0}」在隨機候選裡（點一下拿出）|“{0}” is a random candidate (click to remove)
 把「{0}」加進隨機候選|Add “{0}” to the random candidates
 隨機：亮著 {0} 種，多點亮幾種，每張就從裡面挑 {1} 種|Random: {0} types lit. Light more and each image picks {1} of them.
-隨機：每張從亮著的 {0} 種裡挑 {1} 種；點一下加進或拿出候選|Random: each image picks {1} of the {0} lit types. Click to add or remove a candidate.
+候選 {0} 種，每張抽 {1} 種|{0} candidate types, {1} per image
 隨機：亮著 {0} 格，多點亮幾格，每張就從裡面挑 {1} 格|Random: {0} slots lit. Light more and each image picks {1} of them.
-隨機：每張從亮著的 {0} 格裡挑 {1} 格；點一下加進或拿出候選|Random: each image picks {1} of the {0} lit slots. Click to add or remove a candidate.
+候選 {0} 格，每張抽 {1} 格|{0} candidate slots, {1} per image
 會補「{0}」|Add “{0}”
 換成「{0}」|Replace with “{0}”
 {0}補哪幾格|{0} slots
@@ -2706,6 +2763,7 @@ ComfyUI 畫的 PNG 或 API JSON，拖進來或點這裡選檔|Drop a ComfyUI PNG
 人物改成不限|Set Cast to Any
 顯示所有時代|Show all eras
 時代改成混合|Switch era to Mixed
+整池改用混合時代|Use Mixed era for the whole pool
 ComfyUI 連不上|ComfyUI unreachable
 換種子再印|New seed, print again
 同一組牌換一顆生圖種子，再印一張（G）|Print the same cards again with a new image seed (G)

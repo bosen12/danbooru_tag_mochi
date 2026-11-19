@@ -1,7 +1,8 @@
 /**
  * 社群：Discord 伺服器、GitHub。
  *   - 頂欄「社群」（tour.js 掛在介紹影片、教學、導覽、原理那一組）：打開「加入 Discord」的小視窗。
- *   - 第一次來墨池（任何一個房間、整個瀏覽器只問一次）：先問要不要加入伺服器，關掉之後才冒出導覽的邀請卡。
+ *   - 第一次在墨池印好一張圖、閒下來之後（整個瀏覽器只問一次）：問要不要加入伺服器（askCommunityAfterFirstImage）。
+ *     以前一開頁就問，蓋住操作區、搶走焦點（2026-11-20 改）。
  *     自動化測試（navigator.webdriver）不問，免得擋到別的測試。
  *   - 宣傳頁（about.html）也用這裡的連結。
  */
@@ -111,6 +112,36 @@ export function askCommunityOnce() {
   if (asked() || navigator.webdriver) return Promise.resolve(false);
   markAsked();
   return openCommunity({ first: true }).then(() => true);
+}
+
+/**
+ * 第一張圖印好之後才問（墨池呼叫）：等手上沒在生圖、沒有彈窗、使用者停手一會兒再開，不打斷看圖。
+ * busy()：還在忙就再等。一個瀏覽器只問一次（跟以前一樣）。
+ */
+let waitingAsk = false;
+export function askCommunityAfterFirstImage(busy = () => false) {
+  if (waitingAsk || asked() || navigator.webdriver) return;
+  waitingAsk = true;
+  let quietSince = performance.now();
+  const bump = () => (quietSince = performance.now());
+  addEventListener("pointerdown", bump, true);
+  addEventListener("keydown", bump, true);
+  const tick = () => {
+    if (asked()) return done();
+    const calm = !busy() && !document.querySelector(".overlay, [role='dialog'][aria-modal='true'], .tour-card, #tour-offer");
+    if (!calm) bump();
+    if (calm && performance.now() - quietSince > 4000) {
+      done();
+      askCommunityOnce();
+      return;
+    }
+    setTimeout(tick, 1000);
+  };
+  const done = () => {
+    removeEventListener("pointerdown", bump, true);
+    removeEventListener("keydown", bump, true);
+  };
+  setTimeout(tick, 1000);
 }
 
 /** 頂欄「社群」鈕：放在 after 後面。 */

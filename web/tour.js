@@ -12,7 +12,7 @@
 import { el, anyOverlay } from "./ui.js";
 import { STEPS, ROOM_ZH } from "./tour-steps.js";
 import { DUR, CURVE, css, reducedMotion } from "./motion.js";
-import { askCommunityOnce, communityButton } from "./community.js";
+import { communityButton } from "./community.js";
 
 const SEEN_KEY = (room) => `mochi.tour.${room}.v1`;
 // 按過幾次「不用了」：到 DECLINE_LIMIT 次，還沒去過的房間也不再問。
@@ -72,6 +72,8 @@ export function startTour(room, from = 0) {
   markSeen(room);
   document.getElementById("tour-offer")?.remove();
 
+  // 結束時焦點交回打開導覽的那顆（2026-11-20 外部檢查：Esc 結束後焦點掉到 body，下一個 Tab 不知道從哪接）。
+  const opener = document.activeElement && document.activeElement !== document.body ? document.activeElement : null;
   const ring = el("div", { class: "tour-ring", "aria-hidden": "true" });
   const dim = el("div", { class: "tour-dim", "aria-hidden": "true" });
   const count = el("span", { class: "tour-count" });
@@ -216,6 +218,11 @@ export function startTour(room, from = 0) {
     removeEventListener("resize", place);
     removeEventListener("scroll", onScroll, true);
     active = null;
+    const focusNow = document.activeElement;
+    if (!focusNow || focusNow === document.body || layer.contains(focusNow)) {
+      const back = opener?.isConnected && !layer.contains(opener) ? opener : document.getElementById("tour-btn");
+      back?.focus({ preventScroll: true });
+    }
     // 收掉：整層淡出、小視窗往下沉一點，再拿掉。
     if (still) layer.remove();
     else {
@@ -279,9 +286,10 @@ export function mountTour(room) {
     links.append(...[intro, learn, b, arch].filter((n) => n && n.parentElement === links.parentElement), communityButton());
   }
   if (navigator.webdriver) return;
-  // 第一次來：等頁面安定一下再冒出來，不跟開場動畫搶。第一次來墨池先問要不要加入 Discord，關掉才輪到導覽。
-  setTimeout(async () => {
-    await askCommunityOnce();
+  // 第一次來：等頁面安定一下再冒出來，不跟開場動畫搶。角落的小卡，不搶焦點、不擋操作。
+  // 2026-11-20 外部檢查：以前先跳 Discord 邀請（蓋住操作區、搶走焦點），關掉才輪到導覽；
+  // 第一件事應該是挑牌。Discord 改成印好第一張圖、閒下來之後才問（askCommunityAfterFirstImage）。
+  setTimeout(() => {
     if (seen(room) || declinedEnough() || active || document.getElementById("tour-offer")) return;
     offerTour(room);
   }, 1400);

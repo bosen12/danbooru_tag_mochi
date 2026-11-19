@@ -260,8 +260,41 @@ function onlyKeys(args, keys) {
 
 const str = { type: "string" };
 const strList = { type: "array", items: { type: "string" } };
+const sectionList = { type: "array", items: { type: "string", enum: SECTIONS } };
+
+const WORK_TEXT = {
+  labReference: "正在帶入引用作品的牌",
+  labFindWorks: "正在找作品",
+  labTrace: "正在查看牌的來歷",
+  referenceMissing: "找不到這件引用作品",
+  referenceEmpty: "這件作品在指定的段落沒有可帶入的牌",
+  referenceOp: "照作品 #{0} 帶入",
+  referenceSections: "{0}（{1} 張）",
+  referenceOmitted: "未留在合成池的引用牌：{0}",
+  worksFound: "找到 {0} 件作品",
+  worksFailed: "讀不到作品冊",
+  traceTitle: "牌的來歷",
+};
 
 export const TOOL_DEFS = [
+  {
+    name: "use_reference",
+    kind: "write",
+    description: "把一件使用者引用、或 find_works 找到的作品裡的牌按原份量加到合成池。id 用作品編號，不要加 #。include 只帶指定段落；exclude 略過指定段落。兩者最多用一個，皆省略則帶長相、服裝、姿勢、場景。保留池裡其它牌，互斥會先等確認。不會套用原作的種子、底模、LoRA、分級或尺寸。",
+    input_schema: { type: "object", properties: { id: str, include: sectionList, exclude: sectionList }, required: ["id"], additionalProperties: false },
+  },
+  {
+    name: "find_works",
+    kind: "read",
+    description: "從作品冊查作品，回傳作品編號、縮圖、名稱。from、to 是包含當天的 YYYY-MM-DD，favorite 可篩收藏圖，tags 要全部在作品裡。使用者要看選項時，先展示結果，不要替他選；已指定要借的作品才用 use_reference 帶入。",
+    input_schema: { type: "object", properties: { from: str, to: str, favorite: { type: "boolean" }, tags: strList, limit: { type: "integer", minimum: 1, maximum: 20 } }, additionalProperties: false },
+  },
+  {
+    name: "trace_card",
+    kind: "read",
+    description: "查目前合成池或引用作品裡一張牌的來源、依附鏈、群組、互斥。id 可填引用作品編號，省略查目前的池。inferred 為真表示從現行規則推斷。wouldReturn 指重新套用相關牌的規則時會補回，手動拿掉後不會當場重釘，不要把它說成每次抽牌必定會回來。",
+    input_schema: { type: "object", properties: { tag: str, id: str }, required: ["tag"], additionalProperties: false },
+  },
   {
     name: "get_workspace",
     kind: "read",
@@ -530,6 +563,7 @@ export function createToolRunner(ctx) {
       case "get_workspace":
       case "change_pool":
       case "paste_prompt":
+      case "use_reference":
         return { area: "pool" };
       case "find_cards":
       case "suggest_cards":
@@ -548,6 +582,7 @@ export function createToolRunner(ctx) {
       case "save_card_group":
         return args.section && SECTIONS.includes(args.section) ? { area: "groups", key: args.section } : { area: "groups" };
       case "draw_cards":
+      case "find_works":
         return { area: "wall" };
       default:
         return { area: "pool" };
@@ -570,6 +605,9 @@ export function createToolRunner(ctx) {
     if (spec.notes?.length) out.notes = capLines(spec.notes);
     if (spec.cards?.length) out.cards = spec.cards;
     if (spec.found?.length) out.found = spec.found;
+    if (spec.works?.length) out.works = spec.works;
+    if (spec.trace) out.trace = spec.trace;
+    if (spec.changes) out.changes = spec.changes;
     return out;
   }
 
@@ -644,6 +682,9 @@ export function createToolRunner(ctx) {
     const args = call?.args && typeof call.args === "object" ? call.args : {};
     try {
       if (name === "get_workspace") return { zh: TEXT.labWorkspace, area: "pool" };
+      if (name === "use_reference") return { zh: WORK_TEXT.labReference, area: "pool" };
+      if (name === "find_works") return { zh: WORK_TEXT.labFindWorks, area: "wall" };
+      if (name === "trace_card") return { zh: WORK_TEXT.labTrace, area: "pool" };
       if (name === "find_cards") return { zh: fill(TEXT.labSearch, typeof args.query === "string" ? args.query.trim() : ""), area: "lib" };
       if (name === "card_info") return { zh: fill(TEXT.labCard, zhOf(typeof args.tag === "string" ? resolvedTag(args.tag.trim()) : args.tag)), area: "lib" };
       if (name === "suggest_check") return { zh: TEXT.labCheck, area: "lib" };
@@ -740,6 +781,12 @@ export function createToolRunner(ctx) {
     return undoWrap(async () => {
       const st = await ctx.state();
       const now = new Map((st.pool || []).map((p) => [p.tag, p]));
+      const reban = restore.reban;
+      const changedBan = reban?.find((tag) => st.bans?.includes(tag));
+      if (changedBan) {
+        const reason = fill(TEXT.undoTag, zhOf(changedBan));
+        return { ok: false, reason, summary: reason };
+      }
       for (const [tag, exp] of expect) {
         const cur = now.get(tag);
         if (exp.present) {
@@ -760,10 +807,15 @@ export function createToolRunner(ctx) {
           const reason = fill(TEXT.undoClash, joinZh(clash));
           return { ok: false, reason, summary: reason };
         }
+        if (reban && pv?.unbanned?.length) {
+          const reason = fill(TEXT.undoTag, zhOf(pv.unbanned[0]));
+          return { ok: false, reason, summary: reason };
+        }
         if (pv?.final && Number(pv.total) > POOL_CAP) return { ok: false, reason: TEXT.undoOver, summary: TEXT.undoOver };
       }
       if (restore.unpin.length) await ctx.unpin(restore.unpin);
       if (restore.repin.length) await ctx.pin(restore.repin.map((x) => x.tag));
+      if (reban?.length) await ctx.restoreReferenceBans(reban);
       for (const item of [...restore.repin, ...restore.reweight]) {
         const st2 = await ctx.state();
         const cur = (st2.pool || []).find((p) => p.tag === item.tag);
@@ -900,11 +952,12 @@ export function createToolRunner(ctx) {
     }
   }
 
-  function poolStory(mut, pasted = false) {
+  function poolStory(mut, pasted = false, restoreBans = false) {
     const added = mut.pinned?.added || [];
     const companions = mut.pinned?.companions || [];
     const displaced = mut.pinned?.displaced || [];
     const unbanned = mut.pinned?.unbanned || [];
+    const reban = restoreBans && typeof ctx.restoreReferenceBans === "function" ? unbanned : null;
     const lines = [];
     if (!pasted) for (const tag of added) lines.push(fill(TEXT.added, zhOf(tag)));
     if (companions.length) lines.push(fill(TEXT.companion, joinZh(companions)));
@@ -916,7 +969,7 @@ export function createToolRunner(ctx) {
     for (const tag of unbanned) lines.push(cannot(tag, "banned") && fill(TEXT.confirmUnban, zhOf(tag)));
     const back = (mut.removedNow || []).filter((t) => companions.includes(t) || added.includes(t));
     for (const tag of back) lines.push(fill(TEXT.companionBack, zhOf(tag)));
-    if (unbanned.length) lines.push(TEXT.noBanUndo);
+    if (unbanned.length && !reban) lines.push(TEXT.noBanUndo);
     // 操作紀錄：加入／附帶／移掉／份量／撿回各一列；其他要提醒的（附帶的會跟回來、廢字簍不能復原）放 notes。
     const ops = [];
     if (added.length) ops.push({ k: TEXT.opAdd, v: joinZh(added), raw: true });
@@ -927,7 +980,7 @@ export function createToolRunner(ctx) {
     if ((mut.weightResult || []).length > 4) ops.push({ k: TEXT.opWeight, v: fill(TEXT.moreItems, mut.weightResult.length - 4) });
     if (unbanned.length) ops.push({ k: TEXT.opUnban, v: joinZh(unbanned), raw: true });
     const notes = back.map((tag) => fill(TEXT.companionBack, zhOf(tag)));
-    if (unbanned.length) notes.push(TEXT.noBanUndo);
+    if (unbanned.length && !reban) notes.push(TEXT.noBanUndo);
     let summary;
     if (added.length === 1 && companions.length && !(mut.weightResult || []).length && !(mut.removedNow || []).length) {
       summary = fill(TEXT.withCompanion, zhOf(added[0]), joinZh(companions));
@@ -960,7 +1013,9 @@ export function createToolRunner(ctx) {
     const reweight = (mut.weightResult || [])
       .filter((w) => mut.before.has(w.tag) && !newly.includes(w.tag))
       .map((w) => ({ tag: w.tag, weight: mut.before.get(w.tag).weight ?? 1 }));
-    const undo = unbanned.length || !expect.size ? undefined : undoPool(expect, { unpin: newly.filter((t) => !mut.before.has(t)), repin, reweight });
+    const undo = unbanned.length && !reban || !expect.size && !reban?.length
+      ? undefined
+      : undoPool(expect, { unpin: newly.filter((t) => !mut.before.has(t)), repin, reweight, reban });
     return { summary, lines, undo, added, companions, displaced, unbanned, ops, notes };
   }
 
@@ -996,16 +1051,37 @@ export function createToolRunner(ctx) {
     try {
       const mut = await mutatePool(state, planLike.add, planLike.remove, planLike.weights, planLike.from, write, canWrite);
       await hi(target, "done", labelText);
-      const story = poolStory(mut, planLike.paste);
+      const story = poolStory(mut, planLike.paste, !!planLike.reference);
       const paste = planLike.paste ? pasteChanges(mut) : null;
+      const finalTags = new Set((mut.after.pool || []).map((p) => p.tag));
+      const weights = (mut.weightResult || []).map((w) => ({ tag: w.tag, from: w.from, to: w.to }));
+      const changes = {
+        added: [...finalTags].filter((tag) => !mut.before.has(tag)),
+        removed: [...mut.before.keys()].filter((tag) => !finalTags.has(tag)),
+        weights,
+      };
+      const requested = planLike.reference;
+      const kept = requested?.cards.filter((card) => finalTags.has(card.tag));
+      const omitted = requested?.cards.filter((card) => !finalTags.has(card.tag)).map((card) => card.tag);
+      const reference = requested && {
+        id: requested.id,
+        sections: SECTIONS.filter((section) => kept.some((card) => card.section === section)),
+        count: kept.length,
+        ...(omitted.length ? { omitted } : {}),
+      };
+      const referenceOp = reference?.count && {
+        k: fill(WORK_TEXT.referenceOp, reference.id),
+        v: fill(WORK_TEXT.referenceSections, reference.sections.map((section) => ctx.sectionName?.(section) || SECTION_ZH[section]).join(sep()), reference.count),
+      };
       const total = mut.after.poolCount;
       return pack({
         ok: true,
         status: "done",
         summary: paste?.summary || story.summary,
         lines: story.lines,
-        ops: story.ops,
-        notes: story.notes,
+        ops: referenceOp ? [referenceOp, ...story.ops] : story.ops,
+        notes: omitted?.length ? [...story.notes, fill(WORK_TEXT.referenceOmitted, joinZh(omitted))] : story.notes,
+        changes,
         target,
         undo: story.undo,
         forModel: {
@@ -1015,9 +1091,10 @@ export function createToolRunner(ctx) {
           displaced: story.displaced,
           unbanned: story.unbanned,
           removed: mut.removedNow,
-          weights: (mut.weightResult || []).map((w) => ({ tag: w.tag, from: w.from, to: w.to })),
+          weights,
           total,
           ...(paste ? { pasted: { changes: paste.counts } } : {}),
+          ...(reference ? { reference } : {}),
           undoable: !!story.undo,
         },
       });
@@ -1367,6 +1444,7 @@ export function createToolRunner(ctx) {
       }
     }
     const preview = add.length || remove.length ? await ctx.previewPins(add, remove) : null;
+    if (opts.signal?.aborted) return skip(target, TEXT.aborted, { ok: false, code: "aborted" });
     if (isStale(base)) return staleResult(target);
     const total = projectTotal(state, preview, remove);
     if (total > POOL_CAP) {
@@ -1412,6 +1490,7 @@ export function createToolRunner(ctx) {
         remove,
         weights,
         paste: opts.paste,
+        reference: opts.reference,
         from: opts.from || null,
         pending: null,
       };
@@ -1442,7 +1521,69 @@ export function createToolRunner(ctx) {
         },
       });
     }
-    return commitPool({ add, remove, weights, from: opts.from, paste: opts.paste }, base, target, label({ name: "change_pool", args }).zh);
+    const name = opts.reference ? "use_reference" : "change_pool";
+    return commitPool({ add, remove, weights, from: opts.from, paste: opts.paste, reference: opts.reference }, base, target, label({ name, args }).zh);
+  }
+
+  const workId = (id) => typeof id === "string" && id.trim().length <= 200 ? id.trim().replace(/^#/, "") : "";
+  const validSections = (list) => Array.isArray(list) && list.length > 0 && list.every((key) => SECTIONS.includes(key));
+  function dateArg(day) {
+    if (typeof day !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(day)) return false;
+    const time = Date.parse(`${day}T00:00:00Z`);
+    return Number.isFinite(time) && new Date(time).toISOString().slice(0, 10) === day;
+  }
+
+  async function useReference(args, opts, base) {
+    const target = { area: "pool" };
+    const id = workId(args.id);
+    const { include, exclude } = args;
+    if (!id || include !== undefined && !validSections(include) || exclude !== undefined && !validSections(exclude) || include && exclude) {
+      return fail(target, "bad_args", TEXT.badArgs);
+    }
+    const work = await opts.referenceOf?.(id, opts.signal);
+    if (!work) return fail(target, "reference_missing", WORK_TEXT.referenceMissing);
+    const wanted = SECTIONS.filter((section) => (include ? include.includes(section) : !exclude?.includes(section)));
+    const cards = work.cards.filter((card) => wanted.includes(card.section));
+    if (!cards.length) return fail(target, "reference_empty", WORK_TEXT.referenceEmpty);
+    const reference = { id, cards };
+    return changePool({
+      add: cards.map((card) => card.tag),
+      weights: Object.fromEntries(cards.map(({ tag, weight }) => {
+        const n = Number(weight);
+        return [tag, Number.isFinite(n) ? Math.max(WEIGHT_MIN, Math.min(WEIGHT_MAX, n)) : 1];
+      })),
+    }, { ...opts, reference }, base);
+  }
+
+  async function findWorks(args, { signal }) {
+    const target = { area: "wall" };
+    const { from, to, favorite, limit = 8 } = args;
+    const tags = tagList(args.tags);
+    if (!tags || tags.length > 24 || from !== undefined && !dateArg(from) || to !== undefined && !dateArg(to) ||
+        from && to && from > to || favorite !== undefined && typeof favorite !== "boolean" || !isInt(limit) || limit < 1 || limit > 20) {
+      return fail(target, "bad_args", TEXT.badArgs);
+    }
+    try {
+      const { works, total } = await ctx.findWorks({ from, to, favorite, tags: resolvedTags(tags), limit }, signal);
+      return pack({ ok: true, status: "done", summary: fill(WORK_TEXT.worksFound, total), target, works, forModel: { ok: true, total, works } });
+    } catch {
+      if (signal?.aborted) return skip(target, TEXT.aborted, { ok: false, code: "aborted" });
+      return fail(target, "works_unavailable", WORK_TEXT.worksFailed);
+    }
+  }
+
+  async function traceCard(args, opts) {
+    const target = { area: "pool" };
+    const tag = typeof args.tag === "string" && resolvedTag(args.tag.trim());
+    const id = args.id === undefined ? null : workId(args.id);
+    if (!tag || id === "") return fail(target, "bad_args", TEXT.badArgs);
+    const reason = await blockReason(tag);
+    if (reason) return fail(target, "blocked", cannot(tag, reason), { model: { reason } });
+    const reference = id ? await opts.referenceOf?.(id, opts.signal) : null;
+    if (id && !reference) return fail(target, "reference_missing", WORK_TEXT.referenceMissing);
+    const trace = await ctx.traceReference(tag, reference);
+    if (!trace) return fail(target, "missing", fill(TEXT.notInLex, zhOf(tag)), { model: { tag } });
+    return pack({ ok: true, status: "done", summary: WORK_TEXT.traceTitle, target, trace, forModel: { ok: true, ...trace } });
   }
 
   /* ---------- 貼上提示詞（助手直接寫好一整串） ---------- */
@@ -1936,6 +2077,9 @@ export function createToolRunner(ctx) {
   }
 
   const handlers = {
+    use_reference: useReference,
+    find_works: findWorks,
+    trace_card: traceCard,
     get_workspace: (args) => getWorkspace(args),
     find_cards: (args) => findCards(args),
     card_info: (args) => cardInfo(args),
@@ -1973,7 +2117,7 @@ export function createToolRunner(ctx) {
       }
       if (!st?.ready) return fail(targetFor(name, args), "not_ready", TEXT.notReadyWrite);
     }
-    return handlers[name](args, { signal: opts.signal, callId: call?.id || null, planGeneration: opts.planGeneration }, base);
+    return handlers[name](args, { signal: opts.signal, callId: call?.id || null, planGeneration: opts.planGeneration, referenceOf: opts.turn?.referenceOf }, base);
   }
 
   async function run(call, opts = {}) {

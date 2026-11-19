@@ -26,6 +26,10 @@ import { registerLab } from "./lab.js";
 const fill = (tpl, ...args) => String(tpl).replace(/\{(\d+)\}/g, (_, i) => String(args[Number(i)] ?? ""));
 import { openSettings as openSettingsSheet, swapText, labelOf } from "./assistant-settings.js";
 import { openFound, closeFound } from "./assistant-found.js";
+import {
+  bindReferenceDrop, findReferences, referenceFromAlbum, referenceInfo, referenceSourceLabel,
+  REFERENCE_PREFIX, traceReference, watchShotReferences,
+} from "./assistant-reference.js";
 
 const STORE_KEY = "mochi.assistant.v1";
 const CHAT_KEY = "mochi.assistant.chat.v1";
@@ -284,6 +288,7 @@ export function mountAssistant({ ctx }) {
   let toolMod = null;
   let promptMod = null;
   const halo = createHalo();
+  let unwatchShots = null;
 
   // 對話：送給模型的完整歷史（messages）＋畫面上的每一則（log）。只存在這個分頁。
   let chat = loadChat();
@@ -337,6 +342,7 @@ export function mountAssistant({ ctx }) {
       stopTurn("cancelled");
       // 還沒按的確認卡一起作廢：工具層的計畫丟掉（之後按了也不會換牌），卡片收成「已失效」。
       voidConfirms(t("實驗功能關掉了，這項確認已經失效"));
+      panel?.dropRefs();
       panel?.close();
       halo.clear();
       toast("實驗功能關了：聊天室收起，還沒執行的助手操作都取消");
@@ -346,6 +352,22 @@ export function mountAssistant({ ctx }) {
     }
     paintEntry({ motion: true });
     paintAskButtons({ motion: true });
+    syncShotReferences();
+  }
+
+  function acceptWork(work) {
+    if (!prefs.enabled) return;
+    if (!work) return toast(t("找不到這件引用作品"));
+    openPanel({ ref: { kind: "work", label: work.name, work } });
+  }
+
+  function syncShotReferences() {
+    if (prefs.enabled && !unwatchShots) {
+      unwatchShots = watchShotReferences({ ctx, isOpen: () => panel?.isOpen(), accept: acceptWork });
+    } else if (!prefs.enabled && unwatchShots) {
+      unwatchShots();
+      unwatchShots = null;
+    }
   }
 
   /** 收起時，印章上的光點說目前一步（設計稿 §12）：顏色看狀態，字在滑鼠提示和讀屏（不佔頂欄的寬）。 */
@@ -444,6 +466,7 @@ export function mountAssistant({ ctx }) {
     const root = el("aside", { class: "ai-panel", id: "ai-panel", "aria-label": "墨池助手", hidden: true, tabindex: "-1" }, grip, head, log, foot);
     document.body.append(root);
     let pendingRefs = [];
+    let dropEvents = null;
 
     newBtn.addEventListener("click", async () => {
       // 點下去的當下就是新的一輪：舊的那輪停掉、它的確認計畫作廢、借走的字盒收回，
@@ -550,7 +573,11 @@ export function mountAssistant({ ctx }) {
     }
 
     function addRef(ref) {
-      if (!ref || pendingRefs.some((r) => r.kind === ref.kind && r.label === ref.label)) return;
+      const work = referenceInfo(ref);
+      if (!ref || pendingRefs.some((r) => work
+        ? r.work?.id === work.id && r.work?.kind === work.kind
+        : r.kind === ref.kind && r.label === ref.label)) return;
+      if (work && pendingRefs.filter(referenceInfo).length >= 2) return toast(t("一次最多引用兩件作品"));
       pendingRefs.push(ref);
       const wasHidden = refs.hidden;
       paintRefs();
@@ -573,12 +600,12 @@ export function mountAssistant({ ctx }) {
       refs.hidden = !pendingRefs.length;
       queueMicrotask(refreshEmpty);
       refs.replaceChildren(
-        ...pendingRefs.map((r, i) =>
+        ...pendingRefs.map((r) =>
           el(
             "span",
-            { class: "ai-ref" },
+            { class: "ai-ref", dataset: r.work ? { workId: r.work.id } : {} },
             // 搜尋的引用不再整段標成不翻：交給 i18n 照模板「字盒搜尋「{0}」」翻，只有搜尋字（{0!}）原樣。
-            el("span", {}, r.label),
+            referenceName(r),
             el("button", {
               type: "button",
               class: "ai-ref-x",
@@ -586,7 +613,11 @@ export function mountAssistant({ ctx }) {
               html: ICON.close,
               onclick: (e) => {
                 const chip = e.currentTarget.closest(".ai-ref");
-                const drop = () => (pendingRefs.splice(i, 1), paintRefs());
+                const drop = () => {
+                  pendingRefs = pendingRefs.filter((ref) => ref !== r);
+                  paintRefs();
+                  if (api_.isOpen()) input.focus();
+                };
                 if (!chip || reducedMotion()) return drop();
                 chip.animate([{ opacity: 1, transform: "none" }, { opacity: 0, transform: "scale(0.85)" }], { duration: DUR.short, easing: css(CURVE.exit) }).onfinish = drop;
               },
@@ -594,6 +625,16 @@ export function mountAssistant({ ctx }) {
           )
         )
       );
+    }
+
+    function referenceName(ref) {
+      const work = referenceInfo(ref);
+      return work
+        ? [
+            work.thumbnail ? el("img", { class: "ai-ref-thumb", src: work.thumbnail, alt: "", decoding: "async" }) : null,
+            el("span", { dataset: { noI18n: "" }, title: work.name }, work.name),
+          ]
+        : el("span", {}, ref.label);
     }
 
     /* ----- 對話畫面 ----- */
@@ -605,6 +646,14 @@ export function mountAssistant({ ctx }) {
     }
     function emptyState() {
       const sample = (text) => el("button", { class: "ai-sample", type: "button", onclick: () => ((input.value = t(text)), grow(), input.focus()) }, text);
+      if (pendingRefs.some(referenceInfo)) return el(
+        "div",
+        { class: "ai-empty", dataset: { ctx: "work" } },
+        el("div", { class: "ai-empty-mark", html: ICON.seal }),
+        el("div", { class: "ai-samples" },
+          sample("用這張，保留長相和服裝，背景換成雨夜車站。"),
+          sample("這張作品的場景牌是怎麼來的？"))
+      );
       const ref = pendingRefs[0];
       const here = ref && contextOf(ref);
       if (here)
@@ -651,7 +700,8 @@ export function mountAssistant({ ctx }) {
         return el(
           "div",
           { class: "ai-msg ai-user" },
-          item.refs?.length ? el("div", { class: "ai-msg-refs" }, ...item.refs.map((r) => el("span", { class: "ai-ref is-static" }, r.label))) : null,
+          item.refs?.length ? el("div", { class: "ai-msg-refs" }, ...item.refs.map((r) =>
+            el("span", { class: "ai-ref is-static", dataset: r.work ? { workId: r.work.id } : {} }, referenceName(r)))) : null,
           el("div", { class: "ai-bubble", dataset: { noI18n: "" } }, item.text)
         );
       if (item.role === "note") {
@@ -704,7 +754,7 @@ export function mountAssistant({ ctx }) {
     const openFolds = new Set();
     function stepsNode(item, steps) {
       const ol = el("ol", { class: "ai-steps" });
-      const quiet = (s) => s.kind === "read" && s.status === "done" && !s.cards?.length;
+      const quiet = (s) => s.kind === "read" && s.status === "done" && !s.cards?.length && !s.works?.length && !s.trace;
       for (let k = 0; k < steps.length; ) {
         let end = k;
         while (!item.pending && end < steps.length && quiet(steps[end])) end++;
@@ -748,6 +798,8 @@ export function mountAssistant({ ctx }) {
             // 標題已經寫了的（「加入海邊；附帶戶外」底下又一行「加入海邊」）不再列一次。
             ...(asOps || s.cards?.length ? s.notes || [] : (s.lines || []).filter((l) => l && !(s.summary || "").includes(l))).map((l) => el("span", { class: "ai-step-line" }, l)),
             s.cards?.length && s.status === "done" ? suggNode(item, s) : null,
+            s.works?.length && s.status === "done" ? worksNode(item, s) : null,
+            s.trace && s.status === "done" ? traceNode(s.trace) : null,
             // 找到很多張、聊天室只列前幾張：一顆鈕打開浮空小字盒，看全部（照花色分）、點牌放進合成池。
             s.found?.length && s.status === "done"
               ? el("button", { class: "btn btn-small ai-step-found", type: "button", onclick: (e) => openFound({ ctx, tags: s.found, anchor: e.currentTarget }) }, fill("看這 {0} 張", s.found.length))
@@ -757,7 +809,24 @@ export function mountAssistant({ ctx }) {
         // 真的改了東西才叫「看變更」；查詢、失敗、沒寫入的只是帶你去那一塊（查看位置）。
         if (s.target && s.status !== "running") {
           const changed = s.kind !== "read" && s.status === "done";
-          li.append(el("button", { class: "link-btn ai-step-look", type: "button", onclick: () => look(s.target, s.summary || s.label, s.id) }, changed ? "看變更" : "查看位置"));
+          const detail = changed && s.changes ? changesNode(s.changes, s.id) : null;
+          li.append(el("button", {
+            class: "link-btn ai-step-look", type: "button",
+            ...(detail ? { "aria-controls": detail.id, "aria-expanded": "false" } : {}),
+            onclick: (e) => {
+              if (detail) {
+                detail.hidden = !detail.hidden;
+                e.currentTarget.setAttribute("aria-expanded", String(!detail.hidden));
+                if (!detail.hidden && !reducedMotion()) detail.animate(
+                  [{ opacity: 0, transform: "translateY(-4px)" }, { opacity: 1, transform: "none" }],
+                  { duration: DUR.short, easing: css(CURVE.out) }
+                );
+              }
+              // 手機會先收聊天室；有清單時留在原地就能看。
+              if (!detail || !matchMedia("(max-width: 40rem)").matches) look(s.target, s.summary || s.label, s.id);
+            },
+          }, changed ? "看變更" : "查看位置"));
+          if (detail) li.append(detail);
         }
         if (s.undoable && s.status === "done") {
           const b = el("button", { class: "link-btn ai-step-undo", type: "button", onclick: () => undoStep(item, s) }, "復原");
@@ -767,10 +836,70 @@ export function mountAssistant({ ctx }) {
         return li;
       }
     }
-    function opsNode(ops) {
+    const cardName = (tag) => ctx.cardInfo?.(tag)?.zh || tag;
+
+    function changesNode(changes, id) {
+      const ops = [];
+      if (changes.added.length) ops.push({ k: "加入", v: changes.added.map(cardName).join("、"), raw: true });
+      if (changes.removed.length) ops.push({ k: "移掉", v: changes.removed.map(cardName).join("、"), raw: true });
+      for (const { tag, from, to } of changes.weights) ops.push({ k: "份量", v: `${cardName(tag)} ${from} → ${to}`, raw: true });
+      if (!ops.length) return null;
+      return el("div", { class: "ai-step-changes", id: `ai-changes-${id}`, hidden: true }, opsNode(ops, "ai-change-list"));
+    }
+
+    function worksNode(item, step) {
+      return el("ul", { class: "ai-work-results" }, step.works.map((work) =>
+        el("li", { class: "ai-work-result" },
+          work.thumbnail ? el("img", { class: "ai-work-thumb", src: work.thumbnail, alt: "", loading: "lazy" }) : null,
+          el("span", { class: "ai-work-title", dataset: { noI18n: "" } }, work.name),
+          el("button", {
+            class: "btn btn-small btn-ghost", type: "button",
+            onclick: async (event) => {
+              const button = event.currentTarget;
+              const signal = dropEvents?.signal;
+              if (!signal || button.disabled) return;
+              button.disabled = true;
+              try {
+                const snapshot = await loadWorkResult(item, work.id, signal);
+                if (!signal.aborted && chat.log.includes(item)) acceptWork(snapshot);
+              } finally {
+                button.disabled = false;
+              }
+            },
+          }, "引用這件作品")
+        )
+      ));
+    }
+
+    function traceNode(trace) {
+      const face = (tag) => {
+        const node = ctx.cardFace?.(tag);
+        if (!node) return el("div", { class: "ai-sugg-blank", dataset: { noI18n: "" } }, cardName(tag));
+        node.setAttribute("tabindex", "-1");
+        return node;
+      };
+      const paths = trace.paths.length ? trace.paths : [[{ tag: trace.tag }]];
+      return el(
+        "div",
+        { class: "ai-trace" },
+        el("p", { class: "ai-step-line" }, trace.present ? referenceSourceLabel(trace.source) : "這裡沒有這張牌", trace.inferred ? el("span", { class: "ai-trace-note" }, "依規則推斷") : null),
+        paths.map((path) => el("div", { class: "ai-trace-path" },
+          path.map(({ tag, via }) => [
+            via ? el("span", { class: "ai-trace-via" }, el("span", { "aria-hidden": "true" }, "→ "), referenceSourceLabel(via), el("span", { "aria-hidden": "true" }, " →")) : null,
+            face(tag),
+          ])
+        )),
+        trace.groups.length || trace.customOwner
+          ? el("p", { class: "ai-step-line" }, "群組", " · ", el("span", { dataset: { noI18n: "" } }, [...trace.groups, trace.customOwner].filter(Boolean).join("、")))
+          : null,
+        trace.mutex.length ? el("p", { class: "ai-step-line" }, "互斥", " · ", el("span", { dataset: { noI18n: "" } }, trace.mutex.map(cardName).join("、"))) : null,
+        trace.present ? el("p", { class: "ai-step-line" }, trace.wouldReturn ? "重新套用相關牌的規則時會帶回這張" : "目前未找到會帶回這張的牌") : null
+      );
+    }
+    function opsNode(ops, className = "ai-ops") {
       return el(
         "dl",
-        { class: "ai-ops" },
+        { class: className },
         ...ops.map((o) => el("div", { class: "ai-op" }, el("dt", { class: "ai-op-k" }, o.k), el("dd", { class: "ai-op-v", ...(o.raw ? { dataset: { noI18n: "" } } : {}) }, o.v)))
       );
     }
@@ -1034,6 +1163,8 @@ export function mountAssistant({ ctx }) {
         placeTop();
         root.hidden = false;
         root.dataset.state = "open";
+        dropEvents = new AbortController();
+        bindReferenceDrop(input, { ctx, isOpen: api_.isOpen, accept: acceptWork, signal: dropEvents.signal });
         document.documentElement.dataset.aiPanel = "open";
         chatBtn.setAttribute("aria-expanded", "true");
         renderLog();
@@ -1053,6 +1184,8 @@ export function mountAssistant({ ctx }) {
       },
       close() {
         if (root.hidden) return;
+        dropEvents?.abort();
+        dropEvents = null;
         root.dataset.state = "closing";
         chatBtn.setAttribute("aria-expanded", "false");
         delete document.documentElement.dataset.aiPanel;
@@ -1128,13 +1261,50 @@ export function mountAssistant({ ctx }) {
     running.cancelled = why;
   }
 
+  async function loadWorkResult(item, id, signal) {
+    const saved = item.workSnapshots?.find((work) => work.id === id);
+    if (saved) return saved;
+    try {
+      const work = await referenceFromAlbum(ctx, id, signal);
+      if (!work || signal?.aborted || !chat.log.includes(item)) return null;
+      const alreadyLoaded = item.workSnapshots?.find((snapshot) => snapshot.id === id);
+      if (alreadyLoaded) return alreadyLoaded;
+      (item.workSnapshots ||= []).push(work);
+      saveChat();
+      return work;
+    } catch {
+      return null;
+    }
+  }
+
+  function turnContext(conv, version = ctx.version()) {
+    return {
+      version,
+      async referenceOf(id, signal) {
+        for (let i = conv.log.length - 1; i >= 0; i--) {
+          const item = conv.log[i];
+          const attached = item.refs?.map(referenceInfo).find((work) => work?.id === id);
+          if (attached) return attached;
+          if (item.steps?.some((step) => step.works?.some((work) => work.id === id))) return loadWorkResult(item, id, signal);
+        }
+        return null;
+      },
+    };
+  }
+
   async function runTurn(text, refs) {
+    const conv = chat;
+    const turn = turnContext(conv);
     if (!(await loadTools())) {
       panel.addNote({ role: "note", kind: "err", text: t("助手的工具層還沒準備好（assistant-tools.js 讀不到）。") });
       return;
     }
+    if (!prefs.enabled || conv !== chat) return;
     runner ||= toolMod.createToolRunner({
       ...ctx,
+      sectionName: (section) => t(SECTION_ZH[section] || section),
+      findWorks: (args, signal) => findReferences(ctx, args, signal),
+      traceReference: (tag, reference) => traceReference(ctx, tag, reference),
       highlight: (target, phase, label) => highlight(target, phase, label),
       typeset: (id, sorts) => typeset(id, sorts),
       typesetDone: (id, sorts) => typesetDone(id, sorts),
@@ -1142,9 +1312,16 @@ export function mountAssistant({ ctx }) {
     });
     // 上一則還停在確認卡：新的話送出去，那一則就不會在按了之後自己接著做（模型會看到新的這句）。
     for (const i of chat.log) if (i.paused) i.paused = null;
-    const refText = refs.length ? `［使用者指著］${refs.map((r) => r.label).join("、")}\n` : "";
-    const conv = chat;
-    conv.messages.push({ role: "user", content: `${workspaceNote()}\n${refText}${text}` });
+    const places = refs.filter((r) => !referenceInfo(r));
+    const refText = places.length ? `［使用者指著］${places.map((r) => r.label).join("、")}\n` : "";
+    const works = refs.map(referenceInfo).filter(Boolean).map(({ thumbnail, ...work }) => work);
+    const workText = works.length ? `${REFERENCE_PREFIX}${JSON.stringify(works)}\n` : "";
+    const contextText = `${workspaceNote()}\n${refText}`;
+    conv.messages.push({
+      role: "user",
+      content: `${contextText}${workText}${text}`,
+      ...(works.length ? { workLine: contextText.split("\n").length - 1 } : {}),
+    });
     conv.log.push({ role: "user", text, refs });
     const item = { role: "bot", id: `t${Date.now().toString(36)}`, segs: [], steps: [], confirms: [], pending: true };
     conv.log.push(item);
@@ -1155,7 +1332,7 @@ export function mountAssistant({ ctx }) {
     lookTok++;
     // 這則訊息送出那一刻的工作台版本：整輪的工具共用同一個物件。之後使用者自己動了合成池、規則，
     // 依賴舊狀態的寫入會回 stale（assistant-tools.js），模型先重讀再做。
-    await hops(conv, item, { version: ctx.version() });
+    await hops(conv, item, turn);
   }
 
   /**
@@ -1223,6 +1400,9 @@ export function mountAssistant({ ctx }) {
           if (res.notes?.length) step.notes = res.notes;
           if (res.cards?.length) step.cards = res.cards.map((c) => ({ ...c }));
           if (res.found?.length) step.found = res.found;
+          if (res.works?.length) step.works = res.works;
+          if (res.trace) step.trace = res.trace;
+          if (res.changes) step.changes = res.changes;
           if (res.sorts) step.sorts = res.sorts.map((x) => ({ ...x }));
           if (res.undo) undos.set(`${item.id}:${uid}`, res.undo);
           if (res.status === "needs_confirm" && res.confirm) {
@@ -1327,10 +1507,10 @@ export function mountAssistant({ ctx }) {
     const users = [];
     messages.forEach((x, k) => x.role === "user" && users.push(k));
     const keepFrom = users.length > KEEP_TURNS ? users[users.length - KEEP_TURNS] : 0;
-    if (!keepFrom) return messages;
+    const isRequest = (x) => x.role === "user" && (x.workLine !== undefined || x.content?.startsWith("［目前工作台］"));
+    const latestRequest = messages.findLastIndex(isRequest);
     return messages.map((x, k) => {
-      if (k >= keepFrom) return x;
-      if (x.role === "tool" && String(x.content || "").length > TRIM_OVER) {
+      if (k < keepFrom && x.role === "tool" && String(x.content || "").length > TRIM_OVER) {
         let body;
         try {
           const v = JSON.parse(x.content);
@@ -1340,9 +1520,17 @@ export function mountAssistant({ ctx }) {
         }
         return { ...x, content: JSON.stringify(body) };
       }
-      if (x.role === "user" && String(x.content || "").startsWith("［目前工作台］")) {
-        const nl = x.content.indexOf("\n");
-        return { ...x, content: "［當時的工作台摘要已省略（trimmed）］" + (nl >= 0 ? x.content.slice(nl) : "") };
+      if (isRequest(x)) {
+        const lines = x.content.split("\n");
+        if (k < keepFrom) lines[0] = "［當時的工作台摘要已省略（trimmed）］";
+        const { workLine, ...message } = x;
+        if (k < latestRequest && lines[workLine]?.startsWith(REFERENCE_PREFIX)) {
+          try {
+            const works = JSON.parse(lines[workLine].slice(REFERENCE_PREFIX.length));
+            lines[workLine] = `${REFERENCE_PREFIX}${JSON.stringify(works.map(({ id, name }) => ({ id, name })))}`;
+          } catch { /* 配方行遺失時保留歷史原文 */ }
+        }
+        return { ...message, content: lines.join("\n") };
       }
       return x;
     });
@@ -1651,6 +1839,7 @@ export function mountAssistant({ ctx }) {
       const stepStatus = status === "applied" ? "done" : status === "kept" ? "skipped" : "failed";
       Object.assign(step, { status: stepStatus, summary: res.summary || step.summary, lines: res.lines || step.lines, target: res.target || step.target, undoable: status === "applied" && !!res.undo });
       if (status === "applied" && res.ops?.length) Object.assign(step, { ops: res.ops, notes: res.notes || [] });
+      if (status === "applied" && res.changes) step.changes = res.changes;
       // 排字盤上「等確認」的那幾顆：套用了照真的池子打勾或劃掉；保留、失效、失敗就是略過（劃掉）。
       if (step.sorts) {
         const inPool = new Set((ctx.state().pool || []).map((p) => p.tag));
@@ -1672,7 +1861,7 @@ export function mountAssistant({ ctx }) {
     // 這一輪是停在確認卡上的：決定好了（而且沒有別張卡還開著），接著讓模型做剩下的。
     if (item.paused && !running && !item.confirms.some((x) => x.state === "open") && chat.log.includes(item)) {
       item.paused = null;
-      hops(chat, item, { version: ctx.version() });
+      hops(chat, item, turnContext(chat));
     }
   }
 
@@ -1748,6 +1937,7 @@ export function mountAssistant({ ctx }) {
   /* ---------- 開頁 ---------- */
   paintEntry();
   paintAskButtons();
+  syncShotReferences();
   if (prefs.enabled) {
     refreshStatus();
     if (prefs.open && !matchMedia("(max-width: 40rem)").matches) openPanel();

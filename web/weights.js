@@ -6,7 +6,7 @@
  * 0.85 實際送出的是 0.9 —— 畫面上的數字要跟實際送出的一樣。
  * 只改提示詞裡的份量，不碰抽牌：互斥、分級、禁用照舊。
  *
- * 顯示：牌面右下角一個小數字（1.0 不顯示），大於 1 暖色、小於 1 灰藍。
+ * 顯示：牌面右下角一個小數字（平常 1.0 不顯示，滑鼠移到牌上才淡入），大於 1 暖色、小於 1 灰藍。
  */
 import { parseWeighted, formatWeighted } from "./engine.js";
 import { reducedMotion, DUR, CURVE, css } from "./motion.js";
@@ -87,6 +87,7 @@ export function paintWeight(node, w, { pop = false } = {}) {
     badge.className = "card-w";
     art.append(badge);
   }
+  badge.classList.remove("card-w-rest");
   badge.textContent = weightText(w);
   badge.setAttribute("aria-label", `份量 ${weightText(w)}`);
   if (pop && !reducedMotion()) {
@@ -95,34 +96,88 @@ export function paintWeight(node, w, { pop = false } = {}) {
 }
 
 /**
- * 電腦上滑鼠停在牌上滾滾輪：一格一檔。
- * 只是捲頁面時剛好經過不算：要停在牌上 250ms 以上、頁面 300ms 內沒在捲；
- * 觸控板一甩只動一檔（同一張牌 160ms 內只收一次）。
+ * 滾輪只在指著右下角的份量角標時才調，一格一檔。
+ * 停在牌上看一下再往下捲，是在捲頁面，不能把份量默默改掉。
+ * 觸控板在角標上一甩只動一檔（同一張牌 160ms 內只收一次）。
+ * 平常 1.0 不畫角標；滑鼠移到牌上才淡入，才有地方可以滾。
  */
-let scrolledAt = 0;
-addEventListener("scroll", () => (scrolledAt = performance.now()), { passive: true, capture: true });
+function weightArt(node) {
+  return node.querySelector(".card-art") || node;
+}
+
+function weightBadge(node) {
+  return weightArt(node).querySelector(":scope > .card-w");
+}
+
+/** 指標是不是在角標上。角標不到 28px 時，熱區從中心補到 28，邊角也好指。 */
+function overWeightBadge(node, e) {
+  const badge = weightBadge(node);
+  if (!badge) return false;
+  const r = badge.getBoundingClientRect();
+  const cx = (r.left + r.right) / 2;
+  const cy = (r.top + r.bottom) / 2;
+  return Math.abs(e.clientX - cx) <= Math.max(r.width, 28) / 2 && Math.abs(e.clientY - cy) <= Math.max(r.height, 28) / 2;
+}
 
 export function wireWeightInput(node, { get, set }) {
-  let hoverAt = 0;
   let wheelAt = 0;
-  node.addEventListener("pointerenter", () => (hoverAt = performance.now()));
+  let hovering = false;
+  const showRest = () => {
+    if (!hovering || snapWeight(get()) !== 1) return;
+    const art = weightArt(node);
+    let badge = art.querySelector(":scope > .card-w");
+    if (badge && !badge.classList.contains("card-w-rest")) return;
+    if (badge) {
+      badge.getAnimations().forEach((a) => a.cancel());
+      badge.style.opacity = "";
+    } else {
+      badge = document.createElement("span");
+      badge.className = "card-w card-w-rest";
+      art.append(badge);
+      if (!reducedMotion()) badge.animate([{ opacity: 0 }, { opacity: 1 }], { duration: DUR.short, easing: css(CURVE.out) });
+    }
+    badge.textContent = "1.0";
+    badge.setAttribute("aria-label", "份量 1.0");
+  };
+  const hideRest = () => {
+    const badge = weightBadge(node);
+    if (!badge?.classList.contains("card-w-rest")) return;
+    const drop = () => {
+      if (badge.isConnected && badge.classList.contains("card-w-rest")) badge.remove();
+    };
+    if (reducedMotion()) return drop();
+    badge.animate([{ opacity: 1 }, { opacity: 0 }], { duration: DUR.short, easing: css(CURVE.out) }).onfinish = drop;
+  };
+  const apply = (w) => {
+    set(w);
+    if (hovering) showRest();
+  };
+  node.addEventListener("pointerenter", (e) => {
+    if (e.pointerType === "touch") return;
+    hovering = true;
+    showRest();
+  });
+  node.addEventListener("pointerleave", () => {
+    hovering = false;
+    hideRest();
+  });
   node.addEventListener(
     "wheel",
     (e) => {
-      const now = performance.now();
-      if (now - hoverAt < 250 || now - scrolledAt < 300 || !e.deltaY) return;
+      if (!e.deltaY || !overWeightBadge(node, e)) return;
       e.preventDefault();
+      const now = performance.now();
       if (now - wheelAt < 160) return;
       wheelAt = now;
-      set(stepWeight(get(), e.deltaY < 0 ? 1 : -1));
+      apply(stepWeight(get(), e.deltaY < 0 ? 1 : -1));
     },
     { passive: false }
   );
   node.addEventListener("keydown", (e) => {
     if (e.ctrlKey || e.metaKey || e.altKey) return;
-    if (e.key === "+" || e.key === "=") set(stepWeight(get(), 1));
-    else if (e.key === "-" || e.key === "_") set(stepWeight(get(), -1));
-    else if (e.key === "0") set(1);
+    if (e.key === "+" || e.key === "=") apply(stepWeight(get(), 1));
+    else if (e.key === "-" || e.key === "_") apply(stepWeight(get(), -1));
+    else if (e.key === "0") apply(1);
     else return;
     e.preventDefault();
   });

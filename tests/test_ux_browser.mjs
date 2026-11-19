@@ -129,7 +129,8 @@ try {
   assert.ok(await page.locator('#registers [data-tag="kimono"]').count());
   await page.locator('#trials button').nth(1).click();
   assert.match(await page.locator('.pv-state').innerText(), /已選試印 B/);
-  assert.match(await page.locator('.pv-hint').innerText(), /尚未生成/);
+  // 2026-11-20：預覽區那句「尚未生成」拿掉了（同一句講三遍），改由主鈕寫出真正會付印的那組。
+  assert.match(await page.locator('#print-bar .pb-go').innerText(), /B/, 'the main button names the trial that will print');
   assert.equal(await page.locator('.trial-summary').count(), 4);
   const different = page.locator('#trials button').filter({ has: page.locator('.trial-summary .is-different') }).first();
   if (await different.count()) assert.match(await different.getAttribute('aria-label'), /與已選試印不同/, 'screen readers receive the differences');

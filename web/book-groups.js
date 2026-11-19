@@ -16,7 +16,7 @@
  *   shelf.clear()   回到全部（換花色時）；shelf.openFromHash(hash)
  */
 import { el, toast, friendlyError } from "./ui.js";
-import { reducedMotion, DUR, CURVE, css, swapIn, enter, seat, refuse } from "./motion.js";
+import { reducedMotion, DUR, CURVE, css, swapIn, enter, seat, refuse, heightChange } from "./motion.js";
 import { loadGroups, cachedGroups, onGroupsChange, saveGroup, deleteGroup, GROUP_SECTIONS } from "./card-groups.js";
 import { SECTION_ZH, SECTION_SUIT } from "./group-picks.js";
 import { t as tr, english } from "./i18n.js";
@@ -26,15 +26,31 @@ import { groupChips } from "./cards.js";
 const MAX_TAGS = 120;
 
 const FOLD_KEY = "mochi.book.shelf.v1";
-const readFold = () => {
+// "1" 收起、"0" 攤開；沒存過是 null（交給視窗寬度，或「一個群組都沒有」那一行）。
+const storedFold = () => {
   try {
     const v = localStorage.getItem(FOLD_KEY);
-    // 沒存過：手機上先收著（書架四段直排會把牌推出第一屏），電腦攤開。
-    return v === null ? matchMedia("(max-width: 34rem)").matches : v === "1";
+    return v === "1" ? true : v === "0" ? false : null;
+  } catch {
+    return null;
+  }
+};
+
+/**
+ * 沒存過：手機先收著（四段直排會把牌推出第一屏），電腦攤開。
+ * 清單已經讀回來、而且一個群組都沒有：收成一行。清單還沒回來時不收，
+ * 免得有群組的書架先被收成「建立第一組」。
+ */
+function desiredFold(count) {
+  const stored = storedFold();
+  if (stored !== null) return stored;
+  if (cachedGroups() !== null && count === 0) return true;
+  try {
+    return matchMedia("(max-width: 34rem)").matches;
   } catch {
     return false;
   }
-};
+}
 
 export function mountBookGroups({ lib, assets, onChange, toMochi, visible, data }) {
   const shelf = document.getElementById("book-shelf");
@@ -46,7 +62,7 @@ export function mountBookGroups({ lib, assets, onChange, toMochi, visible, data 
   let saving = Promise.resolve();
   let saveError = null;
   const pending = [];
-  let folded = readFold();
+  let folded = desiredFold(0);
   // 加牌時浮在畫面底下的「完成」：手機上工具列不黏，捲到多下面都按得到。
   const float = el("button", { class: "btn btn-primary bsh-float pressable", type: "button", hidden: true, onclick: () => setEditing(false) });
   document.body.append(float);
@@ -122,9 +138,41 @@ export function mountBookGroups({ lib, assets, onChange, toMochi, visible, data 
     );
   }
 
-  function renderShelf() {
+  function renderShelf({ animate = false } = {}) {
     if (!shelf) return;
     const all = groups();
+    // 人剛按的那一下用記憶裡的收合（存檔失敗也要在這一頁生效）。其餘重畫再跟存檔、群組數對一次。
+    if (!animate) folded = desiredFold(all.length);
+    // 只有人按了展開／收起才長高矮。讀清單、別的分頁改群組，不要每次都演。
+    const grow = animate ? heightChange(shelf) : null;
+    if (!all.length && folded) {
+      shelf.dataset.emptyLine = "true";
+      shelf.dataset.folded = "true";
+      shelf.hidden = false;
+      shelf.replaceChildren(
+        el(
+          "button",
+          {
+            class: "bs-empty pressable",
+            type: "button",
+            onclick: () => {
+              try {
+                localStorage.setItem(FOLD_KEY, "0");
+              } catch {
+                /* 存不了就只記在這一頁 */
+              }
+              folded = false;
+              renderShelf({ animate: true });
+            },
+          },
+          el("b", {}, "群組"),
+          " · 建立第一組"
+        )
+      );
+      grow?.done();
+      return;
+    }
+    delete shelf.dataset.emptyLine;
     const lanes = GROUP_SECTIONS.map((section) => {
       const mine = all.filter((g) => g.section === section);
       return el(
@@ -159,8 +207,7 @@ export function mountBookGroups({ lib, assets, onChange, toMochi, visible, data 
           } catch {
             /* 存不了就只記在這一頁 */
           }
-          renderShelf();
-          if (!folded && !reducedMotion()) shelf.querySelector(".bs-lanes")?.animate([{ opacity: 0, transform: "translateY(-6px)" }, { opacity: 1, transform: "none" }], { duration: DUR.medium, easing: css(CURVE.out) });
+          renderShelf({ animate: true });
         },
       },
       folded ? "展開" : "收起"
@@ -186,6 +233,8 @@ export function mountBookGroups({ lib, assets, onChange, toMochi, visible, data 
     );
     shelf.dataset.folded = folded ? "true" : "false";
     shelf.hidden = false;
+    if (animate && !folded && !reducedMotion()) shelf.querySelector(".bs-lanes")?.animate([{ opacity: 0, transform: "translateY(-6px)" }, { opacity: 1, transform: "none" }], { duration: DUR.medium, easing: css(CURVE.out) });
+    grow?.done();
   }
 
   function renderHead() {

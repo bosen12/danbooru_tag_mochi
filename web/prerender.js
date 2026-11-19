@@ -61,6 +61,9 @@ export function whenActive(fn) {
 }
 
 /** 預先開好之後、點進去之前，這個房間在意的存檔變了就重新整理。要在讀存檔之前呼叫（各頁主程式的第一行）。 */
+/** 程式自己重新整理（不是使用者按的）時留的記號：store.js 的 reloaded() 看到就不當成重來。 */
+export const KEEP_TAB_KEY = "mochi.reload.keep.v1";
+
 export function guardPrerender(room) {
   if (!document.prerendering || !KEYS[room]) return;
   const keys = KEYS[room];
@@ -95,6 +98,14 @@ export function guardPrerender(room) {
       const changed = [...base].some(([id, was]) => read(id[0] === "s" ? sessionStorage : localStorage, id.slice(2)) !== was);
       if (changed) {
         reloading = true;
+        // 這次重新整理是程式自己做的，不是使用者按的：留一張記號給下一頁（store.js 的 reloaded），
+        // 分頁裡組到一半的合成池、卡池照樣拿回來。2026-11-20 專案主：卡冊挑牌加入後切回墨池，原本的牌都不見了
+        // （卡冊寫了交接便條 → 預開的墨池點進去發現便條變了就重新整理 → 被當成「重新整理＝重來」，整池清空）。
+        try {
+          sessionStorage.setItem(KEEP_TAB_KEY, "1");
+        } catch {
+          /* 記不了：照舊當成重新整理 */
+        }
         location.reload();
       }
     },

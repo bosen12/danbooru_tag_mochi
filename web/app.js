@@ -85,7 +85,8 @@ import { attachTilt } from "./card-tilt.js";
 import { loadCustom, addCustomToLib, withCustomArt, onCustomChange, setCharacterBan, isCustomTag, customOf, customTag, customList, extraText, handOffCustom, startFromPrompt, fillText, RATING_NAME } from "./custom-cards.js";
 // 牌庫裡現在放的是哪一份自製牌清單（onCustomChanged 用來判斷有沒有換）。
 let customShown = null;
-import { createHires, openHiresPicker, openFacePicker, paintHiresVeil, hiresBusy, faceBusy, faceDepth, HIRES_MODES } from "./hires.js";
+import { askCommunityAfterFirstImage } from "./community.js";
+import { createHires, openHiresPicker, openFacePicker, paintHiresVeil, hiresBusy, faceBusy, faceDepth, HIRES_MODES, modelLine } from "./hires.js";
 import { reviewFuseTransfer } from "./fuse-transfer.js";
 import { transferLabel } from "./transfer.js";
 import * as S from "./store.js";
@@ -1017,7 +1018,8 @@ function libReasons() {
       hides: (c) => !visible(c),
       text: (c) => `「${c.zh}」不屬於現在的時代`,
       // 改成「混合」而不是只把字盒打開：放進去的牌才不會在抽的時候、放下一張的時候又被時代拿掉。
-      label: () => "時代改成混合",
+      // 按鈕上寫清楚影響整池（不是只打開這一張）。
+      label: () => "整池改用混合時代",
       run: () => {
         setSettings({ eras: [...ERAS], eraMix: true });
         renderRules();
@@ -2234,7 +2236,8 @@ function renderPool(fresh) {
       // 份量：右下角的數字；電腦上滑鼠停著滾滾輪、或 +／− 調（weights.js）。
       paintWeight(node, weights.get(t));
       wireWeightInput(node, { get: () => weights.get(t) || 1, set: (w) => setWeight(t, w) });
-      node.title = node.title ? `${node.title}（滾輪或 +／− 調份量）` : "點開看詳情；滾輪或 +／− 調份量";
+      // 滾輪只在右下角的份量上才調（2026-11-20：停下來看牌再往下捲，份量被默默調淡）。
+      node.title = node.title ? `${node.title}（+／− 或在右下角的份量上滾滾輪：調份量）` : "點開看詳情；+／− 或在右下角的份量上滾滾輪：調份量";
       return el(
         "div",
         { class: "pool-slot", style: poolInbound.has(t) ? "visibility: hidden" : undefined },
@@ -2634,6 +2637,7 @@ const generator = createGenerator({
       if (shot.status === "done" && shot._heard) {
         sfx.done();
         noteDone(shot);
+        askCommunityAfterFirstImage(busyNow);
       }
       else if (shot.status === "failed") sfx.fail();
       shot._heard = shot.status;
@@ -2684,6 +2688,8 @@ const hiresRun = createHires({
     updateShot(shot);
     // 做完、停掉、做壞了都存一次（做壞的那筆工作編號要從存檔拿掉，不然每次重新整理都再接一次）。
     if (!shot.hi || shot.hi.status === "failed") S.saveShots(shots);
+    // 抽並生圖那排的「Hires 中」和「停」跟著換（狀態沒變的話 renderGoBar 自己會略過）。開機接回時排還沒畫好就先不管。
+    if (settings && $("go-bar")?.childElementCount) renderGoBar();
   },
   save: () => S.saveShots(shots),
   done: (shot, kind) => {
@@ -2699,7 +2705,7 @@ const hiresRun = createHires({
 });
 
 /** 這張正在做哪一種（Hires 或修臉）：忙的時候按別的鈕要說清楚是誰佔著。 */
-const busyNote = (shot) => (faceBusy(shot) ? "這張正在修臉，圖上可以停" : "這張正在 Hires，圖上可以停");
+const busyNote = (shot) => (faceBusy(shot) ? "這張正在修臉：按「停」或 Esc 可以停" : "這張正在 Hires：按「停」或 Esc 可以停");
 
 function openHires(shot, btn) {
   if (!shot.image || shot.status !== "done") return refuse(btn);
@@ -2708,8 +2714,10 @@ function openHires(shot, btn) {
     return refuse(btn);
   }
   openHiresPicker(btn, shot, {
-    onStart: (mode, scale) => {
-      if (!hiresRun.start(shot, mode, scale)) return refuse(btn);
+    // 「用目前模型」：頂欄現在選的底模、LoRA 和它們的觸發詞（hires.js 換掉原圖 LoRA 的觸發詞）。
+    current: () => ({ ckpt: currentCkpt(), loras: structuredClone(currentLorasPayload()), trigger: currentTriggerText() }),
+    onStart: (mode, scale, model) => {
+      if (!hiresRun.start(shot, mode, scale, model)) return refuse(btn);
       sfx.hiresStart();
     },
     onRestore: () => {
@@ -2746,9 +2754,26 @@ function openFace(shot, btn) {
 // 生圖種子那一組只建一次，每次重畫合成池底下那排時把同一個節點搬回去（輸入到一半不會被洗掉）。
 let seedNode = null;
 
+/**
+ * 忙不忙：付印、無限抽、抽牌中，還有成品在 Hires／修臉（排著或在做）。
+ * 2026-11-20 專案主：Hires 時圖上的「停」被滑鼠移上去才出現的那行蓋住、按不到，要併進抽並生圖那排。
+ * 所以 Hires 也算忙：成品那列、底部浮動列的「停」和 Esc 都會一起停掉 Hires。
+ */
+const printBusy = () => generator.busy || looping || drawingRounds > 0;
+const hiresCount = () => shots.filter(hiresBusy).length;
+const busyNow = () => printBusy() || hiresCount() > 0;
+// 狀態字的鍵：幾張在 Hires、是不是全是修臉（進度每一格都會叫重畫，靠這個不重畫）。
+const hiresStatusKey = () => (hiresCount() ? hiresStatusText() : "");
+function hiresStatusText() {
+  const list = shots.filter(hiresBusy);
+  const kind = list.every(faceBusy) ? "修臉中" : "Hires 中";
+  return list.length > 1 ? `${kind}，還有 ${list.length} 張` : kind;
+}
+
 /** 抽牌那一列的狀態字：忙的時候講進度；閒著但「同一個人」開著卻沒作用時說一聲。 */
-function goStatusText(busy = generator.busy || looping || drawingRounds > 0) {
-  if (busy) return `${generator.pending ? `印製中，還有 ${generator.pending} 張` : "下一輪…"}${infinite ? (ui.loopMax ? `・無限抽 ${loopSent} / ${ui.loopMax}` : "・無限抽開著") : ""}`;
+function goStatusText(busy = busyNow()) {
+  if (busy && !printBusy()) return hiresStatusText();
+  if (busy) return `${generator.pending ? `印製中，還有 ${generator.pending} 張` : "下一輪…"}${infinite ? (ui.loopMax ? `・無限抽 ${loopSent} / ${ui.loopMax}` : "・無限抽開著") : ""}${hiresCount() ? `・${hiresStatusText()}` : ""}`;
   // 同一個人是「同一輪裡」第 2 張起才鎖長相：一次 1 張的時候開著也沒有作用。
   return settings.samePerson && settings.n < 2 ? "同一個人：一次 2 張以上才有作用" : "";
 }
@@ -2831,7 +2856,7 @@ function renderOverreach() {
 
 function renderGoBar() {
   const bar = $("go-bar");
-  const busy = generator.busy || looping || drawingRounds > 0;
+  const busy = busyNow();
   const n = settings.n;
   // 狀態沒變就不重畫。生圖時每個進度事件都會叫到這裡，以前整排按鈕一秒換好幾次新的：
   // 滑鼠停在「停」上看起來在閃，按下去的那一瞬間按鈕剛好被換掉，按下跟放開落在兩個不同的
@@ -2839,7 +2864,7 @@ function renderGoBar() {
   // 「偏好卡牌」在合成池標題列（跟疊印台一樣放在池子旁邊）：只換選中狀態和張數，不跟著整排重畫。
   syncHandBtn();
   renderOverreach();
-  const key = [busy, generator.pending, infinite, infinite ? loopSent : 0, n, settings.samePerson].join("|");
+  const key = [busy, generator.pending, infinite, infinite ? loopSent : 0, n, settings.samePerson, hiresStatusKey()].join("|");
   if (bar.dataset.key === key && bar.childElementCount) return renderGoFloat();
   // 只是開始印、印完、還剩幾張換了（每抽一輪頭尾各一次）：整排的開關、步進器、按鈕都一樣，只換狀態字。
   // 以前整排拆掉重建，連帶分段滑塊整頁重量一次（抽一輪多兩次同步排版）；滑鼠停在按鈕上也會閃一下。
@@ -2905,9 +2930,9 @@ function renderGoBar() {
  */
 let wallBusy = null;
 function renderWallBusy() {
-  const busy = generator.busy || looping || drawingRounds > 0;
+  const busy = busyNow();
   wallBusy ||= el("span", { class: "wall-busy", id: "wall-busy" });
-  const key = busy ? [generator.pending, infinite, infinite ? loopSent : 0].join("|") : "";
+  const key = busy ? [generator.pending, infinite, infinite ? loopSent : 0, hiresStatusKey()].join("|") : "";
   if (wallBusy.dataset.key === key && wallBusy.isConnected) return;
   const was = wallBusy.dataset.key;
   wallBusy.dataset.key = key;
@@ -2944,7 +2969,7 @@ function renderGoFloat() {
   const float = $("go-float");
   // IntersectionObserver 第一次回報可能比 boot() 讀完設定還早。
   if (!float || !settings) return;
-  const busy = generator.busy || looping || drawingRounds > 0;
+  const busy = busyNow();
   // 手機：抽並生圖不在畫面上就浮出來，合成池空的也一樣（空的照樣能抽，浮動列寫「全靠抽」）。
   // Safari 的網址列、工具列吃掉一段高度，一打開主按鈕常常就在畫面外。
   const show = !goBarVisible && (shots.length > 0 || pool.size > 0 || pickerMQ.matches);
@@ -2955,12 +2980,12 @@ function renderGoFloat() {
   // 印的時候：手機上浮動列放不下那行狀態字，改浮在浮動列上方（styles.css 的 .go-float[data-busy]）。
   float.toggleAttribute("data-busy", busy);
   // 同上：狀態沒變就不換掉底下那排按鈕（不然「停」會閃、按不到）。
-  const key = [busy, generator.pending, pool.size, settings.n, infinite].join("|");
+  const key = [busy, generator.pending, pool.size, settings.n, infinite, hiresStatusKey()].join("|");
   if (float.dataset.key === key && float.childElementCount) return;
   float.dataset.key = key;
   float.replaceChildren(
     ...[
-      el("span", { class: "go-float-state" }, busy ? (generator.pending ? `印製中・還有 ${generator.pending} 張` : "無限抽・下一輪…") : pool.size ? `池裡 ${pool.size} 張` : "池子是空的，全靠抽"),
+      el("span", { class: "go-float-state" }, busy ? (!printBusy() ? hiresStatusText() : generator.pending ? `印製中・還有 ${generator.pending} 張` : "無限抽・下一輪…") : pool.size ? `池裡 ${pool.size} 張` : "池子是空的，全靠抽"),
       busy ? el("button", { class: "btn btn-small go-stop", type: "button", onclick: stopAll }, "停") : null,
       el("button", { class: "btn btn-small btn-ghost", type: "button", onclick: () => drawBatch(false), title: "只抽牌（P）" }, "只抽牌"),
       el("button", { class: "btn btn-small btn-primary", type: "button", onclick: () => drawBatch(true), title: "抽並生圖（G）" }, "抽並生圖", el("span", { class: "count" }, goCount(settings.n))),
@@ -3039,6 +3064,13 @@ function liftTrash() {
 /** 停下來。say：用 Esc 停的（沒按到「停」那顆鈕、看不到它變化）：說一句停了什麼，無限抽也關了就一起講。 */
 function stopAll({ say = false } = {}) {
   const wasInfinite = infinite;
+  // Hires／修臉也一起停（排著的、在做的都拿掉；做好的照舊留著）。
+  for (const s of shots) if (hiresBusy(s)) hiresRun.cancel(s);
+  if (!printBusy()) {
+    renderGoBar();
+    if (say) toast("停下了");
+    return;
+  }
   drawEpoch++;
   infinite = false;
   stopAsked = true;
@@ -3148,6 +3180,20 @@ function assistantCtx() {
   return {
     version: () => workVersion,
     resolveTag,
+    referenceShot(id) {
+      const shot = lib && shots.find((s) => s.id === id && s.status === "done" && s.image && !s._goneSrc);
+      return shot ? { ...shot, name: shotTitle(shot), thumbnail: wallSrc(shot.image) } : null;
+    },
+    referenceRules: () => ({ lex, pinOptions: pinOpts(), groups: cachedGroups(), owners: customOwners() }),
+    restoreReferenceBans(tags) {
+      // 復原引用時還原廢字簍。只還原這一步撿回的牌，別移走重新釘回的其他綁定牌。
+      for (const tag of tags) {
+        pool.delete(tag);
+        bans.add(tag);
+      }
+      commitPins();
+      renderTrash();
+    },
     state: () => ({
       room: "mochi",
       ready: !!lib,
@@ -4169,6 +4215,9 @@ function paintShot(node, shot) {
     }
   } else if (empty) empty.remove();
   paintHiresVeil(frame, shot, { onCancel: () => hiresRun.cancel(shot), onDismiss: () => hiresRun.dismiss(shot) });
+  // Hires 中：下緣那行讓給圖上的 Hires 狀態和「停」（styles.css 的 .shot[data-hi]）。
+  if (shot.hi) node.dataset.hi = shot.hi.status;
+  else delete node.dataset.hi;
   node.querySelector(".fav-btn")?._paint?.();
   const hiBtn = node.querySelector(".shot-hires");
   if (hiBtn) {
@@ -4378,13 +4427,16 @@ function draftFace(shot, text, { hand = true } = {}) {
         {
           class: "btn btn-small " + (shot.status === "drawn" ? "btn-primary" : "btn-pool"),
           type: "button",
+          // 原位重印（同一格、不另外加一張）。印壞的寫「重試這張」：2026-11-20 外部檢查，
+          // 印壞的卡上「再印一次」和滑過才出來的「同種子重印」並排，分不出哪顆會多一張。
+          title: shot.status === "drawn" ? "照這手牌送去印" : "在這一格重印，不會另外多一張",
           onclick: (e) => {
             const sheet = e.currentTarget.closest(".sheet-shot");
             printInPlace(shot);
             sheet?.querySelector(".sheet-close")?.click();
           },
         },
-        shot.status === "drawn" ? "送去印這張" : "再印一次"
+        shot.status === "drawn" ? "送去印這張" : shot.status === "failed" ? "重試這張" : "再印這張"
       )
     );
   }
@@ -4845,6 +4897,43 @@ function promptChips(shot) {
   );
 }
 
+/**
+ * 點開成品：這張用哪顆底模、哪些 LoRA、各多強（2026-11-20 專案主要的）。
+ * 記的是印這張當時送出去的（shot.ckpt、shot.loras），不是頂欄現在選的。沒記到底模（舊的成品）就不寫那一行。
+ */
+const fileStem = (f) => String(f || "").split(/[\\/]/).pop().replace(/\.(safetensors|ckpt|pt|gguf)$/i, "");
+function shotModelInfo(shot) {
+  const ckpt = fileStem(shot.ckpt);
+  const loras = (shot.loras || []).filter((x) => x && (x.file || x.name));
+  const hiModel = shot.hires?.model;
+  if (!ckpt && !loras.length && !hiModel) return null;
+  const row = (label, ...value) => [el("dt", {}, label), el("dd", {}, ...value)];
+  return el(
+    "dl",
+    { class: "sd-model" },
+    ckpt ? row("底模", el("span", { class: "sd-model-name", title: String(shot.ckpt) }, ckpt)) : null,
+    row(
+      "LoRA",
+      loras.length
+        ? el(
+            "ul",
+            { class: "sd-loras" },
+            loras.map((x) =>
+              el(
+                "li",
+                { title: String(x.file || x.name) },
+                el("span", { class: "sd-model-name" }, fileStem(x.file || x.name)),
+                el("b", { class: "sd-lora-w" }, `×${Number(x.strength ?? 1).toFixed(2)}`)
+              )
+            )
+          )
+        : el("span", { class: "sd-none" }, "沒有")
+    ),
+    // Hires 時換了模型（「用目前模型」）：大圖是用這組重畫的。
+    hiModel ? row("Hires", el("span", { class: "sd-model-name", title: String(hiModel.ckpt || "") }, modelLine(hiModel))) : null
+  );
+}
+
 function shotDetailBody(shot, { deal = true } = {}) {
   const src = viewSrc(shot.image) || shot.preview;
   const size = shot.hires ? `${shot.hires.width}×${shot.hires.height}（原圖 ${shot.width}×${shot.height}）` : `${shot.width}×${shot.height}`;
@@ -4859,6 +4948,7 @@ function shotDetailBody(shot, { deal = true } = {}) {
       // 印壞了、中斷了但有預覽圖：左邊畫的是半成品，原因以前只在牆上那行（手機兩欄只看得到十個字）。寫完整。
       src && (shot.status === "failed" || shot.status === "stopped") ? el("p", { class: "sd-fail", role: "note" }, shotWords(shot)[shot.status]) : null,
       el("p", { class: "sd-meta" }, chips.map((c) => el("span", {}, c)), el("span", { class: "sd-seed" }, seedUseButton(shot.seed))),
+      shotModelInfo(shot),
       el(
         "section",
         { class: "sd-cards" },
@@ -5356,9 +5446,17 @@ function onKey(e) {
   // 生圖中、焦點在搜尋框這類輸入框裡，Esc 照樣能停（快捷鍵說明寫「Esc：停下來」）。
   // 搜尋框、文字框裡還有字時先讓框自己處理（搜尋框的 Esc 是清掉字），清空了再按一次才停。
   const clears = t && t.tagName === "INPUT" && (t.type === "search" || t.type === "text") && t.value;
-  if (typing && e.key === "Escape" && !clears && (generator.busy || looping || drawingRounds > 0)) {
+  if (typing && e.key === "Escape" && !clears && busyNow()) {
     e.preventDefault();
     return stopAll({ say: true });
+  }
+  // 字盒搜尋已經空了、沒在生圖：再按 Esc 離開搜尋框，焦點交給「抽並生圖」（2026-11-20 外部檢查：
+  // 找完牌按 Esc 再按 P，P 被打進搜尋框）。之後 P、G 直接能用，Tab 也從抽牌那排接著走。
+  if (typing && e.key === "Escape" && !clears && t.id === "lib-q") {
+    e.preventDefault();
+    t.blur();
+    $("go-bar")?.querySelector(".btn-primary")?.focus({ preventScroll: true });
+    return;
   }
   if (typing) return;
   // 按住不放：鍵盤自動重複一秒三十次，每一下都會排一輪（drawBatch 連按就是各抽一輪），按住 G 會排進幾十輪。只認第一下。
@@ -5375,7 +5473,7 @@ function onKey(e) {
   } else if (e.key === "Escape" && trashPanel?.isOpen) {
     trashPanel.close();
     $("trash").focus({ preventScroll: true });
-  } else if (e.key === "Escape" && (generator.busy || looping || drawingRounds > 0)) {
+  } else if (e.key === "Escape" && busyNow()) {
     stopAll({ say: true });
   } else if ((e.key === "z" || e.key === "Z") && (runToastAction("Z") || undoLastStep())) {
     // 提示上有「復原」（清空合成池、撤下成品、拿出偏好卡牌）：Z 就是按它。

@@ -38,6 +38,8 @@ export function buildSystemPrompt({ lang, room, now } = {}) {
     "每則使用者訊息開頭的［目前工作台］是送出那一刻的摘要（現在時間、合成池、一次、每段補牌、分級、尺度、群組勾選）。要細節或要確認最新狀態，用 get_workspace。較早幾輪的工具結果和工作台摘要會精簡（標 trimmed），要用到裡面的細節就重新查。",
     "配牌要快：使用者描述想要的畫面、要你配一組牌時，自己想好一整串 Danbooru 提示詞（Danbooru 上真的有的英文 tag），用 paste_prompt 一次排進去，跟使用者按「貼上」一樣。不要先 find_cards 一張張找、也不要先 get_workspace（［目前工作台］已經寫了）。",
     "使用者問意見、要推薦（還可以加什麼、你覺得呢）：用 suggest_cards 排出 3～6 張牌、各一句理由，不寫入；畫面上每張都有「加入」。回覆一兩句就好，不要把牌名再列一遍。使用者之後說「第一張」「第三張」，照 suggest_cards 回傳的 n 對應。",
+    "訊息有［引用作品］時，先看配方和編號（兩件照附上順序）。要留著或換掉某段：用 use_reference 的 include 帶入要保留的段，或用 exclude 略過要換的段；再用 paste_prompt（不要 replace 整池）或 change_pool 補新牌。只在使用者要求改牌時動手；不用套用種子或模型。",
+    "要在作品冊找成品，先 find_works。要問某張牌從哪裡來、拿掉後會怎樣，用 trace_card；有指著的作品就傳 id。inferred 是按規則推斷，回答時要說明。",
     "問某一類、某個主題有哪些牌、有幾張（溫泉、洗澡系列、海邊相關）：跟配牌一樣，先憑感覺寫出這個主題 Danbooru 上真的有的英文 tag，放進 find_cards 的 also 一次查完（8～15 個），回答張數看回傳的 total。不要只用一個中文詞查，查不到就說沒有。",
     "單張牌可以用詞庫的正式 tag 或能唯一對應的牌名；辨識後回傳正式 tag。suggest_check 的 usable 才會納入試算，inPool、missing 和 blocked 分開列。",
     "paste_prompt 回的 unknown 是詞庫沒有的字。searched 為 true 表示已在字盒查過，相近的牌在 candidates；重要的挑一張用 change_pool 加入，不重要或都不像就略過。searched 為 false 的重要字才另外用 find_cards 查。不要把沒對上的字塞進額外提示詞。只加減一兩張已知的牌、調份量，用 change_pool。",

@@ -129,5 +129,32 @@ const note = (tags, at) => JSON.stringify({ tags, at, from: "book", weights: {} 
   ok("點進去：便條撕掉", localStorage.getItem(NOTE) === null && page.reloads() === 0);
 }
 
+// 5. 預開的墨池因為別頁寫了便條而自己重新整理：不算使用者按的重新整理，分頁裡組到一半的池子要拿得回來
+//    （2026-11-20 專案主：卡冊挑牌加入後切回墨池，原本的牌都不見了）。使用者真的按重新整理照舊清空。
+{
+  const page = fakePage();
+  const TAB = "mochi.tab.pool.v1";
+  sessionStorage.setItem(TAB, JSON.stringify({ tags: ["red hair", "smile"], weights: {} }));
+  const { guardPrerender } = await load();
+  guardPrerender("index");
+  page.external(NOTE, note(["blue eyes"], Date.now()));
+  page.activate();
+  ok("別頁寫了便條：點進去重新整理", page.reloads() === 1);
+  ok("重新整理前留了記號", sessionStorage.getItem("mochi.reload.keep.v1") === "1");
+  // 重新整理之後的那一頁：navigation 是 reload，但有記號
+  const nav = performance.getEntriesByType;
+  performance.getEntriesByType = () => [{ type: "reload" }];
+  try {
+    const S = await import(pathToFileURL(resolve(import.meta.dirname, web + "store.js")).href + `?v=${n}r1`);
+    ok("程式自己重新整理：不算重來", S.reloaded() === false);
+    ok("程式自己重新整理：分頁裡的池子拿得回來", S.loadTab(TAB)?.tags?.join() === "red hair,smile");
+    ok("記號用過就撕掉", sessionStorage.getItem("mochi.reload.keep.v1") === null);
+    const S2 = await import(pathToFileURL(resolve(import.meta.dirname, web + "store.js")).href + `?v=${n}r2`);
+    ok("之後使用者真的按重新整理：照舊清空", S2.reloaded() === true && S2.loadTab(TAB) === null);
+  } finally {
+    performance.getEntriesByType = nav;
+  }
+}
+
 console.log(failed ? `${failed} failed` : "all ok");
 process.exit(failed ? 1 : 0);

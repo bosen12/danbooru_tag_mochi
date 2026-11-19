@@ -3558,6 +3558,17 @@ html[data-go-float] .wall-busy {
   }
 }
 
+/* Hires／修臉進行中：下緣那行讓給圖上的 Hires 狀態和「停」。
+ * 畫框是 container（自成一層），Hires 那條的 z-index 蓋不過這行：以前滑鼠移上去，這行浮出來壓在「停」上面、按不到。
+ * （屬性寫兩次是要比上面「滑鼠移上去就亮」那條強。） */
+.shot[data-hi][data-hi] > .shot-meta {
+  opacity: 0;
+  pointer-events: none;
+}
+.shot[data-hi][data-hi] > .shot-meta > * {
+  pointer-events: none;
+}
+
 /* 印好了就不寫「印好了」：圖在那裡就是印好了；排著、在印、印壞的才寫。 */
 .shot[data-status="done"] > .shot-meta .status {
   display: none;
@@ -3602,6 +3613,13 @@ html[data-go-float] .wall-busy {
 /* 撤下是這排唯一會拿掉東西的：推到最右、字色放淡，跟其他動作分開。
    五顆放不下一行時，它自己靠右落在第二行，看起來是分組，不是被擠下去。 */
 .shot[data-status="drawn"] .shot-reprint {
+  display: none;
+}
+
+/* 印壞、取消、中斷又沒有圖：畫框裡已經寫了原因和「重試這張」（原位重印）。
+ * 下緣那行不再寫一次同樣的原因；滑過的那排也不放「同種子重印」（那顆是另外排一張新的，並排分不出差別）。 */
+.shot:is([data-status="failed"], [data-status="cancelled"], [data-status="stopped"])[data-bare="true"] > .shot-meta .status,
+.shot:is([data-status="failed"], [data-status="cancelled"], [data-status="stopped"])[data-bare="true"] .shot-reprint {
   display: none;
 }
 
@@ -4358,6 +4376,61 @@ body[data-dragging="true"] .library[data-over="true"] {
   padding: 0;
   border: 0;
   background: none;
+}
+
+/* 底模、LoRA 和強度：兩欄小表，名稱太長就截斷（滑鼠停著看全名），強度用等寬數字靠右。 */
+.sd-model {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 6px var(--space-sm);
+  margin: 0;
+  padding: var(--space-xs) var(--space-sm);
+  border: 1px solid var(--color-rule-2);
+  border-radius: var(--radius-md);
+  background: var(--color-paper-3);
+  font-size: var(--text-xs);
+}
+.sd-model dt {
+  color: var(--color-muted);
+  white-space: nowrap;
+}
+.sd-model dd {
+  min-width: 0;
+  margin: 0;
+  color: var(--color-ink);
+}
+.sd-model-name {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sd-loras {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.sd-loras li {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-xs);
+  min-width: 0;
+}
+.sd-loras .sd-model-name {
+  flex: 1;
+}
+.sd-lora-w {
+  flex: none;
+  font-family: var(--font-mono);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-accent);
+}
+.sd-none {
+  color: var(--color-muted);
 }
 
 .sd-head {
@@ -5429,12 +5502,10 @@ html[data-vt="back"] .vt-sweep {
   display: grid;
   gap: var(--space-sm);
   padding: var(--space-md) var(--space-md) var(--space-sm);
-  background:
-    linear-gradient(var(--color-ink-2), var(--color-ink-2)) top left / 14px 2px no-repeat,
-    linear-gradient(var(--color-ink-2), var(--color-ink-2)) top right / 14px 2px no-repeat,
-    var(--color-paper-2);
+  /* 圓角跟裡面的分段鈕、按鈕同一族（2026-11-20 專案主：直角太硬）；角上的墨線一起拿掉，圓角上會歪。 */
+  background: var(--color-paper-2);
   border: 1px solid var(--color-rule);
-  border-radius: var(--radius-xs);
+  border-radius: var(--radius-lg);
   box-shadow: 0 16px 40px var(--color-shade);
 }
 
@@ -5484,6 +5555,44 @@ html[data-vt="back"] .vt-sweep {
 
 .hp-note[data-kind="err"] {
   color: var(--color-warn);
+}
+
+/* 「用目前模型」：開關＋底下一行寫會用哪組（開著時名稱轉成墨色、說明換成朱色）。 */
+.hp-model {
+  display: grid;
+  gap: 4px;
+  padding: var(--space-xs) var(--space-sm);
+  border: 1px solid var(--color-rule-2);
+  border-radius: var(--radius-md);
+  transition: border-color var(--dur-short) var(--ease-out), background-color var(--dur-short) var(--ease-out);
+}
+.hp-model[data-on="true"] {
+  border-color: var(--color-rule);
+  background: var(--color-paper-3);
+}
+.hp-model-note {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  font-size: var(--text-xs);
+  line-height: 1.5;
+}
+.hp-model-line {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--color-muted);
+  transition: color var(--dur-short) var(--ease-out);
+}
+.hp-model[data-on="true"] .hp-model-line {
+  color: var(--color-ink);
+}
+.hp-model-why {
+  color: var(--color-muted);
+}
+.hp-model[data-on="true"] .hp-model-why {
+  color: var(--color-accent);
 }
 
 .hp-was {
@@ -8695,5 +8804,37 @@ a.btn {
   .community-badge i:first-child {
     opacity: 0.4;
     transform: scale(0.85);
+  }
+}
+
+/* ==== Grok 2026-11-20 ==== */
+/* 份量角標是滾輪的熱區。pointer-events 仍是 none（牌的點擊、拖曳照舊走牌面），
+ * 這裡把畫出來的角標撐到至少 28px，指得到；不到的時候 weights.js 再從中心補熱區。 */
+.card-w {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  min-width: 28px;
+  min-height: 28px;
+}
+
+/* 平常 1.0 不顯示。滑鼠移到牌上才淡入的那顆，用灰字，跟真正調過的暖色分開。 */
+.card-w-rest {
+  color: var(--color-muted);
+}
+
+/* 解析池的入口：電腦寫拖入，觸控寫選圖。parse.css 沒有設這兩個 class 的 display，
+ * 加在這裡才不會改到解析池的版面。兩句都在 HTML 裡，用媒體查詢決定看哪一句。 */
+.parse-drop-touch {
+  display: none;
+}
+
+@media (pointer: coarse), (hover: none) {
+  .parse-drop-mouse {
+    display: none;
+  }
+  .parse-drop-touch {
+    display: block;
   }
 }

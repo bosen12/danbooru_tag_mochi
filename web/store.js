@@ -3,7 +3,7 @@
  * 合成池與疊印台的版不存：重新整理就是空的。明確按「帶牌」時才留下交接便條，
  * 目的頁下一次打開時拿走就刪掉，放太久（30 分鐘）也不算數。
  */
-import { whenActive } from "./prerender.js";
+import { whenActive, KEEP_TAB_KEY } from "./prerender.js";
 import { makeShelf } from "./tab-sync.js";
 
 const KEY = {
@@ -155,12 +155,25 @@ export function recipeOf(src) {
  * 開新分頁也是空的（sessionStorage 每個分頁一份）。
  */
 export function reloaded() {
+  if (keptByGuard) return false;
   try {
     return performance.getEntriesByType("navigation")[0]?.type === "reload";
   } catch {
     return false;
   }
 }
+// 背後預開的頁點進去時自己重新整理了一次（prerender.js 的 guardPrerender 留了記號）：這不算使用者按的重新整理。
+// 開頁時就讀掉、撕掉，之後使用者真的按重新整理照舊清空。
+const keptByGuard = (() => {
+  if (globalThis.document?.prerendering) return false;
+  try {
+    const kept = sessionStorage.getItem(KEEP_TAB_KEY) === "1";
+    if (kept) sessionStorage.removeItem(KEEP_TAB_KEY);
+    return kept;
+  } catch {
+    return false;
+  }
+})();
 export const TAB_POOL = "mochi.tab.pool.v1";
 export const TAB_FUSE = "mochi.tab.fuse.v1";
 export function saveTab(key, value) {
@@ -228,6 +241,8 @@ export function hiresJobOf(t) {
         scale: hi.scale,
         sampling: hi.sampling || {},
         ...(hi.mode === "face" ? { from: hi.from, stack: !!hi.stack } : {}),
+        // 「用目前模型」的 Hires：重新整理後接回去，用的還是那組底模、LoRA 和換過觸發詞的提示詞。
+        ...(hi.model ? { model: hi.model } : {}),
       }
     : null;
 }

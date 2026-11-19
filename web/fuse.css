@@ -2323,6 +2323,41 @@ body.fuse {
   letter-spacing: 0.3em;
 }
 
+/* 付印鈕上的字母：跟動詞分開，換試印時從上面滾進來。按鈕自己的空隙會把空格再撐寬，這裡收掉。 */
+.pb-go {
+  gap: 0;
+}
+
+.pb-go-verb,
+.pb-go-letter {
+  display: inline-block;
+  vertical-align: bottom;
+}
+
+.pb-go-letter {
+  position: relative;
+  overflow: hidden;
+  height: 1.15em;
+  min-width: 1ch;
+}
+
+.pb-go-letter b {
+  display: block;
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  line-height: 1.15;
+  text-align: center;
+  font-weight: inherit;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pb-go-letter b {
+    transition: none;
+  }
+}
+
 .pb-links {
   display: flex;
   flex-wrap: wrap;

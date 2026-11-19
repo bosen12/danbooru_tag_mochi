@@ -65,8 +65,8 @@ export function skeletonPicker({ settings, save, groupKeys = null }) {
       // 整句寫死（服裝說「種」、其他說「格」）：英文版照模板整句翻，數字是 {0}、{1}。
       const lit = litOf(section).length;
       if (section === "clothing")
-        return lit <= n ? `隨機：亮著 ${lit} 種，多點亮幾種，每張就從裡面挑 ${n} 種` : `隨機：每張從亮著的 ${lit} 種裡挑 ${n} 種；點一下加進或拿出候選`;
-      return lit <= n ? `隨機：亮著 ${lit} 格，多點亮幾格，每張就從裡面挑 ${n} 格` : `隨機：每張從亮著的 ${lit} 格裡挑 ${n} 格；點一下加進或拿出候選`;
+        return lit <= n ? `隨機：亮著 ${lit} 種，多點亮幾種，每張就從裡面挑 ${n} 種` : `候選 ${lit} 種，每張抽 ${n} 種`;
+      return lit <= n ? `隨機：亮著 ${lit} 格，多點亮幾格，每張就從裡面挑 ${n} 格` : `候選 ${lit} 格，每張抽 ${n} 格`;
     }
     const unit = section === "clothing" ? "種、每種一件" : "格";
     return n === 1 ? `只補 1 ${unit}，點一顆換過去；釘選只佔同類格` : `只補 ${n} ${unit}，點暗的會換掉最早選的；釘選只佔同類格`;
