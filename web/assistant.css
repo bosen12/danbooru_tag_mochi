@@ -170,6 +170,11 @@
   html[data-ai-panel="open"] .fav-hand {
     left: calc((100% - var(--ai-w) - var(--space-sm)) / 2);
   }
+  /* 托盤展開時的寬度上限也換成那一塊的寬（原本是整個畫面減 20px：置中在左邊那塊之後會超出左緣）。 */
+  /* 只管展開的：收起來的那顆照原本（max-content，跟內容一樣寬）。 */
+  html[data-ai-panel="open"] .fav-hand:not([data-open="false"]) {
+    width: min(calc(100vw - var(--ai-w) - var(--space-sm) - 20px), max(var(--fav-want, 360px), 360px));
+  }
 }
 /* 開關聊天室時兩顆跟著版面滑過去，不是一格跳（只在助手開著時加；原本的過渡照列，只多一個 left）。 */
 @media (min-width: 75rem) and (prefers-reduced-motion: no-preference) {
