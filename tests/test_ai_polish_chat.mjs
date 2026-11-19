@@ -442,7 +442,8 @@ try {
     const prefix = next.slice(0, users[users.length - 2]);
     ok("21 精簡結果穩定（下一句話時前面那段一字不差）", JSON.stringify(prefix) === JSON.stringify(last.slice(0, users[users.length - 2])));
     const full = await page.evaluate(() => JSON.parse(localStorage.getItem("mochi.assistant.chat.v1") || sessionStorage.getItem("mochi.assistant.chat.v1") || "null"));
-    ok("21 存起來的對話不動（只動送出去的）", !full || !JSON.stringify(full).includes("trimmed"));
+    // 看精簡的記號（"trimmed":true、「當時的工作台摘要已省略」），不是字串 trimmed：找到的牌裡有 fur-trimmed 這種 tag。
+    ok("21 存起來的對話不動（只動送出去的）", !full || !["trimmed\\\":true", "trimmed\":true", "當時的工作台摘要已省略"].some((x) => JSON.stringify(full.messages || []).includes(x)));
     await context.close();
   } catch (err) {
     ok("沒有例外", false, err.stack);

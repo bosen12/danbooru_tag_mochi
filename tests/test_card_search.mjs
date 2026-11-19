@@ -65,7 +65,11 @@ test("Chinese terms with no single card fall back to each term separately", () =
   const tags = r.list.map((c) => c.tag);
   assert.ok(tags.includes("long hair") && tags.includes("red hair"));
   assert.ok(tags.indexOf("long hair") < tags.indexOf("red hair"), "in the order typed");
-  assert.equal(find("red hair long").mode, "none", "English words are too common to split (would flood)");
+  // 英文不拆成單字（red、long 一拆就冒出上百張）；三個字以上只退到連續的兩個字：red hair long → red hair
+  const rhl = find("red hair long");
+  assert.equal(rhl.mode, "near");
+  assert.equal(rhl.near, "red hair");
+  assert.ok(rhl.list.length < 60 && rhl.list.every((c) => /red/.test(c.tag) && /hair/.test(c.tag)), rhl.list.map((c) => c.tag).join(","));
 });
 
 test("no match guesses cards whose name is spelled inside the query", () => {
@@ -195,6 +199,15 @@ test("a phrase longer than any card name falls back to its shorter pieces (脫�
   assert.equal(find("紅頭髮").mode, "guess");
   // 英文、帶空白、兩個字、一個字不拆
   assert.deepEqual(shorterTerms("undressing"), []);
+  // 英文：三個字以上照連續的字由長到短，最短兩個字；兩個字的不拆（拆成單字雜訊太多）
+  assert.deepEqual(shorterTerms("fur trimmed white coat").slice(0, 3), ["fur trimmed white", "trimmed white coat", "fur trimmed"]);
+  assert.deepEqual(shorterTerms("red hair"), []);
+  assert.deepEqual(shorterTerms("long_red_hair"), ["long red", "red hair"]);
+  const en = find("fur trimmed white coat");
+  assert.equal(en.mode, "near");
+  assert.equal(en.near, "fur trimmed");
+  assert.equal(en.list[0]?.tag, "fur-trimmed coat", en.list.map((c) => c.tag).join(","));
+  assert.equal(searchNoteText(en, "fur trimmed white coat"), "找不到「fur trimmed white coat」，照「fur trimmed」找到這些");
   assert.deepEqual(shorterTerms("紅 髮"), []);
   assert.deepEqual(shorterTerms("帽子"), []);
   assert.deepEqual(shorterTerms("脫衣服").slice(0, 2), ["脫衣", "衣服"]);

@@ -4,16 +4,39 @@
 
 Changes since [v1.6](https://github.com/bosen12/danbooru_tag_mochi/releases/tag/v1.6).
 
-- **Ink Pool assistant (beta, off by default).** Turn it on under **Experimental features** in the header **Settings** (Ink Pool) and a seal appears in the header (Ctrl+/). Describe the picture you want in one sentence: it writes a prompt and pastes it in as cards, looks up words the lexicon doesn't have, changes weights, per-image and per-category counts, checks groups, saves a group, and draws a round. Every step shows in the chat with **See changes** / **Undo**; replacing a pinned card or rescuing a blocked one asks first. It connects through a CLI you already have (Claude Code, Codex, Grok Build, run with their own tools switched off) or an API key (OpenAI, Anthropic, xAI, or any compatible endpoint), with a reasoning effort per connection; keys stay on the server and are never sent back to the page. It can't print images, change the rating or the model. With the switch off the page is exactly as before.
+- **Ink Pool assistant (beta, off by default).** Turn it on under **Experimental features** in the header **Settings** (Ink Pool) and a seal appears in the header (Ctrl+/). Describe the picture you want in one sentence: it writes a prompt and pastes it in as cards, looks up words the lexicon doesn't have, changes weights, per-image and per-category counts, checks groups, saves a group, and draws a round. It connects through a CLI you already have (Claude Code, Codex, Grok Build, run with their own tools switched off) or an API key (OpenAI, Anthropic, xAI, or any compatible endpoint), with a reasoning effort per connection; keys stay on the server and are never sent back to the page. It can't print images, change the rating or the model. With the switch off the page is exactly as before.
+  - **Suggestions as cards**: ask "what else would fit?" and it lays out real card faces, each with a one-line reason and an **Add** button (undoable; it asks before replacing a pinned card). You can also say "add the first and third".
+  - **Finished steps read as an action log** ("Added sunset", "Batch 1 → 3", "Appearance 2 → 3") with **See changes** and **Undo** beside them.
+  - **Topic searches** ("how many bath cards are there?"): like Paste, it writes a batch of Danbooru tags it expects to exist and checks them all at once; wording that matches a lexicon sub-category (for example *Activities · Water & bathing*) pulls in the whole category, and it reports the real total. **Show all N** opens a floating mini library with just those cards, split by category and sub-category; click a card to pin it (it flies into the pool), click again to remove it.
+  - The header keeps only the name, settings and close; the connection is shown only when something is wrong. Opening it from the pool or a library search shows that context with two related prompts. Replies are faster (stable prompt for provider caching, older tool results trimmed).
 - **Favorite characters, favorite cards and group picks are shared through the server**, so every device and every room sees the same set.
 - Groups also steer the content level and cast, like pinned cards, and ignore scene clothing limits (a checked bikini group in a bedroom now draws bikinis).
-- **Library search** falls back to shorter pieces of a phrase with no exact match: 脫衣服 finds 正在脫衣 and 半脫衣, with a note saying which piece matched. The assistant uses the same search.
+- **Library search** falls back to shorter pieces when a whole phrase has no match, with a note saying which piece matched: `fur trimmed white coat` shows the fur-trimmed cards with *fur-trimmed coat* first (English phrases of three words or more drop to runs of at least two words, never single words). Chinese and Japanese phrases work the same way.
 - **The tour covers more**: card groups (Ink Pool and Card Book), Paste, Decks, Favorite cards, Blocked cards, Rating and the assistant in the Ink Pool; Favorite cards and Decks in the Fuse Bed.
 - **Smoother**: dealing cards after **Draw & generate** no longer repaints every card each frame, the waiting hand before ComfyUI starts only fades its glow, typing in the library search no longer redraws the whole library per keystroke, frosted panels go opaque while you scroll, and card peek no longer pops up mid-scroll.
 - The floating draw bar hides again when you scroll back to the main button, and stays centred beside the chat panel.
 - A header **Settings** gear, and a ComfyUI status mark next to it.
 - "Comfy not connected" bursts: when Windows refuses a local port, Mochi reconnects from another one.
 - Several deep-review rounds fixed well over 100 smaller issues, including: two tabs no longer print the same round twice, removed images are not saved back, gallery saves are locked, custom cards and decks check versions before saving, failed reads of settings or favorites no longer wipe them, and the MCP server reports read errors.
+
+### 繁體中文
+
+與 [v1.6](https://github.com/bosen12/danbooru_tag_mochi/releases/tag/v1.6) 相比：
+
+- **墨池助手（實驗功能，預設關閉）**：在頂欄齒輪「設定」的〈實驗功能〉打開後，頂欄多一顆朱色印章（Ctrl+/）。用一句話說想要的畫面，它會寫好提示詞貼進來變成牌、去字盒找詞庫沒有的字、調份量、改「一次」和各段張數、勾群組、建立群組、抽一輪。連線可以用你已經裝好的 CLI（Claude Code、Codex、Grok Build，它們自己的工具都關掉）或 API 金鑰（OpenAI、Anthropic、xAI 或相容的服務），每條連線可以設推理強度；金鑰只存在伺服器，不會送回網頁。它不能生圖、改分級或改模型。關著時頁面跟原本一模一樣。
+  - **推薦用卡面呈現**：問「還可以加什麼」，它直接排出墨池的卡面，每張一句理由和「加入這張」（可以復原；會擠掉已釘的牌時先問你）。也可以直接說「第一張和第三張加進去」。
+  - **做完的步驟排成操作紀錄**：「加入　日落」「一次　1 → 3」「長相　2 → 3」，旁邊就是「看變更」「復原」。
+  - **找一類牌**（「溫泉、洗澡系列有幾張」）：像貼上一樣，先寫一串 Danbooru 上有的 tag 一次對詞庫；說法對到詞庫的小分類（例如「活動・玩水洗浴」）就整類算進來，並回報真正的總張數。按「看這 N 張」會浮出一個小字盒，只放這些牌，照花色和小分類分；點牌放進合成池（牌會飛過去），再點一次拿掉。
+  - 頂端只留名稱、設定和收起，連線有問題才寫出來。從合成池或字盒搜尋按「問助理」打開時，會寫出那一塊現在的樣子並換成兩句相關的例句。回覆更快（系統說明固定，供應商的提示詞快取接得上；舊回合的工具結果精簡後再送）。
+- **偏好角色、偏好卡牌、群組勾選改由伺服器共用**：每台裝置、每個房間看到的都是同一份。
+- 群組也會像釘選的牌一樣決定尺度和人物，而且不受場景的服裝限制（臥室裡勾了比基尼群組，現在會抽到比基尼）。
+- **字盒搜尋**整句找不到時，改用較短的片段再找，牌格上方寫出是照哪一段找到的：打「脫衣服」會找到「正在脫衣」「半脫衣」。英文也一樣：打 `fur trimmed white coat` 會找到毛邊的衣物，fur-trimmed coat 排第一（三個字以上才拆，最短拆到兩個字，不拆成單字）。
+- **導覽補齊**：墨池加上群組、貼上、牌組、偏好卡牌、廢字簍、分級、墨池助手；卡冊加上群組書架；疊印台加上偏好卡牌、牌組。
+- **更順**：按「抽並生圖」後發牌時，不再每一格重畫每張牌；送去 ComfyUI、還沒開始畫的那段，呼吸光只動透明度；字盒搜尋連續打字不再每個字都整盒重畫；捲動時毛玻璃暫時換成不透明；捲字盒時放大卡不會中途彈出來。
+- 捲回主按鈕時，底部浮動列會收起來；聊天室開著時，浮動列置中在聊天室左邊。
+- 頂欄多了「設定」齒輪，旁邊有 ComfyUI 的連線狀態。
+- 「Comfy 未連」一陣一陣：Windows 擋掉本機連接埠時，會換一個埠重新連線。
+- 幾輪深度檢查修掉了一百多處小問題，例如：兩個分頁不再重複送印同一輪、撤下的成品不會再被存回來、作品存檔加鎖、自製牌和牌組存檔前會先比對版本、讀不到設定或偏好時不會把它們清空、MCP 伺服器會回報讀取錯誤。
 
 ## v1.6 — 2026-11-17
 

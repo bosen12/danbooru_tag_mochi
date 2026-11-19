@@ -3212,6 +3212,8 @@ function assistantCtx() {
       }));
       out.total = list.length;
       out.groups = [...groups];
+      // 全部結果的 tag（不受 limit）：聊天室「看這 N 張」的浮空小字盒照這份畫。
+      out.allTags = list.slice(0, 400).map((c) => c.tag);
       return out;
     },
     cardInfo(tag) {
@@ -3431,6 +3433,11 @@ function assistantCtx() {
       const requested = Number.isInteger(n) && n >= 1 ? Math.min(50, n) : settings.n;
       const made = (await drawBatch(false, { n: requested })) || [];
       return { requested, made: made.length, shotIds: made.map((s) => s.id), warnings: made.length < requested ? ["short"] : [] };
+    },
+    // 浮空小字盒（assistant-found.js）：每張牌的花色、小分類、在不在合成池。
+    cardMeta(tag) {
+      const c = lib?.byTag.get(tag);
+      return c ? { tag, suit: c.suit, group: c.group, groupZh: c.groupZh || c.group, inPool: pool.has(tag), blocked: blockedOf(c) || null } : null;
     },
     // 推薦卡：聊天室裡用字盒同一個卡面（不能點、不能拖，只看）。詞庫沒有回 null。
     cardFace(tag) {

@@ -227,18 +227,39 @@ function searchInner(pool, q, allowStem) {
   // 打的比牌名長一點（「脫衣服」→ 牌叫「正在脫衣」「半脫衣」）：照較短的片段再找，先試最長、靠前的。
   for (const alt of shorterTerms(q)) {
     const near = pool.filter((c) => cardMatches(c, alt));
-    if (near.length) return { list: rankList(near, termsOf(alt).join(" ")), mode: "near", terms: typed, near: alt };
+    if (!near.length) continue;
+    let list = rankList(near, termsOf(alt).join(" "));
+    // 對到原本越多個字的排越前面（fur trimmed white coat 退到 fur trimmed 時，fur-trimmed coat 排第一）。
+    const all = termsOf(q);
+    if (all.length > 1) {
+      const score = (c) => all.filter((t) => hits(keysOf(c), t)).length;
+      list = list.map((c, i) => [c, score(c), i]).sort((a, b) => b[1] - a[1] || a[2] - b[2]).map(([c]) => c);
+    }
+    return { list, mode: "near", terms: typed, near: alt };
   }
   return { list: [], mode: "none", terms: typed };
 }
 
 /**
- * 整句沒有時依序再試的較短片段：只對三個字以上、沒有空白的中日文說法（英文拆開太常見）。
+ * 整句沒有時依序再試的較短片段：三個字以上、沒有空白的中日文說法；或三個字以上的英文說法（只拆到兩個字為止）。
  * 從長到短、同長度從開頭往後（「脫衣服」→「脫衣」→「衣服」），最多 12 個，不要把整盒搜一輪又一輪。
  */
 export function shorterTerms(query) {
   const q = String(query ?? "").trim();
-  if (/\s/.test(q) || !/[぀-ヿ㐀-鿿]/.test(q) || /[a-z0-9]/i.test(q)) return [];
+  // 英文：三個字以上的說法照連續的幾個字由長到短再找（fur trimmed white coat → fur trimmed white → … → fur trimmed），
+  // 最短兩個字。不拆成單一個字：red、long 這種字一拆就冒出上百張不相干的牌。
+  if (!/[぀-ヿ㐀-鿿]/.test(q)) {
+    const words = q.toLowerCase().split(/[\s_]+/).filter(Boolean);
+    const out = [];
+    for (let len = words.length - 1; len >= 2 && out.length < 12; len--) {
+      for (let at = 0; at + len <= words.length && out.length < 12; at++) {
+        const s = words.slice(at, at + len).join(" ");
+        if (!out.includes(s)) out.push(s);
+      }
+    }
+    return out;
+  }
+  if (/\s/.test(q) || /[a-z0-9]/i.test(q)) return [];
   const chars = [...q];
   const out = [];
   for (let len = chars.length - 1; len >= 2 && out.length < 12; len--) {

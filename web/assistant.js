@@ -25,6 +25,7 @@ import { registerLab } from "./lab.js";
 // 畫面上的句子模板：i18n 畫完整句比對，數字和使用者內容用 {0}。
 const fill = (tpl, ...args) => String(tpl).replace(/\{(\d+)\}/g, (_, i) => String(args[Number(i)] ?? ""));
 import { openSettings as openSettingsSheet, swapText, labelOf } from "./assistant-settings.js";
+import { openFound, closeFound } from "./assistant-found.js";
 
 const STORE_KEY = "mochi.assistant.v1";
 const CHAT_KEY = "mochi.assistant.chat.v1";
@@ -456,6 +457,7 @@ export function mountAssistant({ ctx }) {
         try { ctx.libRestore?.(); } catch { /* 收不回就留著 */ }
       }
       halo.clear();
+      closeFound();
       chat = { messages: [], log: [] };
       saveChat();
       dropRefs();
@@ -745,7 +747,11 @@ export function mountAssistant({ ctx }) {
             s.sorts?.length ? sortsNode(s) : null,
             // 標題已經寫了的（「加入海邊；附帶戶外」底下又一行「加入海邊」）不再列一次。
             ...(asOps || s.cards?.length ? s.notes || [] : (s.lines || []).filter((l) => l && !(s.summary || "").includes(l))).map((l) => el("span", { class: "ai-step-line" }, l)),
-            s.cards?.length && s.status === "done" ? suggNode(item, s) : null
+            s.cards?.length && s.status === "done" ? suggNode(item, s) : null,
+            // 找到很多張、聊天室只列前幾張：一顆鈕打開浮空小字盒，看全部（照花色分）、點牌放進合成池。
+            s.found?.length && s.status === "done"
+              ? el("button", { class: "btn btn-small ai-step-found", type: "button", onclick: (e) => openFound({ ctx, tags: s.found, anchor: e.currentTarget }) }, fill("看這 {0} 張", s.found.length))
+              : null
           )
         );
         // 真的改了東西才叫「看變更」；查詢、失敗、沒寫入的只是帶你去那一塊（查看位置）。
@@ -1216,6 +1222,7 @@ export function mountAssistant({ ctx }) {
           if (res.ops?.length) step.ops = res.ops;
           if (res.notes?.length) step.notes = res.notes;
           if (res.cards?.length) step.cards = res.cards.map((c) => ({ ...c }));
+          if (res.found?.length) step.found = res.found;
           if (res.sorts) step.sorts = res.sorts.map((x) => ({ ...x }));
           if (res.undo) undos.set(`${item.id}:${uid}`, res.undo);
           if (res.status === "needs_confirm" && res.confirm) {

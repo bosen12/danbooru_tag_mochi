@@ -2955,6 +2955,10 @@ AI 助手用：{0}|AI assistant uses {0!}
 找到 {0} 張|Found {0}
 照「{0}」找到 {1} 張|Found {1} for “{0!}”
 找到 {0} 張，列出 {1} 張|Found {0}, showing {1}
+看這 {0} 張|Show all {0}
+助手找到的 {0} 張|{0} cards the assistant found
+被目前的分級或尺度擋著|Blocked by the current rating or content level
+點牌放進合成池，再點一次拿掉。|Click a card to pin it; click again to remove it.
 正在挑推薦的牌|Picking cards to suggest
 推薦 {0} 張牌|Suggested {0} cards
 沒有可以推薦的牌|No cards to suggest

@@ -285,7 +285,7 @@ export const TOOL_DEFS = [
   {
     name: "find_cards",
     kind: "read",
-    description: "用中文或英文在詞庫找牌。只有使用者要你列出、比較有哪些牌，或點名一張不確定怎麼寫的牌時才用；要配一組牌用 paste_prompt。回傳裡被擋著的牌不要接著加入。不要把搜尋結果當成已經放進合成池。limit 預設 8、最多 20，不要為了湊數重複搜同一句。回傳的 total 是總共幾張，count 只是列出來的張數，回答「有幾張」看 total。使用者問某一類、某個主題的牌（溫泉、洗澡系列、海邊相關）：query 放主要說法，also 像寫提示詞一樣，憑感覺一次寫出 8～15 個 Danbooru 上真的有的英文 tag（溫泉：onsen, bath, bathing, bathtub, bubble bath, shower, towel, steam, bathhouse），不要只查一個字就說沒有；說法對到詞庫的小分類名（例如「活動・玩水洗浴」「地點・浴場泳池」）時整類都會算進來。整句沒有完全相符時字盒會照較短的片段找（回傳帶 near）；還是沒有，就換英文 Danbooru tag 或別的說法再找一次，不要直接說詞庫沒有。",
+    description: "用中文或英文在詞庫找牌。只有使用者要你列出、比較有哪些牌，或點名一張不確定怎麼寫的牌時才用；要配一組牌用 paste_prompt。回傳裡被擋著的牌不要接著加入。不要把搜尋結果當成已經放進合成池。limit 預設 8、最多 20，不要為了湊數重複搜同一句。回傳的 total 是總共幾張，count 只是列出來的張數，回答「有幾張」看 total；畫面上這一步有「看這 N 張」可以打開全部，回覆不用把牌名一張張列出來。使用者問某一類、某個主題的牌（溫泉、洗澡系列、海邊相關）：query 放主要說法，also 像寫提示詞一樣，憑感覺一次寫出 8～15 個 Danbooru 上真的有的英文 tag（溫泉：onsen, bath, bathing, bathtub, bubble bath, shower, towel, steam, bathhouse），不要只查一個字就說沒有；說法對到詞庫的小分類名（例如「活動・玩水洗浴」「地點・浴場泳池」）時整類都會算進來。整句沒有完全相符時字盒會照較短的片段找（回傳帶 near）；還是沒有，就換英文 Danbooru tag 或別的說法再找一次，不要直接說詞庫沒有。",
     input_schema: {
       type: "object",
       additionalProperties: false,
@@ -569,6 +569,7 @@ export function createToolRunner(ctx) {
     if (spec.ops?.length) out.ops = spec.ops;
     if (spec.notes?.length) out.notes = capLines(spec.notes);
     if (spec.cards?.length) out.cards = spec.cards;
+    if (spec.found?.length) out.found = spec.found;
     return out;
   }
 
@@ -1063,22 +1064,30 @@ export function createToolRunner(ctx) {
       let cards;
       let total;
       let atLeast = false;
+      // 全部找到的 tag（不受 limit）：給畫面的「看這 N 張」，不送給模型。
+      let found = [];
       const groups = new Set();
       if (!also.length) {
         cards = (await ctx.search(resolvedTag(query), { ...opt, raw: query })) || [];
         total = Number.isFinite(cards.total) ? cards.total : cards.length;
+        found = Array.isArray(cards.allTags) ? cards.allTags : cards.map((c) => c?.tag).filter(Boolean);
         for (const g of cards.groups || []) groups.add(g);
       } else {
         const merged = new Map();
+        const every = new Set();
         let capped = false;
         for (const q of [query, ...also]) {
           const got = (await ctx.search(resolvedTag(q), { ...opt, limit: 40, raw: q })) || [];
           if ((got.total ?? got.length) > got.length) capped = true;
           for (const g of got.groups || []) groups.add(g);
           for (const c of got) if (c?.tag && !merged.has(c.tag)) merged.set(c.tag, c);
+          for (const t of Array.isArray(got.allTags) ? got.allTags : got.map((c) => c?.tag)) if (t) every.add(t);
         }
         const all = [...merged.values()];
-        total = all.length;
+        found = [...every];
+        // 每個說法的全部結果都拿得到（allTags）就是精確總數；拿不到才退回只算列出來的。
+        total = Math.max(all.length, found.length);
+        if (found.length >= all.length && capped && found.length > 0) capped = false;
         // 有一個說法就超過 40 張：總數是「至少」，不是精確值。
         if (capped) (total = Math.max(total, 40)), (atLeast = true);
         cards = all.slice(0, limit);
@@ -1098,6 +1107,7 @@ export function createToolRunner(ctx) {
         summary: near ? fill(TEXT.foundNear, near, total) : total > cards.length ? fill(TEXT.foundTotal, total, cards.length) : cards.length ? fill(TEXT.foundN, cards.length) : TEXT.foundNone,
         lines,
         target,
+        found: found.slice(0, 400),
         forModel: {
           ok: true,
           cards,

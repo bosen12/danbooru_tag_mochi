@@ -238,3 +238,216 @@
   background: var(--color-paper-3);
   font-weight: 600;
 }
+
+/* ---------- 「看這 N 張」：找牌結果的浮空小字盒（assistant-found.js），不擋畫面 ---------- */
+.ai-step-found {
+  align-self: start;
+  margin-top: 4px;
+}
+.ai-found {
+  position: fixed;
+  z-index: 56;
+  top: var(--ai-top, 88px);
+  /* 浮在字盒那一側：合成池整塊露出來，點牌飛進去看得到落地 */
+  left: calc(var(--space-sm) + env(safe-area-inset-left));
+  width: min(30rem, 32vw, calc(100vw - var(--ai-w) - 4 * var(--space-sm)));
+  min-width: min(20rem, calc(100vw - 2 * var(--space-sm)));
+  max-height: min(44rem, calc(100dvh - var(--ai-top, 88px) - var(--space-md)));
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+  padding: var(--space-sm) var(--space-md) var(--space-sm);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-rule);
+  background: color-mix(in oklch, var(--color-paper-2) 97%, transparent);
+  box-shadow: 0 24px 60px var(--color-shade);
+  transform-origin: 100% 0;
+}
+.ai-found-head {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: var(--space-sm);
+}
+.ai-found-title {
+  margin: 0;
+  font-size: var(--text-md);
+}
+/* 被分級擋著：淡一點（放得進去，這一檔抽不到） */
+.ai-found-card[data-blocked] .card {
+  opacity: 0.45;
+  filter: grayscale(0.6);
+}
+.ai-found-suits,
+.ai-found-groups {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.ai-found-groups[hidden] {
+  display: none;
+}
+.ai-found-n {
+  margin-left: 4px;
+  color: var(--color-muted);
+  font-size: 0.85em;
+  font-variant-numeric: tabular-nums;
+}
+.ai-found-scroll {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  margin: 0 calc(-1 * var(--space-xs));
+  padding: 4px var(--space-xs);
+}
+.ai-found-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(84px, 1fr));
+  gap: var(--space-sm) var(--space-xs);
+  justify-items: center;
+}
+.ai-found-card {
+  position: relative;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  cursor: pointer;
+}
+.ai-found-card[hidden] {
+  display: none;
+}
+.ai-found-card .card {
+  --card-w: 80px;
+  pointer-events: none;
+}
+/* 已經在合成池：描一圈、右上角一個勾（跟字盒裡已釘的牌一樣看得出來） */
+.ai-found-card[aria-pressed="true"] .card {
+  box-shadow:
+    0 0 0 2px var(--color-accent),
+    var(--shadow-card);
+}
+.ai-found-card[aria-pressed="true"]::after {
+  content: "✓";
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--color-accent);
+  color: var(--color-accent-ink, #fff);
+  font-size: 12px;
+  font-weight: 800;
+}
+.ai-found-blank {
+  display: grid;
+  place-items: center;
+  width: 80px;
+  aspect-ratio: 480 / 702;
+  border: 1px dashed var(--color-rule);
+  border-radius: 6px;
+  font-size: var(--text-xs);
+}
+.ai-found-hint {
+  margin: 0;
+  color: var(--color-muted);
+  font-size: var(--text-xs);
+}
+@media (hover: hover) and (pointer: fine) {
+  .ai-found-card:hover .card {
+    transform: translateY(-3px);
+  }
+}
+/* 手機：聊天室是底部的面板，小字盒從底部浮在它上面 */
+@media (max-width: 40rem) {
+  .ai-found {
+    top: auto;
+    left: var(--space-sm);
+    right: var(--space-sm);
+    bottom: calc(var(--space-sm) + env(safe-area-inset-bottom));
+    width: auto;
+    max-height: 72dvh;
+    transform-origin: 50% 100%;
+  }
+}
+
+/* 浮空小字盒的動態：選中的花色底下的墨色（moveInk 用 transform 滑過去）、離開的牌的影子、勾蓋上去 */
+.ai-found-suits {
+  position: relative;
+  isolation: isolate;
+}
+.ai-found-ink {
+  position: absolute;
+  z-index: -1;
+  top: 0;
+  left: 0;
+  border-radius: 999px;
+  background: var(--color-paper-4);
+  box-shadow: inset 0 0 0 1px var(--color-ink-2);
+  transform-origin: 0 50%;
+  pointer-events: none;
+}
+.ai-found-suits .suit-tab[aria-pressed="true"] {
+  background: transparent;
+  border-color: transparent;
+}
+.ai-found-groups {
+  overflow: hidden;
+}
+.ai-found-groups-ghost {
+  flex: none;
+}
+.ai-found-scroll {
+  position: relative;
+}
+.ai-found-ghost {
+  position: absolute;
+  z-index: 1;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  pointer-events: none;
+}
+.ai-found-ghost .card {
+  --card-w: 80px;
+}
+.ai-found-card[data-just="in"]::after {
+  animation: ai-found-check var(--dur-long, 420ms) cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
+}
+.ai-found-card[data-just="out"]:not([aria-pressed="true"])::after {
+  content: "✓";
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--color-accent);
+  color: var(--color-accent-ink, #fff);
+  font-size: 12px;
+  font-weight: 800;
+  animation: ai-found-uncheck var(--dur-short, 220ms) ease-in both;
+}
+@keyframes ai-found-check {
+  from {
+    opacity: 0;
+    transform: scale(0.2) rotate(-40deg);
+  }
+}
+@keyframes ai-found-uncheck {
+  to {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ai-found-card[data-just]::after {
+    animation: none;
+  }
+}
