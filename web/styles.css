@@ -2945,7 +2945,7 @@ html[data-go-float] .wall-busy {
   aspect-ratio: 480 / 702;
   margin-left: calc(var(--w) / -2);
   border-radius: 6px;
-  overflow: hidden;
+  /* 不用 overflow: hidden 裁圓角：在印時牌外圍那圈花色光（::after）要畫在牌外面。圓角由插畫、底下那行字自己裁（同樣的形狀）。 */
   background: var(--color-stock);
   color: var(--color-stock-ink);
   box-shadow: var(--shadow-card);
@@ -2959,6 +2959,8 @@ html[data-go-float] .wall-busy {
 .hand-card img {
   width: 100%;
   height: 100%;
+  /* 跟牌的內框同一個圓角（上緣被 4px 的花色邊吃掉，垂直半徑剩 2px）。 */
+  border-radius: 6px 6px 6px 6px / 2px 2px 6px 6px;
   object-fit: cover;
   object-position: 50% 22%;
   display: block;
@@ -2985,6 +2987,7 @@ html[data-go-float] .wall-busy {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  border-radius: 0 0 6px 6px;
   background: color-mix(in oklch, var(--color-stock) 88%, transparent);
 }
 
@@ -3004,15 +3007,37 @@ html[data-go-float] .wall-busy {
 .shot[data-status="running"] .hand-card {
   transform: translateX(calc(var(--o) * min(14px, 4.4cqi))) translateY(calc(var(--y) * 1px + 4px)) rotate(calc(var(--o) * 3deg));
   transition: transform var(--dur-story) var(--ease-out), filter var(--dur-story) var(--ease-out);
+  box-shadow: var(--shadow-card), 0 0 0 1px color-mix(in oklch, var(--suit) 35%, transparent);
+}
+
+/* 牌緣的花色光一呼一吸：光畫在牌外圍的一層（::after，跟牌一起轉），只動它的透明度 —— 顯示卡直接合成，不必重畫牌。
+ * 以前直接動牌的 box-shadow：送到 ComfyUI、等開始畫的那一整段，每一格都要重算、重畫每張牌（連插畫），
+ * 正好是顯示卡被 ComfyUI 佔滿的時候，捲動、發牌跟著掉幀（2026-11-19）。 */
+.shot[data-status="running"] .hand-card::after {
+  content: "";
+  position: absolute;
+  /* 蓋到 4px 的花色上緣（::after 從內框算起）。 */
+  inset: -4px 0 0;
+  border-radius: 6px;
+  pointer-events: none;
+  box-shadow:
+    0 0 0 1px color-mix(in oklch, var(--suit) 70%, transparent),
+    0 0 16px -2px color-mix(in oklch, var(--suit) 70%, transparent);
+  opacity: 0;
+  will-change: opacity;
   animation: hand-ready var(--dur-breath) var(--ease-in-out) infinite alternate;
 }
 
 @keyframes hand-ready {
-  from {
-    box-shadow: var(--shadow-card), 0 0 0 1px color-mix(in oklch, var(--suit) 35%, transparent);
-  }
   to {
-    box-shadow: var(--shadow-card), 0 0 0 1px color-mix(in oklch, var(--suit) 70%, transparent), 0 0 16px -2px color-mix(in oklch, var(--suit) 70%, transparent);
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .shot[data-status="running"] .hand-card::after {
+    animation: none;
+    opacity: 0.6;
   }
 }
 
@@ -3028,6 +3053,10 @@ html[data-go-float] .wall-busy {
 .shot-merge .hand-card {
   animation: none;
   transition: none;
+}
+/* 合起來的那一手不呼吸（光暈那一層也停）。 */
+.shot-merge .hand-card::after {
+  animation: none;
 }
 
 .merge-streak {
@@ -4735,6 +4764,11 @@ html[data-overlay] .toast.toast[data-show="true"] {
 }
 
 /* ---------- 印好了（那張不在畫面上）：底部浮出的膠囊，點了捲過去 ---------- */
+/* 捲動中不用毛玻璃（原因同 card.css 的偏好卡牌托盤）。 */
+html[data-scrolling] .done-pill {
+  backdrop-filter: none;
+  background: color-mix(in oklch, var(--color-paper-3) 97%, transparent);
+}
 .done-pill {
   position: fixed;
   left: 50%;
@@ -4750,6 +4784,7 @@ html[data-overlay] .toast.toast[data-show="true"] {
   backdrop-filter: blur(10px);
   color: var(--color-ink);
   font: inherit;
+  transition: background-color var(--dur-short) var(--ease-out), backdrop-filter var(--dur-short) var(--ease-out);
   box-shadow: var(--shadow-lift), 0 0 0 4px var(--color-pool-soft);
   cursor: pointer;
   translate: -50% 0;

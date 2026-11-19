@@ -580,7 +580,17 @@ button.card:active {
     border-color var(--dur-micro) var(--ease-out),
     box-shadow var(--dur-micro) var(--ease-out),
     scale var(--dur-short) var(--ease-out),
-    translate var(--dur-short) var(--ease-out);
+    translate var(--dur-short) var(--ease-out),
+    background-color var(--dur-short) var(--ease-out),
+    backdrop-filter var(--dur-short) var(--ease-out);
+}
+
+/* 捲動中（motion.js 的 watchScrolling）：托盤底下的內容每一格都在動，毛玻璃要每一格重算，
+ * 生圖時跟 ComfyUI 搶顯示卡、捲動會掉幀。先換成幾乎不透明的底，停下來再淡回毛玻璃。 */
+html[data-scrolling] .fav-hand {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  background: color-mix(in oklch, var(--color-paper) 97%, transparent);
 }
 
 .fav-hand[data-hidden="true"] {

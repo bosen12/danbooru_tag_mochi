@@ -23,7 +23,7 @@ globalThis.localStorage = { getItem: () => null, setItem() {}, removeItem() {} }
 globalThis.matchMedia = () => ({ matches: false, addEventListener() {} });
 
 const dir = existsSync(new URL("../web6/cards.js", import.meta.url)) ? "../web6/" : "../web/";
-const { buildLibrary, searchCards, searchKey, searchNoteText } = await import(new URL(dir + "cards.js", import.meta.url));
+const { buildLibrary, searchCards, searchKey, searchNoteText, warmSearchKeys } = await import(new URL(dir + "cards.js", import.meta.url));
 const { ratingBlocked } = await import(new URL("../web/rules/rating.js", import.meta.url));
 const data = JSON.parse(readFileSync(new URL("../web/lexicon.json", import.meta.url), "utf8"));
 const cards = buildLibrary(data, { ratingBlocked }).cards;
@@ -168,4 +168,17 @@ test("a phrase that does not split still guesses, and English plurals guess the 
   assert.equal(find("baseball bat").mode, "all");
   assert.equal(find("glasses").mode, "all");
   assert.equal(find("glasses").list[0].tag, "glasses");
+});
+
+// 開好之後閒下來先算搜尋鍵（app.js 的 warmSearchSoon）：時間快用完就停、回傳下次從哪裡接；接著算完回 -1。
+// 先算過的跟當場算的一樣（搜尋結果不變）。
+test("warmSearchKeys：照閒置時間分段、算完回 -1、結果不變", () => {
+  const fresh = buildLibrary(data, { ratingBlocked }).cards;
+  let budget = 0;
+  const deadline = { timeRemaining: () => (budget-- > 0 ? 50 : 0) };
+  budget = 2;
+  const next = warmSearchKeys(fresh, 0, deadline);
+  assert.ok(next > 0 && next < fresh.length, `第一段停在 ${next}`);
+  assert.equal(warmSearchKeys(fresh, next), -1);
+  for (const q of ["紅髮", "red_hair", "海边", "smile"]) assert.deepEqual(searchCards(fresh, q).list.map((c) => c.tag), searchCards(cards, q).list.map((c) => c.tag), q);
 });

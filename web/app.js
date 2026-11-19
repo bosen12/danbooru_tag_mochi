@@ -51,7 +51,7 @@ import { SCENE_MODES, SCENE_MODE_LABELS, heatBlockedByRating } from "./scene-pol
 import { initLoraPicker, currentLorasPayload, currentTriggerText, currentCkpt, handleLoraKeys, applyRecipeModels, joinTriggerParts, modelTitles } from "./lora.js";
 import { initWorkflow, currentWorkflowId, currentSampling, wfHandleKeys } from "./workflow.js";
 import { HARD_BANNED } from "./card-art.js";
-import { buildLibrary, sizeCards, groupChips, genderChips, chipRun, seriesRun, groupNow, createAssets, cardNode, setCardFlag, setEnterTarget, eagerArt, cardFacts, cardMatches, searchCards, searchNote, CARD_SUIT_INFO, CARD_SUITS, RATING_ZH } from "./cards.js";
+import { buildLibrary, sizeCards, groupChips, genderChips, chipRun, seriesRun, groupNow, createAssets, cardNode, setCardFlag, setEnterTarget, eagerArt, cardFacts, cardMatches, searchCards, searchNote, warmSearchKeys, CARD_SUIT_INFO, CARD_SUITS, RATING_ZH } from "./cards.js";
 import { bindArt, artFallback } from "./card-images.js";
 import { el, openSheet, anyOverlay, toast, runToastAction, dropToastAction, ICONS, syncChoices, bootFailed, friendlyError, isNetError } from "./ui.js";
 import { mountKeysHelp } from "./keys-help.js";
@@ -400,12 +400,22 @@ async function boot() {
   document.addEventListener("keydown", onKey);
   settleMotion();
   rememberBootSize();
+  warmSearchSoon();
   // 開好了：左右相鄰的房間在背後先開好，換過去不用再等開頁（prerender.js）。
   whenActive(prerenderNeighbors);
   addEventListener("mochi:before-language-change", (event) => {
     event.detail.state = { pool: [...pool], weights: Object.fromEntries(weights) };
     S.saveShots(shots);
   });
+}
+
+/** 開好之後閒下來，分幾次把每張牌的搜尋鍵算好（card-search.js 的 warmSearchKeys）。沒有 requestIdleCallback 就不做。 */
+function warmSearchSoon(from = 0) {
+  if (typeof requestIdleCallback !== "function" || !lib) return;
+  requestIdleCallback((deadline) => {
+    const next = warmSearchKeys(lib.cards, from, deadline);
+    if (next >= 0) warmSearchSoon(next);
+  }, { timeout: 4000 });
 }
 
 function saveSettings(prev) {
@@ -492,8 +502,7 @@ function renderLibraryChrome() {
     // 手機上字盒收著只露一排：開始找字就展開，找到的牌才看得到。
     if (ui.query) expandLibrary();
     q.closest(".lib-search").dataset.typing = ui.query ? "true" : "false";
-    libBackToTop();
-    renderLibrary();
+    searchSoon();
   };
   q.onkeydown = libSearchKeys;
   q.onfocus = markEnterTarget;
@@ -856,7 +865,35 @@ function countLine(shown) {
   box.title = `字盒共 ${total} 張，這裡顯示 ${shown} 張` + (why.length ? `。${why.join("、")}` : "") + (shown < total - hid.rating - hid.gender - hid.era ? "。其餘被花色、分類或搜尋篩掉" : "");
 }
 
+/**
+ * 搜尋框打字：停下來的第一個字當場畫，連續打的那幾個字等手停一下（SEARCH_QUIET）再一次畫。
+ * 整盒重畫一次要篩八千張、搜尋、重排一頁牌（電腦約 30～60ms，手機降速 4 倍 0.1～0.25 秒）：
+ * 以前每個字都畫一次，打「hair」連畫四次，打字跟著卡。Enter、↓ 會先把還沒畫的畫完（libSearchKeys）。
+ */
+let searchTimer = 0;
+let typedAt = 0;
+const SEARCH_QUIET = 160;
+function searchSoon() {
+  const now = performance.now();
+  const burst = now - typedAt < 300;
+  typedAt = now;
+  clearTimeout(searchTimer);
+  if (!burst) return flushSearch();
+  searchTimer = setTimeout(flushSearch, SEARCH_QUIET);
+}
+function flushSearch() {
+  clearTimeout(searchTimer);
+  searchTimer = 0;
+  libBackToTop();
+  renderLibrary();
+}
+
 function renderLibrary() {
+  // 別處直接重畫了（換花色、助手借字盒）：還在等的那一次就不用了。
+  if (searchTimer) {
+    clearTimeout(searchTimer);
+    searchTimer = 0;
+  }
   const q = ui.query.toLowerCase();
   const inSuit = lib.cards.filter((c) => (ui.suit === "all" || c.suit === ui.suit) && visible(c) && genderOk(c));
   // 小分類晶片：只在選了某一種花色時出現。出現、收起時下面的牌滑過去，不是一格跳（rowChange）。
@@ -1005,6 +1042,8 @@ function libSearchKeys(e) {
   if (e.key !== "Enter" && e.key !== "ArrowDown") return;
   if (e.isComposing || e.keyCode === 229) return; // 注音、倉頡選字的 Enter 不算
   e.preventDefault();
+  // 剛打的字還在等著畫（searchSoon）：先畫完，Enter 放的才是這次搜尋的第一張。
+  if (searchTimer) flushSearch();
   const q = e.currentTarget;
   const grid = $("lib-grid");
   const first = grid.querySelector(".card[data-tag]");
@@ -2796,7 +2835,22 @@ function renderGoBar() {
   renderOverreach();
   const key = [busy, generator.pending, infinite, infinite ? loopSent : 0, n, settings.samePerson].join("|");
   if (bar.dataset.key === key && bar.childElementCount) return renderGoFloat();
+  // 只是開始印、印完、還剩幾張換了（每抽一輪頭尾各一次）：整排的開關、步進器、按鈕都一樣，只換狀態字。
+  // 以前整排拆掉重建，連帶分段滑塊整頁重量一次（抽一輪多兩次同步排版）；滑鼠停在按鈕上也會閃一下。
+  const shape = [infinite, n, settings.samePerson].join("|");
+  if (bar.dataset.shape === shape && bar.childElementCount && bar.querySelector(".go-status")) {
+    bar.dataset.key = key;
+    if (bar.dataset.busy !== (busy ? "true" : "false")) bar.dataset.busy = busy ? "true" : "false";
+    const status = bar.querySelector(".go-status");
+    const text = goStatusText(busy);
+    if (status.textContent !== t(text)) status.textContent = text;
+    bar._busy = busy;
+    renderWallBusy();
+    renderGoFloat();
+    return;
+  }
   bar.dataset.key = key;
+  bar.dataset.shape = shape;
   bar.dataset.busy = busy ? "true" : "false";
   bar.replaceChildren(
     ...[

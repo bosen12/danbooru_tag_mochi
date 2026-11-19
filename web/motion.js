@@ -118,6 +118,11 @@ export function flight(ghost, from, target, opts = {}) {
     // 一路落後在曲線後面，最後一格離落點還差 15～20px 就被拿掉，真的那張在落點冒出來 —— 看得到一跳。
     // 位置、大小、影子、透明度每一格都由這裡算好，不要再過渡一次。
     transition: "none",
+    // 影子在起飛時畫一次就不動（拿起來的那個高度）。以前每一格照弧高改 box-shadow：box-shadow 不是合成屬性，
+    // 改一次整張牌（連插畫）要重畫 —— 抽並生圖時十幾張一起飛，每一格十幾張重畫，生圖時跟 ComfyUI 搶顯示卡就掉幀
+    // （2026-11-19 專案主：「池中牌移動下來時似乎有掉幀」）。現在途中只改 transform、opacity，顯示卡直接合成；
+    // 被拿起來的感覺靠弧線、中段微微放大和轉角。
+    boxShadow: "0 1px 0 var(--color-shine) inset, 0 15px 25px var(--color-shade)",
   });
   ghost.style.setProperty("--card-w", from.width + "px");
   ghost.setAttribute("aria-hidden", "true");
@@ -185,8 +190,6 @@ export function flight(ghost, from, target, opts = {}) {
     const s = (startScale + ((to.width * endScale) / from.width - startScale) * se) * (1 + lift * bump);
     // 轉角：途中微微轉（tilt），落地時轉到落點自己的角度（endRotate，托盤那把扇形每張斜一點）。
     ghost.style.transform = `translate(${x.toFixed(2)}px, ${y.toFixed(2)}px) rotate(${(tilt * bump + startRotate * (1 - e) + endRotate * e).toFixed(2)}deg) scale(${s.toFixed(4)})`;
-    // 影子跟著高度：飛到弧頂最深最散，落地前收回貼著桌面的那一層。
-    ghost.style.boxShadow = `0 1px 0 var(--color-shine) inset, 0 ${(6 + 18 * bump).toFixed(1)}px ${(14 + 22 * bump).toFixed(1)}px var(--color-shade)`;
     if (endOpacity !== 1) ghost.style.opacity = String(1 + (endOpacity - 1) * Math.max(0, (e - 0.6) / 0.4));
   };
   paint(0);
@@ -628,9 +631,30 @@ function watchMastPeek() {
   phone.addEventListener?.("change", () => set(""));
 }
 
+/**
+ * 捲動中標 <html data-scrolling>（停下來 180ms 後拿掉）：固定在畫面上的毛玻璃（偏好卡牌托盤、印好了的膠囊）
+ * 底下的內容每一格都在動，模糊就要每一格重算 —— 生圖時顯示卡被 ComfyUI 佔滿，捲動跟著掉幀。
+ * 捲動時換成幾乎不透明的底，停下來再淡回毛玻璃（card.css、styles.css）。
+ * 只在開始、停下各寫一次屬性；不讀任何位置（不逼排版）。任何一塊捲動都算（字盒、聊天室也是捲動）。
+ */
+function watchScrolling() {
+  const root = document.documentElement;
+  let timer = 0;
+  addEventListener(
+    "scroll",
+    () => {
+      if (!("scrolling" in root.dataset)) root.dataset.scrolling = "";
+      clearTimeout(timer);
+      timer = setTimeout(() => delete root.dataset.scrolling, 180);
+    },
+    { passive: true, capture: true }
+  );
+}
+
 export function initMotion() {
   wirePress();
   watchMastPeek();
+  watchScrolling();
   // 發牌（.dealt）的動畫是 fill: both，播完如果 class 還掛著，那個「已結束」的動畫就一直留著：
   // 墨池抽 50 次牌留下 1350 個，而且它的 transform: none 壓過牌 hover 時的抬起。
   // 播完就拿掉 class，最後一格本來就等於牌的原樣，看不出差別。

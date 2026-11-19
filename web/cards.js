@@ -3,14 +3,14 @@
  * 花色、分級、插畫檔名都來自 web/card-art.js（字鋪、烘焙腳本共用同一份）。
  */
 import { isCard, cardSuit, ratingTier, artFile, artSources, artUrl, groupSeal, CARD_SUIT_INFO, CARD_SUITS } from "./card-art.js";
-import { searchKey, cardMatches, matchRank, searchCards, indexSearchNames, searchNoteText } from "./card-search.js";
+import { searchKey, cardMatches, matchRank, searchCards, indexSearchNames, searchNoteText, warmSearchKeys } from "./card-search.js";
 import { el, ICONS } from "./ui.js";
 import { miniSet, bindArt, artFallback } from "./card-images.js";
 import { DUR, CURVE, css, reducedMotion } from "./motion.js";
 import { english, registerLexicon, t } from "./i18n.js";
 
 export { CARD_SUIT_INFO, CARD_SUITS };
-export { searchKey, cardMatches, matchRank, searchCards, indexSearchNames, searchNoteText };
+export { searchKey, cardMatches, matchRank, searchCards, indexSearchNames, searchNoteText, warmSearchKeys };
 
 export const ERA_ZH = {
   any: "不限時代",

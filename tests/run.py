@@ -70,6 +70,7 @@ if "--browser" in sys.argv:
     checks.append(("test_go_float_scroll_browser.mjs", "test_go_float_scroll_browser.mjs"))
     checks.append(("test_ai_polish_chat.mjs", "test_ai_polish_chat.mjs"))
     checks.append(("test_ai_polish_grok.mjs", "test_ai_polish_grok.mjs"))
+    checks.append(("test_perf_browser.mjs", "test_web6_perf_browser.mjs"))
     checks.append(("test_pwa_browser.mjs", "test_web6_pwa_browser.mjs"))
     checks.append(("test_theme_browser.mjs", "test_web6_theme_browser.mjs"))
 node = shutil.which("node")

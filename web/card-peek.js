@@ -214,6 +214,9 @@ let pressedEl = null;
 let shownAt = null;
 let lastX = -1;
 let lastY = -1;
+// 最近一次捲動的時間：等 INTENT_MS 的途中捲了，就不浮（牌在滑鼠底下捲過去，不是停在那張上）。
+// 以前捲字盒時會彈一張出來，還要當場量位置、逼一次整頁排版（4 倍降速一格 0.2 秒）。
+let scrolledAt = -1e9;
 
 export function hidePeek(anchor) {
   if (anchor && current && anchor !== current) return;
@@ -259,6 +262,7 @@ export function attachPeek(root, selector, getInfo) {
       clearTimeout(intentTimer);
       intentTimer = setTimeout(() => {
         pendingEl = null;
+        if (performance.now() - scrolledAt < INTENT_MS + 60) return;
         // 看滑鼠「現在」指著哪一張：等的這 120ms 裡牌可能被重畫過，原本那個節點已經不在了。
         const hit = document.elementFromPoint(lastX, lastY)?.closest(selector);
         if (hit && root.contains(hit) && hit !== pressedEl) showPeek(hit, getInfo(hit));
@@ -299,7 +303,8 @@ export function attachPeek(root, selector, getInfo) {
     window.addEventListener(
       "scroll",
       () => {
-        // 還沒開出來的不管：等到時間到，看的是那時滑鼠底下是哪一張。
+        scrolledAt = performance.now();
+        // 還沒開出來的不管：等到時間到，看的是那時滑鼠底下是哪一張（途中捲過就不浮，見 scrolledAt）。
         if (!current) return;
         if (!shownAt) return hidePeek();
         const r = current.getBoundingClientRect();

@@ -21,6 +21,18 @@ function keysOf(c) {
   return k;
 }
 
+/**
+ * 閒下來先把搜尋鍵算好（簡繁轉換、小寫、底線）：第一次打字不必當場算整本（電腦約 25ms，手機降速 4 倍 0.1 秒）。
+ * 從 from 開始算，算到 deadline（requestIdleCallback 給的）快用完就停；回傳下次從哪裡接著算（算完回 -1）。
+ */
+export function warmSearchKeys(cards, from = 0, deadline = null) {
+  for (let i = from; i < cards.length; i++) {
+    keysOf(cards[i]);
+    if (i % 200 === 199 && deadline && deadline.timeRemaining() < 3) return i + 1;
+  }
+  return -1;
+}
+
 let lastQ = null;
 let lastTerms = [];
 function termsOf(q) {
