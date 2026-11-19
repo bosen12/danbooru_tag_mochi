@@ -86,6 +86,20 @@ export const TEXT = {
   foundN: "找到 {0} 張",
   foundNone: "沒有找到",
   foundNear: "照「{0}」找到 {1} 張",
+  labSuggest: "正在挑推薦的牌",
+  suggestN: "推薦 {0} 張牌",
+  suggestNone: "沒有可以推薦的牌",
+  suggestSkip: "沒排出來：{0}",
+  // 操作紀錄（結果排成「加入　日落、走路」「長相　2 → 3」）：左邊的動詞照字典翻，右邊是牌名、數字，原樣顯示。
+  opAdd: "加入",
+  opCompanion: "附帶",
+  opRemove: "移掉",
+  opWeight: "份量",
+  opUnban: "撿回",
+  opN: "一次",
+  opPicks: "{0}群組",
+  opPicksClear: "全部取消",
+  opSaved: "建立群組",
   checkCounts: "可用 {0} 張，已在池中 {1} 張，找不到 {2} 張，受限制 {3} 張",
   noCard: "詞庫沒有「{0}」",
   blockedBy: "「{0}」被{1}擋著",
@@ -279,6 +293,32 @@ export const TOOL_DEFS = [
         query: { ...str, description: "使用者的說法或 tag，空白分開表示都要符合" },
         limit: { type: "integer", minimum: 1, maximum: 20, description: "預設 8，最多 20" },
         section: { type: "string", enum: SEARCH_SECTIONS, description: "feature 長相、clothing 服裝、pose 姿勢、env 場景、subject 人物。不確定就不要傳" },
+      },
+    },
+  },
+  {
+    name: "suggest_cards",
+    kind: "read",
+    description: "使用者問「還可以加什麼」「推薦幾張」「你覺得呢」這類意見時用：從詞庫挑 1～6 張值得加的牌，各寫一句為什麼適合（短、具體、跟現在的合成池有關）。牌會用墨池的卡面排在聊天室，使用者可以直接按「加入」；這一步不會加入任何牌。使用者之後說「第一張和第三張加進去」，照這一步回傳的 n 對應，用 change_pool 加。已經在合成池、被擋著或詞庫沒有的不會排出來（回傳的 skipped 寫原因）。排出來之後回覆一兩句就好，不要把每張牌再寫一遍。",
+    input_schema: {
+      type: "object",
+      additionalProperties: false,
+      required: ["cards"],
+      properties: {
+        cards: {
+          type: "array",
+          minItems: 1,
+          maxItems: 6,
+          items: {
+            type: "object",
+            additionalProperties: false,
+            required: ["tag", "why"],
+            properties: {
+              tag: { ...str, description: "詞庫的正式 tag 或能唯一對應的牌名" },
+              why: { ...str, description: "一句為什麼適合，20 字以內" },
+            },
+          },
+        },
       },
     },
   },
@@ -490,6 +530,7 @@ export function createToolRunner(ctx) {
       case "paste_prompt":
         return { area: "pool" };
       case "find_cards":
+      case "suggest_cards":
       case "suggest_check":
         return { area: "lib" };
       case "card_info":
@@ -522,6 +563,10 @@ export function createToolRunner(ctx) {
     };
     if (spec.undo) out.undo = spec.undo;
     if (spec.confirm) out.confirm = spec.confirm;
+    // 給畫面的：操作紀錄（每列一個動詞＋值）、操作紀錄之外還要說的話（notes）、推薦的牌（cards）。
+    if (spec.ops?.length) out.ops = spec.ops;
+    if (spec.notes?.length) out.notes = capLines(spec.notes);
+    if (spec.cards?.length) out.cards = spec.cards;
     return out;
   }
 
@@ -599,6 +644,7 @@ export function createToolRunner(ctx) {
       if (name === "find_cards") return { zh: fill(TEXT.labSearch, typeof args.query === "string" ? args.query.trim() : ""), area: "lib" };
       if (name === "card_info") return { zh: fill(TEXT.labCard, zhOf(typeof args.tag === "string" ? resolvedTag(args.tag.trim()) : args.tag)), area: "lib" };
       if (name === "suggest_check") return { zh: TEXT.labCheck, area: "lib" };
+      if (name === "suggest_cards") return { zh: TEXT.labSuggest, area: "lib" };
       if (name === "set_draw_count") return { zh: fill(TEXT.labN, args.n), area: "rules" };
       if (name === "set_section_counts") {
         const keys = SECTIONS.filter((k) => Object.prototype.hasOwnProperty.call(args, k));
@@ -868,6 +914,17 @@ export function createToolRunner(ctx) {
     const back = (mut.removedNow || []).filter((t) => companions.includes(t) || added.includes(t));
     for (const tag of back) lines.push(fill(TEXT.companionBack, zhOf(tag)));
     if (unbanned.length) lines.push(TEXT.noBanUndo);
+    // 操作紀錄：加入／附帶／移掉／份量／撿回各一列；其他要提醒的（附帶的會跟回來、廢字簍不能復原）放 notes。
+    const ops = [];
+    if (added.length) ops.push({ k: TEXT.opAdd, v: joinZh(added), raw: true });
+    if (companions.length) ops.push({ k: TEXT.opCompanion, v: joinZh(companions), raw: true });
+    const gone = [...new Set([...(mut.removedNow || []), ...displaced])];
+    if (gone.length) ops.push({ k: TEXT.opRemove, v: joinZh(gone), raw: true });
+    for (const w of (mut.weightResult || []).slice(0, 4)) ops.push({ k: TEXT.opWeight, v: `${zhOf(w.tag)} ${w.from} → ${w.to}`, raw: true });
+    if ((mut.weightResult || []).length > 4) ops.push({ k: TEXT.opWeight, v: fill(TEXT.moreItems, mut.weightResult.length - 4) });
+    if (unbanned.length) ops.push({ k: TEXT.opUnban, v: joinZh(unbanned), raw: true });
+    const notes = back.map((tag) => fill(TEXT.companionBack, zhOf(tag)));
+    if (unbanned.length) notes.push(TEXT.noBanUndo);
     let summary;
     if (added.length === 1 && companions.length && !(mut.weightResult || []).length && !(mut.removedNow || []).length) {
       summary = fill(TEXT.withCompanion, zhOf(added[0]), joinZh(companions));
@@ -901,7 +958,7 @@ export function createToolRunner(ctx) {
       .filter((w) => mut.before.has(w.tag) && !newly.includes(w.tag))
       .map((w) => ({ tag: w.tag, weight: mut.before.get(w.tag).weight ?? 1 }));
     const undo = unbanned.length || !expect.size ? undefined : undoPool(expect, { unpin: newly.filter((t) => !mut.before.has(t)), repin, reweight });
-    return { summary, lines, undo, added, companions, displaced, unbanned };
+    return { summary, lines, undo, added, companions, displaced, unbanned, ops, notes };
   }
 
   function pasteChanges(mut) {
@@ -944,6 +1001,8 @@ export function createToolRunner(ctx) {
         status: "done",
         summary: paste?.summary || story.summary,
         lines: story.lines,
+        ops: story.ops,
+        notes: story.notes,
         target,
         undo: story.undo,
         forModel: {
@@ -1078,6 +1137,64 @@ export function createToolRunner(ctx) {
           inPool: info.inPool,
           weight: info.weight,
         },
+      });
+    } catch (err) {
+      await hi(target, "clear");
+      return fail(target, "failed", TEXT.failed, { model: { error: err?.message || String(err) } });
+    }
+  }
+
+  /**
+   * 推薦卡：模型挑的牌照詞庫認一次，排得出來的才給畫面（卡面＋一句理由＋「加入」）。
+   * 不加入任何牌。已經在合成池、被擋著、詞庫沒有的略過，原因回給模型。
+   */
+  async function suggestCards(args) {
+    const target = { area: "lib" };
+    const raw = Array.isArray(args.cards) ? args.cards : null;
+    if (!raw || !raw.length || raw.length > 6) return fail(target, "bad_args", TEXT.badArgs);
+    await hi(target, "read", TEXT.labSuggest);
+    try {
+      const state = await ctx.state();
+      const poolTags = new Set((state.pool || []).map((p) => p.tag));
+      const cards = [];
+      const skipped = [];
+      const seen = new Set();
+      for (const entry of raw) {
+        const asked = typeof entry?.tag === "string" ? entry.tag.trim() : "";
+        const why = typeof entry?.why === "string" ? entry.why.trim().slice(0, 60) : "";
+        // 格式不對的那一項也要告訴模型（不然它以為都排出來了）。
+        if (!asked) {
+          skipped.push({ tag: null, reason: "bad_item" });
+          continue;
+        }
+        const tag = resolvedTag(asked);
+        // 去重照比對用的寫法：被擋的字 resolvedTag 回原字，Loli／loli 要算同一張。
+        const key = norm(tag);
+        if (seen.has(key)) continue;
+        seen.add(key);
+        const reason = await blockReason(tag);
+        if (reason) {
+          skipped.push({ tag, reason });
+          continue;
+        }
+        const info = await knownInfo(tag, state);
+        if (!info) skipped.push({ tag: asked, reason: "missing" });
+        else if (poolTags.has(info.tag || tag)) skipped.push({ tag: info.tag || tag, reason: "in_pool" });
+        else if (info.blocked) skipped.push({ tag: info.tag || tag, reason: info.blocked });
+        else cards.push({ n: cards.length + 1, tag: info.tag || tag, zh: info.zh || zhOf(tag), why });
+      }
+      await hi(target, "clear");
+      const named = skipped.filter((x) => x.tag);
+      const notes = named.length ? [fill(TEXT.suggestSkip, named.map((x) => (x.reason === "missing" ? x.tag : zhOf(x.tag))).join(sep()))] : [];
+      return pack({
+        ok: true,
+        status: "done",
+        summary: cards.length ? fill(TEXT.suggestN, cards.length) : TEXT.suggestNone,
+        lines: notes,
+        notes,
+        cards,
+        target,
+        forModel: { ok: true, shown: cards.map(({ n, tag, zh }) => ({ n, tag, zh })), skipped },
       });
     } catch (err) {
       await hi(target, "clear");
@@ -1508,6 +1625,7 @@ export function createToolRunner(ctx) {
         status: "done",
         summary: fill(TEXT.nChange, from, to),
         lines: [],
+        ops: [{ k: TEXT.opN, v: `${from} → ${to}`, raw: true }],
         target,
         undo: undoN(from, to),
         forModel: { ok: true, from, to, undoable: true },
@@ -1544,6 +1662,7 @@ export function createToolRunner(ctx) {
         status: "done",
         summary: lines[0] || TEXT.labCounts,
         lines,
+        ops: changes.map((ch) => ({ k: SECTION_ZH[ch.section] || ch.section, v: `${ch.from} → ${ch.to}`, raw: true })),
         target,
         undo: changes.length ? undoCounts(changes) : undefined,
         forModel: { ok: true, changes, undoable: !!changes.length },
@@ -1643,6 +1762,7 @@ export function createToolRunner(ctx) {
         status: "done",
         summary,
         lines: [],
+        ops: [ids.length ? { k: fill(TEXT.opPicks, SECTION_ZH[section]), v: names.join(sep()), raw: true } : { k: fill(TEXT.opPicks, SECTION_ZH[section]), v: TEXT.opPicksClear }],
         target,
         undo: undoPicks(section, to, from),
         forModel: { ok: true, section, from, to, undoable: true },
@@ -1720,6 +1840,7 @@ export function createToolRunner(ctx) {
         status: skipped.length ? "partial" : "done",
         summary: fill(TEXT.saved, group.name),
         lines,
+        ops: [{ k: TEXT.opSaved, v: group.name, raw: true }],
         target,
         forModel: { ok: true, group, skipped, undoable: false },
       });
@@ -1777,6 +1898,7 @@ export function createToolRunner(ctx) {
     find_cards: (args) => findCards(args),
     card_info: (args) => cardInfo(args),
     suggest_check: (args) => suggestCheck(args),
+    suggest_cards: (args) => suggestCards(args),
     change_pool: (args, opts, base) => changePool(args, opts, base),
     paste_prompt: (args, opts, base) => pastePrompt(args, opts, base),
     set_draw_count: (args, opts, base) => setDrawCount(args, opts, base),

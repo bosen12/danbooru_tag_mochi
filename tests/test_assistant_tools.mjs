@@ -214,7 +214,7 @@ function plain(n, extra = {}) {
 const turn = (version = 1) => ({ version });
 
 // ---------- 工具表 ----------
-const namesExpected = ["get_workspace", "paste_prompt", "find_cards", "card_info", "suggest_check", "change_pool", "set_draw_count", "set_section_counts", "list_groups", "set_group_picks", "save_card_group", "draw_cards"];
+const namesExpected = ["get_workspace", "paste_prompt", "find_cards", "suggest_cards", "card_info", "suggest_check", "change_pool", "set_draw_count", "set_section_counts", "list_groups", "set_group_picks", "save_card_group", "draw_cards"];
 assert.deepEqual(TOOL_DEFS.map((t) => t.name), namesExpected);
 assert.deepEqual(toolSchemas().map((t) => t.name), namesExpected);
 for (const tool of TOOL_DEFS) {
@@ -225,7 +225,7 @@ for (const tool of TOOL_DEFS) {
   assert.ok(tool.kind === "read" || tool.kind === "write");
 }
 for (const tool of toolSchemas()) assert.equal("kind" in tool, false);
-assert.deepEqual(TOOL_DEFS.filter((t) => t.kind === "read").map((t) => t.name), ["get_workspace", "find_cards", "card_info", "suggest_check", "list_groups"]);
+assert.deepEqual(TOOL_DEFS.filter((t) => t.kind === "read").map((t) => t.name), ["get_workspace", "find_cards", "suggest_cards", "card_info", "suggest_check", "list_groups"]);
 // 每一句給人看的字（TEXT）都要在英文版的詞表裡（web6/locales/en.js；開源版在 web/），不然英文介面會冒出中文。
 const enFile = ["../web6/locales/en.js", "../web/locales/en.js"].map((p) => new URL(p, import.meta.url)).find((u) => existsSync(u));
 const enLines = readFileSync(enFile, "utf8").split(/\r?\n/).filter((l) => l.includes("|") && !l.startsWith("  ") && !l.startsWith("/"));
@@ -285,6 +285,105 @@ console.log("ok: schemas and phrase list");
   assert.equal(gone.forModel.found, false);
   assert.match(gone.summary, /詞庫沒有/);
   console.log("ok: workspace, search, card info");
+}
+
+// ---------- 推薦牌：排得出來的給畫面，其餘略過，完全不寫入 ----------
+{
+  const cards = {
+    ...beachCards,
+    loli: { zh: "蘿莉", section: "feature" },
+    miku: { zh: "初音未來", section: "subject", bannedChar: true },
+    veil: { zh: "面紗", section: "clothing", blocked: "heat" },
+  };
+  const ctx = world({ cards, pool: [{ tag: "smile", zh: "微笑", weight: 1 }] });
+  const runner = createToolRunner(ctx);
+  const res = await runner.run({
+    name: "suggest_cards",
+    args: {
+      cards: [
+        { tag: "smile", why: "已經在池子裡" },
+        { tag: "hat", why: "遮陽" },
+        { tag: "not_a_card", why: "詞庫沒有的" },
+        { tag: "beach", why: "把場景定在海邊" },
+        { tag: "loli", why: "未成年" },
+        { tag: "hat", why: "重複不該再算一張" },
+      ],
+    },
+  });
+  assert.equal(res.ok, true);
+  assert.equal(res.status, "done");
+  assert.equal(res.summary, "推薦 2 張牌");
+  assert.equal(res.target.area, "lib");
+  assert.deepEqual(res.cards, [
+    { n: 1, tag: "hat", zh: "帽子", why: "遮陽" },
+    { n: 2, tag: "beach", zh: "海邊", why: "把場景定在海邊" },
+  ]);
+  assert.deepEqual(res.forModel, {
+    ok: true,
+    shown: [
+      { n: 1, tag: "hat", zh: "帽子" },
+      { n: 2, tag: "beach", zh: "海邊" },
+    ],
+    skipped: [
+      { tag: "smile", reason: "in_pool" },
+      { tag: "not_a_card", reason: "missing" },
+      { tag: "loli", reason: "minor" },
+    ],
+  });
+  assert.deepEqual(res.notes, ["沒排出來：微笑、not_a_card、蘿莉"]);
+  assert.deepEqual(res.lines, ["沒排出來：微笑、not_a_card、蘿莉"]);
+  assert.equal(res.ops, undefined);
+  const whyLong = `${"晚".repeat(60)}多`;
+  const trimmed = await runner.run({
+    name: "suggest_cards",
+    args: {
+      cards: [
+        { tag: "hat", why: whyLong },
+        { tag: "miku", why: "禁用角色" },
+        { tag: "veil", why: "尺度擋著" },
+      ],
+    },
+  });
+  assert.equal(trimmed.summary, "推薦 1 張牌");
+  assert.equal(trimmed.cards[0].why, "晚".repeat(60));
+  assert.equal(trimmed.cards[0].why.length, 60);
+  assert.deepEqual(trimmed.forModel.skipped, [
+    { tag: "miku", reason: "banned" },
+    { tag: "veil", reason: "heat" },
+  ]);
+  assert.deepEqual(trimmed.notes, ["沒排出來：初音未來、面紗"]);
+  const none = await runner.run({ name: "suggest_cards", args: { cards: [{ tag: "smile", why: "已有" }] } });
+  assert.equal(none.ok, true);
+  assert.equal(none.summary, "沒有可以推薦的牌");
+  assert.equal(none.cards, undefined);
+  assert.deepEqual(none.forModel.shown, []);
+  assert.deepEqual(none.forModel.skipped, [{ tag: "smile", reason: "in_pool" }]);
+  assert.deepEqual(none.notes, ["沒排出來：微笑"]);
+  assert.deepEqual(none.lines, ["沒排出來：微笑"]);
+  for (const args of [
+    { cards: "hat" },
+    { cards: { tag: "hat", why: "不是陣列" } },
+    { cards: [] },
+    { cards: Array.from({ length: 7 }, (_, i) => ({ tag: `extra${i}`, why: "多" })) },
+  ]) {
+    const bad = await runner.run({ name: "suggest_cards", args });
+    assert.equal(bad.ok, false, JSON.stringify(args));
+    assert.equal(bad.forModel.code, "bad_args", JSON.stringify(args));
+    assert.equal(bad.cards, undefined);
+    assert.equal(bad.ops, undefined);
+    assert.equal(bad.notes, undefined);
+  }
+  // 格式不對的項目也回給模型（bad_item），不默默丟掉；被擋的字大小寫不同算同一張
+  const odd = await runner.run({ name: "suggest_cards", args: { cards: [{ why: "no tag" }, "hat", null, { tag: "Loli", why: "a" }, { tag: "loli", why: "b" }] } });
+  assert.equal(odd.ok, true);
+  assert.deepEqual(odd.forModel.skipped.map((x) => x.reason), ["bad_item", "bad_item", "bad_item", "minor"]);
+  for (const kind of ["pin", "unpin", "weight", "n", "counts", "picks", "save", "draw", "preview", "search"]) {
+    assert.equal(names(ctx.log, kind).length, 0, kind);
+  }
+  assert.ok(ctx.highlights.every((h) => h[0] !== "write" && h[0] !== "done"));
+  assert.deepEqual(ctx._pool().map((p) => p.tag), ["smile"]);
+  assert.equal(ctx.version(), 1);
+  console.log("ok: suggest_cards");
 }
 
 // ---------- 檢查不寫入、40 張、確認 ----------
@@ -847,6 +946,147 @@ console.log("ok: schemas and phrase list");
     assert.ok(w._pool().some((p) => p.tag === "swimsuit") && !w._pool().some((p) => p.tag === "dress"));
   }
   console.log("ok: round-6 regressions (stop/stale during typeset, replace, undo clash)");
+}
+
+// ---------- 操作紀錄 ops（寫入結果給畫面排成「動詞　值」） ----------
+{
+  const addedCtx = world({ cards: beachCards });
+  const added = await createToolRunner(addedCtx).run({ name: "change_pool", args: { add: ["beach"] } }, { turn: turn(1) });
+  assert.equal(added.ok, true, added.summary);
+  assert.deepEqual(added.ops, [
+    { k: "加入", v: "海邊", raw: true },
+    { k: "附帶", v: "戶外", raw: true },
+  ]);
+  assert.equal(added.notes, undefined);
+  assert.equal(added.cards, undefined);
+
+  const removedCtx = world({ cards: beachCards, pool: [{ tag: "smile", zh: "微笑", weight: 1 }] });
+  const removed = await createToolRunner(removedCtx).run({ name: "change_pool", args: { remove: ["smile"] } }, { turn: turn(1) });
+  assert.equal(removed.ok, true, removed.summary);
+  assert.deepEqual(removed.ops, [{ k: "移掉", v: "微笑", raw: true }]);
+
+  const swapCtx = world({ cards: beachCards, pool: [{ tag: "dress", zh: "洋裝", weight: 1 }] });
+  const swapRun = createToolRunner(swapCtx);
+  const swapAsk = await swapRun.run({ name: "change_pool", args: { add: ["swimsuit"] } }, { turn: turn(1) });
+  assert.equal(swapAsk.status, "needs_confirm");
+  assert.equal(swapAsk.ops, undefined);
+  const swapped = await swapRun.confirm(swapAsk.confirm.token);
+  assert.equal(swapped.ok, true, swapped.summary);
+  assert.deepEqual(swapped.ops, [
+    { k: "加入", v: "泳裝", raw: true },
+    { k: "移掉", v: "洋裝", raw: true },
+  ]);
+
+  const weightCtx = world({
+    cards: { ...beachCards, long_hair: { zh: "長髮", section: "feature" } },
+    pool: [{ tag: "long_hair", zh: "長髮", weight: 1 }],
+  });
+  const weighted = await createToolRunner(weightCtx).run({ name: "change_pool", args: { weights: { long_hair: 1.2 } } }, { turn: turn(1) });
+  assert.equal(weighted.ok, true, weighted.summary);
+  assert.deepEqual(weighted.ops, [{ k: "份量", v: "長髮 1 → 1.2", raw: true }]);
+
+  const manyCtx = plain(5);
+  const many = await createToolRunner(manyCtx).run({
+    name: "change_pool",
+    args: { weights: { t0: 1.1, t1: 1.2, t2: 1.3, t3: 1.4, t4: 1.5 } },
+  }, { turn: turn(1) });
+  assert.equal(many.ok, true, many.summary);
+  assert.deepEqual(many.ops, [
+    { k: "份量", v: "牌0 1 → 1.1", raw: true },
+    { k: "份量", v: "牌1 1 → 1.2", raw: true },
+    { k: "份量", v: "牌2 1 → 1.3", raw: true },
+    { k: "份量", v: "牌3 1 → 1.4", raw: true },
+    { k: "份量", v: "還有 1 項" },
+  ]);
+
+  const banCtx = world({ cards: beachCards, bans: ["hat"] });
+  const banRun = createToolRunner(banCtx);
+  const banAsk = await banRun.run({ name: "change_pool", args: { add: ["hat"] } }, { turn: turn(1) });
+  assert.equal(banAsk.status, "needs_confirm");
+  assert.equal(banAsk.ops, undefined);
+  const unbanned = await banRun.confirm(banAsk.confirm.token);
+  assert.equal(unbanned.ok, true, unbanned.summary);
+  assert.deepEqual(unbanned.ops, [
+    { k: "加入", v: "帽子", raw: true },
+    { k: "撿回", v: "帽子", raw: true },
+  ]);
+  assert.deepEqual(unbanned.notes, ["廢字簍裡的牌不能自動復原"]);
+
+  const backCtx = world({ cards: beachCards, pool: [{ tag: "outdoors", zh: "戶外", weight: 1 }] });
+  const back = await createToolRunner(backCtx).run({
+    name: "change_pool",
+    args: { add: ["beach"], remove: ["outdoors"] },
+  }, { turn: turn(1) });
+  assert.equal(back.ok, true, back.summary);
+  assert.deepEqual(back.ops, [
+    { k: "加入", v: "海邊", raw: true },
+    { k: "附帶", v: "戶外", raw: true },
+    { k: "移掉", v: "戶外", raw: true },
+  ]);
+  assert.deepEqual(back.notes, ["「戶外」是附帶的，移掉還是會跟著回來"]);
+
+  const pasteCtx = world({ cards: beachCards });
+  pasteCtx.parse = (text) => {
+    const parsed = { cards: [], quality: [], unknown: [], blocked: [], loras: [], engine: [] };
+    for (const raw0 of String(text).split(/[,，、\n]+/)) {
+      const raw = raw0.trim();
+      if (!raw) continue;
+      if (beachCards[raw]) parsed.cards.push({ tag: raw, raw, w: 1, zh: beachCards[raw].zh });
+      else parsed.unknown.push(raw);
+    }
+    return parsed;
+  };
+  const pasted = await createToolRunner(pasteCtx).run({ name: "paste_prompt", args: { prompt: "beach" } }, { turn: turn(1) });
+  assert.equal(pasted.status, "done", pasted.summary);
+  assert.deepEqual(pasted.ops, [
+    { k: "加入", v: "海邊", raw: true },
+    { k: "附帶", v: "戶外", raw: true },
+  ]);
+
+  const nCtx = world({ cards: beachCards, settings: { n: 1 } });
+  const nRun = createToolRunner(nCtx);
+  const nSet = await nRun.run({ name: "set_draw_count", args: { n: 3 } }, { turn: turn(1) });
+  assert.equal(nSet.ok, true, nSet.summary);
+  assert.deepEqual(nSet.ops, [{ k: "一次", v: "1 → 3", raw: true }]);
+  const nSame = await nRun.run({ name: "set_draw_count", args: { n: 3 } }, { turn: turn(nCtx.version()) });
+  assert.equal(nSame.status, "skipped");
+  assert.equal(nSame.ops, undefined);
+  assert.equal(nSame.notes, undefined);
+  assert.equal(nSame.cards, undefined);
+
+  const countCtx = world({ cards: beachCards });
+  const counted = await createToolRunner(countCtx).run({ name: "set_section_counts", args: { feature: 3, pose: 4 } }, { turn: turn(1) });
+  assert.equal(counted.ok, true, counted.summary);
+  assert.deepEqual(counted.ops, [
+    { k: "長相", v: "2 → 3", raw: true },
+    { k: "姿勢", v: "2 → 4", raw: true },
+  ]);
+
+  const groupCtx = world({
+    cards: beachCards,
+    groups: [
+      { id: "a", name: "長相 A", section: "feature", tags: ["smile"] },
+      { id: "b", name: "長相 B", section: "feature", tags: ["smile"] },
+      { id: "c", name: "海邊服", section: "clothing", tags: ["dress"] },
+    ],
+    settings: { groups: { clothing: { ids: ["c"], mode: "whole" } } },
+  });
+  const groupRun = createToolRunner(groupCtx);
+  const picked = await groupRun.run({ name: "set_group_picks", args: { section: "feature", ids: ["a", "b"] } }, { turn: turn(1) });
+  assert.equal(picked.ok, true, picked.summary);
+  assert.deepEqual(picked.ops, [{ k: "長相群組", v: "長相 A、長相 B", raw: true }]);
+  const cleared = await groupRun.run({ name: "set_group_picks", args: { section: "clothing", ids: [] } }, { turn: turn(groupCtx.version()) });
+  assert.equal(cleared.ok, true, cleared.summary);
+  assert.deepEqual(cleared.ops, [{ k: "服裝群組", v: "全部取消" }]);
+
+  const saveCtx = world({ cards: beachCards });
+  const saved = await createToolRunner(saveCtx).run({
+    name: "save_card_group",
+    args: { name: "海邊散步", section: "env", tags: ["beach"] },
+  }, { turn: turn(1) });
+  assert.equal(saved.ok, true, saved.summary);
+  assert.deepEqual(saved.ops, [{ k: "建立群組", v: "海邊散步", raw: true }]);
+  console.log("ok: ops");
 }
 
 // 推理強度：頁面選單跟伺服器接受的值要一樣（不然選了存不進去）

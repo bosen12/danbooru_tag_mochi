@@ -2954,6 +2954,24 @@ AI 助手用：{0}|AI assistant uses {0!}
 長相 {0}、服裝 {1}、姿勢 {2}、場景 {3}|Appearance {0}, clothing {1}, pose {2}, scene {3}
 找到 {0} 張|Found {0}
 照「{0}」找到 {1} 張|Found {1} for “{0!}”
+正在挑推薦的牌|Picking cards to suggest
+推薦 {0} 張牌|Suggested {0} cards
+沒有可以推薦的牌|No cards to suggest
+沒排出來：{0}|Not shown: {0!}
+移掉|Removed
+撿回|Unblocked
+全部取消|Cleared
+建立群組|New group
+已加入|Added
+加入這張|Add
+合成池 · 目前 {0} 張|Pinned cards · {0} now
+字盒搜尋「{0}」· 找到 {1} 張|Library search “{0!}” · {1} found
+字盒 · 合成池目前 {0} 張|Card library · {0} pinned now
+這些牌有沒有互斥或重複的？|Do any of these cards clash or repeat?
+這裡面哪幾張適合現在的合成池？|Which of these suit my pinned cards?
+推薦幾張跟這次搜尋有關的牌|Suggest a few cards related to this search
+推薦幾張適合現在合成池的牌|Suggest a few cards that suit my pinned cards
+幫我找適合海邊的服裝|Find outfits that suit a beach
 詞庫沒有「{0}」|“{0!}” isn't in the library
 「{0}」被{1}擋著|“{0!}” is blocked by {1}
 一次 {0} → {1}|Batch {0} → {1}

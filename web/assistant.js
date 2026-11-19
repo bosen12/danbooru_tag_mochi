@@ -21,6 +21,9 @@ import { el, openSheet, toast, friendlyError } from "./ui.js";
 import { reducedMotion, DUR, CURVE, css, travelTime } from "./motion.js";
 import { english, t } from "./i18n.js";
 import { registerLab } from "./lab.js";
+
+// 畫面上的句子模板：i18n 畫完整句比對，數字和使用者內容用 {0}。
+const fill = (tpl, ...args) => String(tpl).replace(/\{(\d+)\}/g, (_, i) => String(args[Number(i)] ?? ""));
 import { openSettings as openSettingsSheet, swapText, labelOf } from "./assistant-settings.js";
 
 const STORE_KEY = "mochi.assistant.v1";
@@ -154,7 +157,7 @@ function createHalo() {
       ring.querySelector(".ai-halo-label").textContent = label || "";
       ring.querySelector(".ai-halo-label").hidden = !label;
       place();
-      if (phase === "done") fadeT = setTimeout(() => this.clear(), reducedMotion() ? 1400 : 1800);
+      if (phase === "done") fadeT = setTimeout(() => this.clear(), reducedMotion() ? 1000 : 1200);
     },
     clear() {
       clearTimeout(fadeT);
@@ -521,6 +524,9 @@ export function mountAssistant({ ctx }) {
       const blocked = status?.local === false && !status?.allowRemote;
       conn.textContent = status?.ok === false ? status.error || "" : blocked ? t("主機尚未允許這台裝置聊天") : c ? labelOf(c) : t("還沒選連線");
       conn.dataset.kind = status?.ok === false ? "err" : blocked ? "warn" : c ? "ok" : "warn";
+      // 正常時頂端只留名稱、設定、收起：模型名稱放在設定鈕的提示（和設定視窗）裡，有問題才在頂端寫出來。
+      conn.hidden = conn.dataset.kind === "ok";
+      gearBtn.title = c && conn.hidden ? `${t("AI 助手設定")}・${labelOf(c)}` : t("AI 助手設定");
     }
 
     function setState(kind, text = "", step = "") {
@@ -563,6 +569,7 @@ export function mountAssistant({ ctx }) {
     }
     function paintRefs() {
       refs.hidden = !pendingRefs.length;
+      queueMicrotask(refreshEmpty);
       refs.replaceChildren(
         ...pendingRefs.map((r, i) =>
           el(
@@ -596,6 +603,16 @@ export function mountAssistant({ ctx }) {
     }
     function emptyState() {
       const sample = (text) => el("button", { class: "ai-sample", type: "button", onclick: () => ((input.value = t(text)), grow(), input.focus()) }, text);
+      const ref = pendingRefs[0];
+      const here = ref && contextOf(ref);
+      if (here)
+        return el(
+          "div",
+          { class: "ai-empty", dataset: { ctx: ref.kind } },
+          el("div", { class: "ai-empty-mark", html: ICON.seal }),
+          el("p", { class: "ai-empty-ctx" }, here.line),
+          el("div", { class: "ai-samples" }, ...here.samples.map(sample))
+        );
       return el(
         "div",
         { class: "ai-empty" },
@@ -604,6 +621,28 @@ export function mountAssistant({ ctx }) {
         el("p", { class: "ai-muted" }, "助手讀的是你現在的合成池和規則，動手前會照你的話做，做了什麼都會列出來。"),
         el("div", { class: "ai-samples" }, sample("我現在有哪些牌？會抽幾張？"), sample("你覺得還可以加入哪些牌？"), sample("幫我把適合海邊的服裝建立一個群組"), sample("長相改成 3 張，這次只抽牌"))
       );
+    }
+    // 從哪一塊按「問助理」：那一塊現在的樣子一行字，加兩句跟它有關的例句（通用的四句收起來）。
+    function contextOf(ref) {
+      try {
+        const st = ctx.state();
+        if (ref.kind === "pool") return { line: fill("合成池 · 目前 {0} 張", st.poolCount ?? 0), samples: ["你覺得還可以加入哪些牌？", "這些牌有沒有互斥或重複的？"] };
+        if (ref.kind === "search") {
+          const n = (ctx.search(ref.query || "", { limit: 40 }) || []).length;
+          return { line: fill("字盒搜尋「{0}」· 找到 {1} 張", ref.query || "", n >= 40 ? "40+" : n), samples: ["這裡面哪幾張適合現在的合成池？", "推薦幾張跟這次搜尋有關的牌"] };
+        }
+        if (ref.kind === "lib") return { line: fill("字盒 · 合成池目前 {0} 張", st.poolCount ?? 0), samples: ["推薦幾張適合現在合成池的牌", "幫我找適合海邊的服裝"] };
+      } catch { /* 讀不到就用通用的 */ }
+      return null;
+    }
+    // 引用換了（加上、拿掉）而對話還是空的：空白畫面跟著換，淡出淡入。
+    function refreshEmpty() {
+      const old = log.querySelector(".ai-empty");
+      if (!old || chat.log.length) return;
+      const next = emptyState();
+      if ((old.dataset.ctx || "") === (next.dataset.ctx || "") && old.textContent === next.textContent) return;
+      old.replaceWith(next);
+      if (!reducedMotion()) next.animate([{ opacity: 0, transform: "translateY(6px)" }, { opacity: 1, transform: "none" }], { duration: DUR.medium, easing: css(CURVE.out) });
     }
     function renderItem(item) {
       if (item.role === "user")
@@ -655,7 +694,7 @@ export function mountAssistant({ ctx }) {
       const busy = !!running;
       if ((log.dataset.busy === "true") === busy) return;
       log.dataset.busy = busy ? "true" : "false";
-      for (const b of log.querySelectorAll(".ai-step-undo, .ai-confirm-actions .btn")) lockBtn(b, busy);
+      for (const b of log.querySelectorAll(".ai-step-undo, .ai-confirm-actions .btn, .ai-sugg-add:not([disabled])")) lockBtn(b, busy);
     }
     // 連續好幾步都是成功的查詢：這一輪做完後收成一行「已查詢 N 步」，按了才展開（不然手機上只看得到一長串查詢，最後那句回答埋在下面）。
     // 失敗、確認、寫入、復原的步驟一律看得到。
@@ -663,7 +702,7 @@ export function mountAssistant({ ctx }) {
     const openFolds = new Set();
     function stepsNode(item, steps) {
       const ol = el("ol", { class: "ai-steps" });
-      const quiet = (s) => s.kind === "read" && s.status === "done";
+      const quiet = (s) => s.kind === "read" && s.status === "done" && !s.cards?.length;
       for (let k = 0; k < steps.length; ) {
         let end = k;
         while (!item.pending && end < steps.length && quiet(steps[end])) end++;
@@ -690,6 +729,9 @@ export function mountAssistant({ ctx }) {
     }
     function stepNode(item, s) {
       {
+        // 做完的寫入排成墨池自己的操作紀錄：左邊動詞、右邊牌名或數字（「加入　日落、走路」「長相　2 → 3」）。
+        // 紀錄已經寫了的明細不再列；只留紀錄之外的提醒（notes）。進行中、失敗、復原了的照舊一行字。
+        const asOps = s.ops?.length && (s.status === "done" || s.status === "partial");
         const li = el(
           "li",
           { class: "ai-step", dataset: { status: s.status, id: s.id || "" } },
@@ -698,11 +740,12 @@ export function mountAssistant({ ctx }) {
           el(
             "div",
             {},
-            el("b", {}, s.status === "running" || !s.summary ? s.label : s.summary),
+            asOps ? opsNode(s.ops) : el("b", {}, s.status === "running" || !s.summary ? s.label : s.summary),
             // 排字盤緊接在標題底下：做完之後明細行加在它下面，字不會被往下推。
             s.sorts?.length ? sortsNode(s) : null,
             // 標題已經寫了的（「加入海邊；附帶戶外」底下又一行「加入海邊」）不再列一次。
-            ...(s.lines || []).filter((l) => l && !(s.summary || "").includes(l)).map((l) => el("span", { class: "ai-step-line" }, l))
+            ...(asOps || s.cards?.length ? s.notes || [] : (s.lines || []).filter((l) => l && !(s.summary || "").includes(l))).map((l) => el("span", { class: "ai-step-line" }, l)),
+            s.cards?.length && s.status === "done" ? suggNode(item, s) : null
           )
         );
         // 真的改了東西才叫「看變更」；查詢、失敗、沒寫入的只是帶你去那一塊（查看位置）。
@@ -717,6 +760,37 @@ export function mountAssistant({ ctx }) {
         }
         return li;
       }
+    }
+    function opsNode(ops) {
+      return el(
+        "dl",
+        { class: "ai-ops" },
+        ...ops.map((o) => el("div", { class: "ai-op" }, el("dt", { class: "ai-op-k" }, o.k), el("dd", { class: "ai-op-v", ...(o.raw ? { dataset: { noI18n: "" } } : {}) }, o.v)))
+      );
+    }
+    // 推薦卡：字盒同一個卡面＋一句理由＋「加入」。加過的那張標成已加入（按鈕鎖住），復原了又能再按。
+    function suggNode(item, s) {
+      return el(
+        "div",
+        { class: "ai-sugg" },
+        ...s.cards.map((c) => {
+          const face = ctx.cardFace?.(c.tag) || el("div", { class: "ai-sugg-blank", dataset: { noI18n: "" } }, c.zh || c.tag);
+          const added = c.state === "added";
+          const btn = el("button", { class: "btn btn-small ai-sugg-add", type: "button", ...(added || c.state === "busy" ? { disabled: "" } : {}) }, added ? "已加入" : "加入這張");
+          if (!added) {
+            btn.addEventListener("click", () => addSuggested(item, s, c));
+            lockBtn(btn, !!running);
+          }
+          return el(
+            "div",
+            { class: "ai-sugg-item", dataset: { tag: c.tag, n: String(c.n), state: c.state || "" } },
+            el("span", { class: "ai-sugg-n", "aria-hidden": "true" }, String(c.n)),
+            face,
+            el("p", { class: "ai-sugg-why", dataset: { noI18n: "" } }, c.why || ""),
+            btn
+          );
+        })
+      );
     }
     // 排字盤：助手寫的提示詞一顆一顆排出來。認得的字是牌名（剛排出來那一下先是原文，再墨成牌名），
     // 詞庫沒有的是虛線框（去字盒找），引擎自己處理的淡掉。
@@ -1138,6 +1212,10 @@ export function mountAssistant({ ctx }) {
           }
           if (!live()) throw Object.assign(new Error("aborted"), { name: "AbortError" });
           Object.assign(step, { status: res.status || (res.ok ? "done" : "failed"), summary: res.summary || "", lines: res.lines || [], target: res.target || null, undoable: !!res.undo });
+          // 操作紀錄（「加入　日落、走路」）、紀錄之外的提醒、推薦卡：畫面照這幾樣排，沒有就照舊寫摘要。
+          if (res.ops?.length) step.ops = res.ops;
+          if (res.notes?.length) step.notes = res.notes;
+          if (res.cards?.length) step.cards = res.cards.map((c) => ({ ...c }));
           if (res.sorts) step.sorts = res.sorts.map((x) => ({ ...x }));
           if (res.undo) undos.set(`${item.id}:${uid}`, res.undo);
           if (res.status === "needs_confirm" && res.confirm) {
@@ -1483,6 +1561,36 @@ export function mountAssistant({ ctx }) {
     return true;
   }
 
+  async function addSuggested(item, step, card) {
+    if (!runner || card.state === "added" || card.state === "busy" || !canAct(item)) return;
+    card.state = "busy";
+    panel.repaint(item);
+    const uid = `${step.id}:add:${card.tag}:${Date.now().toString(36)}`;
+    const lab = safeLabel({ name: "change_pool", args: { add: [card.tag] } });
+    const added = { id: uid, label: lab.zh, status: "running", seg: step.seg, kind: "write", by: "user" };
+    item.steps.splice(item.steps.indexOf(step) + 1, 0, added);
+    panel.repaint(item);
+    let res;
+    try {
+      res = await runner.run({ id: uid, name: "change_pool", args: { add: [card.tag] } }, { turn: { version: ctx.version() } });
+    } catch (err) {
+      res = { ok: false, status: "failed", summary: friendlyError(err) };
+    }
+    if (!chat.log.includes(item)) return;
+    Object.assign(added, { status: res.status || (res.ok ? "done" : "failed"), summary: res.summary || "", lines: res.lines || [], target: res.target || null, undoable: !!res.undo });
+    if (res.ops?.length) added.ops = res.ops;
+    if (res.notes?.length) added.notes = res.notes;
+    if (res.undo) undos.set(`${item.id}:${uid}`, res.undo);
+    if (res.status === "needs_confirm" && res.confirm) item.confirms.push({ ...res.confirm, callId: uid, state: "open" });
+    const done = res.ok && (res.status || "done") === "done";
+    card.state = done || res.status === "needs_confirm" ? "added" : "";
+    if (done && res.target) look(res.target, res.summary);
+    chat.messages.push({ role: "user", content: `［使用者按了「加入」］推薦的第 ${card.n} 張「${card.zh}」（${card.tag}）→ ${res.summary || (done ? "完成" : "沒做成")}` });
+    saveChat();
+    panel.repaint(item);
+    paintOutcome(item);
+  }
+
   async function undoStep(item, step) {
     const fn = undos.get(`${item.id}:${step.id}`);
     if (!fn || step.undoing || !canAct(item)) return;
@@ -1498,6 +1606,7 @@ export function mountAssistant({ ctx }) {
       step.status = "undone";
       step.summary = (r && r.summary) || t("已復原");
       chat.messages.push({ role: "user", content: `［使用者按了「復原」］${step.label}：${step.summary}` });
+      if (step.by === "user") for (const st of item.steps) for (const c of st.cards || []) if (step.id.startsWith(`${st.id}:add:${c.tag}:`)) c.state = "";
     } catch (err) {
       toast(friendlyError(err));
       return;
@@ -1534,6 +1643,7 @@ export function mountAssistant({ ctx }) {
     if (step) {
       const stepStatus = status === "applied" ? "done" : status === "kept" ? "skipped" : "failed";
       Object.assign(step, { status: stepStatus, summary: res.summary || step.summary, lines: res.lines || step.lines, target: res.target || step.target, undoable: status === "applied" && !!res.undo });
+      if (status === "applied" && res.ops?.length) Object.assign(step, { ops: res.ops, notes: res.notes || [] });
       // 排字盤上「等確認」的那幾顆：套用了照真的池子打勾或劃掉；保留、失效、失敗就是略過（劃掉）。
       if (step.sorts) {
         const inPool = new Set((ctx.state().pool || []).map((p) => p.tag));

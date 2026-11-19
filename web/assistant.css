@@ -787,17 +787,19 @@
   box-shadow:
     0 0 0 1px color-mix(in oklch, var(--ai-glow) 55%, transparent),
     0 0 28px 4px var(--ai-glow-soft);
+  /* 呼吸只動透明度（合成層處理），不每格重算陰影 */
   animation: ai-halo-breathe 1.8s var(--ease-in-out) infinite;
 }
 .ai-halo[data-phase="write"] {
+  /* 朱色淡一點：亮出位置就好，視線留在正在動的那一塊 */
   box-shadow:
-    0 0 0 2px var(--color-accent),
-    0 0 36px 6px oklch(60% 0.19 33 / 0.28);
+    0 0 0 1.5px color-mix(in oklch, var(--color-accent) 75%, transparent),
+    0 0 24px 3px oklch(60% 0.19 33 / 0.16);
 }
 .ai-halo[data-phase="done"] {
   box-shadow:
-    0 0 0 2px var(--color-good),
-    0 0 30px 4px oklch(74% 0.13 150 / 0.22);
+    0 0 0 1.5px var(--color-good),
+    0 0 22px 3px oklch(74% 0.13 150 / 0.16);
 }
 .ai-halo[data-phase="out"] {
   opacity: 0;
@@ -832,9 +834,7 @@
 }
 @keyframes ai-halo-breathe {
   50% {
-    box-shadow:
-      0 0 0 1px color-mix(in oklch, var(--ai-glow) 80%, transparent),
-      0 0 40px 8px var(--ai-glow-soft);
+    opacity: 0.55;
   }
 }
 

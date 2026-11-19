@@ -3407,6 +3407,11 @@ function assistantCtx() {
       const made = (await drawBatch(false, { n: requested })) || [];
       return { requested, made: made.length, shotIds: made.map((s) => s.id), warnings: made.length < requested ? ["short"] : [] };
     },
+    // 推薦卡：聊天室裡用字盒同一個卡面（不能點、不能拖，只看）。詞庫沒有回 null。
+    cardFace(tag) {
+      const c = lib?.byTag.get(tag);
+      return c && assets ? cardNode(c, assets, { tagName: "div" }) : null;
+    },
     sections: GROUP_SECTIONS,
   };
 }

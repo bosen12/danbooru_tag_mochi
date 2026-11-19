@@ -128,3 +128,113 @@
     transition: none;
   }
 }
+
+/* ---------- 操作紀錄：做完的寫入排成「加入　日落、走路」「長相　2 → 3」 ---------- */
+.ai-ops {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 2px var(--space-sm);
+  margin: 0;
+}
+.ai-op {
+  display: contents;
+}
+.ai-op-k {
+  color: var(--color-muted);
+  font-size: var(--text-xs);
+  line-height: 1.7;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+}
+.ai-op-v {
+  margin: 0;
+  font-weight: 600;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+.ai-step[data-status="undone"] .ai-op-v {
+  color: var(--color-muted);
+  text-decoration: line-through;
+}
+
+/* ---------- 推薦卡：字盒同一個卡面＋一句理由＋「加入」 ---------- */
+.ai-sugg {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(92px, 1fr));
+  gap: var(--space-sm) var(--space-xs);
+  margin-top: var(--space-xs);
+}
+.ai-sugg-item {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  align-content: start;
+  gap: 4px;
+  padding: 6px 4px 8px;
+  border-radius: 10px;
+  background: color-mix(in oklch, var(--color-paper-3) 60%, transparent);
+  transition:
+    background-color var(--dur-short) var(--ease-out),
+    opacity var(--dur-short) var(--ease-out);
+}
+.ai-sugg-item .card {
+  --card-w: 76px;
+  pointer-events: none;
+}
+.ai-sugg-n {
+  position: absolute;
+  z-index: 1;
+  top: 2px;
+  left: 4px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: var(--color-ink);
+  color: var(--color-paper);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 18px;
+  text-align: center;
+}
+.ai-sugg-blank {
+  display: grid;
+  place-items: center;
+  width: 76px;
+  aspect-ratio: 480 / 702;
+  border-radius: 6px;
+  border: 1px dashed var(--color-line);
+  font-size: var(--text-xs);
+  text-align: center;
+}
+.ai-sugg-why {
+  margin: 0;
+  width: 100%;
+  color: var(--color-muted);
+  font-size: var(--text-xs);
+  line-height: 1.4;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+.ai-sugg-add {
+  min-width: 64px;
+}
+.ai-sugg-item[data-state="added"] {
+  background: color-mix(in oklch, var(--color-good) 12%, transparent);
+}
+.ai-sugg-item[data-state="added"] .ai-sugg-add {
+  color: var(--color-good);
+  opacity: 1;
+}
+.ai-sugg-item[data-state="busy"] {
+  opacity: 0.7;
+}
+
+/* ---------- 空白畫面：從哪一塊按「問助理」，就寫那一塊現在的樣子 ---------- */
+.ai-empty-ctx {
+  margin: 0;
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: var(--color-paper-3);
+  font-weight: 600;
+}
