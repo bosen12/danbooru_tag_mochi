@@ -826,6 +826,9 @@ def _api_body(conn, chat, force_tool):
             body["system"] = system
         if tools:
             body["tools"] = tools
+        # 自動快取到最後一個區塊：同一輪的下一步、下一句話，前面的工具、系統說明和舊對話都從快取讀，
+        # 第一個字出來得快。系統說明裡沒有時間（時間在使用者訊息），前綴才每次一樣。
+        body["cache_control"] = {"type": "ephemeral"}
         # Opus 5.5、Sonnet 5.5、Fable 5.1 以後指定工具（type tool／any）會回 400。
         # 測試連線的 system 已經說只呼叫這個工具，用 auto 讓新舊模型都能過。
     else:

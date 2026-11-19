@@ -56,6 +56,7 @@ function script(body) {
     return tools === 0 ? sse([["text", { delta: "已換成黑髮。" }], ["tool_calls", { calls: [{ id: "b1", name: "change_pool", args: { add: ["black hair"] } }] }], ["done", { reason: "tool_calls" }]]) : end("等你確認。");
   if (/慢一點/.test(said)) return new Promise((r) => setTimeout(() => r(end("慢慢回來了")), 1500));
   if (/抽兩張/.test(said)) return tools === 0 ? call({ id: "d1", name: "draw_cards", args: { n: 2 } }) : end("抽好了。");
+  if (/找很多牌/.test(said)) return tools === 0 ? call(...Array.from({ length: 3 }, (_, k) => ({ id: `f${k}`, name: "find_cards", args: { query: "hair", limit: 20 } }))) : end("找到了。");
   if (/查很多次/.test(said)) return tools === 0 ? call(...Array.from({ length: 6 }, (_, k) => ({ id: `q${k}`, name: "get_workspace", args: {} }))) : end("查完了。");
   if (/長回答/.test(said)) return sse([...Array.from({ length: 120 }, (_, k) => ["text", { delta: k % 10 === 9 ? "。\n" : "字" }]), ["done", { reason: "end" }]]);
   return end("好。");
@@ -409,6 +410,39 @@ try {
     await send(page, "長回答");
     const raf = await page.evaluate(() => window.__raf);
     ok("18 串流 120 個字（一次到）：不會每個字排一次影格", raf < 40, `排了 ${raf} 次`);
+    await context.close();
+  } catch (err) {
+    ok("沒有例外", false, err.stack);
+  }
+
+  // ---------- 21. 回得快：系統說明每次一樣、舊回合的工具結果精簡 ----------
+  try {
+    const { context, page } = await newPage();
+    const from = chats.length;
+    await send(page, "找很多牌");
+    await send(page, "找很多牌");
+    await send(page, "找很多牌");
+    const sent = chats.slice(from);
+    ok("21 系統說明每一步都一樣（沒有時間戳，快取接得上）", sent.length >= 6 && sent.every((b) => b.system === sent[0].system) && !/現在：/.test(sent[0].system), `${sent.length} 次請求`);
+    const last = sent[sent.length - 1].messages;
+    const users = last.map((m, k) => (m.role === "user" ? k : -1)).filter((k) => k >= 0);
+    const head = last[users[users.length - 1]].content;
+    ok("21 時間寫在這一則的［目前工作台］", /^［目前工作台］現在 \d{4}-\d\d-\d\d \d\d:\d\d｜/.test(head), head.slice(0, 60));
+    const old = last.slice(0, users[users.length - 2]).filter((m) => m.role === "tool");
+    const recent = last.slice(users[users.length - 2]).filter((m) => m.role === "tool");
+    ok(
+      "21 最早那一輪的工具結果精簡過，最近兩輪原樣",
+      old.length === 3 && old.every((m) => JSON.parse(m.content).trimmed === true) && recent.length >= 6 && recent.every((m) => !JSON.parse(m.content).trimmed),
+      `舊 ${old.length} 則、近 ${recent.length} 則；長 ${old[0]?.content.length}：${old[0]?.content.slice(0, 300)}`
+    );
+    ok("21 舊的工作台摘要只留一句", /^［當時的工作台摘要已省略/.test(last[users[0]].content), last[users[0]].content.slice(0, 40));
+    // 同一則舊訊息每次縮出來都一樣：第三輪最後一次請求的開頭，要等於下一句話送出時的開頭（快取前綴不變）
+    await send(page, "找很多牌");
+    const next = chats[chats.length - 1].messages;
+    const prefix = next.slice(0, users[users.length - 2]);
+    ok("21 精簡結果穩定（下一句話時前面那段一字不差）", JSON.stringify(prefix) === JSON.stringify(last.slice(0, users[users.length - 2])));
+    const full = await page.evaluate(() => JSON.parse(localStorage.getItem("mochi.assistant.chat.v1") || sessionStorage.getItem("mochi.assistant.chat.v1") || "null"));
+    ok("21 存起來的對話不動（只動送出去的）", !full || !JSON.stringify(full).includes("trimmed"));
     await context.close();
   } catch (err) {
     ok("沒有例外", false, err.stack);

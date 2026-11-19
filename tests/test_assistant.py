@@ -442,6 +442,8 @@ def api_provider(provider):
                 assert path == "/v1/messages" and headers["x-api-key"] == KEY
                 assert "output_config" not in body and body["max_tokens"] == 16000
                 assert body["system"] == CHAT["system"] and body["tools"] == TOOLS
+                # 整段前綴自動快取：下一步、下一句的第一個字才出來得快
+                assert body["cache_control"] == {"type": "ephemeral"}
                 assert [b["tool_use_id"] for b in body["messages"][-1]["content"]] == ["c1", "c2"]
             else:
                 assert path == "/v1/chat/completions" and headers["authorization"] == "Bearer " + KEY

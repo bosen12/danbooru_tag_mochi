@@ -1018,6 +1018,13 @@ export function mountAssistant({ ctx }) {
 
   let runner = null;
 
+  /** 本地時間到分鐘（寫進使用者訊息，不寫進系統說明：系統說明要每次一樣才吃得到快取）。 */
+  function clockNow() {
+    const d = new Date();
+    const p = (n) => String(n).padStart(2, "0");
+    return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
+  }
+
   /** 工作台摘要：每則使用者訊息前面附一份（模型不必先查就知道現在的池子和規則；細節再用工具查）。 */
   function workspaceNote() {
     try {
@@ -1029,7 +1036,7 @@ export function mountAssistant({ ctx }) {
       const groups = Object.entries(s.settings.groups || {})
         .map(([k, v]) => `${SECTION_ZH[k] || k}：${(v.ids || []).length} 組（${v.mode === "mix" ? "混著抽" : "整組一起"}）`)
         .join("；");
-      return `［目前工作台］合成池 ${s.poolCount} 張：${pool}｜一次 ${s.settings.n}｜每段補牌：${counts}｜分級 ${s.settings.rating}${s.settings.ratingFree ? "（不限制開著）" : ""}｜尺度 ${(s.settings.heats || []).join("、") || "—"}｜群組勾選 ${groups || "沒有"}`;
+      return `［目前工作台］現在 ${clockNow()}｜合成池 ${s.poolCount} 張：${pool}｜一次 ${s.settings.n}｜每段補牌：${counts}｜分級 ${s.settings.rating}${s.settings.ratingFree ? "（不限制開著）" : ""}｜尺度 ${(s.settings.heats || []).join("、") || "—"}｜群組勾選 ${groups || "沒有"}`;
     } catch {
       return "";
     }
@@ -1083,7 +1090,7 @@ export function mountAssistant({ ctx }) {
     item.pending = true;
     item.paused = null;
     panel.setState("thinking", "", t("讀你的訊息"));
-    const system = promptMod.buildSystemPrompt({ lang: english ? "en" : "zh", room: "mochi", now: new Date().toISOString() });
+    const system = promptMod.buildSystemPrompt({ lang: english ? "en" : "zh", room: "mochi" });
     const toolsForModel = toolMod.toolSchemas();
     let finalKind = "answered";
     try {
@@ -1213,13 +1220,57 @@ export function mountAssistant({ ctx }) {
   }
 
   /**
+   * 舊回合精簡：最近兩則使用者訊息起照原樣送，更早的工具結果縮成骨架（長字串截短、長清單留前幾項），
+   * 工作台摘要只留一句。每一步都整串重送，舊回合的找牌候選、整個工作台不必每次再讀一遍。
+   * 同一則訊息每次縮出來都一樣：供應商的提示詞快取照樣接得上。存起來的對話不動，只動送出去的。
+   */
+  const KEEP_TURNS = 2;
+  const TRIM_OVER = 400; // 位元組；短的結果原樣留
+  function shrink(v, depth = 0) {
+    if (typeof v === "string") return v.length > 80 ? v.slice(0, 80) + "…" : v;
+    if (Array.isArray(v)) {
+      const head = v.slice(0, 6).map((x) => shrink(x, depth + 1));
+      return v.length > 6 ? [...head, `…另 ${v.length - 6} 項`] : head;
+    }
+    if (v && typeof v === "object") {
+      if (depth >= 3) return "…";
+      return Object.fromEntries(Object.entries(v).map(([k, x]) => [k, shrink(x, depth + 1)]));
+    }
+    return v;
+  }
+  function compactOld(messages) {
+    const users = [];
+    messages.forEach((x, k) => x.role === "user" && users.push(k));
+    const keepFrom = users.length > KEEP_TURNS ? users[users.length - KEEP_TURNS] : 0;
+    if (!keepFrom) return messages;
+    return messages.map((x, k) => {
+      if (k >= keepFrom) return x;
+      if (x.role === "tool" && String(x.content || "").length > TRIM_OVER) {
+        let body;
+        try {
+          const v = JSON.parse(x.content);
+          body = v && typeof v === "object" && !Array.isArray(v) ? { ...shrink(v), trimmed: true } : { value: shrink(v), trimmed: true };
+        } catch {
+          body = { text: String(x.content).slice(0, 200) + "…", trimmed: true };
+        }
+        return { ...x, content: JSON.stringify(body) };
+      }
+      if (x.role === "user" && String(x.content || "").startsWith("［目前工作台］")) {
+        const nl = x.content.indexOf("\n");
+        return { ...x, content: "［當時的工作台摘要已省略（trimmed）］" + (nl >= 0 ? x.content.slice(nl) : "") };
+      }
+      return x;
+    });
+  }
+
+  /**
    * 送出前把歷史剪到伺服器收得下（最多 200 則、整個請求 400 KiB；這裡各留一點餘裕）。
    * 只從前面整段剪：剪到下一則使用者的話為止，助手的工具呼叫和它的結果一定一起留或一起走。
    */
   function fitHistory(system, tools, messages) {
     const enc = new TextEncoder();
     const size = (m) => enc.encode(JSON.stringify({ system, tools, messages: m })).length;
-    let m = messages;
+    let m = compactOld(messages);
     while (m.length > 1 && (m.length > 190 || size(m) > 360 * 1024)) {
       const next = m.findIndex((x, k) => k > 0 && x.role === "user");
       if (next <= 0) break;

@@ -679,6 +679,10 @@ console.log("ok: schemas and phrase list");
   assert.match(en, /疊印台|還沒接上|不能改這個房間/);
   const bare = buildSystemPrompt({});
   assert.match(bare, /墨池/);
+  // 頁面不傳時間：系統說明每次一樣，供應商的提示詞快取才接得上（時間改寫在［目前工作台］）
+  assert.doesNotMatch(bare, /現在：|不明/);
+  assert.equal(buildSystemPrompt({ lang: "zh-Hant", room: "mochi" }), buildSystemPrompt({ lang: "zh-Hant", room: "mochi" }));
+  assert.match(bare, /trimmed/);
   console.log("ok: system prompt");
 }
 
