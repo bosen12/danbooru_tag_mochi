@@ -43,6 +43,11 @@ elif args[:2] == ["login", "status"]:
     print("Not logged in" if mode == "login" else "Logged in using ChatGPT")
     sys.exit(int(mode == "login"))
 elif args[0] == "models":
+    # flaky：第一次說沒登入（Grok 正在換登入憑證），第二次才正常
+    calls = Path(os.environ["ASSISTANT_CONFIG_PATH"]).with_name("grok-models.calls")
+    calls.write_text(calls.read_text() + "x" if calls.exists() else "x")
+    if mode == "flaky":
+        mode = "login" if len(calls.read_text()) == 1 else "ready"
     if mode == "login":
         print("You are not logged in. Run grok login.")
     else:
@@ -204,6 +209,19 @@ def detection():
     assert results[0]["loginCode"] == "timeout"
     assert results[1]["loginCode"] == "ok" and results[1]["models"][0]["id"] == "grok-fake"
     assert not results[2]["installed"] and results[2]["loginCode"] == "missing"
+    # Grok 換登入憑證那一下會說沒登入：再問一次才算數；真的沒登入，兩次都說沒登入。
+    calls = Path(os.environ["ASSISTANT_CONFIG_PATH"]).with_name("grok-models.calls")
+    for mode, login, asked in (("flaky", "ok", 2), ("login", "no", 2), ("ready", "ok", 1)):
+        calls.unlink(missing_ok=True)
+        with patch.object(assistant, "find_cli", lambda provider, m=mode: (
+            fake_command(provider, m) if provider == "grok" else None
+        )), patch.object(assistant, "LOGIN_RETRY_DELAY", 0.05):
+            grok = assistant.detect()["clis"][1]
+        assert grok["login"] == login, (mode, grok)
+        assert len(calls.read_text()) == asked, (mode, calls.read_text())
+        if login == "ok":
+            assert grok["models"][0]["id"] == "grok-fake"
+    calls.unlink(missing_ok=True)
 
 
 def fake_command(provider, mode):

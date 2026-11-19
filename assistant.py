@@ -466,6 +466,15 @@ def _codex_models(command, cwd):
     return []
 
 
+LOGIN_RETRY_DELAY = 1.0
+
+
+def _grok_logged_out(code, out, err):
+    log = out + "\n" + err
+    return _provider_error(log, cli=True).code == "login" or any(
+        s in log.lower() for s in ("not logged in", "not signed in"))
+
+
 def _probe_cli(provider):
     """版本、登入、模型分開驗證，某個選項不支援時仍保留已確認的資料。"""
     result = {"id": provider, "name": CLI_NAMES[provider], "installed": False, "version": None,
@@ -499,6 +508,11 @@ def _probe_cli(provider):
                 except (OSError, ValueError):
                     pass  # 安裝包可能沒有提供 app-server，這不影響 login status。
             else:
+                # 2026-11-20：Grok 換登入憑證那一下（auth.json 正在重寫），grok models 會說沒登入，
+                # 刷新就好了。說沒登入時隔一下再問一次，兩次都說沒登入才算。
+                if _grok_logged_out(code, out, err):
+                    time.sleep(LOGIN_RETRY_DELAY)
+                    code, out, err = _run_probe(command, args, cwd)
                 if _provider_error(out + "\n" + err, cli=True).code == "login":
                     result["login"] = "no"
                 elif code == 0:
