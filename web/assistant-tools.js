@@ -85,6 +85,7 @@ export const TEXT = {
   countsLine: "長相 {0}、服裝 {1}、姿勢 {2}、場景 {3}",
   foundN: "找到 {0} 張",
   foundNone: "沒有找到",
+  foundNear: "照「{0}」找到 {1} 張",
   checkCounts: "可用 {0} 張，已在池中 {1} 張，找不到 {2} 張，受限制 {3} 張",
   noCard: "詞庫沒有「{0}」",
   blockedBy: "「{0}」被{1}擋著",
@@ -163,6 +164,24 @@ export const TEXT = {
   undoOver: "復原後會超過 40 張，先保留現況",
   cardIs: "「{0}」是{1}",
 };
+
+/**
+ * 找牌整句沒結果時，依序再試的較短片段：只對三個字以上、沒有空白的中日文說法。
+ * 從長到短、同長度從開頭往後（「脫衣服」→「脫衣」→「衣服」），最多試 12 個，不要把字盒搜一整輪。
+ */
+export function shorterTerms(query) {
+  const q = String(query || "").trim();
+  if (/\s/.test(q) || !/[぀-ヿ㐀-鿿]/.test(q)) return [];
+  const chars = [...q];
+  const out = [];
+  for (let len = chars.length - 1; len >= 2 && out.length < 12; len--) {
+    for (let at = 0; at + len <= chars.length && out.length < 12; at++) {
+      const s = chars.slice(at, at + len).join("");
+      if (!out.includes(s)) out.push(s);
+    }
+  }
+  return out;
+}
 
 // 函式替換：牌名裡的 $& 不會被 String.replace 當成插入符號。
 export function fill(tpl, ...args) {
@@ -269,7 +288,7 @@ export const TOOL_DEFS = [
   {
     name: "find_cards",
     kind: "read",
-    description: "用中文或英文在詞庫找牌。只有使用者要你列出、比較有哪些牌，或點名一張不確定怎麼寫的牌時才用；要配一組牌用 paste_prompt。回傳裡被擋著的牌不要接著加入。不要把搜尋結果當成已經放進合成池。limit 預設 8、最多 20，不要為了湊數重複搜同一句。",
+    description: "用中文或英文在詞庫找牌。只有使用者要你列出、比較有哪些牌，或點名一張不確定怎麼寫的牌時才用；要配一組牌用 paste_prompt。回傳裡被擋著的牌不要接著加入。不要把搜尋結果當成已經放進合成池。limit 預設 8、最多 20，不要為了湊數重複搜同一句。整句沒有完全相符時會照較短的片段找（回傳帶 near）；還是沒有，就換英文 Danbooru tag 或別的說法再找一次，不要直接說詞庫沒有。",
     input_schema: {
       type: "object",
       additionalProperties: false,
@@ -993,7 +1012,20 @@ export function createToolRunner(ctx) {
     if (args.section) opt.section = args.section;
     await hi(target, "read", fill(TEXT.labSearch, query));
     try {
-      const cards = (await ctx.search(resolvedTag(query), opt)) || [];
+      let cards = (await ctx.search(resolvedTag(query), opt)) || [];
+      // 使用者的說法常比牌名長一點（「脫衣服」→ 牌叫「正在脫衣」）：整句沒有，就照較短的片段再找，
+      // 模型（尤其推理開得低時）找不到常常不會自己換說法，直接回「沒有」。
+      let near = null;
+      if (!cards.length) {
+        for (const alt of shorterTerms(query)) {
+          const got = (await ctx.search(alt, opt)) || [];
+          if (got.length) {
+            cards = got;
+            near = alt;
+            break;
+          }
+        }
+      }
       await hi(target, "clear");
       const lines = [];
       for (const card of cards) {
@@ -1003,10 +1035,15 @@ export function createToolRunner(ctx) {
       return pack({
         ok: true,
         status: "done",
-        summary: cards.length ? fill(TEXT.foundN, cards.length) : TEXT.foundNone,
+        summary: near ? fill(TEXT.foundNear, near, cards.length) : cards.length ? fill(TEXT.foundN, cards.length) : TEXT.foundNone,
         lines,
         target,
-        forModel: { ok: true, cards, count: cards.length },
+        forModel: {
+          ok: true,
+          cards,
+          count: cards.length,
+          ...(near ? { near, note: `「${query}」沒有完全相符的牌；這些是照「${near}」找到的，挑意思對的用。` } : {}),
+        },
       });
     } catch (err) {
       await hi(target, "clear");

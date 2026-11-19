@@ -2940,6 +2940,7 @@ AI 助手用：{0}|AI assistant uses {0!}
 合成池是空的，一次 {0}|The pool is empty, batch {0}
 長相 {0}、服裝 {1}、姿勢 {2}、場景 {3}|Appearance {0}, clothing {1}, pose {2}, scene {3}
 找到 {0} 張|Found {0}
+照「{0}」找到 {1} 張|Found {1} for “{0!}”
 詞庫沒有「{0}」|“{0!}” isn't in the library
 「{0}」被{1}擋著|“{0!}” is blocked by {1}
 一次 {0} → {1}|Batch {0} → {1}
