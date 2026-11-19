@@ -160,9 +160,33 @@
     margin-right: calc(var(--ai-w) + var(--space-sm));
     transition: margin-right var(--dur-medium) var(--ease-out);
   }
-  html[data-ai-panel="open"] .trash,
-  html[data-ai-panel="open"] .go-float {
+  html[data-ai-panel="open"] .trash {
     right: calc(var(--ai-w) + var(--space-md) * 1.5);
+  }
+  /* 底部浮動列：置中在聊天室左邊剩下的那一塊。不能也設 right —— left、right 都有，這條會被拉成整排長、
+   * 按鈕擠在左邊（2026-11-19 專案主截圖）。 */
+  /* 偏好卡牌（托盤）就疊在浮動列上面：一起置中在同一塊，兩顆對齊。 */
+  html[data-ai-panel="open"] .go-float,
+  html[data-ai-panel="open"] .fav-hand {
+    left: calc((100% - var(--ai-w) - var(--space-sm)) / 2);
+  }
+}
+/* 開關聊天室時兩顆跟著版面滑過去，不是一格跳（只在助手開著時加；原本的過渡照列，只多一個 left）。 */
+@media (min-width: 75rem) and (prefers-reduced-motion: no-preference) {
+  html[data-ai] .go-float {
+    transition:
+      left var(--dur-medium) var(--ease-out),
+      transform var(--dur-short) var(--ease-out),
+      opacity var(--dur-short) var(--ease-out);
+  }
+  html[data-ai] .fav-hand {
+    transition:
+      left var(--dur-medium) var(--ease-out),
+      width var(--dur-medium) var(--ease-out),
+      border-color var(--dur-micro) var(--ease-out),
+      box-shadow var(--dur-micro) var(--ease-out),
+      scale var(--dur-short) var(--ease-out),
+      translate var(--dur-short) var(--ease-out);
   }
 }
 

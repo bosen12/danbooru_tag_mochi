@@ -830,7 +830,7 @@ console.log("ok: schemas and phrase list");
 
 // 推理強度：頁面選單跟伺服器接受的值要一樣（不然選了存不進去）
 {
-  const pageSrc = readFileSync(new URL(front + "assistant.js", import.meta.url), "utf8");
+  const pageSrc = readFileSync(new URL(front + "assistant-settings.js", import.meta.url), "utf8");
   const pySrc = readFileSync(new URL("../assistant.py", import.meta.url), "utf8");
   const pageBlock = pageSrc.match(/const EFFORTS = \{([\s\S]*?)\};/)[1];
   const pyBlock = pySrc.match(/EFFORTS = \{([\s\S]*?)\r?\n\}/)[1];
