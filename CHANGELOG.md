@@ -1,5 +1,20 @@
 # Release notes
 
+## v1.7 — 2026-11-19
+
+Changes since [v1.6](https://github.com/bosen12/danbooru_tag_mochi/releases/tag/v1.6).
+
+- **Ink Pool assistant (beta, off by default).** Turn it on under **Experimental features** in the header **Settings** (Ink Pool) and a seal appears in the header (Ctrl+/). Describe the picture you want in one sentence: it writes a prompt and pastes it in as cards, looks up words the lexicon doesn't have, changes weights, per-image and per-category counts, checks groups, saves a group, and draws a round. Every step shows in the chat with **See changes** / **Undo**; replacing a pinned card or rescuing a blocked one asks first. It connects through a CLI you already have (Claude Code, Codex, Grok Build, run with their own tools switched off) or an API key (OpenAI, Anthropic, xAI, or any compatible endpoint), with a reasoning effort per connection; keys stay on the server and are never sent back to the page. It can't print images, change the rating or the model. With the switch off the page is exactly as before.
+- **Favorite characters, favorite cards and group picks are shared through the server**, so every device and every room sees the same set.
+- Groups also steer the content level and cast, like pinned cards, and ignore scene clothing limits (a checked bikini group in a bedroom now draws bikinis).
+- **Library search** falls back to shorter pieces of a phrase with no exact match: 脫衣服 finds 正在脫衣 and 半脫衣, with a note saying which piece matched. The assistant uses the same search.
+- **The tour covers more**: card groups (Ink Pool and Card Book), Paste, Decks, Favorite cards, Blocked cards, Rating and the assistant in the Ink Pool; Favorite cards and Decks in the Fuse Bed.
+- **Smoother**: dealing cards after **Draw & generate** no longer repaints every card each frame, the waiting hand before ComfyUI starts only fades its glow, typing in the library search no longer redraws the whole library per keystroke, frosted panels go opaque while you scroll, and card peek no longer pops up mid-scroll.
+- The floating draw bar hides again when you scroll back to the main button, and stays centred beside the chat panel.
+- A header **Settings** gear, and a ComfyUI status mark next to it.
+- "Comfy not connected" bursts: when Windows refuses a local port, Mochi reconnects from another one.
+- Several deep-review rounds fixed well over 100 smaller issues, including: two tabs no longer print the same round twice, removed images are not saved back, gallery saves are locked, custom cards and decks check versions before saving, failed reads of settings or favorites no longer wipe them, and the MCP server reports read errors.
+
 ## v1.6 — 2026-11-17
 
 Changes since [v1.5](https://github.com/bosen12/danbooru_tag_mochi/releases/tag/v1.5).
