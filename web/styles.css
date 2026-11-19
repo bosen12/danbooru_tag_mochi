@@ -2411,6 +2411,45 @@ body #wf-pick-btn.has {
   transition-duration: var(--dur-short);
 }
 
+/* 選格的「隨機」開關：一顆小膠囊，開著時墨色填滿、骰子點亮；亮著的格子改成虛線框（候選，不是每張都補）。 */
+.skel-rand {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 28px;
+  padding: 0 var(--space-xs) 0 6px;
+  border: 1px solid var(--color-rule);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--color-muted);
+  font-size: var(--text-xs);
+  white-space: nowrap;
+  transition:
+    background-color var(--dur-short) var(--ease-out),
+    border-color var(--dur-short) var(--ease-out),
+    color var(--dur-short) var(--ease-out);
+}
+.skel-rand-dice {
+  display: inline-grid;
+  place-items: center;
+}
+.skel-rand[aria-checked="true"] {
+  background: var(--color-ink);
+  border-color: var(--color-ink);
+  color: var(--color-paper);
+  font-weight: 700;
+}
+@media (hover: hover) and (pointer: fine) {
+  .skel-rand[aria-checked="false"]:hover {
+    border-color: var(--color-ink-2);
+    color: var(--color-ink);
+  }
+}
+.skel-row[data-random="true"] .skel-chip[aria-pressed="true"] {
+  border-style: dashed;
+  border-color: var(--color-ink);
+}
+
 /* 剛展開：格子依序浮上來。 */
 .skel-row.is-opening .skel-chip {
   animation: skel-chip-in var(--dur-long) var(--ease-out) backwards;

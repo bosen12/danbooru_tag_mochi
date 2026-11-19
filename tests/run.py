@@ -39,6 +39,7 @@ checks = [
     ("test_era_mix_rating_free.mjs", "test_era_mix_rating_free.mjs"),
     ("test_tab_sync.mjs", "test_tab_sync.mjs"),
     ("test_card_search.mjs", "test_card_search.mjs"),
+    ("test_skel_random.mjs", "test_skel_random.mjs"),
     ("test_mcp.mjs", "test_mochi_mcp.mjs"),
     ("test_mobile_bridge.mjs", "test_mobile_bridge.mjs"),
     ("test_fav_chars_sync.mjs", "test_fav_chars_sync.mjs"),

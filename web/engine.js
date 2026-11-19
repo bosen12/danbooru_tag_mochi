@@ -5161,9 +5161,12 @@ function drawOneImpl(lex, settings, pinned, userBanned, rand, seed, opts) {
   // 獨立擲骰（天氣、坐臥面、背景、種族…）也受同樣限制。
   // 選格只約束引擎自己補的牌；釘選、指定必抽與它們的必要相依仍保留。
   // 不再用尺度為性愛／走光／裸身／其他道具開後門。
+  // 選格開了「隨機」的段：這一張先用種子派生的亂數挑好補哪幾格（主亂數不多吃，固定種子可重現）。
+  const skelRand = mulberry32(((Number(seed) >>> 0) ^ 0x2c1b3c6d) >>> 0);
+  const litNow = new Map(Object.keys(SKELETON).map((section) => [section, skeletonDraw(settings, section, skelRand)]));
   const selectedSlots = new Map(Object.keys(SKELETON)
     .filter(section => !zeroSections.has(section) && Number(settings.counts?.[section]) < skeletonCap(section))
-    .map(section => [section, new Set(skeletonLit(settings, section))]));
+    .map(section => [section, new Set(litNow.get(section))]));
   const offKeysOf = supplementKindKeys;
   const ENGINE_FILL = new Set([SOURCES.random, SOURCES.era_anchor, SOURCES.repair]);
   // 卡片群組（web6/card-groups.js 抽牌前解析成 settings.groupPools）：某一段有群組時，群組有放牌的
@@ -7571,7 +7574,7 @@ function drawOneImpl(lex, settings, pinned, userBanned, rand, seed, opts) {
       // 骨架格（照「每段抽幾個」亮著的那幾格：髮長、瞳色、髮色、髮型、胸部…）之後一定會補，所以先花名額，
       // 而且沒被群組蓋到的骨架格要留位子：不然名額花在臉紅、鎖骨上，骨架格又從詞庫補，
       // 張數就超過「每段抽幾個」（Grok 量到長相 5 張變 8 張）。群組其他的格子用剩下的名額。
-      const lit = skeletonLit(settings, section).slice(0, want);
+      const lit = (litNow.get(section) || skeletonLit(settings, section)).slice(0, want);
       // 骨架格真正補的是有互斥的那一格（胸部大小、瞳色…）；同一大類裡沒互斥的（鎖骨、雀斑）不算佔到骨架格。
       const isLit = (key) => g.byKey.get(key).some((m) => m.mutex && offKeysOf(m).some((k) => lit.includes(k)));
       const litOpen = () => lit.filter((k) => !someUsed((it) => it.section === section && it.mutex && offKeysOf(it).includes(k))).length;
@@ -9337,7 +9340,58 @@ export function skeletonLit(settings, section) {
   if (!keys.length || n === 0) return [];
   if (n >= skeletonCap(section)) return keys;
   const off = new Set(settings.offGroups || []);
-  return keys.filter((k) => !off.has(k)).slice(0, n);
+  const on = keys.filter((k) => !off.has(k));
+  // 隨機：亮著的全部都是候選（可以比數字多），每張抽的時候才挑（skeletonDraw）。
+  return skelRandomOn(settings, section) ? on : on.slice(0, n);
+}
+
+/** 這一段開了選格的「隨機」沒。 */
+export function skelRandomOn(settings, section) {
+  return Array.isArray(settings?.skelRandom) && settings.skelRandom.includes(section);
+}
+
+/**
+ * 這一張實際補哪幾格：隨機的段從亮著的格子裡用 rand 挑「數字」那麼多格（照優先序排回去），
+ * 其他的段就是 skeletonLit。rand 是種子派生的亂數：固定種子就能重現同一張。
+ */
+export function skeletonDraw(settings, section, rand) {
+  const lit = skeletonLit(settings, section);
+  if (!skelRandomOn(settings, section)) return lit;
+  const n = Math.max(0, Math.min(10, Number(settings?.counts?.[section]) || 0));
+  if (lit.length <= n || typeof rand !== "function") return lit.slice(0, n);
+  const pick = new Set(shuffle([...lit], rand).slice(0, n));
+  return lit.filter((k) => pick.has(k));
+}
+
+/** 隨機時點一格：亮的熄掉、暗的亮起來（數字不變）；最後一格不能熄。回傳 { offGroups } 或 null。 */
+export function toggleSkeleton(settings, section, key) {
+  const keys = skeletonKeys(section);
+  if (!keys.includes(key)) return null;
+  const lit = skeletonLit(settings, section);
+  const on = lit.includes(key);
+  if (on && lit.length <= 1) return null;
+  const keep = new Set(on ? lit.filter((k) => k !== key) : [...lit, key]);
+  const others = (settings.offGroups || []).filter((k) => !keys.includes(k));
+  return { offGroups: sanitizeOffGroups([...others, ...keys.filter((k) => !keep.has(k))]) };
+}
+
+/** 開關隨機：關掉時亮著的照優先序只留「數字」那麼多格（跟以前一樣）。回傳 { skelRandom, offGroups }。 */
+export function setSkelRandom(settings, section, on) {
+  const now = new Set(sanitizeSkelRandom(settings?.skelRandom));
+  if (on) now.add(section);
+  else now.delete(section);
+  const skelRandom = sanitizeSkelRandom([...now]);
+  const keys = skeletonKeys(section);
+  // 打開：先把畫面上亮著的那幾格寫死（offGroups 空的時候 skeletonLit 是「前 n 格」，一開隨機會變成全亮）。
+  // 關掉：照優先序只留「數字」那麼多格。
+  const keep = new Set(on ? skeletonLit({ ...settings, skelRandom: [] }, section) : skeletonLit({ ...settings, skelRandom }, section));
+  const others = (settings.offGroups || []).filter((k) => !keys.includes(k));
+  return { skelRandom, offGroups: sanitizeOffGroups([...others, ...keys.filter((k) => !keep.has(k))]) };
+}
+
+export function sanitizeSkelRandom(raw) {
+  if (!Array.isArray(raw)) return [];
+  return [...new Set(raw.filter((s) => typeof s === "string" && SKELETON[s]))].sort();
 }
 
 /** 改數字：回傳 { counts, offGroups }。往下按從優先序最後面開始熄，往上按依序亮回來。 */
@@ -9353,7 +9407,8 @@ export function stepSkeleton(settings, section, next) {
     if (lit.length >= v) break;
     if (!lit.includes(k)) lit.push(k);
   }
-  const keep = new Set(lit.slice(0, v));
+  // 隨機：多亮的格子都是候選，留著；不隨機：照數字只留那麼多格。
+  const keep = new Set(skelRandomOn(settings, section) ? lit : lit.slice(0, v));
   return { counts, offGroups: sanitizeOffGroups([...others, ...keys.filter((k) => !keep.has(k))]) };
 }
 
@@ -9446,6 +9501,8 @@ export function defaultSettings(data) {
     sceneMode: "normal",
     mustDraw: {},
     offGroups: [],
+    // 選格的「隨機」開關（2026-11-19 專案主要的）：開著的段可以亮好幾格，每張從裡面隨機挑「每段抽幾個」那麼多格。
+    skelRandom: [],
   };
 }
 
@@ -9510,6 +9567,7 @@ export function sanitizeSettings(raw, data) {
     mustDraw: sanitizeMustDraw(raw.mustDraw),
     groups: sanitizeGroupPick(raw.groups),
     offGroups: sanitizeOffGroups(raw.offGroups),
+    skelRandom: sanitizeSkelRandom(raw.skelRandom),
   };
 }
 

@@ -2623,6 +2623,16 @@ Comfy 靜默超過 {0} 秒，這張放棄|ComfyUI did not respond for {0} second
 抓不到骨架：{0}|Could not detect skeleton: {0}
 只補 1 {0}，點一顆換過去；釘選只佔同類格|Add 1 {0}. Click a slot to change it. Pins occupy their own slot.
 只補 {0} {1}，點暗的會換掉最早選的；釘選只佔同類格|Add {0} {1}. Selecting an inactive slot replaces the oldest choice. Pins occupy their own slot.
+{0}隨機|{0} random
+隨機至少要留一格候選|Random needs at least one slot to pick from
+隨機開著：每張從亮著的格子裡隨機挑（點一下關掉）|Random is on: each image picks from the lit slots (click to turn off)
+打開隨機：可以亮好幾格，每張從裡面隨機挑|Turn on Random: light several slots and each image picks from them
+「{0}」在隨機候選裡（點一下拿出）|“{0}” is a random candidate (click to remove)
+把「{0}」加進隨機候選|Add “{0}” to the random candidates
+隨機：亮著 {0} 種，多點亮幾種，每張就從裡面挑 {1} 種|Random: {0} types lit. Light more and each image picks {1} of them.
+隨機：每張從亮著的 {0} 種裡挑 {1} 種；點一下加進或拿出候選|Random: each image picks {1} of the {0} lit types. Click to add or remove a candidate.
+隨機：亮著 {0} 格，多點亮幾格，每張就從裡面挑 {1} 格|Random: {0} slots lit. Light more and each image picks {1} of them.
+隨機：每張從亮著的 {0} 格裡挑 {1} 格；點一下加進或拿出候選|Random: each image picks {1} of the {0} lit slots. Click to add or remove a candidate.
 會補「{0}」|Add “{0}”
 換成「{0}」|Replace with “{0}”
 {0}補哪幾格|{0} slots
