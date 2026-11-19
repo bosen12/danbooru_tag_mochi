@@ -3182,7 +3182,9 @@ function assistantCtx() {
         suit: c.suit,
         section: c.item?.section || null,
         group: c.groupZh || null,
-        match: res.mode === "guess" ? "near" : "exact",
+        match: res.mode === "guess" || res.mode === "near" ? "near" : "exact",
+        // 照較短的片段找到的（「脫衣服」→「脫衣」）：工具層據此告訴模型、步驟上寫「照「脫衣」找到」
+        ...(res.mode === "near" ? { via: res.near } : {}),
         blocked: blockedOf(c),
         inPool: pool.has(c.tag),
       }));

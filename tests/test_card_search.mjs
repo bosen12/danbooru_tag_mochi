@@ -182,3 +182,22 @@ test("warmSearchKeys：照閒置時間分段、算完回 -1、結果不變", () 
   assert.equal(warmSearchKeys(fresh, next), -1);
   for (const q of ["紅髮", "red_hair", "海边", "smile"]) assert.deepEqual(searchCards(fresh, q).list.map((c) => c.tag), searchCards(cards, q).list.map((c) => c.tag), q);
 });
+
+test("a phrase longer than any card name falls back to its shorter pieces (脫衣服 → 脫衣)", async () => {
+  const { shorterTerms } = await import(new URL(dir + "card-search.js", import.meta.url));
+  const r = find("脫衣服");
+  assert.equal(r.mode, "near");
+  assert.equal(r.near, "脫衣");
+  const tags = r.list.map((c) => c.tag);
+  assert.ok(tags.includes("undressing") && tags.includes("partially undressed"), tags.join(","));
+  assert.equal(searchNoteText(r, "脫衣服"), "找不到「脫衣服」，照「脫衣」找到這些");
+  // 猜得到的照舊用猜的（紅頭髮 → 紅髮，不是「頭髮」一大堆）
+  assert.equal(find("紅頭髮").mode, "guess");
+  // 英文、帶空白、兩個字、一個字不拆
+  assert.deepEqual(shorterTerms("undressing"), []);
+  assert.deepEqual(shorterTerms("紅 髮"), []);
+  assert.deepEqual(shorterTerms("帽子"), []);
+  assert.deepEqual(shorterTerms("脫衣服").slice(0, 2), ["脫衣", "衣服"]);
+  assert.ok(shorterTerms("一二三四五六七八九十").length <= 12);
+  assert.equal(find("鑫").mode, "none");
+});

@@ -223,14 +223,39 @@ function searchInner(pool, q, allowStem) {
     }
   }
   const guess = guessCards(pool, q);
-  return guess.length ? { list: guess, mode: "guess", terms: typed } : { list: [], mode: "none", terms: typed };
+  if (guess.length) return { list: guess, mode: "guess", terms: typed };
+  // 打的比牌名長一點（「脫衣服」→ 牌叫「正在脫衣」「半脫衣」）：照較短的片段再找，先試最長、靠前的。
+  for (const alt of shorterTerms(q)) {
+    const near = pool.filter((c) => cardMatches(c, alt));
+    if (near.length) return { list: rankList(near, termsOf(alt).join(" ")), mode: "near", terms: typed, near: alt };
+  }
+  return { list: [], mode: "none", terms: typed };
+}
+
+/**
+ * 整句沒有時依序再試的較短片段：只對三個字以上、沒有空白的中日文說法（英文拆開太常見）。
+ * 從長到短、同長度從開頭往後（「脫衣服」→「脫衣」→「衣服」），最多 12 個，不要把整盒搜一輪又一輪。
+ */
+export function shorterTerms(query) {
+  const q = String(query ?? "").trim();
+  if (/\s/.test(q) || !/[぀-ヿ㐀-鿿]/.test(q) || /[a-z0-9]/i.test(q)) return [];
+  const chars = [...q];
+  const out = [];
+  for (let len = chars.length - 1; len >= 2 && out.length < 12; len--) {
+    for (let at = 0; at + len <= chars.length && out.length < 12; at++) {
+      const s = chars.slice(at, at + len).join("");
+      if (!out.includes(s) && !SKIP.has(s)) out.push(s);
+    }
+  }
+  return out;
 }
 
 /**
  * 篩過花色、分級…之後的 pool 裡搜 q：回 { list, mode, terms }。
  *   all：每一段都有的（照 matchRank 排）。
  *   any：沒有一張同時都有。空白分開的各段，或連寫的中文拆出來的段，照段的順序排。terms 是拆出來的段（照打的字，不是簡體）。
- *   guess：都找不到，猜的（含英文複數去掉 s／es 再找）。none：真的沒有。
+ *   guess：都找不到，猜的（含英文複數去掉 s／es 再找）。
+ *   near：猜也沒有，照較短的片段找到的（「脫衣服」→「脫衣」），near 是用到的那段。none：真的沒有。
  */
 export function searchCards(pool, q) {
   if (!namesReady) indexSearchNames(pool);
@@ -244,5 +269,6 @@ export function searchNoteText(res, q) {
     return `沒有一張同時有「${terms.join("」「")}」，分別找到這些`;
   }
   if (res?.mode === "guess") return `找不到「${String(q ?? "").trim()}」，你是不是要找這幾張？`;
+  if (res?.mode === "near") return `找不到「${String(q ?? "").trim()}」，照「${res.near}」找到這些`;
   return "";
 }

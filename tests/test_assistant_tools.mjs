@@ -5,7 +5,7 @@ import { clampTagWeight, skeletonLit, stepSkeleton, sanitizeOffGroups } from "..
 import { HARD_BANNED } from "../web/card-art.js";
 // 這邊在 web6/，開源版（danbooru_tag_mochi）在 web/：同一支測試兩邊都能跑。
 const front = existsSync(new URL("../web6/assistant-tools.js", import.meta.url)) ? "../web6/" : "../web/";
-const { TEXT, TOOL_DEFS, toolSchemas, createToolRunner, fill, shorterTerms } = await import(new URL(front + "assistant-tools.js", import.meta.url));
+const { TEXT, TOOL_DEFS, toolSchemas, createToolRunner, fill } = await import(new URL(front + "assistant-tools.js", import.meta.url));
 const { buildSystemPrompt } = await import(new URL(front + "assistant-prompt.js", import.meta.url));
 
 // 假的工作台：互斥、附帶、廢字簍只做測試要的那一點，規則本身仍以 runner 的判斷為準。
@@ -263,10 +263,10 @@ console.log("ok: schemas and phrase list");
   const defLimit = await runner.run({ name: "find_cards", args: { query: "帽" } });
   assert.equal(defLimit.ok, true);
   assert.equal(ctx.log.at(-1)[2].limit, 8);
-  // 整句沒有（「脫衣服」）就照較短的片段找（牌叫「正在脫衣」）：回傳帶 near，模型才不會直接說沒有
+  // 字盒照較短的片段找到的牌帶 via（「脫衣服」→「脫衣」）：回傳帶 near、步驟寫照哪段找到，模型才不會直接說沒有
   {
-    const undress = { tag: "undressing", zh: "正在脫衣", section: "pose" };
-    const w = world({ cards: beachCards, search: (q) => (/^脫衣$/.test(q) ? [undress] : []) });
+    const undress = { tag: "undressing", zh: "正在脫衣", section: "pose", match: "near", via: "脫衣" };
+    const w = world({ cards: beachCards, search: (q) => (q === "脫衣服" ? [undress] : []) });
     const r = createToolRunner(w);
     const near = await r.run({ name: "find_cards", args: { query: "脫衣服" } });
     assert.equal(near.ok, true);
@@ -274,13 +274,8 @@ console.log("ok: schemas and phrase list");
     assert.equal(near.forModel.near, "脫衣");
     assert.match(near.forModel.note, /脫衣服/);
     assert.equal(near.summary, "照「脫衣」找到 1 張");
-    assert.deepEqual(w.log.filter((x) => x[0] === "search").map((x) => x[1]), ["脫衣服", "脫衣"]);
-    // 英文、帶空白、兩個字以下：不拆
-    assert.deepEqual(shorterTerms("undressing"), []);
-    assert.deepEqual(shorterTerms("紅 髮"), []);
-    assert.deepEqual(shorterTerms("帽子"), []);
-    assert.deepEqual(shorterTerms("脫衣服").slice(0, 2), ["脫衣", "衣服"]);
-    assert.ok(shorterTerms("一二三四五六七八九十").length <= 12);
+    const exact = await r.run({ name: "find_cards", args: { query: "海邊" } });
+    assert.equal(exact.forModel.near, undefined);
   }
   const info = await runner.run({ name: "card_info", args: { tag: "dress" } });
   assert.equal(info.ok, true);
