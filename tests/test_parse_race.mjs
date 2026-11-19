@@ -158,8 +158,10 @@ function load(names, extra = {}) {
   };
   if (extra.shrink) ctx.shrink = extra.shrink;
   const parts = [];
-  for (const name of ["abortParse", "announce", ...names]) {
-    if (names.includes(name) || name === "abortParse" || name === "announce") {
+  // abortParse／announce／rememberUnresolved 是後來才加的小幫手：有就一起載（run 會叫 rememberUnresolved）。
+  const helpers = ["abortParse", "announce", "rememberUnresolved"];
+  for (const name of [...helpers, ...names]) {
+    if (names.includes(name) || helpers.includes(name)) {
       const body = extractFunction(src, name);
       if (body) parts.push(body);
       else if (names.includes(name)) throw new Error("找不到 " + name);
@@ -278,7 +280,8 @@ await check("後一次存檔蓋過還在縮圖的前一次，換一張之後不�
   assert.equal(h2.saves.length, 0);
 });
 
-await check("換一張就中止上一張的請求，不叫全域中斷", async () => {
+// 2026-11-20 第五輪檢查：新圖要先確認解得開，才停掉上一張（以前一換就先中止，換到壞圖時請求沒了、畫面停在掃描）。
+await check("換一張：新圖解出來才中止上一張的請求，不叫全域中斷", async () => {
   const pending = [];
   const h = load(["take", "run", "keep"], {
     shrink: (blob) => new Promise((resolve) => pending.push({ blob, resolve })),
@@ -289,13 +292,15 @@ await check("換一張就中止上一張的請求，不叫全域中斷", async (
   const signal = h.fetches[0].opts.signal;
   assert.ok(signal, "parse POST 要帶 AbortSignal");
   const second = h.ctx.api.take({ type: "image/png", name: "b.png" });
-  assert.equal(signal.aborted, true);
+  await tick();
+  assert.equal(signal.aborted, false, "新圖還沒解出來，上一張照跑");
+  pending[0].resolve({ url: "data:b.png", w: 1, h: 1 });
+  await second;
+  assert.equal(signal.aborted, true, "新圖解出來了，上一張中止");
   assert.ok(!h.fetches.some((f) => String(f.url).includes("interrupt")));
   assert.ok(!/\/api\/interrupt/.test(src));
   await first;
   assert.ok(!h.states.includes("error"), "中止的那一輪不要顯示失敗");
-  pending[0].resolve({ url: "data:b.png", w: 1, h: 1 });
-  await second;
   assert.equal(h.ctx.shot.url, "data:b.png");
 });
 

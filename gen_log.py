@@ -439,17 +439,29 @@ def stats(known, favorites) -> dict:
     }
 
 
-def by_tag(tag: str, favorites: dict, limit: int = 48, offset: int = 0, alive=None) -> dict:
+# 沒寫、寫壞的舊日誌當全年齡（跟作品冊日誌同一套），全年齡仍看得到。
+_RATING_RANK = {"general": 0, "sensitive": 1, "explicit": 2}
+
+
+def _rating_rank(value) -> int:
+    return _RATING_RANK.get(str(value or "").strip(), 0)
+
+
+def by_tag(tag: str, favorites: dict, limit: int = 48, offset: int = 0, alive=None, rating=None) -> dict:
     """卡冊「用它做過的圖」：日誌裡用到這張牌、印好的每一張（Hires 不重複算）。
 
     favorites：fav_key → 作品冊那一筆（{"id", "thumb"}），"_src" 是記著原圖檔的那些（FavIndex）。
     收藏過的排前面，再來一般的，撤下過的最後；同一類新的在前。
     alive：image → 原圖還在不在（伺服器查得到 ComfyUI 的 output 時才給）。不在的不列、不算張數；
     收藏過的照列（作品冊自己存了一份）。以前全部列出來、卡冊讀圖 404 才一格格拿掉，面板一縮再縮、底下的按鈕跟著跳。
+    rating：general／sensitive／explicit。分頁之前先拿掉比這一級高的，total 也是篩過的張數。
+    不給、或給了不認得的值，就不篩（舊的呼叫、空的查詢照舊看得到全部）。
     """
     tag = str(tag or "").strip()
     if not tag:
         return {"items": [], "total": 0}
+    raw_rating = str(rating or "").strip()
+    cap = _RATING_RANK[raw_rating] if raw_rating in _RATING_RANK else None
     rows = []
     for e in _load():
         if e.get("kind") == "hires" or not e.get("ok") or not e.get("image"):
@@ -466,6 +478,9 @@ def by_tag(tag: str, favorites: dict, limit: int = 48, offset: int = 0, alive=No
         fav = index.find(e.get("image"), key) if isinstance(index, FavIndex) else favorites.get(key)
         if alive is not None and not fav and not alive(e.get("image")):
             continue
+        # 先篩再排、再切頁。切完才藏，總數和「再多看一些」會把高分級算進去。
+        if cap is not None and _rating_rank(e.get("rating")) > cap:
+            continue
         out.append({
             "id": e.get("id"),
             "at": e.get("at") or 0,
@@ -476,6 +491,7 @@ def by_tag(tag: str, favorites: dict, limit: int = 48, offset: int = 0, alive=No
             "origin": e.get("origin") or "",
             "positive": e.get("positive") or "",
             "mark": e.get("mark"),
+            "rating": e.get("rating") or "",
             "fav": fav["id"] if fav else None,
             "albumThumb": fav.get("thumb") if fav else None,
         })

@@ -2306,16 +2306,27 @@ function readList(key) {
   }
 }
 
-/** 成品牆、晾紙繩上還留著、用到這張牌的（日誌以前的也在這裡）。 */
+// 成品的分級跟作品冊日誌同一套：沒寫的舊圖當全年齡（作品冊沒寫的那份是當色情，那是另一份名單）。
+const WORK_RANK = { general: 0, sensitive: 1, explicit: 2 };
+const withinRating = (r) => (WORK_RANK[r] ?? 0) <= WORK_RANK[seeRating()];
+
+/** 成品牆、晾紙繩上還留著、用到這張牌的（日誌以前的也在這裡）。這一級看不到的不放進來。 */
 function localWorks(card) {
-  const has = (x) => x.image && tagsOfPositive(x.positive).includes(card.tag);
+  const has = (x) => x.image && tagsOfPositive(x.positive).includes(card.tag) && withinRating(x.rating);
   return [
     ...readList("mochi.shots.v1").filter(has).map((x) => ({ ...x, room: "墨池", at: Date.parse(x.at) || 0, fav: x.albumId || null })),
     ...readList("mochi.fuse.prints.v1").filter(has).map((x) => ({ ...x, room: "疊印台", at: Date.parse(x.at) || 0, fav: x.albumId || null })),
   ].sort((a, b) => b.at - a.at);
 }
 
-const workSrc = (x) => x.albumThumb || viewSrc(x.image);
+// 列表、探圖只要 480 寬（作品冊日誌 listSrc 同一套，伺服器 THUMB_WIDTHS）。點開放大才拿沒帶 w 的那張。
+function thumbSrc(src) {
+  if (!src || /[?&]w=/.test(src)) return src;
+  if (src.startsWith("/api/image?") || src.startsWith("/api/recipes/files/")) return `${src}${src.includes("?") ? "&" : "?"}w=480`;
+  return src;
+}
+
+const workSrc = (x) => thumbSrc(x.albumThumb || viewSrc(x.image));
 
 /**
  * 這張作品的原圖還在不在。ComfyUI 那邊把原圖刪了（又沒收藏）就不顯示、張數也不算它（2026-10-26 專案主：自己清掉）。
@@ -2327,9 +2338,20 @@ async function workGone(src) {
   return r?.status === 404;
 }
 
-// 打開詳情時先探前幾張（讀到、確定被刪、或等太久就算數），探完才一次排進去。
+// 前幾張在背景確認原圖還在不在。格子先佔好長寬比，不等這幾張（以前等探完，一張慢圖拖住整排）。
 const WORKS_PROBE_N = 12;
 const WORKS_PROBE_MS = 1500;
+
+/** 縮圖讀到了才淡入。格位先在，不要等整排到齊才出現。 */
+function revealWorkImg(img) {
+  if (!img || img.dataset.shown === "1") return;
+  img.dataset.shown = "1";
+  if (reducedMotion()) {
+    img.style.opacity = "";
+    return;
+  }
+  img.animate([{ opacity: 0 }, { opacity: 1 }], { duration: DUR.medium, easing: css(CURVE.out), fill: "forwards" });
+}
 
 /** 探一張：讀得到（或等太久、讀不到但不是 404）→ true；原圖已刪 → false。同一張只探一次。 */
 const probed = new Map();
@@ -2354,16 +2376,21 @@ function workAlive(x) {
 function workTile(x, i, onGone) {
   const src = workSrc(x);
   const img = el("img", {
-    src,
     alt: "",
     loading: "lazy",
     decoding: "async",
+    onload: (e) => revealWorkImg(e.currentTarget),
     // 沒探過的（排在後面、捲下去才讀的）讀圖失敗：原圖被刪了就把這一格拿掉。
     onerror: async (e) => {
       const tile = e.currentTarget.closest(".book-work");
+      if (!tile?.isConnected) return;
       if (await workGone(src)) onGone?.(x, tile);
     },
   });
+  // 先藏著，src 要在 onload 之後才設：快取裡的圖可能同步載完，監聽還沒掛上就不會淡入。
+  if (!reducedMotion()) img.style.opacity = "0";
+  img.src = src;
+  if (img.complete && img.naturalWidth) revealWorkImg(img);
   return el(
     "button",
     {
@@ -2423,35 +2450,40 @@ function worksOf(card) {
   };
   // 原圖被刪的作品以前先排上去、讀圖失敗才一格格拿掉：面板一縮再縮，底下的按鈕跟著跳好幾下
   // （2026-10-29 專案主：3個女性 打開時按鈕會抖。它 10 張裡 9 張的原圖已經被 ComfyUI 清掉）。
-  // 現在先探前幾張，探完一次排進去（被刪的不出現），面板長高用滑的；後面捲下去才讀的照舊讀不到才拿掉。
+  // 格位先佔著（長寬比固定），縮圖讀到的各自淡入。前幾張在背景探，確定 404 的整批收掉，不讓一張慢圖拖住整排。
   let painting = 0;
-  const paint = async () => {
+  const paint = () => {
     const turn = ++painting;
     // 日誌那邊有的就不重複放（同一張圖的網址一樣）；日誌以前的接在後面。
     const seen = new Set(items.map((x) => x.image));
     const extra = local.filter((x) => !seen.has(x.image));
-    let all = [...items, ...extra].filter((x) => !gone.has(x.image));
+    const all = [...items, ...extra].filter((x) => !gone.has(x.image));
     extraN = extra.length;
     const head = all.slice(0, WORKS_PROBE_N);
-    const alive = await Promise.all(head.map(workAlive));
-    if (turn !== painting) return;
-    head.forEach((x, i) => alive[i] || gone.add(x.image));
-    all = all.filter((x) => !gone.has(x.image));
     const grow = heightChange(box);
-    grid.replaceChildren(...all.map((x, i) => workTile(x, i, onGone)));
+    const tiles = all.map((x, i) => workTile(x, i, onGone));
+    grid.replaceChildren(...tiles);
     shown = all.length;
     note.textContent = "還沒有用到它的成品。從現在起印的每一張都會記下來，這裡就看得到。";
     showCount();
     more.hidden = fromLog >= total;
     grow.done();
+    head.forEach((x, i) => {
+      workAlive(x).then((ok) => {
+        if (turn !== painting || ok || gone.has(x.image)) return;
+        const tile = tiles[i];
+        if (tile?.isConnected) onGone(x, tile);
+      });
+    });
   };
 
   const load = async (offset) => {
-    const r = await fetch(`/api/genlog/bytag?${new URLSearchParams({ tag: card.tag, limit: String(WORKS_PAGE), offset: String(offset) })}`, { cache: "no-store" });
+    const r = await fetch(`/api/genlog/bytag?${new URLSearchParams({ tag: card.tag, limit: String(WORKS_PAGE), offset: String(offset), rating: seeRating() })}`, { cache: "no-store" });
     if (!r.ok) throw new Error(String(r.status));
     const j = await r.json();
     total = j.total || 0;
-    const add = (j.items || []).map((x) => ({ ...x, room: ROOM_ZH[x.origin] || "成品" }));
+    // 伺服器分頁前已篩過。回應裡仍帶著比這一級高的（舊伺服器沒篩），這裡再拿掉。沒寫分級的當全年齡。
+    const add = (j.items || []).filter((x) => withinRating(x.rating)).map((x) => ({ ...x, room: ROOM_ZH[x.origin] || "成品" }));
     items = offset ? items.concat(add) : add;
     fromLog = items.length;
   };
@@ -2460,7 +2492,7 @@ function worksOf(card) {
     more.disabled = true;
     try {
       await load(fromLog);
-      await paint();
+      paint();
     } catch {
       refuse(more);
     } finally {
@@ -2605,7 +2637,7 @@ let sending = S.peekPoolHandoff("book");
 const picking = () => !!hand?.open;
 const inSend = (tag) => sending.includes(tag);
 
-function reviewBookAddition(tags, proceed) {
+function reviewBookAddition(tags, proceed, incoming = {}) {
   const previous = S.peekTab(S.TAB_POOL);
   if (!Array.isArray(previous?.tags) || !previous.tags.length) return proceed();
   const settings = sanitizeSettings(S.loadSettings() || { rating: "general" }, data);
@@ -2619,13 +2651,23 @@ function reviewBookAddition(tags, proceed) {
       if (!pinned.has(member.tag) && lib.byTag.has(member.tag) && !HARD_BANNED.includes(member.tag)) pin(member.tag);
     }
   }
-  return reviewTransfer("pool", pinned, previous.weights || {}, tag => lib.byTag.get(tag)?.zh || tag, proceed, { merge: true });
+  // 跟墨池接收同一套：池裡本來的牌留原份量，這次成品帶來的牌用成品份量。
+  // 同一張兩邊不一樣，確認窗才列「份量變更」（reviewTransfer 比的是這份合併後的）。
+  const merged = { ...(previous.weights || {}) };
+  for (const [tag, w] of Object.entries(incoming || {})) {
+    if (!pinned.has(tag)) continue;
+    const n = Number(w);
+    if (Number.isFinite(n)) merged[tag] = n;
+  }
+  return reviewTransfer("pool", pinned, merged, tag => lib.byTag.get(tag)?.zh || tag, proceed, { merge: true });
 }
 
 function addToPool(selected, button, weights = {}) {
   // 卡冊右下角已勾的牌也在這次交接中。這次點的牌最後放，互斥時沿用放牌順序。
   const tags = [...sending.filter(tag => !selected.includes(tag)), ...selected];
+  // 預告要看到這次成品的份量：池裡同一張不一樣才列出來。確定之後便條也帶這一份。
   reviewBookAddition(tags, () => {
+    // weights 是這次成品的份量（含調過的）。空池、池裡已有別張牌，都要帶進便條。
     if (!S.handOffPool(tags, "book", weights)) {
       if (button) refuse(button);
       return toast("無法交接選牌，請檢查瀏覽器儲存空間。");
@@ -2633,7 +2675,7 @@ function addToPool(selected, button, weights = {}) {
     if (button) button.textContent = "帶過去了…";
     sfx.tap?.();
     setTimeout(() => (location.href = "./"), reducedMotion() ? 0 : DUR.short);
-  });
+  }, weights);
 }
 
 /* ---------- 偏好角色（fav-chars.js；墨池、疊印台同一份名單） ---------- */

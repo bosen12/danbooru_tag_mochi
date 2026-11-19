@@ -43,6 +43,8 @@ checks = [
     ("test_hires_stop_browser.mjs", "test_hires_stop_browser.mjs"),
     ("test_ai_reference.mjs", "test_ai_reference.mjs"),
     ("test_grok_polish_browser.mjs", "test_grok_polish_browser.mjs"),
+    ("test_astra5_a_browser.mjs", "test_astra5_a_browser.mjs"),
+    ("test_astra5_b_browser.mjs", "test_astra5_b_browser.mjs"),
     ("test_mcp.mjs", "test_mochi_mcp.mjs"),
     ("test_mobile_bridge.mjs", "test_mobile_bridge.mjs"),
     ("test_fav_chars_sync.mjs", "test_fav_chars_sync.mjs"),
@@ -51,6 +53,7 @@ checks = [
     ("test_round6_storage.py", "test_round6_storage.py"),
     ("test_round6_mcp.mjs", "test_round6_mcp.mjs"),
     ("test_gen_log_cap.py", "test_gen_log_cap.py"),
+    ("test_gen_log_bytag_rating.py", "test_gen_log_bytag_rating.py"),
     ("test_launchers.py", "test_mochi_launchers.py"), ("test_smoke.py", "test_mochi_smoke.py"),
     ("test_lexicon_rebuild.py", "test_lexicon_rebuild.py"),
 ]

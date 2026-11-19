@@ -356,7 +356,12 @@ async function boot() {
     // 沿用存檔裡排著時取的編號（gen.js 的 enqueue）：手機走 http 兩個分頁都接著印，伺服器只畫一次。
     for (const p of waiting) generator.enqueue(p, { reserved: (stored ? stored.get(p.id) : p)?.reserved });
     if (waiting.length) toast(`接著印剛才排著的 ${waiting.length} 張`);
-    for (const p of prints) if (p.status === "done" && p.hiresJob) hiresRun.resume(p, p.hiresJob);
+    // 別的分頁關掉才輪到這邊（stored 有值）：Hires 照現在的存檔接，那邊可能已經做完或還原原圖了（同墨池，2026-11-20）。
+    for (const p of prints) {
+      const job = stored ? stored.get(p.id)?.hiresJob || null : p.hiresJob;
+      if (stored) p.hiresJob = job;
+      if (p.status === "done" && job) hiresRun.resume(p, job);
+    }
   }));
   // 別的疊印台分頁印好、收藏、Hires 了：繩上那張跟著換（這邊沒動過的才換）。
   onOtherTab(FK.prints, (v) => {
@@ -1307,6 +1312,8 @@ function adoptPrints(list) {
     p.status = t.status === "done" ? "done" : t.status === "failed" ? "failed" : t.live || t.waiting ? "queued" : "stopped";
     p.note = t.note || "";
     p.hi = t.hiresJob ? { ...t.hiresJob, status: "queued" } : null;
+    // 工作編號也跟著存檔（做完、還原原圖了就清掉），輪到這邊接手時才不會拿舊的接回去。
+    p.hiresJob = t.hiresJob || null;
     if (p.status === "done") p.progress = 1;
   }
   renderLine();
@@ -1641,7 +1648,8 @@ function renderPreview({ develop = false } = {}) {
       p && p._gone ? el("span", { class: "pv-hint" }, "ComfyUI 的輸出資料夾裡找不到這張，可能被刪掉了。按「再印一次」照原樣重印。") : null
     );
     // 換了一張試印（或狀態變了）：字淡進來，不是一格換掉。
-    swapIn(pv.blank, `${t.letter}|${p ? previewState(p) : ""}`);
+    // 鍵只看字母＋狀態，不含百分比：以前「印製中 8%→17%…」每一步都重播一次淡入，字一直被藏起來（2026-11-20 第五輪檢查）。
+    swapIn(pv.blank, `${t.letter}|${p ? (p._gone ? "gone" : p.status) : ""}`);
   }
   paintHiresVeil(pv.frame, p || {}, { onCancel: () => hiresRun.cancel(p), onDismiss: () => hiresRun.dismiss(p) });
   pv.roller.hidden = !(state === "running" || state === "queued" || state === "drawn");

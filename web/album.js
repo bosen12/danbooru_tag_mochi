@@ -262,9 +262,10 @@ async function boot() {
   whenActive(prerenderNeighbors);
   openFromHash();
   addEventListener("hashchange", openFromHash);
-  // 別的分頁收了新的作品：回到這一頁時重新讀一次。
+  // 別的分頁收了新的作品：回到這一頁時重新讀一次。分級也補讀（這一頁在背後時別的房間可能調過）。
   document.addEventListener("visibilitychange", async () => {
     if (document.hidden) return;
+    applySharedRating();
     const before = works.map((w) => w.id).join();
     const logHad = tab === "log" && log.loaded && log.items.length > 0;
     await load();
@@ -280,6 +281,14 @@ async function boot() {
       return render();
     }
     if (works.map((w) => w.id).join() !== before) render();
+  });
+  // 別的分頁改了共用尺度：這一頁還開著就要跟著換，作品編號一樣也要重畫牆。
+  addEventListener("storage", (e) => {
+    if (e.key === S.SETTINGS_KEY) applySharedRating();
+  });
+  // 從別的房間按上一頁回來（bfcache）：開機不會重跑，尺度可能已經被那一頁改掉。
+  addEventListener("pageshow", (e) => {
+    if (e.persisted) applySharedRating();
   });
 }
 
@@ -463,6 +472,8 @@ function renderTabs() {
 
 // 第幾次換分頁：換過來的那一頁（和它上面那排篩選）淡進來一次，之後同一頁重畫不再演。
 let tabTurn = 0;
+// 作品牆每一次繪製的編號。提示卡退場是晚一拍才換清單；那一拍只能改「還是這一輪」的牆。
+let gridPaint = 0;
 
 async function pickTab(v) {
   if (tab === v) return;
@@ -476,23 +487,53 @@ async function pickTab(v) {
   renderTabs();
   seat($("album-tabs").querySelector('[aria-checked="true"]'));
   const turn = `${tab}:${tabTurn}`;
+  // 慢的日誌／成績單回來時，人可能已經點回作品。只留快取，不要再把整排作品發一次牌。
+  const mine = tab;
+  const turnN = tabTurn;
+  const still = () => tab === mine && tabTurn === turnN;
   for (const row of [$("log-filters"), $("works-group")]) if (row && !row.hidden) swapIn(row, turn, { firstToo: true });
   // 沒成功讀過，或上次失敗：切回日誌再試一次。讀到一半失敗的，用已有的頁當底去合併，不清空。
-  if (tab === "log" && (!log.loaded || log.failed)) {
+  if (mine === "log" && (!log.loaded || log.failed)) {
     render();
     await log.load({ refresh: !!(log.loaded && log.items.length) });
+    if (!still()) return;
   }
   // 成績單每次換過來都重算（剛才可能又印了、又收藏了）。
-  if (tab === "models") {
+  if (mine === "models") {
     if (!models.loaded) render();
     await models.load();
+    if (!still()) return;
   }
+  if (!still()) return;
   render({ deal: true });
 }
 
 /* ================= 大圖牆 ================= */
 
 const visible = (w) => (RANK[w.rating] ?? 2) <= RANK[seeRating()];
+
+// 開著的那件詳情。別的房間把分級調低、這件已經看不到時要把窗關掉，不能留著受限的圖。
+let openDetail = null;
+
+/**
+ * 共用尺度（rating、ratingFree）跟別的房間是同一份。
+ * 作品 id 沒變也要重畫：調低之後頂欄、牆、開著的詳情都得跟著，不能只比清單。
+ */
+function applySharedRating() {
+  const s = S.loadSettings() || {};
+  const next = typeof s.rating === "string" && RANK[s.rating] != null ? s.rating : "general";
+  const nextFree = s.ratingFree === true;
+  if (next === rating && nextFree === free) return false;
+  rating = next;
+  free = nextFree;
+  renderRating();
+  if (openDetail) {
+    const w = works.find((x) => x.id === openDetail.id);
+    if (!w || !visible(w)) openDetail.close();
+  }
+  render();
+  return true;
+}
 
 /**
  * 作品都被分級擋住：以前只寫一行「看不到」，要自己想到去頂欄換。說清楚有幾件、要哪一級，給一鍵換（跟卡冊一樣）。
@@ -626,7 +667,8 @@ function render({ deal = false } = {}) {
   if (wantGate || (!tiles.length && works.length && !query)) {
     const target = wantGate ? pending : null;
     const need = ratingNeed(target);
-    if (oldNote && oldNote.dataset.need === need) {
+    // 正在退場的那張提示卡已經淡到看不見。這輪還要提示的話換一張新的，不要把舊的貼回來。
+    if (oldNote && oldNote.dataset.need === need && !oldNote.getAnimations().length) {
       oldNote.dataset.for = target?.id || "";
       note = oldNote;
     } else note = hiddenNote(target);
@@ -634,7 +676,12 @@ function render({ deal = false } = {}) {
   const body = tiles.length || !works.length
     ? (note ? [note, ...parts] : parts)
     : [note, query ? el("p", { class: "album-empty" }, `找不到「${query}」`) : null].filter(Boolean);
+  // 退場結束時只准最新一輪改清單。快速切回全年齡時，上一輪不能把受限作品放回來。
+  const paint = ++gridPaint;
   const applyGrid = () => {
+    if (paint !== gridPaint) return;
+    // 這輪還要用同一張提示卡：停掉把它淡掉的退場，不然摘要對了、提示卻是透明的。
+    if (note) for (const a of note.getAnimations()) a.cancel();
     const prev = new Set([...grid.querySelectorAll(".album-tile")].map((n) => n.dataset.id));
     grid.replaceChildren(...body);
     if (note && note !== oldNote) enter(note);
@@ -657,6 +704,13 @@ function render({ deal = false } = {}) {
     }
     maybeOpenHash();
   };
+  // 降級當下就把看不了的格子藏起來、點不了。提示卡可以照舊退場，不必等它播完才收。
+  for (const node of grid.querySelectorAll(".album-tile")) {
+    const cur = works.find((x) => x.id === node.dataset.id);
+    if (cur && visible(cur)) continue;
+    node.hidden = true;
+    node.disabled = true;
+  }
   if (oldNote && oldNote !== note) leave(oldNote, applyGrid);
   else applyGrid();
 }
@@ -670,6 +724,9 @@ function tileOf(w) {
   const had = tileCache.get(w.id);
   if (had && had.sig === sig) {
     had.node._work = w;
+    // 降級時直接把格子藏起來。節點留在快取裡，分級再打開要把它們放回來，不能一直 hidden。
+    had.node.hidden = false;
+    had.node.disabled = false;
     return had.node;
   }
   const node = tile(w);
@@ -706,9 +763,10 @@ function tile(w) {
     el("span", { class: "album-cap" }, el("b", { dataset: { noI18n: "" } }, w.name), el("small", {}, dateText(w.createdAt)))
   );
   // 切回分頁後清單換了新物件、id 沒變就不會重畫。點的時候拿這個 id 現在的那一筆，不拿做出這格時的物件。
+  // 再對一次分級：上一輪退場若把舊格子放回來，這一級看不到的也不能打開。
   node.addEventListener("click", () => {
     const cur = works.find((x) => x.id === node.dataset.id);
-    if (cur) openWork(cur);
+    if (cur && visible(cur)) openWork(cur);
   });
   return node;
 }
@@ -750,6 +808,17 @@ function holdReprint(btn) {
  */
 async function reprintWork(all, w, btn) {
   if (!btn || reprintBusy.has(w.id)) return;
+  // 這次讀取只屬於按下它的那張詳情。關掉 A 去看 B 之後，A 的配方晚到也不能寫便條、不能把人送去墨池。
+  const sheet = btn.closest(".sheet");
+  const overlay = sheet?.closest(".overlay");
+  const ac = new AbortController();
+  let dropped = false;
+  const drop = () => {
+    dropped = true;
+    ac.abort();
+  };
+  sheet?.addEventListener("sheet-close", drop, { once: true });
+  const alive = () => !dropped && !!overlay?.isConnected && overlay.dataset.closing !== "true";
   reprintBusy.add(w.id);
   let held = true;
   const release = () => {
@@ -765,23 +834,32 @@ async function reprintWork(all, w, btn) {
       let full = null;
       let failed = false;
       try {
-        const r = await fetch(`/api/recipes/${encodeURIComponent(w.id)}`, { cache: "no-store" });
+        const r = await fetch(`/api/recipes/${encodeURIComponent(w.id)}`, { signal: ac.signal, cache: "no-store" });
         full = r.ok ? await r.json() : null;
         if (!r.ok || full == null) failed = true;
-      } catch {
+      } catch (err) {
+        if (err?.name === "AbortError" || !alive()) return;
         failed = true;
       }
       restore();
       restore = () => {};
+      if (!alive()) return;
       if (!failed && Array.isArray(full?.recipe?.loras)) src = { ...w, loras: full.recipe.loras };
       // 讀不到就放掉這把鎖，鈕回到原字，可以立刻重按；確認窗若已經開著，不會再疊一層。
       if (failed) release();
     }
+    if (!alive()) return;
     const opened = toMochi(all, `全部 ${all.length} 張牌`, w, btn, { recipe: S.recipeOf(src), onClose: release });
     if (!opened) release();
   } catch {
     restore();
     release();
+  } finally {
+    // 關窗中止的那一輪：鈕可能已經卸掉，鎖要放，免得這件作品再打開時按不了。
+    if (!alive()) {
+      restore();
+      release();
+    }
   }
 }
 
@@ -1041,6 +1119,10 @@ function openWork(w) {
     ]),
   });
   sheet = s;
+  openDetail = { id: w.id, close: () => s.close() };
+  s.sheet.addEventListener("sheet-close", () => {
+    if (openDetail?.id === w.id) openDetail = null;
+  }, { once: true });
   // 圖從作品冊那一格長大到彈窗、關掉時縮回去（zoom.js）；那一格不在畫面上（從網址 #編號 直接打開）就照舊淡進來。
   const tile = () => $("album-grid").querySelector(`.album-tile[data-id="${CSS.escape(w.id)}"] .album-frame img`);
   const t = tile();

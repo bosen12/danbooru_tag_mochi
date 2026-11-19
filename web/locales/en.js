@@ -2484,6 +2484,9 @@ Enter 會加入「{0}」|Enter adds “{0}”
 換一張輪廓清楚的圖|Try an image with clearer outlines
 群組 · 建立第一組|Groups · Create the first one
 建立第一組|Create the first one
+暫時無法確認收藏，請再試一次|Couldn't confirm this favorite. Please try again.
+解析未完成|Parsing didn't finish
+分級要是 general、sensitive 或 explicit|Rating must be general, sensitive or explicit
 交給助手|Send to assistant
 引用這件作品|Reference this work
 一次最多引用兩件作品|You can reference up to two works

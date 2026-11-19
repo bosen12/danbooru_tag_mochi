@@ -156,5 +156,33 @@ const note = (tags, at) => JSON.stringify({ tags, at, from: "book", weights: {} 
   }
 }
 
+// 6. 便條記著哪個分頁寫的：別的分頁開墨池不能領走（2026-11-20 第五輪檢查：解析池送出的牌被另一個剛開的墨池分頁拿走）
+{
+  fakePage();
+  document.prerendering = false;
+  sessionStorage.setItem("mochi.tab.id.v1", "tab-A");
+  const A = await import(pathToFileURL(resolve(import.meta.dirname, web + "store.js")).href + `?v=${n}t1`);
+  ok("分頁編號照 sessionStorage", A.tabId === "tab-A");
+  A.handOffPool(["red hair", "kimono"], "parse");
+  ok("便條寫上分頁編號", JSON.parse(localStorage.getItem(NOTE)).tab === "tab-A");
+  // 另一個分頁（sessionStorage 不同）先開墨池
+  const mine = localStorage;
+  fakePage();
+  globalThis.localStorage = mine;
+  document.prerendering = false;
+  sessionStorage.setItem("mochi.tab.id.v1", "tab-B");
+  const B = await import(pathToFileURL(resolve(import.meta.dirname, web + "store.js")).href + `?v=${n}t2`);
+  ok("別的分頁拿不到", B.takePool().length === 0 && B.handoffFrom === "");
+  ok("別的分頁也不撕掉", localStorage.getItem(NOTE) !== null);
+  // 按的那一頁回到墨池
+  globalThis.sessionStorage = new Storage();
+  sessionStorage.setItem("mochi.tab.id.v1", "tab-A");
+  const A2 = await import(pathToFileURL(resolve(import.meta.dirname, web + "store.js")).href + `?v=${n}t3`);
+  ok("寫的那個分頁拿得到", A2.takePool().join() === "red hair,kimono" && A2.handoffFrom === "parse");
+  // 舊版便條（沒有分頁編號）：誰都能拿
+  localStorage.setItem(NOTE, note(["smile"], Date.now()));
+  ok("沒寫分頁的舊便條照樣拿得到", B.takePool().join() === "smile");
+}
+
 console.log(failed ? `${failed} failed` : "all ok");
 process.exit(failed ? 1 : 0);

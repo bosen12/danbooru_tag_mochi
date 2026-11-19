@@ -7231,7 +7231,12 @@ class Handler(BaseHTTPRequestHandler):
             except ValueError:
                 self._json(400, {"ok": False, "error": "limit、offset 要是數字"})
                 return
-            self._json(200, {"ok": True, **gen_log.by_tag((qs.get("tag") or [""])[0], favorite_index(), limit, offset, alive=output_alive())})
+            raw_rating = (qs.get("rating") or [""])[0].strip()
+            # 空的＝不篩（舊卡冊沒帶這個參數）。寫了但不認得的擋下來，不要默默當成全年齡把圖藏光。
+            if raw_rating and raw_rating not in ("general", "sensitive", "explicit"):
+                self._json(400, {"ok": False, "error": "分級要是 general、sensitive 或 explicit"})
+                return
+            self._json(200, {"ok": True, **gen_log.by_tag((qs.get("tag") or [""])[0], favorite_index(), limit, offset, alive=output_alive(), rating=raw_rating or None)})
             return
         if path == "/api/genlog/stats":
             self._json(200, {"ok": True, **genlog_stats()})

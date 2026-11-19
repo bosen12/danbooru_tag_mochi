@@ -285,31 +285,57 @@ async function shrink(blob, edge) {
 async function take(blob) {
   if (!blob.type.startsWith("image/")) return toast("要一張圖（PNG、JPEG、WebP）");
   const mine = ++pick;
-  // 先停掉上一張還在飛的請求。縮圖還沒好，不能等它回來才停。
-  abortParse();
-  clearInterval(tick);
+  // 先確認新圖解得開，再停掉上一張。解不開就留著正在跑的那張：先中止的話，請求沒了、畫面卻停在掃描。
   let img;
   try {
     img = await shrink(blob, SEND_EDGE);
   } catch {
     if (mine !== pick) return;
-    busy = false;
-    // 這張打不開：上一張如果已經有結果，把狀態放回去，不要停在「解析中」。
-    if (shot?.tags) {
-      setState("done");
-      paintStatus();
-    } else {
-      status();
+    toast("這張圖打不開，換一張試試");
+    // 沒有上一張在跑、也沒有結果：回到可以再選圖，掃描停掉。上一張還在解析就讓它繼續。
+    if (!busy && !shot?.tags) {
+      if (!shot?.url) {
+        setState("empty");
+        status();
+      } else {
+        setState("error");
+        const retry = el("button", { class: "link-btn pressable", type: "button", onclick: () => run() }, "再試一次");
+        status(el("span", { class: "parse-err" }, "這張圖打不開，換一張試試"), " ", retry);
+      }
     }
-    return toast("這張圖打不開，換一張試試");
+    return;
   }
   if (mine !== pick) return;
+  abortParse();
+  clearInterval(tick);
+  // 新圖已經收下：上一張的分頁快照、還在縮圖的存檔都不能再寫回來。回來不能把舊的成功結果套到這張上。
+  savedGen += 1;
+  try {
+    sessionStorage.removeItem(TAB_KEY);
+  } catch {
+    /* 刪不了：代次對不上，舊的存檔也不會蓋回來 */
+  }
   shot = { url: img.url, w: img.w, h: img.h, name: blob.name || "" };
   parsed = null;
   off = new Set();
   clearResults();
   showShot({ fresh: true });
   run();
+}
+
+/** 這張還沒解析完、或失敗了：記下來，換房間再回來不要還原成上一張的成功結果。 */
+function rememberUnresolved(message) {
+  const target = shot;
+  if (!target?.url) return;
+  savedGen += 1;
+  S.saveTab(TAB_KEY, {
+    url: target.small || target.url,
+    w: target.w,
+    h: target.h,
+    tags: null,
+    error: message || "解析未完成",
+    at: Date.now(),
+  });
 }
 
 /**
@@ -427,6 +453,8 @@ async function run() {
     status(el("span", { class: "parse-err" }, err.error || "解析失敗"), " ", err.code === "no_tagger" ? null : retry);
     announce("解析失敗");
     sfx.fail?.();
+    // 失敗也要蓋掉上一張的成功快照。只刪不寫的話，換房間再回來會把舊圖的牌套回來。
+    rememberUnresolved(err.error || "解析失敗");
     return;
   }
   target.tags = j.tags || [];
@@ -941,13 +969,28 @@ function restore() {
   }
   const was = S.loadTab(TAB_KEY);
   // 只留 30 分鐘（跟卡冊的搜尋字一樣）：帶去合成池、看一下再回來還在，隔太久就是新的一頁。
-  if (!was || typeof was.url !== "string" || !Array.isArray(was.tags) || Date.now() - (Number(was.at) || 0) > 30 * 60 * 1000) {
+  const fresh = was && typeof was.url === "string" && Date.now() - (Number(was.at) || 0) <= 30 * 60 * 1000;
+  if (!fresh) {
     try {
       sessionStorage.removeItem(TAB_KEY);
     } catch {
       /* 刪不了就算了 */
     }
     setState("empty");
+    render();
+    return;
+  }
+  // 這張還沒解析完或失敗了。沒有牌就不能當成上一張的成功結果還原（換圖時那份已經作廢）。
+  if (!Array.isArray(was.tags)) {
+    shot = { url: was.url, small: was.url, w: was.w || 1, h: was.h || 1 };
+    off = new Set();
+    parsed = null;
+    showShot();
+    setState("error");
+    const why = was.error || "解析未完成";
+    const retry = el("button", { class: "link-btn pressable", type: "button", onclick: () => run() }, "再試一次");
+    status(el("span", { class: "parse-err" }, why), " ", retry);
+    announce(was.error ? "解析失敗" : "解析未完成");
     render();
     return;
   }

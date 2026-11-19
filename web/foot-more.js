@@ -24,6 +24,8 @@ export function footMore(primary, rest, { narrow = matchMedia(NARROW).matches } 
   const outside = (e) => {
     if (!wrap.contains(e.target)) shut();
   };
+  // Esc 先收選單、焦點還給「⋯」；第二下才關詳情。掛在 window 的捕獲階段：詳情（ui.js）掛在 document 的捕獲階段，
+  // 以前它先收到，一次 Esc 選單、詳情一起關掉，焦點掉回頁面（2026-11-20 第五輪檢查）。
   const onKey = (e) => {
     if (e.key !== "Escape" || menu.hidden) return;
     e.stopPropagation();
@@ -35,13 +37,13 @@ export function footMore(primary, rest, { narrow = matchMedia(NARROW).matches } 
     menu.hidden = true;
     btn.setAttribute("aria-expanded", "false");
     document.removeEventListener("pointerdown", outside, true);
-    document.removeEventListener("keydown", onKey, true);
+    removeEventListener("keydown", onKey, true);
   }
   function open() {
     menu.hidden = false;
     btn.setAttribute("aria-expanded", "true");
     document.addEventListener("pointerdown", outside, true);
-    document.addEventListener("keydown", onKey, true);
+    addEventListener("keydown", onKey, true);
     if (!reducedMotion()) menu.animate([{ opacity: 0, transform: "translateY(6px) scale(0.98)" }, { opacity: 1, transform: "none" }], { duration: DUR.short, easing: css(CURVE.out) });
     items[0]?.focus({ preventScroll: true });
   }

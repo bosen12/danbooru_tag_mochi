@@ -220,7 +220,12 @@ async function boot() {
     pool = pinned;
     handoffMerged = true;
     S.saveBans(banned);
-    weights = new Map(Object.entries(before.weights || {}).filter(([t, w]) => pool.has(t) && w !== 1));
+    // 原本就在池裡的保留原份量；這次從卡冊帶來、便條寫了份量的（例如成品「加入合成池」）用便條裡的。
+    // 池裡本來就有、份量又不一樣的那張，卡冊送出前已經在確認窗列出「份量變更」、使用者按了確定，所以也照便條。
+    // 便條沒寫份量的（牌上的「＋」）不動原份量。
+    // 以前只拿舊池的：池裡先有一張無關的牌，成品的 (red hair:1.2) 就回到 1.0（2026-11-20 第五輪檢查）。
+    const brought = Object.entries(S.handoffWeights || {}).filter(([t]) => handoff.includes(t));
+    weights = new Map([...Object.entries(before.weights || {}), ...brought].filter(([t, w]) => pool.has(t) && Number.isFinite(Number(w)) && Number(w) !== 1).map(([t, w]) => [t, Number(w)]));
   } else if (handoff.length) {
     // 疊印台、作品冊帶來的是一整組：換掉原本那一池，但記著，提示上給「復原」拿回來。
     if (kept.length && kept.some((t) => !handoff.includes(t))) handoffReplaced = { tags: kept, weights: { ...(before?.weights || {}) } };
@@ -387,8 +392,14 @@ async function boot() {
     for (const s of resumeNow) generator.resume(s);
     for (const s of waitNow) generator.enqueue(s, { reserved: s.reserved });
     if (waitNow.length) toast(`接著印剛才排著的 ${waitNow.length} 張`);
-    // Hires 做到一半就重新整理的：接回去。
-    for (const s of shots) if (s.status === "done" && s.hiresJob) hiresRun.resume(s, s.hiresJob);
+    // Hires 做到一半就重新整理的：接回去。別的分頁關掉才輪到這邊時，照「現在的存檔」決定還有沒有要接的
+    // （那邊可能已經做完、或還原原圖了；開機時讀到的編號是舊的）。
+    const storedNow = first ? null : new Map(S.peekShots().map((t) => [t.id, t]));
+    for (const s of shots) {
+      const job = first ? s.hiresJob : storedNow.get(s.id)?.hiresJob || null;
+      if (!first) s.hiresJob = job;
+      if (s.status === "done" && job) hiresRun.resume(s, job);
+    }
   }));
   for (const root of [$("lib-grid"), $("pool-well"), $("wall"), hand?.fan]) {
     attachPeek(root, ".card[data-tag]", peekInfo);
@@ -2040,9 +2051,17 @@ function greetRecipe() {
   const strengths = !!r.loras?.length && r.loras.every((l) => Number.isFinite(Number(l.strength)) && l.strength != null);
   const nowLoras = currentLorasPayload().map((l) => loraKey(l, strengths)).sort().join("|");
   const wantLoras = r.loras ? r.loras.map((l) => loraKey(l, strengths)).sort().join("|") : nowLoras;
-  const ckptDiff = !!r.ckpt && modelName(r.ckpt) !== modelName(currentCkpt());
+  // 底模比完整路徑（只統一斜線、大小寫）：兩個資料夾裡同名的檔是不同的底模（2026-11-20 第五輪檢查：
+  // A/same 跟 B/same 被說成「跟現在選的一樣」，實際照 B 印）。舊紀錄只有檔名的照舊只比檔名。
+  const pathKey = (p) => String(p || "").replace(/\\/g, "/").toLowerCase();
+  const hasFolder = (p) => /[\\/]/.test(String(p || ""));
+  const ckptDiff = !!r.ckpt && (hasFolder(r.ckpt) ? pathKey(r.ckpt) !== pathKey(currentCkpt()) : modelName(r.ckpt) !== modelName(currentCkpt()));
   const differ = ckptDiff || wantLoras !== nowLoras;
-  let names = [modelName(r.ckpt) || modelName(currentCkpt()) || "預設底模", ...(r.loras || []).map((l) => modelName(l.file))];
+  // 同名、不同資料夾：便條上寫出資料夾（A/same），不然看起來一樣。
+  const ckptLabel = ckptDiff && hasFolder(r.ckpt) && modelName(r.ckpt) === modelName(currentCkpt())
+    ? String(r.ckpt).replace(/\\/g, "/").replace(/\.safetensors$/i, "")
+    : modelName(r.ckpt);
+  let names = [ckptLabel || modelName(currentCkpt()) || "預設底模", ...(r.loras || []).map((l) => modelName(l.file))];
   const close = el("button", { class: "recipe-note-x", type: "button", "aria-label": "收起", title: "收起", html: ICONS.close, onclick: () => dismiss() });
   const swap = differ
     ? el("button", { class: "btn btn-small btn-primary", type: "button", onclick: (e) => takeModels(e.currentTarget) }, "換成這組模型")
@@ -2053,7 +2072,8 @@ function greetRecipe() {
   // 檔名換成清單上的名字（LoRA 的檔名常常是一串亂碼）：清單讀到了再換，讀不到就留檔名。
   modelTitles()
     .then((title) => {
-      names = [(r.ckpt && title.ckpt(r.ckpt)) || names[0], ...(r.loras || []).map((l, i) => title.lora(l.file) || names[i + 1])];
+      // 同名不同資料夾時留著「資料夾/檔名」，清單上的名字兩顆可能一樣。
+      names = [(r.ckpt && ckptLabel === modelName(r.ckpt) && title.ckpt(r.ckpt)) || names[0], ...(r.loras || []).map((l, i) => title.lora(l.file) || names[i + 1])];
       if (used.isConnected) used.textContent = t(`這張用 ${names.join("＋")}`);
     })
     .catch(() => {});

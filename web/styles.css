@@ -6361,6 +6361,11 @@ html {
     flex-basis: 12ch;
     width: 12ch;
   }
+  /* 英文的提示字「Random each」比中文「每張隨機」寬，12 字寬會裁掉尾巴（2026-11-20 第五輪檢查，390px 實測）。 */
+  html[lang="en"] .seed-ctl .seed-ctl-input {
+    flex-basis: 14ch;
+    width: 14ch;
+  }
 }
 
 /* 詳情、規則這些彈窗：手機上從底部滑上來，寬度佔滿，只有上緣是圓的。

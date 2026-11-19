@@ -105,21 +105,43 @@ export function favButton(item, { zh, persist, className = "btn btn-small btn-gh
   b._paint = paint;
   b.addEventListener("click", async () => {
     if (b.disabled) return;
-    if (item.albumId) {
-      const still = await fetch(`/api/recipes/${encodeURIComponent(item.albumId)}`, { cache: "no-store" }).then((r) => r.ok).catch(() => true);
-      if (still) return toast("這張已經在作品冊裡", { action: { label: "打開作品冊", run: open } });
-      item.albumId = null;
-      persist();
-    }
-    // 原圖已經被清掉（output 只留最近的圖）：按了也存不到，先說為什麼。
-    if (item._goneSrc || item._gone) {
-      toast("原圖已經不在 ComfyUI 的 output 了：收不進作品冊");
-      return refuse(b);
-    }
-    if (!canSave(item)) return refuse(b);
+    // 從詢問開始就鎖住。502 的空檔連點一次，就會再送一筆新作品。
     b.disabled = true;
-    b.textContent = "收藏中…";
+    b.setAttribute("aria-busy", "true");
+    const unlock = () => {
+      b.disabled = false;
+      b.removeAttribute("aria-busy");
+    };
     try {
+      if (item.albumId) {
+        // 只有明確 404（作品冊裡那筆已經沒了）才清掉編號重收。5xx、斷線留著星號，避免再存一件一樣的。
+        let status = 0;
+        try {
+          const r = await fetch(`/api/recipes/${encodeURIComponent(item.albumId)}`, { cache: "no-store" });
+          status = r.status;
+          r.body?.cancel().catch(() => {});
+        } catch {
+          status = 0;
+        }
+        if (status !== 404) {
+          if (status >= 200 && status < 300) toast("這張已經在作品冊裡", { action: { label: "打開作品冊", run: open } });
+          else {
+            refuse(b);
+            toast("暫時無法確認收藏，請再試一次");
+          }
+          return;
+        }
+        item.albumId = null;
+        persist();
+        paint();
+      }
+      // 原圖已經被清掉（output 只留最近的圖）：按了也存不到，先說為什麼。
+      if (item._goneSrc || item._gone) {
+        toast("原圖已經不在 ComfyUI 的 output 了：收不進作品冊");
+        return refuse(b);
+      }
+      if (!canSave(item)) return refuse(b);
+      b.textContent = "收藏中…";
       const rec = await saveToAlbum(item, workName(item, zh));
       item.albumId = rec.id;
       persist();
@@ -131,7 +153,7 @@ export function favButton(item, { zh, persist, className = "btn btn-small btn-gh
       refuse(b);
       toast(`收不進去：${friendlyError(err)}`);
     } finally {
-      b.disabled = false;
+      unlock();
     }
   });
   paint();
