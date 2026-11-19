@@ -264,3 +264,90 @@ test("group picks: ticking here sends the whole set; ticking before the server a
   await settle();
   assert.deepEqual(server.file, {}, "unticking everything is saved too");
 });
+
+// ---------- 第六輪（Astra）：同步的競賽 ----------
+test("group picks: a slow read that comes back after you ticked B does not flip it back to A, and B is what gets sent", async () => {
+  const server = picksWorld({ file: { feature: { ids: ["g-a"], mode: "whole" } } });
+  const { syncGroupPicks } = await loadPicks();
+  let local = { feature: { ids: ["g-a"], mode: "whole" } };
+  const sync = syncGroupPicks({ get: () => local, apply: (p) => (local = p) });
+  await settle();
+  // 切回分頁：讀伺服器的那一次慢一點，回來之前改勾 B
+  const plain = globalThis.fetch;
+  let open;
+  const gate = new Promise((r) => (open = r));
+  globalThis.fetch = async (url, opts = {}) => {
+    if (!opts.method) {
+      const res = await plain(url, opts);
+      const body = await res.json();
+      await gate;
+      return { ok: true, json: async () => body };
+    }
+    return plain(url, opts);
+  };
+  const reading = sync.pull();
+  await sleep(30);
+  local = { feature: { ids: ["g-b"], mode: "whole" } };
+  sync.push();
+  open();
+  await reading;
+  await settle();
+  assert.deepEqual(local, { feature: { ids: ["g-b"], mode: "whole" } }, "the late read must not put A back");
+  assert.deepEqual(server.file, { feature: { ids: ["g-b"], mode: "whole" } }, "B is saved, not A");
+  assert.ok(server.posts.every((p) => p.picks.feature.ids[0] === "g-b"), JSON.stringify(server.posts));
+});
+
+test("group picks: a save that gets 503 is retried on the next read instead of being replaced by the server copy", async () => {
+  const server = picksWorld({ file: { feature: { ids: ["g-a"], mode: "whole" } } });
+  const plain = globalThis.fetch;
+  let fail = true;
+  globalThis.fetch = async (url, opts = {}) => {
+    if (opts.method === "POST" && fail) {
+      fail = false;
+      lastActivity = Date.now();
+      return { ok: false, status: 503, json: async () => ({ error: "busy" }) };
+    }
+    return plain(url, opts);
+  };
+  const { syncGroupPicks } = await loadPicks();
+  let local = { feature: { ids: ["g-a"], mode: "whole" } };
+  const sync = syncGroupPicks({ get: () => local, apply: (p) => (local = p) });
+  await settle();
+  local = { feature: { ids: ["g-b"], mode: "whole" } };
+  sync.push();
+  await settle();
+  assert.deepEqual(server.file, { feature: { ids: ["g-a"], mode: "whole" } }, "the 503 save did not land");
+  await sync.pull();
+  await settle();
+  assert.deepEqual(local, { feature: { ids: ["g-b"], mode: "whole" } }, "not flipped back to A");
+  assert.deepEqual(server.file, { feature: { ids: ["g-b"], mode: "whole" } }, "B was sent again and saved");
+});
+
+test("favorites: adding then removing quickly, with the add's answer arriving last, does not bring the card back", async () => {
+  const w = world({ local: [], synced: true, file: [] });
+  const fav = await load();
+  await settle();
+  const plain = globalThis.fetch;
+  let releaseAdd;
+  let held = false;
+  globalThis.fetch = async (url, opts = {}) => {
+    // 第一個 POST（加入）的回應晚到：伺服器先處理它，但回應等到最後才放
+    if (opts.method === "POST" && !held) {
+      held = true;
+      // 伺服器當下就處理了（回應內容是那一刻的名單），只是回應晚到
+      const res = await plain(url, opts);
+      const body = await res.json();
+      await new Promise((r) => (releaseAdd = r));
+      return { ok: true, json: async () => body };
+    }
+    return plain(url, opts);
+  };
+  fav.add("frieren");
+  await sleep(400);
+  fav.remove("frieren");
+  await sleep(400);
+  releaseAdd();
+  await settle();
+  assert.deepEqual(w.server.file, [], "the server ends empty");
+  assert.deepEqual(w.local(), [], "and the browser agrees (the late answer did not re-add it)");
+});

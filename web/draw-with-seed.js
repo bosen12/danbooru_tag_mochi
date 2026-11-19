@@ -4,6 +4,7 @@
  */
 import { drawOne, mulberry32 } from "./engine.js";
 import { heatPresetOf, weightsForHeats } from "./heats.js";
+import { ratingOf } from "./rules/rating.js";
 
 /**
  * 這一張實際用的尺度。全年齡、尺度還是預設的「混合」（誘惑＋走光＋性愛，沒自己點過）時，
@@ -12,7 +13,9 @@ import { heatPresetOf, weightsForHeats } from "./heats.js";
  * 墨池、疊印台的抽牌和尺度按鈕都用這個，畫面上亮的就是實際抽的。
  */
 export function effectiveHeats(settings) {
-  if (settings && settings.rating === "general" && heatPresetOf(settings.heats) === "mixed") return ["activity"];
+  // 看「有效分級」（ratingOf：開了「不限制」就當色情）：不然分級留全年齡、開不限制時，尺度鈕亮著混合，
+  // 抽的時候卻被換成活動 —— 畫面上亮的不是實際抽的。
+  if (settings && ratingOf(settings) === "general" && heatPresetOf(settings.heats) === "mixed") return ["activity"];
   return settings ? settings.heats : [];
 }
 

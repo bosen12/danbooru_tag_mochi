@@ -1939,7 +1939,7 @@ function openCustomCard(card, srcNode) {
               if (!gone) return;
               sheet.close();
               if (hand?.has(card.tag)) hand.remove(card.tag, { quiet: true });
-              toast(`「${c.name}」刪掉了`, { action: { label: "復原", key: "Z", run: () => saveCustom(gone).catch((err) => toast(String(err.message || err))) } });
+              toast(`「${c.name}」刪掉了`, { action: { label: "復原", key: "Z", run: () => saveCustom({ ...gone, restore: true }).catch((err) => toast(String(err.message || err))) } });
             },
           },
           "刪除"

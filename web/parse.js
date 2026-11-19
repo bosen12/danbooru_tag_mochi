@@ -307,8 +307,30 @@ async function take(blob) {
   shot = { url: img.url, w: img.w, h: img.h, name: blob.name || "" };
   parsed = null;
   off = new Set();
+  clearResults();
   showShot({ fresh: true });
   run();
+}
+
+/**
+ * 換了一張圖：上一張的牌、張數、帶走列跟著收起來。以前只在新的這張解析成功時才重畫，
+ * 新的這張失敗時畫面上還留著上一張的牌，點下去 parsed 已經是 null，整頁報錯。
+ * 收的時候先淡出（同時就不能點），淡完再清空。
+ */
+function clearResults() {
+  const out = [$("parse-groups"), $("parse-extra"), $("parse-bar"), $("parse-tools")].filter((n) => n && !n.hidden && n.childElementCount);
+  for (const n of out) n.inert = true;
+  const done = () => {
+    for (const n of out) n.inert = false;
+    if (!parsed) render();
+  };
+  if (reducedMotion() || !out.length) return done();
+  let left = out.length;
+  for (const n of out) {
+    n.animate([{ opacity: 1, transform: "none" }, { opacity: 0, transform: "translateY(6px)" }], { duration: DUR.short, easing: css(CURVE.exit) }).onfinish = () => {
+      if (--left === 0) done();
+    };
+  }
 }
 
 /** 底片換成這一張。fresh：剛放進來的，演一段顯影。 */

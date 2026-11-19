@@ -266,11 +266,17 @@ def from_lora_manager(raw: list) -> dict:
             continue
         folder = str(it.get("folder") or "").replace("\\", "/").strip("/")
         category = folder.split("/")[0] if folder else ROOT_CATEGORY
+        # 這個分類的根資料夾（跟 folder 同一個起點：loras 根目錄）。前端靠它把 folder 切成子分類名；
+        # 偏好路徑選在子資料夾時 folder 從 loras 根算、分類從偏好路徑算，以前直接拿分類名去切，切成「s/Character」。
+        cat_folder = "" if category == ROOT_CATEGORY else category
         if pref is not None:
             if not is_under(path, pref):
                 continue
             rest = path[len(str(pref).replace("\\", "/").rstrip("/")) + 1:].split("/")
             category = rest[0] if len(rest) > 1 else ROOT_CATEGORY
+            inner = "/".join(rest[:-1])
+            pref_rel = folder[: len(folder) - len(inner)].rstrip("/") if inner and folder.endswith(inner) else (folder if not inner else "")
+            cat_folder = pref_rel if category == ROOT_CATEGORY else "/".join(x for x in (pref_rel, category) if x)
         if allowed and category not in allowed:
             continue
         stem = fn.rsplit(".", 1)[0]
@@ -280,6 +286,7 @@ def from_lora_manager(raw: list) -> dict:
         entry = {
             "folder": folder,
             "category": category,
+            "catFolder": cat_folder,
             "file": fn,
             "name": stem,
             "title": str(it.get("model_name") or stem),
@@ -403,6 +410,12 @@ def build_lora_list() -> dict:
         except OSError:
             counts[category] = 0
             continue
+        # 分類的根資料夾，跟 folder 同一個起點（見 LoRA Manager 那條路的說明）。
+        try:
+            cat_folder = base.relative_to(name_root).as_posix()
+        except ValueError:
+            cat_folder = base.relative_to(scan_dir).as_posix()
+        cat_folder = "" if cat_folder == "." else cat_folder
         n = 0
         for p in paths:
             fn = p.name
@@ -438,6 +451,7 @@ def build_lora_list() -> dict:
             items.append({
                 "folder": folder,
                 "category": category,
+                "catFolder": cat_folder,
                 "file": fn,
                 "name": stem,
                 "title": title,

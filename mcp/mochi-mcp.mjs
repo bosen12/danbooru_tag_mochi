@@ -271,10 +271,12 @@ function splitWeights(list, weightsIn) {
 async function mine(kind) {
   const path = { decks: "/api/decks", custom: "/api/custom-cards", chars: "/api/fav-chars" }[kind];
   const r = await mochi(path);
-  const d = await r.json().catch(() => ({}));
-  if (kind === "decks") return Array.isArray(d.decks) ? d.decks : [];
-  if (kind === "custom") return Array.isArray(d.cards) ? d.cards : [];
-  return Array.isArray(d.tags) ? d.tags : [];
+  const d = await r.json().catch(() => null);
+  const label = { decks: "牌組", custom: "自製牌", chars: "偏好角色" }[kind];
+  if (!r.ok) throw new Error(`讀不到${label}（HTTP ${r.status}）${d?.error ? "：" + d.error : ""}`);
+  const list = d?.[{ decks: "decks", custom: "cards", chars: "tags" }[kind]];
+  if (!Array.isArray(list) || d.ok === false) throw new Error(`${label}的回應格式不對`);
+  return list;
 }
 
 const findByName = (list, name) => {

@@ -12,6 +12,7 @@ import { seat, refuse } from "./motion.js";
 import { SKELETON, skeletonCap, skeletonLit, swapSkeleton } from "./engine.js";
 import { effectiveHeats } from "./draw-with-seed.js";
 import { heatBlockedByRating } from "./scene-policy.js";
+import { ratingOf } from "./rules/rating.js";
 
 // 姿勢的這三格是「尺度」管的：尺度沒開，選了也抽不到（尺度是總開關，選格只在它允許的範圍裡挑）。
 const HEAT_OF = { "pose:tease": "tease", "pose:flash": "flash", "pose:sex": "sex" };
@@ -46,7 +47,8 @@ export function skeletonPicker({ settings, save, groupKeys = null }) {
     const h = HEAT_OF[key];
     if (!h) return null;
     const s = settings();
-    return effectiveHeats(s).includes(h) && !heatBlockedByRating(h, s.rating) ? null : h;
+    // 跟上面的尺度鈕同一個分級（有效分級：開了「不限制」就不擋），不然上面能勾、這裡卻說要先開尺度。
+    return effectiveHeats(s).includes(h) && !heatBlockedByRating(h, ratingOf(s)) ? null : h;
   };
   const count = (section) => Number(settings().counts?.[section]) || 0;
   const open = (section) => count(section) > 0 && count(section) < skeletonCap(section);

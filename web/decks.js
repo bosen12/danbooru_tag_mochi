@@ -7,7 +7,9 @@
  */
 import { el, openSheet, toast, friendlyError } from "./ui.js";
 import { enter, leave, refuse, reducedMotion, DUR, CURVE, css } from "./motion.js";
-import { handOffCustom } from "./custom-cards.js";
+import { handOffCustom, isCustomTag } from "./custom-cards.js";
+
+const MAX_TAGS = 60; // 跟 card_decks.py 一樣。
 
 let cache = null;
 let revision = 0;
@@ -46,7 +48,9 @@ async function requestWrite(url, method, body) {
     body: body ? JSON.stringify(body) : undefined,
   });
   const j = await r.json().catch(() => ({}));
-  if (!r.ok || !j.ok) throw new Error(j.error || `伺服器回 ${r.status}`);
+  if (!r.ok || !j.ok) {
+    throw Object.assign(new Error(j.error || `伺服器回 ${r.status}`), { status: r.status, bad: j.bad });
+  }
   revision++;
   cache = j.decks || cache;
   return j.deck;
@@ -59,7 +63,11 @@ export const deleteDeck = (id) => call(`/api/decks/${encodeURIComponent(id)}`, "
 export function freeName(base, decks) {
   const used = new Set(decks.map((d) => d.name));
   if (!used.has(base)) return base;
-  for (let i = 2; ; i++) if (!used.has(`${base}（${i}）`)) return `${base}（${i}）`;
+  for (let i = 2; ; i++) {
+    const suffix = `（${i}）`;
+    const name = base.slice(0, 40 - suffix.length) + suffix;
+    if (!used.has(name)) return name;
+  }
 }
 
 /** 沒取名時的預設名字：前三張牌的中文名。 */
@@ -79,7 +87,26 @@ export function suggestName(tags, zh) {
  *   weightsNow()：目前調過的份量（weights.js），存牌組時一起存；偏好卡牌沒有份量就不給。
  */
 export function openDecks({ where, current, has, zh, apply, paste, weightsNow = () => ({}) }) {
-  const now = current().filter(has);
+  const now = [...new Set(current())];
+  const canSave = (tag) => !isCustomTag(tag) && has(tag);
+  const tagNames = (tags) => tags.map((t) => zh(t) || t).join("、");
+  const validation = el("div", { "aria-live": "polite" });
+  // 存之前先講清楚：自製牌（和詞庫沒有的）不會存進牌組 —— 照樣存其他的，但畫面上寫明哪幾張不存
+  //（以前默默丟掉，畫面說存了兩張、其實只存一張）。超過上限才擋下來，由你決定拿掉哪幾張。
+  // 回傳要存的牌；擋下來回 null。
+  const validate = (tags) => {
+    const bad = tags.filter((t) => !canSave(t));
+    const keep = tags.filter(canSave);
+    const notes = [];
+    if (bad.length) notes.push(`這幾張不會存進牌組（自製牌請到卡冊另存成自製牌）：${tagNames(bad)}。`);
+    if (keep.length > MAX_TAGS) notes.push(`牌組最多 ${MAX_TAGS} 張，目前有 ${keep.length} 張，請先移除 ${keep.length - MAX_TAGS} 張。`);
+    if (!keep.length) notes.push(tags.length ? "沒有可以存進牌組的牌（都是自製牌或詞庫沒有的）。" : `${where}是空的：先放幾張牌，就能存成一組。`);
+    const before = validation.textContent;
+    validation.replaceChildren(...notes.map((note) => el("p", { class: "deck-note" }, note)));
+    if (validation.textContent !== before && notes.length && !reducedMotion()) validation.animate([{ opacity: 0, transform: "translateY(-3px)" }, { opacity: 1, transform: "none" }], { duration: DUR.short, easing: css(CURVE.out) });
+    return keep.length && keep.length <= MAX_TAGS ? keep : null;
+  };
+  validate(now);
   const list = el("div", { class: "deck-list", "aria-live": "polite" }, el("p", { class: "deck-note" }, "讀取牌組…"));
   const name = el("input", {
     class: "deck-name",
@@ -90,12 +117,18 @@ export function openDecks({ where, current, has, zh, apply, paste, weightsNow = 
     value: now.length ? suggestName(now, zh) : "",
   });
   const saveBtn = el("button", { class: "btn btn-primary deck-save-btn", type: "submit" }, "");
+  const conflictMsg = el("p", { class: "deck-note", role: "status" });
+  const reloadBtn = el("button", { class: "btn btn-small", type: "button", onclick: reload }, "重新載入");
+  const copyBtn = el("button", { class: "btn btn-small btn-primary", type: "button", onclick: () => submit(true) }, "另存一組");
+  const conflictBox = el("div", { hidden: true }, conflictMsg, reloadBtn, copyBtn);
   const form = now.length
     ? el(
         "form",
         { class: "deck-save" },
-        el("p", { class: "deck-save-lead" }, `把${where}裡的 ${now.length} 張存成一組：`),
+        el("p", { class: "deck-save-lead" }, `把${where}裡的 ${now.filter(canSave).length} 張存成一組：`),
+        validation,
         el("div", { class: "deck-save-row" }, name, saveBtn),
+        conflictBox,
         // 想要能調權重、加詞庫沒有的字、一張牌帶著走的：直接到卡冊做成自製牌（名字、份量一起帶過去）。
         el(
           "button",
@@ -105,7 +138,7 @@ export function openDecks({ where, current, has, zh, apply, paste, weightsNow = 
             onclick: () => {
               close();
               const w = weightsNow();
-              const tags = now.filter((t) => !t.startsWith("custom:"));
+              const tags = now.filter(canSave);
               handOffCustom({ name: (name.value.trim() || suggestName(tags, zh)).slice(0, 24), rating: "general", members: tags.map((t) => ({ tag: t, w: w[t] || 1 })), extra: [] }) || toast("無法交接，請檢查瀏覽器儲存空間。");
             },
           },
@@ -114,11 +147,14 @@ export function openDecks({ where, current, has, zh, apply, paste, weightsNow = 
       )
     : el("p", { class: "deck-note deck-save-empty" }, `${where}是空的：先放幾張牌，就能存成一組。`);
   let decks = cache || [];
+  // 開面板時已看到的同名牌組，要用當時的版本存；即使背景讀到更新也要先問。
+  const draftTargets = new Map(decks.map((d) => [d.name, d]));
   let saving = false;
+  let conflict = null;
   const deleting = new Set();
   let initialLoad;
   // 名字跟存過的一樣：按下去是更新那一組（按鈕上寫清楚），不會多出兩組同名的。
-  const same = () => decks.find((d) => d.name === name.value.trim());
+  const same = () => draftTargets.get(name.value.trim()) || decks.find((d) => d.name === name.value.trim());
   const label = () => {
     saveBtn.textContent = same() ? "更新同名牌組" : "存成牌組";
   };
@@ -215,8 +251,9 @@ export function openDecks({ where, current, has, zh, apply, paste, weightsNow = 
     deleting.add(d.id);
     btn.disabled = true;
     btn.setAttribute("aria-busy", "true");
+    let gone;
     try {
-      await deleteDeck(d.id);
+      gone = await deleteDeck(d.id);
     } catch (err) {
       deleting.delete(d.id);
       btn.disabled = false;
@@ -226,6 +263,9 @@ export function openDecks({ where, current, has, zh, apply, paste, weightsNow = 
     }
     btn.removeAttribute("aria-busy");
     decks = cache || decks.filter((x) => x.id !== d.id);
+    for (const [n, target] of draftTargets) {
+      if (target.id === d.id) draftTargets.delete(n);
+    }
     leave(node, () => {
       deleting.delete(d.id);
       paint();
@@ -236,7 +276,8 @@ export function openDecks({ where, current, has, zh, apply, paste, weightsNow = 
         label: "復原",
         run: async () => {
           try {
-            await saveDeck(d);
+            const restored = await saveDeck({ ...gone, restore: true });
+            draftTargets.set(restored.name, restored);
             decks = cache || decks;
             if (list.isConnected) {
               paint();
@@ -250,37 +291,65 @@ export function openDecks({ where, current, has, zh, apply, paste, weightsNow = 
     });
   };
 
-  form.addEventListener?.("submit", async (e) => {
-    e.preventDefault();
-    if (saving) return;
-    saving = true;
-    saveBtn.disabled = true;
-    saveBtn.setAttribute("aria-busy", "true");
-    const tags = current().filter(has);
-    // 沒取名：按鈕寫的是「存成牌組」，就是要多一組。預設名（前三張牌）撞到舊的時接編號，
-    // 以前直接拿舊的那組的 id 送出去，整組被換掉（第五輪 Astra 找到）。有取名、撞名才是更新那一組。
-    const typed = name.value.trim();
-    let n = typed || suggestName(tags, zh);
+  function setBusy(active) {
+    saving = active;
+    saveBtn.disabled = active || !!conflict;
+    reloadBtn.disabled = copyBtn.disabled = active;
+    if (active) saveBtn.setAttribute("aria-busy", "true");
+    else saveBtn.removeAttribute("aria-busy");
+  }
+
+  function clearConflict() {
+    conflict = null;
+    conflictBox.hidden = true;
+  }
+
+  async function refresh() {
     try {
-      // 舊快取還沒有這個名字時，先等面板這次讀取，避免把別處新增的同名牌組另存一份。
-      if (!typed || !decks.some((d) => d.name === n)) {
-        const fresh = await initialLoad;
-        if (fresh === null) {
-          try {
-            await loadDecks({ strict: true });
-          } catch {
-            refuse(saveBtn);
-            toast("讀不到牌組：伺服器沒開，或連不到主機。");
-            return;
-          }
-        }
-      }
-      decks = cache || decks;
-      if (!typed) n = freeName(n, decks);
-      const hit = typed ? decks.find((d) => d.name === n) : null;
-      const w = weightsNow();
-      const weights = Object.fromEntries(tags.filter((t) => w[t] && w[t] !== 1).map((t) => [t, w[t]]));
-      const deck = await saveDeck({ id: hit?.id, name: n, tags, weights });
+      return await loadDecks({ strict: true });
+    } catch {
+      toast("讀不到牌組：伺服器沒開，或連不到主機。");
+      return null;
+    }
+  }
+
+  async function reload() {
+    if (!conflict || saving) return;
+    setBusy(true);
+    try {
+      const latest = await refresh();
+      if (latest === null) return;
+      decks = latest;
+      draftTargets.clear();
+      clearConflict();
+      paint();
+      label();
+      name.focus();
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function submit(asCopy = false) {
+    if (saving || (asCopy ? !conflict : !!conflict)) return;
+    const tags = validate(asCopy ? conflict.tags : [...new Set(current())]);
+    if (!tags) return refuse(saveBtn);
+    const typed = name.value.trim();
+    const w = weightsNow();
+    const weights = asCopy ? conflict.weights : Object.fromEntries(tags.filter((t) => w[t] && w[t] !== 1).map((t) => [t, w[t]]));
+    // 核對面板按下當時看到的版本；不能把背景讀取的新版本配上這份較早的草稿。
+    const target = !asCopy && typed ? same() : null;
+    setBusy(true);
+    try {
+      const needsRefresh = asCopy || (!target && (await initialLoad) === null);
+      const available = needsRefresh ? await refresh() : decks;
+      if (available === null) return;
+      const hit = target || (!asCopy && typed ? available.find((d) => d.name === typed) : null);
+      const base = (typed || suggestName(tags, zh)).slice(0, 40);
+      const n = asCopy || !typed ? freeName(base, available) : base;
+      const deck = await saveDeck({ ...(hit ? { id: hit.id, updatedAt: hit.updatedAt ?? 0 } : {}), name: n, tags, weights });
+      clearConflict();
+      draftTargets.set(deck.name, deck);
       decks = cache || decks;
       paint();
       const fresh = list.querySelector(`.deck-row[data-id="${deck.id}"]`);
@@ -295,13 +364,26 @@ export function openDecks({ where, current, has, zh, apply, paste, weightsNow = 
       saveBtn.textContent = hit ? "更新了 ✓" : "存好了 ✓";
       setTimeout(label, 1400);
     } catch (err) {
-      refuse(saveBtn);
-      toast(`存不了：${friendlyError(err)}`);
+      if (err.status === 409) {
+        conflict = { tags, weights };
+        conflictMsg.textContent = err.message;
+        conflictBox.hidden = false;
+      } else {
+        refuse(asCopy ? copyBtn : saveBtn);
+        toast(`存不了：${friendlyError(err)}`);
+        if (err.bad?.length) {
+          validation.replaceChildren(el("p", { class: "deck-note" }, `牌組不能存這些牌：${tagNames(err.bad)}。`));
+        }
+      }
     } finally {
-      saving = false;
-      saveBtn.disabled = false;
-      saveBtn.removeAttribute("aria-busy");
+      setBusy(false);
+      if (conflict && !asCopy) reloadBtn.focus();
     }
+  }
+
+  form.addEventListener("submit", (e) => {
+    e.preventDefault();
+    submit();
   });
 
   // 讀過就先畫上次的（馬上看得到），沒讀過就留著「讀取牌組…」，不先閃一句「還沒有牌組」。

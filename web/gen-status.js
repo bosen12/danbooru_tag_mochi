@@ -15,6 +15,12 @@ import { WAIT_KEEP_MS } from "./store.js";
 // mcp：AI 經 MCP（mcp/mochi-mcp.mjs）送的；ios：iPhone App 送的。兩個都沒有自己的房間：點了看作品冊的日誌。
 const ROOM_ZH = { mochi: "墨池", fuse: "疊印台", mcp: "AI", ios: "iPhone" };
 const ROOM_HREF = { mochi: "./", fuse: "fuse.html", mcp: "album.html?tab=log", ios: "album.html?tab=log" };
+// 換頁鈕上的小圈掛在哪一顆：點進去的網址（ROOM_HREF）跟掛圈的房間分開 —— AI、iPhone 點了看作品冊的
+// 日誌（album.html?tab=log），換頁鈕寫的卻是 album.html，以前比不到，手機上看不到這兩種的進度。
+// 兩種都算在作品冊那顆上（各算各的會互相把圈清掉）。
+const TAB_OF = { mochi: "mochi", fuse: "fuse", mcp: "album", ios: "album" };
+const TAB_HREF = { mochi: "./", fuse: "fuse.html", album: "album.html" };
+const TAB_ZH = { mochi: "墨池", fuse: "疊印台", album: "作品冊" };
 // 兩頁的存檔：數一數還排著的（gen-status 不載入那兩頁的程式，直接讀存檔）。
 const SAVES = { mochi: "mochi.shots.v1", fuse: "mochi.fuse.prints.v1" };
 // 看過的「印好了」：回到送印的那一頁、或點了徽章，就不再掛著。
@@ -129,14 +135,15 @@ export function mountGenStatus(room) {
 
   // 換頁鈕上的小圈：每一頁各算各的（墨池在印、疊印台印好了，兩顆各掛各的）。
   function markTabs(seen, waiting) {
-    for (const o of Object.keys(ROOM_HREF)) {
-      const a = document.querySelector(`.page-switch a[href="${ROOM_HREF[o]}"]`);
-      if (!a || o === room) continue;
+    for (const tab of Object.keys(TAB_HREF)) {
+      const a = document.querySelector(`.page-switch a[href="${TAB_HREF[tab]}"]`);
+      if (!a || tab === room) continue;
+      const origins = Object.keys(TAB_OF).filter((o) => TAB_OF[o] === tab);
       const sum = genSummary(
-        jobs.filter((j) => j.origin === o),
+        jobs.filter((j) => origins.includes(j.origin)),
         room,
         seen,
-        { [o]: waiting[o] || 0 }
+        Object.fromEntries(origins.map((o) => [o, waiting[o] || 0]))
       );
       let dot = a.querySelector(".page-switch-gen");
       if (!sum) {
@@ -150,7 +157,7 @@ export function mountGenStatus(room) {
       a.dataset.gen = sum.state;
       a.dataset.genQueued = sum.queued ? "true" : "false";
       a.style.setProperty("--gp", String(sum.progress));
-      a.setAttribute("aria-label", `${ROOM_ZH[o]}（${sum.bare}）`);
+      a.setAttribute("aria-label", `${TAB_ZH[tab]}（${sum.bare}）`);
     }
   }
 

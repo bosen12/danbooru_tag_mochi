@@ -270,13 +270,15 @@ def _clean_picks(raw) -> dict:
 def load_picks() -> dict:
     """{"picks": {...}, "saved": 存過沒有, "at": 毫秒}。沒存過：網頁把它自己的勾選搬上來。"""
     with file_lock.locked(PICKS_PATH):
-        try:
-            data = file_lock.read_json(PICKS_PATH, label="群組勾選")
-        except (OSError, file_lock.StoreCorrupt):
-            return {"picks": {}, "saved": False, "at": 0}
-    if not isinstance(data, dict):
-        return {"picks": {}, "saved": False, "at": 0}
-    return {"picks": _clean_picks(data.get("picks")), "saved": True, "at": int(data.get("at") or 0)}
+        data = file_lock.read_json(PICKS_PATH, label="群組勾選")
+        if data is None:
+            try:
+                PICKS_PATH.stat()
+            except FileNotFoundError:
+                return {"picks": {}, "saved": False, "at": 0}
+    if not (isinstance(data, dict) and isinstance(data.get("picks"), dict)):
+        raise file_lock.StoreCorrupt("伺服器上的群組勾選存檔格式不對。")
+    return {"picks": _clean_picks(data["picks"]), "saved": True, "at": int(data.get("at") or 0)}
 
 
 def save_picks(payload) -> dict:

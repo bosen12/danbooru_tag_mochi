@@ -2204,6 +2204,36 @@ const parameterized = String.raw`
 沒有配合這個底模（{0}）的 LoRA。|No LoRA matches this checkpoint ({0}).
 找不到配合這個底模（{0}）的 LoRA。|No matching LoRA found for this checkpoint ({0}).
 沒有「{0}」的 LoRA。|No {0} LoRA.
+「{0}」裡沒有{1}的 LoRA。|No {1!} LoRA in “{0!}”.
+「{0}」裡沒有 LoRA。|No LoRA in “{0!}”.
+看全部分類|Show all categories
+墨池（{0}）|Ink Pool ({0})
+疊印台（{0}）|Fuse Bed ({0})
+作品冊（{0}）|Gallery ({0})
+這組牌已在別處變更。草稿還在，請重新載入或另存一組。|This deck was changed elsewhere. Your draft is still here. Reload or save it as a new deck.
+這組牌已在別處刪除。草稿還在，請重新載入或另存一組。|This deck was deleted elsewhere. Your draft is still here. Reload or save it as a new deck.
+這張自製牌已在別處變更。草稿還在，請重新載入或另存一張。|This custom card was changed elsewhere. Your draft is still here. Reload or save it as a new card.
+這張自製牌已在別處刪除。草稿還在，請重新載入或另存一張。|This custom card was deleted elsewhere. Your draft is still here. Reload or save it as a new card.
+重新載入|Reload
+另存一組|Save as a new deck
+另存一張|Save as a new card
+這張自製牌已刪除。|This custom card has been deleted.
+讀不到自製牌，請稍後再試。|Could not load custom cards. Please try again shortly.
+牌組不能存這些牌：{0!}。|These cards cannot be saved in a deck: {0!}.
+這幾張不會存進牌組（自製牌請到卡冊另存成自製牌）：{0!}。|These won't be saved in the deck (save custom cards from the Card Book instead): {0!}.
+沒有可以存進牌組的牌（都是自製牌或詞庫沒有的）。|Nothing here can be saved in a deck (only custom cards or cards not in the lexicon).
+牌組最多 {0} 張，目前有 {1} 張，請先移除 {2} 張。|A deck can hold up to {0} cards. You have {1}. Remove {2} to continue.
+牌組只能存詞庫裡的牌|Decks can only contain lexicon cards
+牌組最多 {0} 張|A deck can hold up to {0} cards
+牌組 id 不對|Invalid deck ID
+自製牌 id 不對|Invalid custom card ID
+伺服器暫時無法存取檔案，請稍後再試。|The server cannot access the file right now. Please try again shortly.
+伺服器上的設定檔格式不對，也沒有可用的備份。請修正後再試。|The server settings file is invalid and no usable backup is available. Fix the file and try again.
+伺服器上的{0}存檔格式不對。|The server's {0} save file is invalid.
+伺服器上的群組勾選存檔格式不對。|The server's group selections save file is invalid.
+讀不到{0}（HTTP {1}）|Could not load {0} (HTTP {1})
+讀不到{0}（HTTP {1}）：{2!}|Could not load {0} (HTTP {1}): {2!}
+{0}的回應格式不對|The response for {0} has an invalid format
 找不到「{0}」的 LoRA。|No matching {0} LoRA found.
 替換疊印台的 {0} 張牌|Replace {0} cards in Fuse Bed
 替換合成池的 {0} 張牌|Replace {0} cards in Ink Pool

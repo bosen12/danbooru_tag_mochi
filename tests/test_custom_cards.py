@@ -112,7 +112,7 @@ ok("更新不會多一張", len([x for x in custom_cards.load() if x["id"] == ci
 gone = custom_cards.delete(cid)["card"]
 ok("刪掉了", all(x["id"] != cid for x in custom_cards.load()))
 ok("刪掉後卡面檔先留著", custom_cards.art_path(art2) is not None)
-back = custom_cards.save(gone, banned=banned)["card"]
+back = custom_cards.save({**gone, "restore": True}, banned=banned)["card"]
 ok("復原：同一個 id、接回原本的卡面", back["id"] == cid and back["face"]["art"] == art2)
 raises("刪不存在的", lambda: custom_cards.delete("c_00000000"), "找不到")
 

@@ -21,7 +21,7 @@ import { getSfx } from "./sfx.js";
 import { t as tr } from "./i18n.js";
 import {
   parsePrompt, fillText, autoFace, ratingFloor, ratingAtLeast, bySuit, isBannedWord, isCustomTag,
-  saveCustom, startPreview, previewState, dropPreview, previewUrl, artUrlOf,
+  loadCustom, saveCustom, startPreview, previewState, dropPreview, previewUrl, artUrlOf,
   RATING_NAME, SUIT_ORDER, MAX_MEMBERS, MAX_EXTRA,
 } from "./custom-cards.js";
 
@@ -42,7 +42,7 @@ export function openCustomEditor({ card = null, start = null, lib, lex, assets, 
   const src = card || start || {};
   const st = {
     id: card?.id || "",
-    createdAt: card?.createdAt || 0,
+    updatedAt: card?.updatedAt ?? 0,
     name: src.name || "",
     rating: RATINGS.includes(src.rating) ? src.rating : "general",
     members: (src.members || []).filter((m) => lib.byTag.has(m.tag) && !isCustomTag(m.tag)).map((m) => ({ tag: m.tag, w: m.w || 1 })),
@@ -66,6 +66,8 @@ export function openCustomEditor({ card = null, start = null, lib, lex, assets, 
   let pollMisses = 0;
   let saving = false;
   let saved = false;
+  let closed = false;
+  let conflict = "";
   // 內容畫過一次了沒（第一次畫不演淡入）。
   let painted = false;
 
@@ -208,13 +210,17 @@ export function openCustomEditor({ card = null, start = null, lib, lex, assets, 
   const msg = el("span", { class: "cce-msg", role: "status" });
   const saveBtn = el("button", { class: "btn btn-primary", type: "button" }, "存檔");
   const cancelBtn = el("button", { class: "btn", type: "button" }, "取消");
-  saveBtn.addEventListener("click", save);
+  const reloadBtn = el("button", { class: "btn", type: "button", hidden: true, onclick: reload }, "重新載入");
+  const saveCopyBtn = el("button", { class: "btn btn-primary", type: "button", hidden: true, onclick: () => save({ asCopy: true }) }, "另存一張");
+  saveBtn.addEventListener("click", () => save());
 
   const sheet = openSheet(card ? `編輯「${card.name}」` : "新增自製牌", body, {
     wide: true,
     translateTitle: !card,
-    foot: [msg, cancelBtn, saveBtn],
+    // 衝突時「儲存」藏起來、換成「另存一張」：兩顆主按鈕都排在最後（平常是儲存，衝突時是另存）。
+    foot: [msg, reloadBtn, cancelBtn, saveBtn, saveCopyBtn],
     onClose: () => {
+      closed = true;
       clearTimeout(pollTimer);
       clearTimeout(pasteTimer);
       more.disconnect();
@@ -649,8 +655,12 @@ export function openCustomEditor({ card = null, start = null, lib, lex, assets, 
 
   function paintFoot() {
     const why = !st.name.trim() ? "要取個名字" : !st.members.length && !st.extra.length ? "至少要有一張牌或一個字" : bake?.state === "baking" ? "卡面還在烤" : "";
-    saveBtn.disabled = !!why || saving;
-    if (!saving) msg.textContent = tr(why);
+    saveBtn.hidden = !!conflict;
+    saveBtn.disabled = !!why || saving || !!conflict;
+    reloadBtn.hidden = saveCopyBtn.hidden = !conflict;
+    reloadBtn.disabled = saving;
+    saveCopyBtn.disabled = !!why || saving;
+    if (!saving) msg.textContent = tr(why || conflict);
   }
 
   function changed({ keepPaste = false, arriving = "" } = {}) {
@@ -761,21 +771,41 @@ export function openCustomEditor({ card = null, start = null, lib, lex, assets, 
   }
 
   /* ---------- 存檔 ---------- */
-  async function save() {
-    paintFoot();
-    if (saveBtn.disabled) return refuse(saveBtn);
+  async function reload() {
+    if (!conflict || saving) return;
     saving = true;
-    saveBtn.disabled = true;
+    paintFoot();
+    try {
+      const cards = await loadCustom({ force: true, strict: true });
+      if (closed) return;
+      const latest = cards.find((c) => c.id === st.id);
+      sheet.close();
+      if (latest) openCustomEditor({ card: latest, lib, lex, assets, data, renamed, onSaved });
+      else toast("這張自製牌已刪除。");
+    } catch {
+      if (!closed) toast("讀不到自製牌，請稍後再試。");
+    } finally {
+      saving = false;
+      if (!closed) paintFoot();
+    }
+  }
+
+  async function save({ asCopy = false } = {}) {
+    paintFoot();
+    const btn = asCopy ? saveCopyBtn : saveBtn;
+    if (btn.disabled) return refuse(btn);
+    saving = true;
+    paintFoot();
     msg.textContent = tr("存檔中…");
     const raw = seedIn.value.trim();
     const seed = /^\d{1,15}$/.test(raw) ? Number(raw) : st.face.seed;
     const payload = {
-      ...(st.id ? { id: st.id, createdAt: st.createdAt } : {}),
+      ...(st.id && !asCopy ? { id: st.id, updatedAt: st.updatedAt } : {}),
       name: st.name.trim(),
       rating: st.rating,
       members: st.members,
       extra: st.extra,
-      face: { positive: st.face.positive.trim(), manual: st.face.manual, seed: Number.isSafeInteger(seed) ? seed : null, ...(card?.face?.art ? { art: card.face.art } : {}) },
+      face: { positive: st.face.positive.trim(), manual: st.face.manual, seed: Number.isSafeInteger(seed) ? seed : null },
     };
     try {
       const out = await saveCustom(payload, { draft: draftV ? draft : "" });
@@ -784,9 +814,11 @@ export function openCustomEditor({ card = null, start = null, lib, lex, assets, 
       onSaved?.(out);
     } catch (err) {
       saving = false;
-      msg.textContent = String(err.message || err);
-      saveBtn.disabled = false;
-      refuse(saveBtn);
+      if (err.status === 409) conflict = err.message;
+      paintFoot();
+      msg.textContent = tr(String(err.message || err));
+      if (err.status === 409) reloadBtn.focus();
+      else refuse(btn);
     }
   }
 

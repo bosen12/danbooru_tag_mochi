@@ -317,6 +317,9 @@ function renderLmCats() {
   };
   mk("all", "全部", items.length);
   folders.forEach((f) => mk(f, f, counts[f]));
+  // 選中的分類被底模篩到 0 張：照樣留一顆「Character 0」亮著（不然整排沒有一顆亮，看不出現在在哪一類）。
+  const cur = curScope().cat;
+  if (cur !== "all" && !counts[cur] && (GEN_LORAS || []).some((l) => l.category === cur)) mk(cur, cur, 0);
   markPress(box);
   if (GALLERY) {
     // 第一次有資料時一格格浮上來；之後重畫（換分類、換槽）不再播。
@@ -349,9 +352,11 @@ function renderLmSubcats() {
   if (!box) return;
   box.replaceChildren();
   if (curScope().cat === "all") return;
-  const items = (GEN_LORAS || []).filter((l) => l.category === curScope().cat);
+  // 跟分類列同一份條件（畫廊版照底模篩選）：以前子分類沒篩，換了底模清單空了、子分類和數字還照舊。
+  const items = (GEN_LORAS || []).filter((l) => l.category === curScope().cat && (!GALLERY || loraBaseOk(l)));
   const counts = {};
   for (const l of items) counts[l.folder] = (counts[l.folder] || 0) + 1;
+  const base = items.find((l) => typeof l.catFolder === "string")?.catFolder ?? curScope().cat;
   const subfolders = Object.keys(counts).sort();
   if (subfolders.length <= 1) return;
   const mk = (key, label, n) => {
@@ -375,10 +380,7 @@ function renderLmSubcats() {
     box.appendChild(b);
   };
   mk("", "全部", items.length);
-  subfolders.forEach((f) => {
-    const label = f === curScope().cat ? "(根目錄)" : f.slice(curScope().cat.length + 1);
-    mk(f, label, counts[f]);
-  });
+  subfolders.forEach((f) => mk(f, subLabel(f, base), counts[f]));
   markPress(box);
 }
 
@@ -555,9 +557,19 @@ function loraCatPool() {
       (!GALLERY || loraBaseOk(l))
   );
 }
+/**
+ * 子資料夾在畫面上的名字：從分類的根資料夾（伺服器給的 catFolder，跟 folder 同一個起點）往下切。
+ * 偏好路徑選在 loras 底下的子資料夾時，folder 前面還多一段偏好路徑，不能直接拿分類名去切。
+ */
+function subLabel(f, base) {
+  if (f === base) return "(根目錄)";
+  if (base && f.startsWith(base + "/")) return f.slice(base.length + 1);
+  return f;
+}
 function loraCatLabel() {
   if (curScope().subfolder) {
-    return curScope().subfolder === curScope().cat ? curScope().cat : curScope().subfolder;
+    const base = (GEN_LORAS || []).find((l) => l.category === curScope().cat && typeof l.catFolder === "string")?.catFolder ?? curScope().cat;
+    return curScope().subfolder === base ? curScope().cat : `${curScope().cat}／${subLabel(curScope().subfolder, base)}`;
   }
   return curScope().cat === "all" ? null : curScope().cat;
 }
@@ -592,7 +604,24 @@ function renderLmList(filter, resetPage, deal = resetPage) {
     const empty = document.createElement("div");
     empty.className = "lora-empty";
     const key = GALLERY ? loraBaseKey() : "all";
-    if (key !== "all" && (GEN_LORAS || []).length) {
+    // 選了分類、這一類篩到沒有，但這個底模在別的分類有：說是「這一類」沒有，按鈕看全部分類（不是跳去看全部底模）。
+    const inCat = curScope().cat !== "all" && !q && (GEN_LORAS || []).some((l) => (!GALLERY || loraBaseOk(l)));
+    if (inCat) {
+      const label = GALLERY && key !== "all" ? LORA_BASE_LABEL[key] || key : "";
+      empty.textContent = label ? `「${curScope().cat}」裡沒有${label}的 LoRA。` : `「${curScope().cat}」裡沒有 LoRA。`;
+      const all = document.createElement("button");
+      all.type = "button";
+      all.className = "ghost lora-more-btn";
+      all.textContent = "看全部分類";
+      all.addEventListener("click", () => {
+        curScope().cat = "all";
+        curScope().subfolder = "";
+        renderLmCats();
+        renderLmSubcats();
+        renderLmList($("lm-search").value, true);
+      });
+      empty.append(document.createElement("br"), all);
+    } else if (key !== "all" && (GEN_LORAS || []).length) {
       // 篩掉了：講清楚是哪一家沒有，給一顆看全部。
       const label = LORA_BASE_LABEL[key] || key;
       if (LORA_VIEW.base === "match") {

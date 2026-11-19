@@ -128,6 +128,8 @@ function load(names, extra = {}) {
     digest() { counts.digest += 1; },
     paintStatus() {},
     render() { counts.render += 1; },
+    // 換圖時收掉上一張的牌（第六輪：第二張解析失敗時，畫面還留著第一張的牌、點了整頁報錯）。
+    clearResults() { counts.clear = (counts.clear || 0) + 1; ctx.cleared = ctx.parsed; },
     tagger: () => ({ model: "m" }),
     friendlyError: (e) => e?.message || "解析失敗",
     sfx: { fail() {} },
@@ -198,6 +200,8 @@ await check("慢的縮圖不能蓋掉後來那張", async () => {
   await ta;
   assert.equal(h.ctx.shot.url, "data:b.png");
   assert.equal(h.ctx.shot.name, "b.png");
+  assert.ok(h.counts.clear >= 1, "換了圖就收掉上一張的牌、張數、帶走列");
+  assert.equal(h.ctx.cleared, null, "收的時候 parsed 已經清成 null（之後只會照新圖重畫）");
   assert.deepEqual(h.shown, ["data:b.png"]);
   assert.equal(h.fetches.length, 1);
   assert.equal(JSON.parse(h.fetches[0].opts.body).image, "data:b.png");

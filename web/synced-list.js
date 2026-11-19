@@ -85,25 +85,27 @@ export function createSyncedList({ key, syncedKey, opsKey, url, order: ordered =
       /* 存不了：這一頁照樣送，送不出去下次開就沒有 */
     }
   }
-  function noteOp(kind, t) {
-    const ops = readOps();
-    ops.add = ops.add.filter((x) => x !== t);
-    ops.remove = ops.remove.filter((x) => x !== t);
-    ops[kind].push(t);
-    writeOps(ops);
-  }
   const pending = (ops) => ops.add.length || ops.remove.length || ops.order;
 
+  // 同一份名單一次只有一個寫入在路上：兩個同時送時，晚到的舊回應（加入 A）會把剛取消的 A 畫回來
+  //（伺服器是空的、畫面卻有 A）。送的途中又改的，等這一個回來再送。
+  let inflight = false;
+  let again = false;
   function push() {
     if (!server) return;
     clearTimeout(pushT);
     pushT = setTimeout(() => {
       pushT = 0;
+      if (inflight) {
+        again = true;
+        return;
+      }
       const sent = readOps();
       // 第一次跟伺服器對（或伺服器沒存過）：整份搬上去；之後只送改動。
       const whole = dirty || !synced();
       if (!whole && !pending(sent)) return;
       const body = whole ? { tags } : { add: sent.add, remove: sent.remove, ...(ordered && sent.order ? { order: tags } : {}) };
+      inflight = true;
       fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) })
         .then((r) => (r.ok ? r.json() : null))
         .then((j) => {
@@ -134,7 +136,14 @@ export function createSyncedList({ key, syncedKey, opsKey, url, order: ordered =
           }
           if (pending(left)) push();
         })
-        .catch(() => {});
+        .catch(() => {})
+        .finally(() => {
+          inflight = false;
+          if (again) {
+            again = false;
+            push();
+          }
+        });
     }, 250);
   }
 
@@ -148,7 +157,8 @@ export function createSyncedList({ key, syncedKey, opsKey, url, order: ordered =
 
   /** 跟伺服器對一次：開頁、切回這個分頁、網路回來時（別台裝置可能改過）。 */
   function pull() {
-    if (pulling || pushT) return pulling;
+    // 有寫入在路上：等它回來（它回完整名單）；這時問到的可能是送出前的舊名單。
+    if (pulling || pushT || inflight) return pulling;
     pulling = fetch(url, { cache: "no-store" })
       .then((r) => (r.ok ? r.json() : null))
       .then((j) => {
@@ -204,14 +214,20 @@ export function createSyncedList({ key, syncedKey, opsKey, url, order: ordered =
       next = clean(next);
       const before = tags;
       if (next.length === before.length && next.every((t, i) => t === before[i])) return false;
-      for (const t of next) if (!before.includes(t)) noteOp("add", t);
-      for (const t of before) if (!next.includes(t)) noteOp("remove", t);
+      // 待送的改動讀一次、改完寫一次（以前每張牌各讀寫一次本機存檔：換一千張要同步讀寫兩千次）。
+      const ops = readOps();
+      const beforeSet = new Set(before);
+      const nextSet = new Set(next);
+      const touch = (kind, t) => {
+        ops.add = ops.add.filter((x) => x !== t);
+        ops.remove = ops.remove.filter((x) => x !== t);
+        ops[kind].push(t);
+      };
+      for (const t of next) if (!beforeSet.has(t)) touch("add", t);
+      for (const t of before) if (!nextSet.has(t)) touch("remove", t);
       // 有順序的名單：每一次改動都帶上這台的整份順序（新加的插在哪一格、排過的都照這台的）。
-      if (ordered) {
-        const ops = readOps();
-        ops.order += 1;
-        writeOps(ops);
-      }
+      if (ordered) ops.order += 1;
+      writeOps(ops);
       tags = next;
       changed();
       return true;

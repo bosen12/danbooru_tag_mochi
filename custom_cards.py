@@ -50,6 +50,13 @@ class CustomError(ValueError):
     """訊息直接給畫面看。"""
 
 
+class CustomConflict(CustomError):
+    def __init__(self, message: str, code: str, current: dict | None):
+        super().__init__(message)
+        self.code = code
+        self.current = current
+
+
 def _weight(raw) -> float:
     if isinstance(raw, bool) or not isinstance(raw, (int, float)):
         return 1.0
@@ -93,10 +100,7 @@ def rating_floor(tags: list[str]) -> str:
 
 
 def _read() -> list[dict]:
-    try:
-        data = file_lock.read_json(CARDS_PATH, label="自製牌")
-    except OSError:
-        return []
+    data = file_lock.read_json(CARDS_PATH, label="自製牌")
     if data is None:
         return []
     out = []
@@ -179,13 +183,23 @@ def save(payload: dict, *, banned) -> dict:
     card = _clean(payload, banned)
     rid = str(payload.get("id") or "")
     draft = str(payload.get("draft") or "")
-    now = int(time.time() * 1000)
+    if rid and not _ID_RE.fullmatch(rid):
+        raise CustomError("自製牌 id 不對")
+    seen_at = payload.get("updatedAt")
+    restore = bool(rid) and payload.get("restore") is True
     with _LOCK, file_lock.locked(CARDS_PATH):
         cards = _read()
-        hit = next((c for c in cards if c["id"] == rid), None) if _ID_RE.match(rid) else None
-        if hit is None and len(cards) >= MAX_CARDS:
-            raise CustomError(f"自製牌最多 {MAX_CARDS} 張，先刪掉一些")
-        cid = hit["id"] if hit else (rid if _ID_RE.match(rid) else "c_" + secrets.token_hex(4))
+        hit = next((c for c in cards if c["id"] == rid), None) if rid else None
+        now = int(time.time() * 1000)
+        # 先核對版本，退回衝突時才不會搬走草稿的預覽卡面。
+        if hit and (restore or type(seen_at) is not int or seen_at != hit["updatedAt"]):
+            raise CustomConflict("這張自製牌已在別處變更。草稿還在，請重新載入或另存一張。", "stale", hit)
+        if not hit:
+            if rid and not restore:
+                raise CustomConflict("這張自製牌已在別處刪除。草稿還在，請重新載入或另存一張。", "gone", None)
+            if len(cards) >= MAX_CARDS:
+                raise CustomError(f"自製牌最多 {MAX_CARDS} 張，先刪掉一些")
+        cid = rid or "c_" + secrets.token_hex(4)
         old_art = (hit or {}).get("face", {}).get("art") or ""
         art = old_art
         if not hit:
@@ -197,10 +211,11 @@ def save(payload: dict, *, banned) -> dict:
             art = _promote(draft, cid) or art
         card["face"]["art"] = art
         if hit:
-            hit.update(card, updatedAt=now)
+            hit.update(card, updatedAt=max(now, hit["updatedAt"] + 1))
             out = hit
         else:
-            out = {"id": cid, **card, "createdAt": int(payload.get("createdAt") or 0) or now, "updatedAt": now}
+            updated_at = max(now, seen_at + 1) if restore and type(seen_at) is int else now
+            out = {"id": cid, **card, "createdAt": int(payload.get("createdAt") or 0) or now, "updatedAt": updated_at}
             cards.append(out)
         _write(cards)
     if old_art and old_art != art:

@@ -2102,6 +2102,28 @@ try:
     ok("preferred path: a subfolder still names LoRAs from ComfyUI's loras root", _names == ["A\\x.safetensors"], str(_names))
     ok("preferred path: previews inside the folder are served", _ls.preview_path("A", "x.preview.png") is not None)
     ok("preferred path: files outside the folder are not", _ls.preview_path("B", "y.safetensors") is None and _ls.preview_path("..", "x.png") is None)
+    # 偏好路徑選在 loras 底下的子資料夾、分類裡又有兩層：前端靠 catFolder 切子分類名（以前切成「s/Character」）。
+    _nest = _pref_td / "nest-loras"
+    (_nest / "Illustrious" / "Character" / "Genshin").mkdir(parents=True)
+    (_nest / "Illustrious" / "Character" / "a.safetensors").write_bytes(b"")
+    (_nest / "Illustrious" / "Character" / "Genshin" / "b.safetensors").write_bytes(b"")
+    _ls.comfy_model_dirs = lambda kind: [_nest] if kind == "loras" else []
+    server.set_model_path("lora", str(_nest / "Illustrious"))
+    _ls.reset_cache()
+    _nd = _ls.build_lora_list()
+    _rows = sorted((i["category"], i["folder"], i.get("catFolder")) for i in _nd["items"])
+    ok("preferred path: catFolder is the category's own folder, same root as folder (local scan)",
+       _rows == [("Character", "Illustrious/Character", "Illustrious/Character"), ("Character", "Illustrious/Character/Genshin", "Illustrious/Character")], str(_rows))
+    # LoRA Manager 那條路：folder 一樣從 loras 根算
+    _lm = [{"file_path": str(_nest / "Illustrious" / "Character" / "Genshin" / "b.safetensors"), "folder": "Illustrious/Character/Genshin"},
+           {"file_path": str(_nest / "Illustrious" / "Character" / "a.safetensors"), "folder": "Illustrious/Character"}]
+    _lmd = _ls.from_lora_manager(_lm)
+    _lrows = sorted((i["category"], i["folder"], i.get("catFolder")) for i in _lmd["items"])
+    ok("preferred path: catFolder is the category's own folder (LoRA Manager)",
+       _lrows == [("Character", "Illustrious/Character", "Illustrious/Character"), ("Character", "Illustrious/Character/Genshin", "Illustrious/Character")], str(_lrows))
+    _ls.comfy_model_dirs = lambda kind: [_lroot] if kind == "loras" else []
+    server.set_model_path("lora", str(_lroot / "A"))
+    _ls.reset_cache()
     _alias = _pref_td / "lora-root-alias"
     try:
         _alias.symlink_to(_lroot, target_is_directory=True)

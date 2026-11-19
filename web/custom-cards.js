@@ -31,13 +31,16 @@ const listeners = new Set();
  * 收到空清單的墨池把池裡還在的自製牌拿掉存檔（第五輪 Astra 找到）。有讀過就照舊用上一次的；
  * 第一次就讀不到回空陣列但不記下來，下一次照樣再讀。
  */
-export function loadCustom({ force = false } = {}) {
+export function loadCustom({ force = false, strict = false } = {}) {
   if (cache && !force) return Promise.resolve(cache);
   if (loading && !force) return loading;
   loading = fetch("/api/custom-cards", { cache: "no-store" })
     .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
     .then((j) => (Array.isArray(j?.cards) ? set(j.cards) : Promise.reject(new Error("bad list"))))
-    .catch(() => cache || [])
+    .catch((err) => {
+      if (strict) throw err;
+      return cache || [];
+    })
     .finally(() => (loading = null));
   return loading;
 }
@@ -80,7 +83,7 @@ addEventListener("storage", (e) => {
 async function call(url, method, body) {
   const r = await fetch(url, { method, headers: body ? { "Content-Type": "application/json" } : {}, body: body ? JSON.stringify(body) : undefined });
   const j = await r.json().catch(() => ({}));
-  if (!r.ok || !j.ok) throw new Error(j.error || `HTTP ${r.status}`);
+  if (!r.ok || !j.ok) throw Object.assign(new Error(j.error || `HTTP ${r.status}`), { status: r.status });
   return j;
 }
 
@@ -92,7 +95,7 @@ export async function saveCustom(card, { draft = "" } = {}) {
   return j.card;
 }
 
-/** 刪一張，回傳刪掉的那份（按「復原」時原樣 saveCustom 回去，卡面也接得回來）。 */
+/** 刪一張，回傳刪掉的那份（按「復原」時帶 restore: true，卡面也接得回來）。 */
 export async function deleteCustom(id) {
   const j = await call(`/api/custom-cards/${encodeURIComponent(id)}`, "DELETE");
   set(j.cards);

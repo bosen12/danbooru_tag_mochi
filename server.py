@@ -7008,17 +7008,38 @@ class Handler(BaseHTTPRequestHandler):
         print(f"[存檔] {exc}", flush=True)
         self._json(503, {"ok": False, "error": str(exc), "code": "store_corrupt"})
 
+    def _store_unavailable(self, exc: OSError) -> None:
+        print(f"[存檔] {exc}", flush=True)
+        self._json(503, {"ok": False, "error": "伺服器暫時無法存取檔案，請稍後再試。", "code": "store_unavailable"})
+
+    def _is_storage_route(self) -> bool:
+        path = urllib.parse.urlparse(self.path).path
+        return path in (
+            "/api/fav-chars", "/api/fav-hand", "/api/group-picks", "/api/decks",
+            "/api/custom-cards", "/api/paths", "/api/negative-prompts", "/api/comfy",
+        ) or path.startswith(("/api/decks/", "/api/custom-cards/"))
+
     def do_GET(self) -> None:
         try:
             self._do_get()
         except file_lock.StoreCorrupt as exc:
             self._store_corrupt(exc)
+        except OSError as exc:
+            # 瀏覽器那端斷線（ConnectionError 也是 OSError）不是存檔讀不到：照舊往外丟。
+            if isinstance(exc, ConnectionError) or (not isinstance(exc, workflows.SettingsUnavailable) and not self._is_storage_route()):
+                raise
+            self._store_unavailable(exc)
 
     def do_POST(self) -> None:
         try:
             self._do_post()
         except file_lock.StoreCorrupt as exc:
             self._store_corrupt(exc)
+        except OSError as exc:
+            # 瀏覽器那端斷線（ConnectionError 也是 OSError）不是存檔讀不到：照舊往外丟。
+            if isinstance(exc, ConnectionError) or (not isinstance(exc, workflows.SettingsUnavailable) and not self._is_storage_route()):
+                raise
+            self._store_unavailable(exc)
 
     def _serve_assistant(self, path: str, *, post: bool) -> None:
         """先限制來源再讀 POST，遠端裝置不能藉 API 偵測主機或更改助理設定。"""
@@ -7420,8 +7441,10 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/api/decks":
             try:
                 self._json(200, {"ok": True, **card_decks.save(payload)})
+            except card_decks.DeckConflict as exc:
+                self._json(409, {"ok": False, "error": str(exc), "code": exc.code, "deck": exc.current})
             except card_decks.DeckError as exc:
-                self._json(400, {"ok": False, "error": str(exc), "code": "invalid"})
+                self._json(400, {"ok": False, "error": str(exc), "code": "invalid", **({"bad": exc.bad} if exc.bad else {})})
             return
         if path == "/api/card-groups":
             try:
@@ -7439,6 +7462,9 @@ class Handler(BaseHTTPRequestHandler):
                     out = custom_preview(payload)
             except PromptBlocked as exc:
                 self._json(400, {"ok": False, "error": str(exc), "code": "blocked"})
+                return
+            except custom_cards.CustomConflict as exc:
+                self._json(409, {"ok": False, "error": str(exc), "code": exc.code, "card": exc.current})
                 return
             except custom_cards.CustomError as exc:
                 self._json(400, {"ok": False, "error": str(exc), "code": "invalid"})
@@ -7568,6 +7594,11 @@ class Handler(BaseHTTPRequestHandler):
             self._do_delete()
         except file_lock.StoreCorrupt as exc:
             self._store_corrupt(exc)
+        except OSError as exc:
+            # 瀏覽器那端斷線（ConnectionError 也是 OSError）不是存檔讀不到：照舊往外丟。
+            if isinstance(exc, ConnectionError) or (not isinstance(exc, workflows.SettingsUnavailable) and not self._is_storage_route()):
+                raise
+            self._store_unavailable(exc)
 
     def _do_delete(self) -> None:
         if not self._allowed():

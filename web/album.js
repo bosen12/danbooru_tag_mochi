@@ -10,7 +10,8 @@ import { dateLocale, english } from "./i18n.js";
  *   - 點一張：大圖、你選的牌、全部的牌、尺寸／種子／底模。主鈕「照這張再印」：牌、份量、時代、種子、底模、LoRA
  *     一起交給墨池；其他（只帶牌、複製提示詞、開原圖、從作品冊拿掉）手機上收進「⋯」（foot-more.js）。
  *   - 牌名是可以點的籤：打開卡冊那張牌的詳情（book.html#card=…）。
- *   - 網址帶 #作品編號（收藏完按「打開作品冊」過來）：直接打開那一張。
+ *   - 網址帶 #作品編號（收藏完按「打開作品冊」過來）：這一級看得到就直接打開。
+ *     看不到時沿用牆上的切換提示，等使用者按了才寫進共用分級、打開詳情（不先改，免得另一個墨池分頁被一起調高）。
  *   - 「日誌」分頁：印過的每一張，不只收藏的（album-log.js）。網址帶 ?tab=log 直接開在日誌。
  *   - 「模型」分頁：每個底模、LoRA 的成績單（album-models.js）；點一張跳到日誌只看它印的。
  *   - 分輯：依時代、髮色、服裝、場景把作品分段（album-groups.js）；詳情裡列出相似的作品。
@@ -26,7 +27,7 @@ import { mountKeysHelp } from "./keys-help.js";
 import { mountTour } from "./tour.js";
 import { mountScreensaver } from "./screensaver.js";
 import { mountGenStatus } from "./gen-status.js";
-import { initMotion, settleMotion, seat, refuse, enter, leave, reducedMotion, swapIn, CURVE, DUR, css } from "./motion.js";
+import { initMotion, settleMotion, seat, refuse, enter, leave, reducedMotion, swapIn, heightChange, CURVE, DUR, css } from "./motion.js";
 import { pingLoop } from "./ping.js";
 import { getSfx } from "./sfx.js";
 import { transferLabel, reviewTransfer } from "./transfer.js";
@@ -52,6 +53,8 @@ let lib = null;
 let renamed = {};
 let works = [];
 let rating = "general";
+// 深連結指到目前分級看不到的作品：先記住編號，等使用者自己按切換再寫設定、開詳情。
+let hashWant = "";
 // 分級「不限制」（rating-free.js，跟墨池同一份設定）：開著每件作品都看得到。
 let free = false;
 const seeRating = () => (free ? "explicit" : rating);
@@ -222,6 +225,9 @@ async function boot() {
       await load();
       log.reindex();
     },
+    onStats: (r) => {
+      if (tab === "log") paintLogSum(r);
+    },
   });
   models = createModels({
     zh,
@@ -260,10 +266,13 @@ async function boot() {
   document.addEventListener("visibilitychange", async () => {
     if (document.hidden) return;
     const before = works.map((w) => w.id).join();
+    const logHad = tab === "log" && log.loaded && log.items.length > 0;
     await load();
-    // 日誌開著：回來時也重讀（剛才在墨池又印了幾張）。
+    // 日誌開著：回來時重讀最新一頁。失敗留著已翻到的；成功按 id 合併，不把捲動拉回第一頁。
     if (tab === "log") {
-      await log.load();
+      const ok = await log.load({ refresh: logHad });
+      if (!ok && logHad) toast("讀不到日誌：伺服器沒開、或還是舊版（重開一次伺服器）。");
+      if (logHad && log.items.length && log.keepView({ scroll: true })) return;
       return render();
     }
     if (tab === "models") {
@@ -468,9 +477,10 @@ async function pickTab(v) {
   seat($("album-tabs").querySelector('[aria-checked="true"]'));
   const turn = `${tab}:${tabTurn}`;
   for (const row of [$("log-filters"), $("works-group")]) if (row && !row.hidden) swapIn(row, turn, { firstToo: true });
-  if (tab === "log" && !log.loaded) {
+  // 沒成功讀過，或上次失敗：切回日誌再試一次。讀到一半失敗的，用已有的頁當底去合併，不清空。
+  if (tab === "log" && (!log.loaded || log.failed)) {
     render();
-    await log.load();
+    await log.load({ refresh: !!(log.loaded && log.items.length) });
   }
   // 成績單每次換過來都重算（剛才可能又印了、又收藏了）。
   if (tab === "models") {
@@ -487,10 +497,15 @@ const visible = (w) => (RANK[w.rating] ?? 2) <= RANK[seeRating()];
 /**
  * 作品都被分級擋住：以前只寫一行「看不到」，要自己想到去頂欄換。說清楚有幾件、要哪一級，給一鍵換（跟卡冊一樣）。
  */
-function hiddenNote() {
-  const need = works.some((w) => (RANK[w.rating] ?? 2) <= RANK.sensitive) ? "sensitive" : "explicit";
+function ratingNeed(target) {
+  if (target) return (RANK[target.rating] ?? 2) <= RANK.sensitive ? "sensitive" : "explicit";
+  return works.some((w) => (RANK[w.rating] ?? 2) <= RANK.sensitive) ? "sensitive" : "explicit";
+}
+
+function hiddenNote(target) {
+  const need = ratingNeed(target);
   const n = works.filter((w) => !visible(w)).length;
-  return el(
+  const node = el(
     "div",
     { class: "album-empty album-empty-rating" },
     el("b", {}, `${n} 件作品在${RATING_LABEL[rating]}看不到`),
@@ -502,6 +517,49 @@ function hiddenNote() {
       el("button", { class: "btn btn-small btn-ghost", type: "button", onclick: () => $("rating-free")?.click() }, "打開不限制")
     )
   );
+  node.dataset.need = need;
+  node.dataset.for = target?.id || "";
+  return node;
+}
+
+// 日誌摘要：數字跟「還有更早的」分開，英文版才翻得到後半句。翻頁後外層也要跟著換。
+function paintLogSum(r) {
+  const sum = $("album-sum");
+  if (!sum || tab !== "log") return;
+  const g = heightChange(sum);
+  if (!log.loaded || !r?.total) {
+    if (sum.textContent) sum.replaceChildren();
+    g.done();
+    return;
+  }
+  let num = sum.querySelector("[data-log-n]");
+  if (!num) {
+    num = el("span", { dataset: { logN: "1" } }, String(r.shown));
+    const unit = el("span", { dataset: { logUnit: "1" } }, " 張");
+    sum.replaceChildren(num, unit);
+    num.dataset.swapKey = `n:${r.shown}`;
+  } else if (num.dataset.swapKey !== `n:${r.shown}`) {
+    num.textContent = String(r.shown);
+    swapIn(num, `n:${r.shown}`, { firstToo: true });
+  }
+  let more = sum.querySelector("[data-log-more]");
+  if (r.more && !more) {
+    more = el("span", { dataset: { logMore: "1" } }, "（還有更早的）");
+    sum.querySelector("[data-log-unit]")?.after(more);
+    enter(more);
+  } else if (!r.more && more) leave(more, () => more.remove());
+  const hidText = r.hidden ? `・${r.hidden} 張在${RATING_LABEL[rating]}看不到` : "";
+  let hid = sum.querySelector("[data-log-hid]");
+  if (hidText && !hid) {
+    hid = el("span", { dataset: { logHid: "1", src: hidText } }, hidText);
+    sum.append(hid);
+    enter(hid);
+  } else if (hidText && hid && hid.dataset.src !== hidText) {
+    hid.dataset.src = hidText;
+    hid.textContent = hidText;
+    swapIn(hid, hidText, { firstToo: true });
+  } else if (!hidText && hid) leave(hid, () => hid.remove());
+  g.done();
 }
 
 function render({ deal = false } = {}) {
@@ -520,10 +578,7 @@ function render({ deal = false } = {}) {
   }
   if (tab === "log") {
     $("album-hint").hidden = true;
-    const r = log.render(logBox, { query, filter: logFilter, rating: seeRating() }, { deal });
-    $("album-sum").textContent = log.loaded && r.total
-      ? `${r.shown}${english ? " images" : " 張"}${r.more ? "（還有更早的）" : ""}${r.hidden ? `・${r.hidden} 張在${RATING_LABEL[rating]}看不到` : ""}`
-      : "";
+    log.render(logBox, { query, filter: logFilter, rating: seeRating() }, { deal });
     return;
   }
   const shown = works.filter((w) => visible(w) && (!query || w._text.includes(query)));
@@ -564,21 +619,46 @@ function render({ deal = false } = {}) {
     );
     return;
   }
-  grid.replaceChildren(...(tiles.length || !works.length ? parts : [query ? el("p", { class: "album-empty" }, `找不到「${query}」`) : hiddenNote()]));
-  if (deal && !reducedMotion()) {
-    // 分段的標題（江戶 3 件…）跟著發牌一起淡進來，不是先整排印好、作品才落下。
-    for (const h of grid.querySelectorAll(":scope > .album-group > .log-day-head")) {
-      h.animate([{ opacity: 0, transform: "translateY(-4px)" }, { opacity: 1, transform: "none" }], { duration: DUR.short, easing: css(CURVE.out), fill: "backwards" });
-    }
-    tiles.slice(0, 12).forEach((t, i) =>
-      t.animate([{ opacity: 0, transform: "translateY(14px)" }, { opacity: 1, transform: "none" }], {
-        duration: DUR.long,
-        delay: DUR.micro + i * 40,
-        easing: css(CURVE.out),
-        fill: "backwards",
-      })
-    );
+  const pending = hashWant ? works.find((w) => w.id === hashWant) : null;
+  const wantGate = !!(pending && !visible(pending));
+  const oldNote = grid.querySelector(":scope > .album-empty-rating");
+  let note = null;
+  if (wantGate || (!tiles.length && works.length && !query)) {
+    const target = wantGate ? pending : null;
+    const need = ratingNeed(target);
+    if (oldNote && oldNote.dataset.need === need) {
+      oldNote.dataset.for = target?.id || "";
+      note = oldNote;
+    } else note = hiddenNote(target);
   }
+  const body = tiles.length || !works.length
+    ? (note ? [note, ...parts] : parts)
+    : [note, query ? el("p", { class: "album-empty" }, `找不到「${query}」`) : null].filter(Boolean);
+  const applyGrid = () => {
+    const prev = new Set([...grid.querySelectorAll(".album-tile")].map((n) => n.dataset.id));
+    grid.replaceChildren(...body);
+    if (note && note !== oldNote) enter(note);
+    if (deal && !reducedMotion()) {
+      // 分段的標題（江戶 3 件…）跟著發牌一起淡進來，不是先整排印好、作品才落下。
+      for (const h of grid.querySelectorAll(":scope > .album-group > .log-day-head")) {
+        h.animate([{ opacity: 0, transform: "translateY(-4px)" }, { opacity: 1, transform: "none" }], { duration: DUR.short, easing: css(CURVE.out), fill: "backwards" });
+      }
+      tiles.slice(0, 12).forEach((t, i) =>
+        t.animate([{ opacity: 0, transform: "translateY(14px)" }, { opacity: 1, transform: "none" }], {
+          duration: DUR.long,
+          delay: DUR.micro + i * 40,
+          easing: css(CURVE.out),
+          fill: "backwards",
+        })
+      );
+    } else if (!deal) {
+      // 分級打開後才冒出來的格子要進場；本來就在牆上的不要再演一次。
+      [...grid.querySelectorAll(".album-tile")].filter((n) => !prev.has(n.dataset.id)).slice(0, 12).forEach((n, i) => enter(n, { delay: DUR.micro + i * 24 }));
+    }
+    maybeOpenHash();
+  };
+  if (oldNote && oldNote !== note) leave(oldNote, applyGrid);
+  else applyGrid();
 }
 
 // 牆上的格子照作品留著重用（卡冊的 cells 同一招）：換分頁、換分段、搜尋都是同一批作品重新排，
@@ -625,7 +705,11 @@ function tile(w) {
     src ? el("span", { class: "album-frame", style: `aspect-ratio: ${ratio}` }, img) : recipeFrame(w, "tile", `aspect-ratio: ${ratio}`),
     el("span", { class: "album-cap" }, el("b", { dataset: { noI18n: "" } }, w.name), el("small", {}, dateText(w.createdAt)))
   );
-  node.addEventListener("click", () => openWork(node._work || w));
+  // 切回分頁後清單換了新物件、id 沒變就不會重畫。點的時候拿這個 id 現在的那一筆，不拿做出這格時的物件。
+  node.addEventListener("click", () => {
+    const cur = works.find((x) => x.id === node.dataset.id);
+    if (cur) openWork(cur);
+  });
   return node;
 }
 
@@ -683,17 +767,36 @@ function similarBox(w, sheetOf) {
   );
 }
 
+function maybeOpenHash() {
+  if (!hashWant || tab !== "works") return;
+  const w = works.find((x) => x.id === hashWant);
+  if (!w || !visible(w)) return;
+  hashWant = "";
+  $("album-grid").querySelector(`.album-tile[data-id="${CSS.escape(w.id)}"]`)?.scrollIntoView({ block: "center" });
+  openWork(w);
+}
+
 function openFromHash() {
   const id = decodeURIComponent(location.hash.slice(1));
-  if (!id) return;
-  const w = works.find((x) => x.id === id);
-  if (!w) return toast("這件作品不在作品冊裡了");
-  if (!visible(w)) {
-    rating = w.rating;
-    S.saveSettings({ ...(S.loadSettings() || {}), rating });
-    renderRating();
-    render();
+  if (!id) {
+    if (!hashWant) return;
+    hashWant = "";
+    if (tab === "works") render();
+    return;
   }
+  const w = works.find((x) => x.id === id);
+  if (!w) {
+    hashWant = "";
+    return toast("這件作品不在作品冊裡了");
+  }
+  if (!visible(w)) {
+    // 不寫設定。另一個墨池分頁聽的是同一份分級，這裡先改過去，那邊抽牌也跟著變。
+    hashWant = id;
+    if (tab !== "works") pickTab("works");
+    else render();
+    return;
+  }
+  hashWant = "";
   $("album-grid").querySelector(`.album-tile[data-id="${CSS.escape(id)}"]`)?.scrollIntoView({ block: "center" });
   openWork(w);
 }
@@ -823,7 +926,9 @@ function openWork(w) {
     }
     sheet.close();
     loadSeq++;
-    works = works.filter((x) => x !== w);
+    // 開著詳情時清單可能已經換過一批物件（同 id）。用物件比對刪不到新的那筆，牆上就留著。
+    works = works.filter((x) => x.id !== w.id);
+    if (hashWant === w.id) hashWant = "";
     tileCache.delete(w.id);
     const node = $("album-grid").querySelector(`.album-tile[data-id="${CSS.escape(w.id)}"]`);
     leave(node, () => render());

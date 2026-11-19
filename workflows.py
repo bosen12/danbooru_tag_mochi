@@ -537,13 +537,47 @@ def _write_json(path: Path, data) -> None:
             pass
 
 
+class SettingsUnavailable(OSError):
+    """設定暫時讀不到，像是被另一個程式鎖住。"""
+
+
+def _read_settings_file(path: Path) -> dict | None:
+    try:
+        raw = _read_json(path)
+    except FileNotFoundError:
+        return None
+    except OSError as exc:
+        # 正本被暫時擋住時直接退回，避免用可能較舊的備份蓋掉正本。
+        raise SettingsUnavailable(str(exc)) from exc
+    if not isinstance(raw, dict):
+        raise ValueError
+    return raw
+
+
 def load_settings() -> dict:
     with _STORE_LOCK:
+        missing = False
         try:
-            raw = _read_json(SETTINGS_PATH)
-        except (OSError, ValueError):
-            return {}
-        return raw if isinstance(raw, dict) else {}
+            current = _read_settings_file(SETTINGS_PATH)
+            if current is not None:
+                return current
+            missing = True
+        except ValueError:
+            pass
+        try:
+            backup = _read_settings_file(file_lock.backup_path(SETTINGS_PATH))
+            if backup is not None:
+                return backup
+            if missing:
+                return {}
+        except ValueError:
+            pass
+        # 壞的正本留在原地，重試也不能從空設定開始。
+        raise file_lock.StoreCorrupt("伺服器上的設定檔格式不對，也沒有可用的備份。請修正後再試。")
+
+
+def _write_settings(data: dict) -> None:
+    file_lock.write_text(SETTINGS_PATH, json.dumps(data, ensure_ascii=False, indent=2) + "\n")
 
 
 def save_settings(data: dict) -> None:
@@ -551,7 +585,7 @@ def save_settings(data: dict) -> None:
     with _STORE_LOCK, file_lock.locked(SETTINGS_PATH):
         cur = load_settings()
         cur.update(data)
-        _write_json(SETTINGS_PATH, cur)
+        _write_settings(cur)
 
 
 def update_setting(key: str, change):
@@ -559,7 +593,7 @@ def update_setting(key: str, change):
     with _STORE_LOCK, file_lock.locked(SETTINGS_PATH):
         cur = load_settings()
         cur[key] = change(cur.get(key))
-        _write_json(SETTINGS_PATH, cur)
+        _write_settings(cur)
         return cur[key]
 
 

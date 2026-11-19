@@ -162,9 +162,11 @@ export function openPaste({ where, text = "", lexTags, isCard, zh, banned = [], 
             class: "link-btn pressable",
             type: "button",
             onclick: async (e) => {
+              // await 之後 e.currentTarget 已經是 null：先拿住按鈕，複製好了才改得到字。
+              const btn = e.currentTarget;
               const ok = await copyText(parsed.unknown.join(", "));
-              if (ok) e.currentTarget.textContent = "複製了";
-              else refuse(e.currentTarget);
+              if (ok) btn.textContent = "複製了";
+              else refuse(btn);
             },
           },
           "複製"
@@ -198,10 +200,16 @@ export function openPaste({ where, text = "", lexTags, isCard, zh, banned = [], 
   let timer = 0;
   area.addEventListener("input", () => {
     clearTimeout(timer);
-    timer = setTimeout(paint, 120);
+    timer = setTimeout(() => ((timer = 0), paint()), 120);
   });
   const { close } = openSheet("貼上提示詞變成牌", el("div", { class: "paste" }, area, result), { wide: true, foot: [replaceBtn, addBtn] });
   const go = (replace) => {
+    // 預覽晚 120ms 才跟上：剛貼上馬上按，照現在框裡的字拆（不然放進去的是上一段）。
+    if (timer) {
+      clearTimeout(timer);
+      timer = 0;
+      paint();
+    }
     const tags = parsed.cards.map((c) => c.tag);
     const weights = Object.fromEntries(parsed.cards.filter((c) => c.w !== 1).map((c) => [c.tag, c.w]));
     if (!tags.length) return refuse(replace ? replaceBtn : addBtn);
