@@ -9,7 +9,8 @@
  *   打開：從「看這 N 張」那顆鈕長出來，牌一張張發下來。收起：縮回那顆鈕（鈕不在了就原地淡出）。
  *   換花色、小分類：留下的牌從舊位置滑到新位置（FLIP），離開的在原地淡出縮小，新來的依序浮上來。
  *   選中的花色底下一塊墨色滑過去；小分類那一排展開、收起有高度過渡。
- *   點牌：牌飛進合成池，這張彈一下、勾蓋上去；拿掉時勾淡出。
+ *   點牌：跟字盒一樣（牌就是字盒那個元件：滑鼠停上去有放大預覽、點放進合成池、右鍵看詳情、Delete 丟廢字簍、
+ *   可以拖到合成池／偏好卡牌／廢字簍，偏好卡牌挑牌、廢字簍開著時點牌照那個模式）。放進去時這張彈一下。
  *
  * 只在 AI 助手打開時才會被叫到：實驗功能關著時頁面上沒有這個節點。
  */
@@ -20,6 +21,7 @@ import { CARD_SUIT_INFO, CARD_SUITS } from "./cards.js";
 
 let root = null;
 let state = null;
+let state0 = null; // build() 時還沒有 state：先放 ctx
 let anchorNode = null;
 
 const fill = (tpl, ...args) => String(tpl).replace(/\{(\d+)\}/g, (_, i) => String(args[Number(i)] ?? ""));
@@ -80,6 +82,7 @@ export function openFound({ ctx, tags, anchor = null }) {
   }
   if (!metas.length) return;
   const fresh = !root;
+  state0 = { ctx };
   if (!root) build();
   anchorNode = anchor;
   state = { ctx, metas, suit: "", group: "" };
@@ -112,8 +115,8 @@ function build() {
     el("p", { class: "ai-found-hint" }, "點牌放進合成池，再點一次拿掉。")
   );
   document.body.append(root);
-  // 合成池在別處改了（字盒點牌、助手、復原）：滑鼠回到小字盒時照實際的重畫勾選。
-  root.addEventListener("pointerenter", syncFound);
+  // 放大預覽、傾斜：跟字盒同一套（事件委派掛在小字盒上，牌重畫也不用重綁）。
+  state0.ctx?.decorateCards?.(root.querySelector(".ai-found-grid"));
   addEventListener("keydown", onKey, true);
 }
 
@@ -231,7 +234,6 @@ function applyFilter() {
   for (const n of grid.children) {
     const show = (!state.suit || n.dataset.suit === state.suit) && (!state.group || n.dataset.group === state.group);
     n.hidden = !show;
-    n.setAttribute("aria-pressed", state.ctx.cardMeta?.(n.dataset.tag)?.inPool ? "true" : "false");
   }
 }
 
@@ -309,45 +311,32 @@ function pick(suit, group) {
 }
 
 function cardButton(m) {
-  const face = state.ctx.cardFace?.(m.tag) || el("span", { class: "ai-found-blank", dataset: { noI18n: "" } }, m.tag);
+  // 牌就是字盒那一張（ctx.libCard）：所有操作跟字盒一樣。外面包一層只用來篩花色、小分類、做動畫。
+  const card = state.ctx.libCard?.(m.tag) || state.ctx.cardFace?.(m.tag) || el("span", { class: "ai-found-blank", dataset: { noI18n: "" } }, m.tag);
   // 被目前分級、尺度擋著的牌：淡一點、滑鼠提示寫原因（放得進合成池，但這一檔抽不到）。
-  const b = el(
-    "button",
+  const box = el(
+    "div",
     {
-      class: "ai-found-card pressable",
-      type: "button",
+      class: "ai-found-card",
       dataset: { tag: m.tag, suit: m.suit, group: m.group, ...(m.blocked ? { blocked: m.blocked } : {}) },
-      "aria-pressed": m.inPool ? "true" : "false",
       ...(m.blocked ? { title: t("被目前的分級或尺度擋著") } : {}),
     },
-    face
+    card
   );
-  b.addEventListener("click", () => toggle(b));
-  return b;
-}
-
-function toggle(b) {
-  if (!state) return;
-  const tag = b.dataset.tag;
-  const inPool = state.ctx.cardMeta?.(tag)?.inPool;
-  try {
-    // 放進去時從這張牌飛到合成池（跟從字盒點一樣）；拿掉直接拿。
-    if (inPool) state.ctx.unpin([tag]);
-    else state.ctx.pin([tag], { from: () => b.getBoundingClientRect() });
-  } catch {
-    /* 放不進去（互斥、禁用）：狀態照實際的畫 */
-  }
-  const now = !!state.ctx.cardMeta?.(tag)?.inPool;
-  b.setAttribute("aria-pressed", now ? "true" : "false");
-  // 勾蓋上去／淡出：只在這一下播（重畫時不播）。
-  b.dataset.just = now ? "in" : "out";
-  clearTimeout(b._just);
-  b._just = setTimeout(() => delete b.dataset.just, DUR.long + 60);
-  if (reducedMotion()) return;
-  const face = b.firstElementChild;
-  if (now) face?.animate([{ transform: "scale(1)" }, { transform: "scale(0.9)", offset: 0.35 }, { transform: "scale(1.04)", offset: 0.7 }, { transform: "scale(1)" }], { duration: DUR.long, easing: css(CURVE.out) });
-  else face?.animate([{ transform: "scale(1)" }, { transform: "scale(0.96)" }, { transform: "scale(1)" }], { duration: DUR.short, easing: css(CURVE.out) });
-  if (!now && inPool) b.animate([{ opacity: 0.6 }, { opacity: 1 }], { duration: DUR.short, easing: css(CURVE.out) });
+  // 點下去之後（字盒那一套已經放進／拿出合成池）：放進去的這張彈一下。
+  box.addEventListener("click", () => {
+    if (reducedMotion()) return;
+    queueMicrotask(() => {
+      const pinned = card.dataset?.state === "pinned";
+      card.animate(
+        pinned
+          ? [{ scale: "1" }, { scale: "0.9", offset: 0.35 }, { scale: "1.05", offset: 0.7 }, { scale: "1" }]
+          : [{ scale: "1" }, { scale: "0.95" }, { scale: "1" }],
+        { duration: pinned ? DUR.long : DUR.short, easing: css(CURVE.out), composite: "add" }
+      );
+    });
+  });
+  return box;
 }
 
 export function syncFound() {

@@ -1382,6 +1382,12 @@ function paintState(node, tag) {
 function repaintLibrary() {
   for (const node of $("lib-grid").querySelectorAll(".card")) paintState(node, node.dataset.tag);
   hand?.mark($("lib-grid"));
+  // 助手的浮空小字盒（assistant-found.js）：牌跟字盒是同一個元件，章也一起換。
+  const found = document.getElementById("ai-found");
+  if (found) {
+    for (const node of found.querySelectorAll(".ai-found-grid .card[data-tag]")) paintState(node, node.dataset.tag);
+    hand?.mark(found);
+  }
   // 成品詳情、牆上攤開的牌：放進合成池、丟進廢字簍之後馬上換章。
   for (const node of document.querySelectorAll(".result-card")) paintState(node, node.dataset.tag);
 }
@@ -3433,6 +3439,16 @@ function assistantCtx() {
       const requested = Number.isInteger(n) && n >= 1 ? Math.min(50, n) : settings.n;
       const made = (await drawBatch(false, { n: requested })) || [];
       return { requested, made: made.length, shotIds: made.map((s) => s.id), warnings: made.length < requested ? ["short"] : [] };
+    },
+    // 浮空小字盒（assistant-found.js）：牌用字盒同一個（點放進合成池、右鍵詳情、Delete 丟廢字簍、拖曳、偏好卡牌挑牌模式都一樣），
+    // 放大預覽、跟著游標傾斜也一樣掛上。
+    libCard(tag) {
+      const c = lib?.byTag.get(tag);
+      return c ? libCard(c) : null;
+    },
+    decorateCards(root) {
+      attachPeek(root, ".card[data-tag]", peekInfo);
+      attachTilt(root);
     },
     // 浮空小字盒（assistant-found.js）：每張牌的花色、小分類、在不在合成池。
     cardMeta(tag) {

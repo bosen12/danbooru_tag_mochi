@@ -252,7 +252,8 @@
   left: calc(var(--space-sm) + env(safe-area-inset-left));
   width: min(30rem, 32vw, calc(100vw - var(--ai-w) - 4 * var(--space-sm)));
   min-width: min(20rem, calc(100vw - 2 * var(--space-sm)));
-  max-height: min(44rem, calc(100dvh - var(--ai-top, 88px) - var(--space-md)));
+  /* 底下讓出偏好卡牌托盤的高度（--fav-h，hand.js 寫的）：托盤不會蓋住小字盒的下半截 */
+  max-height: min(44rem, calc(100dvh - var(--ai-top, 88px) - var(--fav-h, 0px) - var(--space-md)));
   display: flex;
   flex-direction: column;
   gap: var(--space-xs);
@@ -308,39 +309,13 @@
 }
 .ai-found-card {
   position: relative;
-  padding: 0;
-  border: 0;
-  border-radius: 8px;
-  background: none;
-  cursor: pointer;
 }
 .ai-found-card[hidden] {
   display: none;
 }
+/* 牌跟字盒同一個（章「池中」「封鎖」也一樣）；只把寬度定下來 */
 .ai-found-card .card {
   --card-w: 80px;
-  pointer-events: none;
-}
-/* 已經在合成池：描一圈、右上角一個勾（跟字盒裡已釘的牌一樣看得出來） */
-.ai-found-card[aria-pressed="true"] .card {
-  box-shadow:
-    0 0 0 2px var(--color-accent),
-    var(--shadow-card);
-}
-.ai-found-card[aria-pressed="true"]::after {
-  content: "✓";
-  position: absolute;
-  top: -6px;
-  right: -6px;
-  display: grid;
-  place-items: center;
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  background: var(--color-accent);
-  color: var(--color-accent-ink, #fff);
-  font-size: 12px;
-  font-weight: 800;
 }
 .ai-found-blank {
   display: grid;
@@ -355,11 +330,6 @@
   margin: 0;
   color: var(--color-muted);
   font-size: var(--text-xs);
-}
-@media (hover: hover) and (pointer: fine) {
-  .ai-found-card:hover .card {
-    transform: translateY(-3px);
-  }
 }
 /* 手機：聊天室是底部的面板，小字盒從底部浮在它上面 */
 @media (max-width: 40rem) {
@@ -414,40 +384,4 @@
 }
 .ai-found-ghost .card {
   --card-w: 80px;
-}
-.ai-found-card[data-just="in"]::after {
-  animation: ai-found-check var(--dur-long, 420ms) cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
-}
-.ai-found-card[data-just="out"]:not([aria-pressed="true"])::after {
-  content: "✓";
-  position: absolute;
-  top: -6px;
-  right: -6px;
-  display: grid;
-  place-items: center;
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  background: var(--color-accent);
-  color: var(--color-accent-ink, #fff);
-  font-size: 12px;
-  font-weight: 800;
-  animation: ai-found-uncheck var(--dur-short, 220ms) ease-in both;
-}
-@keyframes ai-found-check {
-  from {
-    opacity: 0;
-    transform: scale(0.2) rotate(-40deg);
-  }
-}
-@keyframes ai-found-uncheck {
-  to {
-    opacity: 0;
-    transform: scale(0.4);
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .ai-found-card[data-just]::after {
-    animation: none;
-  }
 }

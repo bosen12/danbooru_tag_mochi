@@ -216,12 +216,13 @@ try {
     const rendered = await foundCards(dialog).evaluateAll((nodes) => nodes.map((node) => ({
       tag: node.dataset.tag,
       suit: node.dataset.suit,
-      hasFace: node.matches("button") && !!node.querySelector(".card"),
+      // 牌就是字盒那一張（button.card），外面包一層篩選用的格子
+      hasFace: !!node.querySelector("button.card[data-tag]"),
     })));
     assert.equal(rendered.length, total, "牌格應有全部結果");
     assert.equal(await foundCards(dialog).filter({ visible: true }).count(), total);
     assert.equal(new Set(rendered.map((card) => card.tag)).size, total, "每張牌只能出現一次");
-    assert.ok(rendered.every((card) => card.tag && card.suit && card.hasFace), "每筆結果都應是帶 tag、花色和卡面的按鈕");
+    assert.ok(rendered.every((card) => card.tag && card.suit && card.hasFace), "每筆結果都應帶 tag、花色和字盒同一張卡面");
     for (const { tag, suit } of cards) {
       assert.ok(rendered.some((card) => card.tag === tag && card.suit === suit), `模型收到的 ${tag} 應出現在完整結果中`);
     }
@@ -292,20 +293,61 @@ try {
     assert.equal(await foundCards(dialog, "[hidden]").count(), 0);
   });
 
-  await scenario("浮窗卡牌加入與移出合成池", async (page, result) => {
+  // 小字盒的牌就是字盒那一張：點放進／拿出合成池、章寫「池中」、滑鼠停上去有放大預覽、右鍵看詳情、Delete 丟廢字簍。
+  await scenario("浮窗的牌跟字盒的操作一樣", async (page, result) => {
     await open(result);
     const candidate = result.cards.find((card) => !card.blocked && !card.inPool);
     assert.ok(candidate, "模型列出的牌應有一張能加入、且尚未在合成池");
-    const card = result.dialog.locator(`.ai-found-card[data-tag=${JSON.stringify(candidate.tag)}]`);
+    const box = result.dialog.locator(`.ai-found-card[data-tag=${JSON.stringify(candidate.tag)}]`);
+    const card = box.locator(".card[data-tag]");
     const inPool = poolCard(page, candidate.tag);
     assert.equal(await inPool.count(), 0);
-    assert.equal(await card.getAttribute("aria-pressed"), "false");
+    assert.notEqual(await card.getAttribute("data-state"), "pinned");
+    // 放大預覽：滑鼠停上去出現 .card-peek（字盒同一套）
+    await card.hover();
+    await page.waitForFunction(() => {
+      const p = document.querySelector(".card-peek");
+      return p && getComputedStyle(p).opacity !== "0";
+    }, null, { timeout: 5000 });
+    // 點一下：進合成池，牌上的章變「池中」
     await card.click();
     await inPool.waitFor({ state: "attached" });
-    assert.equal(await card.getAttribute("aria-pressed"), "true");
+    await page.waitForFunction((tag) => document.querySelector(`#ai-found .card[data-tag="${CSS.escape(tag)}"]`)?.dataset.state === "pinned", candidate.tag);
+    // 再點一次：拿出合成池
     await card.click();
     await inPool.waitFor({ state: "detached" });
-    assert.equal(await card.getAttribute("aria-pressed"), "false");
+    await page.waitForFunction((tag) => document.querySelector(`#ai-found .card[data-tag="${CSS.escape(tag)}"]`)?.dataset.state !== "pinned", candidate.tag);
+    // 右鍵：打開牌的詳情（字盒同一個），小字盒還在
+    await card.click({ button: "right" });
+    await page.locator(".overlay").first().waitFor({ state: "visible", timeout: 5000 });
+    await page.locator(".overlay .sheet-close").first().click();
+    await page.waitForFunction(() => !document.querySelector(".overlay"), null, { timeout: 5000 });
+    assert.ok(await result.dialog.isVisible(), "看完詳情小字盒應還在");
+    // 在合成池外頭改了（從合成池把牌拿掉）：小字盒的章跟著換
+    await card.click();
+    await inPool.waitFor({ state: "attached" });
+    // 點合成池裡那張打開詳情，按「拿出合成池」（不是從小字盒拿）
+    await inPool.click();
+    await page.locator(".overlay .btn-pool").first().click();
+    await inPool.waitFor({ state: "detached" });
+    await page.waitForFunction(() => !document.querySelector(".overlay"), null, { timeout: 5000 });
+    await page.waitForFunction((tag) => document.querySelector(`#ai-found .card[data-tag="${CSS.escape(tag)}"]`)?.dataset.state !== "pinned", candidate.tag, { timeout: 3000 });
+  });
+
+  // 拖曳：小字盒的牌拖進合成池（字盒同一套 drag）
+  await scenario("浮窗的牌可以拖進合成池", async (page, result) => {
+    await open(result);
+    const candidate = result.cards.find((card) => !card.blocked && !card.inPool);
+    const card = result.dialog.locator(`.ai-found-card[data-tag=${JSON.stringify(candidate.tag)}] .card`);
+    const well = page.locator("#pool-well");
+    const a = await card.boundingBox();
+    const b = await well.boundingBox();
+    await page.mouse.move(a.x + a.width / 2, a.y + a.height / 2);
+    await page.mouse.down();
+    for (let i = 1; i <= 12; i++) await page.mouse.move(a.x + a.width / 2 + ((b.x + b.width / 2 - a.x - a.width / 2) * i) / 12, a.y + a.height / 2 + ((b.y + b.height / 2 - a.y - a.height / 2) * i) / 12);
+    await page.mouse.up();
+    await poolCard(page, candidate.tag).waitFor({ state: "attached", timeout: 5000 });
+    await page.evaluate((tag) => document.querySelector(`#pool-well [data-tag="${CSS.escape(tag)}"]`)?.click(), candidate.tag);
   });
 
   // 小字盒浮在字盒那一側（合成池整塊露出來，點牌飛進去看得到落地）：不擋的是合成池和規則。
