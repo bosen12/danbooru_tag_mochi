@@ -252,7 +252,7 @@ console.log("ok: schemas and phrase list");
   JSON.stringify(seen.forModel);
   const found = await runner.run({ id: "f1", name: "find_cards", args: { query: "海邊", section: "env", limit: 5 } }, { turn: turn(1) });
   assert.equal(found.ok, true);
-  assert.deepEqual(ctx.log[0], ["search", "海邊", { limit: 5, section: "env" }]);
+  assert.deepEqual(ctx.log[0], ["search", "海邊", { limit: 5, section: "env", raw: "海邊" }]);
   const emptyQ = await runner.run({ name: "find_cards", args: { query: "  " } });
   assert.equal(emptyQ.ok, false);
   assert.equal(emptyQ.forModel.code, "bad_args");
@@ -276,6 +276,36 @@ console.log("ok: schemas and phrase list");
     assert.equal(near.summary, "照「脫衣」找到 1 張");
     const exact = await r.run({ name: "find_cards", args: { query: "海邊" } });
     assert.equal(exact.forModel.near, undefined);
+  }
+  // 問某一類有幾張（溫泉、洗澡系列）：also 一次查好幾個說法、合併去重；回報總數 total（不是列出的張數）；小分類整類算進來
+  {
+    const card = (tag, extra = {}) => ({ tag, zh: tag, section: "env", match: "exact", ...extra });
+    const withTotal = (arr, total, groups = []) => Object.assign(arr, { total, groups });
+    const table = {
+      溫泉: withTotal([card("onsen")], 1),
+      洗浴: withTotal([card("bathing", { match: "group" }), card("bubble bath", { match: "group" }), card("onsen")], 3, ["活動・玩水洗浴"]),
+      bath: withTotal([card("bath"), card("bathtub"), card("bathing")], 3),
+      大海: withTotal([card("sea")], 30),
+    };
+    const w = world({ cards: beachCards, search: (q) => table[q] || [] });
+    const r = createToolRunner(w);
+    const many = await r.run({ name: "find_cards", args: { query: "溫泉", also: ["洗浴", "bath", "溫泉", " "], limit: 4 } });
+    assert.equal(many.ok, true);
+    assert.equal(many.forModel.total, 5);
+    assert.deepEqual(many.forModel.cards.map((c) => c.tag), ["onsen", "bathing", "bubble bath", "bath"]);
+    assert.equal(many.forModel.count, 4);
+    assert.deepEqual(many.forModel.groups, ["活動・玩水洗浴"]);
+    assert.equal(many.summary, "找到 5 張，列出 4 張");
+    const searched = w.log.filter((x) => x[0] === "search");
+    assert.deepEqual(searched.map((x) => x[1]), ["溫泉", "洗浴", "bath"]);
+    assert.ok(searched.every((x) => x[2].limit === 40));
+    const one = await r.run({ name: "find_cards", args: { query: "大海" } });
+    assert.equal(one.forModel.total, 30);
+    assert.equal(one.summary, "找到 30 張，列出 1 張");
+    for (const also of ["bath", Array(16).fill("x"), [1]]) {
+      const bad = await r.run({ name: "find_cards", args: { query: "溫泉", also } });
+      assert.equal(bad.forModel.code, "bad_args", JSON.stringify(also));
+    }
   }
   const info = await runner.run({ name: "card_info", args: { tag: "dress" } });
   assert.equal(info.ok, true);

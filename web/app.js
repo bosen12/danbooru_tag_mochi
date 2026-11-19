@@ -3171,11 +3171,32 @@ function assistantCtx() {
       infinite,
       lastBatch,
     }),
-    search(query, { limit = 12, section } = {}) {
-      const res = searchCards(lib.cards, String(query || ""));
-      let list = res.list || [];
+    search(query, { limit = 12, section, raw } = {}) {
+      const q = String(query || "");
+      const res = searchCards(lib.cards, q);
+      let list = [...(res.list || [])];
+      // 小分類：說法對到詞庫的小分類名（「洗浴」→「活動・玩水洗浴」、「浴場」→「地點・浴場泳池」），整類接在後面。
+      // 問「溫泉、洗澡系列有幾張」時，牌名裡多半沒有那幾個字（浴缸、淋浴、泡泡浴），照牌名只找得到一兩張。
+      // 小分類用使用者原本的說法比（工具層會先把「溫泉」換成 onsen 再找牌，那樣就對不到「地點・浴場泳池」）。
+      const words = `${q} ${raw || ""}`.toLowerCase().split(/[\s,，、/]+/).filter((w) => w.length >= 2);
+      const groups = new Set();
+      if (words.length) {
+        const seen = new Set(list);
+        const groupEn = data.groupEn || {};
+        for (const c of lib.cards) {
+          const key = c.item?.sub || c.item?.group;
+          const name = `${c.groupZh || ""} ${groupEn[key] || ""}`.toLowerCase();
+          if (!name.trim() || !words.some((w) => name.includes(w))) continue;
+          groups.add(c.groupZh || key);
+          if (!seen.has(c)) {
+            seen.add(c);
+            list.push(Object.assign(Object.create(c), { _byGroup: true }));
+          }
+        }
+      }
       if (section) list = list.filter((c) => c.item?.section === section);
-      return list.slice(0, Math.max(1, Math.min(40, limit))).map((c) => ({
+      // 總共幾張另外帶（只列前幾張時，模型才不會把「列出 8 張」說成「只有 8 張」）。
+      const out = list.slice(0, Math.max(1, Math.min(40, limit))).map((c) => ({
         tag: c.tag,
         zh: cardName(c),
         en: c.tag,
@@ -3184,10 +3205,14 @@ function assistantCtx() {
         group: c.groupZh || null,
         match: res.mode === "guess" || res.mode === "near" ? "near" : "exact",
         // 照較短的片段找到的（「脫衣服」→「脫衣」）：工具層據此告訴模型、步驟上寫「照「脫衣」找到」
-        ...(res.mode === "near" ? { via: res.near } : {}),
+        ...(res.mode === "near" && !c._byGroup ? { via: res.near } : {}),
+        ...(c._byGroup ? { match: "group" } : {}),
         blocked: blockedOf(c),
         inPool: pool.has(c.tag),
       }));
+      out.total = list.length;
+      out.groups = [...groups];
+      return out;
     },
     cardInfo(tag) {
       const c = lib.byTag.get(tag);

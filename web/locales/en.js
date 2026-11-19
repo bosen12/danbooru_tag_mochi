@@ -2954,6 +2954,7 @@ AI 助手用：{0}|AI assistant uses {0!}
 長相 {0}、服裝 {1}、姿勢 {2}、場景 {3}|Appearance {0}, clothing {1}, pose {2}, scene {3}
 找到 {0} 張|Found {0}
 照「{0}」找到 {1} 張|Found {1} for “{0!}”
+找到 {0} 張，列出 {1} 張|Found {0}, showing {1}
 正在挑推薦的牌|Picking cards to suggest
 推薦 {0} 張牌|Suggested {0} cards
 沒有可以推薦的牌|No cards to suggest

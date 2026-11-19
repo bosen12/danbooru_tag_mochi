@@ -86,6 +86,7 @@ export const TEXT = {
   foundN: "找到 {0} 張",
   foundNone: "沒有找到",
   foundNear: "照「{0}」找到 {1} 張",
+  foundTotal: "找到 {0} 張，列出 {1} 張",
   labSuggest: "正在挑推薦的牌",
   suggestN: "推薦 {0} 張牌",
   suggestNone: "沒有可以推薦的牌",
@@ -284,13 +285,14 @@ export const TOOL_DEFS = [
   {
     name: "find_cards",
     kind: "read",
-    description: "用中文或英文在詞庫找牌。只有使用者要你列出、比較有哪些牌，或點名一張不確定怎麼寫的牌時才用；要配一組牌用 paste_prompt。回傳裡被擋著的牌不要接著加入。不要把搜尋結果當成已經放進合成池。limit 預設 8、最多 20，不要為了湊數重複搜同一句。整句沒有完全相符時字盒會照較短的片段找（回傳帶 near）；還是沒有，就換英文 Danbooru tag 或別的說法再找一次，不要直接說詞庫沒有。",
+    description: "用中文或英文在詞庫找牌。只有使用者要你列出、比較有哪些牌，或點名一張不確定怎麼寫的牌時才用；要配一組牌用 paste_prompt。回傳裡被擋著的牌不要接著加入。不要把搜尋結果當成已經放進合成池。limit 預設 8、最多 20，不要為了湊數重複搜同一句。回傳的 total 是總共幾張，count 只是列出來的張數，回答「有幾張」看 total。使用者問某一類、某個主題的牌（溫泉、洗澡系列、海邊相關）：query 放主要說法，also 像寫提示詞一樣，憑感覺一次寫出 8～15 個 Danbooru 上真的有的英文 tag（溫泉：onsen, bath, bathing, bathtub, bubble bath, shower, towel, steam, bathhouse），不要只查一個字就說沒有；說法對到詞庫的小分類名（例如「活動・玩水洗浴」「地點・浴場泳池」）時整類都會算進來。整句沒有完全相符時字盒會照較短的片段找（回傳帶 near）；還是沒有，就換英文 Danbooru tag 或別的說法再找一次，不要直接說詞庫沒有。",
     input_schema: {
       type: "object",
       additionalProperties: false,
       required: ["query"],
       properties: {
         query: { ...str, description: "使用者的說法或 tag，空白分開表示都要符合" },
+        also: { type: "array", maxItems: 15, items: { ...str }, description: "像寫提示詞一樣，憑感覺寫出這個主題 Danbooru 上真的有的英文 tag（8～15 個），加上一兩個中文說法；一起對詞庫、結果合併去重。例如溫泉：onsen, bath, bathing, bathtub, bubble bath, shower, showering, towel, steam, bathhouse, 洗浴" },
         limit: { type: "integer", minimum: 1, maximum: 20, description: "預設 8，最多 20" },
         section: { type: "string", enum: SEARCH_SECTIONS, description: "feature 長相、clothing 服裝、pose 姿勢、env 場景、subject 人物。不確定就不要傳" },
       },
@@ -1049,11 +1051,38 @@ export function createToolRunner(ctx) {
       return fail(target, "bad_args", TEXT.badSection);
     }
     const limit = Object.prototype.hasOwnProperty.call(args, "limit") ? args.limit : 8;
+    if (Object.prototype.hasOwnProperty.call(args, "also") && (!Array.isArray(args.also) || args.also.length > 15 || args.also.some((x) => typeof x !== "string"))) {
+      return fail(target, "bad_args", TEXT.badArgs);
+    }
+    const also = [...new Set((args.also || []).map((x) => x.trim()).filter((x) => x && x !== query))];
     const opt = { limit };
     if (args.section) opt.section = args.section;
-    await hi(target, "read", fill(TEXT.labSearch, query));
+    await hi(target, "read", fill(TEXT.labSearch, [query, ...also].join("、")));
     try {
-      const cards = (await ctx.search(resolvedTag(query), opt)) || [];
+      // 好幾個說法：每個都查（各取最多 40 張好算總數），照順序合併、同一張只留一次。
+      let cards;
+      let total;
+      let atLeast = false;
+      const groups = new Set();
+      if (!also.length) {
+        cards = (await ctx.search(resolvedTag(query), { ...opt, raw: query })) || [];
+        total = Number.isFinite(cards.total) ? cards.total : cards.length;
+        for (const g of cards.groups || []) groups.add(g);
+      } else {
+        const merged = new Map();
+        let capped = false;
+        for (const q of [query, ...also]) {
+          const got = (await ctx.search(resolvedTag(q), { ...opt, limit: 40, raw: q })) || [];
+          if ((got.total ?? got.length) > got.length) capped = true;
+          for (const g of got.groups || []) groups.add(g);
+          for (const c of got) if (c?.tag && !merged.has(c.tag)) merged.set(c.tag, c);
+        }
+        const all = [...merged.values()];
+        total = all.length;
+        // 有一個說法就超過 40 張：總數是「至少」，不是精確值。
+        if (capped) (total = Math.max(total, 40)), (atLeast = true);
+        cards = all.slice(0, limit);
+      }
       // 使用者的說法常比牌名長一點（「脫衣服」→ 牌叫「正在脫衣」）：字盒的搜尋整句沒有就照較短的片段找，
       // 找到的牌帶 via（用到的那段）。要明白告訴模型，推理開得低時它找不到常常不會自己換說法。
       const near = cards.find((c) => c?.via)?.via || null;
@@ -1066,13 +1095,16 @@ export function createToolRunner(ctx) {
       return pack({
         ok: true,
         status: "done",
-        summary: near ? fill(TEXT.foundNear, near, cards.length) : cards.length ? fill(TEXT.foundN, cards.length) : TEXT.foundNone,
+        summary: near ? fill(TEXT.foundNear, near, total) : total > cards.length ? fill(TEXT.foundTotal, total, cards.length) : cards.length ? fill(TEXT.foundN, cards.length) : TEXT.foundNone,
         lines,
         target,
         forModel: {
           ok: true,
           cards,
           count: cards.length,
+          total,
+          ...(atLeast ? { atLeast: true } : {}),
+          ...(groups.size ? { groups: [...groups], groupNote: "這些小分類整類都算進來了（牌上 match 為 group）。要列出全部，提高 limit 或分類別查。" } : {}),
           ...(near ? { near, note: `「${query}」沒有完全相符的牌；這些是照「${near}」找到的，挑意思對的用。` } : {}),
         },
       });
