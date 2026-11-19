@@ -1,0 +1,130 @@
+/* 墨池助手：聊天流程這一側新加的樣式（assistant.js；assistant.css 是設定、手機版面那一側的）。
+ * 全部掛在 .ai-* 底下：實驗功能關著時頁面上沒有這些節點，這份樣式什麼都不碰。 */
+
+/* 送出：收下文字到真的送出去之間（初開聊天室要先等連線狀態）淡成等待，再按一次 Enter 不會又送一次。 */
+.ai-send[data-pending="true"] {
+  opacity: 0.55;
+  cursor: progress;
+}
+.ai-send {
+  transition:
+    transform var(--dur-short) var(--ease-settle),
+    background-color var(--dur-micro) var(--ease-out),
+    opacity var(--dur-short) var(--ease-out);
+}
+
+/* 一批工具還在跑：復原、舊確認卡的鈕留在原位、淡一點（按了說「這一批做完就能按」）。 */
+.ai-step-undo,
+.ai-confirm-actions .btn {
+  transition: opacity var(--dur-short) var(--ease-out);
+}
+.ai-log[data-busy="true"] :is(.ai-step-undo, .ai-confirm-actions .btn)[aria-disabled="true"] {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* 確認卡按下去：兩顆當場鎖住，選的那顆呼吸，另一顆淡掉。 */
+.ai-confirm-actions .btn[data-busy] {
+  pointer-events: none;
+}
+.ai-confirm-actions .btn[data-busy]:not([data-chosen]) {
+  opacity: 0.35;
+}
+.ai-confirm-actions .btn[data-chosen] {
+  animation: ai-confirm-wait 1.1s var(--ease-in-out) infinite;
+}
+@keyframes ai-confirm-wait {
+  50% {
+    opacity: 0.6;
+  }
+}
+/* 已失效、沒做成：寫出原因，不是一句「保留原狀」帶過。 */
+.ai-confirm[data-state="stale"],
+.ai-confirm[data-state="failed"] {
+  border-color: color-mix(in oklch, var(--color-accent-2) 45%, transparent);
+  background: transparent;
+}
+.ai-confirm[data-state="stale"] > p:first-child,
+.ai-confirm[data-state="failed"] > p:first-child {
+  color: var(--color-muted);
+}
+.ai-confirm-why {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--color-accent-2);
+}
+
+/* 連續的成功查詢收成一行：「已查詢 N 步」，按了展開。 */
+.ai-step-fold {
+  display: block;
+}
+.ai-fold > summary {
+  display: grid;
+  grid-template-columns: 14px minmax(0, 1fr) auto;
+  gap: 2px var(--space-xs);
+  list-style: none;
+  cursor: pointer;
+  color: var(--color-ink-2);
+}
+.ai-fold > summary::-webkit-details-marker {
+  display: none;
+}
+.ai-fold > summary::after {
+  content: "";
+  align-self: center;
+  width: 6px;
+  height: 6px;
+  margin-right: 4px;
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+  transform: rotate(45deg);
+  transition: transform var(--dur-short) var(--ease-out);
+}
+.ai-fold[open] > summary::after {
+  transform: rotate(225deg);
+}
+.ai-fold > summary .ai-step-dot {
+  border-color: var(--color-good);
+  background: var(--color-good);
+  box-shadow: inset 0 0 0 2px var(--color-paper-2);
+}
+.ai-fold > summary b {
+  font-weight: 600;
+}
+.ai-fold-list {
+  margin-top: 2px;
+  padding: 0 0 0 var(--space-sm);
+  border: 0;
+  background: transparent;
+}
+
+/* 聊天室裡的提示附一顆動作鈕（主機還沒開放 → 重新檢查）。 */
+.ai-note {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: center;
+  gap: 2px var(--space-xs);
+  transition: color var(--dur-short) var(--ease-out);
+}
+.ai-note[data-kind="ok"] {
+  color: var(--color-good);
+}
+.ai-note-act {
+  font-size: inherit;
+}
+
+/* 復原了整輪：狀態列的點換成空心（跟步驟的「已復原」一樣）。 */
+.ai-state[data-kind="undone"] .ai-state-dot {
+  background: transparent;
+  box-shadow: inset 0 0 0 1.5px var(--color-muted);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ai-confirm-actions .btn[data-chosen] {
+    animation: none;
+  }
+  .ai-fold > summary::after {
+    transition: none;
+  }
+}

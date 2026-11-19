@@ -843,6 +843,8 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-sm);
+  min-width: 0;
+  max-width: 100%;
 }
 .ai-setup-intro {
   margin: 0;
@@ -865,6 +867,7 @@
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 4px var(--space-sm);
+  min-width: 0;
   padding: var(--space-sm);
   border: 1px solid var(--color-rule);
   border-radius: var(--radius-md);
@@ -882,7 +885,9 @@
 .ai-cli-name {
   display: flex;
   align-items: baseline;
+  flex-wrap: wrap;
   gap: var(--space-xs);
+  min-width: 0;
 }
 .ai-cli-name small {
   color: var(--color-muted);
@@ -917,9 +922,26 @@
 }
 .ai-cli-note {
   grid-column: 1 / -1;
+  min-width: 0;
   margin: 0;
   font-size: var(--text-xs);
   color: var(--color-muted);
+  overflow-wrap: anywhere;
+}
+.ai-picked-mark {
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--color-accent);
+  color: var(--color-accent-ink);
+  font-size: var(--text-2xs);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+.ai-picked-mark[hidden] {
+  display: none;
+}
+.ai-api-head:not(:has(.ai-picked-mark:not([hidden]))) {
+  display: none;
 }
 .ai-cli-actions {
   grid-column: 1 / -1;
@@ -941,10 +963,12 @@
 .ai-api {
   display: grid;
   gap: var(--space-xs);
+  min-width: 0;
   padding: var(--space-sm);
   border: 1px solid var(--color-rule);
   border-radius: var(--radius-md);
   background: var(--color-paper-3);
+  transition: border-color var(--dur-short) var(--ease-out), box-shadow var(--dur-short) var(--ease-out);
 }
 .ai-api-row {
   display: flex;
@@ -984,8 +1008,24 @@
 .ai-api-actions {
   justify-content: flex-end;
 }
+.ai-remote {
+  min-width: 0;
+  max-width: 100%;
+}
 .ai-remote-switch {
   flex-wrap: wrap;
+  max-width: 100%;
+}
+.ai-remote-help {
+  display: grid;
+  gap: var(--space-sm);
+  min-width: 0;
+}
+.ai-remote-help p,
+.ai-remote-status {
+  margin: 0;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
 }
 .ai-test-line {
   margin: 0;
@@ -1001,6 +1041,62 @@
 .ai-redetect {
   justify-self: end;
   font-size: var(--text-xs);
+}
+
+/* 手機英文：名稱和版本一行，登入／隔離下一行，模型自己一行，強度和「使用」並排。
+ * 遠端說明另起一行，允許換行。選單的 min-content 不能把紙張撐出畫面。 */
+@media (max-width: 40rem) {
+  .ai-cli {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .ai-cli-chips {
+    justify-content: flex-start;
+    min-width: 0;
+  }
+  .ai-cli-actions {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+  }
+  .ai-cli-model {
+    grid-column: 1 / -1;
+    width: 100%;
+    max-width: none;
+  }
+  .ai-effort {
+    min-width: 0;
+    width: 100%;
+  }
+  .ai-api-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .ai-grow {
+    min-width: 0;
+  }
+  .ai-api .select,
+  .ai-field,
+  .ai-cli-model {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+  }
+  .ai-remote-switch {
+    display: flex;
+    white-space: normal;
+  }
+  .ai-remote-label {
+    flex: 1 1 auto;
+    min-width: 0;
+    white-space: normal;
+  }
+  .ai-remote-note {
+    flex: 1 0 100%;
+    min-width: 0;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    line-height: 1.5;
+  }
 }
 
 /* ---------- 手機：從底部拉上來的面板 ---------- */

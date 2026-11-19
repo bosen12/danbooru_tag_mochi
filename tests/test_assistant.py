@@ -187,6 +187,10 @@ def detection():
     assert [m["id"] for m in results["grok"]["models"]] == ["grok-fake", "grok-fake-fast", "grok-old"]
     # grok models 第一行就說登入了：要認得（以前一律「登入待確認」）
     assert results["grok"]["login"] == "ok" and results["grok"]["loginNote"] == "已登入。"
+    # 登入短句跟隔離說明要能分開翻：代碼穩定，句子留在頁面上對。
+    assert results["claude"]["loginCode"] == "no"
+    assert results["grok"]["loginCode"] == "ok"
+    assert results["codex"]["loginCode"] == "ok"
     assert results["codex"]["models"][0]["id"] == "fake-codex"
     assert all(cli["usable"] and cli["isolation"]["note"] for cli in results.values())
     assert [cli["isolation"]["level"] for cli in results.values()] == ["strict", "strict", "readonly"]
@@ -195,8 +199,9 @@ def detection():
     )), patch.object(assistant, "PROBE_TIMEOUT", 0.6):
         results = assistant.detect()["clis"]
     assert results[0]["installed"] and results[0]["login"] == "unknown" and "逾時" in results[0]["loginNote"]
-    assert results[1]["models"][0]["id"] == "grok-fake"
-    assert not results[2]["installed"]
+    assert results[0]["loginCode"] == "timeout"
+    assert results[1]["loginCode"] == "ok" and results[1]["models"][0]["id"] == "grok-fake"
+    assert not results[2]["installed"] and results[2]["loginCode"] == "missing"
 
 
 def fake_command(provider, mode):
@@ -416,6 +421,12 @@ def api_provider(provider):
             config(provider, apiKey=KEY, **({"baseUrl": url} if provider == "custom" else {}))
             listing = assistant.models({"kind": "api", "provider": provider})
             assert listing["source"] == "list" and listing["models"][0]["id"] == "fake-model"
+            # 清單要帶回這次問的是哪一家，頁面才丟得掉切換前的慢回應。
+            assert listing["provider"] == provider
+            if provider == "custom":
+                assert listing["baseUrl"] == url
+            else:
+                assert "baseUrl" not in listing
             events = dict(assistant.chat_events(CHAT))
             assert events["text"]["delta"] == "海邊" and events["done"]["reason"] == "tool_calls"
             calls = events["tool_calls"]["calls"]

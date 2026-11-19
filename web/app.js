@@ -27,6 +27,7 @@ import {
   ACT_PLACE,
   SKELETON,
   skeletonCap,
+  skeletonLit,
   stepSkeleton,
   supplementKindKeys,
 } from "./engine.js";
@@ -3007,6 +3008,33 @@ function assistantCtx() {
   const countPool = (set) => [...set].filter((t) => lib.byTag.has(t) && !isCustomTag(t)).length;
   const ratingName = (item) => (!ratingBlocked(item, "general") ? "general" : !ratingBlocked(item, "sensitive") ? "sensitive" : "explicit");
   const banned = new Set((data.characterBan || []).map((t) => String(t).toLowerCase()));
+  const tagKey = (text) => text.toLowerCase().replace(/[_\s]+/g, " ").trim();
+  let tagIndex = null;
+  let nameIndex = null;
+  function indexNames() {
+    if (tagIndex) return;
+    tagIndex = new Map();
+    nameIndex = new Map();
+    const add = (index, name, tag) => {
+      if (!name) return;
+      const key = tagKey(name);
+      if (!index.has(key)) index.set(key, tag);
+      else if (index.get(key) !== tag) index.set(key, null);
+    };
+    for (const c of lib.byTag.values()) {
+      add(tagIndex, c.tag, c.tag);
+      add(nameIndex, c.zh, c.tag);
+    }
+  }
+  function resolveTag(tag) {
+    if (lib.byTag.has(tag) || isCustomTag(tag)) return tag;
+    indexNames();
+    const key = tagKey(tag);
+    // 正式 tag 優先。正規化後重名就留原字，不能猜是哪張。
+    return (tagIndex.has(key) ? tagIndex.get(key) : nameIndex.get(key)) ?? tag;
+  }
+  const offIn = (section, off = settings.offGroups || []) => off.filter((key) => key.startsWith(`${section}:`));
+  const countOf = (section) => ({ n: settings.counts[section], offGroups: offIn(section), lit: skeletonLit(settings, section) });
   // 這張牌現在放不放得進來、為什麼（字盒會把它藏起來的那些原因）。
   const blockedOf = (card) => {
     if (HARD_BANNED.includes(card.tag) || banned.has(card.tag)) return "banned";
@@ -3059,6 +3087,7 @@ function assistantCtx() {
   });
   return {
     version: () => workVersion,
+    resolveTag,
     state: () => ({
       room: "mochi",
       ready: !!lib,
@@ -3074,6 +3103,7 @@ function assistantCtx() {
       settings: {
         n: settings.n,
         counts: { ...settings.counts },
+        offGroups: [...(settings.offGroups || [])],
         rating: settings.rating,
         ratingFree: !!settings.ratingFree,
         heats: [...(settings.heats || [])],
@@ -3132,8 +3162,27 @@ function assistantCtx() {
     },
     /** 一段提示詞拆成牌：跟「貼上提示詞」同一套（paste-prompt.js），詞庫有的才是牌。 */
     parse(text) {
-      const r = parsePrompt(String(text || ""), { lexTags: data.tags.map((x) => x.tag), isCard: (x) => lib.byTag.has(x), zh, banned: data.characterBan || [] });
-      return { ...r, cards: r.cards.map((c) => ({ ...c, zh: zhOf(c.tag) })) };
+      indexNames();
+      const lexTags = new Set(data.tags.map((x) => x.tag));
+      // 提示詞拆括號和份量仍走原本的解析器，唯一名稱和常用寫法也讓它能對到牌。
+      for (const index of [tagIndex, nameIndex]) {
+        for (const [key, tag] of index) if (tag && resolveTag(key) === tag) lexTags.add(key);
+      }
+      const r = parsePrompt(String(text || ""), {
+        lexTags: [...lexTags],
+        isCard: (tag) => lib.byTag.has(resolveTag(tag)),
+        zh: (tag) => {
+          const card = lib.byTag.get(resolveTag(tag));
+          return card?.zh && resolveTag(card.zh) === card.tag ? card.zh : undefined;
+        },
+        banned: data.characterBan || [],
+      });
+      const cards = new Map();
+      for (const c of r.cards) {
+        const tag = resolveTag(c.tag);
+        if (!cards.has(tag)) cards.set(tag, { ...c, tag, zh: zhOf(tag) });
+      }
+      return { ...r, cards: [...cards.values()] };
     },
     /**
      * 釘牌，看得到的就飛進來：from(tag) 給出發點（助手排字盤上那顆字的位置），沒有就從字盒裡那張起飛
@@ -3178,7 +3227,7 @@ function assistantCtx() {
         const n = Math.min(8, Math.max(1, flights.length || 1));
         for (let i = 0; i < n; i++) setTimeout(() => sfx.stamp(), (flights.length ? i * 70 + LAND_SFX_MS + 140 : LAND_SFX_MS));
       }
-      return diff(tags, pool, bans, before, bansBefore);
+      return { ...diff(tags, pool, bans, before, bansBefore), version: workVersion };
     },
     /**
      * 字盒偷看一下（助手去找相近的牌）：搜尋框打上這個字、候選那幾張亮起來（照順序編號）。
@@ -3230,12 +3279,12 @@ function assistantCtx() {
         unpin(t);
         if (!pool.has(t)) removed.push(t);
       }
-      return { removed, total: countPool(pool) };
+      return { removed, total: countPool(pool), version: workVersion };
     },
     setWeight(tag, w) {
       const from = weights.get(tag) ?? 1;
       setWeight(tag, w);
-      return { tag, from, to: weights.get(tag) ?? 1 };
+      return { tag, from, to: weights.get(tag) ?? 1, version: workVersion };
     },
     setN(n) {
       const from = settings.n;
@@ -3243,24 +3292,35 @@ function assistantCtx() {
       setSettings({ n });
       renderGoBar();
       syncGoCount(was);
-      return { from, to: settings.n };
+      return { from, to: settings.n, version: workVersion };
     },
-    setSectionCounts(map) {
-      const changes = [];
-      for (const section of ["feature", "clothing", "pose", "env"]) {
-        if (!Number.isInteger(map?.[section])) continue;
-        const from = settings.counts[section];
-        setSettings(stepSkeleton(settings, section, map[section]));
-        changes.push({ section, from, to: settings.counts[section] });
+    setSectionCounts(map, restoreOffGroups = {}) {
+      const sections = GROUP_SECTIONS.filter((section) => Number.isInteger(map?.[section]));
+      const before = sections.map(countOf);
+      let { counts, offGroups } = settings;
+      for (const section of sections) {
+        ({ counts, offGroups } = stepSkeleton({ counts, offGroups }, section, map[section]));
+        if (restoreOffGroups[section]) {
+          // 復原只換這一步改過的段，別段後來換過的格子要留著。
+          offGroups = [...offGroups.filter((key) => !key.startsWith(`${section}:`)), ...restoreOffGroups[section]];
+        }
       }
+      setSettings({ counts, offGroups });
       renderRules();
-      return { changes };
+      const changes = sections.map((section, i) => {
+        const from = before[i];
+        const to = countOf(section);
+        return { section, from: from.n, to: to.n, fromOffGroups: from.offGroups, toOffGroups: to.offGroups, fromLit: from.lit, toLit: to.lit };
+      });
+      return { changes, version: workVersion };
     },
-    groups: () =>
-      (cachedGroups() || []).map((g) => {
+    async groups({ refresh = false } = {}) {
+      const groups = (refresh ? null : cachedGroups()) ?? await loadGroups({ strict: true });
+      return groups?.map((g) => {
         const pick = pickOf(settings, g.section);
         return { id: g.id, name: g.name, section: g.section, tags: [...(g.tags || [])], picked: pick.ids.includes(g.id), mode: pick.mode };
-      }),
+      }) ?? null;
+    },
     setGroupPicks(section, ids, mode) {
       const from = pickOf(settings, section);
       const next = { ...(settings.groups || {}) };
@@ -3269,7 +3329,7 @@ function assistantCtx() {
       setSettings({ groups: next });
       renderRules();
       const to = pickOf(settings, section);
-      return { section, from: { ids: from.ids, mode: from.mode }, to: { ids: to.ids, mode: to.mode } };
+      return { section, from, to, version: workVersion };
     },
     async saveGroup({ name, section, tags }) {
       const ok = [];
@@ -3281,10 +3341,10 @@ function assistantCtx() {
         else if (blockedOf(c) === "banned") skipped.push({ tag: t, why: "banned" });
         else ok.push(t);
       }
-      const j = await saveGroup({ name, section, tags: ok });
-      await loadGroups().catch(() => {});
-      skelPicker?.repaint();
-      return { group: j.group, skipped: [...skipped, ...(j.skipped || []).map((x) => (typeof x === "string" ? { tag: x, why: "server" } : x))] };
+      const group = await saveGroup({ name, section, tags: ok });
+      const stored = new Set(group.tags);
+      for (const tag of ok) if (!stored.has(tag)) skipped.push({ tag, why: "server" });
+      return { group, skipped };
     },
     async draw({ n } = {}) {
       const requested = Number.isInteger(n) && n >= 1 ? Math.min(50, n) : settings.n;

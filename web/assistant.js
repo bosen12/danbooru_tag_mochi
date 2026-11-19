@@ -168,7 +168,9 @@ function createHalo() {
   };
 }
 
-/** 工具回的 target（area＋key）→ 畫面上的那一塊。找不到回 null（不亮，不報錯）。 */
+const GONE = Symbol("gone"); // 那張成品已經從牆上拿掉了
+
+/** 工具回的 target（area＋key）→ 畫面上的那一塊。找不到回 null（不亮，不報錯）；指名的成品不在了回 GONE。 */
 function nodeFor(target) {
   if (!target) return null;
   const { area, key } = target;
@@ -176,7 +178,14 @@ function nodeFor(target) {
   const visibleNode = (n) => (n && n.getClientRects().length ? n : null);
   if (area === "lib") return visibleNode(q("#library")) || visibleNode(q("#lib-grid"));
   if (area === "pool") return visibleNode(q("#pool-well"));
-  if (area === "wall") return visibleNode(q("#wall .shot")) || visibleNode(q("#wall-head"));
+  // 成品：照這一步自己的那張（target.key 是 shot id）找。以前一律找牆上第一張，舊一輪的「看變更」會指到最新那輪。
+  if (area === "wall") {
+    if (key) {
+      const shot = q(`#wall .shot[data-id="${CSS.escape(String(key))}"]`);
+      return shot ? visibleNode(shot) || shot : GONE;
+    }
+    return visibleNode(q("#wall .shot")) || visibleNode(q("#wall-head"));
+  }
   if (area === "groups") {
     const pill = key ? q(`.skel-row[data-section="${key}"] .gp-pill`) : q(".gp-pill");
     return visibleNode(pill) || visibleNode(q(".more-rules")) || visibleNode(q("#rules"));
@@ -235,7 +244,27 @@ const STATUS_ZH = {
   partial: "部分完成",
   failed: "操作失敗",
   cancelled: "已取消",
+  undone: "已復原",
+  replied: "有新回覆",
 };
+
+/**
+ * 一則助手回覆的整體結果：狀態列、收起時印章上的光點都看這一個（以前各算各的：步驟部分成功、頂部寫完成）。
+ * 開著的確認卡 > 失敗／部分 > 全部復原了 > 有寫入 > 純回答。
+ */
+function outcomeOf(item) {
+  if ((item.confirms || []).some((c) => c.state === "open" || c.state === "busy")) return { kind: "confirm", text: "" };
+  const writes = (item.steps || []).filter((s) => s.kind !== "read");
+  const st = (item.steps || []).map((s) => s.status);
+  const bad = st.some((s) => s === "failed" || s === "stale");
+  const good = st.includes("done") || st.includes("undone");
+  const lastDone = writes.filter((s) => s.status === "done").at(-1);
+  if (st.includes("partial") || (bad && good)) return { kind: "partial", text: lastDone?.summary || "" };
+  if (bad) return { kind: "failed", text: "" };
+  if (writes.length && writes.every((s) => s.status === "undone" || s.status === "skipped") && writes.some((s) => s.status === "undone")) return { kind: "undone", text: writes.filter((s) => s.status === "undone").at(-1)?.summary || "" };
+  if (lastDone) return { kind: "done", text: lastDone.summary || "" };
+  return { kind: "answered", text: "" };
+}
 
 /* ================= 主體 ================= */
 
@@ -246,6 +275,8 @@ export function mountAssistant({ ctx }) {
   let status = null; // /api/assistant/status
   let panel = null;
   let running = null; // { ctrl, turn }
+  // 送出鎖：收下文字那一刻就拿（第一個 await 之前）。初開聊天室時要先等 /status，那段空檔再按一次 Enter 不能又送一次。
+  let sending = false;
   let toolMod = null;
   let promptMod = null;
   const halo = createHalo();
@@ -300,6 +331,8 @@ export function mountAssistant({ ctx }) {
     writePrefs(prefs);
     if (!on) {
       stopTurn("cancelled");
+      // 還沒按的確認卡一起作廢：工具層的計畫丟掉（之後按了也不會換牌），卡片收成「已失效」。
+      voidConfirms(t("實驗功能關掉了，這項確認已經失效"));
       panel?.close();
       halo.clear();
       toast("實驗功能關了：聊天室收起，還沒執行的助手操作都取消");
@@ -335,6 +368,7 @@ export function mountAssistant({ ctx }) {
       () => document.querySelector("#library .panel-head"),
       () => {
         const q = document.getElementById("lib-q")?.value.trim();
+        // 標籤照模板翻（英文：Library search “…”）；搜尋字是使用者的，{0!} 原樣插入，不翻。
         return q ? { kind: "search", label: `字盒搜尋「${q}」`, query: q } : { kind: "lib", label: "字盒" };
       },
     ],
@@ -398,7 +432,9 @@ export function mountAssistant({ ctx }) {
     const log = el("div", { class: "ai-log", role: "log", "aria-label": "對話", tabindex: "0" });
     const refs = el("div", { class: "ai-refs", hidden: true });
     const input = el("textarea", { class: "ai-input", rows: "1", placeholder: "交代墨池助手…（Enter 送出，Shift+Enter 換行）", "aria-label": "給助手的訊息" });
-    const sendBtn = el("button", { class: "ai-send", type: "button", title: "送出", "aria-label": "送出", html: ICON.send });
+    // 「送出」在英文字典裡是完成式（Sent，別處用）：這顆用自己的字。
+    const SEND = "送出訊息";
+    const sendBtn = el("button", { class: "ai-send", type: "button", title: SEND, "aria-label": SEND, html: ICON.send });
     const foot = el("div", { class: "ai-foot" }, refs, el("div", { class: "ai-compose" }, input, sendBtn), el("p", { class: "ai-hint" }, "問意見只回答；說「幫我加入」「改成」「建立」「抽」才會動工作台。"));
     const grip = el("div", { class: "ai-grip", "aria-hidden": "true" });
     const root = el("aside", { class: "ai-panel", id: "ai-panel", "aria-label": "墨池助手", hidden: true, tabindex: "-1" }, grip, head, log, foot);
@@ -406,9 +442,23 @@ export function mountAssistant({ ctx }) {
     let pendingRefs = [];
 
     newBtn.addEventListener("click", async () => {
+      // 點下去的當下就是新的一輪：舊的那輪停掉、它的確認計畫作廢、借走的字盒收回，
+      // 狀態列、印章、送出鈕、待用的引用和草稿全部歸零（不然空的對話配著「理解中」和停止鈕，草稿一送還帶著舊引用）。
       if (running) stopTurn("cancelled");
+      running = null;
+      voidConfirms("");
+      lookTok++;
+      if (peeking) {
+        peeking = false;
+        try { ctx.libRestore?.(); } catch { /* 收不回就留著 */ }
+      }
+      halo.clear();
       chat = { messages: [], log: [] };
       saveChat();
+      dropRefs();
+      input.value = "";
+      grow();
+      setState("idle");
       if (!reducedMotion() && log.firstElementChild && !log.querySelector(".ai-empty")) {
         await log.animate([{ opacity: 1, transform: "none" }, { opacity: 0, transform: "translateY(-14px)" }], { duration: DUR.short, easing: css(CURVE.exit) }).finished.catch(() => {});
       }
@@ -467,18 +517,25 @@ export function mountAssistant({ ctx }) {
 
     function paintHead() {
       const c = status?.connection;
-      conn.textContent = status?.ok === false ? status.error || "" : c ? labelOf(c) : t("還沒選連線");
-      conn.dataset.kind = status?.ok === false ? "err" : c ? "ok" : "warn";
+      // 遠端、主機沒開放：連線列不能寫「已選 Codex」讓人以為能用，送了才收到拒絕。
+      const blocked = status?.local === false && !status?.allowRemote;
+      conn.textContent = status?.ok === false ? status.error || "" : blocked ? t("主機尚未允許這台裝置聊天") : c ? labelOf(c) : t("還沒選連線");
+      conn.dataset.kind = status?.ok === false ? "err" : blocked ? "warn" : c ? "ok" : "warn";
     }
 
     function setState(kind, text = "", step = "") {
       stateBar.dataset.kind = kind;
       swapText(stateText, text || STATUS_ZH[kind] || "");
       swapText(stepText, step ? `· ${step}` : "");
+      const was = sendBtn.dataset.running;
       sendBtn.innerHTML = running ? ICON.stop : ICON.send;
-      sendBtn.title = running ? t("停止") : t("送出");
+      sendBtn.title = running ? t("停止") : t(SEND);
       sendBtn.setAttribute("aria-label", sendBtn.title);
       sendBtn.dataset.running = running ? "true" : "false";
+      // 箭頭 ↔ 停止：圖示轉一下換過去，不是一格跳。
+      if (was !== undefined && was !== sendBtn.dataset.running && !reducedMotion())
+        sendBtn.firstElementChild?.animate([{ opacity: 0, transform: "rotate(-90deg) scale(0.6)" }, { opacity: 1, transform: "none" }], { duration: DUR.short, easing: css(CURVE.out) });
+      paintBusy();
       // 收起時的狀態：開啟鍵旁邊寫目前這一步
       if (!api_.isOpen()) paintChatState(step || (kind !== "idle" ? STATUS_ZH[kind] : ""), kind);
       else paintChatState("");
@@ -495,6 +552,15 @@ export function mountAssistant({ ctx }) {
       }
       input.focus();
     }
+    // 新對話：待用的引用一起清掉（淡出），不然下一句送出去還帶著上一段的「使用者指著…」。
+    function dropRefs() {
+      if (!pendingRefs.length) return;
+      pendingRefs = [];
+      if (reducedMotion() || refs.hidden) return paintRefs();
+      refs.animate([{ opacity: 1, transform: "none" }, { opacity: 0, transform: "translateY(4px)" }], { duration: DUR.short, easing: css(CURVE.exit) }).onfinish = () => {
+        if (!pendingRefs.length) paintRefs();
+      };
+    }
     function paintRefs() {
       refs.hidden = !pendingRefs.length;
       refs.replaceChildren(
@@ -502,7 +568,8 @@ export function mountAssistant({ ctx }) {
           el(
             "span",
             { class: "ai-ref" },
-            el("span", r.kind === "search" ? { dataset: { noI18n: "" } } : {}, r.label),
+            // 搜尋的引用不再整段標成不翻：交給 i18n 照模板「字盒搜尋「{0}」」翻，只有搜尋字（{0!}）原樣。
+            el("span", {}, r.label),
             el("button", {
               type: "button",
               class: "ai-ref-x",
@@ -546,7 +613,11 @@ export function mountAssistant({ ctx }) {
           item.refs?.length ? el("div", { class: "ai-msg-refs" }, ...item.refs.map((r) => el("span", { class: "ai-ref is-static" }, r.label))) : null,
           el("div", { class: "ai-bubble", dataset: { noI18n: "" } }, item.text)
         );
-      if (item.role === "note") return el("div", { class: "ai-note", dataset: { kind: item.kind || "" } }, item.text);
+      if (item.role === "note") {
+        const n = el("div", { class: "ai-note", dataset: { kind: item.kind || "" } }, el("span", {}, item.text));
+        if (item.action === "recheck") n.append(el("button", { class: "link-btn ai-note-act", type: "button", onclick: (e) => recheck(item, e.currentTarget) }, "重新檢查"));
+        return n;
+      }
       // 助手的一則：文字（串流進來）＋這一輪的步驟
       const node = el("div", { class: "ai-msg ai-bot", dataset: { id: item.id } });
       node.append(el("div", { class: "ai-avatar", html: ICON.seal }));
@@ -568,9 +639,57 @@ export function mountAssistant({ ctx }) {
       if (item.pending) col.append(el("div", { class: "ai-typing", "aria-hidden": "true" }, el("i"), el("i"), el("i")));
       return node;
     }
+    // 一批工具還在跑時，「復原」和舊的確認卡先鎖著（位置不動、淡一點）：中途插進一則「使用者按了…」，
+    // 送給模型的歷史就變成「呼叫兩個工具 → 一個結果 → 使用者 → 另一個結果」，伺服器整段退件，之後連問一句都失敗。
+    const LOCKED = "這一批做完就能按";
+    function lockBtn(b, on) {
+      if (on) {
+        b.setAttribute("aria-disabled", "true");
+        b.title = t(LOCKED);
+      } else if (b.getAttribute("aria-disabled") === "true" && !b.dataset.busy) {
+        b.removeAttribute("aria-disabled");
+        b.removeAttribute("title");
+      }
+    }
+    function paintBusy() {
+      const busy = !!running;
+      if ((log.dataset.busy === "true") === busy) return;
+      log.dataset.busy = busy ? "true" : "false";
+      for (const b of log.querySelectorAll(".ai-step-undo, .ai-confirm-actions .btn")) lockBtn(b, busy);
+    }
+    // 連續好幾步都是成功的查詢：這一輪做完後收成一行「已查詢 N 步」，按了才展開（不然手機上只看得到一長串查詢，最後那句回答埋在下面）。
+    // 失敗、確認、寫入、復原的步驟一律看得到。
+    const FOLD_MIN = 3;
+    const openFolds = new Set();
     function stepsNode(item, steps) {
       const ol = el("ol", { class: "ai-steps" });
-      for (const s of steps) {
+      const quiet = (s) => s.kind === "read" && s.status === "done";
+      for (let k = 0; k < steps.length; ) {
+        let end = k;
+        while (!item.pending && end < steps.length && quiet(steps[end])) end++;
+        if (end - k >= FOLD_MIN) {
+          const run = steps.slice(k, end);
+          const key = `${item.id}:${run[0].id}`;
+          const inner = el("ol", { class: "ai-steps ai-fold-list" });
+          for (const s of run) inner.append(stepNode(item, s));
+          const det = el("details", { class: "ai-fold", ...(openFolds.has(key) ? { open: "" } : {}) }, el("summary", {}, el("i", { class: "ai-step-dot", "aria-hidden": "true" }), el("b", {}, t(`已查詢 ${run.length} 步`))), inner);
+          det.addEventListener("toggle", () => {
+            if (det.open) openFolds.add(key);
+            else openFolds.delete(key);
+            if (det.open && !reducedMotion())
+              [...inner.children].forEach((li, j) => li.animate([{ opacity: 0, transform: "translateY(-4px)" }, { opacity: 1, transform: "none" }], { duration: DUR.medium, delay: Math.min(j, 10) * 30, easing: css(CURVE.out), fill: "backwards" }));
+          });
+          ol.append(el("li", { class: "ai-step ai-step-fold", dataset: { status: "done", fold: key } }, det));
+          k = end;
+          continue;
+        }
+        ol.append(stepNode(item, steps[k]));
+        k++;
+      }
+      return ol;
+    }
+    function stepNode(item, s) {
+      {
         const li = el(
           "li",
           { class: "ai-step", dataset: { status: s.status, id: s.id || "" } },
@@ -586,15 +705,18 @@ export function mountAssistant({ ctx }) {
             ...(s.lines || []).filter((l) => l && !(s.summary || "").includes(l)).map((l) => el("span", { class: "ai-step-line" }, l))
           )
         );
+        // 真的改了東西才叫「看變更」；查詢、失敗、沒寫入的只是帶你去那一塊（查看位置）。
         if (s.target && s.status !== "running") {
-          li.append(el("button", { class: "link-btn ai-step-look", type: "button", onclick: () => look(s.target, s.summary || s.label) }, "看變更"));
+          const changed = s.kind !== "read" && s.status === "done";
+          li.append(el("button", { class: "link-btn ai-step-look", type: "button", onclick: () => look(s.target, s.summary || s.label, s.id) }, changed ? "看變更" : "查看位置"));
         }
         if (s.undoable && s.status === "done") {
-          li.append(el("button", { class: "link-btn ai-step-undo", type: "button", onclick: () => undoStep(item, s) }, "復原"));
+          const b = el("button", { class: "link-btn ai-step-undo", type: "button", onclick: () => undoStep(item, s) }, "復原");
+          lockBtn(b, !!running);
+          li.append(b);
         }
-        ol.append(li);
+        return li;
       }
-      return ol;
     }
     // 排字盤：助手寫的提示詞一顆一顆排出來。認得的字是牌名（剛排出來那一下先是原文，再墨成牌名），
     // 詞庫沒有的是虛線框（去字盒找），引擎自己處理的淡掉。
@@ -604,12 +726,15 @@ export function mountAssistant({ ctx }) {
       return n;
     }
     // 一個影格最多補畫一次；聊天室收起時不畫（打開時 renderLog 整串畫）。這一段還沒出現過就整則重畫一次。
+    // 排程用獨立的旗標：以前看 streaming.size > 1，同一則一直進字時 size 永遠是 1，每個字都排一次 rAF。
     const streaming = new Map();
+    let streamRaf = 0;
     function streamText(item, seg) {
       if (!api_.isOpen()) return;
       streaming.set(item.id, [item, seg]);
-      if (streaming.size > 1) return;
-      requestAnimationFrame(() => {
+      if (streamRaf) return;
+      streamRaf = requestAnimationFrame(() => {
+        streamRaf = 0;
         for (const [it, sg] of streaming.values()) {
           if (sg.held) continue;
           const host = log.querySelector(`.ai-msg[data-id="${it.id}"]`);
@@ -640,16 +765,26 @@ export function mountAssistant({ ctx }) {
         )
       );
     }
+    // 確認卡：待確認（兩顆鈕）→ 處理中（按下去那一刻兩顆都鎖住）→ 已套用／已保留／已失效／沒做成（收成一行結果）。
+    const CONFIRM_END = { applied: "已套用", kept: "保留原狀", stale: "這項確認已經失效", failed: "沒做成" };
     function confirmNode(item, c) {
-      const box = el("div", { class: "ai-confirm", dataset: { state: c.state || "open" } }, el("p", {}, c.prompt));
+      const state = c.state || "open";
+      const box = el("div", { class: "ai-confirm", dataset: { state } }, el("p", {}, c.prompt));
       if (c.lines?.length) box.append(el("ul", {}, ...c.lines.map((l) => el("li", {}, l))));
-      if (!c.state || c.state === "open") {
+      if (state === "open" || state === "busy") {
         const yes = el("button", { class: "btn btn-small btn-primary", type: "button" }, c.choices?.[0] || "套用");
         const no = el("button", { class: "btn btn-small btn-ghost", type: "button" }, c.choices?.[1] || "保留原狀");
         yes.addEventListener("click", () => decide(item, c, true));
         no.addEventListener("click", () => decide(item, c, false));
+        if (state === "busy") {
+          for (const b of [yes, no]) Object.assign(b.dataset, { busy: "true" }), b.setAttribute("aria-disabled", "true");
+          (c.choice === "apply" ? yes : no).dataset.chosen = "true";
+        } else for (const b of [yes, no]) lockBtn(b, !!running);
         box.append(el("div", { class: "ai-confirm-actions" }, yes, no));
-      } else box.append(el("p", { class: "ai-muted" }, c.state === "applied" ? c.result || "已套用" : "保留原狀"));
+      } else {
+        const why = state === "applied" ? c.result || CONFIRM_END.applied : state === "kept" ? CONFIRM_END.kept : c.result || CONFIRM_END[state] || "";
+        box.append(el("p", { class: state === "stale" || state === "failed" ? "ai-confirm-why" : "ai-muted" }, why));
+      }
       return box;
     }
     // 貼著最新那則：送出時貼上；使用者自己往上捲（離底部超過一點）就放開，捲回底部再貼上。
@@ -736,23 +871,80 @@ export function mountAssistant({ ctx }) {
         if (!reducedMotion()) m.animate([{ opacity: 0, transform: "translateY(12px)" }, { opacity: 1, transform: "none" }], { duration: DUR.long, delay: k * 70, easing: css(CURVE.out), fill: "backwards" });
       });
     }
+    // 對話尾巴多了 n 則：只把這幾則接上去（以前整串重畫，長對話送一句就拆掉、重建幾百個節點）。
+    function appendLast(n) {
+      if (log.querySelector(".ai-empty") || log.childElementCount < chat.log.length - n) return renderLog();
+      for (const item of chat.log.slice(-n)) log.append(renderItem(item));
+      scrollDown(true);
+    }
+    // 聊天室裡的提示（還沒選連線、主機沒開放…）：同一句已經是最後一則就不再疊一則，原地亮一下。
+    function addNote(note) {
+      const last = chat.log.at(-1);
+      if (last?.role === "note" && last.text === note.text) {
+        const n = log.lastElementChild;
+        if (n && !reducedMotion()) n.animate([{ transform: "scale(1.04)", filter: "brightness(1.15)" }, { transform: "none", filter: "none" }], { duration: DUR.medium, easing: css(CURVE.out) });
+        return;
+      }
+      chat.log.push(note);
+      appendLast(1);
+      rise(log.lastElementChild);
+    }
+
+    // 遠端（手機、別台電腦）連進來、主機還沒開放：送之前就說，草稿留著，附「重新檢查」。
+    const remoteBlocked = () => status?.local === false && !status?.allowRemote;
+    const REMOTE_NOTE = "主機還沒允許這台裝置用聊天室：到主機的「AI 助手設定 → 讓手機、別台裝置也能用聊天室」打開，再按重新檢查。";
+
+    async function recheck(item, btn) {
+      if (btn.dataset.busy) return;
+      btn.dataset.busy = "true";
+      btn.setAttribute("aria-busy", "true");
+      swapText(btn, t("檢查中…"));
+      await refreshStatus();
+      const node = btn.closest(".ai-note");
+      if (remoteBlocked()) {
+        delete btn.dataset.busy;
+        btn.removeAttribute("aria-busy");
+        swapText(btn, t("重新檢查"));
+        if (node && !reducedMotion()) node.animate([{ transform: "translateX(0)" }, { transform: "translateX(-4px)" }, { transform: "translateX(4px)" }, { transform: "none" }], { duration: DUR.medium, easing: css(CURVE.out) });
+        return;
+      }
+      Object.assign(item, { kind: "ok", text: t("可以了：這台裝置能用聊天室了，再送一次。"), action: null });
+      saveChat();
+      if (!node) return;
+      const fresh = renderItem(item);
+      node.replaceWith(fresh);
+      if (!reducedMotion()) fresh.animate([{ opacity: 0, transform: "translateY(4px)", filter: "blur(2px)" }, { opacity: 1, transform: "none", filter: "none" }], { duration: DUR.medium, easing: css(CURVE.out) });
+      input.focus();
+    }
 
     async function send() {
       const text = input.value.trim();
-      if (!text || running) return;
-      if (!status) await refreshStatus();
-      if (status?.ok === false || !status?.connection) {
-        chat.log.push({ role: "note", kind: "warn", text: status?.ok === false ? status.error : t("還沒選連線：先到「AI 助手設定」選一條。") });
-        renderLog();
-        if (status?.ok !== false) openSettings({ thenChat: true });
-        return;
+      if (!text || running || sending) return;
+      // 同步拿鎖、引用跟著這一則固定下來；按鈕當場淡成等待（第二次 Enter 直接忽略）。
+      sending = true;
+      const usedRefs = pendingRefs.slice();
+      sendBtn.dataset.pending = "true";
+      sendBtn.setAttribute("aria-busy", "true");
+      try {
+        if (!status) await refreshStatus();
+        if (remoteBlocked()) return addNote({ role: "note", kind: "warn", text: t(REMOTE_NOTE), action: "recheck" });
+        if (status?.ok === false || !status?.connection) {
+          addNote({ role: "note", kind: "warn", text: status?.ok === false ? status.error : t("還沒選連線：先到「AI 助手設定」選一條。") });
+          if (status?.ok !== false) openSettings({ thenChat: true });
+          return;
+        }
+        input.value = "";
+        grow();
+        pendingRefs = pendingRefs.filter((r) => !usedRefs.includes(r));
+        paintRefs();
+        delete sendBtn.dataset.pending;
+        sendBtn.removeAttribute("aria-busy");
+        await runTurn(text, usedRefs);
+      } finally {
+        sending = false;
+        delete sendBtn.dataset.pending;
+        sendBtn.removeAttribute("aria-busy");
       }
-      input.value = "";
-      grow();
-      const usedRefs = pendingRefs;
-      pendingRefs = [];
-      paintRefs();
-      await runTurn(text, usedRefs);
     }
 
     const api_ = {
@@ -769,6 +961,15 @@ export function mountAssistant({ ctx }) {
         refreshStatus();
         paintChatState("");
         requestAnimationFrame(() => input.focus({ preventScroll: true }));
+        // 手機上按「看變更」會先收起聊天室；回來時那一步重新入鏡、亮一下（不然又捲回最底下，找不到剛才看的是哪一步）。
+        const back = lookFrom && log.querySelector(`.ai-step[data-id="${CSS.escape(lookFrom)}"]`);
+        lookFrom = null;
+        if (back) {
+          back.closest("details")?.setAttribute("open", "");
+          stick = false;
+          back.scrollIntoView({ block: "center" });
+          if (!reducedMotion()) back.animate([{ backgroundColor: "color-mix(in oklch, var(--ai-glow) 30%, transparent)" }, { backgroundColor: "transparent" }], { duration: DUR.xl, easing: css(CURVE.out) });
+        }
       },
       close() {
         if (root.hidden) return;
@@ -780,10 +981,15 @@ export function mountAssistant({ ctx }) {
         setTimeout(() => {
           if (root.dataset.state === "closing") root.hidden = true;
         }, reducedMotion() ? 0 : DUR.medium);
-        if (running) paintChatState(stepText.textContent.replace(/^· /, "") || STATUS_ZH[stateBar.dataset.kind], stateBar.dataset.kind);
+        // 收起時印章接著說目前的狀態：在跑、等你確認（黃點）、部分完成、失敗都留著；純回答、做完的不留（已經看過了）。
+        const k = stateBar.dataset.kind;
+        if (running || ["confirm", "partial", "failed"].includes(k)) paintChatState(stepText.textContent.replace(/^· /, "") || t(STATUS_ZH[k] || ""), k);
         chatBtn.focus({ preventScroll: true });
       },
       addRef,
+      dropRefs,
+      appendLast,
+      addNote,
       paintHead,
       setState,
       repaint,
@@ -837,8 +1043,7 @@ export function mountAssistant({ ctx }) {
 
   async function runTurn(text, refs) {
     if (!(await loadTools())) {
-      chat.log.push({ role: "note", kind: "err", text: t("助手的工具層還沒準備好（assistant-tools.js 讀不到）。") });
-      panel.renderLog();
+      panel.addNote({ role: "note", kind: "err", text: t("助手的工具層還沒準備好（assistant-tools.js 讀不到）。") });
       return;
     }
     runner ||= toolMod.createToolRunner({
@@ -856,7 +1061,9 @@ export function mountAssistant({ ctx }) {
     conv.log.push({ role: "user", text, refs });
     const item = { role: "bot", id: `t${Date.now().toString(36)}`, segs: [], steps: [], confirms: [], pending: true };
     conv.log.push(item);
-    panel.renderLog();
+    // 檢查點：收下這句話就存（工具改了工作台之後重新整理，這一輪至少還在，知道停在哪）。
+    saveChat();
+    panel.appendLast(2);
     panel.riseLast(2);
     lookTok++;
     // 這則訊息送出那一刻的工作台版本：整輪的工具共用同一個物件。之後使用者自己動了合成池、規則，
@@ -878,7 +1085,6 @@ export function mountAssistant({ ctx }) {
     panel.setState("thinking", "", t("讀你的訊息"));
     const system = promptMod.buildSystemPrompt({ lang: english ? "en" : "zh", room: "mochi", now: new Date().toISOString() });
     const toolsForModel = toolMod.toolSchemas();
-    let wrote = false;
     let finalKind = "answered";
     try {
       for (let hop = 0; hop < MAX_HOPS; hop++) {
@@ -913,7 +1119,7 @@ export function mountAssistant({ ctx }) {
           }
           const lab = safeLabel(call);
           const uid = `${batch}:${call.id}`;
-          const step = { id: uid, label: lab.zh, status: "running", seg: seg.n };
+          const step = { id: uid, label: lab.zh, status: "running", seg: seg.n, kind: lab.kind };
           item.steps.push(step);
           panel.setState(lab.kind === "read" ? "reading" : "working", "", lab.zh);
           panel.repaint(item);
@@ -931,16 +1137,26 @@ export function mountAssistant({ ctx }) {
             item.confirms.push({ ...res.confirm, callId: uid, state: "open" });
             waiting = lab.zh;
           }
-          if (lab.kind !== "read" && res.ok) wrote = true;
           results.push({ write: lab.kind !== "read", res });
           // 重讀了工作台：之後的寫入照這一版判斷 stale（不然重讀完還是一直說「工作台已經變了」）。
           if (call.name === "get_workspace" && res.ok && Number.isFinite(res.forModel?.version)) turn.version = res.forModel.version;
           conv.messages.push({ role: "tool", toolCallId: call.id, name: call.name, content: JSON.stringify(res.forModel ?? { ok: !!res.ok, status: res.status }) });
+          // 檢查點：寫入落地、或停在確認卡，都存一次（重新整理後看得到這一步做了沒）。
+          if (lab.kind !== "read" || waiting) saveChat();
           panel.repaint(item);
         }
-        seg.held = false;
-        panel.repaint(item);
-        panel.riseText(item, seg);
+        // 模型事先寫好的那句話（「已換黑髮」）只有在結果撐得住時才放出來：等確認、失敗、略過、部分完成時先只看步驟實績，
+        // 要說明的話下一輪模型看了工具結果再說（以前一律放出來：確認卡上方已經寫「已換黑髮」，池子其實還是紅髮）。
+        const backed = results.every((r) => r.res.ok && (r.res.status || "done") === "done");
+        if (backed) {
+          seg.held = false;
+          panel.repaint(item);
+          panel.riseText(item, seg);
+        } else {
+          seg.text = "";
+          seg.held = false;
+          panel.repaint(item);
+        }
         if (waiting) {
           item.paused = true;
           break;
@@ -950,8 +1166,7 @@ export function mountAssistant({ ctx }) {
         if (seg.text.trim() && results.length && results.every((r) => r.write && r.res.status === "done" && !r.res.forModel?.pasted?.unknown?.length && !r.res.forModel?.pasted?.dropped?.length)) break;
         if (hop === MAX_HOPS - 1) item.error = t("這一輪的步驟太多，先停在這裡；要繼續就再交代一次。");
       }
-      const st = item.steps.map((s) => s.status);
-      finalKind = item.confirms.some((c) => c.state === "open") ? "confirm" : st.includes("failed") ? (st.includes("done") ? "partial" : "failed") : wrote ? "done" : "answered";
+      finalKind = outcomeOf(item).kind;
     } catch (err) {
       item.paused = null;
       for (const s of item.segs) if (s.held) s.text = "";
@@ -982,11 +1197,19 @@ export function mountAssistant({ ctx }) {
         }
         saveChat();
         panel.repaint(item);
-        const last = item.steps.filter((s) => s.status === "done").at(-1);
-        panel.setState(finalKind === "answered" ? "idle" : finalKind, finalKind === "answered" ? "" : STATUS_ZH[finalKind], finalKind === "done" ? last?.summary || "" : "");
-        if (!panel.isOpen() && finalKind !== "answered") paintChatState(finalKind === "done" ? last?.summary || STATUS_ZH.done : STATUS_ZH[finalKind], finalKind);
+        paintOutcome(item, finalKind);
       }
     }
+  }
+
+  /** 狀態列和收起時的印章說同一件事（outcomeOf）。收著時純回答也亮一下綠點（有新回覆），打開就淡掉。 */
+  function paintOutcome(item, kind = outcomeOf(item).kind) {
+    if (!panel) return;
+    const text = kind === "cancelled" ? "" : outcomeOf(item).text;
+    panel.setState(kind === "answered" ? "idle" : kind, kind === "answered" ? "" : STATUS_ZH[kind], kind === "done" || kind === "partial" || kind === "undone" ? text : "");
+    if (panel.isOpen()) return;
+    if (kind === "answered") paintChatState(t(STATUS_ZH.replied), "done");
+    else paintChatState(text && kind !== "failed" ? text : t(STATUS_ZH[kind] || ""), kind === "undone" ? "done" : kind);
   }
 
   /**
@@ -1170,9 +1393,49 @@ export function mountAssistant({ ctx }) {
   }
 
   const undos = new Map();
+  /** 作廢所有還沒按的確認：工具層的計畫丟掉（之後按也不會動工作台），畫面上的卡收成「已失效」、排字盤上等確認的劃掉。 */
+  function voidConfirms(reason) {
+    try {
+      runner?.cancelPlans?.();
+    } catch {
+      /* 工具層還沒載入：本來就沒有計畫 */
+    }
+    let changed = false;
+    for (const i of chat.log) {
+      let mine = false;
+      i.paused = null;
+      for (const c of i.confirms || []) {
+        if (c.state !== "open" && c.state !== "busy") continue;
+        Object.assign(c, { state: "stale", result: reason || t("這項確認已經失效") });
+        const step = (i.steps || []).find((s) => s.id === c.callId);
+        if (step) {
+          Object.assign(step, { status: "skipped", summary: c.result });
+          for (const x of step.sorts || []) if (x.state === "wait") x.state = "miss";
+        }
+        mine = changed = true;
+      }
+      if (mine) panel?.repaint(i);
+    }
+    if (!changed) return;
+    saveChat();
+    // 狀態列、印章不能還寫「等待確認」。
+    if (!running) panel?.setState("idle");
+  }
+
+  // 這個按鈕還算數嗎：所屬的那則還在目前的對話裡（按了新對話，舊的節點可能還在淡出）、而且沒有一批工具正在跑。
+  function canAct(item) {
+    if (!chat.log.includes(item)) return false;
+    if (running) {
+      toast(t("助手還在做事：這一批做完就能按"));
+      return false;
+    }
+    return true;
+  }
+
   async function undoStep(item, step) {
     const fn = undos.get(`${item.id}:${step.id}`);
-    if (!fn) return;
+    if (!fn || step.undoing || !canAct(item)) return;
+    step.undoing = true;
     try {
       const r = await fn();
       if (r?.ok === false) {
@@ -1187,38 +1450,57 @@ export function mountAssistant({ ctx }) {
     } catch (err) {
       toast(friendlyError(err));
       return;
+    } finally {
+      step.undoing = false;
     }
     saveChat();
     panel.repaint(item);
+    // 整輪的摘要跟著換（以前復原了，頂部還寫「一次 1 → 3」）；明細裡原本的變更照留。
+    paintOutcome(item);
   }
 
+  /**
+   * 確認卡按下去：當下鎖住兩顆（處理中），工具層照選擇套用或保留，回來的 status 決定怎麼結案：
+   * applied → 那一步打勾；kept → 略過；stale／failed → 寫出失效或失敗的原因。重按沿用第一次的結果（工具層保證）。
+   */
   async function decide(item, c, yes) {
-    if (!yes) {
-      c.state = "kept";
-      chat.messages.push({ role: "user", content: `［使用者選了「保留原狀」］${c.prompt}` });
-    } else {
-      try {
-        const res = await runner.confirm(c.token);
-        c.state = res.ok ? "applied" : "kept";
-        c.result = res.summary || "";
-        const step = item.steps.find((s) => s.id === c.callId);
-        if (step) Object.assign(step, { status: res.status || (res.ok ? "done" : "failed"), summary: res.summary || step.summary, lines: res.lines || step.lines, target: res.target || step.target, undoable: !!res.undo });
-        // 排字盤上「等確認」的那幾顆：照按下去之後真的池子打勾或劃掉。
-        if (step?.sorts) {
-          const inPool = new Set((ctx.state().pool || []).map((p) => p.tag));
-          for (const x of step.sorts) if (x.kind === "card" && x.state === "wait") x.state = res.ok && inPool.has(x.tag) ? "set" : "miss";
-        }
-        if (res.undo) undos.set(`${item.id}:${c.callId}`, res.undo);
-        if (res.target) look(res.target, res.summary);
-        chat.messages.push({ role: "user", content: `［使用者按了「套用」］${c.prompt} → ${res.summary || (res.ok ? "完成" : "沒做成")}` });
-      } catch (err) {
-        toast(friendlyError(err));
-        return;
+    if (c.state !== "open" || !canAct(item)) return;
+    c.state = "busy";
+    c.choice = yes ? "apply" : "keep";
+    panel.repaint(item);
+    let res;
+    try {
+      res = runner ? await runner.confirm(c.token, c.choice) : { ok: false, status: "stale", summary: t("這項確認已經失效") };
+    } catch (err) {
+      res = { ok: false, status: "failed", summary: friendlyError(err) };
+    }
+    // 等的時候按了新對話、或關掉實驗功能：這張卡已經不在了，結果不寫回去。
+    if (!chat.log.includes(item) || c.state !== "busy") return;
+    const status = ["applied", "kept", "stale", "failed"].includes(res.status) ? res.status : res.ok ? (yes ? "applied" : "kept") : "failed";
+    c.state = status;
+    c.result = res.summary || "";
+    const step = item.steps.find((s) => s.id === c.callId);
+    if (step) {
+      const stepStatus = status === "applied" ? "done" : status === "kept" ? "skipped" : "failed";
+      Object.assign(step, { status: stepStatus, summary: res.summary || step.summary, lines: res.lines || step.lines, target: res.target || step.target, undoable: status === "applied" && !!res.undo });
+      // 排字盤上「等確認」的那幾顆：套用了照真的池子打勾或劃掉；保留、失效、失敗就是略過（劃掉）。
+      if (step.sorts) {
+        const inPool = new Set((ctx.state().pool || []).map((p) => p.tag));
+        for (const x of step.sorts) if (x.kind === "card" && x.state === "wait") x.state = status === "applied" && inPool.has(x.tag) ? "set" : "miss";
       }
     }
+    if (status === "applied" && res.undo) undos.set(`${item.id}:${c.callId}`, res.undo);
+    if (status === "applied" && res.target) look(res.target, res.summary);
+    const said = {
+      applied: `［使用者按了「套用」］${c.prompt} → ${res.summary || "完成"}`,
+      kept: `［使用者選了「保留原狀」］${c.prompt}`,
+      stale: `［使用者按了「${yes ? "套用" : "保留原狀"}」，但這項確認已經失效］${c.prompt} → ${res.summary || ""}`,
+      failed: `［使用者按了「套用」，但沒做成］${c.prompt} → ${res.summary || ""}`,
+    }[status];
+    chat.messages.push({ role: "user", content: said });
     saveChat();
     panel.repaint(item);
-    panel.setState(c.state === "applied" ? "done" : "idle", c.state === "applied" ? STATUS_ZH.done : "", c.result || "");
+    paintOutcome(item);
     // 這一輪是停在確認卡上的：決定好了（而且沒有別張卡還開著），接著讓模型做剩下的。
     if (item.paused && !running && !item.confirms.some((x) => x.state === "open") && chat.log.includes(item)) {
       item.paused = null;
@@ -1227,10 +1509,15 @@ export function mountAssistant({ ctx }) {
   }
 
   /** 「看變更」：捲到那一塊、亮一下。手機上先收起聊天室再定位（不然面板蓋住）。 */
-  function look(target, label) {
+  let lookFrom = null;
+  function look(target, label, stepId = null) {
     const node = nodeFor(target);
+    if (node === GONE) return toast(t("這張成品已移除"));
     if (!node) return toast(t("那一塊現在不在畫面上"));
-    if (matchMedia("(max-width: 40rem)").matches) panel?.close();
+    if (matchMedia("(max-width: 40rem)").matches) {
+      lookFrom = stepId;
+      panel?.close();
+    }
     node.scrollIntoView({ block: "center", behavior: reducedMotion() ? "instant" : "smooth" });
     setTimeout(() => halo.show(node, "done", label || ""), reducedMotion() ? 0 : 320);
   }
@@ -1238,7 +1525,7 @@ export function mountAssistant({ ctx }) {
   function highlight(target, phase, label) {
     if (phase === "clear") return halo.clear();
     const node = nodeFor(target);
-    if (!node) return;
+    if (!node || node === GONE) return;
     halo.show(node, phase, label ? t(label) : "");
   }
 
@@ -1248,8 +1535,22 @@ export function mountAssistant({ ctx }) {
       const v = JSON.parse(sessionStorage.getItem(CHAT_KEY) || "null");
       if (v && Array.isArray(v.messages) && Array.isArray(v.log)) {
         // 重新整理時還在跑的那一輪：當成停了（請求已經斷了）
-        for (const i of v.log) if (i.pending) Object.assign(i, { pending: false, error: "重新整理時這一輪停了。" });
-        for (const i of v.log) for (const c of i.confirms || []) if (c.state === "open") c.state = "kept";
+        // 檢查點存的是做到一半的樣子：沒做完的步驟收成「已取消」，做完的照留，並說清楚哪些已經生效。
+        for (const i of v.log) {
+          if (!i.pending) continue;
+          const done = (i.steps || []).filter((s) => s.status === "done");
+          for (const s of i.steps || []) if (s.status === "running") s.status = "cancelled";
+          for (const s of i.segs || []) if (s.held) Object.assign(s, { text: "", held: false });
+          Object.assign(i, { pending: false, error: done.length ? `重新整理時這一輪停了。已經生效的：${done.map((s) => s.summary || s.label).join("、")}` : "重新整理時這一輪停了。" });
+        }
+        // 確認計畫在這一頁的記憶體裡：重新整理之後就沒了，卡片收成「已失效」（不是假裝「保留原狀」）。
+        for (const i of v.log)
+          for (const c of i.confirms || [])
+            if (c.state === "open" || c.state === "busy") {
+              Object.assign(c, { state: "stale", result: "重新整理之後這項確認已經失效" });
+              const step = (i.steps || []).find((s) => s.id === c.callId);
+              if (step) step.status = "skipped";
+            }
         // 復原靠的是這一頁記憶體裡的函式：重新整理之後沒有了，按鈕不能留著按了沒反應。
         for (const i of v.log) {
           i.paused = null;

@@ -2182,6 +2182,68 @@ CLI 預設模型|CLI default model
 這些牌都不屬於這個類別|None of these cards belong in this category
 群組勾選沒有要改的|The group selection is already like that
 一次已經被改過，沒有復原|The batch size was changed since, so it wasn't restored
+送出訊息|Send
+有新回覆|New reply
+這一批做完就能按|Available once this batch finishes
+助手還在做事：這一批做完就能按|The assistant is still working. Try again once this batch finishes
+查看位置|Show where
+這張成品已移除|This image has been removed
+沒做成|Didn’t go through
+實驗功能關掉了，這項確認已經失效|Experimental features were turned off, so this confirmation is no longer valid
+重新整理之後這項確認已經失效|This confirmation expired when the page reloaded
+主機尚未允許這台裝置聊天|The host hasn’t allowed chat from this device
+主機還沒允許這台裝置用聊天室：到主機的「AI 助手設定 → 讓手機、別台裝置也能用聊天室」打開，再按重新檢查。|The host hasn’t allowed chat from this device yet. On the host, open AI assistant settings → “Let phones and other devices use the chat”, then tap Recheck.
+重新檢查|Recheck
+檢查中…|Checking…
+可以了：這台裝置能用聊天室了，再送一次。|All set: this device can use the chat now. Send again.
+請傳這個類別要保留的完整 ID 清單|Provide the full list of group IDs to keep for this section
+群組清單還沒讀到，請再試一次|The group list hasn’t loaded yet. Try again
+讀取群組清單失敗，請再試一次|Couldn’t load the group list. Try again
+已選|Selected
+請先選一條連線。|Choose a connection first.
+請填這組 API 的模型。|Enter a model for this API.
+儲存|Save
+儲存並測試|Save and test
+這台不是主機，主機還沒開放聊天室。|This device isn't the host, and the host hasn't opened the chat.
+請回到主機，打開「AI 助手設定 → 讓手機、別台裝置也能用聊天室」。|On the host, turn on “AI assistant settings → Let phones and other devices use the chat”.
+主機還沒開放。打開之後再查一次。|The host hasn't opened it yet. Check again after turning it on.
+這台用主機的連線：|This device uses the host's connection:
+主機已開放聊天室，但還沒選連線。|The host has opened the chat, but no connection is chosen yet.
+連線和金鑰要在主機上改。|Change the connection and the key on the host.
+尚未安裝或找不到執行檔。|It isn't installed, or the program couldn't be found.
+這版 CLI 未能確認登入狀態。|This CLI version couldn't confirm whether you're signed in.
+已查詢模型目錄，登入狀態仍待確認。|The model list loaded, but sign-in is still unconfirmed.
+CLI 偵測逾時，請稍後再試。|CLI detection timed out. Try again in a moment.
+CLI 的狀態讀取失敗。|Couldn't read this CLI's status.
+找不到執行檔。|Couldn't find the program.
+模型的本機工具、MCP 和斜線指令都已關閉。|This model's local tools, MCP and slash commands are off.
+模型的本機工具、MCP 和網頁搜尋都已關閉（實測沒有任何工具）。|This model's local tools, MCP and web search are off (checked: it has no tools).
+已停用 shell 工具並使用唯讀沙箱。這條連線的模型理論上能讀這台電腦的檔案（不能改）。|Shell tools are off and the sandbox is read-only. This connection's model can read files on this computer, but it cannot change them.
+這套 CLI 尚未登入。請在主機登入後再試。|This CLI isn't signed in. Sign in on the host, then try again.
+這個模型目前無法使用。請確認模型名稱與帳號權限。|This model can't be used right now. Check the model name and the account's access.
+API 金鑰缺少、無效或權限不足。請檢查助理設定。|The API key is missing, invalid, or not permitted. Check the assistant settings.
+等待模型回應逾時。請稍後再試。|Timed out waiting for the model. Try again in a moment.
+模型服務暫時限制請求或額度用完了。請稍後再試，或查看帳號額度。|The model service is limiting requests, or the quota is used up. Try again later, or check the account quota.
+模型回應的格式不完整或無法辨識。請重試或換一個模型。|The model's reply was incomplete or couldn't be read. Try again, or switch models.
+目前連不上模型服務。請檢查連線設定後再試。|Can't reach the model service. Check the connection settings and try again.
+已停止等待模型回應。|Stopped waiting for the model.
+這項操作只開放給執行墨池的電腦。|Only the computer running Ink Pool can do this.
+聊天內容太多了。每次最多 400 KB、200 則訊息，請先清除部分對話。|This chat is too large. Each turn allows 400 KB and 200 messages; clear some of it first.
+跟墨池伺服器的連線中途斷了，這一段可能不完整。請再送一次。|The connection to the Ink Pool server dropped, so this part may be incomplete. Send it again.
+跟墨池伺服器連不上。請確認墨池開著再試。|Can't reach the Ink Pool server. Make sure Ink Pool is open, then try again.
+請填入有效的 API Base URL，網址裡不能帶金鑰或查詢參數。|Enter a valid API base URL. Don't put a key or a query in it.
+API Base URL 請填 HTTP 或 HTTPS 網址，網址裡不能帶帳密。|The API base URL needs to be http or https, with no username or password in it.
+請選擇助理的連線方式。|Choose how the assistant connects.
+請選擇支援的模型供應商。|Choose a supported model provider.
+助理設定檔的格式有誤，請先檢查存檔。|The assistant settings file isn't valid. Check the saved file.
+允許遠端和清除金鑰的值應為開或關。|Allow-remote and clear-key must be on or off.
+請選擇更新或清除金鑰。|Choose whether to update the key or clear it.
+請先填入自訂服務的 API Base URL。|Enter the custom service's API base URL first.
+模型清單太大，請直接填寫模型名稱。|The model list is too large. Type the model name instead.
+讀不到模型清單，請檢查連線或直接填寫模型名稱。|Couldn't load the model list. Check the connection, or type the model name.
+模型清單的分頁有誤，請直接填寫模型名稱。|The model list's pages didn't line up. Type the model name instead.
+推理強度的值不對，請到助手設定重選。|That reasoning effort isn't valid. Choose it again in the assistant settings.
+模型沒有回傳預期的測試工具呼叫，請換一個模型再試。|The model didn't return the expected test tool call. Try another model.
 `;
 
 export const messages = Object.freeze(Object.fromEntries(copy.trim().split("\n").map((line) => {
@@ -2912,6 +2974,14 @@ AI 助手用：{0}|AI assistant uses {0!}
 群組共 {0} 組|{0} groups in total
 「{0}」已經被改過，沒有復原|“{0!}” was changed since, so it wasn't restored
 「{0}」是{1}|“{0!}” is {1}
+已查詢 {0} 步|{0} lookups
+重新整理時這一輪停了。已經生效的：{0}|This turn stopped when the page reloaded. Already applied: {0}
+調整 {0} 張牌的份量|Adjusted the weight of {0} cards
+移除 {0} 張牌|Removed {0} cards
+排進 {0} 張牌，調整 {1} 張牌的份量，移除 {2} 張牌|Set {0} cards, adjusted the weight of {1} cards, and removed {2} cards
+另 {0} 個尚未查找|{0} more words still to look up
+可用 {0} 張，已在池中 {1} 張，找不到 {2} 張，受限制 {3} 張|{0} available, {1} already in the pool, {2} missing, {3} restricted
+推理強度只能選：{0}，或留預設。|Reasoning effort must be {0!}, or leave the default.
 `;
 export const templates = parameterized.trim().split("\n").map((line) => {
   const split = line.indexOf("|");

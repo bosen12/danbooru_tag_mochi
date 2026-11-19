@@ -233,7 +233,7 @@ try {
   await page.locator(".ai-cli .ai-effort").selectOption("high");
   ok("設定：選了強度，「選了」那行寫出來", /Codex CLI · .+ · high/.test(await page.locator(".ai-test-line").textContent()));
   const saveReq = page.waitForRequest((r) => r.url().endsWith("/api/assistant/config") && r.method() === "POST");
-  await page.getByRole("button", { name: "儲存" }).click();
+  await page.getByRole("button", { name: "儲存", exact: true }).click();
   const saved = JSON.parse((await saveReq).postData() || "{}");
   ok("設定：存檔帶 effort", saved.connection?.effort === "high", JSON.stringify(saved));
   await page.keyboard.press("Escape");

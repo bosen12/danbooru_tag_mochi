@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";
-import { clampTagWeight } from "../web/engine.js";
+import { test } from "node:test";
+import { clampTagWeight, skeletonLit, stepSkeleton, sanitizeOffGroups } from "../web/engine.js";
 import { HARD_BANNED } from "../web/card-art.js";
 // 這邊在 web6/，開源版（danbooru_tag_mochi）在 web/：同一支測試兩邊都能跑。
 const front = existsSync(new URL("../web6/assistant-tools.js", import.meta.url)) ? "../web6/" : "../web/";
@@ -111,7 +112,7 @@ function world(opts = {}) {
       pool = p.next;
       bans = p.ban;
       version += 1;
-      return { added: p.added, companions: p.companions, displaced: p.displaced, unbanned: p.unbanned, total: p.total };
+      return { added: p.added, companions: p.companions, displaced: p.displaced, unbanned: p.unbanned, total: p.total, version };
     },
     unpin(tags) {
       log.push(["unpin", [...tags]]);
@@ -123,7 +124,7 @@ function world(opts = {}) {
         return false;
       });
       version += 1;
-      return { removed, total: counted() };
+      return { removed, total: counted(), version };
     },
     setWeight(tag, w) {
       log.push(["weight", tag, w]);
@@ -131,14 +132,14 @@ function world(opts = {}) {
       const from = p ? p.weight : 1;
       if (p) p.weight = w;
       version += 1;
-      return { tag, from, to: w };
+      return { tag, from, to: w, version };
     },
     setN(n) {
       log.push(["n", n]);
       const from = settings.n;
       settings.n = n;
       version += 1;
-      return { from, to: n };
+      return { from, to: n, version };
     },
     setSectionCounts(patch) {
       log.push(["counts", { ...patch }]);
@@ -148,7 +149,7 @@ function world(opts = {}) {
         settings.counts[k] = v;
       }
       version += 1;
-      return { changes };
+      return { changes: changes.map((c) => ({ ...c, fromOffGroups: [], toOffGroups: [] })), version };
     },
     groups: () => groups.map((g) => ({
       ...g,
@@ -162,18 +163,16 @@ function world(opts = {}) {
       if (ids.length) settings.groups[section] = { ids: [...ids], mode };
       else delete settings.groups[section];
       version += 1;
-      return { section, from, to: { ids: [...ids], mode } };
+      return { section, from, to: { ids: [...ids], mode }, version };
     },
     saveGroup({ name, section, tags }) {
       log.push(["save", name, section, [...tags]]);
       const group = { id: "g-new", name, section, tags: [...tags] };
       groups.push({ ...group, picked: false, mode: "whole" });
-      version += 1;
       return { group, skipped: [] };
     },
     draw({ n }) {
       log.push(["draw", n]);
-      version += 1;
       const requested = n;
       const made = opts.drawMade ?? requested;
       return { requested, made, shotIds: Array.from({ length: made }, (_, i) => `s${i}`), warnings: opts.warnings || [] };
@@ -232,8 +231,10 @@ const enFile = ["../web6/locales/en.js", "../web/locales/en.js"].map((p) => new 
 const enLines = readFileSync(enFile, "utf8").split(/\r?\n/).filter((l) => l.includes("|") && !l.startsWith("  ") && !l.startsWith("/"));
 const enLeft = new Map(enLines.map((l) => [l.slice(0, l.indexOf("|")), l.slice(l.indexOf("|") + 1)]));
 const phrases = [...new Set(Object.values(TEXT))];
-for (const tpl of phrases) assert.ok(enLeft.has(tpl), `en.js 缺 ${tpl}`);
-for (const tpl of phrases) assert.ok(String(enLeft.get(tpl)).trim(), `en.js 的 ${tpl} 沒有英文`);
+for (const tpl of phrases) {
+  assert.ok(enLeft.has(tpl), `en.js 缺 ${tpl}`);
+  assert.ok(enLeft.get(tpl).trim(), `en.js 的 ${tpl} 沒有英文`);
+}
 console.log("ok: schemas and phrase list");
 
 // ---------- 讀 ----------
@@ -332,7 +333,7 @@ console.log("ok: schemas and phrase list");
   assert.equal(names(ctx.log, "pin").length, 0);
   const applied = await runner.confirm(ask.confirm.token);
   assert.equal(applied.ok, true);
-  assert.equal(applied.status, "done");
+  assert.equal(applied.status, "applied");
   assert.equal(names(ctx.log, "pin").length, 1);
   assert.equal(ctx._pool().some((p) => p.tag === "swimsuit"), true);
   assert.equal(ctx._pool().some((p) => p.tag === "dress"), false);
@@ -734,9 +735,10 @@ console.log("ok: schemas and phrase list");
   assert.deepEqual(ctx.stages[1], ["done", "p1", ["", "set", "set", "look"]]);
   // 字盒找相近的：已經在池裡的不算候選；在廢字簍的照列但標著
   assert.deepEqual(ctx.stages[2], ["lookup", "p1", ["sunset glow>outdoors+hat"]]);
-  assert.deepEqual(res.forModel.pasted.unknown, [{ word: "sunset_glow", candidates: [{ tag: "outdoors", zh: "戶外", section: "env" }, { tag: "hat", zh: "帽子", section: "clothing", blocked: "trash" }] }]);
+  assert.deepEqual(res.forModel.pasted.unknown, [{ word: "sunset_glow", searched: true, candidates: [{ tag: "outdoors", zh: "戶外", section: "env" }, { tag: "hat", zh: "帽子", section: "clothing", blocked: "trash" }] }]);
   assert.deepEqual(res.forModel.pasted.ignored, ["masterpiece"]);
-  assert.equal(res.summary, fill(TEXT.pasteSumLook, 2, 1));
+  assert.equal(res.summary, fill(TEXT.pasteSum, 3));
+  assert.deepEqual(res.forModel.pasted.changes, { added: 3, weights: 0, removed: 0 });
   assert.ok(res.lines.includes(fill(TEXT.pasteCands, "sunset_glow", "戶外、帽子")), res.lines.join("|"));
   assert.ok(res.undo, "跟 change_pool 一樣可以復原");
   assert.equal(res.sorts.length, 4);
@@ -810,6 +812,7 @@ console.log("ok: schemas and phrase list");
     const w = withParse(world({ cards: beachCards, pool: [{ tag: "smile", zh: "微笑", weight: 1.4 }, { tag: "hat", zh: "帽子", weight: 1 }] }));
     const r = await createToolRunner(w).run({ id: "a4", name: "paste_prompt", args: { prompt: "smile, beach", replace: true } }, { turn: turn(1) });
     assert.equal(r.status, "done");
+    assert.deepEqual(r.forModel.pasted.changes, { added: 2, weights: 1, removed: 1 });
     assert.equal(w._pool().find((p) => p.tag === "smile").weight, 1);
     assert.ok(!w._pool().some((p) => p.tag === "hat"));
   }
@@ -842,4 +845,221 @@ console.log("ok: schemas and phrase list");
   console.log("ok: effort lists match server");
 }
 
-console.log("all ok");
+// 直接用頁面的橋接，只替換詞庫、設定與外部操作，不載入整頁或真資料。
+function bridgeFixture({ groups = [], saveGroup, loadGroups, cards = {}, pool = [], banned = [] } = {}) {
+  const app = readFileSync(new URL(front + "app.js", import.meta.url), "utf8");
+  const bridge = app.slice(app.indexOf("function assistantCtx()"), app.indexOf("\nfunction drawBatch(gen"));
+  const parser = readFileSync(new URL(front + "paste-prompt.js", import.meta.url), "utf8")
+    .replace(/^import .*;\r?$/gm, "").replace(/^export /gm, "");
+  const byTag = new Map(Object.entries(cards).map(([tag, c]) => [tag, { tag, ...c }]));
+  const picks = (settings, section) => settings.groups?.[section] || { ids: [], mode: "whole" };
+  return new Function("deps", `
+    const { byTag, skeletonLit, stepSkeleton, sanitizeOffGroups, picks: pickOf, saveGroup, loadGroups, cachedGroups, HARD_BANNED, snapWeight } = deps;
+    const lib = { byTag, cards: [...byTag.values()] }, english = false;
+    const data = { characterBan: deps.banned, tags: lib.cards }, lex = { byTag };
+    const pool = new Set(deps.pool), bans = new Set(), weights = new Map();
+    const skelPicker = null, infinite = false, lastBatch = null;
+    const GROUP_SECTIONS = ["feature", "clothing", "pose", "env"];
+    let settings = { n: 1, counts: { feature: 1, clothing: 1 }, offGroups: sanitizeOffGroups(["feature:hair_len", "feature:eyes", "feature:hair_color"]), groups: {} };
+    let workVersion = 1;
+    const setSettings = patch => { settings = { ...settings, ...patch }; workVersion++; };
+    const renderGoBar = () => {}, syncGoCount = () => {}, renderRules = () => {};
+    const isCustomTag = tag => tag.startsWith("custom:");
+    const ratingBlocked = () => false, ratingHides = card => card.hidden, customOf = () => null;
+    const zh = tag => byTag.get(tag)?.zh || tag;
+    ${parser}
+    ${bridge}
+    return { ctx: assistantCtx(), change: setSettings, current: () => settings };
+  `)({ byTag, skeletonLit, stepSkeleton, sanitizeOffGroups, picks, saveGroup, loadGroups, cachedGroups: () => groups, pool, banned, HARD_BANNED, snapWeight: clampTagWeight });
+}
+
+for (const [name, args, method] of [
+  ["save_card_group", { name: "海邊", section: "env", tags: ["outdoors"] }, "saveGroup"],
+  ["draw_cards", { n: 1 }, "draw"],
+]) {
+  test(`第 2 項：${name} 等待時，下一步保留使用者改的張數`, async () => {
+    const ctx = world({ cards: beachCards });
+    const original = ctx[method];
+    ctx[method] = async (...params) => {
+      await Promise.resolve();
+      ctx.setN(5);
+      return original(...params);
+    };
+    const runner = createToolRunner(ctx);
+    assert.equal((await runner.run({ name, args }, { turn: turn(1) })).ok, true);
+    const next = await runner.run({ name: "set_draw_count", args: { n: 4 } }, { turn: turn(1) });
+    assert.equal(next.forModel.code, "stale", name);
+    assert.equal(ctx._settings().n, 5);
+  });
+}
+
+test("第 2 項：真正的寫入只認領橋接回報的版本", async () => {
+  const { ctx, change, current } = bridgeFixture();
+  const setN = ctx.setN;
+  ctx.setN = async (n) => {
+    const write = setN(n);
+    await Promise.resolve();
+    change({ n: 3 });
+    return write;
+  };
+  const runner = createToolRunner(ctx);
+  assert.equal((await runner.run({ name: "set_draw_count", args: { n: 2 } }, { turn: turn(1) })).ok, true);
+  const next = await runner.run({ name: "set_draw_count", args: { n: 4 } }, { turn: turn(1) });
+  assert.equal(next.forModel.code, "stale");
+  assert.equal(current().n, 3);
+});
+
+test("第 5 項：補牌復原恢復原選格，且會尊重後來換過的選格", async () => {
+  const { ctx, change, current } = bridgeFixture();
+  const runner = createToolRunner(ctx);
+  const firstLit = skeletonLit(current(), "feature");
+  assert.deepEqual(firstLit, ["feature:hair_style"]);
+  const setCounts = (feature) => runner.run({ name: "set_section_counts", args: { feature } }, { turn: turn(ctx.version()) });
+  const up = await setCounts(6);
+  change({ offGroups: [...current().offGroups, "clothing:top"] });
+  const back = await up.undo();
+  assert.equal(back.ok, true);
+  assert.equal(current().counts.feature, 1);
+  assert.deepEqual(skeletonLit(current(), "feature"), firstLit);
+  assert.ok(current().offGroups.includes("clothing:top"));
+  const next = await setCounts(2);
+  change({ offGroups: ["feature:hair_len"] });
+  assert.equal((await next.undo()).ok, false);
+  assert.equal(current().counts.feature, 2);
+});
+
+test("第 8 項：確認可取消、保留、套用、失效或失敗", async () => {
+  for (const expected of ["cancel", "kept", "applied", "stale", "failed"]) {
+    const ctx = world({ cards: beachCards, pool: [{ tag: "dress" }] });
+    const runner = createToolRunner(ctx);
+    const ask = () => runner.run({ name: "change_pool", args: { add: ["swimsuit"] } }, { turn: turn(1) });
+    const { confirm: { token } } = await ask();
+    if (expected === "cancel") {
+      const second = await ask();
+      runner.cancelPlans();
+      const gone = await runner.confirm(token);
+      assert.equal(gone.status, "stale");
+      assert.equal(gone.summary, "這項確認已經失效");
+      assert.equal((await runner.confirm(second.confirm.token)).status, "stale");
+    } else {
+      if (expected === "stale") ctx.bump();
+      if (expected === "failed") ctx.pin = () => { throw new Error("測試用錯誤"); };
+      const result = await runner.confirm(token, expected === "kept" ? "keep" : "apply");
+      assert.equal(result.status, expected);
+      assert.equal(await runner.confirm(token), result);
+    }
+    assert.equal(ctx._pool()[0].tag, expected === "applied" ? "swimsuit" : "dress");
+  }
+  const ctx = world({ cards: beachCards, pool: [{ tag: "dress" }] });
+  const preview = ctx.previewPins;
+  let finish;
+  let begin;
+  const waiting = new Promise((resolve) => { begin = resolve; });
+  ctx.previewPins = async (...args) => {
+    begin();
+    await new Promise((resolve) => { finish = resolve; });
+    return preview(...args);
+  };
+  const runner = createToolRunner(ctx);
+  const upcoming = runner.run({ name: "change_pool", args: { add: ["swimsuit"] } }, { turn: turn(1) });
+  await waiting;
+  runner.cancelPlans();
+  finish();
+  assert.equal((await upcoming).summary, "這項確認已經失效");
+  assert.equal(ctx._pool()[0].tag, "dress");
+});
+
+test("第 9 項：試算、查牌和改牌共用詞庫解析，試算分四類", async () => {
+  const { ctx } = bridgeFixture({
+    cards: {
+      "red hair": { zh: "紅髮" },
+      smile: { zh: "微笑" },
+      secret: { zh: "受分級限制", hidden: true },
+      cap: { zh: "帽子" },
+      hat: { zh: "帽子" },
+    },
+    pool: ["smile"],
+  });
+  ctx.previewPins = (tags) => ({ added: tags, total: 2, final: true });
+  const runner = createToolRunner(ctx);
+  const check = await runner.run({ name: "suggest_check", args: { tags: ["RED__Hair", "紅髮", "微笑", "帽子", "none", "secret", "loli"] } });
+  assert.deepEqual(check.forModel.usable, ["red hair"]);
+  assert.deepEqual(check.forModel.inPool, ["smile"]);
+  assert.deepEqual(check.forModel.missing, ["帽子", "none"]);
+  assert.deepEqual(check.forModel.blocked, [{ tag: "secret", reason: "rating" }, { tag: "loli", reason: "minor" }]);
+  assert.match(check.summary, /1.*1.*2.*2/);
+  const info = await runner.run({ name: "card_info", args: { tag: "Red_Hair" } });
+  assert.equal(info.forModel.tag, "red hair");
+  assert.equal(info.forModel.found, true);
+  const overlap = await runner.run({ name: "change_pool", args: { add: ["red_hair"], remove: ["紅髮"] } });
+  assert.equal(overlap.forModel.code, "bad_args");
+  const parsed = ctx.parse("(紅髮:1.4), Red__Hair, 帽子");
+  assert.deepEqual(parsed.cards.map((c) => ({ tag: c.tag, w: c.w })), [{ tag: "red hair", w: 1.4 }]);
+  assert.deepEqual(parsed.unknown, ["帽子"]);
+});
+
+test("第 10 項：建組回傳實際新 ID，只有明確的空陣列能清勾選", async () => {
+  const group = { id: "Group_ID", name: "海邊", section: "env", tags: ["outdoors"] };
+  const { ctx, change, current } = bridgeFixture({
+    cards: { outdoors: { zh: "戶外", item: { section: "env" } } },
+    saveGroup: async () => group,
+    loadGroups: async () => [group],
+  });
+  const runner = createToolRunner(ctx);
+  const saved = await runner.run({ name: "save_card_group", args: { name: group.name, section: "env", tags: ["outdoors"] } });
+  assert.deepEqual(saved.forModel.group, group);
+  change({ groups: { env: { ids: [group.id], mode: "whole" } } });
+  for (const ids of [undefined, null, [" "]]) {
+    const invalid = await runner.run({ name: "set_group_picks", args: { section: "env", mode: "mix", ...(ids !== undefined ? { ids } : {}) } });
+    assert.equal(invalid.forModel.code, "bad_args");
+    assert.deepEqual(invalid.forModel.current, { ids: [group.id], mode: "whole" });
+    assert.match(invalid.forModel.message, /完整.*ID/);
+    assert.deepEqual(current().groups.env.ids, [group.id]);
+  }
+  const cleared = await runner.run({ name: "set_group_picks", args: { section: "env", ids: [] } });
+  assert.equal(cleared.ok, true);
+  assert.equal(current().groups.env, undefined);
+});
+
+test("第 11 項：群組能區分未讀與失敗，重讀後回傳精簡清單及單組明細", async () => {
+  const groups = Array.from({ length: 200 }, (_, i) => ({
+    id: `Group_${i}`, name: `海邊 ${i}`, section: "env",
+    tags: Array.from({ length: 120 }, (_, j) => `a very long danbooru setting name ${i} ${j}`),
+  }));
+  let reads = 0;
+  const { ctx, current } = bridgeFixture({ groups: null, loadGroups: async ({ strict } = {}) => {
+    assert.equal(strict, true);
+    reads++;
+    if (reads === 1) return null;
+    if (reads === 2) throw new Error("503");
+    return groups;
+  } });
+  const runner = createToolRunner(ctx);
+  const list = (args = {}) => runner.run({ name: "list_groups", args });
+  assert.equal((await list()).forModel.code, "groups_not_loaded");
+  assert.equal((await list()).forModel.code, "groups_read_failed");
+  const picked = await runner.run({ name: "set_group_picks", args: { section: "env", ids: ["Group_0"], mode: "mix" } });
+  assert.equal(picked.ok, true);
+  assert.deepEqual(current().groups.env.ids, ["Group_0"]);
+  const view = (await list()).forModel.groups;
+  assert.equal(view.length, 200);
+  assert.deepEqual(view[0], { id: "Group_0", name: "海邊 0", section: "env", count: 120, picked: true, mode: "mix" });
+  assert.ok(Buffer.byteLength(JSON.stringify(view)) < 400 * 1024);
+  assert.deepEqual((await list({ id: "Group_0" })).forModel.groups[0].tags, groups[0].tags);
+  const empty = await createToolRunner(bridgeFixture().ctx).run({ name: "list_groups" });
+  assert.equal(empty.ok, true);
+  assert.deepEqual(empty.forModel.groups, []);
+});
+
+test("第 17 項：只改份量會列出前後值，超過六個未知字仍完整回傳", async () => {
+  const ctx = world({ cards: beachCards, pool: [{ tag: "smile", weight: 1 }] });
+  const unknown = Array.from({ length: 50 }, (_, i) => `unknown${i}`);
+  const raw = "(smile:1.4)";
+  ctx.parse = () => ({ cards: [{ tag: "smile", raw, w: 1.4 }], unknown });
+  const result = await createToolRunner(ctx).run({ name: "paste_prompt", args: { prompt: [raw, ...unknown].join(", ") } });
+  assert.match(result.summary, /微笑.*份量 1 → 1.4/);
+  assert.deepEqual(result.forModel.pasted.unknown.map((item) => item.word), unknown);
+  assert.deepEqual(result.forModel.pasted.unknown.map((item) => item.searched), unknown.map((_, i) => i < 6));
+  assert.equal(result.sorts.filter((item) => item.state === "look").length, 6);
+  assert.ok(result.lines.some((line) => line.includes("另 44 個尚未查找")));
+});

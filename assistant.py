@@ -469,19 +469,20 @@ def _codex_models(command, cwd):
 def _probe_cli(provider):
     """版本、登入、模型分開驗證，某個選項不支援時仍保留已確認的資料。"""
     result = {"id": provider, "name": CLI_NAMES[provider], "installed": False, "version": None,
-              "login": "unknown", "loginNote": "尚未安裝或找不到執行檔。", "models": [],
+              "login": "unknown", "loginCode": "missing", "loginNote": "尚未安裝或找不到執行檔。", "models": [],
               "usable": False, "note": "找不到執行檔。", "isolation": dict(CLI_ISOLATION[provider])}
     try:
         command = find_cli(provider)
         if not command:
             return result
-        result.update(installed=True, path=command[0], usable=True, note="", models=_builtin(provider))
+        # loginCode 跟中文短句分開：頁面照代碼取一句，英文才翻得動，不會跟隔離說明黏成一段。
+        result.update(installed=True, path=command[0], usable=True, note="", models=_builtin(provider),
+                      loginCode="unconfirmed", loginNote="這版 CLI 未能確認登入狀態。")
         with tempfile.TemporaryDirectory(prefix="mochi-cli-probe-") as cwd:
             result["version"] = _cli_version(command, cwd)
             args = {"claude": ["auth", "status", "--json"], "grok": ["models"],
                     "codex": ["login", "status"]}[provider]
             code, out, err = _run_probe(command, args, cwd)
-            result["loginNote"] = "這版 CLI 未能確認登入狀態。"
             if provider == "claude":
                 data = _json_value(out)
                 logged = data.get("loggedIn") if isinstance(data, dict) else None
@@ -510,12 +511,16 @@ def _probe_cli(provider):
                     elif re.search(r"\b(logged|signed) in\b", log):
                         result["login"] = "ok"
                     else:
+                        result["loginCode"] = "catalog"
                         result["loginNote"] = "已查詢模型目錄，登入狀態仍待確認。"
             if result["login"] != "unknown":
+                result["loginCode"] = "ok" if result["login"] == "ok" else "no"
                 result["loginNote"] = "已登入。" if result["login"] == "ok" else "尚未登入。"
     except subprocess.TimeoutExpired:
+        result["loginCode"] = "timeout"
         result["loginNote"] = "CLI 偵測逾時，請稍後再試。"
     except (OSError, ValueError, RecursionError):
+        result["loginCode"] = "read_failed"
         result["loginNote"] = "CLI 的狀態讀取失敗。"
     return result
 
@@ -656,6 +661,14 @@ def _response_json(raw):
     return value
 
 
+def _models_out(conn, models, source):
+    """帶回這次問的是哪一條連線。頁面拿慢回來的清單時要對得上，切換後的舊回應不能套到新的。"""
+    out = {"ok": True, "models": models, "source": source, "provider": conn["provider"]}
+    if conn.get("baseUrl"):
+        out["baseUrl"] = conn["baseUrl"]
+    return out
+
+
 def models(payload):
     """可先用暫填的金鑰看清單，確認後才另外存入設定。"""
     conn = _connection(payload, require_base=False)
@@ -663,7 +676,7 @@ def models(payload):
     builtin = _builtin(provider)
     if conn["kind"] == "cli":
         items = _probe_cli(provider)["models"]
-        return {"ok": True, "models": items, "source": "list" if items and items != builtin else "builtin"}
+        return _models_out(conn, items, "list" if items and items != builtin else "builtin")
     path = _config_path()
     with _settings_lock, file_lock.locked(path):
         saved = _stored(path)["connection"]
@@ -673,14 +686,14 @@ def models(payload):
             conn["baseUrl"] = saved["baseUrl"]
         key = _key_input(payload) or _api_key(path, conn, saved)
     if not key and provider != "custom":
-        return {"ok": True, "models": builtin, "source": "builtin"}
+        return _models_out(conn, builtin, "builtin")
     items = []
     endpoint = "/models"
     seen_cursors = set()
     while True:
         with _api_request(conn, key, endpoint) as response:
             if response is None:
-                return {"ok": True, "models": builtin, "source": "builtin"}
+                return _models_out(conn, builtin, "builtin")
             raw = response.read(MAX_RESPONSE_BYTES + 1)
         if len(raw) > MAX_RESPONSE_BYTES:
             raise AssistantError("format", "模型清單太大，請直接填寫模型名稱。", status=502)
@@ -696,7 +709,7 @@ def models(payload):
         seen_cursors.add(cursor)
         endpoint = "/models?" + urllib.parse.urlencode({"after_id": cursor})
     unique = {item["id"]: item for item in items}
-    return {"ok": True, "models": list(unique.values()), "source": "list"}
+    return _models_out(conn, list(unique.values()), "list")
 
 
 def _name_ok(name):

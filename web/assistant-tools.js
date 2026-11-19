@@ -67,7 +67,10 @@ export const TEXT = {
   labGeneric: "正在處理",
   labPaste: "正在排 {0} 個字",
   pasteSum: "排進 {0} 張牌",
-  pasteSumLook: "排進 {0} 張牌；{1} 個字到字盒找相近的",
+  pasteWeights: "調整 {0} 張牌的份量",
+  pasteRemoves: "移除 {0} 張牌",
+  pasteChanges: "排進 {0} 張牌，調整 {1} 張牌的份量，移除 {2} 張牌",
+  pasteUnsearched: "另 {0} 個尚未查找",
   pasteNone: "一張牌都對不上",
   pasteHave: "這些牌都已經在合成池",
   pasteCands: "「{0}」可能是：{1}",
@@ -82,6 +85,7 @@ export const TEXT = {
   countsLine: "長相 {0}、服裝 {1}、姿勢 {2}、場景 {3}",
   foundN: "找到 {0} 張",
   foundNone: "沒有找到",
+  checkCounts: "可用 {0} 張，已在池中 {1} 張，找不到 {2} 張，受限制 {3} 張",
   noCard: "詞庫沒有「{0}」",
   blockedBy: "「{0}」被{1}擋著",
   emptyQuery: "搜尋字不能是空的",
@@ -139,6 +143,9 @@ export const TEXT = {
   tooManyPicks: "一次最多勾 {0} 組",
   tooManyGroups: "群組最多 {0} 組，先刪掉一些",
   badMode: "抽法不對",
+  picksNeedIds: "請傳這個類別要保留的完整 ID 清單",
+  groupsNotLoaded: "群組清單還沒讀到，請再試一次",
+  groupsReadFailed: "讀取群組清單失敗，請再試一次",
   groupMissing: "這個類別沒有這組",
   nameTaken: "已有同名群組「{0}」",
   wrongSection: "「{0}」不屬於這個類別",
@@ -166,7 +173,7 @@ export function fill(tpl, ...args) {
 }
 
 function norm(tag) {
-  return String(tag ?? "").toLowerCase().replace(/_/g, " ").trim();
+  return String(tag ?? "").toLowerCase().replace(/[_\s]+/g, " ").trim();
 }
 
 function snapWeight(weight) {
@@ -282,13 +289,13 @@ export const TOOL_DEFS = [
       type: "object",
       additionalProperties: false,
       required: ["tag"],
-      properties: { tag: { ...str, description: "詞庫裡的 tag，不是中文名" } },
+      properties: { tag: { ...str, description: "詞庫正式 tag，或可唯一對應的牌名" } },
     },
   },
   {
     name: "suggest_check",
     kind: "read",
-    description: "給準備加入的 tag，試算會附帶誰、擠掉哪張已釘的牌、會不會從廢字簍撿回、加入後會不會超過 40 張。完全不寫入。一次加很多張、或池子接近 40 張時，先呼叫這支再決定要不要 change_pool。不要把它當成已經寫入，試算完使用者沒交代就不要接著改池子。",
+    description: "給準備加入的 tag，分成可用、已在池中、找不到和受限制，只用可用的牌試算附帶、互斥和 40 張上限。完全不寫入。一次加很多張、或池子接近 40 張時，先呼叫這支再決定要不要 change_pool。不要把它當成已經寫入，試算完使用者沒交代就不要接著改池子。",
     input_schema: {
       type: "object",
       additionalProperties: false,
@@ -343,11 +350,14 @@ export const TOOL_DEFS = [
   {
     name: "list_groups",
     kind: "read",
-    description: "查看已存的群組，以及每個類別現在勾了哪些、是整組一起還是混著抽。要勾選或建立之前、還不知道組名對應的 id 時先呼叫。不要用它勾選、取消或存檔。",
+    description: "查看已存的群組，以及每個類別現在勾了哪些、是整組一起還是混著抽。預設只列 ID、名稱、類別、張數、勾選和抽法，需要成員時帶單一 id。要勾選或建立之前、還不知道組名對應的 id 時先呼叫。不要用它勾選、取消或存檔。",
     input_schema: {
       type: "object",
       additionalProperties: false,
-      properties: { section: { type: "string", enum: SECTIONS, description: "不傳就列出全部類別" } },
+      properties: {
+        section: { type: "string", enum: SECTIONS, description: "不傳就列出全部類別" },
+        id: { ...str, description: "傳一組的完整 ID 才會附上這組的成員" },
+      },
     },
   },
   {
@@ -411,6 +421,8 @@ export function createToolRunner(ctx) {
   // 助手自己寫入造成的版本推進。鍵是這一輪模型看到的版本，值是我們最後寫到的版本。
   const progressed = new Map();
   const plans = new Map();
+  const staleWrite = Symbol();
+  let planGeneration = 0;
   let seq = 0;
 
   function isStale(base) {
@@ -423,9 +435,22 @@ export function createToolRunner(ctx) {
     return true;
   }
 
-  function note(base) {
-    if (base == null) return;
-    try { progressed.set(base, ctx.version()); } catch { /* 讀不到就讓下一支自己再判 */ }
+  function note(base, result) {
+    if (base != null && Number.isFinite(result?.version)) progressed.set(base, result.version);
+  }
+
+  function staleResult(target) {
+    return fail(target, "stale", TEXT.stale, { model: { message: "工作台已經變了，請先 get_workspace 再寫入。" } });
+  }
+
+  function resolvedTag(tag) {
+    // 原字若在封鎖表，不能被另一張同名的牌洗掉封鎖理由。
+    const key = norm(tag);
+    return HARD.has(key) || MINOR_RE.test(key) ? tag : ctx.resolveTag?.(tag) ?? tag;
+  }
+
+  function resolvedTags(tags) {
+    return [...new Set(tags.map(resolvedTag))];
   }
 
   function zhOf(tag) {
@@ -571,7 +596,7 @@ export function createToolRunner(ctx) {
     try {
       if (name === "get_workspace") return { zh: TEXT.labWorkspace, area: "pool" };
       if (name === "find_cards") return { zh: fill(TEXT.labSearch, typeof args.query === "string" ? args.query.trim() : ""), area: "lib" };
-      if (name === "card_info") return { zh: fill(TEXT.labCard, zhOf(args.tag)), area: "lib" };
+      if (name === "card_info") return { zh: fill(TEXT.labCard, zhOf(typeof args.tag === "string" ? resolvedTag(args.tag.trim()) : args.tag)), area: "lib" };
       if (name === "suggest_check") return { zh: TEXT.labCheck, area: "lib" };
       if (name === "set_draw_count") return { zh: fill(TEXT.labN, args.n), area: "rules" };
       if (name === "set_section_counts") {
@@ -598,9 +623,9 @@ export function createToolRunner(ctx) {
         const add = Array.isArray(args.add) ? args.add.filter((t) => typeof t === "string" && t.trim()) : [];
         const remove = Array.isArray(args.remove) ? args.remove.filter((t) => typeof t === "string" && t.trim()) : [];
         const wkeys = args.weights && typeof args.weights === "object" && !Array.isArray(args.weights) ? Object.keys(args.weights) : [];
-        if (add.length === 1 && !remove.length && !wkeys.length) return { zh: fill(TEXT.labAdd, zhOf(add[0].trim())), area: "pool" };
-        if (!add.length && remove.length === 1 && !wkeys.length) return { zh: fill(TEXT.labRemove, zhOf(remove[0].trim())), area: "pool" };
-        if (!add.length && !remove.length && wkeys.length === 1) return { zh: fill(TEXT.labWeight, zhOf(wkeys[0])), area: "pool" };
+        if (add.length === 1 && !remove.length && !wkeys.length) return { zh: fill(TEXT.labAdd, zhOf(resolvedTag(add[0].trim()))), area: "pool" };
+        if (!add.length && remove.length === 1 && !wkeys.length) return { zh: fill(TEXT.labRemove, zhOf(resolvedTag(remove[0].trim()))), area: "pool" };
+        if (!add.length && !remove.length && wkeys.length === 1) return { zh: fill(TEXT.labWeight, zhOf(resolvedTag(wkeys[0].trim()))), area: "pool" };
         return { zh: TEXT.labPool, area: "pool" };
       }
     } catch { /* 名稱失敗仍要回一個區域，畫面才知道亮哪裡 */ }
@@ -629,15 +654,18 @@ export function createToolRunner(ctx) {
   function undoCounts(changes) {
     return undoWrap(async () => {
       const st = await ctx.state();
+      const patch = {};
+      const off = {};
       for (const ch of changes) {
-        if (st.settings?.counts?.[ch.section] !== ch.to) {
+        const current = (st.settings?.offGroups || []).filter((key) => key.startsWith(`${ch.section}:`)).sort();
+        if (st.settings?.counts?.[ch.section] !== ch.to || !sameList(current, [...ch.toOffGroups].sort())) {
           const reason = fill(TEXT.undoTag, SECTION_ZH[ch.section] || ch.section);
           return { ok: false, reason, summary: reason };
         }
+        patch[ch.section] = ch.from;
+        off[ch.section] = ch.fromOffGroups;
       }
-      const patch = {};
-      for (const ch of changes) patch[ch.section] = ch.from;
-      await ctx.setSectionCounts(patch);
+      await ctx.setSectionCounts(patch, off);
       return { ok: true, restored: true, summary: TEXT.restored };
     });
   }
@@ -789,17 +817,17 @@ export function createToolRunner(ctx) {
     return TEXT.confirmGeneric;
   }
 
-  async function mutatePool(state, add, removes, weights, from = null) {
+  async function mutatePool(state, add, removes, weights, from, write, canWrite) {
     const before = new Map((state.pool || []).map((p) => [p.tag, p]));
     const toUnpin = removes.filter((t) => before.has(t));
     let removedNow = [];
     let pinned = { added: [], companions: [], displaced: [], unbanned: [] };
     try {
       if (toUnpin.length) {
-        const r = await ctx.unpin(toUnpin);
+        const r = await write(() => ctx.unpin(toUnpin));
         removedNow = r?.removed || [...toUnpin];
       }
-      if (add.length) pinned = (await (from ? ctx.pin(add, { from }) : ctx.pin(add))) || pinned;
+      if (add.length) pinned = (await write(() => ctx.pin(add, from ? { from } : undefined))) || pinned;
       const weightResult = [];
       const afterPin = await ctx.state();
       const have = new Map((afterPin.pool || []).map((p) => [p.tag, p]));
@@ -807,7 +835,7 @@ export function createToolRunner(ctx) {
         const cur = have.get(tag);
         if (!cur) continue;
         if (sameW(cur.weight, w)) continue;
-        const wr = await ctx.setWeight(tag, w);
+        const wr = await write(() => ctx.setWeight(tag, w));
         weightResult.push({ tag, from: wr?.from ?? cur.weight, to: wr?.to ?? w });
         cur.weight = wr?.to ?? w;
       }
@@ -815,20 +843,20 @@ export function createToolRunner(ctx) {
       return { pinned, removedNow, weightResult, before, after };
     } catch (err) {
       // 先移掉再釘上時，釘上失敗要把剛剛移掉的補回去，避免池子停在半套。
-      if (removedNow.length) {
+      if (removedNow.length && err !== staleWrite && canWrite()) {
         try { await ctx.pin(removedNow); } catch { /* 補不回就失敗，模型重讀 */ }
       }
       throw err;
     }
   }
 
-  function poolStory(mut) {
+  function poolStory(mut, pasted = false) {
     const added = mut.pinned?.added || [];
     const companions = mut.pinned?.companions || [];
     const displaced = mut.pinned?.displaced || [];
     const unbanned = mut.pinned?.unbanned || [];
     const lines = [];
-    for (const tag of added) lines.push(fill(TEXT.added, zhOf(tag)));
+    if (!pasted) for (const tag of added) lines.push(fill(TEXT.added, zhOf(tag)));
     if (companions.length) lines.push(fill(TEXT.companion, joinZh(companions)));
     for (const tag of mut.removedNow || []) {
       if (!displaced.includes(tag)) lines.push(fill(TEXT.removed, zhOf(tag)));
@@ -875,19 +903,45 @@ export function createToolRunner(ctx) {
     return { summary, lines, undo, added, companions, displaced, unbanned };
   }
 
+  function pasteChanges(mut) {
+    const after = new Set((mut.after.pool || []).map((p) => p.tag));
+    const added = [...after].filter((t) => !mut.before.has(t)).length;
+    const removed = [...mut.before.keys()].filter((t) => !after.has(t)).length;
+    const weights = mut.weightResult.filter((w) => mut.before.has(w.tag) && after.has(w.tag));
+    const n = weights.length;
+    const counts = { added, weights: n, removed };
+    if ([added, n, removed].filter(Boolean).length > 1) return { summary: fill(TEXT.pasteChanges, added, n, removed), counts };
+    if (added) return { summary: fill(TEXT.pasteSum, added), counts };
+    if (removed) return { summary: fill(TEXT.pasteRemoves, removed), counts };
+    if (n === 1) {
+      const { tag, from, to } = weights[0];
+      return { summary: fill(TEXT.weightChange, zhOf(tag), from, to), counts };
+    }
+    return { summary: n ? fill(TEXT.pasteWeights, n) : TEXT.poolSame, counts };
+  }
+
   async function commitPool(planLike, base, target, labelText) {
     const state = await ctx.state();
     await hi(target, "write", labelText);
+    let expected = planLike.seen;
+    const canWrite = () => expected == null ? !isStale(base) : ctx.version() === expected;
+    const write = async (fn) => {
+      if (!canWrite()) throw staleWrite;
+      const r = await fn();
+      if (Number.isFinite(r?.version)) expected = r.version;
+      note(base, r);
+      return r;
+    };
     try {
-      const mut = await mutatePool(state, planLike.add, planLike.remove, planLike.weights, planLike.from || null);
-      note(base);
+      const mut = await mutatePool(state, planLike.add, planLike.remove, planLike.weights, planLike.from, write, canWrite);
       await hi(target, "done", labelText);
-      const story = poolStory(mut);
+      const story = poolStory(mut, planLike.paste);
+      const paste = planLike.paste ? pasteChanges(mut) : null;
       const total = mut.after.poolCount;
       return pack({
         ok: true,
         status: "done",
-        summary: story.summary,
+        summary: paste?.summary || story.summary,
         lines: story.lines,
         target,
         undo: story.undo,
@@ -900,11 +954,13 @@ export function createToolRunner(ctx) {
           removed: mut.removedNow,
           weights: (mut.weightResult || []).map((w) => ({ tag: w.tag, from: w.from, to: w.to })),
           total,
+          ...(paste ? { pasted: { changes: paste.counts } } : {}),
           undoable: !!story.undo,
         },
       });
     } catch (err) {
       await hi(target, "clear", labelText);
+      if (err === staleWrite) return staleResult(target);
       return fail(target, "failed", TEXT.failed, { model: { error: err?.message || String(err) } });
     }
   }
@@ -937,7 +993,7 @@ export function createToolRunner(ctx) {
     if (args.section) opt.section = args.section;
     await hi(target, "read", fill(TEXT.labSearch, query));
     try {
-      const cards = (await ctx.search(query, opt)) || [];
+      const cards = (await ctx.search(resolvedTag(query), opt)) || [];
       await hi(target, "clear");
       const lines = [];
       for (const card of cards) {
@@ -959,13 +1015,13 @@ export function createToolRunner(ctx) {
   }
 
   async function cardInfo(args) {
-    const tag = typeof args.tag === "string" ? args.tag.trim() : "";
+    const tag = typeof args.tag === "string" ? resolvedTag(args.tag.trim()) : "";
     const target = tag ? { area: "lib", key: tag } : { area: "lib" };
     if (!tag) return fail(target, "bad_args", TEXT.badArgs);
     const reason = await blockReason(tag);
     await hi(target, "read", fill(TEXT.labCard, zhOf(tag)));
     try {
-      const info = await ctx.cardInfo(tag);
+      const info = await knownInfo(tag, await ctx.state());
       await hi(target, "clear");
       if (!info) {
         if (reason) {
@@ -1024,27 +1080,38 @@ export function createToolRunner(ctx) {
     const target = { area: "lib" };
     const tags = tagList(args.tags);
     if (!tags || !tags.length) return fail(target, "bad_args", tags ? TEXT.needTag : TEXT.badArgs);
-    const blocked = [];
-    const usable = [];
-    for (const tag of tags) {
-      const reason = await blockReason(tag);
-      if (reason) blocked.push({ tag, reason });
-      else usable.push(tag);
-    }
     await hi(target, "read", TEXT.labCheck);
     try {
       const state = await ctx.state();
+      const poolTags = new Set((state.pool || []).map((p) => p.tag));
+      const blocked = [];
+      const usable = [];
+      const inPool = [];
+      const missing = [];
+      for (const tag of resolvedTags(tags)) {
+        const reason = await blockReason(tag);
+        const info = await knownInfo(tag, state);
+        if (reason) blocked.push({ tag, reason });
+        else if (poolTags.has(tag)) inPool.push(tag);
+        else if (!info) missing.push(tag);
+        else if (info.blocked) blocked.push({ tag, reason: info.blocked });
+        else usable.push(tag);
+      }
       const preview = usable.length ? await ctx.previewPins(usable) : { added: [], companions: [], displaced: [], unbanned: [], total: state.poolCount };
       await hi(target, "clear");
       const total = projectTotal(state, usable.length ? preview : null, []);
       const lines = [];
-      for (const b of blocked) lines.push(cannot(b.tag, b.reason));
+      for (const b of blocked) {
+        lines.push(WHY[b.reason] ? cannot(b.tag, b.reason) : fill(TEXT.blockedBy, zhOf(b.tag), GATE_ZH[b.reason] || b.reason));
+      }
+      for (const tag of missing) lines.push(fill(TEXT.noCard, tag));
       for (const tag of preview.displaced || []) lines.push(fill(TEXT.wouldRemove, zhOf(tag)));
       for (const tag of preview.unbanned || []) lines.push(fill(TEXT.confirmUnban, zhOf(tag)));
       if (preview.companions?.length) lines.push(fill(TEXT.companion, joinZh(preview.companions)));
       const over = total > POOL_CAP;
       if (over) lines.push(fill(TEXT.over40, total));
-      const summary = over ? fill(TEXT.over40, total) : (preview.displaced?.length ? fill(TEXT.wouldRemove, zhOf(preview.displaced[0])) : fill(TEXT.foundN, usable.length));
+      const counts = fill(TEXT.checkCounts, usable.length, inPool.length, missing.length, blocked.length);
+      const summary = over ? `${counts}・${fill(TEXT.over40, total)}` : counts;
       return pack({
         ok: true,
         status: "done",
@@ -1054,6 +1121,8 @@ export function createToolRunner(ctx) {
         forModel: {
           ok: true,
           usable,
+          inPool,
+          missing,
           blocked,
           added: preview.added || [],
           companions: preview.companions || [],
@@ -1070,22 +1139,25 @@ export function createToolRunner(ctx) {
   }
 
   function parsePool(args, target) {
-    const add = tagList(args.add);
-    const remove = tagList(args.remove);
+    const addInput = tagList(args.add);
+    const removeInput = tagList(args.remove);
     const weights = weightMap(args.weights);
-    if (!add || !remove || weights.error) return { error: fail(target, "bad_args", TEXT.badArgs) };
-    const addSet = new Set(add);
+    if (!addInput || !removeInput || weights.error) return { error: fail(target, "bad_args", TEXT.badArgs) };
+    const add = resolvedTags(addInput);
+    const remove = resolvedTags(removeInput);
     const removeSet = new Set(remove);
     for (const tag of add) if (removeSet.has(tag)) return { error: fail(target, "bad_args", TEXT.overlap) };
-    for (const tag of Object.keys(weights.map)) if (removeSet.has(tag)) return { error: fail(target, "bad_args", TEXT.overlapW) };
-    const snapped = [];
-    for (const [tag, raw] of Object.entries(weights.map)) {
+    const snapped = new Map();
+    for (const [key, raw] of Object.entries(weights.map)) {
+      const tag = resolvedTag(key);
+      if (removeSet.has(tag)) return { error: fail(target, "bad_args", TEXT.overlapW) };
       const s = snapWeight(raw);
       if (!s.ok) return { error: fail(target, "bad_args", s.type ? TEXT.weightType : TEXT.weightRange) };
-      snapped.push([tag, s.value]);
+      if (snapped.has(tag) && snapped.get(tag) !== s.value) return { error: fail(target, "bad_args", TEXT.badArgs) };
+      snapped.set(tag, s.value);
     }
-    if (!add.length && !remove.length && !snapped.length) return { error: fail(target, "bad_args", TEXT.nothing) };
-    return { add, remove, addSet, removeSet, weights: snapped };
+    if (!add.length && !remove.length && !snapped.size) return { error: fail(target, "bad_args", TEXT.nothing) };
+    return { add, remove, removeSet, weights: [...snapped] };
   }
 
   async function changePool(args, opts, base) {
@@ -1127,6 +1199,7 @@ export function createToolRunner(ctx) {
       }
     }
     const preview = add.length || remove.length ? await ctx.previewPins(add, remove) : null;
+    if (isStale(base)) return staleResult(target);
     const total = projectTotal(state, preview, remove);
     if (total > POOL_CAP) {
       const lim = limitLines(total, state);
@@ -1157,6 +1230,7 @@ export function createToolRunner(ctx) {
       return skip(target, idle && !add.length ? fill(TEXT.notInPool, zhOf(idle)) : TEXT.poolSame);
     }
     if (surpriseD.length || surpriseU.length) {
+      if (opts.planGeneration !== planGeneration) return fail(target, "confirm_unknown", TEXT.confirmGone);
       const prompt = confirmPrompt({ ...preview, displaced: surpriseD, unbanned: surpriseU });
       const token = `cf${++seq}`;
       const plan = {
@@ -1169,8 +1243,8 @@ export function createToolRunner(ctx) {
         add,
         remove,
         weights,
+        paste: opts.paste,
         from: opts.from || null,
-        applied: null,
         pending: null,
       };
       plans.set(token, plan);
@@ -1200,7 +1274,7 @@ export function createToolRunner(ctx) {
         },
       });
     }
-    return commitPool({ add, remove, weights, from: opts.from || null }, base, target, label({ name: "change_pool", args }).zh);
+    return commitPool({ add, remove, weights, from: opts.from, paste: opts.paste }, base, target, label({ name: "change_pool", args }).zh);
   }
 
   /* ---------- 貼上提示詞（助手直接寫好一整串） ---------- */
@@ -1256,13 +1330,19 @@ export function createToolRunner(ctx) {
   // 詞庫沒有的字：到字盒找相近的（同一個搜尋），整串找不到就拿最長的那個詞再找一次。
   async function lookupWord(raw) {
     const q = plainWord(raw);
-    if (!q) return { raw, query: q, candidates: [] };
-    let list = [];
+    let searched = false;
+    const search = async (query) => {
+      try {
+        const result = await ctx.search(query, { limit: 8 });
+        searched = true;
+        return result || [];
+      } catch { return []; }
+    };
+    let list = q ? await search(q) : [];
     let used = q;
-    try { list = (await ctx.search(q, { limit: 8 })) || []; } catch { list = []; }
     if (!list.length && q.includes(" ")) {
       for (const w of q.split(" ").filter((x) => x.length >= 3).sort((a, b) => b.length - a.length)) {
-        try { list = (await ctx.search(w, { limit: 8 })) || []; } catch { list = []; }
+        list = await search(w);
         if (list.length) {
           used = w;
           break;
@@ -1276,7 +1356,7 @@ export function createToolRunner(ctx) {
       candidates.push({ tag: c.tag, zh: c.zh || zhOf(c.tag), section: c.section || null, ...(c.blocked ? { blocked: c.blocked } : {}) });
       if (candidates.length >= 4) break;
     }
-    return { raw, query: used, candidates };
+    return { raw, query: used, candidates, searched };
   }
 
   async function stage(fn, ...a) {
@@ -1312,8 +1392,14 @@ export function createToolRunner(ctx) {
       const s = sorts.find((x) => x.kind === "card" && x.tag === tag);
       return s && tray?.rect ? tray.rect(s.i) : null;
     };
+    const unknown = parsed.unknown || [];
+    const unknownSorts = new Map(sorts.filter((s) => s.kind === "unknown").map((s) => [s.raw, s]));
     const lookups = [];
-    for (const s of sorts.filter((x) => x.kind === "unknown").slice(0, 6)) lookups.push({ i: s.i, ...(await lookupWord(s.raw)) });
+    for (const raw of unknown.slice(0, 6)) {
+      if (opts.signal?.aborted) break;
+      const result = await lookupWord(raw);
+      if (result.searched) lookups.push({ i: unknownSorts.get(raw)?.i, ...result });
+    }
     // 排字動畫最長一秒多：這段時間按了停止、或自己動了合成池，就不能照舊的狀態寫（replace 會把你剛放的牌當成舊的拿掉）。
     if (opts.signal?.aborted) return skip(target, TEXT.aborted, { ok: false, code: "aborted" });
     if (isStale(base)) return fail(target, "stale", TEXT.stale, { model: { message: "排字時工作台被改過，請先 get_workspace 再寫入。" } });
@@ -1324,7 +1410,8 @@ export function createToolRunner(ctx) {
     // 一張都對不上時不能照樣清池子（手動貼上這時「換成」是按不下去的）。
     const remove = args.replace && add.length ? (st.pool || []).map((p) => p.tag).filter((t) => !add.includes(t)) : [];
     const ignored = sorts.filter((x) => x.kind === "muted").map((x) => x.raw);
-    const unknownForModel = lookups.map((l) => ({ word: l.raw, candidates: l.candidates }));
+    const byWord = new Map(lookups.map((l) => [l.raw, l]));
+    const unknownForModel = unknown.map((word) => ({ word, searched: byWord.has(word), candidates: byWord.get(word)?.candidates || [] }));
     const lookLines = lookups.map((l) => (l.candidates.length ? fill(TEXT.pasteCands, l.raw, l.candidates.map((c) => c.zh).join(sep())) : fill(TEXT.pasteNoCand, l.raw)));
     const extra = {
       pasted: { cards: add.length, unknown: unknownForModel, ignored, blocked },
@@ -1336,7 +1423,7 @@ export function createToolRunner(ctx) {
     } else if (!remove.length && add.every((t) => already.has(t)) && Object.entries(weightsObj).every(([t, w]) => sameW((st.pool || []).find((p) => p.tag === t)?.weight ?? 1, w))) {
       res = skip(target, TEXT.pasteHave, { model: { code: "already_in_pool" } });
     } else {
-      res = await changePool({ add, ...(remove.length ? { remove } : {}), ...(Object.keys(weightsObj).length ? { weights: weightsObj } : {}) }, { ...opts, from: rectOf }, base);
+      res = await changePool({ add, ...(remove.length ? { remove } : {}), ...(Object.keys(weightsObj).length ? { weights: weightsObj } : {}) }, { ...opts, from: rectOf, paste: true }, base);
     }
     // 排字盤上每一顆的下場照放完之後真的池子：同一串裡互斥的（beach 跟 ocean），後面那張會把前面那張擠掉。
     let inPool = already;
@@ -1344,30 +1431,21 @@ export function createToolRunner(ctx) {
     const dropped = res.status === "done" ? add.filter((t) => !inPool.has(t)) : [];
     for (const s of sorts) {
       if (s.kind === "card") s.state = res.status === "needs_confirm" ? "wait" : inPool.has(s.tag) ? "set" : "miss";
-      else if (s.kind === "unknown") s.state = "look";
+      else if (s.kind === "unknown" && byWord.has(s.raw)) s.state = "look";
     }
     if (dropped.length) extra.pasted.dropped = dropped.map((t) => ({ tag: t, why: "mutex_in_prompt" }));
     await stage("typesetDone", opts.callId || null, sorts);
-    if (lookups.length) stage("lookup", opts.callId || null, lookups.map((l) => ({ i: l.i, raw: l.raw, query: l.query, tags: l.candidates.map((c) => c.tag) })));
-    const n = (res.forModel?.added || []).filter((t) => inPool.has(t)).length;
-    if (res.status === "done") {
-      res.summary = lookups.length ? fill(TEXT.pasteSumLook, n, lookups.length) : fill(TEXT.pasteSum, n);
-    }
-    // 每張「加入」排字盤上已經打勾了，明細只寫排字盤看不到的：附帶、拿掉的、字盒找到的、引擎處理的。
-    // （等確認、失敗的照原本的明細，那幾行說的是要決定的事。）
-    const fm = res.forModel || {};
-    const own = res.status === "done"
-      ? [
-          ...(fm.companions?.length ? [fill(TEXT.companion, joinZh(fm.companions))] : []),
-          ...(fm.removed || []).filter((t) => !(fm.displaced || []).includes(t)).map((t) => fill(TEXT.removed, zhOf(t))),
-          ...(fm.displaced || []).map((t) => fill(TEXT.wouldRemove, zhOf(t))),
-          ...(dropped.length ? [fill(TEXT.pasteDropped, joinZh(dropped))] : []),
-        ]
-      : res.lines || [];
-    const tail = [...lookLines, ...(ignored.length ? [fill(TEXT.pasteIgnored, ignored.slice(0, 6).join(sep()))] : [])];
-    // 字盒找到的那幾行最重要：明細太長時先收「拿掉」那些，不收它們。
-    res.lines = [...capLines(own).slice(0, Math.max(1, LINE_CAP - tail.length)), ...tail].slice(0, LINE_CAP);
-    res.forModel = { ...(res.forModel || {}), ...extra };
+    const animated = lookups.filter((l) => l.i != null);
+    if (animated.length) stage("lookup", opts.callId || null, animated.map((l) => ({ i: l.i, raw: l.raw, query: l.query, tags: l.candidates.map((c) => c.tag) })));
+    const unsearched = unknown.length - lookups.length;
+    const own = [...(res.lines || []), ...(dropped.length ? [fill(TEXT.pasteDropped, joinZh(dropped))] : [])];
+    const tail = [
+      ...(unsearched ? [fill(TEXT.pasteUnsearched, unsearched)] : []),
+      ...lookLines,
+      ...(ignored.length ? [fill(TEXT.pasteIgnored, ignored.slice(0, 6).join(sep()))] : []),
+    ];
+    res.lines = [...own.slice(0, Math.max(1, LINE_CAP - tail.length)), ...tail].slice(0, LINE_CAP);
+    res.forModel = { ...res.forModel, pasted: { ...res.forModel.pasted, ...extra.pasted } };
     res.sorts = sorts;
     return res;
   }
@@ -1410,8 +1488,9 @@ export function createToolRunner(ctx) {
     const text = fill(TEXT.labN, args.n);
     await hi(target, "write", text);
     try {
+      if (isStale(base)) throw staleWrite;
       const r = await ctx.setN(args.n);
-      note(base);
+      note(base, r);
       await hi(target, "done", text);
       const from = r?.from ?? st.settings?.n;
       const to = r?.to ?? args.n;
@@ -1426,6 +1505,7 @@ export function createToolRunner(ctx) {
       });
     } catch (err) {
       await hi(target, "clear", text);
+      if (err === staleWrite) return staleResult(target);
       return fail(target, "failed", TEXT.failed, { model: { error: err?.message || String(err) } });
     }
   }
@@ -1444,10 +1524,11 @@ export function createToolRunner(ctx) {
     const text = keys.length === 1 ? fill(TEXT.labCount, SECTION_ZH[keys[0]], args[keys[0]]) : TEXT.labCounts;
     await hi(target, "write", text);
     try {
+      if (isStale(base)) throw staleWrite;
       const r = await ctx.setSectionCounts(patch);
-      note(base);
+      note(base, r);
       await hi(target, "done", text);
-      const changes = r?.changes || Object.keys(patch).map((section) => ({ section, from: st.settings?.counts?.[section], to: patch[section] }));
+      const changes = r.changes;
       const lines = changes.map((ch) => fill(TEXT.countChange, SECTION_ZH[ch.section] || ch.section, ch.from, ch.to));
       return pack({
         ok: true,
@@ -1460,52 +1541,75 @@ export function createToolRunner(ctx) {
       });
     } catch (err) {
       await hi(target, "clear", text);
+      if (err === staleWrite) return staleResult(target);
       return fail(target, "failed", TEXT.failed, { model: { error: err?.message || String(err) } });
     }
   }
 
+  async function readGroups(target, refresh = false) {
+    try {
+      const groups = await ctx.groups({ refresh });
+      return groups == null ? { error: fail(target, "groups_not_loaded", TEXT.groupsNotLoaded) } : { groups };
+    } catch (err) {
+      return { error: fail(target, "groups_read_failed", TEXT.groupsReadFailed, { model: { error: err?.message || String(err) } }) };
+    }
+  }
+
   async function listGroups(args) {
-    const section = args.section;
+    const { section, id } = args;
     const target = section ? { area: "groups", key: section } : { area: "groups" };
     if (section != null && !SECTIONS.includes(section)) return fail(target, "bad_args", TEXT.badSection);
+    if (Object.hasOwn(args, "id") && (typeof id !== "string" || !id.trim())) return fail(target, "bad_args", TEXT.badArgs);
     await hi(target, "read", TEXT.labGroups);
-    try {
-      let groups = (await ctx.groups()) || [];
-      if (section) groups = groups.filter((g) => g.section === section);
-      await hi(target, "clear");
-      const view = groups.map((g) => ({
-        id: g.id,
-        name: g.name,
-        section: g.section,
-        tags: [...(g.tags || [])],
-        picked: !!g.picked,
-        mode: g.mode || "whole",
-      }));
-      const summary = section
-        ? fill(TEXT.groupCount, SECTION_ZH[section], view.length)
-        : fill(TEXT.groupCountAll, view.length);
-      return pack({ ok: true, status: "done", summary, lines: [], target, forModel: { ok: true, groups: view } });
-    } catch (err) {
-      await hi(target, "clear");
-      return fail(target, "failed", TEXT.failed, { model: { error: err?.message || String(err) } });
-    }
+    const { error, groups } = await readGroups(target);
+    await hi(target, "clear");
+    if (error) return error;
+    const view = groups.filter((g) => (!section || g.section === section) && (!id || g.id === id)).map((g) => ({
+      id: g.id,
+      name: g.name,
+      section: g.section,
+      count: (g.tags || []).length,
+      picked: !!g.picked,
+      mode: g.mode || "whole",
+      ...(id ? { tags: [...(g.tags || [])] } : {}),
+    }));
+    if (id && !view.length) return fail(target, "group_missing", TEXT.groupMissing, { model: { missing: [id] } });
+    const summary = section
+      ? fill(TEXT.groupCount, SECTION_ZH[section], view.length)
+      : fill(TEXT.groupCountAll, view.length);
+    return pack({ ok: true, status: "done", summary, lines: [], target, forModel: { ok: true, groups: view } });
   }
 
   async function setGroupPicks(args, _opts, base) {
     const section = args.section;
     const target = SECTIONS.includes(section) ? { area: "groups", key: section } : { area: "groups" };
     if (!SECTIONS.includes(section)) return fail(target, "bad_args", TEXT.badSection);
-    const ids = tagList(args.ids);
-    if (!ids) return fail(target, "bad_args", TEXT.badArgs);
-    if (args.ids.length > MAX_PICKS || ids.length > MAX_PICKS) return fail(target, "bad_args", fill(TEXT.tooManyPicks, MAX_PICKS));
-    if (Object.prototype.hasOwnProperty.call(args, "mode") && !MODES.includes(args.mode)) return fail(target, "bad_args", TEXT.badMode);
-    const groups = ((await ctx.groups()) || []).filter((g) => g.section === section);
-    const have = new Set(groups.map((g) => g.id));
-    const missing = ids.filter((id) => !have.has(id));
-    if (missing.length) {
-      return fail(target, "group_missing", TEXT.groupMissing, {
-        model: { missing, candidates: groups.map((g) => ({ id: g.id, name: g.name, section: g.section })) },
+    if (!Array.isArray(args.ids) || args.ids.some((id) => typeof id !== "string" || !id.trim())) {
+      const cur = (await ctx.state()).settings?.groups?.[section];
+      return fail(target, "bad_args", TEXT.picksNeedIds, {
+        model: { message: `${TEXT.picksNeedIds}；只有明確傳 [] 才會全部取消。`, current: { ids: cur?.ids || [], mode: cur?.mode || "whole" } },
       });
+    }
+    const ids = [...new Set(args.ids)];
+    if (args.ids.length > MAX_PICKS) return fail(target, "bad_args", fill(TEXT.tooManyPicks, MAX_PICKS));
+    if (Object.prototype.hasOwnProperty.call(args, "mode") && !MODES.includes(args.mode)) return fail(target, "bad_args", TEXT.badMode);
+    let groups = [];
+    if (ids.length) {
+      const missingOf = () => ids.filter((id) => !groups.some((g) => g.id === id));
+      const loaded = await readGroups(target);
+      if (loaded.error) return loaded.error;
+      groups = loaded.groups.filter((g) => g.section === section);
+      if (missingOf().length) {
+        const refreshed = await readGroups(target, true);
+        if (refreshed.error) return refreshed.error;
+        groups = refreshed.groups.filter((g) => g.section === section);
+      }
+      const missing = missingOf();
+      if (missing.length) {
+        return fail(target, "group_missing", TEXT.groupMissing, {
+          model: { missing, candidates: groups.map((g) => ({ id: g.id, name: g.name, section: g.section })) },
+        });
+      }
     }
     const st = await ctx.state();
     const cur = st.settings?.groups?.[section];
@@ -1517,8 +1621,9 @@ export function createToolRunner(ctx) {
     const text = fill(TEXT.labPicks, SECTION_ZH[section]);
     await hi(target, "write", text);
     try {
+      if (isStale(base)) throw staleWrite;
       const r = await ctx.setGroupPicks(section, ids, mode);
-      note(base);
+      note(base, r);
       await hi(target, "done", text);
       const from = r?.from || { ids: curIds, mode: curMode };
       const to = r?.to || { ids, mode };
@@ -1535,6 +1640,7 @@ export function createToolRunner(ctx) {
       });
     } catch (err) {
       await hi(target, "clear", text);
+      if (err === staleWrite) return staleResult(target);
       return fail(target, "failed", TEXT.failed, { model: { error: err?.message || String(err) } });
     }
   }
@@ -1547,8 +1653,9 @@ export function createToolRunner(ctx) {
     const name = collapseName(args.name);
     if (!name) return fail(target, "bad_args", TEXT.nameEmpty);
     if ([...name].length > MAX_NAME) return fail(target, "bad_args", TEXT.nameLong);
-    const tags = tagList(args.tags);
-    if (!tags) return fail(target, "bad_args", TEXT.badArgs);
+    const tagsInput = tagList(args.tags);
+    if (!tagsInput) return fail(target, "bad_args", TEXT.badArgs);
+    const tags = resolvedTags(tagsInput);
     if (!tags.length) return fail(target, "bad_args", TEXT.needTag);
     if (tags.length > MAX_TAGS) return fail(target, "bad_args", fill(TEXT.tooManyTags, MAX_TAGS));
     const state = await ctx.state();
@@ -1582,7 +1689,8 @@ export function createToolRunner(ctx) {
     if (!keep.length) {
       return fail(target, "bad_args", TEXT.allWrong, { lines: wrong.map((t) => fill(TEXT.wrongSection, zhOf(t))) });
     }
-    const groups = (await ctx.groups()) || [];
+    const { error, groups } = await readGroups(target);
+    if (error) return error;
     if (groups.length >= MAX_GROUPS) return fail(target, "failed", fill(TEXT.tooManyGroups, MAX_GROUPS), { model: { limit: MAX_GROUPS } });
     if (groups.some((g) => g.section === section && collapseName(g.name) === name)) {
       return fail(target, "name_taken", fill(TEXT.nameTaken, name), { model: { name, section } });
@@ -1590,22 +1698,25 @@ export function createToolRunner(ctx) {
     const text = fill(TEXT.labSave, name);
     await hi(target, "write", text);
     try {
+      if (isStale(base)) throw staleWrite;
       const saved = await ctx.saveGroup({ name, section, tags: keep });
-      note(base);
+      const group = saved.group;
+      if (!group?.id) throw new Error("伺服器沒有回傳新群組 ID");
       await hi(target, "done", text);
       const lines = wrong.map((t) => fill(TEXT.wrongSection, zhOf(t)));
-      for (const s of saved?.skipped || []) lines.push(fill(TEXT.wrongSection, zhOf(s.tag || s)));
-      const group = saved?.group || { name, section, tags: keep };
+      for (const s of saved.skipped || []) lines.push(fill(TEXT.wrongSection, zhOf(s.tag || s)));
+      const skipped = [...wrong.map((tag) => ({ tag, why: "section" })), ...(saved.skipped || [])];
       return pack({
         ok: true,
-        status: wrong.length || (saved?.skipped || []).length ? "partial" : "done",
-        summary: fill(TEXT.saved, group.name || name),
+        status: skipped.length ? "partial" : "done",
+        summary: fill(TEXT.saved, group.name),
         lines,
         target,
-        forModel: { ok: true, group, skipped: wrong.map((t) => ({ tag: t, why: "section" })), undoable: false },
+        forModel: { ok: true, group, skipped, undoable: false },
       });
     } catch (err) {
       await hi(target, "clear", text);
+      if (err === staleWrite) return staleResult(target);
       return fail(target, "failed", TEXT.failed, { model: { error: err?.message || String(err) } });
     }
   }
@@ -1621,8 +1732,8 @@ export function createToolRunner(ctx) {
     const text = fill(TEXT.labDrawN, n);
     await hi(target, "write", text);
     try {
+      if (isStale(base)) throw staleWrite;
       const r = await ctx.draw({ n });
-      note(base);
       const requested = r?.requested ?? n;
       const made = r?.made ?? 0;
       const shotIds = r?.shotIds || [];
@@ -1647,6 +1758,7 @@ export function createToolRunner(ctx) {
       });
     } catch (err) {
       await hi(target, "clear", text);
+      if (err === staleWrite) return staleResult(target);
       return fail(target, "failed", TEXT.failed, { model: { error: err?.message || String(err) } });
     }
   }
@@ -1688,16 +1800,17 @@ export function createToolRunner(ctx) {
       }
       if (!st?.ready) return fail(targetFor(name, args), "not_ready", TEXT.notReadyWrite);
     }
-    return handlers[name](args, { signal: opts.signal, callId: call?.id || null }, base);
+    return handlers[name](args, { signal: opts.signal, callId: call?.id || null, planGeneration: opts.planGeneration }, base);
   }
 
   async function run(call, opts = {}) {
     const id = call && typeof call.id === "string" && call.id ? call.id : null;
     if (id && settled.has(id)) return settled.get(id);
     if (id && inflight.has(id)) return inflight.get(id);
+    const generation = planGeneration;
     const job = Promise.resolve()
-      .then(() => execute(call || {}, opts || {}))
-      .then((res) => res)
+      .then(() => execute(call || {}, { ...opts, planGeneration: generation }))
+      .then((res) => res.confirm && !plans.has(res.confirm.token) ? fail(res.target, "confirm_unknown", TEXT.confirmGone) : res)
       .catch((err) => fail(targetFor(call?.name, call?.args || {}), "failed", TEXT.failed, { model: { error: err?.message || String(err) } }));
     if (!id) return job;
     inflight.set(id, job);
@@ -1710,26 +1823,31 @@ export function createToolRunner(ctx) {
     }
   }
 
-  function confirm(token) {
+  function cancelPlans() {
+    planGeneration++;
+    for (const [token, plan] of plans) {
+      if (plan.pending) continue;
+      plans.delete(token);
+      if (plan.callId && settled.has(plan.callId)) settled.set(plan.callId, fail(plan.target, "confirm_unknown", TEXT.confirmGone));
+    }
+  }
+
+  function confirm(token, choice = "apply") {
     const plan = plans.get(token);
-    if (!plan) return Promise.resolve(fail({ area: "pool" }, "confirm_unknown", TEXT.confirmGone));
-    if (plan.applied) return Promise.resolve(plan.applied);
+    if (!plan) return Promise.resolve({ ...fail({ area: "pool" }, "confirm_unknown", TEXT.confirmGone), status: "stale" });
     if (plan.pending) return plan.pending;
+    if (choice !== "apply" && choice !== "keep") return Promise.resolve(fail(plan.target, "bad_args", TEXT.badArgs));
     plan.pending = Promise.resolve()
-      .then(() => applyConfirmed(plan))
-      .then((res) => {
-        plan.applied = res;
+      .then(() => choice === "keep" ? skip(plan.target, TEXT.keep) : applyConfirmed(plan))
+      .catch((err) => fail(plan.target, "failed", TEXT.failed, { model: { error: err?.message || String(err) } }))
+      .then(async (res) => {
+        const status = !res.ok ? (res.forModel.code === "stale" ? "stale" : "failed") : choice === "keep" ? "kept" : "applied";
+        if (status !== "applied") await hi(plan.target, "clear");
         if (plan.callId) settled.set(plan.callId, res);
-        return res;
-      })
-      .catch((err) => {
-        const res = fail(plan.target, "failed", TEXT.failed, { model: { error: err?.message || String(err) } });
-        plan.applied = res;
-        if (plan.callId) settled.set(plan.callId, res);
-        return res;
+        return { ...res, status };
       });
     return plan.pending;
   }
 
-  return { run, label, confirm };
+  return { run, label, confirm, cancelPlans };
 }
