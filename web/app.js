@@ -2922,16 +2922,36 @@ function watchGoBar() {
   // 「看得到」看的是抽並生圖那顆主按鈕整顆在畫面裡，不是整排露一角就算：
   // 抽牌那排很高（張數、開關、按鈕、種子），以前露出最上面 4px 浮動列就收起來，主按鈕卻還在畫面外。
   // 牌排會整排重畫（主按鈕換新的），所以觀察整排、每 10% 回報一次，回報時再量主按鈕。
-  const update = () => {
+  const measure = () => {
     const main = bar.querySelector(".btn-primary");
     const r = main && main.getBoundingClientRect();
     goBarVisible = !!(r && r.width && r.top >= 56 && r.bottom <= innerHeight - 8);
+  };
+  const update = () => {
+    measure();
     renderGoFloat();
     liftTrash();
   };
   new IntersectionObserver(update, { threshold: Array.from({ length: 11 }, (_, i) => i / 10) }).observe(bar);
   addEventListener("resize", update, { passive: true });
-  addEventListener("scroll", liftTrash, { passive: true });
+  // 只靠 IntersectionObserver 不夠：捲回來時整排一露全（比例到 1）就不再回報，那一刻主按鈕常常還貼在畫面底下
+  // 那 8px 裡（或頂欄底下），算成看不到 —— 之後主按鈕明明整顆回到畫面裡，浮動列卻一直留著（2026-11-19 專案主）。
+  // 捲動時每個影格量一次主按鈕，看得到／看不到真的換了才重畫浮動列。
+  let raf = 0;
+  addEventListener(
+    "scroll",
+    () => {
+      liftTrash();
+      if (raf) return;
+      raf = requestAnimationFrame(() => {
+        raf = 0;
+        const was = goBarVisible;
+        measure();
+        if (was !== goBarVisible) renderGoFloat();
+      });
+    },
+    { passive: true }
+  );
 }
 
 /**
