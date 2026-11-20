@@ -15,6 +15,7 @@ from __future__ import annotations
 import json
 import os
 import re
+import shutil
 import threading
 import time
 import uuid
@@ -51,13 +52,79 @@ class DeckConflict(DeckError):
         self.current = current
 
 
+def _coerce_decks(data):
+    """舊格式能轉就轉：最外層就是陣列，或 decks 是 {id: 牌組}。轉不成的交給 _recover_shape，不能當成空的。"""
+    if isinstance(data, list):
+        return {"v": 1, "decks": data}
+    if isinstance(data, dict) and isinstance(data.get("decks"), dict):
+        vals = list(data["decks"].values())
+        if all(isinstance(v, dict) for v in vals):
+            return {**data, "decks": vals}
+    return data
+
+
+def _decks_ok(data) -> bool:
+    data = _coerce_decks(data)
+    return isinstance(data, dict) and isinstance(data.get("decks"), list)
+
+
+def _recover_shape():
+    """JSON 讀得懂、樣子卻不對（例如 {"decks": {"old": [...]}}）：不能當成沒有牌組。
+    下一次存會用空的那份把正本和 .bak 一起蓋掉。壞的改名留著，試 .bak；不行就丟 StoreCorrupt，這一次不存。"""
+    path = DECKS_PATH
+    stamp = time.strftime("%Y%m%d-%H%M%S")
+    aside = path.with_name(f"{path.name}.corrupt-{stamp}")
+    n = 2
+    while aside.exists():
+        aside = path.with_name(f"{path.name}.corrupt-{stamp}-{n}")
+        n += 1
+    try:
+        shutil.copyfile(path, aside)
+    except OSError:
+        pass
+    bak = file_lock.backup_path(path)
+    try:
+        data = json.loads(bak.read_text(encoding="utf-8"))
+    except (OSError, ValueError, UnicodeDecodeError):
+        data = None
+    if _decks_ok(data):
+        # 換回備份失敗（檔案被占用）：跟讀不到一樣回 503，這次不存；不要變成 500。
+        try:
+            shutil.copyfile(bak, path)
+        except OSError as exc:
+            raise file_lock.StoreCorrupt(f"伺服器換不回牌組的備份（{path.name}）：{exc}") from None
+        print(f"[存檔] {path.name} 樣子不對，已用 {bak.name} 換回（壞的留在 {aside.name}）", flush=True)
+        return _coerce_decks(data)
+    try:
+        path.unlink()
+    except OSError:
+        pass
+    raise file_lock.StoreCorrupt(
+        f"伺服器上的牌組存檔（{path.name}）樣子不對，也沒有能用的備份。"
+        f"那份改名成 {aside.name} 留著；之後存的會從空的開始。"
+    )
+
+
 def _read() -> list[dict]:
     # 讀不懂的檔不能當成空的：下一次存牌組會用空的那份把整份蓋掉。先試 .bak，再不行丟 StoreCorrupt（伺服器回 503）。
-    data = file_lock.read_json(DECKS_PATH, label="牌組")
+    # 檔案不存在才是第一次用。讀不到（檔案被占用）這一次不存，正本和 .bak 都不動。
+    try:
+        data = file_lock.read_json(DECKS_PATH, label="牌組")
+    except OSError as exc:
+        raise file_lock.StoreCorrupt(f"伺服器讀不到牌組的存檔（{DECKS_PATH.name}）：{exc}") from None
     if data is None:
-        return []
+        try:
+            DECKS_PATH.stat()
+        except FileNotFoundError:
+            return []
+        except OSError as exc:
+            raise file_lock.StoreCorrupt(f"伺服器讀不到牌組的存檔（{DECKS_PATH.name}）：{exc}") from None
+    if not _decks_ok(data):
+        data = _recover_shape()
+    else:
+        data = _coerce_decks(data)
     out = []
-    for d in (data.get("decks") if isinstance(data, dict) else None) or []:
+    for d in data.get("decks") or []:
         if not isinstance(d, dict) or not _ID_RE.match(str(d.get("id") or "")):
             continue
         # 詞庫換過名的字：舊名換成新名（card_usage.rename 讀 lexicon.json 的 renamed）。

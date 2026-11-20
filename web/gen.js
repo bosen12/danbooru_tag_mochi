@@ -215,6 +215,12 @@ export function createGenerator(hooks) {
               const got = await recover();
               if (got) return true;
             }
+            // 接回時碰到暫時的錯（503 忙線、502／504 中間的代理沒接上、429 太多請求）：伺服器那邊的那張還在，
+            // 跟連線斷了一樣隔一下再接，不算印壞（2026-11-20 第六輪檢查：接回碰到一次 503，那張就直接變失敗）。
+            if (current.job && [408, 429, 502, 503, 504].includes(res.status)) {
+              const err = await errorOf(res);
+              throw new Error(err.message);
+            }
             throw await errorOf(res);
           }
           const job = res.headers.get("X-Gen-Job");
@@ -477,9 +483,19 @@ export function createGenerator(hooks) {
  * 按復原送 null 蓋掉。牌的戰績、模型成績單拿它當「這張不要」。整面清空不算（那是整理，不是嫌棄）。
  * 送不出去就算了：只是統計少一筆。
  */
+// 同一張的標記排隊送：撤下（discard）還在路上就按「復原」（null），以前兩個一起送，伺服器先收到復原、
+// 後收到撤下，日誌最後寫成撤下（2026-11-20 第六輪檢查）。前一個回來（成功失敗都算）才送下一個。
+const markChains = new Map();
 export function markGenLog(job, mark) {
   if (!job) return;
-  fetch("/api/genlog/mark", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: job, mark }) }).catch(() => {});
+  const send = () => fetch("/api/genlog/mark", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: job, mark }) }).catch(() => {});
+  const prev = markChains.get(job);
+  const next = prev ? prev.then(send) : send();
+  markChains.set(job, next);
+  next.finally(() => {
+    if (markChains.get(job) === next) markChains.delete(job);
+  });
+  return next;
 }
 
 /**

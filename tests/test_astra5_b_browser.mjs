@@ -359,7 +359,7 @@ try {
       } catch {}
     }
     await page.waitForTimeout(800);
-    const note = await page.evaluate(() => localStorage.getItem("mochi.pool.handoff.v1"));
+    const note = await page.evaluate(() => (localStorage.getItem("mochi.pool.handoff.v1." + sessionStorage.getItem("mochi.tab.id.v1")) ?? localStorage.getItem("mochi.pool.handoff.v1")));
     ok("8 人還在作品冊", page.url().includes("album.html"), page.url());
     ok("8 A 的遲到回應沒有寫交接便條", !note, note || "");
   });
@@ -492,7 +492,7 @@ try {
     const body = await page.locator(".sheet").last().innerText();
     ok("6 確認窗列出紅髮份量變更", body.includes("份量變更") && body.includes("紅髮") && body.includes("1.2"), (poolNow || "pool-empty") + " " + body.slice(0, 300));
     await page.getByRole("button", { name: "確認加入" }).click({ noWaitAfter: true });
-    const note = await page.evaluate(() => JSON.parse(localStorage.getItem("mochi.pool.handoff.v1") || "null"));
+    const note = await page.evaluate(() => JSON.parse((localStorage.getItem("mochi.pool.handoff.v1." + sessionStorage.getItem("mochi.tab.id.v1")) ?? localStorage.getItem("mochi.pool.handoff.v1")) || "null"));
     ok("6 確定之後便條帶著成品份量", note && note.weights && note.weights["red hair"] === 1.2 && (note.tags || []).includes("red hair"), JSON.stringify(note));
   });
 
@@ -506,7 +506,7 @@ try {
     await page.waitForSelector(".book-work", { timeout: 60000 });
     await page.locator(".book-work").first().click();
     await page.getByRole("button", { name: "加入合成池 · 2 張牌" }).click({ noWaitAfter: true });
-    const note = await page.evaluate(() => JSON.parse(localStorage.getItem("mochi.pool.handoff.v1") || "null"));
+    const note = await page.evaluate(() => JSON.parse((localStorage.getItem("mochi.pool.handoff.v1." + sessionStorage.getItem("mochi.tab.id.v1")) ?? localStorage.getItem("mochi.pool.handoff.v1")) || "null"));
     ok("6 無關的既有牌不會把成品份量弄丟", !!(note && note.weights && note.weights["red hair"] === 1.2), JSON.stringify(note));
   });
 

@@ -92,21 +92,45 @@ export const tabId = (() => {
 })();
 /** 這張便條是不是給這個分頁的（沒寫分頁的舊便條、拿不到編號時都算）。 */
 const forThisTab = (note) => !note || !note.tab || !tabId || note.tab === tabId;
+/*
+ * 每個分頁一張便條（鑰匙後面接分頁編號）：兩個卡冊分頁各按「＋」，以前寫的是同一張，後寫的蓋掉先寫的
+ * （2026-11-20 第六輪檢查：第一個分頁的「+1」不見、送去的牌也沒了）。
+ * 舊版寫的共用那張（沒有分頁編號）照樣認。別的分頁過期的便條順手清掉。
+ */
+const tabKey = (base) => (tabId ? `${base}.${tabId}` : base);
+function ownNote(base) {
+  const mine = tabKey(base);
+  const note = read(mine, null);
+  if (note || mine === base) return [mine, note];
+  const legacy = read(base, null);
+  return legacy && forThisTab(legacy) ? [base, legacy] : [mine, null];
+}
+function pruneNotes(base) {
+  try {
+    for (let i = localStorage.length - 1; i >= 0; i--) {
+      const k = localStorage.key(i);
+      if (!k || !k.startsWith(base + ".") || k === tabKey(base)) continue;
+      const n = read(k, null);
+      if (!n || !(Date.now() - Number(n.at) < HANDOFF_MS)) localStorage.removeItem(k);
+    }
+  } catch {
+    /* 清不了就算了 */
+  }
+}
 
 /** Explicit, one-shot transfer; ordinary navigation still opens an empty bed. */
 /** from：從哪裡交過來（"parse"＝解析池；墨池不寫），疊印台接到時說一聲。 */
-export const handOffFuse = (tags, weights = {}, from = "") => write(KEY.fuseHandoff, { tags: [...tags], weights, at: Date.now(), ...(from ? { from } : {}), ...(tabId ? { tab: tabId } : {}) });
+export const handOffFuse = (tags, weights = {}, from = "") => write(tabKey(KEY.fuseHandoff), { tags: [...tags], weights, at: Date.now(), ...(from ? { from } : {}), ...(tabId ? { tab: tabId } : {}) });
 export function takeFuse() {
-  const note = read(KEY.fuseHandoff, null);
-  // 別的分頁寫給它自己的：不拿、也不撕。
-  if (!forThisTab(note)) return null;
+  const [key, note] = ownNote(KEY.fuseHandoff);
+  pruneNotes(KEY.fuseHandoff);
   // 背後預先開的頁（prerender.js）只讀不拿：沒點進去的話便條要留給真的打開的那一次。點進去才拿走。
   if (globalThis.document?.prerendering) {
     whenActive(() => {
-      try { localStorage.removeItem(KEY.fuseHandoff); } catch { /* 下次再試 */ }
+      try { localStorage.removeItem(key); } catch { /* 下次再試 */ }
     });
   } else {
-    try { localStorage.removeItem(KEY.fuseHandoff); } catch { return null; }
+    try { localStorage.removeItem(key); } catch { return null; }
   }
   const age = Date.now() - Number(note?.at);
   if (!note || !Array.isArray(note.tags) || !(age >= 0 && age < HANDOFF_MS)) return null;
@@ -117,23 +141,25 @@ export function takeFuse() {
 /** from：從哪裡交過來（"fuse"、"book"），墨池接到時跟使用者說一聲。 */
 /** recipe：作品冊、日誌的「照這張再印」多帶的那一份（時代、種子、底模、LoRA），見 recipeOf。 */
 export const handOffPool = (tags, from = "", weights = {}, recipe = null) =>
-  write(KEY.handoff, { tags: [...tags], at: Date.now(), from, weights, ...(recipe ? { recipe } : {}), ...(tabId ? { tab: tabId } : {}) });
+  write(tabKey(KEY.handoff), { tags: [...tags], at: Date.now(), from, weights, ...(recipe ? { recipe } : {}), ...(tabId ? { tab: tabId } : {}) });
 /** 卡冊的「＋」：看便條裡現在有哪幾張（不拿走）。不是 from 寫的、過期了就是空的。 */
 export function peekPoolHandoff(from) {
-  const note = read(KEY.handoff, null);
+  const [, note] = ownNote(KEY.handoff);
   if (!note || !forThisTab(note) || !Array.isArray(note.tags) || note.from !== from || !(Date.now() - note.at < HANDOFF_MS)) return [];
   return note.tags.filter((t) => typeof t === "string");
 }
 /** 卡冊的「＋」全部拿回來：便條撕掉。 */
 export function clearPoolHandoff() {
   try {
-    localStorage.removeItem(KEY.handoff);
+    localStorage.removeItem(tabKey(KEY.handoff));
+    // 舊版的共用那張是這個分頁的也撕掉
+    if (forThisTab(read(KEY.handoff, null))) localStorage.removeItem(KEY.handoff);
   } catch {
     /* 刪不了就算了 */
   }
 }
 /** 交接便條的 localStorage 鑰匙（卡冊看別的分頁有沒有把它拿走）。 */
-export const POOL_HANDOFF_KEY = KEY.handoff;
+export const POOL_HANDOFF_KEY = tabKey(KEY.handoff);
 /** 上一次 takePool() 拿到的便條是從哪裡來的（沒有便條就是空字串）。 */
 export let handoffFrom = "";
 /** 上一次 takePool() 拿到的便條裡各張牌的份量（作品冊、疊印台交過來的）。 */
@@ -223,7 +249,8 @@ export function peekTab(key) {
 
 /** 墨池開機時呼叫：拿走交接的牌（沒有就是空的池子），順手清掉舊版一直存著的合成池。 */
 export function takePool() {
-  const note = read(KEY.handoff, null);
+  const [key, note] = ownNote(KEY.handoff);
+  pruneNotes(KEY.handoff);
   // 別的分頁寫給它自己的：不拿、也不撕（handoffFrom 等照「沒有便條」）。
   if (!forThisTab(note)) {
     handoffFrom = "";
@@ -234,14 +261,14 @@ export function takePool() {
   // 背後預先開的頁（prerender.js）只讀不拿：沒點進去的話便條要留給真的打開的那一次。點進去才拿走。
   const drop = () => {
     try {
-      localStorage.removeItem(KEY.handoff);
+      localStorage.removeItem(key);
       localStorage.removeItem(KEY.pool);
     } catch {
       /* 刪不了就算了：下一次還會再試 */
     }
   };
   // 點進去時只撕「讀到的那一張」：讀完之後別頁又寫了新的（卡冊再按一張 ＋、解析池帶過來），新的留著。
-  if (globalThis.document?.prerendering) whenActive(() => read(KEY.handoff, null)?.at === note?.at && drop());
+  if (globalThis.document?.prerendering) whenActive(() => read(key, null)?.at === note?.at && drop());
   else drop();
   if (!note || !Array.isArray(note.tags) || !(Date.now() - note.at < HANDOFF_MS)) return [];
   handoffFrom = typeof note.from === "string" ? note.from : "";

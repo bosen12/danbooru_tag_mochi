@@ -31,6 +31,25 @@ for (const k of Object.values(KEYS)) {
   k.local.push("mochi.language.v1");
   k.session.push("mochi.language.state.v1");
 }
+// 交接便條每個分頁一張（store.js 的 tabKey）：這個分頁的那張也要看。分頁編號存在 sessionStorage，
+// 背後預開的頁拿到的是開它那個分頁的副本，編號一樣。
+const TAB_ID = (() => {
+  try {
+    let id = sessionStorage.getItem("mochi.tab.id.v1");
+    if (!id) {
+      id = Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+      sessionStorage.setItem("mochi.tab.id.v1", id);
+    }
+    return id;
+  } catch {
+    return "";
+  }
+})();
+if (TAB_ID) {
+  for (const k of Object.values(KEYS)) {
+    for (const base of ["mochi.pool.handoff.v1", "mochi.fuse.handoff.v1"]) if (k.local.includes(base)) k.local.push(`${base}.${TAB_ID}`);
+  }
+}
 
 // 由左到右的五個房間（頂欄分頁的順序）。
 const ROOMS = [

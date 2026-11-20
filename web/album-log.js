@@ -116,6 +116,17 @@ export function createLog(ctx) {
   let lastView = null;
   // 上一次整頁畫的條件。沒變的「再往前翻」只追加，不把前面的列拆掉重做。
   let paintedKey = "";
+  // 翻頁進行中的次數。這時背景刷新先擱著：寫進 items 會把游標前面那一筆擠掉，遲到的下一頁就接不上。
+  let paging = 0;
+  let heldRefresh = null;
+  // id → 那一列。標記只改那一格，不要對每筆再 querySelector 一次（兩千筆會卡半秒）。
+  const rowById = new Map();
+  // 搜尋在最近一頁找不到：自動再往前翻幾頁，翻太久可以按正在讀的那顆停。
+  let seekBudget = 0;
+  let seeking = false;
+  let seekStop = false;
+  // 開著的日誌詳情。別的房間把分級調低、這一件已經看不到時要把窗關掉。
+  let openEntrySheet = null;
 
   const cards =(e) => tagsOfPositive(e.positive).filter(ctx.isCard);
 
@@ -144,7 +155,9 @@ export function createLog(ctx) {
       e._fav = w ? w.id : null;
       // 收藏過的作品冊另有一份：ComfyUI 的 output 清掉了（只留最近幾張）也看得到圖。
       e._favImg = w && w.image && w.image.file ? `/api/recipes/files/${encodeURIComponent(w.image.file)}` : null;
-      if (!e._text) e._text = [e.positive, ...cards(e).map(ctx.zh), shortName(e.ckpt), ...(e.loras || []).map((l) => shortName(l.file)), ORIGIN_ZH[e.origin] || ""].join(" ").toLowerCase();
+      // 完整路徑也放進去（斜線統一）：成績單上同名、不同資料夾的底模點進來，用路徑才只找到那一個資料夾的。
+      const fullPath = (p) => String(p || "").replace(/\\/g, "/");
+      if (!e._text) e._text = [e.positive, ...cards(e).map(ctx.zh), shortName(e.ckpt), fullPath(e.ckpt), ...(e.loras || []).flatMap((l) => [shortName(l.file), fullPath(l.file)]), ORIGIN_ZH[e.origin] || ""].join(" ").toLowerCase();
     }
   }
 
@@ -190,7 +203,9 @@ export function createLog(ctx) {
       const j = await fetchPage(null);
       if (seq !== loadSeq) return false;
       const page = j.items || [];
-      if (refresh && items.length) absorb(page, !!j.more);
+      // 翻頁的回應還在路上：現在改寫 items，游標就不再是送出去的那一筆，下一頁會接到錯誤的地方、中間漏一筆。
+      if (paging) heldRefresh = { page, more: !!j.more };
+      else if (refresh && items.length) absorb(page, !!j.more);
       else {
         items = page;
         more = !!j.more;
@@ -201,23 +216,60 @@ export function createLog(ctx) {
       ok = true;
     } catch {
       // 讀過的頁留著。第一次就失敗才是空的，畫面給重試，不把「沒讀到」說成「日誌是空的」。
+      // 翻頁進行中的刷新失敗也不把已經翻到的頁說成讀不到。
       if (seq !== loadSeq) return false;
-      failed = true;
+      if (!paging) failed = true;
     }
-    index();
+    if (!paging) index();
     return ok;
   }
 
-  async function loadMore() {
-    const last = items[items.length - 1];
-    if (!last || !more) return;
-    const j = await fetchPage(last);
+  function takePage(j) {
     const seen = new Set(items.map((e) => e.id));
     const extra = (j.items || []).filter((e) => e && !seen.has(e.id));
     items = items.concat(extra);
     more = !!j.more;
     paged = true;
     index();
+  }
+
+  // 翻頁結束才把擱著的最新一頁併進去。這時 paged 已經是 true，不在新頁裡的舊列留著，游標那一筆才不會不見。
+  function flushHeld() {
+    const held = heldRefresh;
+    heldRefresh = null;
+    if (!held) return;
+    absorb(held.page, held.more);
+    index();
+    const box = lastView?.container;
+    if (!box?.isConnected || !lastView?.view) return;
+    if (box.querySelector(".log-row")) patch(box, lastView.view, { scroll: true });
+    else render(box, lastView.view);
+  }
+
+  async function loadMore() {
+    const last = items[items.length - 1];
+    if (!last || !more) return;
+    paging++;
+    try {
+      // 送出時的序號和游標。回來時序號變了（中間有人刷新）或游標已經不是最後一筆，這包不能接在現在的清單後面。
+      let seq = loadSeq;
+      let cursor = last;
+      let j = await fetchPage(cursor);
+      let tail = items[items.length - 1];
+      if (seq !== loadSeq || !tail || tail.id !== cursor.id) {
+        tail = items[items.length - 1];
+        if (!tail) return;
+        seq = loadSeq;
+        cursor = tail;
+        j = await fetchPage(cursor);
+        const again = items[items.length - 1];
+        if (seq !== loadSeq || !again || again.id !== cursor.id) return;
+      }
+      takePage(j);
+    } finally {
+      paging = Math.max(0, paging - 1);
+      if (paging === 0 && heldRefresh) flushHeld();
+    }
   }
 
   const pass = (e, filter) =>
@@ -242,12 +294,19 @@ export function createLog(ctx) {
     if (!e.ok || !e.image) return el("span", { class: "log-thumb is-empty", "aria-hidden": "true" }, "✕");
     const box = el("span", { class: "log-thumb", style: e.width && e.height ? `aspect-ratio: ${e.width} / ${e.height}` : "" });
     const favSrc = () => listSrc(e._favImg);
+    // 這張縮圖自己的探針序號：圖後來載入了，早先那次 5xx 的回應就不能再把旗標寫回去。
+    let probe = 0;
     box.append(
       el("img", {
         src: listSrc(viewSrc(e.image)),
         alt: "",
         loading: "lazy",
         decoding: "async",
+        onload: () => {
+          // 縮圖又讀到了：先前的 5xx 不能一直當成「原圖不在了」（詳情和收藏鈕都看這個旗標）。
+          probe++;
+          e._gone = false;
+        },
         onerror: (ev) => {
           // output 裡的原圖清掉了：收藏過的換成作品冊那一份，沒收藏的才說不在了。
           const fav = favSrc();
@@ -257,9 +316,34 @@ export function createLog(ctx) {
             ev.currentTarget.src = fav;
             return;
           }
-          e._gone = true;
-          box.classList.add("is-gone");
-          box.replaceChildren(el("span", {}, "原圖不在了"));
+          // 5xx、斷線是暫時的。只有伺服器明說沒有這張（404／410）才記成永久不在；
+          // 記錯的話，圖恢復了詳情仍寫「原圖不在了」、收藏鈕也收起來。
+          const mine = ++probe;
+          const src = ev.currentTarget.getAttribute("src");
+          if (!src) return;
+          fetch(src, { cache: "no-store" })
+            .then(async (r) => {
+              try {
+                await r.body?.cancel();
+              } catch {
+                /* 只要狀態碼 */
+              }
+              return r.status;
+            })
+            .then((status) => {
+              if (mine !== probe || !box.isConnected) return;
+              if (status !== 404 && status !== 410) {
+                e._gone = false;
+                return;
+              }
+              e._gone = true;
+              box.classList.add("is-gone");
+              box.replaceChildren(el("span", {}, "原圖不在了"));
+            })
+            .catch(() => {
+              if (mine !== probe || !box.isConnected) return;
+              e._gone = false;
+            });
         },
       })
     );
@@ -275,6 +359,13 @@ export function createLog(ctx) {
     return pick.map(ctx.zh).join("・") + (c.length > pick.length ? `…（共 ${c.length} 張牌）` : "");
   }
 
+  function chipKey(e) {
+    if (!e.ok) return "failed";
+    if (e._fav) return "fav";
+    if (e.mark === "discard") return "discard";
+    return "";
+  }
+
   function row(e) {
     const meta = [
       clock(e.at),
@@ -287,16 +378,17 @@ export function createLog(ctx) {
     ].filter(Boolean);
     const node = el(
       "button",
-      { class: "log-row pressable", type: "button", role: "listitem", dataset: { id: e.id, ok: e.ok ? "true" : "false" } },
+      { class: "log-row pressable", type: "button", role: "listitem", dataset: { id: e.id, ok: e.ok ? "true" : "false", chip: chipKey(e) } },
       thumb(e),
       el("span", { class: "log-main" }, el("b", {}, title(e)), el("small", {}, meta.join("・")), !e.ok && e.error ? el("small", { class: "log-error" }, e.error) : null),
       stateChip(e)
     );
     node.addEventListener("click", () => openEntry(e, () => node.querySelector(".log-thumb img")));
+    rowById.set(String(e.id), node);
     return node;
   }
 
-  const viewKey = (v) => `${v.query}\0${v.filter}\0${v.rating}`;
+  const viewKey = (v) => `${v.query}\0${v.filter}\0${v.rating}\0${v.emptyCkpt ? 1 : 0}`;
 
   function collect(view) {
     const query = view.query || "";
@@ -307,6 +399,8 @@ export function createLog(ctx) {
     for (const e of items) {
       if (!visible(e, rate)) continue;
       inRating += 1;
+      // 成績單的空底模：名字是「預設」，日誌這欄是空的，不能拿「預設」去比對文字。
+      if (view.emptyCkpt && shortName(e.ckpt)) continue;
       if (pass(e, filter) && (!query || (e._text || "").includes(query))) shownList.push(e);
     }
     return { shownList, shown: shownList.length, hidden: items.length - inRating, total: items.length };
@@ -349,24 +443,47 @@ export function createLog(ctx) {
     return b;
   }
 
+  function queueSeek() {
+    if (seeking || seekStop || seekBudget <= 0) return;
+    const v = lastView?.view;
+    const box = lastView?.container;
+    if (!v?.query || !box?.isConnected || !more) return;
+    if (collect(v).shownList.length) return;
+    const b = box.querySelector(":scope > .log-more");
+    if (!b || b.dataset.busy) return;
+    // 搜尋時自己再翻，不必等人發現「更早的還沒翻到」卻沒有按鈕。一次最多四頁，再多就停下來給人按。
+    seekBudget -= 1;
+    onMore(b);
+  }
+
   async function onMore(b) {
-    if (b.disabled) return;
-    b.disabled = true;
+    // 正在讀的那一顆再按：停掉後面的自動翻頁。這一頁還是把它讀完（disabled 的按鈕按不到，所以不設 disabled）。
+    if (b.dataset.busy) {
+      seekStop = true;
+      seekBudget = 0;
+      return;
+    }
     b.dataset.busy = "1";
+    b.setAttribute("aria-busy", "true");
     b.textContent = "讀取中…";
+    seeking = true;
     try {
       await loadMore();
       const v = lastView?.view;
       const box = lastView?.container;
       if (box && v) render(box, v, { append: true });
     } catch {
+      seekStop = true;
       if (b.isConnected) {
-        b.disabled = false;
         delete b.dataset.busy;
+        b.removeAttribute("aria-busy");
         b.textContent = "再往前翻";
         refuse(b);
       }
+    } finally {
+      seeking = false;
     }
+    if (!seekStop) queueSeek();
   }
 
   function paintMore(container) {
@@ -412,31 +529,48 @@ export function createLog(ctx) {
     enter(node);
   }
 
-  function updateChips(container) {
+  function paintChip(rowNode, e) {
+    const nextKey = chipKey(e);
+    if (rowNode.dataset.chip === nextKey) return;
+    rowNode.dataset.chip = nextKey;
+    const next = stateChip(e);
+    const old = rowNode.querySelector(":scope > .log-state");
+    if (old && next) {
+      old.replaceWith(next);
+      enter(next);
+    } else if (next) {
+      rowNode.append(next);
+      enter(next);
+    } else if (old) leave(old, () => old.remove());
+  }
+
+  function updateChips() {
     for (const e of items) {
-      const rowNode = container.querySelector(`.log-row[data-id="${CSS.escape(String(e.id))}"]`);
-      if (!rowNode) continue;
-      const next = stateChip(e);
-      const old = rowNode.querySelector(":scope > .log-state");
-      const nextKey = next ? next.className : "";
-      const oldKey = old ? old.className : "";
-      if (nextKey === oldKey) continue;
-      if (old && next) {
-        old.replaceWith(next);
-        enter(next);
-      } else if (next) {
-        rowNode.append(next);
-        enter(next);
-      } else if (old) leave(old, () => old.remove());
+      const rowNode = rowById.get(String(e.id));
+      if (!rowNode?.isConnected) continue;
+      paintChip(rowNode, e);
     }
   }
 
   // 收藏完：列還在就補上星號。篩選把這張排除或納入時，只動那一列，不整表重播。
-  function syncFavs() {
+  // only：標記的就是這一筆，成員沒變就只改那一格，不要把整份清單再掃一次。
+  function syncFavs(only) {
     const container = lastView?.container;
     if (!container?.isConnected || !lastView.view) return;
     if (!container.querySelector(".log-row")) return;
     const st = collect(lastView.view);
+    if (only) {
+      const want = st.shownList.some((e) => e.id === only.id);
+      const node = rowById.get(String(only.id));
+      const have = !!(node && node.isConnected);
+      if (want !== have) {
+        patch(container, lastView.view, { scroll: false });
+        return;
+      }
+      if (node) paintChip(node, only);
+      ctx.onStats?.(statsOf(st));
+      return;
+    }
     const dom = [...container.querySelectorAll(".log-row")];
     const shownIds = new Set(st.shownList.map((e) => String(e.id)));
     const domIds = new Set(dom.map((n) => n.dataset.id));
@@ -446,7 +580,7 @@ export function createLog(ctx) {
       patch(container, lastView.view, { scroll: false });
       return;
     }
-    updateChips(container);
+    updateChips();
     const out = statsOf(st);
     ctx.onStats?.(out);
   }
@@ -489,6 +623,7 @@ export function createLog(ctx) {
     const shownIds = new Set(st.shownList.map((e) => String(e.id)));
     for (const node of rows) {
       if (shownIds.has(node.dataset.id)) continue;
+      rowById.delete(node.dataset.id);
       leave(node, () => {
         const section = node.closest(".log-day");
         node.remove();
@@ -497,13 +632,15 @@ export function createLog(ctx) {
     }
     paintDayCounts(container, st.shownList);
     paintMore(container);
-    updateChips(container);
+    updateChips();
     const out = statsOf(st);
     ctx.onStats?.(out);
+    queueSeek();
     return out;
   }
 
   function paintList(container, view, { deal = false } = {}) {
+    rowById.clear();
     const st = collect(view);
     const out = [];
     if (!st.shownList.length) {
@@ -540,16 +677,18 @@ export function createLog(ctx) {
         list.append(row(e));
       }
     }
-    if (more && st.shownList.length) out.push(moreButton());
+    // 這一頁沒有符合的、後面還有：按鈕也要在。以前只在有列的時候放，搜尋就停在「更早的還沒翻到」。
+    if (more) out.push(moreButton());
     const oldEmpty = container.querySelector(":scope > .album-empty, :scope > .album-hint");
     const apply = () => {
       container.replaceChildren(...out);
       paintedKey = viewKey(view);
       if (deal && !reducedMotion()) [...container.querySelectorAll(".log-row")].slice(0, 14).forEach((n, i) => enter(n, { delay: DUR.micro + i * 24 }));
       else if (!deal) {
-        const born = container.querySelector(":scope > .album-empty, :scope > .log-more");
-        if (born) enter(born);
+        for (const born of container.querySelectorAll(":scope > .album-empty, :scope > .log-more")) enter(born);
       }
+      // 空狀態的離場會把換內容延後。按鈕進了文件之後才自動往前翻，不然找不到那顆。
+      queueSeek();
     };
     if (oldEmpty && oldEmpty.classList.contains("album-empty")) leave(oldEmpty, apply);
     else apply();
@@ -597,7 +736,11 @@ export function createLog(ctx) {
   }
 
   function render(container, view = {}, { deal = false, append = false } = {}) {
-    const v = { query: view.query || "", filter: view.filter || "all", rating: view.rating || "general" };
+    const v = { query: view.query || "", filter: view.filter || "all", rating: view.rating || "general", emptyCkpt: !!view.emptyCkpt };
+    if (!append && viewKey(v) !== paintedKey) {
+      seekStop = false;
+      seekBudget = v.query ? 4 : 0;
+    }
     lastView = { container, view: v };
     if (!loaded && !failed) {
       if (!container.querySelector(".log-loading")) {
@@ -684,7 +827,7 @@ export function createLog(ctx) {
     };
     const fav = e.ok ? favButton(item, { zh: ctx.zh, persist: () => {
       e._fav = item.albumId;
-      syncFavs();
+      syncFavs(e);
       return ctx.reloadWorks();
     }, className: "btn btn-small" }) : null;
     const body = el(
@@ -731,6 +874,11 @@ export function createLog(ctx) {
         full ? el("a", { class: "btn btn-small", href, target: "_blank", rel: "noopener", dataset: { orig: "" } }, "開原圖") : null,
       ]),
     });
+    // 先記下這扇窗，再播放大：放大若中途出錯，分級調低時仍要關得掉。
+    openEntrySheet = { entry: e, close: () => sheet.close() };
+    sheet.sheet.addEventListener("sheet-close", () => {
+      if (openEntrySheet?.entry === e) openEntrySheet = null;
+    }, { once: true });
     // 圖從那一列的小縮圖長大到彈窗、關掉時縮回去（zoom.js）；沒有縮圖可以接的照舊淡進來。
     const big = body.querySelector(".album-big img");
     const t = from?.();
@@ -738,9 +886,16 @@ export function createLog(ctx) {
     else if (!reducedMotion()) big?.animate([{ opacity: 0, transform: "scale(0.97)" }, { opacity: 1, transform: "none" }], { duration: DUR.long, easing: css(CURVE.out) });
   }
 
+  function guardRating(rating) {
+    const cur = openEntrySheet;
+    if (!cur) return;
+    if (!visible(cur.entry, rating)) cur.close();
+  }
+
   return {
     load,
     render,
+    guardRating,
     reindex() {
       index();
       syncFavs();

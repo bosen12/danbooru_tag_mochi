@@ -102,16 +102,20 @@ export function createSyncedList({ key, syncedKey, opsKey, url, order: ordered =
       }
       const sent = readOps();
       // 第一次跟伺服器對（或伺服器沒存過）：整份搬上去；之後只送改動。
+      // 「整份」也是當成「加這些」送（伺服器併進它那份），不是整份換掉：手機和電腦同時第一次對，
+      // 兩台各自讀到同一份、各自併上自己的再整份送，後到的把先到的那台的牌蓋掉（2026-11-20 第六輪檢查）。
       const whole = dirty || !synced();
       if (!whole && !pending(sent)) return;
-      const body = whole ? { tags } : { add: sent.add, remove: sent.remove, ...(ordered && sent.order ? { order: tags } : {}) };
+      const body = whole
+        ? { add: tags, remove: sent.remove, ...(ordered ? { order: tags } : {}) }
+        : { add: sent.add, remove: sent.remove, ...(ordered && sent.order ? { order: tags } : {}) };
       inflight = true;
       fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) })
         .then((r) => (r.ok ? r.json() : null))
         .then((j) => {
           if (!j || !Array.isArray(j.tags)) return;
           // 只送了改動、伺服器那邊卻是剛建的（原本沒有檔案）：兩邊合起來整份再送一次。
-          if (j.fresh && !body.tags) {
+          if (j.fresh && !whole) {
             adopt([...new Set([...j.tags, ...tags])]);
             dirty = true;
             return push();

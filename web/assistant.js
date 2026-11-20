@@ -339,9 +339,10 @@ export function mountAssistant({ ctx }) {
     }
   }
 
-  function setEnabled(on) {
+  function setEnabled(on, { quiet = false } = {}) {
     prefs = { ...prefs, enabled: on, open: on ? prefs.open : false };
-    writePrefs(prefs);
+    // 別的分頁改的（quiet）：存檔已經是新的，不再寫一次（兩個分頁不會你寫我、我寫你），也不跳提示。
+    if (!quiet) writePrefs(prefs);
     if (!on) {
       stopTurn("cancelled");
       // 還沒按的確認卡一起作廢：工具層的計畫丟掉（之後按了也不會換牌），卡片收成「已失效」。
@@ -349,9 +350,9 @@ export function mountAssistant({ ctx }) {
       panel?.dropRefs();
       panel?.close();
       halo.clear();
-      toast("實驗功能關了：聊天室收起，還沒執行的助手操作都取消");
+      if (!quiet) toast("實驗功能關了：聊天室收起，還沒執行的助手操作都取消");
     } else {
-      toast("實驗功能開了：頂欄多了一顆朱色印章（墨池助手），字盒、合成池多了「問助理」");
+      if (!quiet) toast("實驗功能開了：頂欄多了一顆朱色印章（墨池助手），字盒、合成池多了「問助理」");
       refreshStatus();
     }
     paintEntry({ motion: true });
@@ -1373,7 +1374,9 @@ export function mountAssistant({ ctx }) {
           else if (event === "error") throw Object.assign(new Error(data.error || "模型出錯"), { code: data.code });
         });
         if (!live()) throw Object.assign(new Error("aborted"), { name: "AbortError" });
-        conv.messages.push({ role: "assistant", content: seg.text, ...(calls.length ? { toolCalls: calls } : {}) });
+        // 沒字也沒叫工具的回覆不存進對話：Anthropic 不收空白的 assistant 訊息，存進去之後這段對話每一則都被退回
+        //（2026-11-20 第六輪檢查）。
+        if (seg.text.trim() || calls.length) conv.messages.push({ role: "assistant", content: seg.text, ...(calls.length ? { toolCalls: calls } : {}) });
         if (!calls.length && !nudged && NO_TOOLS_RE.test(seg.text)) {
           nudged = true;
           conv.messages.push({ role: "user", content: TOOL_NUDGE });
@@ -1729,6 +1732,14 @@ export function mountAssistant({ ctx }) {
   }
 
   const undos = new Map();
+  /**
+   * 使用者按「加入」的那一步最後沒有生效（保留原狀、確認失效、失敗、復原）：那張推薦卡改回可以按。
+   * 以前只有復原會改回；選「保留原狀」或重新整理把確認收成失效，卡片停在「已加入」、按不了（2026-11-20 第六輪檢查）。
+   */
+  function releaseSuggested(item, step) {
+    if (step?.by !== "user") return;
+    for (const st of item.steps || []) for (const c of st.cards || []) if (step.id.startsWith(`${st.id}:add:${c.tag}:`)) c.state = "";
+  }
   /** 作廢所有還沒按的確認：工具層的計畫丟掉（之後按也不會動工作台），畫面上的卡收成「已失效」、排字盤上等確認的劃掉。 */
   function voidConfirms(reason) {
     try {
@@ -1747,6 +1758,7 @@ export function mountAssistant({ ctx }) {
         if (step) {
           Object.assign(step, { status: "skipped", summary: c.result });
           for (const x of step.sorts || []) if (x.state === "wait") x.state = "miss";
+          releaseSuggested(i, step);
         }
         mine = changed = true;
       }
@@ -1813,7 +1825,7 @@ export function mountAssistant({ ctx }) {
       step.status = "undone";
       step.summary = (r && r.summary) || t("已復原");
       chat.messages.push({ role: "user", content: `［使用者按了「復原」］${step.label}：${step.summary}` });
-      if (step.by === "user") for (const st of item.steps) for (const c of st.cards || []) if (step.id.startsWith(`${st.id}:add:${c.tag}:`)) c.state = "";
+      releaseSuggested(item, step);
     } catch (err) {
       toast(friendlyError(err));
       return;
@@ -1852,6 +1864,7 @@ export function mountAssistant({ ctx }) {
       Object.assign(step, { status: stepStatus, summary: res.summary || step.summary, lines: res.lines || step.lines, target: res.target || step.target, undoable: status === "applied" && !!res.undo });
       if (status === "applied" && res.ops?.length) Object.assign(step, { ops: res.ops, notes: res.notes || [] });
       if (status === "applied" && res.changes) step.changes = res.changes;
+      if (status !== "applied") releaseSuggested(item, step);
       // 排字盤上「等確認」的那幾顆：套用了照真的池子打勾或劃掉；保留、失效、失敗就是略過（劃掉）。
       if (step.sorts) {
         const inPool = new Set((ctx.state().pool || []).map((p) => p.tag));
@@ -1918,7 +1931,10 @@ export function mountAssistant({ ctx }) {
             if (c.state === "open" || c.state === "busy") {
               Object.assign(c, { state: "stale", result: "重新整理之後這項確認已經失效" });
               const step = (i.steps || []).find((s) => s.id === c.callId);
-              if (step) step.status = "skipped";
+              if (step) {
+                step.status = "skipped";
+                releaseSuggested(i, step);
+              }
             }
         // 復原靠的是這一頁記憶體裡的函式：重新整理之後沒有了，按鈕不能留著按了沒反應。
         for (const i of v.log) {
@@ -1954,6 +1970,13 @@ export function mountAssistant({ ctx }) {
     refreshStatus();
     if (prefs.open && !matchMedia("(max-width: 40rem)").matches) openPanel();
   }
+  // 別的分頁在設定裡開關助手：這一頁跟著開關（關了就把印章、「問助理」拿掉，跟原本一模一樣）。
+  // 以前只有重新整理才跟上，關掉之後另一頁的印章還在、按了還會連線（2026-11-20 第六輪檢查）。
+  addEventListener("storage", (e) => {
+    if (e.key !== STORE_KEY) return;
+    const next = readPrefs();
+    if (next.enabled !== prefs.enabled) setEnabled(next.enabled, { quiet: true });
+  });
   // Ctrl+/（Mac ⌘/）：打開或收起聊天室（實驗功能開著時）
   addEventListener("keydown", (e) => {
     if (!prefs.enabled || e.key !== "/" || !(e.ctrlKey || e.metaKey)) return;

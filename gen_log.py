@@ -159,7 +159,8 @@ def _trim(path: Path) -> int:
                 if not isinstance(row, dict) or not row.get("id"):
                     continue
                 if row.get("t") == "gen":
-                    gens.append((row.get("at") or 0, str(row["id"]), raw if raw.endswith("\n") else raw + "\n"))
+                    # at 不是數字就排到最舊：不能拿字串跟數字一起排序，不然整理會整段失敗、檔案一直長大。
+                    gens.append((_at_or_zero(row), str(row["id"]), raw if raw.endswith("\n") else raw + "\n"))
                 elif row.get("t") == "mark":
                     marks[str(row["id"])] = raw if raw.endswith("\n") else raw + "\n"
     except OSError:
@@ -225,6 +226,12 @@ def _load() -> list[dict]:
                 if not isinstance(row, dict) or not row.get("id"):
                     continue
                 if row.get("t") == "gen":
+                    # 一筆 at 是字串（手改、寫到一半）不能讓整份日誌排序時 TypeError。跳過這一列，其他的照常讀。
+                    if "at" in row and _event_at(row) is None:
+                        print(f"[日誌] 跳過一筆時間壞掉的紀錄 {row.get('id')}", flush=True)
+                        continue
+                    if _event_at(row) is not None:
+                        row = {**row, "at": _event_at(row)}
                     items[str(row["id"])] = row
                 elif row.get("t") == "mark":
                     marks[str(row["id"])] = row.get("mark")
@@ -234,8 +241,8 @@ def _load() -> list[dict]:
     for jid, row in items.items():
         m = marks.get(jid)
         out.append({**row, "mark": m} if m else row)
-    # 時間一樣的照編號排：翻頁的游標是 (at, id)，排序要跟它一致。
-    out.sort(key=lambda r: (r.get("at") or 0, str(r.get("id") or "")), reverse=True)
+    # 時間一樣的照編號排：翻頁的游標是 (at, id)，排序要跟它一致。at 一律是數字，才不會跟壞資料比大小。
+    out.sort(key=lambda r: (_at_or_zero(r), str(r.get("id") or "")), reverse=True)
     with _LOCK:
         _cache["key"] = key
         _cache["items"] = out
@@ -252,9 +259,9 @@ def page(limit: int = 200, before: int | None = None, before_id: str | None = No
     limit = max(1, min(PAGE_MAX, int(limit or 200)))
     if before and before_id:
         cursor = (before, str(before_id))
-        items = [r for r in items if ((r.get("at") or 0), str(r.get("id") or "")) < cursor]
+        items = [r for r in items if (_at_or_zero(r), str(r.get("id") or "")) < cursor]
     elif before:
-        items = [r for r in items if (r.get("at") or 0) < before]
+        items = [r for r in items if _at_or_zero(r) < before]
     return {"items": items[:limit], "more": len(items) > limit, "total": len(_load())}
 
 
@@ -336,6 +343,25 @@ def _model_name(path: str) -> str:
     return name[:-12] if name.lower().endswith(".safetensors") else name
 
 
+def _event_at(row) -> int | None:
+    """日誌的 at 應該是毫秒。缺了回 None（排序時當 0）；寫成字串這類壞值也回 None，呼叫端跳過那一列。
+    混在數字裡排序會 TypeError，一整頁、成績單、按牌查圖都讀不出來。"""
+    if not isinstance(row, dict) or "at" not in row:
+        return None
+    at = row.get("at")
+    if isinstance(at, bool) or not isinstance(at, (int, float)):
+        return None
+    try:
+        return int(at)
+    except (TypeError, ValueError, OverflowError):
+        return None
+
+
+def _at_or_zero(row) -> int:
+    at = _event_at(row)
+    return 0 if at is None else at
+
+
 def stats(known, favorites) -> dict:
     """known：詞庫裡的牌；favorites：作品冊的每一筆（要 seed、positive、id）。
 
@@ -357,24 +383,36 @@ def stats(known, favorites) -> dict:
     days: dict[str, int] = {}
     hours = [0] * 24
 
-    def model(kind: str, name: str) -> dict:
-        key = f"{kind}:{name}"
+    def model(kind: str, raw) -> dict:
+        # 用完整路徑分組：A/same 跟 B/same 是兩個底模。以前只留檔名，成績單會把兩邊的張數算成同一個。
+        full = str(raw or "").replace("\\", "/").strip()
+        short = _model_name(full)
+        if kind == "ckpt" and not short:
+            short = "預設"
+            full = ""
+        folder = full.rsplit("/", 1)[0] if "/" in full else ""
+        key = f"{kind}:{folder}/{short}" if folder else f"{kind}:{short}"
         m = models.get(key)
         if m is None:
-            m = models[key] = {"kind": kind, "name": name, "n": 0, "fav": 0, "discard": 0, "failed": 0, "drawMs": 0, "drawN": 0, "cards": {}, "best": None, "last": 0}
+            m = models[key] = {
+                "kind": kind, "name": short or full, "path": full, "folder": folder,
+                "n": 0, "fav": 0, "discard": 0, "failed": 0, "drawMs": 0, "drawN": 0, "cards": {}, "best": None, "last": 0,
+            }
         return m
 
     for e in _load():
         if e.get("kind") == "hires":
             continue
-        at = e.get("at") or 0
+        if "at" in e and _event_at(e) is None:
+            continue
+        at = _at_or_zero(e)
         first = at if first is None else min(first, at)
         tags = [t for t in tags_of(e.get("positive")) if t in known]
         ok = bool(e.get("ok"))
         fav_rec = favs.find(e.get("image"), fav_key(e.get("seed"), tags)) if ok else None
         fav = fav_rec is not None
         drop = ok and e.get("mark") == "discard"
-        ms = [model("ckpt", _model_name(e.get("ckpt")) or "預設")] + [model("lora", _model_name(l.get("file"))) for l in e.get("loras") or [] if l.get("file")]
+        ms = [model("ckpt", e.get("ckpt"))] + [model("lora", l.get("file")) for l in e.get("loras") or [] if l.get("file")]
         for m in ms:
             if not ok:
                 m["failed"] += 1
@@ -410,12 +448,20 @@ def stats(known, favorites) -> dict:
             c[0] += 1
             c[1] += fav
             c[2] += drop
+    # 顯示名稱撞名時帶資料夾。name 仍是短檔名（舊的前端照這個找），path／label 讓新的分得出 A/same 跟 B/same。
+    name_n: dict[tuple, int] = {}
+    for m in models.values():
+        name_n[(m["kind"], m["name"])] = name_n.get((m["kind"], m["name"]), 0) + 1
     out_models = []
     for m in models.values():
         top = sorted(m["cards"].items(), key=lambda kv: -kv[1])[:14]
+        label = f"{m['folder']}/{m['name']}" if m["folder"] and name_n[(m["kind"], m["name"])] > 1 else m["name"]
         out_models.append({
             "kind": m["kind"],
             "name": m["name"],
+            "path": m["path"],
+            "folder": m["folder"],
+            "label": label,
             "n": m["n"],
             "fav": m["fav"],
             "discard": m["discard"],
@@ -466,6 +512,8 @@ def by_tag(tag: str, favorites: dict, limit: int = 48, offset: int = 0, alive=No
     for e in _load():
         if e.get("kind") == "hires" or not e.get("ok") or not e.get("image"):
             continue
+        if "at" in e and _event_at(e) is None:
+            continue
         tags = tags_of(e.get("positive"))
         if tag not in tags:
             continue
@@ -483,7 +531,7 @@ def by_tag(tag: str, favorites: dict, limit: int = 48, offset: int = 0, alive=No
             continue
         out.append({
             "id": e.get("id"),
-            "at": e.get("at") or 0,
+            "at": _at_or_zero(e),
             "image": e.get("image"),
             "width": e.get("width"),
             "height": e.get("height"),

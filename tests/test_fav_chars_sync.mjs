@@ -141,7 +141,10 @@ function handWorld({ local, synced, file, fuse }) {
     lastActivity = Date.now();
     inflight++;
     try {
-      if (!opts.method) return { ok: true, json: async () => (server.file ? { tags: server.file, saved: true, at: 1 } : { tags: [], saved: false, at: 0 }) };
+      if (!opts.method) {
+        if (server.gate) await server.gate;
+        return { ok: true, json: async () => (server.file ? { tags: server.file, saved: true, at: 1 } : { tags: [], saved: false, at: 0 }) };
+      }
       const p = JSON.parse(opts.body);
       server.posts.push(p);
       let fresh = false;
@@ -173,6 +176,23 @@ test("hand: the first sync merges this browser's cards into the server list (bot
   await settle();
   assert.deepEqual(w.server.file, ["smile", "red hair", "kimono"]);
   assert.deepEqual(w.hand(), ["smile", "red hair", "kimono"]);
+});
+
+test("hand: two devices migrating at once both keep their cards (astra-6: the later whole list replaced the earlier)", async () => {
+  // 這台讀到伺服器 [kimono]、併上自己的 red hair；送出去之前另一台（也是第一次）已經把 blue hair 併上去了。
+  const w = handWorld({ local: ["kimono", "red hair"], synced: false, file: ["kimono"] });
+  let open;
+  w.server.gate = new Promise((r) => (open = r));
+  await loadHand();
+  await sleep(30);
+  open();
+  w.server.gate = null;
+  await sleep(100);
+  w.server.file = ["kimono", "blue hair"];
+  await settle();
+  assert.deepEqual(new Set(w.server.file), new Set(["kimono", "red hair", "blue hair"]));
+  assert.deepEqual(new Set(w.hand()), new Set(w.server.file));
+  assert.ok(w.server.posts.every((p) => !Array.isArray(p.tags)), "never sends a whole list that replaces the server's");
 });
 
 test("hand: reordering sends the order; a card another device just added stays (first)", async () => {

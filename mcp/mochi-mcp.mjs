@@ -96,6 +96,24 @@ for (const it of items) {
 }
 indexSearchNames(CARDS);
 
+/*
+ * 釘選、份量、禁用寫成 long_hair、Long hair、長髮：換成詞庫的正式寫法再判斷。以前只認原字串，對不到就當詞庫外，
+ * 跳過互斥和附帶、原字串直接進提示詞（還可能再補一張 short hair 互相矛盾；中文直接送進 ComfyUI）（2026-11-20 第六輪檢查）。
+ * 中文名只認不重複的（同一個中文名對到兩張牌就不猜）。
+ */
+const CANON = (() => {
+  const m = new Map();
+  for (const it of items) if (!m.has(key(it.tag))) m.set(key(it.tag), it.tag);
+  const seen = new Map();
+  for (const it of items) {
+    const z = key(it.zh || zhOf(it.tag));
+    if (z) seen.set(z, seen.has(z) ? null : it.tag);
+  }
+  for (const [z, tag] of seen) if (tag && !m.has(z)) m.set(z, tag);
+  return m;
+})();
+const canon = (t) => (!t || lex.byTag.has(t) || String(t).startsWith("custom:") ? t : CANON.get(key(t)) || t);
+
 function brief(it) {
   return {
     tag: it.tag,
@@ -247,16 +265,18 @@ function contentLevel(spec) {
 }
 
 /** 份量：pins 裡的 (tag:1.2) 和 weights 物件合在一起，夾在墨池的 0.6～1.5。 */
-function splitWeights(list, weightsIn) {
+function splitWeights(list, weightsIn, norm = (t) => t) {
   const tags = [];
   const weights = {};
   for (const raw of list) {
-    const { tag, weight } = E.parseWeighted(raw);
+    const tag = norm(E.parseWeighted(raw).tag);
+    const { weight } = E.parseWeighted(raw);
     if (!tag) continue;
     tags.push(tag);
     if (weight !== 1) weights[tag] = E.clampTagWeight(weight);
   }
-  for (const [tag, w] of Object.entries(weightsIn && typeof weightsIn === "object" ? weightsIn : {})) {
+  for (const [name, w] of Object.entries(weightsIn && typeof weightsIn === "object" ? weightsIn : {})) {
+    const tag = norm(name);
     const n = E.clampTagWeight(w);
     if (n !== 1) weights[tag] = n;
     else delete weights[tag];
@@ -304,7 +324,7 @@ async function prepare(spec) {
     deckW = deck.weights || {};
     notes.push(`套用牌組「${deck.name}」：${(deck.tags || []).length} 張牌`);
   }
-  const { tags: pinsAll, weights } = splitWeights(raw, { ...deckW, ...(spec.weights || {}) });
+  const { tags: pinsAll, weights } = splitWeights(raw, { ...deckW, ...(spec.weights || {}) }, canon);
   // 自製牌（custom:<id> 或自製牌的名字）：拆成裡面的牌（帶份量）＋詞庫外的字，跟墨池網頁一樣。
   const level = contentLevel(spec);
   if (level.note) notes.push(level.note);
@@ -343,7 +363,7 @@ async function prepare(spec) {
     pinsIn.push(pick);
     notes.push(`從 ${pool.length} 個偏好角色挑了${label(pick)}`);
   }
-  const bansIn = (spec.bans || []).map((t) => bareTag(t)).filter(Boolean);
+  const bansIn = (spec.bans || []).map((t) => canon(bareTag(t))).filter(Boolean);
   const all = [...pinsIn, ...extraIn];
   const minor = all.filter(isMinor);
   if (minor.length) throw new Error("不能畫未成年角色，這些字被擋下：" + minor.join(", "));
@@ -774,32 +794,53 @@ async function startJob(body, meta) {
   const settle = () => job.waiters.splice(0).forEach((f) => f());
   // 一直讀到畫完：墨池的工作有人接著才會畫完（沒人接的兩分鐘會被收掉），所以這條連線要留著，工具先回也一樣。
   (async () => {
+    let stream = res;
+    let seen = 0; // 收過幾則（預覽不算）：接回去時只補後面的，跟網頁的 gen.js 一樣
+    let why = "跟墨池的連線中途斷了";
     try {
-      for await (const { event, data: d } of sse(res)) {
-        if (event === "queued") job.state = "queued";
-        else if (event === "ping" && d?.prompt_id) job.promptId = d.prompt_id;
-        else if (event === "progress") {
-          job.state = "running";
-          job.progress = Math.min(1, (d?.value || 0) / (d?.max || 25));
-        } else if (event === "done") {
-          Object.assign(job, { state: "done", progress: 1, image: d?.image, seed: d?.seed, ...(d?.width ? { width: d.width, height: d.height } : {}) });
-          return;
-        } else if (event === "error") {
-          Object.assign(job, { state: "error", error: d?.error || "ComfyUI 報錯" });
-          return;
+      for (let attempt = 0; ; attempt++) {
+        if (stream) {
+          try {
+            for await (const { event, data: d } of sse(stream)) {
+              if (event !== "preview" && event !== "message") seen++;
+              if (event === "queued") job.state = "queued";
+              else if (event === "ping" && d?.prompt_id) job.promptId = d.prompt_id;
+              else if (event === "progress") {
+                job.state = "running";
+                job.progress = Math.min(1, (d?.value || 0) / (d?.max || 25));
+              } else if (event === "done") {
+                Object.assign(job, { state: "done", progress: 1, image: d?.image, seed: d?.seed, ...(d?.width ? { width: d.width, height: d.height } : {}) });
+                return;
+              } else if (event === "error") {
+                Object.assign(job, { state: "error", error: d?.error || "ComfyUI 報錯" });
+                return;
+              }
+            }
+          } catch (err) {
+            why = String(err?.message || err);
+          }
         }
+        // 連線斷了：先接回去（GET /api/gen/attach）。墨池那邊沒人接著的工作 30 秒後就停掉，只開 MCP、沒開網頁時
+        // 以前只記成 lost、等 image_status 去問 recover，那時這張已經被停了（2026-11-20 第六輪檢查）。
+        // 伺服器說找不到（404：重開過、或結束太久）才不接，交給 recover。
+        if (attempt >= REATTACH_WAITS.length) break;
+        await new Promise((r) => setTimeout(r, REATTACH_WAITS[attempt]));
+        stream = null;
+        const r = await mochi(`/api/gen/attach?job=${encodeURIComponent(job.id)}&since=${seen}`, { headers: { Accept: "text/event-stream" } }).catch(() => null);
+        if (r?.status === 404) break;
+        if (r?.ok) stream = r;
       }
       // 連線斷了不等於印壞：墨池那邊可能照樣畫完。記成 lost，image_status 會去問墨池（/api/gen/recover）。
       // 以前直接記成 error，之後怎麼問都是失敗，明明圖已經印好了（第五輪 Astra 找到）。
-      if (job.state !== "done" && job.state !== "error") Object.assign(job, { state: "lost", error: "跟墨池的連線中途斷了" });
-    } catch (err) {
-      if (job.state !== "done" && job.state !== "error") Object.assign(job, { state: "lost", error: String(err?.message || err) });
+      if (job.state !== "done" && job.state !== "error") Object.assign(job, { state: "lost", error: why });
     } finally {
       settle();
     }
   })();
   return job;
 }
+// 接回去之前等多久（跟網頁 gen.js 的 REATTACH_WAITS 一樣，加起來約 23 秒，在伺服器留著的 30 秒裡）。
+const REATTACH_WAITS = [800, 1500, 2500, 4000, 6000, 8000];
 
 /**
  * 生圖、修圖的種子：ComfyUI 收 0～2^64-1。以前一律 >>> 0 砍成 32 位元，4294967297 送出去變成 1（第五輪 Astra 找到）。

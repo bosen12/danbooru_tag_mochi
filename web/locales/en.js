@@ -348,6 +348,7 @@ Python 3 · 標準函式庫，不用裝任何套件|Python 3 · Standard library
 找作品|Search gallery
 搜尋字盒|Search card library
 搜尋：紅髮、red hair…（按 / 跳到這裡）|Search red hair, smile… (press /)
+搜尋：紅髮、kimono…（按 / 跳到這裡）|Search red hair, kimono… (press /)
 找牌：紅髮、kimono…（按 /）|Search red hair, kimono… (press /)
 找牌：紅髮、kimono…|Search red hair, kimono…
 找作品：牌名、提示詞…|Search cards or prompts…
@@ -2059,6 +2060,12 @@ ComfyUI 沒開：先用拼貼卡面，之後再回來烤。|ComfyUI isn’t runn
 讀取群組…|Loading groups…
 空的|Empty
 空|Empty
+空的群組|Empty group
+這件作品已在別處刪掉。|This work was already deleted somewhere else.
+這件作品的存檔壞了，已改名留著。可以再收藏一次。|This work's save file is damaged and was kept under a new name. You can save it again.
+匯入檔裡有一件不是配方。|One item in the import is not a recipe.
+整組|Whole group
+這組有哪些小分類|Subcategories in this group
 加牌|Add cards
 在墨池用這組|Use in Mochi
 這組還是空的：按「加牌」挑幾張進來。|This group is empty. Press “Add cards” to pick some.
@@ -3101,6 +3108,15 @@ AI 助手用：{0}|AI assistant uses {0!}
 另 {0} 個尚未查找|{0} more words still to look up
 可用 {0} 張，已在池中 {1} 張，找不到 {2} 張，受限制 {3} 張|{0} available, {1} already in the pool, {2} missing, {3} restricted
 推理強度只能選：{0}，或留預設。|Reasoning effort must be {0!}, or leave the default.
+只看這組裡「{0}」的 {1} 張|Show only the {1!} {0} cards in this group
+這組沒有「{0}」：抽牌時照常抽|This group has no {0} cards; draws pick them as usual
+讀不到這件作品的存檔：{0}|Can't read this work's save file: {0!}
+伺服器讀不到牌的使用次數存檔（{0}）：{1}|The server can't read the card-usage save ({0!}): {1!}
+伺服器讀不到牌組的存檔（{0}）：{1}|The server can't read the deck save ({0!}): {1!}
+伺服器上的牌的使用次數存檔（{0}）樣子不對，也沒有能用的備份。那份改名成 {1} 留著；之後存的會從空的開始。|The card-usage save on the server ({0!}) has the wrong shape and there is no usable backup. The bad copy was kept as {1!}. Later saves start empty.
+伺服器上的牌組存檔（{0}）樣子不對，也沒有能用的備份。那份改名成 {1} 留著；之後存的會從空的開始。|The deck save on the server ({0!}) has the wrong shape and there is no usable backup. The bad copy was kept as {1!}. Later saves start empty.
+伺服器換不回牌的使用次數的備份（{0}）：{1}|The server couldn't restore the card-usage backup ({0!}): {1!}
+伺服器換不回牌組的備份（{0}）：{1}|The server couldn't restore the deck backup ({0!}): {1!}
 `;
 export const templates = parameterized.trim().split("\n").map((line) => {
   const split = line.indexOf("|");

@@ -156,6 +156,170 @@ def resolve_stored_file(name: str) -> Path | None:
     return path if path.is_file() else None
 
 
+_IMAGE_SUFFIXES = {".png", ".jpg", ".jpeg", ".webp"}
+
+
+def error_status(exc: RecipeError) -> int:
+    """給 HTTP 用。gone 要 409（舊分頁不能把刪掉的作品存回來）。
+    corrupt 要 404：成品上的收藏鈕只有 404 才會清掉編號重收，400 會永遠停在「暫時無法確認」。
+    暫時讀不到（檔案被占用）要 503，不能回 404，不然會當成已經刪掉再存一件。"""
+    return {"gone": 409, "corrupt": 404, "unavailable": 503}.get(exc.code, 400)
+
+
+def _trash_dir() -> Path:
+    folder = files_dir() / ".trash"
+    folder.mkdir(parents=True, exist_ok=True)
+    return folder.resolve()
+
+
+def _trash_file(name: str) -> Path | None:
+    """刪掉的圖先放 files/.trash/，匯出再匯入、或明確復原時才搬得回來。"""
+    safe = _safe_file_name(name)
+    if not safe:
+        return None
+    folder = _trash_dir()
+    path = (folder / safe).resolve()
+    try:
+        path.relative_to(folder)
+    except ValueError:
+        return None
+    return path if path.is_file() else None
+
+
+def _owns_file(rid: str, name: str, *, thumb: bool) -> bool:
+    """圖檔名是不是這件作品自己的。匯入、複製會帶著別人的檔名，那一份不能共用。"""
+    if thumb:
+        return name == f"{rid}.thumb.webp"
+    return Path(name).suffix.lower() in _IMAGE_SUFFIXES and name == f"{rid}{Path(name).suffix.lower()}"
+
+
+def _write_bytes(dest: Path, data: bytes) -> None:
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    fd, temp_name = tempfile.mkstemp(prefix=f".{dest.name}.", suffix=".tmp", dir=dest.parent)
+    temp_path = Path(temp_name)
+    try:
+        with os.fdopen(fd, "wb") as handle:
+            handle.write(data)
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.replace(temp_path, dest)
+    finally:
+        try:
+            temp_path.unlink()
+        except FileNotFoundError:
+            pass
+
+
+def _quarantine(path: Path) -> None:
+    """壞掉的單件 JSON 改名留著，不刪：列表才不會永遠略過、也才刪得掉、收藏鈕才收得到 404。"""
+    stamp = time.strftime("%Y%m%d-%H%M%S")
+    aside = path.with_name(f"{path.name}.corrupt-{stamp}")
+    n = 2
+    while aside.exists():
+        aside = path.with_name(f"{path.name}.corrupt-{stamp}-{n}")
+        n += 1
+    try:
+        os.replace(path, aside)
+    except OSError as exc:
+        print(f"[作品冊] {path.name} 壞了，但改名留不住：{exc}", flush=True)
+        return
+    print(f"[作品冊] {path.name} 壞了，改名成 {aside.name} 留著（不刪，裡面可能還救得回）", flush=True)
+
+
+def _load_recipe_file(path: Path):
+    """讀一件作品。JSON 壞了、或根本不是物件：改名留著並丟 corrupt。檔案被占用不改名。"""
+    try:
+        raw = _read_json(path)
+    except ValueError:
+        _quarantine(path)
+        raise RecipeError("這件作品的存檔壞了，已改名留著。可以再收藏一次。", "corrupt") from None
+    except OSError as exc:
+        raise RecipeError(f"讀不到這件作品的存檔：{exc}", "unavailable") from None
+    if not isinstance(raw, dict):
+        _quarantine(path)
+        raise RecipeError("這件作品的存檔壞了，已改名留著。可以再收藏一次。", "corrupt")
+    return raw
+
+
+def _claim_media(rec: dict) -> None:
+    """新建、匯入、複製時，圖檔名不是自己的編號就複製一份。
+    刪一件才不會把另一件還指著的同一個檔一起刪掉。檔已經被刪進回收區就從那裡複製回來；
+    兩邊都沒有就把參照清掉（留下一個指不到的檔名，牆上會一直是破圖）。"""
+    for key, thumb in (("image", False), ("thumbnail", True)):
+        ref = rec.get(key)
+        if not isinstance(ref, dict):
+            continue
+        name = str(ref.get("file") or "")
+        if not name:
+            rec[key] = None
+            continue
+        live = resolve_stored_file(name)
+        trashed = None if live else _trash_file(name)
+        if _owns_file(rec["id"], name, thumb=thumb):
+            if live:
+                continue
+            if trashed is not None:
+                # 這件作品自己的檔，刪過又復原：搬回原檔名，不要再複製一份。
+                os.replace(trashed, files_dir() / name)
+                continue
+            rec[key] = None
+            continue
+        src = live or trashed
+        if src is None:
+            rec[key] = None
+            continue
+        suffix = ".thumb.webp" if thumb else src.suffix.lower()
+        if suffix not in _IMAGE_SUFFIXES and suffix != ".thumb.webp":
+            suffix = ".png"
+        new_name = f"{rec['id']}{suffix}"
+        dest = files_dir() / new_name
+        if dest.is_file() and dest.resolve() != src.resolve():
+            new_name = f"{rec['id']}-{uuid.uuid4().hex[:8]}{suffix}"
+            dest = files_dir() / new_name
+        if dest.resolve() != src.resolve():
+            _write_bytes(dest, src.read_bytes())
+        copied = dict(ref)
+        copied["file"] = new_name
+        copied["copied"] = True
+        rec[key] = copied
+
+
+def _used_by_others(name: str, rid: str) -> bool:
+    """別件作品的 JSON 還指著這個檔名就不許移走。舊資料匯入時共用過同一個檔。"""
+    if not name or not DATA_DIR.is_dir():
+        return False
+    for path in DATA_DIR.glob("*.json"):
+        if path.stem == rid:
+            continue
+        try:
+            raw = _read_json(path)
+        except (OSError, ValueError):
+            continue
+        if not isinstance(raw, dict):
+            continue
+        for key in ("image", "thumbnail"):
+            ref = raw.get(key)
+            if isinstance(ref, dict) and str(ref.get("file") or "") == name:
+                return True
+    return False
+
+
+def _release_file(name: str, rid: str) -> None:
+    """沒有別件在用才搬進回收區。直接刪的話，匯出再匯入、或另一件還指著同一個檔，圖就沒了。"""
+    if not name or _used_by_others(name, rid):
+        return
+    stored = resolve_stored_file(name)
+    if stored is None:
+        return
+    dest = _trash_dir() / stored.name
+    if dest.exists():
+        dest = _trash_dir() / f"{stored.stem}-{time.strftime('%Y%m%d-%H%M%S')}{stored.suffix}"
+    try:
+        os.replace(stored, dest)
+    except OSError:
+        pass
+
+
 def _clean_loras(raw) -> list:
     if not isinstance(raw, list):
         return []
@@ -388,10 +552,23 @@ def list_recipes() -> list[dict]:
             return []
         out = []
         for path in sorted(DATA_DIR.glob("*.json"), key=lambda p: p.stat().st_mtime, reverse=True):
+            # 壞掉的那件改名留著再跳過：以前直接略過，列表少一件、單件查詢又回 400，收藏鈕永遠重試、也刪不掉。
+            # 暫時讀不到（被占用）不改名，下一輪還看得到。
             try:
                 raw = _read_json(path)
-                rec = normalize_recipe(raw, rid=path.stem, existing=raw if isinstance(raw, dict) else None)
-            except (OSError, ValueError, RecipeError):
+            except ValueError:
+                _quarantine(path)
+                continue
+            except OSError as exc:
+                print(f"[作品冊] 讀不到 {path.name}：{exc}", flush=True)
+                continue
+            if not isinstance(raw, dict):
+                _quarantine(path)
+                continue
+            try:
+                rec = normalize_recipe(raw, rid=path.stem, existing=raw)
+            except RecipeError as exc:
+                print(f"[作品冊] {path.name} 讀不了（{exc.code}）：{exc}", flush=True)
                 continue
             out.append(_summary(rec))
         return out
@@ -424,11 +601,8 @@ def get_recipe(rid: str) -> dict | None:
         path = _recipe_path(rid)
         if not path.is_file():
             return None
-        try:
-            raw = _read_json(path)
-        except (OSError, ValueError):
-            raise RecipeError("配方檔損壞。", "corrupt")
-        return normalize_recipe(raw, rid=rid, existing=raw if isinstance(raw, dict) else None)
+        raw = _load_recipe_file(path)
+        return normalize_recipe(raw, rid=rid, existing=raw)
 
 
 def save_recipe(payload: dict, *, rid: str | None = None) -> dict:
@@ -440,12 +614,14 @@ def save_recipe(payload: dict, *, rid: str | None = None) -> dict:
         existing = None
         if rid:
             path = _recipe_path(rid)
-            if path.is_file():
-                try:
-                    existing = _read_json(path)
-                except (OSError, ValueError):
-                    existing = None
-            rec = normalize_recipe(payload, rid=rid, existing=existing)
+            # 檔案已經不在：舊分頁還拿著這件的編號來改名，不能把它救回來（圖會指到已經刪掉的檔）。
+            # 只有刪除後按復原、明確帶 restore: true，才照原編號建回去。跟牌組、群組同一套。
+            if not path.is_file():
+                if not isinstance(payload, dict) or payload.get("restore") is not True:
+                    raise RecipeError("這件作品已在別處刪掉。", "gone")
+            else:
+                existing = _load_recipe_file(path)
+            rec = normalize_recipe(payload, rid=rid, existing=existing if isinstance(existing, dict) else None)
         else:
             rec = normalize_recipe(payload)
             if (_recipe_path(rec["id"])).is_file():
@@ -453,6 +629,7 @@ def save_recipe(payload: dict, *, rid: str | None = None) -> dict:
         rec["updatedAt"] = _now()
         if not rec.get("createdAt"):
             rec["createdAt"] = rec["updatedAt"]
+        _claim_media(rec)
         _write_json(_recipe_path(rec["id"]), rec)
         return rec
 
@@ -469,12 +646,8 @@ def delete_recipe(rid: str) -> dict | None:
             return None
         for key in ("image", "thumbnail"):
             ref = rec.get(key) or {}
-            stored = resolve_stored_file(str(ref.get("file") or ""))
-            if stored:
-                try:
-                    stored.unlink()
-                except OSError:
-                    pass
+            if isinstance(ref, dict):
+                _release_file(str(ref.get("file") or ""), rec["id"])
         return rec
 
 
@@ -531,6 +704,9 @@ def _save_thumbnail_locked(rid: str, data: bytes) -> dict:
     try:
         with os.fdopen(fd, "wb") as handle:
             handle.write(data)
+            # 跟原圖同一套：沒有 flush／fsync，收藏後幾秒內停電，JSON 會指到 0 位元組的縮圖，牆上一直是破圖。
+            handle.flush()
+            os.fsync(handle.fileno())
         os.replace(temp_path, dest)
     finally:
         try:
@@ -590,14 +766,19 @@ def import_payload(raw) -> list[dict]:
         raise RecipeError("匯入檔沒有配方。", "invalid")
     if len(recipes) > MAX_BATCH:
         raise RecipeError("一次匯入太多份。", "too_large")
-    saved = []
+    # 先全部驗過再寫。以前寫到一半才發現後面一件版本不認得，前面幾件已經進作品冊，重試又多一份。
+    prepared = []
     for item in recipes:
         if not isinstance(item, dict):
-            continue
+            raise RecipeError("匯入檔裡有一件不是配方。", "invalid")
         incoming = dict(item)
         incoming.pop("id", None)
-        saved.append(save_recipe(incoming))
-    return saved
+        blob = json.dumps(incoming, ensure_ascii=False).encode("utf-8")
+        if len(blob) > MAX_RECIPE_BYTES:
+            raise RecipeError("配方 JSON 太大。", "too_large")
+        normalize_recipe(incoming)
+        prepared.append(incoming)
+    return [save_recipe(incoming) for incoming in prepared]
 
 
 def reproduce_payload(rec: dict) -> dict:

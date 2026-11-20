@@ -290,7 +290,7 @@ try {
     await page.waitForTimeout(700);
     assert.match(await slotText(tagB), /2 張/, `the other custom card keeps the shared member: ${await slotText(tagB)}`);
     // 別的分頁把乙改成只剩長髮：藍眼從合成池拿掉，不另外冒一張。
-    await post({ id: B.id, name: '測試乙', rating: 'general', members: [{ tag: 'long hair', w: 1 }], extra: [] });
+    await post({ id: B.id, updatedAt: B.updatedAt, name: '測試乙', rating: 'general', members: [{ tag: 'long hair', w: 1 }], extra: [] }); // 帶上 updatedAt：沒帶的修改伺服器當成舊分頁、回 409
     const other = await ctx.newPage();
     await other.goto(origin + '/api/custom-cards');
     await other.evaluate(() => localStorage.setItem('mochi.custom.v1', String(Date.now())));

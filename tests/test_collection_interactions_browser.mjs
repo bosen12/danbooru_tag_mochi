@@ -99,15 +99,15 @@ try {
     const tag = await cell.getAttribute('data-tag');
     await cell.hover();
     await cell.locator('.box-add').click();
-    assert.deepEqual(await page.evaluate(() => JSON.parse(localStorage.getItem('mochi.pool.handoff.v1'))?.tags), [tag]);
+    assert.deepEqual(await page.evaluate(() => JSON.parse((localStorage.getItem('mochi.pool.handoff.v1.' + sessionStorage.getItem('mochi.tab.id.v1')) ?? localStorage.getItem('mochi.pool.handoff.v1')))?.tags), [tag]);
     assert.deepEqual(await page.evaluate(() => JSON.parse(localStorage.getItem('mochi.hand.v1'))), ['red hair']);
     await cell.locator('.card').click();
     assert.ok(await page.evaluate(tag => JSON.parse(localStorage.getItem('mochi.hand.v1')).includes(tag), tag));
     assert.equal(await cell.locator('.box-add').getAttribute('aria-pressed'), 'true');
     await cell.locator('.box-add').click();
-    assert.equal(await page.evaluate(() => localStorage.getItem('mochi.pool.handoff.v1')), null);
+    assert.equal(await page.evaluate(() => (localStorage.getItem('mochi.pool.handoff.v1.' + sessionStorage.getItem('mochi.tab.id.v1')) ?? localStorage.getItem('mochi.pool.handoff.v1'))), null);
   });
-  await test('plus send stays unsent when handoff storage fails', async page => { await book(page); await quota(page); const cell = page.locator('.book-cell:not(.is-skel)').first(); await cell.hover(); await cell.locator('.box-add').click(); await handoffStayed(page, '/book.html'); assert.equal(await page.evaluate(() => localStorage.getItem('mochi.pool.handoff.v1')), null); assert.equal(await cell.locator('.box-add').getAttribute('aria-pressed'), 'false'); assert.equal(await page.locator('.page-switch .send-badge').count(), 0); assert.deepEqual(await page.evaluate(() => JSON.parse(localStorage.getItem('mochi.hand.v1'))), ['red hair']); });
+  await test('plus send stays unsent when handoff storage fails', async page => { await book(page); await quota(page); const cell = page.locator('.book-cell:not(.is-skel)').first(); await cell.hover(); await cell.locator('.box-add').click(); await handoffStayed(page, '/book.html'); assert.equal(await page.evaluate(() => (localStorage.getItem('mochi.pool.handoff.v1.' + sessionStorage.getItem('mochi.tab.id.v1')) ?? localStorage.getItem('mochi.pool.handoff.v1'))), null); assert.equal(await cell.locator('.box-add').getAttribute('aria-pressed'), 'false'); assert.equal(await page.locator('.page-switch .send-badge').count(), 0); assert.deepEqual(await page.evaluate(() => JSON.parse(localStorage.getItem('mochi.hand.v1'))), ['red hair']); });
   await test('single card handoff stays in card details on failure', async page => { await book(page); await page.locator('.book-cell .card').first().click(); await quota(page); await page.getByRole('button', { name: '加入合成池', exact: true }).click(); await handoffStayed(page, '/book.html'); assert.equal(await page.locator('.book-detail').count(), 1); });
   await test('transfer from book details keeps cards already marked for Ink Pool', async page => {
     await book(page);
@@ -133,7 +133,7 @@ try {
     assert.match(await review.innerText(), /黑髮/);
     assert.doesNotMatch(await review.innerText(), /和服/);
     await review.getByRole('button', { name: '取消' }).click();
-    assert.equal(await page.evaluate(() => localStorage.getItem('mochi.pool.handoff.v1')), null);
+    assert.equal(await page.evaluate(() => (localStorage.getItem('mochi.pool.handoff.v1.' + sessionStorage.getItem('mochi.tab.id.v1')) ?? localStorage.getItem('mochi.pool.handoff.v1'))), null);
     await cell.locator('.box-add').click();
     await page.getByRole('button', { name: '確認加入' }).last().click();
     assert.equal(await cell.locator('.box-add').getAttribute('aria-pressed'), 'true');
@@ -150,7 +150,7 @@ try {
     assert.match(await review.innerText(), /會拿下的牌/);
     assert.match(await review.innerText(), /份量變更.*1\.4 → 1/);
     await review.getByRole('button', { name: '取消' }).click();
-    assert.equal(await page.evaluate(() => localStorage.getItem('mochi.pool.handoff.v1')), null);
+    assert.equal(await page.evaluate(() => (localStorage.getItem('mochi.pool.handoff.v1.' + sessionStorage.getItem('mochi.tab.id.v1')) ?? localStorage.getItem('mochi.pool.handoff.v1'))), null);
     await reprint.click();
     await page.getByRole('button', { name: '確認替換' }).last().click();
     await page.waitForURL(origin + '/');

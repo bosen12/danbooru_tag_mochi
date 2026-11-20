@@ -796,6 +796,16 @@ def validate_chat(payload):
     return chat
 
 
+def _merge_user(message, text):
+    """兩則使用者的話接在一起（中間那則空白的模型回覆略過了）：Anthropic 要使用者、模型輪流。"""
+    blocks = message["content"]
+    if isinstance(blocks, str):
+        blocks = [{"type": "text", "text": blocks}] if blocks.strip() else []
+    if str(text or "").strip():
+        blocks = blocks + [{"type": "text", "text": text}]
+    message["content"] = blocks
+
+
 def _api_body(conn, chat, force_tool):
     """兩套原生工具協定各自重建歷史，Anthropic 的並列結果要放進同一則 user 訊息。"""
     anthropic = conn["provider"] == "anthropic"
@@ -818,8 +828,15 @@ def _api_body(conn, chat, force_tool):
             continue
         message = {"role": role, "content": text}
         calls = entry.get("toolCalls", [])
+        if anthropic and not calls and not str(text or "").strip():
+            # Anthropic 不收空白的訊息：模型偶爾只回 end_turn（沒字也沒叫工具），舊的對話紀錄裡留著這種，
+            # 之後每一則都被退回（2026-11-20 第六輪檢查）。略過；前後兩則使用者的話併成一則。
+            continue
+        if anthropic and role == "user" and messages and messages[-1]["role"] == "user":
+            _merge_user(messages[-1], text)
+            continue
         if calls and anthropic:
-            message["content"] = ([{"type": "text", "text": text}] if text else []) + [
+            message["content"] = ([{"type": "text", "text": text}] if str(text or "").strip() else []) + [
                 {"type": "tool_use", "id": c["id"], "name": c["name"], "input": c["args"]} for c in calls
             ]
         elif calls:

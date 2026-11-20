@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import json
 import os
+import shutil
 import threading
 import time
 from pathlib import Path
@@ -69,17 +70,85 @@ def _blank() -> dict:
     return {"v": 1, "counts": {}, "mine": {}, "last": {}, "updated": 0, "seen": []}
 
 
+_USAGE_KEYS = {"v", "counts", "mine", "last", "updated", "seen"}
+
+
+def _coerce_usage(data):
+    """舊格式：整份就是 {牌: 次數}，沒有 counts。認得出來就轉，不要當成空的蓋掉。"""
+    if not isinstance(data, dict) or not data or (set(data) & _USAGE_KEYS):
+        return data
+    if all(isinstance(k, str) and isinstance(v, (int, float)) and not isinstance(v, bool) and v > 0 for k, v in data.items()):
+        return {"v": 1, "counts": {k: int(v) for k, v in data.items()}, "mine": {}, "last": {}, "updated": 0, "seen": []}
+    return data
+
+
+def _usage_ok(data) -> bool:
+    data = _coerce_usage(data)
+    if not isinstance(data, dict):
+        return False
+    for key in ("counts", "mine", "last"):
+        if key in data and not isinstance(data[key], dict):
+            return False
+    if "seen" in data and not isinstance(data["seen"], list):
+        return False
+    return True
+
+
+def _recover_shape():
+    """JSON 讀得懂、樣子卻不對（例如 [] 或 null）：跟讀不懂的檔一樣，這一次不存。
+    壞的改名留著，試 .bak；備份的樣子對就換回來。"""
+    path = USAGE_PATH
+    stamp = time.strftime("%Y%m%d-%H%M%S")
+    aside = path.with_name(f"{path.name}.corrupt-{stamp}")
+    n = 2
+    while aside.exists():
+        aside = path.with_name(f"{path.name}.corrupt-{stamp}-{n}")
+        n += 1
+    try:
+        shutil.copyfile(path, aside)
+    except OSError:
+        pass
+    bak = file_lock.backup_path(path)
+    try:
+        data = json.loads(bak.read_text(encoding="utf-8"))
+    except (OSError, ValueError, UnicodeDecodeError):
+        data = None
+    if _usage_ok(data):
+        # 換回備份失敗（檔案被占用）：跟讀不到一樣回 503，這次不存；不要變成 500。
+        try:
+            shutil.copyfile(bak, path)
+        except OSError as exc:
+            raise file_lock.StoreCorrupt(f"伺服器換不回牌的使用次數的備份（{path.name}）：{exc}") from None
+        print(f"[存檔] {path.name} 樣子不對，已用 {bak.name} 換回（壞的留在 {aside.name}）", flush=True)
+        return _coerce_usage(data)
+    try:
+        path.unlink()
+    except OSError:
+        pass
+    raise file_lock.StoreCorrupt(
+        f"伺服器上的牌的使用次數存檔（{path.name}）樣子不對，也沒有能用的備份。"
+        f"那份改名成 {aside.name} 留著；之後存的會從空的開始。"
+    )
+
+
 def _read() -> dict:
-    # 讀不懂的檔不能當成空的：整晚無限抽每一輪都在寫，空的那份會把幾千次的紀錄一次蓋掉。
-    # 先試 .bak；再不行丟 StoreCorrupt（伺服器回 503，壞的那份改名留著）。
+    # 讀不懂、讀不到、樣子不對，都不能當成空的：整晚無限抽每一輪都在寫，空的那份會把幾千次的紀錄跟 .bak 一次蓋掉。
+    # 檔案不存在才是第一次用。讀不到（檔案被占用）這一次不存，正本和 .bak 都不動。
     try:
         data = file_lock.read_json(USAGE_PATH, label="牌的使用次數")
-    except OSError:
-        return _blank()
+    except OSError as exc:
+        raise file_lock.StoreCorrupt(f"伺服器讀不到牌的使用次數存檔（{USAGE_PATH.name}）：{exc}") from None
     if data is None:
-        return _blank()
-    if not isinstance(data, dict):
-        return _blank()
+        try:
+            USAGE_PATH.stat()
+        except FileNotFoundError:
+            return _blank()
+        except OSError as exc:
+            raise file_lock.StoreCorrupt(f"伺服器讀不到牌的使用次數存檔（{USAGE_PATH.name}）：{exc}") from None
+    if not _usage_ok(data):
+        data = _recover_shape()
+    else:
+        data = _coerce_usage(data)
     out = _blank()
     for key in ("counts", "mine", "last"):
         val = data.get(key)

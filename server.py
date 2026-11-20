@@ -3381,7 +3381,12 @@ def _card_bake_worker() -> None:
             state = {"state": "failed", "error": out.strip()[-300:]}
         state["at"] = int(time.time() * 1000)
         with _ART_BAKE["lock"]:
-            _ART_BAKE["state"][tag] = state
+            # 烤的途中這張牌又被存了一次、排回佇列：這一輪烤的是舊提示詞。
+            # 寫成完成的話，前端看到完成就停止追蹤，卡面停在舊的那張，新的提示詞要重新整理才對得上。
+            if tag in _ART_BAKE["queue"]:
+                _ART_BAKE["state"][tag] = {"state": "queued", "at": state["at"]}
+            else:
+                _ART_BAKE["state"][tag] = state
 
 
 def save_card_prompt(payload: dict) -> dict:
@@ -6391,6 +6396,10 @@ class Handler(BaseHTTPRequestHandler):
             return
         self._json(404, {"ok": False, "error": "not found"})
 
+    def _recipe_error(self, exc: recipes.RecipeError) -> None:
+        # 狀態碼的理由在 recipes.error_status：舊分頁 409、壞檔 404、暫時讀不到 503。
+        self._json(recipes.error_status(exc), {"ok": False, "error": str(exc), "code": exc.code})
+
     def _serve_recipe_get(self, path: str) -> None:
         if path == "/api/recipes":
             self._json(200, {"ok": True, "items": recipes.list_recipes()})
@@ -6434,7 +6443,7 @@ class Handler(BaseHTTPRequestHandler):
         try:
             rec = recipes.get_recipe(pid)
         except recipes.RecipeError as exc:
-            self._json(400, {"ok": False, "error": str(exc), "code": exc.code})
+            self._recipe_error(exc)
             return
         if rec is None:
             self._json(404, {"ok": False, "error": "找不到這個配方。", "code": "missing"})
@@ -6496,7 +6505,7 @@ class Handler(BaseHTTPRequestHandler):
             rec = recipes.save_recipe(payload, rid=pid)
             self._json(200, {"ok": True, "recipe": rec})
         except recipes.RecipeError as exc:
-            self._json(400, {"ok": False, "error": str(exc), "code": exc.code})
+            self._recipe_error(exc)
         except Exception as exc:
             self._json(502, {"ok": False, "error": str(exc)})
 
@@ -6508,7 +6517,7 @@ class Handler(BaseHTTPRequestHandler):
         try:
             rec = recipes.delete_recipe(pid)
         except recipes.RecipeError as exc:
-            self._json(400, {"ok": False, "error": str(exc), "code": exc.code})
+            self._recipe_error(exc)
             return
         if rec is None:
             self._json(404, {"ok": False, "error": "找不到這個配方。", "code": "missing"})

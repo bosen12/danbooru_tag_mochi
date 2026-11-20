@@ -100,10 +100,16 @@ export function mountBookGroups({ lib, assets, onChange, toMochi, visible, data 
 
   // keepScroll：只是存好了（加牌模式每點一張就存一次），牌還是同一批，不要捲回頂端。
   // 2026-11-20 專案主：加牌時每選一張就跳到最上面，很不好用。
+  // 現在畫面上這一組的牌。別的裝置改了內容才重畫牌格；自己這台還在存的那一筆不要在這裡再畫一次。
+  let shownSig = "";
+  const groupSig = (g) => (g ? `${g.id}\0${editing ? 1 : 0}\0${g.tags.join("\0")}` : "");
   function changed({ grid = true, keepScroll = false } = {}) {
     renderShelf();
     renderHead();
-    if (grid) onChange({ keepScroll });
+    if (grid) {
+      shownSig = groupSig(active());
+      onChange({ keepScroll });
+    }
   }
 
   /** 一疊牌：前三張的縮圖扇開；沒有縮圖的那張用花色底寫字。 */
@@ -549,11 +555,15 @@ export function mountBookGroups({ lib, assets, onChange, toMochi, visible, data 
               title: on ? `從「${g.name}」拿掉` : `加進「${g.name}」`,
               onclick: async (e) => {
                 const btn = e.currentTarget;
-                if (!on && g.tags.length >= MAX_TAGS) return refuse(btn), toast(`一個群組最多 ${MAX_TAGS} 張`);
-                btn.setAttribute("aria-pressed", on ? "false" : "true");
+                // 連點時 paint() 還沒重畫，閉包裡的 on 仍是上一格。跟加牌模式一樣，用現在的群組（含還沒送完的）重算。
+                const now = groups().find((x) => x.id === g.id);
+                const onNow = !!now?.tags.includes(card.tag);
+                if (!onNow && (now?.tags.length || 0) >= MAX_TAGS) return refuse(btn), toast(`一個群組最多 ${MAX_TAGS} 張`);
+                btn.setAttribute("aria-pressed", onNow ? "false" : "true");
+                if (!reducedMotion()) btn.animate([{ transform: "scale(0.96)" }, { transform: "none" }], { duration: DUR.short, easing: css(CURVE.settle) });
                 const tag = card.tag;
                 try {
-                  await write(g.id, (cur) => ({ ...cur, tags: on ? cur.tags.filter((t) => t !== tag) : cur.tags.includes(tag) ? cur.tags : [...cur.tags, tag] }), on ? `從「${g.name}」拿掉了` : `加進「${g.name}」了`);
+                  await write(g.id, (cur) => ({ ...cur, tags: onNow ? cur.tags.filter((t) => t !== tag) : cur.tags.includes(tag) ? cur.tags : [...cur.tags, tag] }), onNow ? `從「${g.name}」拿掉了` : `加進「${g.name}」了`);
                   changed();
                 } catch {
                   /* write 已經說了 */
@@ -620,8 +630,17 @@ export function mountBookGroups({ lib, assets, onChange, toMochi, visible, data 
       changed();
       return;
     }
+    const g = active();
+    const next = groupSig(g);
+    // 自己按下的那筆還在佇列裡：send 收尾會 changed。這裡再畫一次，牌格會跳兩次。
+    const external = !g || !pending.some((p) => p.id === g.id);
     renderShelf();
     renderHead();
+    if (g && external && next !== shownSig) {
+      shownSig = next;
+      // 別的裝置改了這一組的牌：摘要已經會變，牌格也要跟著（FLIP，不把整頁拉回頂）。
+      onChange({ keepScroll: true });
+    }
   });
   renderShelf();
   loadGroups();

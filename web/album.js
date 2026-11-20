@@ -68,6 +68,8 @@ const TABS = [
 ];
 let tab = TABS.some(([v]) => v === new URLSearchParams(location.search).get("tab")) ? new URLSearchParams(location.search).get("tab") : "works";
 let logFilter = "all";
+// 成績單上的「預設」是空底模，不是名字叫預設的模型。搜尋字對不上日誌（日誌裡這欄是空的）。
+let logEmptyCkpt = false;
 // 分輯（作品分頁）：記在這個瀏覽器。
 const GROUP_KEY = "mochi.album.group.v1";
 let grouping = (() => {
@@ -233,10 +235,27 @@ async function boot() {
     zh,
     isCard: (t) => lib.byTag.has(t),
     sectionOf: (t) => lib.byTag.get(t)?.item?.section,
-    // 點一張成績單：換到日誌、找字框填上它的名字。
+    // 點一張成績單：篩選先回到「全部」（剛才停在「收藏的」會把這模型印壞的、沒收藏的藏掉）。
+    // 空底模的名字是「預設」，拿去當搜尋字對不到日誌（那一欄是空的）。用旗標只留空底模，框留空。
     openLogFor: (name) => {
-      $("album-q").value = name;
-      query = name.toLowerCase();
+      logFilter = "all";
+      const empty = !!name && typeof name === "object" && name.emptyCkpt;
+      logEmptyCkpt = empty;
+      const q = $("album-q");
+      if (empty) {
+        q.value = "";
+        query = "";
+      } else {
+        const text = typeof name === "string" ? name : "";
+        q.value = text;
+        query = text.trim().toLowerCase();
+      }
+      // 已經在日誌：pickTab 看分頁沒變就直接返回，篩選和找字不會重畫。
+      if (tab === "log") {
+        renderTabs();
+        render();
+        return;
+      }
       pickTab("log");
     },
   });
@@ -379,6 +398,8 @@ function wireSearch() {
   q.addEventListener("input", () => {
     clearTimeout(timer);
     timer = setTimeout(() => {
+      // 人自己打了字：空底模那面旗標要放下，不然清掉字還是只剩空底模。
+      logEmptyCkpt = false;
       query = q.value.trim().toLowerCase();
       render();
     }, 140);
@@ -387,6 +408,7 @@ function wireSearch() {
     if (e.key === "Escape" && q.value) {
       q.value = "";
       query = "";
+      logEmptyCkpt = false;
       render();
     }
   });
@@ -527,12 +549,19 @@ function applySharedRating() {
   rating = next;
   free = nextFree;
   renderRating();
+  // 開著的詳情、相似列、日誌詳情都在 render 開頭收：同頁按分級鈕不走這裡，也要收得到。
+  render();
+  return true;
+}
+
+/** 分級變了（這一頁的鈕，或別的房間寫進同一份設定）：看不到的詳情關掉，還看得到的就把相似列重算。 */
+function guardOpenDetails() {
   if (openDetail) {
     const w = works.find((x) => x.id === openDetail.id);
     if (!w || !visible(w)) openDetail.close();
+    else refreshSimilar();
   }
-  render();
-  return true;
+  log?.guardRating?.(seeRating());
 }
 
 /**
@@ -604,6 +633,7 @@ function paintLogSum(r) {
 }
 
 function render({ deal = false } = {}) {
+  guardOpenDetails();
   const grid = $("album-grid");
   const logBox = $("album-log");
   const modelBox = $("album-models");
@@ -619,7 +649,7 @@ function render({ deal = false } = {}) {
   }
   if (tab === "log") {
     $("album-hint").hidden = true;
-    log.render(logBox, { query, filter: logFilter, rating: seeRating() }, { deal });
+    log.render(logBox, { query, filter: logFilter, rating: seeRating(), emptyCkpt: logEmptyCkpt }, { deal });
     return;
   }
   const shown = works.filter((w) => visible(w) && (!query || w._text.includes(query)));
@@ -869,7 +899,7 @@ function similarBox(w, sheetOf) {
   if (!list.length) return null;
   return el(
     "section",
-    { class: "album-similar" },
+    { class: "album-similar", dataset: { ids: list.map(({ work: x }) => x.id).join("\0") } },
     el("h3", {}, `相似的作品・${list.length}`),
     el(
       "div",
@@ -883,8 +913,11 @@ function similarBox(w, sheetOf) {
             type: "button",
             title: `${x.name}：${both} 張牌一樣`,
             onclick: () => {
+              // 打開詳情之後分級可能被別的房間調低。用現在的作品、現在看不看得見，不要用當初算列時抓住的那件。
+              const cur = works.find((y) => y.id === x.id);
+              if (!cur || !visible(cur)) return;
               sheetOf()?.close();
-              setTimeout(() => openWork(x), reducedMotion() ? 0 : DUR.short);
+              setTimeout(() => openWork(cur), reducedMotion() ? 0 : DUR.short);
             },
           },
           src
@@ -968,7 +1001,34 @@ function sendToMochi(tags, label, all, recipe, button) {
   setTimeout(() => (location.href = "./"), reducedMotion() ? 0 : DUR.short);
 }
 
+/** 詳情還開著、這件仍看得到：相似列照現在的分級重算。少掉的收起來，不是留著還點得開。 */
+function refreshSimilar() {
+  const detail = openDetail;
+  const body = detail?.body;
+  if (!body?.isConnected) return;
+  const w = works.find((x) => x.id === detail.id);
+  if (!w || !visible(w)) return;
+  const ids = similarWorks(w, works.filter(visible), tellingOf).map(({ work: x }) => x.id).join("\0");
+  // 相似列在 .album-info 裡，不是詳情根節點的直接子。用 :scope > 找不到，分級調低後舊列還留著、點得開。
+  const old = body.querySelector(".album-similar");
+  if ((old?.dataset.ids || "") === ids) return;
+  const next = ids ? similarBox(w, () => detail) : null;
+  if (old && next) {
+    leave(old, () => {
+      if (!old.isConnected || openDetail !== detail) return;
+      old.replaceWith(next);
+      enter(next);
+    });
+  } else if (old) leave(old, () => old.remove());
+  else if (next) {
+    body.append(next);
+    enter(next);
+  }
+}
+
 function openWork(w) {
+  // 網址、相似列、遲到的點擊都走這裡。這一級已經看不到就不要打開。
+  if (!w || !visible(w)) return;
   sfx.open?.();
   const full = fileUrl(w.image) || fileUrl(w.thumbnail);
   const mine = mineOf(w);
@@ -1125,7 +1185,7 @@ function openWork(w) {
     ]),
   });
   sheet = s;
-  openDetail = { id: w.id, close: () => s.close() };
+  openDetail = { id: w.id, close: () => s.close(), body };
   s.sheet.addEventListener("sheet-close", () => {
     if (openDetail?.id === w.id) openDetail = null;
   }, { once: true });

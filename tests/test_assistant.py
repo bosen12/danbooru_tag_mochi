@@ -493,7 +493,10 @@ def api_provider(provider):
             partial = history[:-1] + [{"role": "user", "content": "上輪按停，開始新一輪。"}]
             assert list(assistant.chat_events({**CHAT, "messages": partial}))[-1][0] == "done"
             sent = state["seen"][-1][2]["messages"]
-            result = sent[-2]["content"][-1]["content"] if anth else sent[-2]["content"]
+            # Anthropic：工具結果和後面那句使用者的話併成同一則（使用者、模型輪流）
+            result = [b for b in sent[-1]["content"] if b["type"] == "tool_result"][-1]["content"] if anth else sent[-2]["content"]
+            if anth:
+                assert sent[-1]["content"][-1] == {"type": "text", "text": "上輪按停，開始新一輪。"}
             assert json.loads(result)["code"] == "aborted"
             assert assistant.test_connection()["ok"]
             config(provider, effort="high", **({"baseUrl": url} if provider == "custom" else {}))
@@ -659,6 +662,28 @@ def api_cancel():
             assert closed.wait(2), f"上游仍連著，stream={stream}"
 
 
+def anthropic_blank_reply():
+    """模型回了一則沒字也沒工具的空白訊息（舊紀錄裡留著）：送 Anthropic 時略過，前後的使用者的話併成一則；
+    工具結果後面接的使用者文字也併進同一則（2026-11-20 第六輪檢查：以前之後每一則都被退回）。"""
+    chat = {"system": "s", "tools": [], "messages": [
+        {"role": "user", "content": "畫一張"},
+        {"role": "assistant", "content": "  ", "toolCalls": []},
+        {"role": "user", "content": "再一次"},
+        {"role": "assistant", "content": " \n", "toolCalls": [{"id": "t1", "name": "draw", "args": {}}]},
+        {"role": "tool", "toolCallId": "t1", "content": "{}"},
+        {"role": "user", "content": "套用"},
+    ]}
+    body = assistant._api_body({"provider": "anthropic", "model": "m"}, chat, None)
+    msgs = body["messages"]
+    assert [m["role"] for m in msgs] == ["user", "assistant", "user"], msgs
+    assert [b["text"] for b in msgs[0]["content"]] == ["畫一張", "再一次"], msgs[0]
+    assert [b["type"] for b in msgs[1]["content"]] == ["tool_use"], msgs[1]
+    assert [b["type"] for b in msgs[2]["content"]] == ["tool_result", "text"], msgs[2]
+    # OpenAI 那套照舊（空白回覆它收）
+    plain = assistant._api_body({"provider": "openai", "model": "m"}, chat, None)["messages"]
+    assert [m["role"] for m in plain] == ["system", "user", "assistant", "user", "assistant", "tool", "user"], plain
+
+
 def main():
     """每項測試單獨繼續跑，讓輸出能看出是哪條連線壞了。"""
     global assistant, server
@@ -689,6 +714,7 @@ def main():
                 ("三套 CLI 的串流格式", cli_output_formats),
                 *((f"{p} 原生工具串流、壞 JSON 與錯誤分類", lambda p=p: api_provider(p))
                   for p in ("openai", "anthropic", "xai", "custom")),
+                ("Anthropic 略過空白的模型回覆", anthropic_blank_reply),
                 ("HTTP 路由與本機限制", routes), ("客戶端斷線與逾時終止 CLI", cli_cancel),
                 ("模型尚未回應或正在串流時斷開 HTTP", api_cancel),
             ]

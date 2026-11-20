@@ -1,4 +1,4 @@
-import { dateLocale, english } from "./i18n.js";
+import { dateLocale, english, t } from "./i18n.js";
 /**
  * 作品冊的「模型」：每個底模、每個 LoRA 一張成績單（伺服器 /api/genlog/stats 從出圖日誌算）。
  *   代表作（收藏過的優先）、印好幾張、收藏幾成、撤下幾成、印壞幾張、平均畫多久、常配的牌、最近一次。
@@ -53,19 +53,31 @@ export function createModels(ctx) {
     const known = (m.cards || []).filter(ctx.isCard);
     const telling = known.filter((t) => ctx.sectionOf(t) !== "subject");
     const cards = (telling.length ? telling : known).slice(0, 6);
+    // 空底模在成績單上叫「預設」。這兩個字要給英文版翻成 Default；真的模型名仍不進字典，免得被誤翻。
+    const bareDefault = m.kind === "ckpt" && m.name === "預設";
+    // 同名、不同資料夾的兩個底模（A/same、B/same）：伺服器分開算，label 帶資料夾，畫面上才分得出來。
+    // 點進日誌用完整路徑找（只用檔名會把兩個資料夾的都找出來）。舊伺服器沒有 label、path 就照舊。
+    const shown = m.label || m.name;
+    const byPath = !bareDefault && m.label && m.label !== m.name && m.path;
+    const titleName = bareDefault ? t("預設") : shown;
     const node = el(
       "button",
-      { class: "model-card pressable", type: "button", role: "listitem", dataset: { kind: m.kind }, title: `看用「${m.name}」印的（日誌）` },
+      { class: "model-card pressable", type: "button", role: "listitem", dataset: { kind: m.kind }, title: `看用「${titleName}」印的（日誌）` },
       art,
       el(
         "span",
         { class: "model-body" },
-        el("b", { class: "model-name", dataset: { noI18n: "" } }, m.name),
+        el("b", { class: "model-name", ...(bareDefault ? {} : { dataset: { noI18n: "" } }) }, bareDefault ? m.name : shown),
         el("span", { class: "model-facts" }, facts.map(([k, v, tone]) => el("span", { class: "model-fact", dataset: tone ? { tone } : {} }, el("small", {}, k), el("b", {}, v)))),
         cards.length ? el("span", { class: "model-cards" }, el("small", {}, "常配的牌"), el("span", { class: "album-chips" }, cards.map((t) => el("span", { class: "album-chip", title: t }, ctx.zh(t))))) : null
       )
     );
-    node.addEventListener("click", () => ctx.openLogFor(m.name));
+    node.addEventListener("click", () => {
+      // 空底模不要把中文「預設」拿去當搜尋字（日誌裡這欄是空的，英文畫面上它也叫 Default）。
+      if (m.kind === "ckpt" && m.name === "預設") ctx.openLogFor({ emptyCkpt: true });
+      else if (byPath) ctx.openLogFor(m.path);
+      else ctx.openLogFor(m.name);
+    });
     return node;
   }
 
@@ -87,7 +99,7 @@ export function createModels(ctx) {
       container.replaceChildren(el("p", { class: "album-empty" }, "讀取統計…"));
       return { shown: 0 };
     }
-    const all = (stats.models || []).filter((m) => m.n + m.failed > 0 && (!query || m.name.toLowerCase().includes(query)));
+    const all = (stats.models || []).filter((m) => m.n + m.failed > 0 && (!query || [m.name, m.label, m.path].some((x) => String(x || "").toLowerCase().includes(query))));
     const ckpts = all.filter((m) => m.kind === "ckpt");
     const loras = all.filter((m) => m.kind === "lora");
     if (!stats.models?.length) {

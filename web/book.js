@@ -1877,23 +1877,62 @@ function stampCard(tag) {
   );
 }
 
-/** 貼上分享碼：讀剪貼簿（讀不到就請人貼進來），過詞庫和封鎖，打開編輯面板給人看過再存。 */
-async function pasteShare() {
-  let text = "";
-  try {
-    text = await navigator.clipboard.readText();
-  } catch {}
-  if (!/mochi-card:/.test(text)) text = prompt(t("把分享碼貼在這裡（mochi-card: 開頭）")) || "";
-  if (!text.trim()) return;
+/** 分享碼 → 打開編輯面板給人看過再存。讀不懂就說原因、回 false。 */
+function openShareCode(text) {
   let got;
   try {
     got = readShareCode(text);
   } catch (err) {
-    return toast(String(err.message || err));
+    toast(String(err.message || err));
+    return false;
   }
   // 分享碼裡的牌照樣走一次拆提示詞：詞庫沒有的變成詞庫外、封鎖的拿掉。
   const start = startFromPrompt([...got.members.map((m) => (m.w !== 1 ? `(${m.tag}:${m.w})` : m.tag)), ...got.extra.map((x) => (x.w !== 1 ? `(${x.text}:${x.w})` : x.text))].join(", "), { lib, renamed: data.renamed || {}, rating: got.rating, name: got.name });
   openEditor(null, start);
+  return true;
+}
+
+/**
+ * 貼上分享碼。剪貼簿一下子就讀到碼（電腦上常見）：跟以前一樣直接打開編輯面板，不多按一次。
+ * 讀不到、要問權限、讀到的不是碼（手機上常見）：打開頁面上的輸入框讓人自己貼。以前用 prompt()，
+ * 手機上等剪貼簿回來時手勢已經結束，prompt 常常不出來，按了像沒反應（2026-11-20 第六輪檢查）。
+ * 剪貼簿晚一點才回來、使用者還沒打字，就把碼填進輸入框。
+ */
+async function pasteShare() {
+  const read = Promise.resolve()
+    // 沒有 clipboard（http 開的手機）會丟錯，接到下面的 catch，當成讀不到。
+    .then(() => navigator.clipboard.readText())
+    .catch(() => "");
+  const quick = await Promise.race([read, new Promise((r) => setTimeout(() => r(null), 300))]);
+  if (quick && /mochi-card:/.test(quick)) {
+    openShareCode(quick);
+    return;
+  }
+  const hint = "把分享碼貼在這裡（mochi-card: 開頭）";
+  const input = el("textarea", { class: "cce-paste", rows: "4", spellcheck: "false", placeholder: hint, "aria-label": hint });
+  const submit = () => {
+    const text = input.value.trim();
+    if (!text) return;
+    if (openShareCode(text)) sheet.close();
+  };
+  const go = el("button", { class: "btn btn-primary", type: "button", onclick: submit }, "貼上");
+  input.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+      e.preventDefault();
+      submit();
+    }
+  });
+  // 按下當下就開。等剪貼簿（會失敗、會問權限）再 prompt，手機上那一下手勢已經沒了。
+  const sheet = openSheet(t("貼上分享碼"), el("div", {}, input), { foot: [go] });
+  const focusInput = () => {
+    if (input.isConnected) input.focus({ preventScroll: true });
+  };
+  // openSheet 會在兩格之後把焦點放上主鈕。再排一次，焦點才留在輸入框。
+  requestAnimationFrame(() => requestAnimationFrame(focusInput));
+  read.then((text) => {
+    if (!input.isConnected || input.value || !/mochi-card:/.test(text || "")) return;
+    input.value = String(text).trim();
+  });
 }
 
 /** 自製牌的詳情：卡面、裡面的牌、送去生圖的那段；編輯、複製分享碼、刪除（可復原）。 */

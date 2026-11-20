@@ -791,6 +791,12 @@ export function openCustomEditor({ card = null, start = null, lib, lex, assets, 
   }
 
   async function save({ asCopy = false } = {}) {
+    // 貼上模式拆詞晚 250ms 才寫進 st。改完字立刻按存，不把還在等的那次做完，存到的是上一串。
+    if (mode === "paste") {
+      clearTimeout(pasteTimer);
+      pasteTimer = 0;
+      applyPaste();
+    }
     paintFoot();
     const btn = asCopy ? saveCopyBtn : saveBtn;
     if (btn.disabled) return refuse(btn);

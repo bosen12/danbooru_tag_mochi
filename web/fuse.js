@@ -645,8 +645,22 @@ function printFor(sig) {
   return sig ? prints.find((p) => p.sig === sig || p.sig.startsWith(sig + "|v")) : null;
 }
 
-/** 這張印樣是不是選中那張試印現在看的那一張（最新的那張，含換種子再印的）。 */
-const isPickedPrint = (p) => !!trials[picked] && printFor(sigOf(trials[picked])) === p;
+/** 這一張試印現在的成品。簽名不含份量（份量寫在 positive 裡）：調過份量之後，對不上的那張不能拿來 Hires／修臉。
+ *  舊存檔沒有 positive 時才退回只比簽名，而且只在這一簽名底下沒有任何記了提示詞的成品時。 */
+function printForTrial(t) {
+  if (!t) return null;
+  const sig = sigOf(t);
+  if (!sig) return null;
+  const now = trialPositive(t);
+  const hits = prints.filter((p) => p.sig === sig || (typeof p.sig === "string" && p.sig.startsWith(sig + "|v")));
+  const exact = hits.find((p) => p.positive === now);
+  if (exact) return exact;
+  if (hits.some((p) => p.positive)) return null;
+  return hits[0] || null;
+}
+
+/** 這張印樣是不是選中那張試印現在看的那一張（份量也要對得上，含換種子再印的）。 */
+const isPickedPrint = (p) => !!trials[picked] && printForTrial(trials[picked]) === p;
 
 /* ================= 動作：放、拿、撤回 ================= */
 
@@ -1168,7 +1182,7 @@ function printNow({ fresh = false } = {}) {
   // fresh：印好的那張再印一張，換一顆生圖種子（同一顆種子印出來一模一樣，再印沒有意義）。
   const freshSeed = fresh ? randomSeed() : null;
   const sig = fresh ? `${sigOf(t)}|v${freshSeed}` : sigOf(t);
-  const same = printFor(sigOf(t));
+  const same = printForTrial(t);
   if (same && (same.status === "queued" || same.status === "running")) {
     announce("這一張已經在印了");
     return refuse($("print-bar").querySelector(".pb-go"));
@@ -1454,7 +1468,7 @@ function buildPreview() {
     class: "pv-sheet pressable",
     type: "button",
     onclick: () => {
-      const p = printFor(sigOf(trials[picked]));
+      const p = printForTrial(trials[picked]);
       if (p && (p.image || p.preview)) openPrint(p, () => pv.sheet.querySelector("img:not(.pv-under)"));
     },
   });
@@ -1572,7 +1586,7 @@ function renderPreview({ develop = false } = {}) {
   // 空白的版換成一張紙（付印、換試印）時預覽變高：高度慢慢長，底下的試印、付印列跟著被推過去，
   // 不是一格被推走（手機上捲動錨點讓它往上長，畫面也是慢慢走）。
   const grow = heightChange($("preview"));
-  const p = printFor(sigOf(t));
+  const p = printForTrial(t);
   const w = p ? p.width : settings.width;
   const h = p ? p.height : settings.height;
   pv.frame.style.setProperty("--arn", String(w / h));
@@ -1587,6 +1601,12 @@ function renderPreview({ develop = false } = {}) {
       img = el("img", { alt: "", decoding: "async", draggable: "false" });
       pv.sheet.prepend(img);
       watchGone(img, goneAt);
+    }
+    // 上一張正在淡出：新圖來了就停掉，不要等它淡完才被拿掉。
+    if (img.dataset.fading) {
+      img.getAnimations().forEach((a) => a.cancel());
+      delete img.dataset.fading;
+      img.style.opacity = "";
     }
     if (img.getAttribute("src") !== src) {
       // 上一幀墊在底下（.pv-under），新的一幀載好了才淡進來／顯影 —— 解碼的那一下不會空掉。
@@ -1612,9 +1632,17 @@ function renderPreview({ develop = false } = {}) {
       img.src = src;
     }
     img.alt = `試印 ${t.letter} 的成品`;
-  } else {
-    img?.remove();
+  } else if (img && img.dataset.fading !== "1") {
+    // 份量或牌改了、這一張試印沒有對得上的成品：圖淡掉，不要用 leave() 的縮小（那是離場，預覽框還在）。
     pv.sheet.querySelector(".pv-under")?.remove();
+    if (reduced()) img.remove();
+    else {
+      img.dataset.fading = "1";
+      const fade = img.animate([{ opacity: 1 }, { opacity: 0 }], { duration: DUR.short, easing: css(CURVE.out), fill: "forwards" });
+      fade.onfinish = () => {
+        if (img.dataset.fading === "1") img.remove();
+      };
+    }
   }
   // 印製中的預覽幀越印越濃，印好才是全濃度。
   pv.sheet.style.setProperty("--print-o", state === "running" ? String(0.4 + 0.6 * (p.progress || 0)) : "1");
@@ -1752,7 +1780,7 @@ function renderTrials() {
     const n = trialNodes[i];
     n.node.setAttribute("aria-checked", i === picked ? "true" : "false");
     n.node.tabIndex = i === picked ? 0 : -1;
-    const p = printFor(sigOf(t));
+    const p = printForTrial(t);
     put(
       n.meta,
       el("span", {}, `補 ${t.extra.length}`),
@@ -1818,7 +1846,7 @@ function renderTrialsSame(same) {
 }
 
 /** 試印左邊那一格：印過就放成品的小圖，沒印過就是字母。 */
-function paintTrialFace(i, p = printFor(sigOf(trials[i]))) {
+function paintTrialFace(i, p = printForTrial(trials[i])) {
   const n = trialNodes[i];
   if (!n) return;
   const src = printSrc(p);
@@ -2430,6 +2458,10 @@ function setPlateWeight(tag, w) {
   bed = Object.keys(next).length ? { ...rest, weights: next } : rest;
   paintWeight(plateNode(tag), w, { pop: true });
   sfx.stamp?.();
+  // 份量不進簽名。試印臉、預覽、付印列要改看「現在這份提示詞」對得上的那張，對不上就不提供 Hires。
+  for (let i = 0; i < trials.length; i++) paintTrialFace(i);
+  renderPreview();
+  renderPrintBar();
 }
 
 function plateCard(tag) {
@@ -3066,7 +3098,7 @@ function markPrintGone(p) {
   renderPreview();
   renderPrintBar();
   trials.forEach((t, i) => {
-    if (printFor(sigOf(t)) === p) paintTrialFace(i);
+    if (printForTrial(t) === p) paintTrialFace(i);
   });
   noteGone();
 }
@@ -3101,7 +3133,7 @@ function sweepPrints() {
 function printAction(btn) {
   const t = trials[picked];
   if (!t) return;
-  const p = printFor(sigOf(t));
+  const p = printForTrial(t);
   if (p && p._gone) return reprint(p);
   // 印好了：主鈕是「換種子再印」（Hires、修臉在旁邊）。以前主鈕直接變成 Hires，想再印一張的人按下去打開的是 Hires。
   // 種子固定的時候照舊：固定就是要一模一樣，再印也一樣，主鈕留給 Hires。
@@ -3211,7 +3243,7 @@ function renderPrintBar() {
     bar.replaceChildren();
     return syncPrintFloat();
   }
-  const p = printFor(sigOf(t));
+  const p = printForTrial(t);
   const sizeId = (SIZES.find(s => s.w === settings.width && s.h === settings.height) || SIZES[0]).id;
   const currentSize = bar.querySelector(".pb-size select");
   if (currentSize) currentSize.value = sizeId;
@@ -3246,7 +3278,8 @@ function renderPrintBar() {
   const wasOffline = bar.dataset.offline === "1";
   bar.dataset.offline = offline ? "1" : "0";
   const hiBusy = !!p && p.status === "done" && hiresBusy(p);
-  const key = [t.letter, sigOf(t), p ? p.status : "", p?._gone ? "gone" : "", p?.hi?.status || "", p?.hi?.mode || "", p?.hires?.scale || "", p?.face ? "face" + faceDepth(p) : "", summary.join("・"), detail.join("・"), t.missing.join(","), offline, linkNow, p && p.status === "failed" ? p.note : "", !!bed.pins.length, settings.ratingFree ? effectiveHeats(settings).join(",") : ""].join("|");
+  // 同一簽名、不同份量是兩張成品。key 不含印樣編號的話，付印列會以為沒變，Hires 仍綁著上一張。
+  const key = [t.letter, sigOf(t), p?.id || "", p ? p.status : "", p?._gone ? "gone" : "", p?.hi?.status || "", p?.hi?.mode || "", p?.hires?.scale || "", p?.face ? "face" + faceDepth(p) : "", summary.join("・"), detail.join("・"), t.missing.join(","), offline, linkNow, p && p.status === "failed" ? p.note : "", !!bed.pins.length, settings.ratingFree ? effectiveHeats(settings).join(",") : ""].join("|");
   const go = bar.querySelector(".pb-go");
   // 放一張牌、換一張試印時，常常只有「試印 A／你的 N 張・引擎補 N 張／時代・分級・尺寸」幾個字變了：
   // 只改字，不把整排（連同收著的種子設定）拆掉重建 —— 手機上每放一張牌都在重建它。

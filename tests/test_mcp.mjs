@@ -18,6 +18,7 @@ const ok = (name, cond, detail = "") => {
 const PNG = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==", "base64");
 const got = [];
 let slow = false;
+const attachJobs = new Map(); // 接回時認得的工作編號 → 接過幾次
 const fake = createServer((req, res) => {
   const url = new URL(req.url, "http://x");
   if (req.method === "POST" && url.pathname === "/api/gen") {
@@ -26,6 +27,7 @@ const fake = createServer((req, res) => {
     req.on("end", () => {
       const p = JSON.parse(body);
       got.push({ body: p, headers: req.headers });
+      if (p.positive.includes("reattach")) attachJobs.set(p.job, 0);
       if (p.positive.includes("explode")) {
         res.writeHead(503, { "Content-Type": "application/json" });
         return res.end(JSON.stringify({ ok: false, error: "ComfyUI 連不上 http://127.0.0.1:8188：先開 ComfyUI" }));
@@ -33,7 +35,7 @@ const fake = createServer((req, res) => {
       res.writeHead(200, { "Content-Type": "text/event-stream", "X-Gen-Job": p.job });
       const ev = (event, data) => res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
       // 連線中途斷掉（墨池那邊照樣畫完）：只送到排隊和 prompt_id 就收線。
-      if (p.positive.includes("dropme")) {
+      if (p.positive.includes("dropme") || p.positive.includes("reattach")) {
         ev("queued", { seed: 1 });
         ev("ping", { stage: "queued", prompt_id: "pid-drop-0001" });
         return res.end();
@@ -57,6 +59,18 @@ const fake = createServer((req, res) => {
   if (url.pathname === "/api/checkpoints") return json({ ok: true, current: "il\waiIllustriousSDXL_v170.safetensors", items: [{ file: "waiIllustriousSDXL_v170.safetensors", ckpt_name: "il\waiIllustriousSDXL_v170.safetensors" }] });
   if (url.pathname === "/api/loras") return json({ items: [{ folder: "style", category: "style", file: "detail.safetensors", name: "detail", title: "Detail Tweaker", trainedWords: ["detailed"] }, { folder: "Character", category: "Character", file: "x.safetensors", name: "x", title: "X", trainedWords: ["alpha trigger", "beta trigger"] }], counts: { style: 1, Character: 1 } });
   if (url.pathname === "/api/genlog") return json({ ok: true, items: [{ ok: true, origin: "mcp", positive: "1girl, solo", seed: 1, image: "/api/image?filename=a.png&type=output" }] });
+  // 接回（2026-11-20 第六輪檢查）：第一次 503（忙線），第二次接上、只補後面的、畫完。dropme 那張照舊找不到（404）。
+  if (url.pathname === "/api/gen/attach") {
+    const job = url.searchParams.get("job") || "";
+    got.push({ attach: url.search });
+    if (!attachJobs.has(job)) return res.writeHead(404, { "Content-Type": "application/json" }), res.end(JSON.stringify({ ok: false, error: "找不到這張" }));
+    const n = (attachJobs.get(job) || 0) + 1;
+    attachJobs.set(job, n);
+    if (n === 1) return res.writeHead(503, { "Content-Type": "application/json" }), res.end(JSON.stringify({ ok: false, error: "忙線" }));
+    res.writeHead(200, { "Content-Type": "text/event-stream", "X-Gen-Job": job });
+    res.write(`event: progress\ndata: ${JSON.stringify({ value: 20, max: 20 })}\n\n`);
+    return res.end(`event: done\ndata: ${JSON.stringify({ ok: true, image: "/api/image?filename=reattached_00001_.png&type=output", seed: 7 })}\n\n`);
+  }
   if (url.pathname === "/api/gen/recover") {
     got.push({ recover: url.search });
     if (url.searchParams.get("prompt_id") === "pid-drop-0001") return json({ ok: true, state: "done", image: "/api/image?filename=dropped_00001_.png&type=output" });
@@ -176,6 +190,15 @@ try {
   ok("抽牌：釘了人數就不再補 1girl", two.data.defaultedPeople === null && two.data.results[0].positive.startsWith("2girls"), two.data.results?.[0]?.positive);
   const extra = await tool("draw_prompt", { pins: ["park"], extra: ["made-up tag"], seed: 1, heats: ["activity"], rating: "general" });
   ok("抽牌：extra 接在分級字前面", /made-up tag, sfw|made-up tag, general/.test(extra.data.results[0].positive), extra.data.results?.[0]?.positive);
+  // 釘選寫成底線、大小寫不同、中文名：換成詞庫的正式寫法再判斷（2026-11-20 第六輪檢查：以前當詞庫外，原字串進提示詞）
+  const lh = await tool("draw_prompt", { pins: ["Long_hair", "長髮"], weights: { long_hair: 1.3 }, seed: 4, heats: ["activity"], rating: "general" });
+  const lp = lh.data.results?.[0]?.positive || "";
+  ok("釘選正規化：Long_hair、長髮都是 long hair、份量也認", /\(long hair:1\.3\)/.test(lp) && !/long_hair|Long_hair|長髮|short hair/.test(lp) && !(lh.data.notInLexicon || []).length, lp + " " + JSON.stringify(lh.data.notInLexicon));
+  const ls = await tool("draw_prompt", { pins: ["Long_hair", "short_hair"], seed: 4, heats: ["activity"], rating: "general" });
+  const lsp = ls.data.results?.[0]?.positive || "";
+  ok("釘選正規化：後釘的 short_hair 照互斥換掉 long hair（不會兩個都在）", /short hair/.test(lsp) && !/long[ _]hair/i.test(lsp), lsp);
+  const lban = await tool("draw_prompt", { pins: ["long hair"], bans: ["長髮"], seed: 4, heats: ["activity"], rating: "general" });
+  ok("禁用也認中文名", !/long hair/.test(lban.data.results?.[0]?.positive || "") || !!lban.error, lban.text?.slice(0, 160));
   const minor = await tool("draw_prompt", { pins: ["loli"] });
   ok("抽牌：未成年擋下（isError）", minor.error && /未成年/.test(minor.text));
   const minorExtra = await tool("draw_prompt", { extra: ["child"] });
@@ -347,6 +370,13 @@ try {
   ok("連線中途斷了：不記成印壞", !lost.error && lost.data.state !== "error", JSON.stringify(lost.data));
   const back = await tool("image_status", { job: lost.data.job, wait_seconds: 0 });
   ok("連線中途斷了：image_status 去問墨池、拿到成品", !back.error && back.data.state === "done" && /dropped_00001_/.test(back.data.imageUrl || "") && got.some((x) => x.recover && x.recover.includes("pid-drop-0001")), JSON.stringify(back.data));
+
+  // 只開 MCP、沒開網頁：連線斷了先接回（以前只記成 lost，等問 recover 時伺服器已經把沒人接的那張停了）
+  const reFrom = got.length;
+  const re = await tool("generate_image", { positive: "1girl, solo, smile, reattach", wait_seconds: 15 });
+  const asks = got.slice(reFrom).filter((x) => x.attach);
+  ok("連線斷了：先接回（碰到 503 再接一次），拿到成品", !re.error && re.data.state === "done" && /reattached_00001_/.test(re.data.imageUrl || "") && asks.length === 2, JSON.stringify(re.data).slice(0, 300) + " " + JSON.stringify(asks));
+  ok("接回只補後面的（since=收過的兩則）、沒去問 recover", asks.every((x) => /since=2/.test(x.attach)) && !got.slice(reFrom).some((x) => x.recover), JSON.stringify(got.slice(reFrom).map((x) => x.attach || x.recover || "post")));
 
   const none = await tool("沒有這個", {});
   ok("不認得的工具回 isError", none.error);
