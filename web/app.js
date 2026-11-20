@@ -3479,7 +3479,7 @@ function assistantCtx() {
       const groups = (refresh ? null : cachedGroups()) ?? await loadGroups({ strict: true });
       return groups?.map((g) => {
         const pick = pickOf(settings, g.section);
-        return { id: g.id, name: g.name, section: g.section, tags: [...(g.tags || [])], picked: pick.ids.includes(g.id), mode: pick.mode };
+        return { id: g.id, name: g.name, section: g.section, tags: [...(g.tags || [])], updatedAt: g.updatedAt, picked: pick.ids.includes(g.id), mode: pick.mode };
       }) ?? null;
     },
     setGroupPicks(section, ids, mode) {
@@ -3492,7 +3492,8 @@ function assistantCtx() {
       const to = pickOf(settings, section);
       return { section, from, to, version: workVersion };
     },
-    async saveGroup({ name, section, tags }) {
+    // id、updatedAt：加進已經有的群組（add_to_card_group）；沒有就是新建。
+    async saveGroup({ id, updatedAt, name, section, tags }) {
       const ok = [];
       const skipped = [];
       for (const t of tags) {
@@ -3502,7 +3503,7 @@ function assistantCtx() {
         else if (blockedOf(c) === "banned") skipped.push({ tag: t, why: "banned" });
         else ok.push(t);
       }
-      const group = await saveGroup({ name, section, tags: ok });
+      const group = await saveGroup({ ...(id ? { id, updatedAt } : {}), name, section, tags: ok });
       const stored = new Set(group.tags);
       for (const tag of ok) if (!stored.has(tag)) skipped.push({ tag, why: "server" });
       return { group, skipped };

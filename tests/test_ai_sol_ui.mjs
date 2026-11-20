@@ -22,6 +22,8 @@ const recommendations = [
 const recommend = "請推薦兩張牌";
 const drawCount = "一次改成三張";
 const addBeach = "把海邊加入合成池";
+// 2026-11-20：模型說「沒有可呼叫的墨池工具」又沒叫工具時，頁面收回那句、提醒一次再問。
+const noTools = "你直接去服裝找";
 const checkHistory = "收到推薦後再問一句";
 const checkHalo = "改張數並檢查光暈";
 const chats = [];
@@ -54,6 +56,8 @@ async function script(body) {
   const results = messages.slice(user + 1).filter((m) => m.role === "tool");
   chats.push({ said, messages, results });
   if (said.startsWith("［使用者")) return end("好。");
+  if (said === noTools && !results.length) return end("目前沒有可呼叫的墨池工具，無法直接查服裝牌或建立群組。");
+  if (said.startsWith("［提醒］") && !results.length) return call({ id: "nudged", name: "change_pool", args: { add: ["beach"] } });
   if (results.length) {
     await heldReplies.get(said);
     return end(said === recommend ? "這兩張可以試試。" : "好了。");
@@ -313,6 +317,15 @@ try {
     await page.locator("#lib-q").fill("sunset");
     await page.locator("#library .ai-ask").click();
     await page.locator('.ai-empty[data-ctx="search"]').waitFor();
+  });
+
+  await scenario("模型說沒有工具：收回那句、提醒一次，真的去做", async (page) => {
+    await send(page, noTools);
+    await page.waitForFunction(() => window.mochi?.pool?.has("beach"), null, { timeout: 8000 });
+    await idle(page);
+    assert.ok(chats.some((c) => c.said.startsWith("［提醒］")), "模型要收到提醒");
+    const text = await lastReply(page).innerText();
+    assert.ok(!text.includes("沒有可呼叫"), "收回那句沒有工具的話：" + text);
   });
 
   await scenario("光暈：寫入完成後兩秒內隱藏", async (page) => {

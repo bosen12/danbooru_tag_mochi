@@ -31,7 +31,7 @@ const root = resolve(import.meta.dirname, "..");
 const front = existsSync(resolve(root, "web6/index.html")) ? "web6" : "web";
 const baseline = {};
 if (process.env.BASELINE) {
-  for (const f of ["app.js", "store.js", "fuse.js", "foot-more.js", "styles.css", "album.js", "album-save.js"]) baseline[f] = execFileSync("git", ["show", `${process.env.BASELINE}:${front}/${f}`], { cwd: root, maxBuffer: 2 ** 25 });
+  for (const f of ["app.js", "store.js", "fuse.js", "foot-more.js", "styles.css", "album.js", "album-save.js", "book.js", "book-groups.js"]) baseline[f] = execFileSync("git", ["show", `${process.env.BASELINE}:${front}/${f}`], { cwd: root, maxBuffer: 2 ** 25 });
 }
 
 const PNG = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";
@@ -353,6 +353,42 @@ try {
     ok("D. 伺服器說已經不在：格子離開、詳情關上、不寫「拿不掉」", !s.tile && !s.sheet && !s.toast.includes("拿不掉"), JSON.stringify(s));
     delete state.controllers["/api/recipes/work1"];
     state.works = [work(1)];
+    await c.close();
+  });
+
+  // G. 卡冊群組加牌：每點一張就存一次，存完不能跳回頂端（2026-11-20 專案主：每選一個就跳到最上面）。
+  await step("G. 加牌不跳頂", async () => {
+    let group = { id: "g-ootd", name: "現代 OOTD", section: "clothing", tags: ["dress"], createdAt: 1, updatedAt: 1 };
+    state.controllers["/api/card-groups"] = async (req, res, body) => {
+      res.setHeader("Content-Type", "application/json");
+      if (req.method === "POST") {
+        group = { ...group, ...JSON.parse(body), updatedAt: group.updatedAt + 1 };
+        await sleep(120);
+        res.end(JSON.stringify({ ok: true, group, groups: [group] }));
+      } else res.end(JSON.stringify({ ok: true, groups: [group] }));
+      return true;
+    };
+    const c = await context();
+    const p = await c.newPage();
+    await go(p, origin + "/book.html#group=g-ootd");
+    await p.locator(".bsh-edit").click();
+    await sleep(800);
+    await p.evaluate(() => scrollTo(0, 1500));
+    await sleep(600);
+    const ys = [];
+    for (let i = 0; i < 3; i++) {
+      await p.evaluate(() => {
+        const cell = [...document.querySelectorAll("#book-grid .book-cell")].find((n) => {
+          const r = n.getBoundingClientRect();
+          return r.top > 120 && r.bottom < innerHeight - 120 && n.dataset.ingroup !== "true";
+        });
+        (cell?.querySelector(".card, [data-tag]") || cell)?.click();
+      });
+      await sleep(900);
+      ys.push(await p.evaluate(() => scrollY));
+    }
+    ok("G. 加牌模式點了三張：捲動位置不變", ys.every((y) => Math.abs(y - 1500) < 4) && group.tags.length === 4, JSON.stringify({ ys, tags: group.tags.length }));
+    delete state.controllers["/api/card-groups"];
     await c.close();
   });
 

@@ -62,6 +62,7 @@ export const TEXT = {
   labGroups: "正在查看群組",
   labPicks: "正在套用{0}的群組",
   labSave: "正在建立群組「{0}」",
+  labAddGroup: "正在把牌加進群組「{0}」",
   labDrawN: "正在抽 {0} 張",
   labDraw: "正在抽這一輪",
   labGeneric: "正在處理",
@@ -101,6 +102,7 @@ export const TEXT = {
   opPicks: "{0}群組",
   opPicksClear: "全部取消",
   opSaved: "建立群組",
+  opGroupAdd: "加進群組",
   checkCounts: "可用 {0} 張，已在池中 {1} 張，找不到 {2} 張，受限制 {3} 張",
   noCard: "詞庫沒有「{0}」",
   blockedBy: "「{0}」被{1}擋著",
@@ -164,6 +166,12 @@ export const TEXT = {
   groupsReadFailed: "讀取群組清單失敗，請再試一次",
   groupMissing: "這個類別沒有這組",
   nameTaken: "已有同名群組「{0}」",
+  groupMissing: "這個類別沒有叫「{0}」的群組",
+  swappedIn: "「{0}」詞庫沒有，換成「{1}」",
+  skippedMissing: "「{0}」詞庫沒有，也找不到相近的牌，跳過",
+  groupAdded: "「{0}」加了 {1} 張（共 {2} 張）",
+  groupNothingNew: "「{0}」已經有這些牌了",
+  groupStale: "這個群組剛在別的地方改過，請再試一次",
   wrongSection: "「{0}」不屬於這個類別",
   allWrong: "這些牌都不屬於這個類別",
   saved: "已建立「{0}」",
@@ -454,7 +462,7 @@ export const TOOL_DEFS = [
   {
     name: "save_card_group",
     kind: "write",
-    description: "使用者明確說建立、存成群組時才呼叫。同一個類別裡已有同名群組就不要覆寫，換一個新名字；這一版不能更新舊組。牌必須屬於該類別，不屬於的會被跳過。建完不會自動勾上，要套用再另外呼叫 set_group_picks。使用者說「先幫我想」時不要呼叫。不要把未成年或禁用角色放進群組。",
+    description: "使用者明確說建立、存成群組時才呼叫。同一個類別裡已有同名群組就不要覆寫，換一個新名字；要加牌到已經有的群組用 add_to_card_group。牌必須屬於該類別，不屬於的會被跳過。詞庫沒有的字會在同類別找最接近的牌替換，找不到的跳過，結果寫在 swapped、missing。建完不會自動勾上，要套用再另外呼叫 set_group_picks。使用者說「先幫我想」時不要呼叫。不要把未成年或禁用角色放進群組。",
     input_schema: {
       type: "object",
       additionalProperties: false,
@@ -463,6 +471,21 @@ export const TOOL_DEFS = [
         name: { ...str, description: "新名字，最多 40 字。不要用這個類別裡已經有的名字" },
         section: { type: "string", enum: SECTIONS },
         tags: { ...strList, description: "要放進這組的 tag，最多 120 張，而且都要屬於這個類別" },
+      },
+    },
+  },
+  {
+    name: "add_to_card_group",
+    kind: "write",
+    description: "把牌加進一個已經有的群組（使用者說再多一點、再加幾張、補進那組）。用群組名稱找；原本的牌都留著，只加新的，重複的不算。詞庫沒有的字會在同類別找最接近的牌替換，找不到的跳過。不要用它建立新群組。不要把未成年或禁用角色放進群組。",
+    input_schema: {
+      type: "object",
+      additionalProperties: false,
+      required: ["name", "section", "tags"],
+      properties: {
+        name: { ...str, description: "已經有的群組名稱" },
+        section: { type: "string", enum: SECTIONS },
+        tags: { ...strList, description: "要加進去的 tag，都要屬於這個類別" },
       },
     },
   },
@@ -580,6 +603,7 @@ export function createToolRunner(ctx) {
       case "list_groups":
       case "set_group_picks":
       case "save_card_group":
+      case "add_to_card_group":
         return args.section && SECTIONS.includes(args.section) ? { area: "groups", key: args.section } : { area: "groups" };
       case "draw_cards":
       case "find_works":
@@ -698,6 +722,7 @@ export function createToolRunner(ctx) {
       if (name === "list_groups") return { zh: TEXT.labGroups, area: "groups" };
       if (name === "set_group_picks") return { zh: fill(TEXT.labPicks, SECTION_ZH[args.section] || ""), area: "groups" };
       if (name === "save_card_group") return { zh: fill(TEXT.labSave, typeof args.name === "string" ? args.name.trim() : ""), area: "groups" };
+      if (name === "add_to_card_group") return { zh: fill(TEXT.labAddGroup, typeof args.name === "string" ? args.name.trim() : ""), area: "groups" };
       if (name === "draw_cards") {
         if (isInt(args.n)) return { zh: fill(TEXT.labDrawN, args.n), area: "wall" };
         try {
@@ -1957,6 +1982,113 @@ export function createToolRunner(ctx) {
     }
   }
 
+  /**
+   * 群組要放的牌：詞庫有、屬於這個類別的留著；詞庫沒有的，用字盒同一套搜尋在這個類別找最接近的一張替換
+   * （trousers → 長褲、puffer jacket → 羽絨外套）；找不到的跳過。回傳 { keep, swapped:[{from,to}], missing, wrong }。
+   */
+  async function resolveForGroup(tags, section, state) {
+    const keep = [];
+    const swapped = [];
+    const missing = [];
+    const wrong = [];
+    for (const tag of tags) {
+      const info = await knownInfo(tag, state);
+      if (info) {
+        if (info.section === section) keep.push(tag);
+        else wrong.push(tag);
+        continue;
+      }
+      let hit = null;
+      try {
+        const found = (await ctx.search(tag, { limit: 5, section, raw: tag })) || [];
+        for (const c of found) {
+          if (!c?.tag || keep.includes(c.tag)) continue;
+          const ci = await knownInfo(c.tag, state);
+          if (ci?.section === section && !(await blockReason(c.tag))) {
+            hit = c.tag;
+            break;
+          }
+        }
+      } catch {
+        hit = null;
+      }
+      if (hit) {
+        keep.push(hit);
+        swapped.push({ from: tag, to: hit });
+      } else missing.push(tag);
+    }
+    return { keep: [...new Set(keep)], swapped, missing, wrong };
+  }
+
+  /** 加進已經有的群組：原本的牌留著，只加新的（2026-11-20：以前「再多一點」做不到，只能另建一組）。 */
+  async function addToCardGroup(args, _opts, base) {
+    const section = args.section;
+    const target = SECTIONS.includes(section) ? { area: "groups", key: section } : { area: "groups" };
+    if (!SECTIONS.includes(section)) return fail(target, "bad_args", TEXT.badSection);
+    if (typeof args.name !== "string") return fail(target, "bad_args", TEXT.badArgs);
+    const name = collapseName(args.name);
+    if (!name) return fail(target, "bad_args", TEXT.nameEmpty);
+    const tagsInput = tagList(args.tags);
+    if (!tagsInput) return fail(target, "bad_args", TEXT.badArgs);
+    const tags = resolvedTags(tagsInput);
+    if (!tags.length) return fail(target, "bad_args", TEXT.needTag);
+    const { error, groups } = await readGroups(target, true);
+    if (error) return error;
+    const group = groups.find((g) => g.section === section && collapseName(g.name) === name);
+    if (!group) {
+      return fail(target, "group_not_found", fill(TEXT.groupMissing, name), {
+        model: { names: groups.filter((g) => g.section === section).map((g) => g.name) },
+      });
+    }
+    const blocked = [];
+    for (const tag of tags) {
+      const reason = await blockReason(tag);
+      if (reason) blocked.push({ tag, reason });
+    }
+    if (blocked.length) {
+      return fail(target, "blocked", cannot(blocked[0].tag, blocked[0].reason), { lines: blocked.map((b) => cannot(b.tag, b.reason)), model: { blocked } });
+    }
+    const state = await ctx.state();
+    const { keep, swapped, missing, wrong } = await resolveForGroup(tags, section, state);
+    const had = new Set(group.tags);
+    const fresh = keep.filter((t) => !had.has(t));
+    const lines = [
+      ...swapped.map((s) => fill(TEXT.swappedIn, s.from, zhOf(s.to))),
+      ...missing.map((t) => fill(TEXT.skippedMissing, t)),
+      ...wrong.map((t) => fill(TEXT.wrongSection, zhOf(t))),
+    ];
+    if (!fresh.length) {
+      return pack({ ok: true, status: "done", summary: fill(TEXT.groupNothingNew, group.name), lines, target, forModel: { ok: true, added: [], count: group.tags.length, swapped, missing, undoable: false } });
+    }
+    const all = [...group.tags, ...fresh].slice(0, MAX_TAGS);
+    const text = fill(TEXT.labAddGroup, group.name);
+    await hi(target, "write", text);
+    try {
+      if (isStale(base)) throw staleWrite;
+      const saved = await ctx.saveGroup({ id: group.id, updatedAt: group.updatedAt, name: group.name, section, tags: all });
+      const out = saved.group;
+      if (!out?.id) throw new Error("伺服器沒有回傳群組");
+      await hi(target, "done", text);
+      const stored = new Set(out.tags || []);
+      const added = fresh.filter((t) => stored.has(t));
+      for (const s of saved.skipped || []) lines.push(fill(TEXT.wrongSection, zhOf(s.tag || s)));
+      return pack({
+        ok: true,
+        status: missing.length || wrong.length || swapped.length ? "partial" : "done",
+        summary: fill(TEXT.groupAdded, out.name, added.length, stored.size),
+        lines,
+        ops: [{ k: TEXT.opGroupAdd, v: `${out.name} +${added.length}`, raw: true }],
+        target,
+        forModel: { ok: true, group: { id: out.id, name: out.name, section }, added, count: stored.size, swapped, missing, undoable: false },
+      });
+    } catch (err) {
+      await hi(target, "clear", text);
+      if (err === staleWrite) return staleResult(target);
+      if (err?.code === "stale" || /剛在別的地方改過/.test(err?.message || "")) return fail(target, "stale", TEXT.groupStale);
+      return fail(target, "failed", TEXT.failed, { model: { error: err?.message || String(err) } });
+    }
+  }
+
   async function saveCardGroup(args, _opts, base) {
     const section = args.section;
     const target = SECTIONS.includes(section) ? { area: "groups", key: section } : { area: "groups" };
@@ -1982,24 +2114,14 @@ export function createToolRunner(ctx) {
         model: { blocked },
       });
     }
-    const missing = [];
-    const wrong = [];
-    const keep = [];
-    for (const tag of tags) {
-      const info = await knownInfo(tag, state);
-      if (!info) { missing.push(tag); continue; }
-      if (info.section && info.section !== section) { wrong.push(tag); continue; }
-      if (!info.section) { wrong.push(tag); continue; }
-      keep.push(tag);
-    }
-    if (missing.length) {
-      return fail(target, "missing", fill(TEXT.notInLex, missing[0]), {
-        lines: missing.map((t) => fill(TEXT.notInLex, t)),
-        model: { missing },
-      });
-    }
+    // 詞庫沒有的字不再整批失敗（2026-11-20 專案主：要建「現代 OOTD」，trousers、cap 這幾個字詞庫沒有就整組建不起來）：
+    // 同類別找最接近的牌替換（trousers → 長褲），找不到的才跳過。
+    const { keep, swapped, missing, wrong } = await resolveForGroup(tags, section, state);
     if (!keep.length) {
-      return fail(target, "bad_args", TEXT.allWrong, { lines: wrong.map((t) => fill(TEXT.wrongSection, zhOf(t))) });
+      return fail(target, missing.length ? "missing" : "bad_args", missing.length ? fill(TEXT.notInLex, missing[0]) : TEXT.allWrong, {
+        lines: [...missing.map((t) => fill(TEXT.skippedMissing, t)), ...wrong.map((t) => fill(TEXT.wrongSection, zhOf(t)))],
+        model: { missing, wrong },
+      });
     }
     const { error, groups } = await readGroups(target);
     if (error) return error;
@@ -2015,17 +2137,21 @@ export function createToolRunner(ctx) {
       const group = saved.group;
       if (!group?.id) throw new Error("伺服器沒有回傳新群組 ID");
       await hi(target, "done", text);
-      const lines = wrong.map((t) => fill(TEXT.wrongSection, zhOf(t)));
+      const lines = [
+        ...swapped.map((s) => fill(TEXT.swappedIn, s.from, zhOf(s.to))),
+        ...missing.map((t) => fill(TEXT.skippedMissing, t)),
+        ...wrong.map((t) => fill(TEXT.wrongSection, zhOf(t))),
+      ];
       for (const s of saved.skipped || []) lines.push(fill(TEXT.wrongSection, zhOf(s.tag || s)));
-      const skipped = [...wrong.map((tag) => ({ tag, why: "section" })), ...(saved.skipped || [])];
+      const skipped = [...wrong.map((tag) => ({ tag, why: "section" })), ...missing.map((tag) => ({ tag, why: "not_found" })), ...(saved.skipped || [])];
       return pack({
         ok: true,
-        status: skipped.length ? "partial" : "done",
+        status: skipped.length || swapped.length ? "partial" : "done",
         summary: fill(TEXT.saved, group.name),
         lines,
         ops: [{ k: TEXT.opSaved, v: group.name, raw: true }],
         target,
-        forModel: { ok: true, group, skipped, undoable: false },
+        forModel: { ok: true, group, count: group.tags?.length ?? keep.length, swapped, missing, skipped, undoable: false },
       });
     } catch (err) {
       await hi(target, "clear", text);
@@ -2092,6 +2218,7 @@ export function createToolRunner(ctx) {
     list_groups: (args) => listGroups(args),
     set_group_picks: (args, opts, base) => setGroupPicks(args, opts, base),
     save_card_group: (args, opts, base) => saveCardGroup(args, opts, base),
+    add_to_card_group: (args, opts, base) => addToCardGroup(args, opts, base),
     draw_cards: (args, opts, base) => drawCards(args, opts, base),
   };
 

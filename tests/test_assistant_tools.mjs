@@ -282,7 +282,7 @@ function plain(n, extra = {}) {
 const turn = (version = 1) => ({ version });
 
 // ---------- 工具表 ----------
-const namesExpected = ["use_reference", "find_works", "trace_card", "get_workspace", "paste_prompt", "find_cards", "suggest_cards", "card_info", "suggest_check", "change_pool", "set_draw_count", "set_section_counts", "list_groups", "set_group_picks", "save_card_group", "draw_cards"];
+const namesExpected = ["use_reference", "find_works", "trace_card", "get_workspace", "paste_prompt", "find_cards", "suggest_cards", "card_info", "suggest_check", "change_pool", "set_draw_count", "set_section_counts", "list_groups", "set_group_picks", "save_card_group", "add_to_card_group", "draw_cards"];
 assert.deepEqual(TOOL_DEFS.map((t) => t.name), namesExpected);
 assert.deepEqual(toolSchemas().map((t) => t.name), namesExpected);
 for (const tool of TOOL_DEFS) {
@@ -810,6 +810,60 @@ console.log("ok: schemas and phrase list");
   console.log("ok: groups");
 }
 
+// 2026-11-20 專案主：「建一個現代 OOTD 服裝群組」→ 詞庫沒有 trousers、cap 就整組建不起來；「多一點」又不能加進已有的群組。
+{
+  const groups = [{ id: "g-ootd", name: "現代 OOTD", section: "clothing", tags: ["dress"], updatedAt: 111 }];
+  const cards = { ...beachCards, pants: { zh: "長褲", section: "clothing" }, jeans: { zh: "牛仔褲", section: "clothing" } };
+  const ctx = world({
+    cards,
+    groups,
+    // 字盒搜尋：trousers 找得到長褲；cap 找到的只有別類的牌（應該跳過）；其他都找不到
+    search: (q, o) => (q === "trousers" ? [{ tag: "pants" }] : q === "cap" ? [{ tag: "smile" }] : []),
+  });
+  const runner = createToolRunner(ctx);
+  // 建立：缺的字換成相近的、找不到的跳過，不再整批失敗
+  const made = await runner.run({ name: "save_card_group", args: { name: "街頭", section: "clothing", tags: ["dress", "trousers", "cap", "puffer jacket"] } }, { turn: turn(ctx.version()) });
+  assert.equal(made.ok, true, JSON.stringify(made.forModel));
+  assert.equal(made.status, "partial");
+  assert.deepEqual(names(ctx.log, "save").at(-1)[3], ["dress", "pants"]);
+  assert.deepEqual(made.forModel.swapped, [{ from: "trousers", to: "pants" }]);
+  assert.deepEqual(made.forModel.missing, ["cap", "puffer jacket"]);
+  assert.ok(made.lines.some((l) => l.includes("trousers") && l.includes("長褲")));
+  // 全都找不到才失敗
+  const nothing = await runner.run({ name: "save_card_group", args: { name: "空的", section: "clothing", tags: ["cap", "windbreaker"] } }, { turn: turn(ctx.version()) });
+  assert.equal(nothing.ok, false);
+  assert.equal(nothing.forModel.code, "missing");
+
+  // 加進已有的群組：原本的留著、只加新的、帶著 id 和版本存回去
+  const sent = [];
+  ctx.saveGroup = async (g) => {
+    sent.push(g);
+    return { group: { id: g.id, name: g.name, section: g.section, tags: [...g.tags] }, skipped: [] };
+  };
+  const more = await runner.run({ name: "add_to_card_group", args: { name: "現代 OOTD", section: "clothing", tags: ["dress", "jeans", "trousers", "cap"] } }, { turn: turn(ctx.version()) });
+  assert.equal(more.ok, true, JSON.stringify(more.forModel));
+  assert.equal(sent.length, 1);
+  assert.equal(sent[0].id, "g-ootd");
+  assert.equal(sent[0].updatedAt, 111);
+  assert.deepEqual(sent[0].tags, ["dress", "jeans", "pants"]);
+  assert.deepEqual(more.forModel.added, ["jeans", "pants"]);
+  assert.equal(more.forModel.count, 3);
+  assert.deepEqual(more.forModel.missing, ["cap"]);
+  // 沒有新的牌：不存
+  const same = await runner.run({ name: "add_to_card_group", args: { name: "現代 OOTD", section: "clothing", tags: ["dress"] } }, { turn: turn(ctx.version()) });
+  assert.equal(same.ok, true);
+  assert.equal(sent.length, 1);
+  // 名字不對：說找不到，並把這類有哪些群組給模型
+  const wrongName = await runner.run({ name: "add_to_card_group", args: { name: "不存在", section: "clothing", tags: ["jeans"] } }, { turn: turn(ctx.version()) });
+  assert.equal(wrongName.forModel.code, "group_not_found");
+  assert.ok(wrongName.forModel.names.includes("現代 OOTD"));
+  // 禁的牌照樣擋
+  const minor = await runner.run({ name: "add_to_card_group", args: { name: "現代 OOTD", section: "clothing", tags: ["loli"] } }, { turn: turn(ctx.version()) });
+  assert.equal(minor.forModel.code, "blocked");
+  assert.equal(runner.label({ name: "add_to_card_group", args: { name: "現代 OOTD", section: "clothing" } }).area, "groups");
+  console.log("ok: groups substitute missing tags and add to an existing group");
+}
+
 {
   const ctx = world({ cards: beachCards, settings: { n: 2 } });
   const runner = createToolRunner(ctx);
@@ -879,8 +933,13 @@ console.log("ok: schemas and phrase list");
   assert.match(zh, /40/);
   assert.match(zh, /幫我加入|交代/);
   assert.match(zh, /性侵/);
-  assert.match(zh, /成年人物游泳/);
-  assert.match(zh, /游泳時遇到危險並獲救/);
+  // 2026-11-20：拿掉寫死的「成年人物游泳」例子（模型看到合成池原本的牌就照搬），改成照使用者的主題給兩個構想；
+  // 也不評論使用者沒問的、池裡原本的牌。
+  assert.match(zh, /照他要的主題給兩個不含這些情節的構想/);
+  assert.match(zh, /原本就有的牌，使用者沒問就不要評論/);
+  assert.doesNotMatch(zh, /成年人物游泳/);
+  assert.match(zh, /add_to_card_group/);
+  assert.match(zh, /多一點就是同一件事做更多/);
   assert.match(zh, /未成年/);
   assert.doesNotMatch(zh, /用英文回覆/);
   const en = buildSystemPrompt({ lang: "en-US", room: "fuse", now: "now-1" });

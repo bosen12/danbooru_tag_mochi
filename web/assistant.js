@@ -34,6 +34,10 @@ import {
 const STORE_KEY = "mochi.assistant.v1";
 const CHAT_KEY = "mochi.assistant.chat.v1";
 const MAX_HOPS = 12; // 一輪最多幾次工具往返：模型繞圈時停下來，不要一直燒額度
+// 模型（推理強度低的 CLI 最常見）偶爾回「目前沒有可呼叫的墨池工具」就停下，其實工具一直都在。
+// 這種回覆又沒叫任何工具時：收回那句、提醒一次再問（一輪最多一次）。2026-11-20 專案主貼的對話：「你直接去服裝找」→「目前沒有可呼叫的墨池工具」。
+export const NO_TOOLS_RE = /(沒有|無)[^。\n]{0,10}工具|工具[^。\n]{0,8}(不能用|無法使用|不可用|用不了)|no (available )?(mochi )?tools|(can'?t|cannot) (call|use) (any )?(the )?tools/i;
+const TOOL_NUDGE = "［提醒］墨池的工具一直都能用（就是這次給你的工具清單）。請直接呼叫工具完成我上一個要求，不要說沒有工具。";
 const SECTION_ZH = { subject: "人數", feature: "長相", clothing: "服裝", pose: "姿勢", env: "場景" };
 
 const ICON = {
@@ -1350,6 +1354,7 @@ export function mountAssistant({ ctx }) {
     const system = promptMod.buildSystemPrompt({ lang: english ? "en" : "zh", room: "mochi" });
     const toolsForModel = toolMod.toolSchemas();
     let finalKind = "answered";
+    let nudged = false;
     try {
       for (let hop = 0; hop < MAX_HOPS; hop++) {
         const seg = { text: "", n: item.segs.length };
@@ -1369,6 +1374,13 @@ export function mountAssistant({ ctx }) {
         });
         if (!live()) throw Object.assign(new Error("aborted"), { name: "AbortError" });
         conv.messages.push({ role: "assistant", content: seg.text, ...(calls.length ? { toolCalls: calls } : {}) });
+        if (!calls.length && !nudged && NO_TOOLS_RE.test(seg.text)) {
+          nudged = true;
+          conv.messages.push({ role: "user", content: TOOL_NUDGE });
+          seg.text = "";
+          panel.streamText(item, seg);
+          continue;
+        }
         if (!calls.length) break;
         // 這一批工具在畫面上的編號：模型（尤其相容 OpenAI 的服務）每一批都可能從 call_0 數起，
         // 同一個 id 不能撞到前面的步驟、復原、或工具層「同一個 id 不做第二次」的快取。

@@ -2484,6 +2484,14 @@ Enter 會加入「{0}」|Enter adds “{0}”
 換一張輪廓清楚的圖|Try an image with clearer outlines
 群組 · 建立第一組|Groups · Create the first one
 建立第一組|Create the first one
+正在把牌加進群組「{0}」|Adding cards to group “{0!}”
+加進群組|Added to group
+這個類別沒有叫「{0}」的群組|No group named “{0!}” in this category
+「{0}」詞庫沒有，換成「{1}」|“{0!}” isn't in the lexicon; used “{1}” instead
+「{0}」詞庫沒有，也找不到相近的牌，跳過|“{0!}” isn't in the lexicon and nothing close was found; skipped
+「{0}」加了 {1} 張（共 {2} 張）|Added {1} to “{0!}” ({2} in total)
+「{0}」已經有這些牌了|“{0!}” already has these cards
+這個群組剛在別的地方改過，請再試一次|This group was just changed elsewhere. Please try again.
 暫時無法確認收藏，請再試一次|Couldn't confirm this favorite. Please try again.
 解析未完成|Parsing didn't finish
 分級要是 general、sensitive 或 explicit|Rating must be general, sensitive or explicit

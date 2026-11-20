@@ -98,10 +98,12 @@ export function mountBookGroups({ lib, assets, onChange, toMochi, visible, data 
     } catch { return false; }
   }
 
-  function changed({ grid = true } = {}) {
+  // keepScroll：只是存好了（加牌模式每點一張就存一次），牌還是同一批，不要捲回頂端。
+  // 2026-11-20 專案主：加牌時每選一張就跳到最上面，很不好用。
+  function changed({ grid = true, keepScroll = false } = {}) {
     renderShelf();
     renderHead();
-    if (grid) onChange();
+    if (grid) onChange({ keepScroll });
   }
 
   /** 一疊牌：前三張的縮圖扇開；沒有縮圖的那張用花色底寫字。 */
@@ -426,7 +428,7 @@ export function mountBookGroups({ lib, assets, onChange, toMochi, visible, data 
       const g = await saveGroup(entry.change(cur));
       pending.splice(pending.indexOf(entry), 1);
       if (entry.done) toast(entry.done);
-      changed();
+      changed({ keepScroll: true });
       return g;
     } catch (err) {
       saveError = err;
@@ -436,7 +438,7 @@ export function mountBookGroups({ lib, assets, onChange, toMochi, visible, data 
         if (!pending.length) saveError = null;
       }
       toast(errorText(err));
-      changed();
+      changed({ keepScroll: true });
       throw err;
     }
   }

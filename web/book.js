@@ -293,10 +293,10 @@ async function boot() {
   shelf = mountBookGroups({
     lib,
     assets,
-    onChange: () => {
+    onChange: ({ keepScroll = false } = {}) => {
       renderSuits({ groups: false });
       renderGroups();
-      backToTop();
+      if (!keepScroll) backToTop();
       render();
       renderSummary();
     },
