@@ -211,6 +211,7 @@ async function boot() {
   // 交接過來的：疊印台、作品冊帶的是一整組，換成那一組；卡冊帶的是幾張單牌，加進剛才那一池。
   // 自製牌可能還沒讀回來（不擋開頁）：先留著，讀回來再補成員（onCustomChanged）。
   const handoff = S.takePool().filter((t) => lib.byTag.has(t) || isCustomTag(t));
+  let mergedBans = null;
   const before = S.loadTab(S.TAB_POOL);
   const kept = before && Array.isArray(before.tags) ? before.tags.filter((t) => lib.byTag.has(t) || isCustomTag(t)) : [];
   if (handoff.length && S.handoffFrom === "book" && kept.length) {
@@ -219,7 +220,10 @@ async function boot() {
     for (const t of handoff) ({ pinned, userBanned: banned } = applyPin(lex, pinned, banned, t, pinOpts()));
     pool = pinned;
     handoffMerged = true;
-    S.saveBans(banned);
+    // 廢字簍等真的點進來才寫回去：背後預開的這一頁沒被點開的話（例如在卡冊又按一次「＋」收回、或根本沒回墨池），
+    // 不能先把共用的廢字簍改掉（2026-11-20 第五輪 Opus：卡冊按「＋」約 1.5 秒後，廢字簍裡那張就永久不見了）。
+    mergedBans = banned;
+    whenActive(() => S.saveBans(banned));
     // 原本就在池裡的保留原份量；這次從卡冊帶來、便條寫了份量的（例如成品「加入合成池」）用便條裡的。
     // 池裡本來就有、份量又不一樣的那張，卡冊送出前已經在確認窗列出「份量變更」、使用者按了確定，所以也照便條。
     // 便條沒寫份量的（牌上的「＋」）不動原份量。
@@ -265,7 +269,8 @@ async function boot() {
     // 尺寸：墨池有的那幾種（sizes.js）才換；作品冊記的是 Hires 之後的大小時就照現在的（招呼語會說一聲）。
     const size = SIZES.find((s) => s.w === handoffRecipe.width && s.h === handoffRecipe.height);
     if (size) settings = sanitizeSettings({ ...settings, width: size.w, height: size.h }, data);
-    if (settings !== prev) saveSettings(prev);
+    // 同上：設定等點進來才存（預開沒被點開的頁不能改共用的設定）。
+    if (settings !== prev) whenActive(() => saveSettings(prev));
     if (handoffRecipe.seed != null) useSeed(handoffRecipe.seed);
   }
   addEventListener("pagehide", () => S.saveTab(S.TAB_POOL, { tags: [...pool], weights: Object.fromEntries(weights) }));
@@ -274,7 +279,8 @@ async function boot() {
     pool = new Set((languageState.pool || []).filter((tag) => lib.byTag.has(tag)));
     weights = new Map(Object.entries(languageState.weights || {}).filter(([tag]) => pool.has(tag)));
   }
-  bans = new Set(S.loadBans().filter((t) => lib.byTag.has(t)));
+  // 卡冊交接剛算好的廢字簍（還沒寫回存檔，等點進來才寫）優先。
+  bans = new Set((mergedBans ? [...mergedBans] : S.loadBans()).filter((t) => lib.byTag.has(t)));
   // 重新整理就把沒印出來的清掉（失敗、取消、停掉的）：以前它們一直留在牆上掛著「再試一次」。
   // 留下的：印好的、只抽牌的（本來就沒要印）、畫到一半還接得回去的、剛剛還排著的（去別頁晃一下回來）。
   const saved = S.loadShots();

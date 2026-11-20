@@ -164,10 +164,20 @@ try {
     await shot(page, 'book-card-from-hash.png');
     await page.keyboard.press('Escape');
     await page.locator('.overlay').waitFor({ state: 'detached' });
+    // 關掉詳情時焦點交回那張牌、頁面平滑捲過去：等它停下來再自己捲（2026-11-20：以前沒等，
+    // 還在跑的平滑捲動蓋掉下面的 scrollTo，看起來像頂欄沒冒出來，這支一直紅在這裡）。
+    const settle = () => page.waitForFunction(() => new Promise((r) => {
+      let last = scrollY, same = 0;
+      const check = () => (scrollY === last ? ++same : ((last = scrollY), (same = 0)), same >= 6 ? r(true) : requestAnimationFrame(check));
+      requestAnimationFrame(check);
+    }), null, { timeout: 5000 }).catch(() => {});
+    await settle();
     const mini = page.locator('#book-mini');
     // 往下捲一段再往上滑一點：頂欄冒出來，小工具列接在底下。
     const peek = async (y) => {
       const frames = () => page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
+      // 換排序、花色之後頁面也會自己平滑捲動：先等它停。
+      await settle();
       // 牌格可能比 y 矮（排序、篩選之後）：從捲得到的最底往上滑。
       const low = await page.evaluate((y) => Math.min(y + 400, document.documentElement.scrollHeight - innerHeight), y);
       await page.evaluate((v) => scrollTo(0, v), low);

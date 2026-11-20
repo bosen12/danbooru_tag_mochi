@@ -1047,12 +1047,18 @@ function openWork(w) {
     }
     clearTimeout(armed);
     del.disabled = true;
+    let goneAlready = false;
     try {
       await removeFromAlbum(w.id);
     } catch (err) {
-      del.disabled = false;
-      refuse(del);
-      return toast(`拿不掉：${friendlyError(err)}`);
+      // 伺服器說找不到：別的分頁、別的裝置已經拿掉了。目的一樣，照拿掉處理，不要寫「拿不掉」、格子還留在牆上
+      // （2026-11-20 第五輪 Opus：兩個作品冊並排，一邊刪了，另一邊再刪就卡住，要切走再切回來）。
+      if (err?.status !== 404) {
+        del.disabled = false;
+        refuse(del);
+        return toast(`拿不掉：${friendlyError(err)}`);
+      }
+      goneAlready = true;
     }
     sheet.close();
     loadSeq++;
@@ -1062,7 +1068,7 @@ function openWork(w) {
     tileCache.delete(w.id);
     const node = $("album-grid").querySelector(`.album-tile[data-id="${CSS.escape(w.id)}"]`);
     leave(node, () => render());
-    toast(`「${w.name}」拿出作品冊了`);
+    toast(goneAlready ? `「${w.name}」已經在別的地方拿掉了` : `「${w.name}」拿出作品冊了`);
   });
   const body = el(
     "div",

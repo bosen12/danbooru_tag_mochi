@@ -1,5 +1,45 @@
 # Release notes
 
+## v1.8 — 2026-11-20
+
+Changes since [v1.7](https://github.com/bosen12/danbooru_tag_mochi/releases/tag/v1.7).
+
+- **Hires with the current model.** The Hires panel has a **Use current model** switch: the upscale redraws with the checkpoint and LoRAs picked in the header now (for example, draw with a fast model, then Hires with a better one). The image's old LoRA trigger words are swapped for the new ones; your own cards stay. The switch is remembered. The panel also has rounded corners now.
+- **Stopping Hires is easy to reach.** The Stop on the image could be covered by the caption line on hover; it now stays clickable, and while a Hires or face fix runs, the Results row and the floating bar say "Upscaling" with a **Stop** beside **Draw & generate** (Esc works too).
+- **Image details show the checkpoint, every LoRA and its strength** (for example ×0.80), plus the model used for Hires if it differed.
+- **Cards kept when coming back from the Card Book.** Adding a card from the Card Book and returning to the Ink Pool no longer empties the pool you were building, and the background-prepared Ink Pool no longer edits your Blocked cards or settings before you actually open it. Hand-offs between rooms now belong to the tab that sent them, so another tab can't pick them up.
+- **Card dates**: about 300 recent cards that showed "No date" in the Card Book now have their added date.
+- **Slot picker**: turning **Random** off and on again brings back the candidates you had lit.
+- **Card weights**: the mouse wheel changes a card's weight only over the weight badge in its corner (it shows `1.0` on hover); elsewhere the wheel scrolls the page, so reading a card and scrolling on no longer changes it.
+- **Library search**: Esc closes the card preview; with the search empty, Esc moves focus to **Draw & generate** so P and G work; when the best match is hidden by a rule, the note says which card Enter will add, and the unlock button says it applies to the whole pool.
+- **Failed images** show the reason once and a single **Retry this one** (regenerates in the same slot).
+- **Gallery**: reprinting reads the recipe once and opens one confirmation even on a double click; closing a work cancels its pending reprint; lowering the rating (here or in another room) hides restricted works at once; removing a work already removed elsewhere just removes it; checkpoints with the same file name in different folders are told apart when reprinting; a temporary error on **★ Saved** no longer creates a duplicate work.
+- **Card Book**: "Made with this card" follows the content rating (filtered on the server too) and loads thumbnails into reserved space; adding a result to a pool that already has cards keeps the result's weights; with no groups yet, the group shelf folds into one line.
+- **Fuse Bed**: the main button names the set it will print (**Generate A**), a repeated explanation was removed, and the status line no longer flickers on every progress step.
+- **Parse Pool**: touch devices say "Choose an image"; a broken image no longer leaves it stuck loading, and a failed new image no longer brings back the previous result after switching rooms.
+- **Ink Pool assistant (beta)**: drag a result into the chat to reference it ("keep the character and clothes, change the background"), borrow chosen categories from a gallery work, find works, and ask where a card came from (shown as a chain of cards). The Grok Build sign-in check retries once instead of briefly showing "Not signed in".
+- Smaller fixes: the tour returns focus where it started; the Discord invite waits until your first image instead of covering the page on first visit; on phones Esc closes the "⋯" menu before the details; the English seed field no longer clips; two Ink Pool tabs no longer overwrite a restored original with an old Hires job.
+
+### 繁體中文
+
+與 [v1.7](https://github.com/bosen12/danbooru_tag_mochi/releases/tag/v1.7) 相比：
+
+- **Hires 用目前模型**：Hires 視窗多一顆「用目前模型」開關，改用頂欄現在選的底模和 LoRA 重畫（例如先用快的模型抽、滿意了再用好的模型 Hires）。原圖 LoRA 的觸發詞會換成新的，你選的牌照留。開關會記住。視窗也改成圓角。
+- **Hires 的「停」按得到了**：以前滑鼠移到圖上，下緣那行會蓋住「停」；現在按得到，而且 Hires、修臉進行中，成品那列和底部浮動列會寫「Hires 中」，抽並生圖旁邊就有「停」（Esc 也能停）。
+- **點開成品會寫出底模、每個 LoRA 和強度**（例如 ×0.80），Hires 換過模型的也寫出來。
+- **從卡冊回墨池，牌不會不見**：在卡冊加牌再回墨池，原本那池牌照樣在；背景先開好的墨池也不會在你點進去之前改到廢字簍和設定。房間之間交接的牌只給送出的那個分頁，別的分頁拿不走。
+- **卡冊的加入日**：近期加的約 300 張原本寫「沒有日期」，現在都有了。
+- **選格**：「隨機」關掉再打開，會記得原本點亮的候選格。
+- **牌的份量**：滑鼠滾輪只在牌右下角的份量角標上才調份量（滑鼠移上去會出現 `1.0`）；其他地方照常捲頁面，停下來看牌再往下捲不會改到份量。
+- **字盒搜尋**：Esc 收起放大卡；搜尋框空了再按 Esc，焦點回到「抽並生圖」，P、G 直接能用；最符合的牌被規則藏起來時，會寫按 Enter 會加入哪一張，解開的按鈕寫明「整池」生效。
+- **印壞的成品**：原因只寫一次，只留「重試這張」（在同一格重印）。
+- **作品冊**：連點「照這張再印」只讀一次、只開一個確認窗；關掉作品會取消它還沒回來的再印；調低分級（這裡或別的房間）受限作品馬上收起；別處已經拿掉的作品，這邊再拿掉就直接拿掉；再印時同名、不同資料夾的底模分得出來；「★ 已收藏」遇到暫時錯誤不會多收一份。
+- **卡冊**：「用它做過的圖」照分級篩（伺服器也篩），先佔位再用縮圖淡入；成品加進已經有牌的合成池時，成品的份量照樣帶上；還沒有群組時，群組區收成一行。
+- **疊印台**：主按鈕寫出會印哪一組（「付印 A」），重複的說明拿掉，印製中狀態字不再每一步閃一下。
+- **解析池**：觸控裝置寫「選一張圖片」；換到壞掉的圖不會一直停在載入中；新圖失敗後換房間再回來，不會變回上一張的結果。
+- **墨池助手（實驗功能）**：可以把成品拖進聊天室當引用（「人物和衣服留著，背景換掉」）、從作品冊借指定段落的牌、找作品、問一張牌是怎麼來的（用卡面畫成一條鏈）。Grok Build 的登入檢查遇到換憑證會再問一次，不再閃一下「沒登入」。
+- 其他：導覽結束焦點交回原處；Discord 邀請改成印好第一張圖之後才問，不再一開頁就蓋住畫面；手機詳情的「⋯」選單按 Esc 先收選單；英文版種子框不再裁字；兩個墨池分頁不會再用舊的 Hires 工作蓋掉已還原的原圖。
+
 ## v1.7 — 2026-11-19
 
 Changes since [v1.6](https://github.com/bosen12/danbooru_tag_mochi/releases/tag/v1.6).

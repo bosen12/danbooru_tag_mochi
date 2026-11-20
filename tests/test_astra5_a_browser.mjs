@@ -31,7 +31,7 @@ const root = resolve(import.meta.dirname, "..");
 const front = existsSync(resolve(root, "web6/index.html")) ? "web6" : "web";
 const baseline = {};
 if (process.env.BASELINE) {
-  for (const f of ["app.js", "store.js", "fuse.js", "foot-more.js", "styles.css"]) baseline[f] = execFileSync("git", ["show", `${process.env.BASELINE}:${front}/${f}`], { cwd: root, maxBuffer: 2 ** 25 });
+  for (const f of ["app.js", "store.js", "fuse.js", "foot-more.js", "styles.css", "album.js", "album-save.js"]) baseline[f] = execFileSync("git", ["show", `${process.env.BASELINE}:${front}/${f}`], { cwd: root, maxBuffer: 2 ** 25 });
 }
 
 const PNG = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";
@@ -294,6 +294,65 @@ try {
     const repeats = await p.evaluate(() => window.repeats);
     ok("15. 12 步進度：狀態字最多在換狀態時淡入（不是每一步）", repeats.length <= 3, JSON.stringify(repeats));
     delete state.controllers["/api/gen"];
+    await c.close();
+  });
+
+  // P. 背後預開的墨池不能先改共用的廢字簍（Opus 在第五輪找到）：卡冊按「＋」送來一張廢字簍裡的牌，
+  //    預開的墨池開機就把它移出廢字簍；沒被點開也改掉了。現在等點進去才寫回。
+  await step("P. 預開不改廢字簍", async () => {
+    const c = await context({
+      init: () => {
+        if (location.protocol !== "http:") return;
+        // 假裝這一頁在背後預開：document.prerendering 是 true，直到測試派出 prerenderingchange
+        let pre = true;
+        Object.defineProperty(Document.prototype, "prerendering", { configurable: true, get: () => pre });
+        window.__activate = () => {
+          pre = false;
+          document.dispatchEvent(new Event("prerenderingchange"));
+        };
+        if (sessionStorage.getItem("p-setup")) return;
+        sessionStorage.setItem("p-setup", "1");
+        sessionStorage.setItem("mochi.tab.id.v1", "tab-p");
+        sessionStorage.setItem("mochi.tab.pool.v1", JSON.stringify({ tags: ["standing"], weights: {} }));
+        localStorage.setItem("mochi.bans.v1", JSON.stringify(["smile"]));
+        localStorage.setItem("mochi.pool.handoff.v1", JSON.stringify({ tags: ["smile"], at: Date.now(), from: "book", weights: {}, tab: "tab-p" }));
+      },
+    });
+    const p = await c.newPage();
+    await go(p, origin + "/index.html?debug");
+    await p.waitForFunction(() => window.mochi?.pool?.has("smile"), null, { timeout: 8000 }).catch(async () => {
+      throw new Error("pool " + JSON.stringify(await p.evaluate(() => ({ mochi: !!window.mochi, pool: window.mochi ? [...window.mochi.pool] : null, pre: document.prerendering }))));
+    });
+    await sleep(400);
+    const before = await p.evaluate(() => JSON.parse(localStorage.getItem("mochi.bans.v1") || "[]"));
+    ok("P. 預開中：畫面上已經加進池子，但共用的廢字簍沒被改", before.includes("smile"), JSON.stringify(before));
+    await p.evaluate(() => window.__activate());
+    await sleep(400);
+    const after = await p.evaluate(() => JSON.parse(localStorage.getItem("mochi.bans.v1") || "[]"));
+    ok("P. 點進去之後：才把那張移出廢字簍", !after.includes("smile"), JSON.stringify(after));
+    await c.close();
+  });
+
+  // D. 作品冊：別的分頁已經拿掉的作品，這邊再拿掉（伺服器回 404）要照拿掉處理，格子離開牆面。
+  await step("D. 別處已刪的作品", async () => {
+    state.works = [work(1), work(2)];
+    state.controllers["/api/recipes/work1"] = async (req, res) => {
+      if (req.method !== "DELETE") return false;
+      res.writeHead(404, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ ok: false, error: "找不到這件作品" }));
+      return true;
+    };
+    const c = await context();
+    const p = await c.newPage();
+    await go(p, origin + "/album.html");
+    await p.locator('[data-id="work1"]').click();
+    await p.locator(".album-del").click();
+    await p.locator(".album-del").click();
+    await p.waitForFunction(() => !document.querySelector('.album-tile[data-id="work1"]'), null, { timeout: 6000 }).catch(() => {});
+    const s = await p.evaluate(() => ({ tile: !!document.querySelector('.album-tile[data-id="work1"]'), sheet: !!document.querySelector(".overlay .sheet"), toast: document.querySelector(".toast")?.textContent || "" }));
+    ok("D. 伺服器說已經不在：格子離開、詳情關上、不寫「拿不掉」", !s.tile && !s.sheet && !s.toast.includes("拿不掉"), JSON.stringify(s));
+    delete state.controllers["/api/recipes/work1"];
+    state.works = [work(1)];
     await c.close();
   });
 

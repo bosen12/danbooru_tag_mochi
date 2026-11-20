@@ -2606,6 +2606,7 @@ LoRA 觸發詞|LoRA trigger
 拿不掉：{0}|Could not remove: {0}
 印壞：{0}|Generation failed: {0}
 「{0}」拿出作品冊了|Removed “{0!}” from Gallery
+「{0}」已經在別的地方拿掉了|“{0!}” was already removed elsewhere
 {0} 件作品{1}|{0} saved images{1}
 {0} 件作品|{0} saved images
 {0} 件|{0} images

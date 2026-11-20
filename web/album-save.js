@@ -21,7 +21,8 @@ function imageRef(src) {
 async function call(url, method, body) {
   const r = await fetch(url, { method, headers: body ? { "Content-Type": "application/json" } : {}, body: body ? JSON.stringify(body) : undefined });
   const j = await r.json().catch(() => ({}));
-  if (!r.ok || !j.ok) throw new Error(j.error || `伺服器回 ${r.status}`);
+  // 帶著 HTTP 狀態：呼叫的人要分得出「已經不在了」（404）和其他錯誤。
+  if (!r.ok || !j.ok) throw Object.assign(new Error(j.error || `伺服器回 ${r.status}`), { status: r.status });
   return j;
 }
 
