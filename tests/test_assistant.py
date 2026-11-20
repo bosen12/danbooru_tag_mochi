@@ -283,6 +283,9 @@ def cli_commands():
                     assert {"--ignore-user-config", "--ignore-rules", "--skip-git-repo-check", "--json",
                             'approval_policy="never"', "features.shell_tool=false", "features.apps=false",
                             "features.plugins=false"} <= set(argv)
+                    # 2026-11-20：新版預設開著、會自己動手的工具也要關（另一套跑指令、瀏覽器、電腦操作、code mode）
+                    assert {"features.unified_exec=false", "features.browser_use=false", "features.computer_use=false",
+                            "features.code_mode_host=false", "features.image_generation=false"} <= set(argv)
                     if os.name == "nt":
                         assert 'windows.sandbox="unelevated"' in argv
                     schema = json.loads(Path(option("--output-schema")).read_text(encoding="utf-8"))
@@ -344,6 +347,20 @@ def cli_output_formats():
         ("codex", {"type": "item.started", "item": {"type": "command_execution"}}),
     ):
         expect_error("format", lambda: parse(provider, frames(event, reply)))
+    # Codex 動手被擋：錯誤寫出它回了什麼，原始事件記在設定檔旁邊；警告類（type error）的項目不擋
+    note = Path(os.environ["ASSISTANT_CONFIG_PATH"]).with_name("assistant-cli-last-event.json")
+    note.unlink(missing_ok=True)
+    try:
+        parse("codex", frames({"type": "item.started", "item": {"type": "command_execution", "command": "dir"}}, reply))
+        raise AssertionError("should fail")
+    except assistant.AssistantError as err:
+        assert "command_execution" in str(err), err
+    assert json.loads(note.read_text(encoding="utf-8"))["event"]["item"]["type"] == "command_execution"
+    assert parse("codex", frames(
+        {"type": "item.completed", "item": {"type": "error", "message": "Model metadata not found"}},
+        {"type": "item.completed", "item": {"type": "agent_message", "text": encoded}},
+        {"type": "turn.completed"},
+    )) == reply
     expect_error("login", lambda: parse("grok", frames({"type": "error", "message": "Not logged in"})))
     expect_error("format", lambda: parse("grok", frames(
         {"type": "text", "data": encoded}, {"type": "end", "stopReason": "max_tokens"},

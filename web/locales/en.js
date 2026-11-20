@@ -2484,6 +2484,8 @@ Enter 會加入「{0}」|Enter adds “{0}”
 換一張輪廓清楚的圖|Try an image with clearer outlines
 群組 · 建立第一組|Groups · Create the first one
 建立第一組|Create the first one
+CLI 回傳了純對話以外的事件。|The CLI returned something other than chat.
+CLI 回傳了純對話以外的事件（{0}）。|The CLI returned something other than chat ({0!}).
 正在把牌加進群組「{0}」|Adding cards to group “{0!}”
 加進群組|Added to group
 這個類別沒有叫「{0}」的群組|No group named “{0!}” in this category

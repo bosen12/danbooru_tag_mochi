@@ -1090,6 +1090,10 @@ def _cli_invocation(conn, chat):
             overrides = ['approval_policy="never"', 'web_search="disabled"',
                          "features.shell_tool=false", "features.view_image=false", "features.apps=false",
                          "features.plugins=false", "features.multi_agent=false", "features.multi_agent_v2=false"]
+            # 2026-11-20：codex-cli 0.167 起預設多開了好幾個會自己動手的工具（另一套跑指令的 unified_exec、
+            # 瀏覽器、電腦操作、code mode、生圖、技能搜尋…）。模型（推理強度 low 的 GPT-6 Luna）被要求「加牌」時
+            # 拿它們去找，回了對話以外的事件，整個回覆被擋下。一起關掉；舊版不認得的名稱 Codex 會略過，不報錯。
+            overrides += [f"features.{name}=false" for name in CODEX_EXTRA_OFF]
             if os.name == "nt":
                 overrides.append('windows.sandbox="unelevated"')
             if effort:
@@ -1102,6 +1106,23 @@ def _cli_invocation(conn, chat):
                 args.extend(("-c", override))
             args.append("-")
         yield command + args, cwd, prompt_file
+
+
+# Codex 會自己動手、這裡用不到的功能（見 _cli_args）。
+CODEX_EXTRA_OFF = (
+    "unified_exec", "unified_exec_tty", "shell_snapshot", "browser_use", "browser_use_external",
+    "browser_use_full_cdp_access", "browser_annotation_api", "in_app_browser", "computer_use", "code_mode_host",
+    "image_generation", "sleep_tool", "skill_search", "tool_suggest", "goals", "hooks", "in_app_local_automation",
+    "remote_plugin", "plugin_discovery_prefetch", "workspace_dependencies", "skill_mcp_dependency_install",
+)
+
+
+def _note_cli_event(provider, event):
+    """CLI 回了對話以外的東西：原樣記在設定檔旁邊（只留最後一筆），下次一看就知道它想做什麼。不含金鑰。"""
+    try:
+        _config_path().with_name("assistant-cli-last-event.json").write_bytes(_json_bytes({"provider": provider, "event": event}))
+    except (OSError, TypeError, ValueError):
+        pass
 
 
 def _kill_tree(proc):
@@ -1184,10 +1205,15 @@ def _cli_output(provider, raw):
                 result = event if "say" in event else event.get("result") or event.get("text")
         elif provider == "codex" and typ in ("item.started", "item.updated", "item.completed"):
             item = event.get("item", {})
-            if item.get("type") == "agent_message" and typ == "item.completed":
+            kind = item.get("type")
+            if kind == "agent_message" and typ == "item.completed":
                 text = [item.get("text", "")]
-            elif item.get("type") not in ("agent_message", "reasoning", "todo_list"):
-                raise AssistantError("format", tool_error, status=502)
+            elif kind == "error":
+                # Codex 的警告（例如模型資料找不到、重新連線）：不是動手，不擋整個回覆。
+                pass
+            elif kind not in ("agent_message", "reasoning", "todo_list"):
+                _note_cli_event(provider, event)
+                raise AssistantError("format", f"{tool_error[:-1]}（{str(kind)[:40]}）。", status=502)
         elif provider == "grok" and typ == "text":
             text.append(event.get("data", ""))
         elif typ in ("assistant", "user", "stream_event"):
