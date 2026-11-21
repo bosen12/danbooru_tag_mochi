@@ -1011,6 +1011,129 @@ function offscreen(node) {
   return node._view === "out";
 }
 
+/**
+ * 一整片內容換掉（字盒換花色、搜尋、換時代；卡冊換排序、找牌；日誌篩選；作品分輯）：舊的那一片不要一格不見。
+ * 重畫之前 const g = ghostOut(container, ".card", { key })，重畫完 g.done()：
+ * 畫面上看得到的舊項目各複製一份蓋在原位，淡出、往下沉一點；新的照原本的方式進場（發牌、淡入、滑過去）。
+ * 兩層疊著就是交叉淡化。以前舊的一格全不見、畫面空一下，新的才發進來（2026-11-21 專案主：切換不能生硬）。
+ *
+ * - key(node)：同一項的識別（牌名）。重畫後同一項還在原位：不做殘影（新舊一樣，疊了看不出來，省事）。
+ * - onlyGone：只替這次被拿掉的做殘影（卡冊：留下來的牌自己會滑到新位置，不能再多一份舊的）。
+ * - 殘影放在一層 position: fixed 的殼裡，殼掛在 container 後面（同一個父層：靠祖先選擇器的樣式照樣套到），
+ *   殼的 class 跟 container 一樣但沒有 id、加 inert：程式和測試用 #id 找的、用 container.querySelector 找的都找不到殘影。
+ *   殼裁成 container 在畫面上真的看得到的那一塊（捲動盒、視窗），殘影不會畫到框外。
+ */
+// 殘影淡出的時間：比進場短，新舊疊在一起的時間短，不會看起來兩層打架。
+const GHOST_MS = 160;
+export function ghostOut(container, selector, { key = null, onlyGone = false, max = 48 } = {}) {
+  const none = { done() {} };
+  if (!container || !container.isConnected || !container.parentNode || reducedMotion() || "booting" in document.documentElement.dataset) return none;
+  const clip = shownRect(container);
+  if (!clip) return none;
+  const items = [];
+  for (const n of container.querySelectorAll(selector)) {
+    const r = n.getBoundingClientRect();
+    if (!r.width || !r.height || r.bottom <= clip.top || r.top >= clip.bottom || r.right <= clip.left || r.left >= clip.right) continue;
+    items.push({ n, r, k: key ? key(n) : null });
+    if (items.length >= max) break;
+  }
+  if (!items.length) return none;
+  // 現在就複製（重畫之後舊的節點可能被改掉、拿掉）。
+  for (const it of items) it.c = ghostClone(it.n);
+  return {
+    done() {
+      if (!container.isConnected || !container.parentNode) return;
+      let now = null;
+      if (key) {
+        now = new Map();
+        for (const n of container.querySelectorAll(selector)) now.set(key(n), n);
+      }
+      const keep = items.filter((it) => {
+        if (!now) return true;
+        const n = now.get(it.k);
+        if (!n) return true;
+        if (onlyGone) return false;
+        const r = n.getBoundingClientRect();
+        return Math.abs(r.left - it.r.left) > 1 || Math.abs(r.top - it.r.top) > 1 || Math.abs(r.width - it.r.width) > 1;
+      });
+      if (!keep.length) return;
+      const shell = document.createElement(container.tagName === "UL" || container.tagName === "OL" ? "div" : container.tagName);
+      shell.className = container.className;
+      shell.classList.add("ghost-layer");
+      shell.setAttribute("aria-hidden", "true");
+      shell.inert = true;
+      Object.assign(shell.style, { position: "fixed", left: clip.left + "px", top: clip.top + "px", width: clip.right - clip.left + "px", height: clip.bottom - clip.top + "px", margin: "0", padding: "0", border: "0", overflow: "hidden", pointerEvents: "none", display: "block", zIndex: "1", background: "none", boxShadow: "none", transform: "none", contain: "layout paint" });
+      container.after(shell);
+      // 祖先有 transform／filter 時 fixed 是對它定位：量一下實際落在哪，差多少補多少。
+      const at = shell.getBoundingClientRect();
+      const fx = clip.left - at.left;
+      const fy = clip.top - at.top;
+      if (Math.abs(fx) > 0.5 || Math.abs(fy) > 0.5) {
+        shell.style.left = clip.left + fx + "px";
+        shell.style.top = clip.top + fy + "px";
+      }
+      for (const it of keep) {
+        // 量到的位置已經含原本的 transform／translate：複本的位移歸零，才會落在原位。
+        Object.assign(it.c.style, { position: "absolute", left: it.r.left - clip.left + "px", top: it.r.top - clip.top + "px", width: it.r.width + "px", height: it.r.height + "px", margin: "0", boxSizing: "border-box", transform: "none", translate: "none", scale: "none", rotate: "none" });
+        shell.append(it.c);
+      }
+      const anims = keep.map((it, i) =>
+        it.c.animate(
+          [
+            { opacity: 1, transform: "none" },
+            { opacity: 0, transform: "translateY(6px) scale(0.98)" },
+          ],
+          { duration: GHOST_MS, delay: Math.min(i, 8) * 6, easing: css(CURVE.exit), fill: "forwards" }
+        )
+      );
+      let gone = false;
+      const end = () => {
+        if (gone) return;
+        gone = true;
+        shell.remove();
+      };
+      Promise.all(anims.map((a) => a.finished.catch(() => {}))).then(end);
+      setTimeout(end, GHOST_MS + 8 * 6 + 200);
+    },
+  };
+}
+
+/** container 在畫面上真的看得到的那一塊：跟視窗、每一層會裁切的祖先（捲動盒）取交集。看不到就回 null。 */
+function shownRect(node) {
+  const r = node.getBoundingClientRect();
+  let left = Math.max(0, r.left);
+  let top = Math.max(0, r.top);
+  let right = Math.min(innerWidth, r.right);
+  let bottom = Math.min(innerHeight, r.bottom);
+  for (let p = node.parentElement; p && p !== document.body && p !== document.documentElement; p = p.parentElement) {
+    const cs = getComputedStyle(p);
+    if (cs.overflowX === "visible" && cs.overflowY === "visible") continue;
+    const pr = p.getBoundingClientRect();
+    left = Math.max(left, pr.left);
+    top = Math.max(top, pr.top);
+    right = Math.min(right, pr.right);
+    bottom = Math.min(bottom, pr.bottom);
+  }
+  return right - left > 1 && bottom - top > 1 ? { left, top, right, bottom } : null;
+}
+
+/** 殘影用的複本：拿掉 id、data-tag、data-id（不讓程式、測試把它當成真的那張），圖立刻要、動畫不重播。 */
+function ghostClone(node) {
+  const c = node.cloneNode(true);
+  for (const n of [c, ...c.querySelectorAll("*")]) {
+    n.removeAttribute("id");
+    // 程式、測試用 data-tag／data-id 找那一張：殘影改名，找不到它。
+    for (const k of ["tag", "id"]) {
+      if (!n.dataset || !(k in n.dataset)) continue;
+      n.dataset["ghost" + k[0].toUpperCase() + k.slice(1)] = n.dataset[k];
+      delete n.dataset[k];
+    }
+    if (n.tagName === "IMG") n.loading = "eager";
+  }
+  c.classList.add("ghost-item");
+  return c;
+}
+
 /** 一個東西進場：從上面一點浮下來。 */
 export function enter(node, { delay = 0 } = {}) {
   if (!node || reducedMotion()) return;

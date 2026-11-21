@@ -31,7 +31,7 @@ import { createHand, HAND_ICON } from "./hand.js";
 import { handStore } from "./hand-store.js";
 import { handTools } from "./hand-tools.js";
 import { measure, evaluate, announce, openWall } from "./achievements.js";
-import { initMotion, settleMotion, seat, refuse, flight, reducedMotion, swapIn, rowChange, heightChange, holdWidth, CURVE, DUR, css, cropFlipStart, cropFlipEnd } from "./motion.js";
+import { initMotion, settleMotion, seat, refuse, flight, reducedMotion, swapIn, rowChange, heightChange, ghostOut, holdWidth, CURVE, DUR, css, cropFlipStart, cropFlipEnd } from "./motion.js";
 import { waitImage, unwaitImage, retrySrc } from "./img-wait.js";
 import { viewSrc } from "./gen.js";
 import { pingLoop } from "./ping.js";
@@ -692,6 +692,14 @@ function renderGroups() {
   const now = $("book-group-now");
   // 籤列出現、收起、變高變矮時，下面的牌滑過去，不是一格跳（rowChange）。
   const rowMove = rowChange(flow, $("book-grid"));
+  // 黏在工具列裡那一排也一樣；收起或換一批籤時，舊的那排淡出（殘影），不是一格不見（2026-11-21）。
+  const stickyMove = rowChange(sticky, $("book-grid"));
+  const stickyGhost = sticky && !sticky.hidden ? ghostOut(sticky.parentElement, ":scope > #book-groups") : null;
+  const finish = () => {
+    rowMove.done();
+    stickyMove.done();
+    stickyGhost?.done();
+  };
   for (const b of [sticky, flow, now]) {
     if (!b) continue;
     b.hidden = true;
@@ -705,16 +713,17 @@ function renderGroups() {
       ui.group = "";
       saveUi();
     }
-    return rowMove.done();
+    return finish();
   }
-  if (shelf?.active() && !editing) return rowMove.done();
+  if (shelf?.active() && !editing) return finish();
   if (ui.suit === "custom" && !editing) {
     sticky.hidden = false;
     sticky.replaceChildren(
       el("button", { class: "group-chip pressable cc-new", type: "button", onclick: () => openEditor(null, null) }, el("b", { "aria-hidden": "true" }, "＋"), " 新增自製牌"),
       el("button", { class: "group-chip pressable", type: "button", onclick: pasteShare }, "貼上分享碼")
     );
-    return rowMove.done();
+    swapIn(sticky, "custom", { firstToo: !("booting" in document.documentElement.dataset) });
+    return finish();
   }
   const runs = groupChips(lib.cards.filter((c) => (editing ? shelf.keep(c) : c.suit === ui.suit) && visibleCard(c) && genderOk(c)));
   if (ui.group && !runs.some((r) => r.items.some((i) => i.g === ui.group))) ui.group = "";
@@ -749,8 +758,9 @@ function renderGroups() {
     ),
   ];
   box.replaceChildren(...(ui.suit === "chara" && !editing ? [genderChips(ui.charGender, pickGender), seriesRun(all)] : all));
-  swapIn(box, editing ? "group:" + shelf.active().id : ui.suit);
-  rowMove.done();
+  // 第一次換到有籤的花色也要淡進來（以前第一次沒有記號，swapIn 當成開頁不演）；開頁時照舊不演。
+  swapIn(box, editing ? "group:" + shelf.active().id : ui.suit, { firstToo: !("booting" in document.documentElement.dataset) });
+  finish();
 }
 
 function pickGroup(g, from) {
@@ -1641,6 +1651,8 @@ function repaintLive() {
  *   shuffle：換排序的那一下，連移動也錯開一點點，看得出「重新洗過」。
  *   deal：第一次畫（開頁）：交給開版動畫，不另外動。
  */
+// 上一次畫牌格時的分級：調低時不做殘影。
+let gridRatingShown = null;
 function render({ animate = true, shuffle = false, deal = false } = {}) {
   const grid = $("book-grid");
   const motion = animate && !reducedMotion();
@@ -1652,12 +1664,20 @@ function render({ animate = true, shuffle = false, deal = false } = {}) {
       if (r.bottom > -80 && r.top < innerHeight + 80) before.set(cell.dataset.tag, r);
     }
   }
+  // 這次被拿掉的牌淡出（殘影）：留下來的自己滑到新位置，新的淡入；以前拿掉的一格就不見（motion.js ghostOut）。
+  // 重新發牌（換花色）：留下來的也會從頭發一次，整片都要殘影，不然那幾張先閃不見才發進來。
+  // 分級往下調的那一次不做殘影：擋掉的牌要立刻看不到。
+  const rankNow = WORK_RANK[seeRating()] ?? 2;
+  const lowered = gridRatingShown != null && rankNow < gridRatingShown;
+  gridRatingShown = rankNow;
+  const ghost = !motion || lowered ? null : deal ? ghostOut(grid, ".book-cell:not(.is-skel)") : ghostOut(grid, ".book-cell:not(.is-skel)", { key: (n) => n.dataset.tag, onlyGone: true });
   list = listNow();
   searchNote($("book-grid"), lastFound, ui.query);
   padTop ||= el("div", { class: "book-pad", "aria-hidden": "true" });
   padBottom ||= el("div", { class: "book-pad", "aria-hidden": "true" });
   tail = list.length ? null : emptyNote();
   layoutWindow(true);
+  ghost?.done();
   // 有沒有任何使用紀錄：有的話沒用過的牌才褪色；一筆都沒有就在上面放一行引導。
   const any = Object.values(usage.counts).some((n) => n > 0);
   grid.dataset.any = any ? "true" : "false";

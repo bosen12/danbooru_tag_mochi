@@ -48,6 +48,7 @@ checks = [
     ("test_astra6_a_browser.mjs", "test_astra6_a_browser.mjs"),
     ("test_astra6_b_browser.mjs", "test_astra6_b_browser.mjs"),
     ("test_astra6_c.py", "test_astra6_c.py"),
+    ("test_motion_transitions_browser.mjs", "test_motion_transitions_browser.mjs"),
     ("test_mcp.mjs", "test_mochi_mcp.mjs"),
     ("test_mobile_bridge.mjs", "test_mobile_bridge.mjs"),
     ("test_fav_chars_sync.mjs", "test_fav_chars_sync.mjs"),

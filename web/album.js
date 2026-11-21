@@ -27,7 +27,7 @@ import { mountKeysHelp } from "./keys-help.js";
 import { mountTour } from "./tour.js";
 import { mountScreensaver } from "./screensaver.js";
 import { mountGenStatus } from "./gen-status.js";
-import { initMotion, settleMotion, seat, refuse, enter, leave, reducedMotion, swapIn, heightChange, CURVE, DUR, css } from "./motion.js";
+import { initMotion, settleMotion, seat, refuse, enter, leave, reducedMotion, swapIn, heightChange, ghostOut, CURVE, DUR, css } from "./motion.js";
 import { pingLoop } from "./ping.js";
 import { getSfx } from "./sfx.js";
 import { transferLabel, reviewTransfer } from "./transfer.js";
@@ -506,7 +506,10 @@ async function pickTab(v) {
   if (tab === "works") u.searchParams.delete("tab");
   else u.searchParams.set("tab", tab);
   history.replaceState(null, "", u.pathname + u.search + u.hash);
+  // 日誌的篩選列、作品的分輯列：換分頁時收起的那一排淡出（殘影），出來的那一排照舊淡進來（下面的 swapIn）。
+  const barGhosts = [$("log-filters"), $("works-group")].filter((b) => b && !b.hidden).map((b) => ghostOut(b.parentElement, `:scope > #${b.id}`));
   renderTabs();
+  for (const g of barGhosts) g.done();
   seat($("album-tabs").querySelector('[aria-checked="true"]'));
   const turn = `${tab}:${tabTurn}`;
   // 慢的日誌／成績單回來時，人可能已經點回作品。只留快取，不要再把整排作品發一次牌。
@@ -632,19 +635,39 @@ function paintLogSum(r) {
   g.done();
 }
 
+/** 作品、模型分頁的摘要（「5 件作品・3 件在全年齡看不到」）：字換了就淡進來，不是一格換掉。 */
+function setSum(text) {
+  const sum = $("album-sum");
+  if (sum.textContent === text && !sum.querySelector("[data-log-n]")) return;
+  const g = heightChange(sum);
+  sum.textContent = text;
+  if (text) swapIn(sum, "sum:" + text, { firstToo: true });
+  else delete sum.dataset.swapKey;
+  g.done();
+}
+
+// 換分頁時正在離開的那一頁：畫面上看得到的項目淡出（殘影），新的一頁照舊淡進來。以前舊的一格不見。
+const PANE_ITEMS = ".album-tile:not([hidden]), .album-group > .log-day-head, .log-row, .log-day-head, .log-more, .model-card, .album-empty, .album-hint";
+let paneShown = "";
+
 function render({ deal = false } = {}) {
   guardOpenDetails();
   const grid = $("album-grid");
   const logBox = $("album-log");
   const modelBox = $("album-models");
+  const panes = { works: grid, log: logBox, models: modelBox };
+  const leaving = paneShown && paneShown !== tab ? panes[paneShown] : null;
+  const ghost = leaving && !leaving.hidden ? ghostOut(leaving, PANE_ITEMS) : null;
+  paneShown = tab;
   grid.hidden = tab !== "works";
   logBox.hidden = tab !== "log";
   modelBox.hidden = tab !== "models";
+  ghost?.done();
   if (tabTurn) swapIn({ works: grid, log: logBox, models: modelBox }[tab], `${tab}:${tabTurn}`, { firstToo: true });
   if (tab === "models") {
     $("album-hint").hidden = true;
     const r = models.render(modelBox, { query, rating: seeRating() }, { deal });
-    $("album-sum").textContent = r.total ? `從日誌裡印好的 ${r.total} 張算` : "";
+    setSum(r.total ? `從日誌裡印好的 ${r.total} 張算` : "");
     return;
   }
   if (tab === "log") {
@@ -655,9 +678,7 @@ function render({ deal = false } = {}) {
   const shown = works.filter((w) => visible(w) && (!query || w._text.includes(query)));
   const hidden = works.filter((w) => !visible(w)).length;
   $("album-hint").hidden = works.length > 0 || loadFailed;
-  $("album-sum").textContent = works.length
-    ? `${shown.length} 件作品${hidden ? `・${hidden} 件在${RATING_LABEL[rating]}看不到` : ""}`
-    : "";
+  setSum(works.length ? `${shown.length} 件作品${hidden ? `・${hidden} 件在${RATING_LABEL[rating]}看不到` : ""}` : "");
   const groups = groupWorks(shown, shown.length ? grouping : "none", { lib, eraZh: ERA_ZH, cardsOf });
   const grouped = groups.length > 1 || (groups[0] && groups[0].label);
   grid.classList.toggle("is-grouped", !!grouped);
@@ -713,6 +734,18 @@ function render({ deal = false } = {}) {
     // 這輪還要用同一張提示卡：停掉把它淡掉的退場，不然摘要對了、提示卻是透明的。
     if (note) for (const a of note.getAnimations()) a.cancel();
     const prev = new Set([...grid.querySelectorAll(".album-tile")].map((n) => n.dataset.id));
+    // 換分輯、找字：留下來的作品從原本的位置滑到新位置，拿掉的淡出（殘影），分段標題淡進來。
+    // 以前整面一格重排（2026-11-21 專案主：切換不能生硬）。藏起來的（分級調低）不演：那是要立刻看不到的。
+    const before = new Map();
+    const heads = new Set([...grid.querySelectorAll(":scope > .album-group > .log-day-head")].map((h) => h.firstChild?.textContent || ""));
+    if (!deal && !reducedMotion()) {
+      for (const n of grid.querySelectorAll(".album-tile:not([hidden])")) {
+        const r = n.getBoundingClientRect();
+        if (r.width && r.bottom > -80 && r.top < innerHeight + 80) before.set(n.dataset.id, r);
+      }
+    }
+    const tileKey = (n) => (n.classList.contains("album-tile") ? n.dataset.id : "head:" + (n.firstChild?.textContent || ""));
+    const ghost = !deal ? ghostOut(grid, ".album-tile:not([hidden]), .album-group > .log-day-head", { key: tileKey, onlyGone: true }) : null;
     grid.replaceChildren(...body);
     if (note && note !== oldNote) enter(note);
     if (deal && !reducedMotion()) {
@@ -731,7 +764,29 @@ function render({ deal = false } = {}) {
     } else if (!deal) {
       // 分級打開後才冒出來的格子要進場；本來就在牆上的不要再演一次。
       [...grid.querySelectorAll(".album-tile")].filter((n) => !prev.has(n.dataset.id)).slice(0, 12).forEach((n, i) => enter(n, { delay: DUR.micro + i * 24 }));
+      if (!reducedMotion()) {
+        let moving = 0;
+        for (const n of grid.querySelectorAll(".album-tile")) {
+          const was = before.get(n.dataset.id);
+          if (!was) continue;
+          const r = n.getBoundingClientRect();
+          const dx = was.left - r.left;
+          const dy = was.top - r.top;
+          if (Math.abs(dx) < 1 && Math.abs(dy) < 1) continue;
+          n.animate([{ transform: `translate(${dx}px, ${dy}px)` }, { transform: "none" }], {
+            duration: Math.min(DUR.long + Math.hypot(dx, dy) * 0.15, 600),
+            delay: Math.min(moving++, 12) * 14,
+            easing: css(CURVE.travel),
+            fill: "backwards",
+          });
+        }
+        for (const h of grid.querySelectorAll(":scope > .album-group > .log-day-head")) {
+          if (heads.has(h.firstChild?.textContent || "")) continue;
+          h.animate([{ opacity: 0, transform: "translateY(-4px)" }, { opacity: 1, transform: "none" }], { duration: DUR.medium, delay: DUR.micro, easing: css(CURVE.out), fill: "backwards" });
+        }
+      }
     }
+    ghost?.done();
     maybeOpenHash();
   };
   // 降級當下就把看不了的格子藏起來、點不了。提示卡可以照舊退場，不必等它播完才收。

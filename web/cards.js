@@ -6,7 +6,7 @@ import { isCard, cardSuit, ratingTier, artFile, artSources, artUrl, groupSeal, C
 import { searchKey, cardMatches, matchRank, searchCards, indexSearchNames, searchNoteText, warmSearchKeys } from "./card-search.js";
 import { el, ICONS } from "./ui.js";
 import { miniSet, bindArt, artFallback } from "./card-images.js";
-import { DUR, CURVE, css, reducedMotion } from "./motion.js";
+import { DUR, CURVE, css, reducedMotion, rowChange, ghostOut, swapIn } from "./motion.js";
 import { english, registerLexicon, t } from "./i18n.js";
 
 export { CARD_SUIT_INFO, CARD_SUITS };
@@ -83,17 +83,32 @@ export function searchNote(grid, res, q, also = null) {
   if (!grid) return;
   let note = grid.previousElementSibling?.classList.contains("search-note") ? grid.previousElementSibling : null;
   const text = searchNoteText(res, q);
-  if (!text && !also) return void note?.remove();
+  // 這行出現、收起、換字都要有過渡（2026-11-21）：以前一格冒出來、一格不見，底下的牌跟著一格跳。
+  // 收起：淡出（殘影），底下的牌滑上來。出現：長高淡入，牌被慢慢推下去。換字：新的字淡進來。
+  if (!text && !also) {
+    if (!note) return;
+    const move = rowChange(note, grid);
+    const ghost = ghostOut(note.parentElement, ":scope > .search-note");
+    note.remove();
+    ghost.done();
+    move.done();
+    return;
+  }
+  let move = null;
   if (!note) {
     note = el("p", { class: "search-note", role: "status" });
+    move = rowChange(note, grid);
     grid.before(note);
   }
   // 英文版：換成英文再比（畫面上永遠是英文，直接比中文每次都不一樣）。
   const shown = t(text);
   const key = `${shown}|${also?.dataset.key || ""}`;
-  if (note.dataset.key === key) return;
+  if (note.dataset.key === key) return void move?.done();
+  const changed = note.dataset.key !== undefined;
   note.dataset.key = key;
   note.replaceChildren(...(shown ? [el("span", {}, shown)] : []), ...(also ? [also] : []));
+  if (changed) swapIn(note, key, { firstToo: true });
+  move?.done();
 }
 
 /**

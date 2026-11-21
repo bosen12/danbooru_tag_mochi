@@ -36,7 +36,8 @@ const GATE_ZH = { rating: "分級", banned: "廢字簍", trash: "廢字簍", gen
 // card_groups.py：名字、張數、勾選上限。這裡先擋，免得送去伺服器才被截斷，模型還以為全部存進去了。
 const POOL_CAP = 40;
 const MAX_NAME = 40;
-const MAX_TAGS = 120;
+// 跟 card_groups.py 一樣：實際上不限（以前是 120）。
+const MAX_TAGS = 5000;
 const MAX_PICKS = 50;
 const MAX_GROUPS = 200;
 const WEIGHT_MIN = 0.6;
@@ -470,7 +471,7 @@ export const TOOL_DEFS = [
       properties: {
         name: { ...str, description: "新名字，最多 40 字。不要用這個類別裡已經有的名字" },
         section: { type: "string", enum: SECTIONS },
-        tags: { ...strList, description: "要放進這組的 tag，最多 120 張，而且都要屬於這個類別" },
+        tags: { ...strList, description: "要放進這組的 tag，張數不限，但都要屬於這個類別" },
       },
     },
   },

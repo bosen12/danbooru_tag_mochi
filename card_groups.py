@@ -32,7 +32,9 @@ GROUPS_PATH = Path(os.environ.get("CARD_GROUPS_PATH") or ROOT / "data" / "card_g
 
 SECTIONS = ("feature", "clothing", "pose", "env")
 MAX_GROUPS = 200
-MAX_TAGS = 120
+# 一組幾張：實際上不限（2026-11-21 專案主：群組可以無限嗎）。牌一定要屬於那一類，最多的「服裝」約 2700 張，
+# 整類全放進一組也放得下；留一個上限只是擋掉壞掉、灌爆的資料。以前是 120。
+MAX_TAGS = 5000
 MAX_NAME = 40
 _ID_RE = re.compile(r"^[a-z0-9-]{4,40}$")
 

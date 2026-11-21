@@ -601,6 +601,11 @@ html[data-book-group="edit"] .book-cell[data-ingroup="true"]::after {
   pointer-events: none;
   box-shadow: 0 0 0 1px color-mix(in oklch, var(--color-accent) 30%, transparent) inset, 0 2px 8px rgb(0 0 0 / 0.45);
   transform: translate(-50%, -50%) rotate(-8deg);
+}
+/* 蓋章那一下只給剛蓋的（book-groups.js 標 data-stamp="fresh"，一下子就拿掉）。以前動畫寫在每個章上：
+ * 每加一張牌，牌格重排時節點重新插進文件，整組的章全部重蓋一次，看起來每挑一張已選的牌都閃一下
+ *（2026-11-21 專案主回報）。剛進加牌模式時整組一起蓋一次。 */
+html[data-book-group="edit"] .book-cell[data-ingroup="true"][data-stamp="fresh"]::after {
   animation: bs-stamp var(--dur-medium) var(--ease-settle) both;
 }
 @keyframes bs-stamp {
@@ -686,7 +691,7 @@ html[data-book-group="edit"] .book-cell[data-ingroup="true"]::after {
   .bs-chip {
     transition: none;
   }
-  html[data-book-group="edit"] .book-cell[data-ingroup="true"]::after {
+  html[data-book-group="edit"] .book-cell[data-ingroup="true"][data-stamp="fresh"]::after {
     animation: none;
   }
 }

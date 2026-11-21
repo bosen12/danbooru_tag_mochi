@@ -16,7 +16,8 @@ lex.write_text(
         "tags": [
             {"tag": "blonde hair", "section": "feature"}, {"tag": "twintails", "section": "feature"},
             {"tag": "blue eyes", "section": "feature"}, {"tag": "beach", "section": "env"},
-            *[{"tag": f"acc {i}", "section": "clothing"} for i in range(130)],
+            # 比一組的上限（card_groups.MAX_TAGS，5000）多一些：測「超過上限明講」要送得出上限＋1 張認得的牌。
+            *[{"tag": f"acc {i}", "section": "clothing"} for i in range(5100)],
         ],
         "renamed": {"old blonde": "blonde hair"},
     }),

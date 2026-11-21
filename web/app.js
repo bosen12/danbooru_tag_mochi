@@ -72,7 +72,7 @@ import { openPaste, listenPaste, parsePrompt } from "./paste-prompt.js";
 import { paintWeight, wireWeightInput, weightRow, weightPositive } from "./weights.js";
 import { favButton } from "./album-save.js";
 import { createDrag, inkRing } from "./drag.js";
-import { initMotion, settleMotion, replayDeal, flip, flipBy, leave, enter, confirmButton, gatherHome, flight, seat, refuse, reducedMotion, swapIn, rowChange, CURVE, DUR, css, cropFlipStart, cropFlipEnd } from "./motion.js";
+import { initMotion, settleMotion, replayDeal, flip, flipBy, leave, enter, confirmButton, gatherHome, flight, seat, refuse, reducedMotion, swapIn, rowChange, ghostOut, heightChange, CURVE, DUR, css, cropFlipStart, cropFlipEnd } from "./motion.js";
 import { cloneCard } from "./card-images.js";
 import { createHand } from "./hand.js";
 import { handStore } from "./hand-store.js";
@@ -606,6 +606,40 @@ function buildPicker() {
   updatePickerFoot();
 }
 
+/*
+ * 手機挑牌抽屜打開、收起時，底下浮著的那幾樣（抽牌列、廢字簍、偏好卡牌、標題旁的「挑牌」）
+ * 淡出、淡入，不是一格不見、一格冒出來（2026-11-21）。抽屜打開時它們被 CSS 藏起來（visibility），
+ * 所以淡出用一份複本：疊在原位、放在 <body> 外面（不吃「抽屜開著就藏」那條規則），淡完拿掉。
+ */
+const PICKER_FLOATERS = ".trash, .go-float, .fav-hand, .tray-bridge, #lib-toggle";
+function floatersAway() {
+  if (reducedMotion()) return;
+  for (const n of document.querySelectorAll(PICKER_FLOATERS)) {
+    const r = n.getBoundingClientRect();
+    if (!r.width || !r.height || r.bottom < 0 || r.top > innerHeight || getComputedStyle(n).visibility === "hidden") continue;
+    const c = n.cloneNode(true);
+    for (const x of [c, ...c.querySelectorAll("[id]")]) x.removeAttribute("id");
+    c.setAttribute("aria-hidden", "true");
+    c.inert = true;
+    c.classList.add("ghost-item");
+    // 量到的 r 已經含 CSS 的 transform／translate：複本的位移全部歸零，才會落在原位。
+    Object.assign(c.style, { position: "fixed", left: r.left + "px", top: r.top + "px", width: r.width + "px", height: r.height + "px", margin: "0", right: "auto", bottom: "auto", zIndex: "60", pointerEvents: "none", transition: "none", animation: "none", transform: "none", translate: "none", scale: "none", rotate: "none" });
+    document.documentElement.append(c);
+    const a = c.animate([{ opacity: 1, transform: "none" }, { opacity: 0, transform: "translateY(10px) scale(0.97)" }], { duration: DUR.short, easing: css(CURVE.exit), fill: "forwards" });
+    const drop = () => c.remove();
+    a.onfinish = drop;
+    a.oncancel = drop;
+    setTimeout(drop, DUR.short + 150);
+  }
+}
+function floatersBack() {
+  if (reducedMotion()) return;
+  for (const n of document.querySelectorAll(PICKER_FLOATERS)) {
+    if (!n.getClientRects().length || getComputedStyle(n).visibility === "hidden") continue;
+    n.animate([{ opacity: 0 }, { opacity: 1 }], { duration: DUR.medium, delay: DUR.micro, easing: css(CURVE.out), fill: "backwards" });
+  }
+}
+
 function openPicker() {
   if (pickerOpen || !pickerMode()) return;
   pickerOpen = true;
@@ -614,6 +648,7 @@ function openPicker() {
   // 字盒離開版面（變成固定在底部的抽屜）時，原位墊一塊一樣高的空白：背後的頁面不會跳。
   pickerHold.style.height = lib.getBoundingClientRect().height + "px";
   pickerHold.hidden = false;
+  floatersAway();
   document.body.dataset.picker = "open";
   document.documentElement.style.overflow = "hidden";
   lib.setAttribute("role", "dialog");
@@ -672,6 +707,7 @@ function closePicker({ fromHistory = false } = {}) {
     pickerHold.hidden = true;
     $("lib-toggle").setAttribute("aria-expanded", "false");
     $("lib-toggle").focus({ preventScroll: true });
+    floatersBack();
     greetPicked();
   };
   if (!fromHistory && history.state && history.state.mochiPicker) {
@@ -911,6 +947,9 @@ function flushSearch() {
   renderLibrary();
 }
 
+// 上一次畫字盒時的分級（0 全年齡、1 敏感、2 色情）：調低時不做殘影。
+const RATING_RANK = { general: 0, sensitive: 1, explicit: 2 };
+let libRatingShown = null;
 function renderLibrary() {
   // 別處直接重畫了（換花色、助手借字盒）：還在等的那一次就不用了。
   if (searchTimer) {
@@ -918,6 +957,24 @@ function renderLibrary() {
     searchTimer = 0;
   }
   const q = ui.query.toLowerCase();
+  // 換花色、搜尋、換時代／人物／分級：舊的那一片淡出（殘影），不是一格全不見（motion.js ghostOut）。
+  // 整排重發（換花色、搜尋）：舊的整片淡出。只換了一部分（換人物、時代、分級）：被拿掉的淡出，
+  // 留下來的從原本的位置滑到新位置（下面 FLIP），新冒出來的發牌進場。
+  // 分級往下調的那一次不做殘影：被分級擋掉的牌要立刻看不到，不能再淡出一下。
+  const libRating = RATING_RANK[ratingOf(settings)] ?? 2;
+  const lowered = libRatingShown != null && libRating < libRatingShown;
+  libRatingShown = libRating;
+  const ghost = lowered ? { done() {} } : dealLibrary ? ghostOut($("lib-grid"), ".card") : ghostOut($("lib-grid"), ".card", { key: (n) => n.dataset.tag, onlyGone: true });
+  // 這次重畫前畫面上有哪些牌、在哪裡。
+  const hadTags = new Set([...$("lib-grid").querySelectorAll(".card[data-tag]")].map((n) => n.dataset.tag));
+  const hadAt = new Map();
+  if (!dealLibrary && !reducedMotion()) {
+    for (const n of $("lib-grid").querySelectorAll(".card[data-tag]")) {
+      const r = n.getBoundingClientRect();
+      if (r.width && r.bottom > -40 && r.top < innerHeight + 40) hadAt.set(n.dataset.tag, r);
+      if (hadAt.size >= 40) break;
+    }
+  }
   const inSuit = lib.cards.filter((c) => (ui.suit === "all" || c.suit === ui.suit) && visible(c) && genderOk(c));
   // 小分類晶片：只在選了某一種花色時出現。出現、收起時下面的牌滑過去，不是一格跳（rowChange）。
   const chips = $("group-chips");
@@ -980,6 +1037,7 @@ function renderLibrary() {
         : offSide ? el("p", { class: "lib-empty" }, ui.charGender === "male" ? "規則的「人物」沒開男生，男角色都收起來了。" : "規則的「人物」沒開女生，女角色都收起來了。")
         : el("p", { class: "lib-empty" }, "這一格沒有字。")
     );
+    ghost.done();
     markEnterTarget();
     return;
   }
@@ -996,14 +1054,31 @@ function renderLibrary() {
     moreLibrary(LIB_FIRST);
   }
   rowMove.done();
-  if (dealLibrary && !matchMedia("(prefers-reduced-motion: reduce)").matches) {
-    [...grid.querySelectorAll(".card")].slice(0, 20).forEach((c, i) => {
+  if (!matchMedia("(prefers-reduced-motion: reduce)").matches && (dealLibrary || hadTags.size)) {
+    const fresh = [...grid.querySelectorAll(".card")].slice(0, 20).filter((c) => dealLibrary || !hadTags.has(c.dataset.tag));
+    fresh.forEach((c, i) => {
       c.style.setProperty("--i", String(i));
       c.classList.add("dealt");
       setTimeout(() => c.classList.remove("dealt"), 900);
     });
+    let moving = 0;
+    for (const c of grid.querySelectorAll(".card[data-tag]")) {
+      const was = hadAt.get(c.dataset.tag);
+      if (!was) continue;
+      const r = c.getBoundingClientRect();
+      const dx = was.left - r.left;
+      const dy = was.top - r.top;
+      if (Math.abs(dx) < 1 && Math.abs(dy) < 1) continue;
+      c.animate([{ transform: `translate(${dx}px, ${dy}px)` }, { transform: "none" }], {
+        duration: Math.min(DUR.long + Math.hypot(dx, dy) * 0.15, 600),
+        delay: Math.min(moving++, 16) * 10,
+        easing: css(CURVE.travel),
+        fill: "backwards",
+      });
+    }
   }
   dealLibrary = false;
+  ghost.done();
   markEnterTarget();
 }
 
@@ -2183,7 +2258,7 @@ function renderPool(fresh) {
     const starters = starterPick;
     lastClash = new Set();
     renderPoolClash([]);
-    well.replaceChildren(
+    const emptyNode = (
       el(
         "div",
         { class: "pool-empty" },
@@ -2208,6 +2283,13 @@ function renderPool(fresh) {
         ) : null
       )
     );
+    // 已經是空池說明、而且字一樣（重畫但沒換起手組）：留著原本那個，不重播進場。
+    // 換了（「換一組」有自己的起手組動畫、換分級後起手組不同）：新的說明不必等 —— CSS 的 animation-delay
+    // 是給拿掉最後一張、牌還在飛回字盒時用的；空池換空池時等那一下，框裡會空一拍（2026-11-21）。
+    const oldEmpty = well.querySelector(":scope > .pool-empty:not(.is-leaving)");
+    if (oldEmpty && well.children.length === 1 && oldEmpty.textContent === emptyNode.textContent) return;
+    if (oldEmpty) emptyNode.style.animationDelay = "0ms";
+    well.replaceChildren(emptyNode);
     return;
   }
   starterPick = null;
@@ -2503,14 +2585,28 @@ function renderRules() {
     quiet.classList.toggle("is-open", !!ui.rulesOpen);
   };
   sum.onclick = () => {
+    // 手機上「改設定」展開、「收起」收回：高度慢慢變，要收走的那一排淡出（殘影），出來的一項一項淡進來。
+    // 以前摘要和選項一格互換（2026-11-21）。
+    const grow = heightChange($("rules"));
+    const ghost = ui.rulesOpen ? ghostOut(quiet, ":scope > .rule-pair") : ghostOut(sum, ".rule-sum-items");
     ui.rulesOpen = !ui.rulesOpen;
     saveUi();
     paintSum();
+    ghost.done();
+    grow.done();
+    if (!reducedMotion()) {
+      const born = ui.rulesOpen ? [...quiet.querySelectorAll(":scope > .rule-pair")] : [...sum.querySelectorAll(".rule-sum-item")];
+      born.filter((n) => n.getClientRects().length).forEach((n, i) => n.animate([{ opacity: 0, transform: "translateY(-4px)" }, { opacity: 1, transform: "none" }], { duration: DUR.medium, delay: DUR.micro + i * 30, easing: css(CURVE.out), fill: "backwards" }));
+    }
   };
   // 展開時改了哪一項，收起來那一行要對得上：選單、開關改了就重寫；姿勢鈕換字（挑了參考圖）也是。
   quiet.addEventListener("change", paintSum);
   new MutationObserver(paintSum).observe(poseBtn, { childList: true, subtree: true, characterData: true });
   paintSum();
+  // 整排重畫前記下每顆籤／開關按著沒有：重畫後狀態換了的那顆播一下按下去、落定（新節點沒有 CSS 過渡可以跑，
+  // 以前一格就變成按著的樣子）。2026-11-21。
+  const pressKey = (n) => n.dataset.heat || n.getAttribute("aria-label") || n.textContent;
+  const wasPressed = new Map([...box.querySelectorAll(".chip-toggle[aria-pressed]")].map((n) => [pressKey(n), n.getAttribute("aria-pressed")]));
   box.replaceChildren(
     // 標籤跟它的控制項包成一組：窄畫面換行時整組一起走，不會出現「時代」掛在上一行尾、選單在下一行。
     el("div", { class: "rule-row" }, rulePair("尺度", heatRow), sum, quiet),
@@ -2528,6 +2624,19 @@ function renderRules() {
       )
     )
   );
+  if (wasPressed.size && !reducedMotion()) {
+    for (const n of box.querySelectorAll(".chip-toggle[aria-pressed]")) {
+      const was = wasPressed.get(pressKey(n));
+      const now = n.getAttribute("aria-pressed");
+      if (!was || was === now) continue;
+      n.animate(
+        now === "true"
+          ? [{ transform: "scale(0.9)", opacity: 0.55 }, { transform: "scale(1.04)", opacity: 1, offset: 0.6 }, { transform: "none", opacity: 1 }]
+          : [{ opacity: 0.55, transform: "scale(0.96)" }, { opacity: 1, transform: "none" }],
+        { duration: DUR.medium, easing: css(CURVE.settle) }
+      );
+    }
+  }
 }
 
 /** 姿勢參考的「最近印的」：成品牆上印好的。 */
@@ -2927,8 +3036,21 @@ function renderGoBar() {
       if (v) loopSent = 0;
       if (!v) stopAsked = true;
       // 只把「印幾張停」露出來／收起來，不整列重畫（開關的鍵盤焦點會丟掉）。
+      // 選單淡進淡出，旁邊被推開、收回的那幾樣滑過去，不是一格跳（2026-11-21）。
       const pick = $("go-bar").querySelector(".loop-max");
-      if (pick) pick.hidden = !v;
+      if (pick && pick.hidden === v) {
+        const moves = reducedMotion() ? [] : [...pick.parentElement.children].filter((n) => n !== pick && !n.hidden).map((n) => [n, n.getBoundingClientRect()]);
+        const ghost = !v ? ghostOut(pick.parentElement, ":scope > .loop-max") : null;
+        pick.hidden = !v;
+        ghost?.done();
+        if (v && !reducedMotion()) pick.animate([{ opacity: 0, transform: "translateX(-6px) scale(0.96)" }, { opacity: 1, transform: "none" }], { duration: DUR.short, easing: css(CURVE.out) });
+        for (const [n, r] of moves) {
+          const a = n.getBoundingClientRect();
+          const dx = r.left - a.left;
+          const dy = r.top - a.top;
+          if (Math.abs(dx) > 1 || Math.abs(dy) > 1) n.animate([{ transform: `translate(${dx}px, ${dy}px)` }, { transform: "none" }], { duration: DUR.medium, easing: css(CURVE.out) });
+        }
+      }
       syncGoCount(settings.n);
     }, "抽完一輪自動接著抽下一輪，一直到按「停」，或印到右邊設定的張數"),
     loopMaxPicker(),
@@ -2988,8 +3110,11 @@ const goCount = (n) => (infinite ? `×${n} ∞` : `×${n}`);
 function syncGoCount(was) {
   const n = settings.n;
   for (const cnt of document.querySelectorAll("#go-bar .btn-primary .count, #go-float .btn-primary .count")) {
+    const before = cnt.textContent;
     cnt.textContent = goCount(n);
     if (!reducedMotion() && was !== n) cnt.animate([{ opacity: 0, transform: `translateY(${n > was ? 6 : -6}px)` }], { duration: DUR.short, easing: css(CURVE.out) });
+    // 只有 ∞ 出現、收起（無限抽開關）：淡一下換過去，不是一格換字。
+    else if (!reducedMotion() && before !== cnt.textContent) cnt.animate([{ opacity: 0, transform: "scale(0.9)" }, { opacity: 1, transform: "none" }], { duration: DUR.short, easing: css(CURVE.out) });
   }
 }
 
@@ -3923,10 +4048,28 @@ function wallFlip(mutate) {
 }
 
 function syncWallEmpty(hasShots) {
-  $("wall-empty").hidden = hasShots;
+  const empty = $("wall-empty");
+  // 「還沒有成品」那一列收起來時淡出（殘影），跟第一張成品淡進來疊在一起，不是一格不見；再出現時淡進來。
+  if (empty.hidden !== hasShots && typeof ghostOut === "function") {
+    if (hasShots) {
+      const ghost = ghostOut(empty.parentElement, ":scope > #wall-empty");
+      empty.hidden = true;
+      ghost.done();
+    } else {
+      empty.hidden = false;
+      swapIn(empty, `empty:${Date.now()}`, { firstToo: true });
+    }
+  }
+  empty.hidden = hasShots;
   const state = hasShots ? "true" : "false";
   const head = $("wall-head");
-  if (head.dataset.hasShots !== state) head.dataset.hasShots = state;
+  if (head.dataset.hasShots !== state) {
+    const was = head.dataset.hasShots;
+    head.dataset.hasShots = state;
+    // 第一張成品來了：標題列右邊的說明和「每排幾張」淡進來，不是跟著一格冒出來。
+    if (was === "false" && hasShots && typeof ghostOut === "function" && !reducedMotion())
+      for (const n of head.querySelectorAll(":scope > p, :scope > .wall-tools")) n.animate([{ opacity: 0, transform: "translateY(-4px)" }, { opacity: 1, transform: "none" }], { duration: DUR.medium, delay: DUR.micro, easing: css(CURVE.out), fill: "backwards" });
+  }
 }
 
 function renderWall() {

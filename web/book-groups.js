@@ -16,14 +16,15 @@
  *   shelf.clear()   回到全部（換花色時）；shelf.openFromHash(hash)
  */
 import { el, toast, friendlyError } from "./ui.js";
-import { reducedMotion, DUR, CURVE, css, swapIn, enter, seat, refuse, heightChange } from "./motion.js";
+import { reducedMotion, DUR, CURVE, css, swapIn, enter, seat, refuse, heightChange, ghostOut } from "./motion.js";
 import { loadGroups, cachedGroups, onGroupsChange, saveGroup, deleteGroup, GROUP_SECTIONS } from "./card-groups.js";
 import { SECTION_ZH, SECTION_SUIT } from "./group-picks.js";
 import { t as tr, english } from "./i18n.js";
 import { groupSlotKey } from "./engine.js";
 import { groupChips } from "./cards.js";
 
-const MAX_TAGS = 120;
+// 跟 card_groups.py 一樣：實際上不限（整類的牌全放進一組也放得下），以前是 120。
+const MAX_TAGS = 5000;
 
 const FOLD_KEY = "mochi.book.shelf.v1";
 // "1" 收起、"0" 攤開；沒存過是 null（交給視窗寬度，或「一個群組都沒有」那一行）。
@@ -221,6 +222,8 @@ export function mountBookGroups({ lib, assets, onChange, toMochi, visible, data 
       folded ? "展開" : "收起"
     );
     // 收著：一排小籤（組名），點了一樣打開那組；攤開才是一疊一疊的牌。
+    // 人按了展開／收起：要收走的那一排（攤開的一疊疊、或收著的小籤）淡出（殘影），不是一格換掉（2026-11-21）。
+    const leaving = animate && !reducedMotion() ? ghostOut(shelf, folded ? ":scope > .bs-lanes, :scope > .bs-intro" : ":scope > .bs-compact") : null;
     const compact = el(
       "div",
       { class: "bs-compact" },
@@ -242,6 +245,8 @@ export function mountBookGroups({ lib, assets, onChange, toMochi, visible, data 
     shelf.dataset.folded = folded ? "true" : "false";
     shelf.hidden = false;
     if (animate && !folded && !reducedMotion()) shelf.querySelector(".bs-lanes")?.animate([{ opacity: 0, transform: "translateY(-6px)" }, { opacity: 1, transform: "none" }], { duration: DUR.medium, easing: css(CURVE.out) });
+    if (animate && folded && !reducedMotion()) shelf.querySelector(".bs-compact")?.animate([{ opacity: 0, transform: "translateY(4px)" }, { opacity: 1, transform: "none" }], { duration: DUR.medium, delay: DUR.micro, easing: css(CURVE.out), fill: "backwards" });
+    leaving?.done();
     grow?.done();
   }
 
@@ -249,8 +254,11 @@ export function mountBookGroups({ lib, assets, onChange, toMochi, visible, data 
     if (!head) return;
     const g = active();
     if (!g) {
+      // 不看這組了：標頭淡出（殘影），不是整塊一格不見（2026-11-21）。
+      const ghost = !head.hidden ? ghostOut(head.parentElement, ":scope > #book-shelf-head") : null;
       head.hidden = true;
       head.replaceChildren();
+      ghost?.done();
       float.hidden = true;
       document.documentElement.removeAttribute("data-book-group");
       return;
@@ -407,6 +415,17 @@ export function mountBookGroups({ lib, assets, onChange, toMochi, visible, data 
     editing = on;
     sub = "";
     changed();
+    // 剛進加牌模式：畫面上已在組裡的牌一起蓋一次章（之後重排不再重蓋）。
+    if (on && typeof document.querySelectorAll === "function") for (const cell of document.querySelectorAll('#book-grid .book-cell[data-ingroup="true"]')) freshStamp(cell);
+  }
+
+  /** 這一格的章要演蓋下去那一下：標一下，播完拿掉（groups.css 只給標著的播）。 */
+  function freshStamp(cell) {
+    cell.dataset.stamp = "fresh";
+    clearTimeout(cell._stampT);
+    cell._stampT = setTimeout(() => {
+      if (cell.dataset.stamp === "fresh") delete cell.dataset.stamp;
+    }, DUR.medium + 120);
   }
 
   /**
@@ -527,6 +546,7 @@ export function mountBookGroups({ lib, assets, onChange, toMochi, visible, data 
     const cell = node?.closest?.(".book-cell");
     if (cell) {
       cell.dataset.ingroup = had ? "false" : "true";
+      if (!had) freshStamp(cell);
       // 章是 CSS 畫的（groups.css：加牌模式裡 data-ingroup 的牌）；蓋上去的那一下牌也被壓一下。
       if (!had && !reducedMotion()) node.animate([{ transform: "scale(0.96)" }, { transform: "none" }], { duration: DUR.short, easing: css(CURVE.out) });
     }

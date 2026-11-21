@@ -3286,11 +3286,15 @@ function renderPrintBar() {
   const shape = key.replace(summary.join("・"), "").replace(detail.join("・"), "").replace(t.letter + "|" + sigOf(t) + "|", "");
   if (bar.dataset.shape === shape && bar.dataset.key !== key && go && !busy && !hiBusy) {
     bar.dataset.key = key;
-    const setText = (sel, text) => {
+    // 字換了就淡進來（字母從下面滾上來）：以前換一張試印，字母、標題、張數都是一格換掉（2026-11-21）。
+    const setText = (sel, text, roll = false) => {
       const n = bar.querySelector(sel);
-      if (n && n.textContent !== translate(text)) n.textContent = text;
+      if (!n || n.textContent === translate(text)) return;
+      n.textContent = text;
+      if (reduced()) return;
+      n.animate(roll ? [{ opacity: 0, transform: "translateY(40%)" }, { opacity: 1, transform: "none" }] : [{ opacity: 0.2 }, { opacity: 1 }], { duration: DUR.short, easing: css(CURVE.out) });
     };
-    setText(".pb-letter", t.letter);
+    setText(".pb-letter", t.letter, true);
     setText(".pb-title", `試印 ${t.letter}`);
     setText(".pb-sum", summary.join("・"));
     setText(".pb-detail", detail.join("・"));

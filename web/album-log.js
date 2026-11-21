@@ -11,7 +11,7 @@ import { dateLocale } from "./i18n.js";
 import { el, openSheet } from "./ui.js";
 import { copyText } from "./copy-text.js";
 import { zoomFromThumb } from "./zoom.js";
-import { refuse, enter, leave, reducedMotion, DUR, CURVE, css, swapIn, heightChange } from "./motion.js";
+import { refuse, enter, leave, reducedMotion, DUR, CURVE, css, swapIn, heightChange, ghostOut } from "./motion.js";
 import { viewSrc } from "./gen.js";
 import { tagsOfPositive } from "./usage.js";
 import { favButton } from "./album-save.js";
@@ -661,6 +661,7 @@ export function createLog(ctx) {
     return out;
   }
 
+  let paintedRating = null;
   function paintList(container, view, { deal = false } = {}) {
     rowById.clear();
     const st = collect(view);
@@ -703,12 +704,30 @@ export function createLog(ctx) {
     if (more) out.push(moreButton());
     const oldEmpty = container.querySelector(":scope > .album-empty, :scope > .album-hint");
     const apply = () => {
+      // 換篩選、找字（同一頁換一批列）：舊的列淡出（殘影），新出現的列一列一列浮進來。
+      // 以前兩邊都是一格換掉（2026-11-21 專案主：切換不能生硬）。同一列還在原位的不動。
+      // 分級往下調的那一次不做殘影：受限的列要立刻看不到，不能再淡出一下。
+      const lowered = paintedRating != null && (RANK[view.rating] ?? 2) < paintedRating;
+      paintedRating = RANK[view.rating] ?? 2;
+      const changed = !deal && !lowered && paintedKey !== viewKey(view);
+      const keyOf = (n) => (n.classList.contains("log-row") ? n.dataset.id : n.classList.contains("log-day-head") ? "day:" + n.parentElement?.dataset.day : "more");
+      const ghost = changed ? ghostOut(container, ".log-row, .log-day-head, .log-more", { key: keyOf }) : null;
+      const had = changed ? new Set([...container.querySelectorAll(".log-row, .log-day-head")].map(keyOf)) : null;
       container.replaceChildren(...out);
       paintedKey = viewKey(view);
-      if (deal && !reducedMotion()) [...container.querySelectorAll(".log-row")].slice(0, 14).forEach((n, i) => enter(n, { delay: DUR.micro + i * 24 }));
+      if (deal && !reducedMotion()) {
+        [...container.querySelectorAll(".log-row")].slice(0, 14).forEach((n, i) => enter(n, { delay: DUR.micro + i * 24 }));
+        // 日期標題也跟著淡進來：以前列一列一列浮進來，標題卻是一格就在。
+        [...container.querySelectorAll(".log-day-head")].slice(0, 4).forEach((n, i) => enter(n, { delay: i * 40 }));
+      }
       else if (!deal) {
         for (const born of container.querySelectorAll(":scope > .album-empty, :scope > .log-more")) enter(born);
+        if (had) {
+          const born = [...container.querySelectorAll(".log-row, .log-day-head")].filter((n) => !had.has(keyOf(n)) && n.getBoundingClientRect().top < innerHeight);
+          born.slice(0, 16).forEach((n, i) => enter(n, { delay: DUR.micro + i * 18 }));
+        }
       }
+      ghost?.done();
       // 空狀態的離場會把換內容延後。按鈕進了文件之後才自動往前翻，不然找不到那顆。
       queueSeek();
     };

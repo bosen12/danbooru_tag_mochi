@@ -6930,6 +6930,13 @@ body {
   }
 }
 
+/* 整片內容換掉時的殘影（motion.js ghostOut）：只播淡出那一下，複本身上原本的進場動畫、過渡都不播。 */
+.ghost-layer,
+.ghost-layer * {
+  animation: none !important;
+  transition: none !important;
+}
+
 /* 成品、晾紙繩的圖暫時讀不到（ComfyUI 沒開）：藏起來等它回來（gone.js），不露破圖和替代文字。 */
 img.img-wait {
   visibility: hidden;
