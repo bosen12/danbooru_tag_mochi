@@ -2053,12 +2053,44 @@ function commitPins(fresh) {
   hand?.update();
   // 說明只講「剛剛那一步」：再動一次池子，舊的換下說明就收掉。
   if (!fresh) poolNote = null;
+  // 合成池變高變矮（第一張牌進來、清空、多一排）：標題區那行張數出現收起時慢慢長，
+  // 底下的規則、抽牌列、成品牆從原位置滑過去，不是整片一格跳（2026-11-21）。
+  const poolHead = $("pool-well").parentElement.querySelector(":scope > .panel-head");
+  const headWas = poolHead?.getBoundingClientRect().height || 0;
+  const growHead = heightChange(poolHead);
+  const below = slideBelow($("pool-well"));
   // 池子整塊重畫：同一張牌從舊位置滑到新位置，不是一格一格跳（拿出一張、擠掉一張時最明顯）。
   flipBy($("pool-well"), ".pool-slot", (n) => n.querySelector(".card")?.dataset.tag, () => renderPool(fresh));
   renderPoolNote();
   repaintLibrary();
   renderTrash();
   renderGoFloat();
+  // 標題區自己會慢慢長高，底下跟著慢慢走：滑的那一段扣掉它長的。
+  below.done((poolHead?.getBoundingClientRect().height || 0) - headWas);
+  growHead.done();
+}
+
+/**
+ * anchor 底下的東西（同一層後面的兄弟，再往外一層後面的兄弟，到主欄為止）：先記位置，改完 DOM 再叫 done(skip)，
+ * 位置變了的從原位置滑到新位置（FLIP，只動 transform）。skip：這段位移裡有多少是上面另外慢慢長出來的（不要演兩次）。
+ */
+function slideBelow(anchor) {
+  if (!anchor || reducedMotion() || "booting" in document.documentElement.dataset) return { done() {} };
+  const nodes = [];
+  for (let n = anchor; n && n.id !== "work" && n !== document.body; n = n.parentElement) {
+    for (let sib = n.nextElementSibling; sib; sib = sib.nextElementSibling) if (!sib.hidden && sib.offsetHeight) nodes.push(sib);
+  }
+  const was = new Map(nodes.map((n) => [n, n.getBoundingClientRect().top]));
+  return {
+    done(skip = 0) {
+      for (const [n, top] of was) {
+        if (!n.isConnected || n.hidden) continue;
+        const d = top - n.getBoundingClientRect().top + skip;
+        if (Math.abs(d) < 1) continue;
+        n.animate([{ transform: `translateY(${d.toFixed(1)}px)` }, { transform: "none" }], { duration: DUR.medium, easing: css(CURVE.out) });
+      }
+    },
+  };
 }
 
 /** 調一張合成池裡的牌的份量：右下角的數字跳一下、蓋章聲。 */
@@ -2250,9 +2282,19 @@ function renderPool(fresh) {
   const owner = customOwners();
   const allTags = [...pool].filter((t) => lib.byTag.has(t) && !isCustomTag(t));
   const tags = [...pool].filter((t) => lib.byTag.has(t) && !owner.has(t));
+  // 「N 張會一定進圖」出現、收起時同一行的按鈕被推開：從原位滑過去，不是整排一格跳（2026-11-21 逐格量到 81px）。
+  const countRow = $("pool-count").parentElement;
+  const rowWas = reducedMotion() ? [] : [...countRow.children].map((n) => [n, n.getBoundingClientRect()]);
   settleText($("pool-count"), allTags.length ? `${allTags.length} 張會一定進圖` : "");
   shownInPlace($("pool-clear"), tags.length);
   shownInPlace($("pool-to-fuse"), tags.length);
+  for (const [n, r] of rowWas) {
+    if (n.id === "pool-count") continue;
+    const a = n.getBoundingClientRect();
+    const dx = r.left - a.left;
+    const dy = r.top - a.top;
+    if (Math.abs(dx) > 1 || Math.abs(dy) > 1) n.animate([{ translate: `${dx}px ${dy}px` }, { translate: "0 0" }], { duration: DUR.medium, easing: css(CURVE.out) });
+  }
   if (!tags.length) {
     starterPick = refreshStarters(starterPick, starterAllowed);
     const starters = starterPick;

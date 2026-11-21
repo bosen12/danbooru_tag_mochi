@@ -58,7 +58,7 @@ import { openDecks, loadDecks, cachedDecks } from "./decks.js";
 import { openPaste, listenPaste } from "./paste-prompt.js";
 import { paintWeight, wireWeightInput, weightRow, weightPositive } from "./weights.js";
 import { favButton } from "./album-save.js";
-import { initMotion, settleMotion, flip, flipBy, leave, gatherHome, flight, enter, seat, refuse, swapIn, rowChange, heightChange, CURVE, DUR, css } from "./motion.js";
+import { initMotion, settleMotion, flip, flipBy, leave, gatherHome, flight, enter, seat, refuse, swapIn, rowChange, heightChange, ghostOut, CURVE, DUR, css } from "./motion.js";
 import { cloneCard, fixedSizes } from "./card-images.js";
 import { createHand } from "./hand.js";
 import { handStore, mergeLegacyHand } from "./hand-store.js";
@@ -2186,6 +2186,11 @@ function renderPlate(events = []) {
     for (const c of g.querySelectorAll(".plate-card")) c.style.visibility = "hidden";
     sheet = { node: g, rect: r };
   }
+  // 引擎補的影子換了一批（放牌、撤回、換試印、預覽別張）：舊的淡出（殘影）、新的淡進來，不是一整排一格換掉。
+  // 被收成正式的那張不算消失（after 也找正式的牌）；它照 flipBy 的路線滑過去。2026-11-21。
+  const shadowMotion = plateSeen && !morph && !reduced();
+  const shadowGhost = shadowMotion ? ghostOut(box, ".ghost-card", { key: (n) => n.dataset.tag, onlyGone: true, after: ".ghost-card, .plate-card" }) : null;
+  const hadShadow = shadowMotion ? new Set([...box.querySelectorAll(".ghost-card, .plate-card")].map((n) => n.dataset.tag)) : null;
   // 卡池捲出畫面（手機上在底下的字盒挑牌）：看不到的滑動不必演，也就不用量每張牌的位置
   // （量一次要把整頁排版一次，CPU 慢的手機上 30ms 以上）。
   (plateSeen ? flipBy : (_box, _sel, _key, mutate) => mutate())(box, ".plate-card, .ghost-card", cardKey, () => {
@@ -2197,6 +2202,15 @@ function renderPlate(events = []) {
     alias: (k) => (k.startsWith("p:") ? "g:" + k.slice(2) : null),
   });
   if (morph) morphPlate(box, sheet);
+  shadowGhost?.done();
+  if (hadShadow?.size) {
+    let i = 0;
+    for (const n of box.querySelectorAll(".ghost-card")) {
+      if (hadShadow.has(n.dataset.tag)) continue;
+      // 只給起點（終點是 CSS 的樣子：影子本來就淡一點）。
+      n.animate([{ opacity: 0, transform: "translateY(6px) scale(0.96)" }], { duration: DUR.medium, delay: Math.min(i++, 12) * 14, easing: css(CURVE.out), fill: "backwards" });
+    }
+  }
   if (peeking) box.dataset.peek = t.letter;
   else delete box.dataset.peek;
   const sub = $("plate-sub");
@@ -3900,9 +3914,32 @@ function caseBackToTop(all = false) {
   if (box.scrollTop > top) box.scrollTop = top;
 }
 
+// 上一次畫字盒時的分級：調低時不做殘影（擋掉的牌要立刻看不到）。
+let caseRatingShown = null;
 function renderCase() {
   const deal = dealCase;
   dealCase = false;
+  // 跟墨池的字盒一樣（2026-11-21）：換花色、找牌整排重發時舊的整片淡出（殘影）；
+  // 只換了一部分（放牌後「相配」、找字多打一個字）時被拿掉的淡出、留下來的滑到新位置、新冒出來的發進來。
+  const rankNow = { general: 0, sensitive: 1, explicit: 2 }[ratingOf(settings)] ?? 2;
+  const lowered = caseRatingShown != null && rankNow < caseRatingShown;
+  caseRatingShown = rankNow;
+  const caseGrid = $("case-grid");
+  // 「找不到／沒有符合」的說明也算在裡面：換回有牌時它淡出，不是一格不見。
+  const caseItems = ".card, .case-empty, .lib-hint, .lib-empty";
+  const caseKey = (n) => n.dataset.tag || "note:" + n.textContent;
+  const ghost = lowered ? null : deal ? ghostOut(caseGrid, caseItems) : ghostOut(caseGrid, caseItems, { key: caseKey, onlyGone: true });
+  const hadTags = new Set([...caseGrid.querySelectorAll(".card[data-tag]")].map((n) => n.dataset.tag));
+  // 剛才是空的（找不到）：這次冒出來的牌整批發進來。
+  const wasEmpty = !hadTags.size && !!caseGrid.querySelector(".case-empty, .lib-hint, .lib-empty");
+  const hadAt = new Map();
+  if (!deal && !reduced()) {
+    for (const n of caseGrid.querySelectorAll(".card[data-tag]")) {
+      const r = n.getBoundingClientRect();
+      if (r.width && r.bottom > -40 && r.top < innerHeight + 40) hadAt.set(n.dataset.tag, r);
+      if (hadAt.size >= 40) break;
+    }
+  }
   const q = caseQuery.trim().toLowerCase();
   let list;
   let reasons = null;
@@ -3971,6 +4008,7 @@ function renderCase() {
       caseEmptyShown = emptyKey;
       enter(empty);
     }
+    ghost?.done();
     markEnterTarget();
     return;
   }
@@ -3987,7 +4025,24 @@ function renderCase() {
         setTimeout(() => c.classList.remove("dealt"), 900);
       });
     }
+  } else if (!reduced() && (hadTags.size || wasEmpty)) {
+    [...grid.querySelectorAll(".card[data-tag]")].slice(0, 20).filter((c) => !hadTags.has(c.dataset.tag)).forEach((c, i) => {
+      c.style.setProperty("--i", String(i));
+      c.classList.add("dealt");
+      setTimeout(() => c.classList.remove("dealt"), 900);
+    });
+    let moving = 0;
+    for (const c of grid.querySelectorAll(".card[data-tag]")) {
+      const was = hadAt.get(c.dataset.tag);
+      if (!was) continue;
+      const r = c.getBoundingClientRect();
+      const dx = was.left - r.left;
+      const dy = was.top - r.top;
+      if (Math.abs(dx) < 1 && Math.abs(dy) < 1) continue;
+      c.animate([{ transform: `translate(${dx}px, ${dy}px)` }, { transform: "none" }], { duration: Math.min(DUR.long + Math.hypot(dx, dy) * 0.15, 600), delay: Math.min(moving++, 16) * 10, easing: css(CURVE.travel), fill: "backwards" });
+    }
   }
+  ghost?.done();
 }
 
 /** 找牌框裡打了字：Enter 會放上的那一張（第一張）描一圈，按之前就知道是哪張。 */

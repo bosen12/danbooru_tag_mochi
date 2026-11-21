@@ -7,6 +7,7 @@
 //   F. 卡冊：不看群組了，標頭淡出
 //   G. 手機挑牌抽屜：打開時底下浮著的那幾樣淡出，收起時淡進來
 //   H. 卡冊群組加牌：只有剛加的那張蓋章，已在組裡的章不重蓋（以前每挑一張整組的章都閃一下）
+//   J. 疊印台字盒換花色：舊牌淡出（殘影）
 //
 //   node scripts/test_motion_transitions_browser.mjs
 //   BASELINE=HEAD node scripts/test_motion_transitions_browser.mjs   # 拿舊版對照（應該紅）
@@ -33,7 +34,7 @@ const root = resolve(import.meta.dirname, "..");
 const front = existsSync(resolve(root, "web6/index.html")) ? "web6" : "web";
 const baseline = {};
 if (process.env.BASELINE) {
-  for (const f of ["app.js", "album.js", "album-log.js", "book.js", "book-groups.js", "cards.js", "motion.js", "styles.css", "groups.css"]) baseline[f] = execFileSync("git", ["show", `${process.env.BASELINE}:${front}/${f}`], { cwd: root, maxBuffer: 2 ** 25 });
+  for (const f of ["app.js", "album.js", "album-log.js", "book.js", "book-groups.js", "cards.js", "motion.js", "styles.css", "groups.css", "fuse.js", "hand.js"]) baseline[f] = execFileSync("git", ["show", `${process.env.BASELINE}:${front}/${f}`], { cwd: root, maxBuffer: 2 ** 25 });
 }
 
 const PNG = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";
@@ -350,6 +351,20 @@ try {
     }
     ok("H. 每挑一張只有那張蓋章", stamped.every((r) => r.picked && r.stamps.length === 1 && r.stamps[0] === r.picked), JSON.stringify(stamped));
     delete state.controllers["/api/card-groups"];
+    await c.close();
+  });
+
+  await step("J. 疊印台字盒換花色：舊牌淡出（殘影）", async () => {
+    const c = await context({ init: watch });
+    const p = await c.newPage();
+    await go(p, origin + "/fuse.html");
+    await p.locator("#case-grid .card").first().waitFor({ state: "attached" });
+    await sleep(900);
+    await reset(p);
+    await p.locator("#case-tabs .case-tab").nth(2).evaluate((n) => n.click());
+    await sleep(100);
+    const s = await seen(p);
+    ok("J. 換花色時有殘影、殘影不帶 id／data-tag", s.ghost >= 1 && s.tagged === 0, JSON.stringify(s));
     await c.close();
   });
 

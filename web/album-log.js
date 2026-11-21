@@ -305,7 +305,10 @@ export function createLog(ctx) {
       if (box.classList.contains("is-gone")) return;
       if (!box.classList.contains("is-wait")) {
         box.classList.add("is-wait");
-        box.append(el("span", { class: "log-thumb-wait" }, "暫時讀不到"));
+        const label = el("span", { class: "log-thumb-wait" }, "暫時讀不到");
+        box.append(label);
+        // 字淡進來，不是一格冒出來。
+        if (!reducedMotion()) label.animate([{ opacity: 0 }, { opacity: 1 }], { duration: DUR.medium, easing: css(CURVE.out) });
       }
       waitImage(waiter);
     };

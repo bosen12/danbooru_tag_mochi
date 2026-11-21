@@ -396,7 +396,14 @@ export function createHand({
     pick.textContent = editing ? "完成" : "＋ 挑牌";
     pick.setAttribute("aria-pressed", editing ? "true" : "false");
     pick.title = editing ? "挑好了（Esc）" : pickText;
-    hint.textContent = picking() ? pickText : placed ? `${placed} 張在卡池裡` : "長期常用的單張牌，不限張數。";
+    // 說明字換了就淡進來（放牌、拿牌、挑牌時會換），不是一格換掉（2026-11-21）。
+    const hintText = picking() ? pickText : placed ? `${placed} 張在卡池裡` : "長期常用的單張牌，不限張數。";
+    if (hint.dataset.src !== hintText) {
+      const had = hint.dataset.src !== undefined;
+      hint.dataset.src = hintText;
+      hint.textContent = hintText;
+      if (had && !matchMedia("(prefers-reduced-motion: reduce)").matches) hint.animate([{ opacity: 0, transform: "translateY(3px)" }, { opacity: 1, transform: "none" }], { duration: DUR.short, easing: css(CURVE.out) });
+    }
   }
 
   /** 只重排位置（指到別張、視窗變寬窄），不動節點。 */

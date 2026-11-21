@@ -1019,13 +1019,14 @@ function offscreen(node) {
  *
  * - key(node)：同一項的識別（牌名）。重畫後同一項還在原位：不做殘影（新舊一樣，疊了看不出來，省事）。
  * - onlyGone：只替這次被拿掉的做殘影（卡冊：留下來的牌自己會滑到新位置，不能再多一份舊的）。
+ * - after：重畫後找「還在不在」用的選擇器（預設同 selector）。疊印台：影子牌被收成正式的牌，換了 class 但還在。
  * - 殘影放在一層 position: fixed 的殼裡，殼掛在 container 後面（同一個父層：靠祖先選擇器的樣式照樣套到），
  *   殼的 class 跟 container 一樣但沒有 id、加 inert：程式和測試用 #id 找的、用 container.querySelector 找的都找不到殘影。
  *   殼裁成 container 在畫面上真的看得到的那一塊（捲動盒、視窗），殘影不會畫到框外。
  */
 // 殘影淡出的時間：比進場短，新舊疊在一起的時間短，不會看起來兩層打架。
 const GHOST_MS = 160;
-export function ghostOut(container, selector, { key = null, onlyGone = false, max = 48 } = {}) {
+export function ghostOut(container, selector, { key = null, onlyGone = false, max = 48, after = null } = {}) {
   const none = { done() {} };
   if (!container || !container.isConnected || !container.parentNode || reducedMotion() || "booting" in document.documentElement.dataset) return none;
   const clip = shownRect(container);
@@ -1046,7 +1047,7 @@ export function ghostOut(container, selector, { key = null, onlyGone = false, ma
       let now = null;
       if (key) {
         now = new Map();
-        for (const n of container.querySelectorAll(selector)) now.set(key(n), n);
+        for (const n of container.querySelectorAll(after || selector)) now.set(key(n), n);
       }
       const keep = items.filter((it) => {
         if (!now) return true;

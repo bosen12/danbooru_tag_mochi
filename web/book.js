@@ -2573,6 +2573,9 @@ function worksOf(card) {
     extraN = extra.length;
     const head = all.slice(0, WORKS_PROBE_N);
     const grow = heightChange(box);
+    // 詳情視窗本身有高度上限：裡面慢慢長、外框卻第一格就撐到上限，底下的按鈕一格跳一大段（2026-11-21 逐格量到 188px）。
+    // 外框也跟著慢慢長。
+    const growSheet = heightChange(box.closest(".sheet"));
     const tiles = all.map((x, i) => workTile(x, i, onGone, onWait));
     grid.replaceChildren(...tiles);
     shown = all.length;
@@ -2580,6 +2583,7 @@ function worksOf(card) {
     showCount();
     more.hidden = fromLog >= total;
     grow.done();
+    growSheet.done();
     head.forEach((x, i) => {
       workAlive(x).then((ok) => {
         if (turn !== painting || ok || gone.has(x.image)) return;
