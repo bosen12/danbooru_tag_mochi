@@ -24,8 +24,9 @@ const han = /[\u3400-\u9fff]/;
 const excluded = "script, style, code, pre, textarea, input, [contenteditable], [data-no-i18n]";
 const attrs = ["title", "aria-label", "aria-description", "placeholder", "alt"];
 const escape = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-const compiled = [...templates].sort((a, b) => b[0].replace(/\{\d+\}/g, "").length - a[0].replace(/\{\d+\}/g, "").length).map(([source, target]) => {
-  const parts = source.split(/\{\d+\}/);
+// 中文那一邊的空格位寫 {0} 或 {0!} 都認（字典裡有十幾句左邊也寫了 {0!}，以前整句對不上，英文版露出中文）。
+const compiled = [...templates].sort((a, b) => b[0].replace(/\{\d+!?\}/g, "").length - a[0].replace(/\{\d+!?\}/g, "").length).map(([source, target]) => {
+  const parts = source.split(/\{\d+!?\}/);
   return { re: new RegExp("^" + parts.map(escape).join("([\\s\\S]*?)") + "$"), target };
 });
 // Chinese counters have no plural; English units after a lone 1 read singular.

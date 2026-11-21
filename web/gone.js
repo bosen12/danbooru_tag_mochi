@@ -11,6 +11,9 @@
  * 不在就是 404。所以就算圖本身有快取、畫面看起來正常，也問得出原檔還在不在。
  */
 
+import { waitImage, unwaitImage } from "./img-wait.js";
+import { reducedMotion, DUR, CURVE, css } from "./motion.js";
+
 const verdicts = new Map();
 
 const own = (src) => typeof src === "string" && src.includes("/api/image?");
@@ -37,11 +40,39 @@ export function checkGone(src) {
 export function watchGone(img, onGone) {
   if (!img || img._watchGone) return;
   img._watchGone = true;
+  // 暫時讀不到（ComfyUI 沒開、重開中）：圖先藏起來，不露瀏覽器的破圖和替代文字（以前整面牆都是「seed 123…」）；
+  // ComfyUI 回來就重讀同一個網址（img-wait.js 先拿一張試，讀到了才一起重讀）。2026-11-21。
+  const waiter = {
+    node: img,
+    src: "",
+    reload: () => {
+      const src = waiter.src;
+      if (!src || img.getAttribute("src") !== src) return;
+      img.removeAttribute("src");
+      img.setAttribute("src", src);
+    },
+  };
+  img.addEventListener("load", () => {
+    if (!img.classList.contains("img-wait")) return;
+    img.classList.remove("img-wait");
+    unwaitImage(waiter);
+    // 等回來的：淡進來，不要一下子跳出來。
+    if (!reducedMotion()) img.animate([{ opacity: 0 }, { opacity: 1 }], { duration: DUR.medium, easing: css(CURVE.out) });
+  });
   img.addEventListener("error", () => {
     const src = img.getAttribute("src");
     if (!own(src)) return;
     checkGone(src).then((gone) => {
-      if (gone && img.getAttribute("src") === src) onGone(src);
+      if (img.getAttribute("src") !== src) return;
+      if (gone) {
+        img.classList.remove("img-wait");
+        unwaitImage(waiter);
+        onGone(src);
+        return;
+      }
+      waiter.src = src;
+      img.classList.add("img-wait");
+      waitImage(waiter);
     });
   });
 }

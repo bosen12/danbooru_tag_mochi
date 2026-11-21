@@ -77,7 +77,7 @@ import { REGISTERS, REGISTER_ROLE, emptyBed, sanitizeBed, placeCard, removeCard,
 import { createSfx } from "./fuse-sfx.js";
 import { genSeed, isFixedSeed, mountSeedControl, onSeedChange, restoreSeed, seedState, seedUseButton, useSeed } from "./seed-control.js";
 import { mountDiscord, openRouteFromShot } from "./discord-link.js";
-import { t as translate, takeLanguageState } from "./i18n.js";
+import { t as translate, takeLanguageState, english } from "./i18n.js";
 import { trialSummaries } from "./composition.js";
 import { pickStarters as chooseStarters, refreshStarters } from "./starters.js";
 import { SIZES } from "./sizes.js";
@@ -3739,7 +3739,8 @@ function renderCaseTabs() {
           class: "case-tab pressable",
           type: "button",
           dataset: { tab: id, suit: suit || "" },
-          title: suit ? `${label}（${CARD_SUIT_INFO[suit].glyph}）` : undefined,
+          // 括號裡的章是中文字：英文版的章換成字母，提示裡就不帶（以前寫成 Cast (人)）。
+          title: suit ? (english ? label : `${label}（${CARD_SUIT_INFO[suit].glyph}）`) : undefined,
           "aria-pressed": caseTab === id ? "true" : "false",
           onclick: () => {
             caseTab = id;

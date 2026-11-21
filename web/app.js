@@ -880,7 +880,12 @@ function countLine(shown) {
   ].filter(Boolean);
   const box = $("lib-count");
   settleText(box, `${shown} / ${total} 張`);
-  box.title = `字盒共 ${total} 張，這裡顯示 ${shown} 張` + (why.length ? `。${why.join("、")}` : "") + (shown < total - hid.rating - hid.gender - hid.era ? "。其餘被花色、分類或搜尋篩掉" : "");
+  const head = `字盒共 ${total} 張，這裡顯示 ${shown} 張`;
+  const rest = shown < total - hid.rating - hid.gender - hid.era ? "其餘被花色、分類或搜尋篩掉" : "";
+  // 英文版一句一句翻再接起來：整串交給字典時，句中的「、」被當成分隔切開，前後半句都翻不到。
+  box.title = english
+    ? [head, ...why, rest].filter(Boolean).map((s) => t(s)).join(". ")
+    : head + (why.length ? `。${why.join("、")}` : "") + (rest ? `。${rest}` : "");
 }
 
 /**

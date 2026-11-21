@@ -6930,6 +6930,11 @@ body {
   }
 }
 
+/* 成品、晾紙繩的圖暫時讀不到（ComfyUI 沒開）：藏起來等它回來（gone.js），不露破圖和替代文字。 */
+img.img-wait {
+  visibility: hidden;
+}
+
 /* 手機上頂欄的連線狀態只剩一顆點；連不上的時候把字露出來（綠點不用解釋）。 */
 @media (max-width: 40rem) {
   .ping[data-ok="0"] span {
@@ -6939,6 +6944,10 @@ body {
     overflow: visible;
     clip-path: none;
     color: var(--color-accent-text);
+  }
+  /* 字露出來時已經寫了「Comfy 未連」：前面那個「Comfy」收起來，不然讀成「Comfy ✕ Comfy 未連」。 */
+  .ping[data-ok="0"]:has(> span) .ping-name {
+    display: none;
   }
 }
 

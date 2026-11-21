@@ -509,6 +509,18 @@
   height: 100%;
   object-fit: cover;
 }
+/* 暫時讀不到（ComfyUI 沒開）：不露破圖，空格子上一條淡淡的斜紋，跟「還在讀」分得出來。 */
+.book-work.is-wait img {
+  visibility: hidden;
+}
+.book-work.is-wait {
+  background: repeating-linear-gradient(135deg, var(--color-paper-3) 0 8px, color-mix(in oklch, var(--color-paper-3) 80%, var(--color-rule-2)) 8px 16px);
+}
+.book-works-wait {
+  margin: 0 0 var(--space-xs);
+  color: var(--color-muted);
+  font-size: var(--text-xs);
+}
 
 .book-work-room {
   position: absolute;

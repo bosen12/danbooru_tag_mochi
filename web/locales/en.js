@@ -136,7 +136,7 @@ tag（最多 5 個）|Tags (up to 5)
 件|images
 天|days
 沒說原因|No reason provided
-（還有更早的）|(older entries available)
+（還有更早的）| (older entries available)
 這張用到的牌|Cards used
 女生|female characters
 男生|male characters
@@ -2061,6 +2061,11 @@ ComfyUI 沒開：先用拼貼卡面，之後再回來烤。|ComfyUI isn’t runn
 空的|Empty
 空|Empty
 空的群組|Empty group
+其餘被花色、分類或搜尋篩掉|The rest are filtered out by suit, category or search
+把禁用角色也列出來（不能帶去墨池）|Also list blocked characters (they can't go to Ink Pool)
+抽的角色都跟釘的角色同一部作品；沒釘就先挑一部人數、性別湊得齊的（要開「抽角色」）|Drawn characters all come from the pinned character's series; with none pinned, one series that fits the cast is picked first (needs Draw characters on)
+暫時讀不到|Can't load now
+圖暫時讀不到（ComfyUI 沒開？），開好就會自己出現。|Images can't load right now (is ComfyUI off?). They'll appear once it's running.
 這件作品已在別處刪掉。|This work was already deleted somewhere else.
 這件作品的存檔壞了，已改名留著。可以再收藏一次。|This work's save file is damaged and was kept under a new name. You can save it again.
 匯入檔裡有一件不是配方。|One item in the import is not a recipe.
@@ -3109,6 +3114,8 @@ AI 助手用：{0}|AI assistant uses {0!}
 可用 {0} 張，已在池中 {1} 張，找不到 {2} 張，受限制 {3} 張|{0} available, {1} already in the pool, {2} missing, {3} restricted
 推理強度只能選：{0}，或留預設。|Reasoning effort must be {0!}, or leave the default.
 只看這組裡「{0}」的 {1} 張|Show only the {1!} {0} cards in this group
+{0}（從勾的群組抽）|{0} (drawn from the checked groups)
+{0}（勾的群組有這格；亮起來才會從群組抽）|{0} (a checked group covers this slot; turn it on to draw from the group)
 這組沒有「{0}」：抽牌時照常抽|This group has no {0} cards; draws pick them as usual
 讀不到這件作品的存檔：{0}|Can't read this work's save file: {0!}
 伺服器讀不到牌的使用次數存檔（{0}）：{1}|The server can't read the card-usage save ({0!}): {1!}

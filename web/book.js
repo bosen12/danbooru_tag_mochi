@@ -32,6 +32,7 @@ import { handStore } from "./hand-store.js";
 import { handTools } from "./hand-tools.js";
 import { measure, evaluate, announce, openWall } from "./achievements.js";
 import { initMotion, settleMotion, seat, refuse, flight, reducedMotion, swapIn, rowChange, heightChange, holdWidth, CURVE, DUR, css, cropFlipStart, cropFlipEnd } from "./motion.js";
+import { waitImage, unwaitImage, retrySrc } from "./img-wait.js";
 import { viewSrc } from "./gen.js";
 import { pingLoop } from "./ping.js";
 import { getSfx } from "./sfx.js";
@@ -97,16 +98,35 @@ const warScore = (tag) => {
 };
 const pct = (k, n) => (n ? Math.round((k / n) * 100) : 0);
 
+let warRetry = 0;
 async function fetchWar() {
   try {
     const r = await fetch("/api/genlog/stats", { cache: "no-store" });
     if (!r.ok) throw new Error(String(r.status));
     const j = await r.json();
     war = { cards: j.cards || {}, total: j.total || 0, fav: j.fav || 0, discard: j.discard || 0, since: j.since || 0 };
+    warRetry = 0;
   } catch {
     war = war || { cards: {}, total: 0, since: 0, failed: true };
+    // 一時讀不到（伺服器剛開、正忙）：過幾秒再問，讀到了把畫面上的戰績補上。
+    // 以前開頁那一次失敗，整頁就一直寫「讀不到出圖日誌」，要重新整理才有（2026-11-21）。
+    if (war.failed && warRetry < 5) setTimeout(() => fetchWar().then((w) => !w.failed && warArrived()), 2000 * 2 ** warRetry++);
   }
   return war;
+}
+
+/** 戰績晚到：照戰績排的整格重排，摘要和開著的詳情裡那一行補上。 */
+function warArrived() {
+  if (!lib) return;
+  if (isWar()) render({ animate: false });
+  renderSummary();
+  for (const dd of document.querySelectorAll("dd.book-war[data-war-of]")) {
+    const text = warText(dd.dataset.warOf);
+    if (dd.textContent !== text) {
+      dd.textContent = text;
+      swapIn(dd, `war:${text}`, { firstToo: true });
+    }
+  }
 }
 
 let data = null;
@@ -321,6 +341,14 @@ async function boot() {
       if (isDate() || ui.showBanned) render({ animate: false });
       else repaintLive();
       renderSummary();
+      // 已經開著的詳情（作品冊、日誌點牌名過來，開頁就打開）：那一行「加入」也補上。
+      for (const dd of document.querySelectorAll("dd[data-added-of]")) {
+        const added = lib.byTag.get(dd.dataset.addedOf)?.added;
+        if (added && dd.textContent !== added) {
+          dd.textContent = added;
+          swapIn(dd, `added:${added}`, { firstToo: true });
+        }
+      }
     });
   addEventListener("pagehide", saveSpot);
   renderSummary({ count: true });
@@ -2064,11 +2092,12 @@ function openCard(card, srcNode) {
     el("dt", {}, "最近一次"),
     el("dd", {}, ago(usage.last[card.tag] || 0)),
     el("dt", {}, "加入"),
-    el("dd", {}, card.added || "沒有日期"),
+    // 標著牌名：加入日晚到（網址 #card= 直接開詳情時還沒讀到）就補上，不留著「沒有日期」。
+    el("dd", { dataset: { addedOf: card.tag } }, card.added || "沒有日期"),
     card.banned ? el("dt", {}, "禁用") : null,
     card.banned ? el("dd", {}, banReason(card)) : null,
     el("dt", {}, "戰績"),
-    el("dd", { class: "book-war" }, warText(card.tag))
+    el("dd", { class: "book-war", dataset: { warOf: card.tag } }, warText(card.tag))
   );
   const share = c && sumShown.total ? Math.min(1, c / Math.max(...pool.map((x) => countOf(x.tag)), 1)) : 0;
   const sheet = openSheet(
@@ -2412,18 +2441,33 @@ function workAlive(x) {
   return probed.get(src);
 }
 
-function workTile(x, i, onGone) {
+function workTile(x, i, onGone, onWait) {
   const src = workSrc(x);
+  // 暫時讀不到（ComfyUI 沒開）：這格標成等候，ComfyUI 回來就自己重讀（img-wait.js）。以前一整排空灰格、也不說為什麼。
+  const waiter = { node: null, src, reload: (n) => (img.src = retrySrc(src, n)) };
   const img = el("img", {
     alt: "",
     loading: "lazy",
     decoding: "async",
-    onload: (e) => revealWorkImg(e.currentTarget),
-    // 沒探過的（排在後面、捲下去才讀的）讀圖失敗：原圖被刪了就把這一格拿掉。
+    onload: (e) => {
+      revealWorkImg(e.currentTarget);
+      unwaitImage(waiter);
+      const tile = e.currentTarget.closest(".book-work");
+      if (tile?.classList.contains("is-wait")) {
+        tile.classList.remove("is-wait");
+        onWait?.();
+      }
+    },
+    // 讀圖失敗：原圖被刪了就把這一格拿掉；只是暫時讀不到就等。
     onerror: async (e) => {
       const tile = e.currentTarget.closest(".book-work");
       if (!tile?.isConnected) return;
-      if (await workGone(src)) onGone?.(x, tile);
+      if (await workGone(src)) return onGone?.(x, tile);
+      if (!tile.isConnected) return;
+      waiter.node = tile;
+      tile.classList.add("is-wait");
+      waitImage(waiter);
+      onWait?.();
     },
   });
   // 先藏著，src 要在 onload 之後才設：快取裡的圖可能同步載完，監聽還沒掛上就不會淡入。
@@ -2454,7 +2498,16 @@ function worksOf(card) {
   const more = el("button", { class: "btn btn-small book-works-more", type: "button", hidden: true }, "再多看一些");
   // 還在探圖時：沒有格子、也還不說「沒有成品」。
   const note = el("p", { class: "book-works-empty", hidden: true });
-  const box = el("section", { class: "book-works" }, head, grid, note, more);
+  // 有格子在等（ComfyUI 沒開）：整區說一次，不是每格各寫一句。
+  const waitNote = el("p", { class: "book-works-wait", hidden: true }, "圖暫時讀不到（ComfyUI 沒開？），開好就會自己出現。");
+  const onWait = () => {
+    const n = grid.querySelectorAll(".book-work.is-wait").length;
+    if (!n === waitNote.hidden) return;
+    const grow = heightChange(box);
+    waitNote.hidden = !n;
+    grow.done();
+  };
+  const box = el("section", { class: "book-works" }, head, waitNote, grid, note, more);
   let items = [];
   let total = 0;
   let fromLog = 0;
@@ -2500,7 +2553,7 @@ function worksOf(card) {
     extraN = extra.length;
     const head = all.slice(0, WORKS_PROBE_N);
     const grow = heightChange(box);
-    const tiles = all.map((x, i) => workTile(x, i, onGone));
+    const tiles = all.map((x, i) => workTile(x, i, onGone, onWait));
     grid.replaceChildren(...tiles);
     shown = all.length;
     note.textContent = "還沒有用到它的成品。從現在起印的每一張都會記下來，這裡就看得到。";

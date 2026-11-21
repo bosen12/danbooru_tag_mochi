@@ -50,6 +50,10 @@ assert.equal(t('紅髮 1.2'), 'red hair 1.2');
 assert.equal(t('試印 C：你的 1 張，引擎補 28 張'), 'Proof C · 1 pinned · 28 engine additions');
 assert.equal(t('一張圖只留一個：跟黑髮、棕髮 等 12 個互斥'), 'One per image · 12 cards share this slot, including black hair, brown hair');
 assert.equal(t('牌組「紅髮」'), 'Deck “紅髮”', 'User deck names must remain intact');
+// 字典左邊（中文）寫 {0!} 的模板也要對得上（2026-11-21：十幾句這樣寫，以前整句沒翻，英文版露出中文）
+assert.equal(t('刪掉「長相 A」'), 'Deleted “長相 A”');
+assert.equal(t('長相群組：長相 A'), 'Appearance groups: 長相 A');
+assert.equal(t('牌組不能存這些牌：red hair。'), 'These cards cannot be saved in a deck: red hair.');
 assert.equal(t('找不到「紅髮」'), 'No results for “紅髮”', 'Search input must remain intact');
 assert.equal(t('你的 5 張・引擎補 30 張'), '5 pinned · 30 engine additions');
 assert.equal(t('seed 123, (red hair:1.2), <lora:demo>'), 'seed 123, (red hair:1.2), <lora:demo>', 'Machine values must remain intact');

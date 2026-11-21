@@ -3,11 +3,15 @@
 //   T. 兩個分頁：一頁在設定裡關掉助手，另一頁的印章、「問助理」也拿掉（關著時頁面跟原本一樣）
 //   U. 生圖接回時碰到一次 503：再接一次，不算印壞
 //   V. 撤下一張、馬上按復原：伺服器照順序收到「撤下」「復原」，日誌最後不是撤下
+// 2026-11-21 走查補的（ComfyUI 沒開時）：
+//   W. 成品牆的圖暫時讀不到：不露破圖和替代文字，ComfyUI 回來自己讀到
+//   X. 作品冊日誌的縮圖：寫「暫時讀不到」，回來自己讀到
+//   Y. 卡冊牌詳情：用它做過的圖整區說一次「暫時讀不到」、回來自己讀到；加入日、戰績晚到也補上
 // （兩個卡冊分頁的交接便條：test_prerender_handoff.mjs；偏好卡牌兩台同時第一次同步：test_fav_chars_sync.mjs；
 //   Anthropic 空白回覆：test_assistant.py；MCP：test_mochi_mcp.mjs）
 //
 //   node scripts/test_astra6_a_browser.mjs
-//   BASELINE=HEAD node scripts/test_astra6_a_browser.mjs   # 拿舊版 assistant.js、gen.js、synced-list.js 對照（應該紅）
+//   BASELINE=HEAD node scripts/test_astra6_a_browser.mjs   # 拿舊版 assistant.js、gen.js、synced-list.js、album-log.js、book.js、gone.js 對照（應該紅）
 //   ONLY=S node scripts/test_astra6_a_browser.mjs          # 只跑 S
 //
 // 假伺服器：/api/gen 是自己的假 SSE，不連 ComfyUI；不寫 data/；不叫真的模型。
@@ -31,7 +35,7 @@ const root = resolve(import.meta.dirname, "..");
 const front = existsSync(resolve(root, "web6/index.html")) ? "web6" : "web";
 const baseline = {};
 if (process.env.BASELINE) {
-  for (const f of ["assistant.js", "gen.js", "synced-list.js"]) baseline[f] = execFileSync("git", ["show", `${process.env.BASELINE}:${front}/${f}`], { cwd: root, maxBuffer: 2 ** 25 });
+  for (const f of ["assistant.js", "gen.js", "synced-list.js", "album-log.js", "book.js", "gone.js"]) baseline[f] = execFileSync("git", ["show", `${process.env.BASELINE}:${front}/${f}`], { cwd: root, maxBuffer: 2 ** 25 });
 }
 
 const PNG = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";
@@ -41,7 +45,7 @@ const json = (r, v, code = 200) => {
   return true;
 };
 const work = (i, extra = {}) => ({ id: "work" + i, name: "Work " + i, rating: "general", positive: "red hair, standing, kimono", pinned: ["red hair"], createdAt: new Date(1700000000000 + i * 1000).toISOString(), image: { file: "fixture.png" }, width: 832, height: 1216, seed: i, ...extra });
-const state = { works: [work(1)], calls: [], controllers: {} };
+const state = { works: [work(1)], calls: [], controllers: {}, slowStatic: {} };
 
 const server = createServer(async (req, res) => {
   try {
@@ -80,6 +84,7 @@ const server = createServer(async (req, res) => {
       return res.end(JSON.stringify(data));
     }
     const name = decodeURIComponent(p.slice(1)) || "index.html";
+    if (state.slowStatic[name]) await sleep(state.slowStatic[name]);
     if (baseline[name]) return res.writeHead(200, { "Content-Type": name.endsWith(".css") ? "text/css" : "text/javascript" }), res.end(baseline[name]);
     let file = resolve(root, front, name);
     if (!existsSync(file)) file = resolve(root, "web", name);
@@ -251,6 +256,122 @@ try {
     ok("V. 伺服器最後收到的是復原（null）", commits.length === 2 && commits[0] === "discard" && commits[1] === null, JSON.stringify(commits));
     ok("V. 那張還在牆上", (await p.locator(".shot[data-status=done]").count()) === 1);
     delete state.controllers["/api/genlog/mark"];
+    await c.close();
+  });
+
+  // ComfyUI 沒開：/api/image 回 502，back 打開之後才給圖。回到分頁（visibilitychange）時 img-wait.js 先拿一張試。
+  let comfyBack = false;
+  const imageGate = (q, r) => {
+    if (!comfyBack) return json(r, { ok: false, error: "ComfyUI 連不上" }, 502);
+    r.writeHead(200, { "Content-Type": "image/png" }).end(Buffer.from(PNG, "base64"));
+    return true;
+  };
+  const comfyReturns = async (page) => {
+    comfyBack = true;
+    await page.evaluate(() => document.dispatchEvent(new Event("visibilitychange")));
+  };
+
+  await step("W. 成品牆暫時讀不到：不露破圖，回來自己讀", async () => {
+    comfyBack = false;
+    const c = await context({
+      init: () => {
+        if (location.protocol !== "http:" || localStorage.getItem("mochi.shots.v1")) return;
+        localStorage.setItem("mochi.shots.v1", JSON.stringify([{ id: "w1", status: "done", image: "/api/image?filename=w1.png&type=output", positive: "red hair", mine: ["red hair"], drawn: [], width: 832, height: 1216, seed: 1, rating: "general", at: new Date().toISOString() }]));
+      },
+    });
+    state.controllers["/api/image"] = imageGate;
+    const p = await c.newPage();
+    await go(p, origin + "/");
+    await p.locator("#wall .shot").first().scrollIntoViewIfNeeded();
+    await p.waitForFunction(() => document.querySelector("#wall .shot img.img-wait"), null, { timeout: 10000 }).catch(() => {});
+    const waiting = await p.evaluate(() => {
+      const i = document.querySelector("#wall .shot img:not(.shot-under)");
+      return { wait: !!i?.classList.contains("img-wait"), vis: i ? getComputedStyle(i).visibility : "" };
+    });
+    ok("W. 讀不到時圖藏起來，不露破圖和替代文字", waiting.wait && waiting.vis === "hidden", JSON.stringify(waiting));
+    await comfyReturns(p);
+    const loaded = await p
+      .waitForFunction(() => {
+        const i = document.querySelector("#wall .shot img:not(.shot-under)");
+        return i && i.naturalWidth > 0 && !i.classList.contains("img-wait");
+      }, null, { timeout: 8000 })
+      .then(() => true)
+      .catch(() => false);
+    ok("W. ComfyUI 回來就自己讀到", loaded);
+    delete state.controllers["/api/image"];
+    await c.close();
+  });
+
+  await step("X. 日誌縮圖暫時讀不到：寫出來，回來自己讀", async () => {
+    comfyBack = false;
+    const c = await context();
+    state.controllers["/api/image"] = imageGate;
+    state.controllers["/api/genlog"] = (q, r) =>
+      json(r, { ok: true, more: false, total: 1, items: [{ id: "g1", at: Date.now(), ok: true, image: "/api/image?filename=g1.png&type=output", positive: "red hair", seed: 1, width: 832, height: 1216, rating: "general", origin: "mochi", ckpt: "a.safetensors" }] });
+    const p = await c.newPage();
+    await go(p, origin + "/album.html?tab=log");
+    const shown = await p.locator(".log-thumb.is-wait").first().waitFor({ timeout: 10000 }).then(() => true).catch(() => false);
+    const text = shown ? await p.locator(".log-thumb.is-wait").first().innerText() : "";
+    ok("X. 縮圖寫「暫時讀不到」、不露破圖", shown && text.includes("暫時讀不到"), text);
+    await comfyReturns(p);
+    const loaded = await p
+      .waitForFunction(() => {
+        const box = document.querySelector(".log-thumb");
+        const i = box?.querySelector("img");
+        return i && i.naturalWidth > 0 && !box.classList.contains("is-wait");
+      }, null, { timeout: 8000 })
+      .then(() => true)
+      .catch(() => false);
+    ok("X. ComfyUI 回來縮圖自己出現", loaded);
+    delete state.controllers["/api/image"];
+    delete state.controllers["/api/genlog"];
+    await c.close();
+  });
+
+  await step("Y. 卡冊牌詳情：圖、加入日、戰績晚到都補上", async () => {
+    comfyBack = false;
+    const c = await context();
+    state.controllers["/api/image"] = imageGate;
+    state.slowStatic["tag_dates.json"] = 2500;
+    let statsAsked = 0;
+    state.controllers["/api/genlog/stats"] = (q, r) => {
+      statsAsked++;
+      if (statsAsked === 1) return json(r, { ok: false, error: "忙" }, 503);
+      return json(r, { ok: true, cards: { "red hair": [5, 1, 0] }, total: 5, fav: 1, discard: 0, since: 1 });
+    };
+    state.controllers["/api/genlog/bytag"] = (q, r) =>
+      json(r, { ok: true, total: 1, items: [{ id: "b1", at: Date.now(), ok: true, image: "/api/image?filename=b1.png&type=output", width: 832, height: 1216, rating: "general", origin: "mochi" }] });
+    const p = await c.newPage();
+    await go(p, origin + "/book.html#card=red%20hair");
+    await p.locator(".book-stats").waitFor({ timeout: 20000 });
+    const dated = await p
+      .waitForFunction(() => /\d{4}-\d{2}-\d{2}/.test(document.querySelector("dd[data-added-of], .book-stats dd:nth-of-type(5)")?.textContent || ""), null, { timeout: 8000 })
+      .then(() => true)
+      .catch(() => false);
+    ok("Y. 加入日晚到：詳情裡那一行補上日期", dated, await p.evaluate(() => [...document.querySelectorAll(".book-stats dd")].map((d) => d.textContent).join(" | ")));
+    const war = await p
+      .waitForFunction(() => {
+        const t = [...document.querySelectorAll(".book-stats dd")].map((d) => d.textContent).join(" ");
+        return /印好 5/.test(t) && !/讀不到出圖日誌/.test(t);
+      }, null, { timeout: 9000 })
+      .then(() => true)
+      .catch(() => false);
+    ok("Y. 戰績第一次讀不到：過幾秒再問、補上", war, `問了 ${statsAsked} 次`);
+    const waitNote = await p.locator(".book-works-wait").waitFor({ timeout: 10000 }).then(() => true).catch(() => false);
+    ok("Y. 圖讀不到時整區說一次、格子標成等候", waitNote && (await p.locator(".book-work.is-wait").count()) === 1);
+    await comfyReturns(p);
+    const back = await p
+      .waitForFunction(() => {
+        const i = document.querySelector(".book-work img");
+        return i && i.naturalWidth > 0 && !document.querySelector(".book-work.is-wait") && !document.querySelector(".book-works-wait:not([hidden])");
+      }, null, { timeout: 8000 })
+      .then(() => true)
+      .catch(() => false);
+    ok("Y. ComfyUI 回來圖自己出現、說明收起", back);
+    delete state.controllers["/api/image"];
+    delete state.controllers["/api/genlog/stats"];
+    delete state.controllers["/api/genlog/bytag"];
+    delete state.slowStatic["tag_dates.json"];
     await c.close();
   });
 

@@ -20,6 +20,7 @@ import { RATING_LABEL } from "./rules/rating.js";
 import { footMore } from "./foot-more.js";
 import { transferLabel } from "./transfer.js";
 import { recipeOf } from "./store.js";
+import { waitImage, unwaitImage, retrySrc } from "./img-wait.js";
 
 /** 一張牌的籤：點了打開卡冊那張牌的詳情（book.html 開頁時看 #card=）。作品冊也用這個。 */
 export const cardHref = (tag) => `book.html#card=${encodeURIComponent(tag)}`;
@@ -290,15 +291,26 @@ export function createLog(ctx) {
     return src;
   }
 
+  // 暫時讀不到的縮圖（ComfyUI 沒開：伺服器回 502／503）：不露瀏覽器的破圖小圖示，換成安靜的「暫時讀不到」，
+  // ComfyUI 回來就自己重載（img-wait.js）。2026-11-21。
   function thumb(e) {
     if (!e.ok || !e.image) return el("span", { class: "log-thumb is-empty", "aria-hidden": "true" }, "✕");
     const box = el("span", { class: "log-thumb", style: e.width && e.height ? `aspect-ratio: ${e.width} / ${e.height}` : "" });
     const favSrc = () => listSrc(e._favImg);
+    const base = listSrc(viewSrc(e.image));
     // 這張縮圖自己的探針序號：圖後來載入了，早先那次 5xx 的回應就不能再把旗標寫回去。
     let probe = 0;
-    box.append(
-      el("img", {
-        src: listSrc(viewSrc(e.image)),
+    const waiter = { node: box, src: base, reload: (n) => (img.src = retrySrc(base, n)) };
+    const showWait = () => {
+      if (box.classList.contains("is-gone")) return;
+      if (!box.classList.contains("is-wait")) {
+        box.classList.add("is-wait");
+        box.append(el("span", { class: "log-thumb-wait" }, "暫時讀不到"));
+      }
+      waitImage(waiter);
+    };
+    const img = el("img", {
+        src: base,
         alt: "",
         loading: "lazy",
         decoding: "async",
@@ -306,6 +318,12 @@ export function createLog(ctx) {
           // 縮圖又讀到了：先前的 5xx 不能一直當成「原圖不在了」（詳情和收藏鈕都看這個旗標）。
           probe++;
           e._gone = false;
+          unwaitImage(waiter);
+          if (box.classList.contains("is-wait")) {
+            box.classList.remove("is-wait");
+            box.querySelector(".log-thumb-wait")?.remove();
+            if (!reducedMotion()) img.animate([{ opacity: 0 }, { opacity: 1 }], { duration: DUR.short, easing: css(CURVE.out) });
+          }
         },
         onerror: (ev) => {
           // output 裡的原圖清掉了：收藏過的換成作品冊那一份，沒收藏的才說不在了。
@@ -334,19 +352,23 @@ export function createLog(ctx) {
               if (mine !== probe || !box.isConnected) return;
               if (status !== 404 && status !== 410) {
                 e._gone = false;
+                showWait();
                 return;
               }
               e._gone = true;
+              unwaitImage(waiter);
+              box.classList.remove("is-wait");
               box.classList.add("is-gone");
               box.replaceChildren(el("span", {}, "原圖不在了"));
             })
             .catch(() => {
               if (mine !== probe || !box.isConnected) return;
               e._gone = false;
+              showWait();
             });
         },
-      })
-    );
+      });
+    box.append(img);
     return box;
   }
 
