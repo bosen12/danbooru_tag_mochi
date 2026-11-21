@@ -33,6 +33,7 @@ import { handTools } from "./hand-tools.js";
 import { measure, evaluate, announce, openWall } from "./achievements.js";
 import { initMotion, settleMotion, seat, refuse, flight, reducedMotion, swapIn, rowChange, heightChange, ghostOut, holdWidth, CURVE, DUR, css, cropFlipStart, cropFlipEnd } from "./motion.js";
 import { waitImage, unwaitImage, retrySrc } from "./img-wait.js";
+import { holdArt, resumeArt } from "./card-images.js";
 import { viewSrc } from "./gen.js";
 import { pingLoop } from "./ping.js";
 import { getSfx } from "./sfx.js";
@@ -64,6 +65,17 @@ const AHEAD = 1.5;
 const BUDGET_MS = 6;
 // 做好的格子最多留幾個：捲很遠之後最久沒看到的放掉，記憶體不會一直長。
 const CACHE_MAX = 900;
+// 牌圖什麼時候抓（2026-11-21 慢網路，pumpArt）：以前格子一接上就抓、甩過去也不撤，連甩一大段就排出幾百張
+// （電腦慢網路實測 773 個請求），停下來那一屏的圖排在最後面，等 5 秒以上。現在：
+//   看得到的那幾排隨時可以抓；看不到的（上下多接的那幾排）同時最多 ART_MAX 張；閒下來往下預抓只在抓的不多時（ART_SOFT）。
+//   格子捲出去時圖還沒到：撤掉（card-images.js 的 holdArt），捲回來再放回去。
+//   最近常撤（網路跟不上這個捲法，artMiss 超過 ART_MISS）又捲得比 FLING_SPEED 快：先都不抓，慢下來、停下來再抓。
+//   不用「一張圖等多久」判斷網路慢：慢網路不排隊時一張也只要 60ms，家用 Wi-Fi 開頁一次抓上百張反而排到 400ms，分不出來。
+// 網路快的時候圖在格子捲出去之前就到了，從來不撤，跟以前一樣接上就抓。
+const ART_MAX = 24;
+const ART_SOFT = 8;
+const ART_MISS = 0.3;
+const FLING_SPEED = 2;
 // 電腦（滑鼠）：「＋」、愛心等滑鼠移過去才做（每格少四五個節點）；觸控一直看得到，照舊一開始就做。
 const HOVER = matchMedia("(hover: hover) and (pointer: fine)");
 const ORDER_ZH = { desc: "多到少", asc: "少到多", good: "出好圖", bad: "常撤下", new: "新到舊", old: "舊到新" };
@@ -1123,6 +1135,8 @@ function cellOf(card) {
   }
   // 禁用角色不接卡面：舊圖就算還在磁碟上，也不在卡冊裡顯示。
   const node = cardNode(card, card.banned ? { art: () => null, sources: () => null, mini: () => null } : assets);
+  // 圖先收著（還沒開始抓：格子沒接上、又是 lazy），輪到它才放出去抓（pumpArt）。
+  for (const img of node.querySelectorAll(".card-art > img")) holdArt(img);
   // 點牌打開詳情：整格網格一個監聽（wireGrid），不再每張牌各掛一個。
   const n = el("b", { class: "book-n" });
   const meta = el("span", { class: "book-meta" }, n, el("span", { class: "book-unit" }), el("span", { class: "book-when" }));
@@ -1265,6 +1279,17 @@ let scrolledAt = 0;
 let topIndex = 0;
 // 上一次接牌時看得到的排：[第一排, 最後一排的下一排)。還沒量過格高是 null（第一次畫，全當看得到）。
 let seenRows = null;
+// 正在抓的牌圖（<img>）：到了、失敗、撤掉就拿掉。
+// artMiss：最近捲出去還沒到、被撤掉的比例（撤一次往 1 拉兩成，到一張往 0 拉兩成）。
+const artBusy = new Set();
+let artMiss = 0;
+let artSoon = false;
+let artSettle = 0;
+// 捲的方向（1 往下、-1 往上）、速度（px/ms）：windowNow 每一格量一次。
+let scrollDir = 1;
+let scrollSpeed = 0;
+let lastTop = 0;
+let lastTopAt = 0;
 
 /**
  * 卡冊的格寬（book.css 的 .book-grid 改成一排排折行）：跟 grid 的 repeat(auto-fill, minmax(最小, 1fr)) 同一個算法，
@@ -1323,6 +1348,12 @@ function windowNow() {
   if (!list.length) return [0, 0];
   if (!rowH) return [0, Math.min(list.length, cols * 6)];
   const top = scrollY - gridTopY();
+  const now = performance.now();
+  const dt = now - lastTopAt;
+  if (top !== lastTop) scrollDir = top > lastTop ? 1 : -1;
+  scrollSpeed = dt > 0 && dt < 250 ? Math.abs(top - lastTop) / dt : 0;
+  lastTop = top;
+  lastTopAt = now;
   topIndex = Math.max(0, Math.floor(top / rowH)) * cols;
   seenRows = [Math.floor(top / rowH), Math.ceil((top + innerHeight) / rowH)];
   const r0 = Math.max(0, Math.floor((top - innerHeight * BEHIND) / rowH));
@@ -1348,9 +1379,10 @@ function nodeAt(i, t0) {
   const cell = cellOf(card);
   // 接上畫面就會排版：之後不必再進預排區（buildAhead）。
   cell._laid = true;
+  cell._i = i;
   paintCell(cell, card, rankAt(card, i));
-  // 接上畫面的格子（看得到的和下方一屏半）：圖立刻開始抓，不等捲到眼前（通常閒下來時 buildAhead 已經先抓了）。
-  startArt(cell);
+  // 接上畫面的格子（看得到的和下方一屏半）：圖照順序開始抓（layoutWindow 最後的 pumpArt；網路快時就是立刻），
+  // 不等捲到眼前（通常閒下來時 buildAhead 已經先抓了）。
   // 接在畫面外的（捲動時頭尾多接的那幾排）：圖在那裡就到了，不必掃光、顯影給沒人看（cards.js 的 quietArt）。
   const row = Math.floor(i / cols);
   if (seenRows && (row < seenRows[0] || row >= seenRows[1])) quietArt(cell);
@@ -1365,15 +1397,31 @@ function layoutWindow(force = false) {
   const grid = $("book-grid");
   if (!padTop) return;
   const [s, e] = windowNow();
-  if (!force && s === winStart && e === winEnd) return;
+  // 同一段：格子不動，可是捲的速度變了（甩慢下來）可能就輪到圖了。
+  if (!force && s === winStart && e === winEnd) return pumpArt();
   const t0 = performance.now();
   if (force || e <= winStart || s >= winEnd) {
+    const old = live;
     live = [];
     for (let i = s; i < e; i++) live.push(nodeAt(i, t0));
     grid.replaceChildren(padTop, ...live, padBottom, ...(tail ? [tail] : []));
+    for (const c of old) if (!c.isConnected) dropArt(c, false);
+    // 換排序、換篩選、跳很遠：先前往下預抓、還沒到的也撤掉（index 已經不是那一份 list 的了）。
+    for (const img of [...artBusy]) {
+      const c = img.closest(".book-cell");
+      if (c && !c.isConnected) dropArt(c, false);
+    }
   } else {
-    for (; winStart < s; winStart++) live.shift().remove();
-    for (; winEnd > e; winEnd--) live.pop().remove();
+    for (; winStart < s; winStart++) {
+      const c = live.shift();
+      c.remove();
+      dropArt(c);
+    }
+    for (; winEnd > e; winEnd--) {
+      const c = live.pop();
+      c.remove();
+      dropArt(c);
+    }
     const head = [];
     for (let i = s; i < winStart; i++) head.push(nodeAt(i, t0));
     if (head.length) {
@@ -1393,20 +1441,96 @@ function layoutWindow(force = false) {
   setPad(padBottom, Math.ceil(list.length / cols) - Math.ceil(e / cols));
   // 第一次畫：量好一排多高，照真的捲動位置再接一次。
   if (!rowH && live.length && measureRow()) return layoutWindow(true);
+  pumpArt();
   if (live.some((n) => n._skel)) fillSoon();
   else buildAhead();
 }
 
 /**
- * 牌面圖開始抓：卡冊的圖預設 lazy（上千張不能一次抓），接上畫面、或快要接上時才改成立刻抓。
+ * 牌面圖開始抓：卡冊的圖先收著（cellOf 的 holdArt），輪到了才放回網址、改成立刻抓。
  * 改的那一下瀏覽器就發出請求（手機上一張零點幾毫秒）：能在閒下來時做（buildAhead）就別等到捲動的那一格。
- * 圖在格子還沒接上時就到了，也不必在捲動中為了圖重排版面。
+ * 圖在格子還沒接上時就到了，也不必在捲動中為了圖重排版面。seen：看得到的那一格，跟瀏覽器說先抓它。
  */
-function startArt(cell) {
+function startArt(cell, seen = false) {
   if (cell._art) return;
   cell._art = true;
-  const img = cell.querySelector('img[loading="lazy"]');
-  if (img) img.loading = "eager";
+  const img = cell.querySelector(".card-art > img");
+  if (!img) return;
+  const resumed = resumeArt(img);
+  if (img.loading !== "eager") img.loading = "eager";
+  // 本來就在快取裡的當場就好了，不佔名額。
+  if (!resumed || (img.complete && img.naturalWidth)) return;
+  if (seen) img.fetchPriority = "high";
+  artBusy.add(img);
+  img.addEventListener("load", artDone);
+  img.addEventListener("error", artDone);
+}
+
+/** 一張圖到了（或失敗）：記下等了多久，空出名額給下一張。 */
+function artDone(e) {
+  const img = e.currentTarget;
+  img.removeEventListener("load", artDone);
+  img.removeEventListener("error", artDone);
+  if (!artBusy.delete(img)) return;
+  if (e.type === "load") artMiss *= 0.8;
+  if (!artSoon) {
+    artSoon = true;
+    queueMicrotask(() => ((artSoon = false), pumpArt()));
+  }
+}
+
+/** 格子離開畫面（或預抓的已經用不到）：圖還沒到就撤掉，捲回來再抓。miss：是捲出去的（算進 artMiss）。 */
+function dropArt(cell, miss = true) {
+  if (cell._art !== true) return;
+  const img = cell.querySelector(".card-art > img");
+  if (!img || !artBusy.has(img)) return;
+  artBusy.delete(img);
+  img.removeEventListener("load", artDone);
+  img.removeEventListener("error", artDone);
+  holdArt(img);
+  img.fetchPriority = "auto";
+  cell._art = false;
+  if (miss) artMiss = artMiss * 0.8 + 0.2;
+}
+
+/** 網路慢、又捲得很快（甩）：這時抓的圖還沒到，格子就捲走了，先都不抓。 */
+const flinging = () => artMiss > ART_MISS && scrollSpeed > FLING_SPEED && performance.now() - scrolledAt < 100;
+
+/**
+ * 輪到誰抓圖：看得到的那幾排全部，再來是往捲的方向多接的那幾排、背後的那幾排（這兩種同時最多 ART_MAX 張）。
+ * 甩的時候（flinging）先不抓；停下來之後（watchScroll 的 artSettle）再排一次。
+ * 停下來時，看得到的牌如果是在畫面外先接上的（quietArt：到了不顯影、不掃光），圖還沒到就改回會掃光、會顯影。
+ */
+function pumpArt() {
+  if (!live.length || flinging()) return;
+  const settled = performance.now() - scrolledAt >= 100;
+  const [r0, r1] = seenRows || [0, Infinity];
+  const above = [];
+  const below = [];
+  for (let k = 0; k < live.length; k++) {
+    const c = live[k];
+    if (c._skel) continue;
+    const row = Math.floor((winStart + k) / cols);
+    if (row < r0) above.push(c);
+    else if (row >= r1) below.push(c);
+    else {
+      if (!c._art) startArt(c, true);
+      if (settled) wakeArt(c);
+    }
+  }
+  const rest = scrollDir > 0 ? below.concat(above.reverse()) : above.reverse().concat(below);
+  for (const c of rest) {
+    if (artBusy.size >= ART_MAX) break;
+    if (!c._art) startArt(c);
+  }
+}
+
+/** 看得到、圖還沒到、又被標成安靜（quietArt）的牌：改回等的時候掃光、到了顯影（cards.js 的 artImg）。 */
+function wakeArt(cell) {
+  const img = cell.querySelector(".card-art > img");
+  if (!img?._quiet || img.naturalWidth || !artBusy.has(img)) return;
+  img._quiet = false;
+  delete img.dataset.ready;
 }
 
 /** 空位一格畫面換幾張成真的牌（同樣的時間預算），換完為止。 */
@@ -1422,6 +1546,7 @@ function fillSoon() {
       live[k].replaceWith(cell);
       live[k] = cell;
     }
+    pumpArt();
     if (live.some((n) => n._skel)) fillSoon();
     else buildAhead();
   });
@@ -1468,6 +1593,13 @@ function stageNow() {
 }
 
 /** 閒下來時先把下方幾屏的格子做好、排過一次版（不接上畫面）：捲下去時直接接上，不用當場做、當場排字。 */
+/** 閒下來往下預抓（還沒接上的格子）：只在網路跟得上（抓的不多）、也沒在甩的時候。 */
+function aheadArt(cell, i) {
+  if (cell._art || artBusy.size >= ART_SOFT || flinging()) return;
+  cell._i = i;
+  startArt(cell);
+}
+
 function buildAhead() {
   if (aheadId || !rowH) return;
   aheadId = idle((idleDeadline) => {
@@ -1494,12 +1626,12 @@ function buildAhead() {
         // 接在畫面上的、排過的：字已經整形過了，不算在這一批。
         if (known && (known._laid || known.isConnected)) {
           known._laid = true;
-          if (i < artEnd) startArt(known);
+          if (i < artEnd) aheadArt(known, i);
           continue;
         }
         made++;
         const cell = cellOf(list[i]);
-        if (i < artEnd) startArt(cell);
+        if (i < artEnd) aheadArt(cell, i);
         if (!busy) batch.push(cell);
       }
       if (!batch.length) continue;
@@ -1627,6 +1759,10 @@ function watchScroll() {
       scrollFrame = 0;
       layoutWindow();
     });
+    // 停下來：甩的時候沒抓的圖現在抓（看得到的先）。
+    clearTimeout(artSettle);
+    // 110ms 沒再捲＝停了（手機慢的時候捲動中兩格畫面也可能隔 80ms，再短會在甩到一半時當成停下）。
+    artSettle = setTimeout(pumpArt, 110);
   };
   addEventListener("scroll", soon, { passive: true });
   // 只有高度變（手機網址列收起來）才在這裡接；寬度變了交給 sizeCells（要先重量格高），

@@ -84,7 +84,11 @@ function observer() {
       const cover = coverWidth(width, height);
       guess[b.kind] = cover;
       const url = chooseArt(b.set, cover * dpr());
-      if (img.dataset.artFallback !== "1" && img.getAttribute("src") !== url) img.src = url;
+      // 收著的圖（holdArt）：只換收著的網址，放回去時抓新挑的那張；直接寫 src 會當場開始抓。
+      if (img.dataset.artFallback !== "1") {
+        if (img._heldSrc != null) img._heldSrc = url;
+        else if (img.getAttribute("src") !== url) img.src = url;
+      }
       release(img);
     }
   });
@@ -164,6 +168,29 @@ export function bindArt(img, set, legacy, kind = "card") {
 }
 
 /**
+ * 圖先不抓、抓到一半的撤掉（卡冊捲很快、網路又慢的時候，book.js 的 pumpArt）：拿掉 src，網址收在 img 上。
+ * 實測 Chromium：拿掉 src 會撤掉還在路上的請求（ERR_ABORTED），不觸發 error（不會被當成壞圖退回原圖），
+ * 格子和圖的大小都不變。用 srcset 的（沒有 mini 的舊路）拿掉 src 也擋不住，不收。回 true：這次收起來了。
+ */
+export function holdArt(img) {
+  if (img._heldSrc != null || img.hasAttribute("srcset")) return false;
+  const src = img.getAttribute("src");
+  if (src == null) return false;
+  img._heldSrc = src;
+  img.removeAttribute("src");
+  return true;
+}
+
+/** 收著的圖放回去（開始抓）。回 true：這次放回去了；本來就沒收著回 false。 */
+export function resumeArt(img) {
+  const src = img._heldSrc;
+  if (src == null) return false;
+  img._heldSrc = null;
+  img.src = src;
+  return true;
+}
+
+/**
  * <img> 載入失敗：挑的是 mini 就退回原圖，回 true；本來就是原圖（或沒掛過）回 false，交給呼叫的人。
  */
 export function artFallback(img) {
@@ -199,7 +226,8 @@ export function cloneCard(node, artSource = node) {
     const ready = () => { if (img.naturalWidth) img.dataset.ready = "1"; };
     img.addEventListener("load", ready);
     img.addEventListener("error", () => { if (!artFallback(img)) img.remove(); });
-    img.src = source.currentSrc || source.src;
+    // 來源的圖還收著（卡冊還沒輪到它抓，holdArt）：用收著的網址，不要寫空字串（會 error、退回去抓原圖）。
+    img.src = source.currentSrc || source.src || source._heldSrc || "";
     if (source.complete && source.naturalWidth) img.dataset.ready = "1";
     else delete img.dataset.ready;
     if (img.complete) ready();
