@@ -2691,11 +2691,6 @@ body.fuse {
     grid-auto-columns: minmax(0, 1fr);
     width: 100%;
   }
-  /* 尺寸有六種：一排擺不下（「1024×1024」不會斷行，跟隔壁的數字疊在一起），手機排成三欄兩列。 */
-  .rules-sheet .segmented[data-kind="size"] {
-    grid-auto-flow: row;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
   .rules-sheet .segmented button {
     min-width: 0;
     padding-inline: var(--space-2xs);

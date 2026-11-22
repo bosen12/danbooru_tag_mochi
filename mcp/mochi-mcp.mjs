@@ -1142,7 +1142,7 @@ const TOOLS = [
       properties: {
         positive: { type: "string", description: "draw_prompt 回的 positive（或改過的）。墨池會補齊分級字、品質字，不用自己寫" },
         rating: { type: "string", enum: E.RATINGS, description: "分級（決定負向提示詞）。不給就看 positive 尾巴的 general／sensitive／explicit" },
-        width: { type: "integer", description: "直圖 832×1216、橫圖 1216×832、方圖 1024×1024" },
+        width: { type: "integer", description: "常用尺寸（跟墨池的選單同一份）：直 1024×1344（推薦，通用人物）、896×1344（推薦，全身立繪）、832×1216（省 VRAM）、960×1280、1024×1536；橫 1152×896（雙人）、1216×832（多人場景）、1344×768（寬幅風景）；方 1024×1024" },
         height: { type: "integer" },
         seed: { type: ["integer", "string"], description: "生圖種子 0～18446744073709551615（同提示詞＋同種子＝同構圖）；不給就隨機。超過 9007199254740991 的請用字串給，數字會被四捨五入" },
         ckpt: { type: "string", description: "底模檔名（list_models 查）；不給用墨池預設" },

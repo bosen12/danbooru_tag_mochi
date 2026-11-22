@@ -3186,6 +3186,8 @@ function watchServer() {
   };
   setInterval(tick, 20000);
   document.addEventListener("visibilitychange", tick);
+  // 網路、主機回來（ping.js 也會發）：馬上補，不等下一個 20 秒。
+  addEventListener("online", tick);
 }
 
 function sameUsage(a, b) {

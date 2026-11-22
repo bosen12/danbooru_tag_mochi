@@ -282,10 +282,17 @@ async function boot() {
   openFromHash();
   addEventListener("hashchange", openFromHash);
   // 別的分頁收了新的作品：回到這一頁時重新讀一次。分級也補讀（這一頁在背後時別的房間可能調過）。
-  document.addEventListener("visibilitychange", async () => {
-    if (document.hidden) return;
+  // 網路、主機回來（伺服器重開：ping.js 替瀏覽器發 online）也讀一次：讀不到的那一頁自己補上。
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden) refreshAlbum();
+  });
+  addEventListener("online", () => {
+    if (!document.hidden) refreshAlbum();
+  });
+  async function refreshAlbum() {
     applySharedRating();
     const before = works.map((w) => w.id).join();
+    const failedBefore = loadFailed;
     const logHad = tab === "log" && log.loaded && log.items.length > 0;
     await load();
     // 日誌開著：回來時重讀最新一頁。失敗留著已翻到的；成功按 id 合併，不把捲動拉回第一頁。
@@ -299,8 +306,10 @@ async function boot() {
       await models.load();
       return render();
     }
-    if (works.map((w) => w.id).join() !== before) render();
-  });
+    // 上次讀不到、畫面寫著「讀不到作品冊」（一件都沒有時才這樣寫），這次讀到了：要重畫把它換掉。
+    // 作品一直在畫面上的（讀失敗時照舊留著）不重畫：id 沒變就不動格子（網路一閃又回來時，格子不要整面重建）。
+    if (works.map((w) => w.id).join() !== before || (failedBefore && !loadFailed && !before)) render();
+  }
   // 別的分頁改了共用尺度：這一頁還開著就要跟著換，作品編號一樣也要重畫牆。
   addEventListener("storage", (e) => {
     if (e.key === S.SETTINGS_KEY) applySharedRating();

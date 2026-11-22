@@ -60,7 +60,7 @@ import { mountScreensaver } from "./screensaver.js";
 import { mountGenStatus } from "./gen-status.js";
 import { currentPose, poseButton } from "./pose.js";
 import { openDecks } from "./decks.js";
-import { SIZES, ratioBox } from "./sizes.js";
+import { SIZES, ratioBox, sizeTip } from "./sizes.js";
 import { pickTrim, shotBusy } from "./wall-trim.js";
 import { mountMasonry } from "./wall-masonry.js";
 import { loadGroups, freshGroups, cachedGroups, withGroupPools, onGroupsChange, saveGroup, pickOf, GROUP_SECTIONS } from "./card-groups.js";
@@ -2527,14 +2527,18 @@ function renderRules() {
   // 數字比骨架少時，那一段在這裡展開選格（skeleton-picker.js）。
   const picker = skeletonPicker({ settings: () => settings, save: (patch) => setSettings(patch), groupKeys: groupSkeletonKeys });
   skelPicker = picker;
-  const sizeSel = el("select", { class: "select", "aria-label": "尺寸" }, SIZES.map((s) => el("option", { value: s.id }, s.zh)));
-  sizeSel.value = (SIZES.find((s) => s.w === settings.width && s.h === settings.height) || SIZES[0]).id;
+  // 滑鼠移到選項上（和收起來的選單上）跳出那個尺寸的比例、適合畫什麼（sizes.js 的 sizeTip）。
+  const sizeSel = el("select", { class: "select", "aria-label": "尺寸" }, SIZES.map((s) => el("option", { value: s.id, title: sizeTip(s) }, s.zh)));
+  const sizeNow = SIZES.find((s) => s.w === settings.width && s.h === settings.height) || SIZES[0];
+  sizeSel.value = sizeNow.id;
+  sizeSel.title = sizeTip(sizeNow);
   // 選單旁一個小框照長寬比畫：換尺寸時框從舊的比例變形成新的，一眼看出直、橫、多長。
   const sizeRatio = ratioBox(settings.width, settings.height);
   sizeSel.onchange = () => {
     const s = SIZES.find((x) => x.id === sizeSel.value);
     setSettings({ width: s.w, height: s.h });
     sizeRatio.paint(s.w, s.h);
+    sizeSel.title = sizeTip(s);
     seat(sizeSel);
   };
   const sceneSel = el("select", { class: "select", "aria-label": "場景合理度" }, SCENE_MODES.map((m) => el("option", { value: m }, SCENE_MODE_LABELS[m])));

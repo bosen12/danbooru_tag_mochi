@@ -80,7 +80,7 @@ import { mountDiscord, openRouteFromShot } from "./discord-link.js";
 import { t as translate, takeLanguageState, english } from "./i18n.js";
 import { trialSummaries } from "./composition.js";
 import { pickStarters as chooseStarters, refreshStarters } from "./starters.js";
-import { SIZES } from "./sizes.js";
+import { SIZES, sizeTip } from "./sizes.js";
 
 // 背後預先開好的這一頁（prerender.js）：點進去之前這個房間讀的存檔被別頁改過，就重新整理。
 guardPrerender("fuse");
@@ -1038,11 +1038,20 @@ function pick(i, { quiet = false } = {}) {
   announce(`換到試印 ${LETTERS[i]}`);
 }
 
+/*
+ * 換一批：按下去那一格只讓洗牌動起來、洗牌聲先出（洗牌是 transform／opacity，在合成執行緒上跑，
+ * 主執行緒抽牌時照樣動）；抽選中那張、重畫留到下一個任務。以前同一格裡先抽完才動：
+ * 電腦按下去 100～140ms、手機（CPU÷4）0.5～0.9 秒畫面才動、聲音才出（2026-11-22 量）。
+ * 這中間再有任何輸入（按 G 付印、點試印、拖牌…），先把這一批抽完再處理（init 裡掛的 flushReroll），
+ * 讀到的都是新的一批；還沒輪到之前，畫面和資料都還是舊的那一批，對得上。
+ */
+let rerollSoon = null;
+function flushReroll() {
+  if (rerollSoon) rerollSoon();
+}
+
 function reroll() {
-  seeds = freshSeeds();
-  // 先抽選中的那一張（預覽當場換），其他三張在洗牌動畫的頭幾格裡一張一張補（retrialPicked）。
-  // 以前四張一次抽完再重畫，按下去 70ms 多畫面才開始動。
-  retrialPicked();
+  flushReroll();
   const box = $("trials");
   if (!reduced()) {
     box.classList.remove("is-shuffling");
@@ -1050,10 +1059,28 @@ function reroll() {
     box.classList.add("is-shuffling");
     setTimeout(() => box.classList.remove("is-shuffling"), 520);
   }
-  renderAll([]);
-  if (caseTab === "match") renderCase();
   sfx.shuffle();
-  announce("換了一批試印");
+  let frame = 0;
+  let timer = 0;
+  const run = () => {
+    if (rerollSoon !== run) return;
+    rerollSoon = null;
+    cancelAnimationFrame(frame);
+    clearTimeout(timer);
+    seeds = freshSeeds();
+    // 先抽選中的那一張（預覽當場換），其他三張在洗牌動畫的頭幾格裡補（retrialPicked）。
+    retrialPicked();
+    renderAll([]);
+    if (caseTab === "match") renderCase();
+    announce("換了一批試印");
+  };
+  rerollSoon = run;
+  // 洗牌那一格畫面出去之後的第一個任務；分頁在背景（不畫畫面）時也保證會抽。
+  frame = requestAnimationFrame(() => {
+    clearTimeout(timer);
+    timer = setTimeout(run, 0);
+  });
+  timer = setTimeout(run, 250);
 }
 
 /* ================= 付印 ================= */
@@ -3343,12 +3370,13 @@ function renderPrintBar() {
     t.missing.length ? el("p", { class: "pb-warn" }, `這張沒收到：${t.missing.map(zh).join("、")}`) : null,
     // 不限制開著、尺度超過右邊選的分級：付印前說一聲（rating-free.js）。
     overreachLine(settings, effectiveHeats(settings), "pb-warn"),
-    el("label", { class: "pb-size" }, "尺寸", el("select", { class: "select", "aria-label": "尺寸", onchange: (e) => {
+    // 滑鼠移到選項上（和收起來的選單上）跳出那個尺寸的比例、適合畫什麼（sizes.js 的 sizeTip）。
+    el("label", { class: "pb-size" }, "尺寸", el("select", { class: "select", "aria-label": "尺寸", title: sizeTip(SIZES.find(s => s.id === sizeId)), onchange: (e) => {
       const hadFocus = document.activeElement === e.currentTarget;
       const size = SIZES.find(s => s.id === e.currentTarget.value);
       setSettings({ width: size.w, height: size.h });
       if (hadFocus) $("print-bar").querySelector(".pb-size select")?.focus({ preventScroll: true });
-    } }, SIZES.map(s => el("option", { value: s.id, selected: s.id === sizeId }, `${translate(s.short)} ${s.w}×${s.h}`)))),
+    } }, SIZES.map(s => el("option", { value: s.id, selected: s.id === sizeId, title: sizeTip(s) }, `${translate(s.short)} ${s.w}×${s.h}`)))),
     el(
       "div",
       { class: "pb-acts" },
@@ -4272,12 +4300,6 @@ function renderRating() {
 
 let ratingFreePaint = null;
 
-/** 規則裡的尺寸那一排：六種，手機排成三欄兩列（fuse.css 的 data-kind="size"）。 */
-function sizeKind(seg) {
-  seg.dataset.kind = "size";
-  return seg;
-}
-
 function segmented(label, options, current, onPick) {
   return el(
     "div",
@@ -4328,7 +4350,21 @@ function stepper(label, value, min, max, onChange) {
 }
 
 function openRules() {
-  const size = (SIZES.find((s) => s.w === settings.width && s.h === settings.height) || SIZES[0]).id;
+  const size = SIZES.find((s) => s.w === settings.width && s.h === settings.height) || SIZES[0];
+  // 尺寸有十一種（2026-11-22 加到十一種）：一排按鈕擺不下（電腦超出框外、手機英文斷成兩行），
+  // 跟墨池、付印列一樣用選單。滑鼠移到選項上（和收起來的選單上）跳出比例、用途（sizes.js 的 sizeTip）。
+  const sizeSel = el(
+    "select",
+    { class: "select", "aria-label": "尺寸", title: sizeTip(size) },
+    SIZES.map((s) => el("option", { value: s.id, title: sizeTip(s) }, `${s.short} ${s.w}×${s.h}`))
+  );
+  sizeSel.value = size.id;
+  sizeSel.onchange = () => {
+    const s = SIZES.find((x) => x.id === sizeSel.value);
+    sizeSel.title = sizeTip(s);
+    setSettings({ width: s.w, height: s.h });
+    seat(sizeSel);
+  };
   const who = settings.girl && settings.boy ? "any" : settings.boy ? "boy" : "girl";
   const eraSel = el(
     "select",
@@ -4380,20 +4416,7 @@ function openRules() {
       "div",
       { class: "rules-sheet" },
       el("p", { class: "rules-note" }, "疊印台自己的規則，跟墨池分開。改了之後四張試印會立刻重抽。"),
-      row(
-        "尺寸",
-        sizeKind(
-          segmented(
-            "尺寸",
-            SIZES.map((s) => [s.id, `${s.short} ${s.w}×${s.h}`]),
-            size,
-            (v) => {
-              const s = SIZES.find((x) => x.id === v);
-              setSettings({ width: s.w, height: s.h });
-            }
-          )
-        )
-      ),
+      row("尺寸", sizeSel),
       row(
         "畫面裡有誰",
         segmented(
@@ -4515,6 +4538,8 @@ function wireChrome() {
   });
   $("clear").addEventListener("click", clearBed);
   $("reroll").addEventListener("click", reroll);
+  // 換一批還沒抽完就又有輸入：先抽完（capture：比誰的處理都早），付印、點試印讀到的才是新的一批。
+  for (const type of ["pointerdown", "keydown"]) document.addEventListener(type, flushReroll, true);
   const q = $("case-q");
   q.addEventListener("input", () => {
     clearTimeout(caseSearchTimer);

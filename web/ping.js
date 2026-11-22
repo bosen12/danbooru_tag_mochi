@@ -26,10 +26,18 @@ export function pingLoop(onChange) {
     const wasOk = prev === "ok";
     p.dataset.ok = ok ? "1" : "0";
     p.dataset.link = st;
+    // 連不到的是墨池的伺服器（不是 ComfyUI）：燈號的名字跟著寫「主機」。以前照樣寫「Comfy ✕」，
+    // 電腦版只看得到這兩個字，會以為是 ComfyUI 沒開、跑去重開 ComfyUI。
+    p.querySelector(".ping-name").textContent = st === "net" ? "主機" : "Comfy";
     p.querySelector("span").textContent = LINK_LABEL[st];
     p.title = LINK_LABEL[st];
     if (prev !== null && ok !== wasOk) (ok ? seat : refuse)(p);
+    const back = prev === "net";
     prev = st;
     onChange?.(st, ok);
+    // 主機回來了（伺服器重開、手機的 Tailscale 接回來）：瀏覽器自己的網路一直是通的，不會發 online。
+    // 這裡替它發一次 —— 等著重送的偏好名單、群組勾選（synced-list、group-picks-sync）、暫時讀不到的圖（img-wait）、
+    // 作品冊、卡冊的次數都聽 online，不用等切分頁才補上（2026-11-22 走查：作品冊的模型頁一直停在「讀不到統計」）。
+    if (back) dispatchEvent(new Event("online"));
   });
 }

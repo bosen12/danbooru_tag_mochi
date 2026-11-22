@@ -65,6 +65,25 @@ export function buildMutexIndex(graph) {
   });
 }
 
+/** tag → 兄弟的 Set：get 到才從 lex.siblings 那張算、記住；不遍歷（遍歷會逼 LazySiblings 全部算完）。 */
+class LazySiblingSets extends Map {
+  constructor(src) {
+    super();
+    this._src = src;
+  }
+  get(tag) {
+    if (!super.has(tag)) {
+      const sibs = this._src && this._src.get(tag);
+      if (!sibs) return undefined;
+      super.set(tag, new Set(sibs));
+    }
+    return super.get(tag);
+  }
+  has(tag) {
+    return super.has(tag) || !!(this._src && this._src.has(tag));
+  }
+}
+
 /**
  * Build the same M index from a live `indexLexicon()` result (browser-safe, no JSON).
  * @param {{ mutexOf: Map<string,string[]>, siblings: Map<string,string[]>, byTag: Map<string, any> }} lex
@@ -88,10 +107,10 @@ export function buildMutexIndexFromLex(lex) {
   for (const [t, arr] of tagToGroups) {
     tagToGroups.set(t, Object.freeze(arr));
   }
-  const tagToSiblings = new Map();
-  for (const [t, sibs] of lex.siblings || []) {
-    tagToSiblings.set(t, new Set(sibs));
-  }
+  // 兄弟清單用到哪張才換成 Set。以前這裡一次走遍 lex.siblings：引擎刻意延後的兩兩比對（engine.js 的
+  // LazySiblings）在第一次抽牌時全部補齊，再建八千多個 Set —— 電腦多 70～80ms、手機（CPU÷4）0.3 秒，
+  // 正好卡在疊印台第一次放牌、墨池第一次在主執行緒抽。抽牌只用 groupToTags（prefilterPoolByMutex）。
+  const tagToSiblings = new LazySiblingSets(lex.siblings);
   return freezeIndex(tagToGroups, groupToTags, tagToSiblings, {
     generated: "from-lex",
     stats: {

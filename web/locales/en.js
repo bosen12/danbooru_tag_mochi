@@ -419,12 +419,29 @@ Python 3 · 標準函式庫，不用裝任何套件|Python 3 · Standard library
 直 896×1152|Portrait 896×1152
 直 768×1344|Portrait 768×1344
 橫 1344×768|Landscape 1344×768
+直 1024×1344|Portrait 1024×1344
+直 960×1280|Portrait 960×1280
+直 896×1344|Portrait 896×1344
+直 1024×1536|Portrait 1024×1536
+橫 1152×896|Landscape 1152×896
+1:1・頭像、方形插畫|1:1 · Avatars, square illustrations
+7:9・接近方的直圖：胸像、半身|7:9 · Near-square portrait: bust, half-body
+⭐ 推薦・16:21・通用人物、半身、全身|⭐ Recommended · 16:21 · General characters, half-body, full-body
+3:4・人物插畫、半身|3:4 · Character illustrations, half-body
+13:19・單人角色、節省 VRAM|13:19 · Single character, saves VRAM
+⭐ 推薦・2:3・全身立繪、角色設計|⭐ Recommended · 2:3 · Full-body standing art, character design
+2:3・修長構圖、全身人物|2:3 · Tall compositions, full-body figures
+4:7・細長直圖：全身站姿、手機桌布|4:7 · Very tall portrait: full-body standing poses, phone wallpapers
+9:7・橫向人物、雙人|9:7 · Landscape figures, two characters
+19:13・場景、多人構圖|19:13 · Scenes, multi-character compositions
+7:4・寬幅場景、風景|7:4 · Wide scenes, landscapes
 聲音：開|Sound on
 聲音：開（點一下關掉）|Sound on · Click to mute
 聲音：關（點一下打開）|Sound off · Click to enable
 Comfy 已連|Comfy connected
 Comfy 未連|Comfy offline
 連不到主機|Server offline
+主機|Server
 讀取中…|Loading…
 載入中…|Loading…
 翻譯中…|Translating…
