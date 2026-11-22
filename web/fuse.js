@@ -424,9 +424,9 @@ function setSettings(patch) {
   // Heat selection has automatic weights; inherited weights belong to the old selection.
   settings = sanitizeSettings({ ...settings, ...(patch.heats ? { weights: undefined } : {}), ...patch }, data);
   saveFuseSettings(prev);
-  // 跟放牌、換一批一樣：先抽選中的那張（預覽、版上的影子當場換），其他三張丟背景執行緒（retrialPicked）。
-  // 以前換分級、尺度、時代都在這一下把四張抽完：電腦按下去 240ms 才動（2026-11-22 量）。
-  retrialPicked();
+  // 跟放牌一樣四張都丟背景執行緒（retrialLater）。以前換分級、尺度、時代都在這一下把四張抽完：
+  // 電腦按下去 240ms、手機 320ms 才動（2026-11-22 量）。
+  retrialLater();
   renderAll();
   renderCase();
 }
@@ -532,6 +532,34 @@ function retrialPicked() {
   deferTrials();
 }
 
+/*
+ * 放牌、拿牌、撤回、清版、改規則、換一批：連選中那張也丟背景執行緒抽（選中的排第一），手指放下去牌當場起飛。
+ * 以前選中那張在這一下同步抽（預覽、版上的影子當場換）：手機（CPU÷4）一張 720ms，放一張牌 0.8 秒畫面才動、
+ * 清版 0.75 秒（2026-11-22 量；電腦一張 40～75ms，背景抽回來也就晚兩三格畫面）。
+ * 抽回來之前，版上的影子還是上一張試印的（已經上版的那幾張拿掉）；抽回來 pickedArrived 換上、舊的淡出。
+ * 付印、看提示詞、挑試印、小選單這些要用它的，先在這邊抽完（ensurePicked、finishTrials）。
+ */
+function retrialLater() {
+  trialsPending = new Set([picked, ...seeds.map((_, i) => i).filter((i) => i !== picked)]);
+  deferTrials();
+}
+
+/** 選中那張抽回來了：版上的影子、預覽、付印列照它換。 */
+function pickedArrived() {
+  refreshInk();
+  renderPlate([]);
+  renderPreview();
+  renderTrials();
+  renderPrintBar();
+}
+
+/** 選中那張還在背景抽：要用它（付印、看提示詞）的先在這邊抽完。 */
+function ensurePicked() {
+  if (!trialsPending?.has(picked)) return;
+  retrial(picked, picked + 1);
+  pickedArrived();
+}
+
 function deferTrials() {
   const work = ++trialsWork;
   clearTimeout(trialsTimer);
@@ -551,13 +579,18 @@ function deferTrials() {
       drawInWorker({ settings: withFavChars(withEffectiveHeats(settings)), pins: bed.pins, banned: [...bans, ...HARD_BANNED], seeds: todo.map((i) => seeds[i]) }).then((out) => {
         if (work !== trialsWork || !trialsPending) return;
         if (!out || out.length !== todo.length || sig() !== asked) return deferTrialsHere(work);
+        const pickedLate = trialsPending.has(picked);
         const next = trials.slice();
         todo.forEach((i, k) => {
           if (trialsPending.has(i)) next[i] = trialOf(out[k], i, seeds[i]);
           trialsPending.delete(i);
         });
         trials = next;
-        finishTrials();
+        if (!pickedLate) return finishTrials();
+        // 選中那張也一起回來：影子、預覽、試印那一排一次畫（finishTrials 再畫一次試印那一排是重工，手機上 60ms）。
+        settleTrials();
+        pickedArrived();
+        if (caseTab === "match") renderCase();
       });
     };
     trialsFrame = requestAnimationFrame(() => {
@@ -587,6 +620,8 @@ function deferTrialsHere(work) {
     }
     const i = trialsPending.values().next().value;
     if (i !== undefined) retrial(i, i + 1);
+    // 選中那張（retrialLater 排第一）抽好了：影子、預覽先換，其他三張接著抽。
+    if (i === picked) pickedArrived();
     // 一個任務只抽一張，中間留畫面給正在飛的牌；小點仍整批抽完才補上。
     if (trialsPending.size) deferTrialsHere(work);
     else finishTrials();
@@ -611,10 +646,14 @@ function settleTrials() {
 function finishTrials() {
   if (!trialsPending) return;
   const todo = [...trialsPending];
+  const pickedLate = trialsPending.has(picked);
   for (const i of todo) retrial(i, i + 1);
   settleTrials();
-  refreshInk();
-  renderTrials();
+  if (pickedLate) pickedArrived();
+  else {
+    refreshInk();
+    renderTrials();
+  }
   if (caseTab === "match") renderCase();
 }
 
@@ -708,7 +747,7 @@ function commit(next, label, events = []) {
       back: e.out,
     };
   }
-  retrialPicked();
+  retrialLater();
   renderAfterPlace(events);
   syncCaseStates();
   updateCaseFoot();
@@ -956,7 +995,7 @@ function undo() {
   if (h.restore) undoRestore(h.restore);
   rowNotes = {};
   plateNotice = null;
-  retrialPicked();
+  retrialLater();
   renderAll([]);
   syncCaseStates();
   // 撤回：上一步放上來的回去（字盒的四張以上先疊成一疊再一起走，不然路線交叉看起來在亂飛）；
@@ -1070,8 +1109,8 @@ function reroll() {
     cancelAnimationFrame(frame);
     clearTimeout(timer);
     seeds = freshSeeds();
-    // 先抽選中的那一張（預覽當場換），其他三張在洗牌動畫的頭幾格裡補（retrialPicked）。
-    retrialPicked();
+    // 四張都丟背景執行緒（retrialLater，選中的排第一），洗牌動畫照跑、主執行緒不卡；抽回來就換上。
+    retrialLater();
     renderAll([]);
     if (caseTab === "match") renderCase();
     announce("換了一批試印");
@@ -1206,6 +1245,7 @@ function openHires(p, btn) {
 }
 
 function printNow({ fresh = false } = {}) {
+  ensurePicked();
   const t = committedTrial();
   if (!t) return;
   // fresh：印好的那張再印一張，換一顆生圖種子（同一顆種子印出來一模一樣，再印沒有意義）。
@@ -2137,7 +2177,8 @@ function renderPlate(events = []) {
   const rows = REGISTERS.map((suit) => {
     const mine = bed.pins.filter((x) => regOf(x) === suit);
     // 空白的版不列引擎的影子：還沒有東西可以對照，只會讓人以為版上已經有牌。
-    const ghosts = !empty && t ? t.extra.filter((x) => regOf(x) === suit) : [];
+    // 已經上版的不當影子：選中那張還在背景抽的那一下，影子還是上一張試印的（retrialLater）。
+    const ghosts = !empty && t ? t.extra.filter((x) => regOf(x) === suit && !bed.pins.includes(x)) : [];
     const cap = plan.caps[suit] ?? ghosts.length;
     const open = expanded.has(suit);
     const shown = open ? ghosts : ghosts.slice(0, cap);
@@ -3224,6 +3265,7 @@ function sweepPrints() {
 
 /** 付印鈕的那個動作（付印／再印一次／Hires）。btn 是 Hires 選單要貼著彈出的那顆。 */
 function printAction(btn) {
+  ensurePicked();
   const t = trials[picked];
   if (!t) return;
   const p = printForTrial(t);
@@ -3494,6 +3536,7 @@ function renderPrintBar() {
 }
 
 function showPos() {
+  ensurePicked();
   const t = trials[picked];
   if (!t) return;
   openSheet(

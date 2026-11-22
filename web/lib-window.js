@@ -9,6 +9,24 @@
  *
  * grid：牌格（CSS grid，auto-fill 欄）；scroller：真的在捲的那一層；make(card) 做一張牌。
  */
+/**
+ * parent.replaceChildren(...nodes) 的省事版：已經在對的位置的牌不動，只拿掉不要的、補上新的、搬動換了位置的。
+ * 以前打開抽屜、搜尋、換花色都把留下來的牌整批拔下來再接回去：每一張都要重算樣式，
+ * 手機（CPU÷4）打開抽屜 0.34 秒、搜尋一次 130 張 0.2～0.37 秒的長任務（2026-11-22 量）。
+ */
+function placeKids(parent, nodes) {
+  const keep = new Set(nodes);
+  for (const c of [...parent.childNodes]) if (!keep.has(c)) c.remove();
+  let ref = parent.firstChild;
+  for (const n of nodes) {
+    if (n === ref) {
+      ref = ref.nextSibling;
+      continue;
+    }
+    parent.insertBefore(n, ref);
+  }
+}
+
 export function createLibWindow({ grid, scroller, make, refresh, first = 24, overscan = 1, keep = 360 }) {
   let list = [];
   let cols = 0;
@@ -98,7 +116,7 @@ export function createLibWindow({ grid, scroller, make, refresh, first = 24, ove
   function place(start, end, all) {
     const [a, b] = shown;
     if (all || a < 0 || end <= a || start >= b || top.parentNode !== grid) {
-      grid.replaceChildren(top, ...list.slice(start, end).map(nodeOf), bottom);
+      placeKids(grid, [top, ...list.slice(start, end).map(nodeOf), bottom]);
       return;
     }
     const cards = [...grid.children].filter((n) => n !== top && n !== bottom);
@@ -131,7 +149,7 @@ export function createLibWindow({ grid, scroller, make, refresh, first = 24, ove
       active = true;
       list = next;
       shown = [-1, -1];
-      grid.replaceChildren(...list.slice(0, first).map(nodeOf));
+      placeKids(grid, list.slice(0, first).map(nodeOf));
       if (frame) cancelAnimationFrame(frame);
       frame = requestAnimationFrame(() => update(true));
     },
