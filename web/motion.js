@@ -1129,7 +1129,12 @@ function ghostClone(node) {
       n.dataset["ghost" + k[0].toUpperCase() + k.slice(1)] = n.dataset[k];
       delete n.dataset[k];
     }
-    if (n.tagName === "IMG") n.loading = "eager";
+    if (n.tagName === "IMG") {
+      n.loading = "eager";
+      // 殘影第一格就要有圖：複製來的 decoding="async" 可能先畫一格空白再淡出（看起來閃一下）。
+      // 這張圖原本就在畫面上、解碼過了，同步拿不花時間。
+      n.decoding = "sync";
+    }
   }
   c.classList.add("ghost-item");
   return c;

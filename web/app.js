@@ -1050,8 +1050,11 @@ function renderLibrary() {
   } else {
     libWin?.stop();
     libShown = 0;
+    // 換花色、搜尋（整排重發）也一樣沿用：同一張牌不必重新做、圖不必重新解碼；發牌動畫照演。
+    libReuse = new Map([...grid.querySelectorAll(":scope > .card[data-tag]")].map((n) => [n.dataset.tag, n]));
     grid.replaceChildren();
     moreLibrary(LIB_FIRST);
+    libReuse = null;
   }
   rowMove.done();
   if (!matchMedia("(prefers-reduced-motion: reduce)").matches && (dealLibrary || hadTags.size)) {
@@ -1205,14 +1208,32 @@ function libWindow() {
     make: libCard,
     first: LIB_FIRST,
     // 牌離開畫面的這段時間池子、廢字簍、偏好卡牌、偏好角色可能變了：插回來時照現在的重蓋一次。
-    refresh: (node, card) => {
-      paintState(node, card.tag);
-      if (hand?.has(card.tag)) node.dataset.inHand = "true";
-      else delete node.dataset.inHand;
-      if (card.suit === "chara") paintFavChar(node, card.tag);
-    },
+    refresh: refreshLibCard,
   });
   return libWin;
+}
+
+function refreshLibCard(node, card) {
+  paintState(node, card.tag);
+  if (hand?.has(card.tag)) node.dataset.inHand = "true";
+  else delete node.dataset.inHand;
+  if (card.suit === "chara") paintFavChar(node, card.tag);
+}
+
+/**
+ * 電腦版字盒重畫（換分級、時代、人物…）時，畫面上原本就有的牌：拿原本那一張接回去、蓋章照現在的重蓋。
+ * 以前整批重做，留下來的牌圖要重新解碼（白一下），換分級時 24 張一模一樣的牌全部新做（2026-11-22 量）。
+ * 牌物件換了（自製牌改過、詞庫重讀）就照舊重做。
+ */
+let libReuse = null;
+function libCardNow(card) {
+  const old = libReuse?.get(card.tag);
+  if (old && old._card === card) {
+    libReuse.delete(card.tag);
+    refreshLibCard(old, card);
+    return old;
+  }
+  return libCard(card);
 }
 
 function moreLibrary(n = LIB_PAGE) {
@@ -1220,7 +1241,7 @@ function moreLibrary(n = LIB_PAGE) {
   grid.querySelector(".lib-more")?.remove();
   const slice = libList.slice(libShown, libShown + n);
   libShown += slice.length;
-  const nodes = slice.map((c) => libCard(c));
+  const nodes = slice.map((c) => libCardNow(c));
   for (const n of nodes) n.tabIndex = -1;
   grid.append(...nodes);
   if (!grid.querySelector(".card[tabindex='0']")) {
@@ -1315,6 +1336,7 @@ function buildHand() {
 
 function libCard(card) {
   const node = cardNode(card, assets);
+  node._card = card;
   paintState(node, card.tag);
   if (hand?.has(card.tag)) node.dataset.inHand = "true";
   if (card.suit === "chara") paintFavChar(node, card.tag);

@@ -1390,6 +1390,24 @@ function nodeAt(i, t0) {
 }
 
 /**
+ * parent.replaceChildren(...nodes) 的省事版：已經在對的位置的不動，只拿掉不要的、補上新的、搬動換了位置的。
+ * 整段重接（換分級、只看用過的、看群組）以前把留下來的格子整批拔下來再接回去：每一格都要重算樣式、重新排版，
+ * 手機（CPU÷4）一次 60～140ms 的長任務，格子其實一樣（2026-11-22 量：只看用過的 36 格全部重接）。
+ */
+function placeChildren(parent, nodes) {
+  const keep = new Set(nodes);
+  for (const c of [...parent.childNodes]) if (!keep.has(c)) c.remove();
+  let ref = parent.firstChild;
+  for (const n of nodes) {
+    if (n === ref) {
+      ref = ref.nextSibling;
+      continue;
+    }
+    parent.insertBefore(n, ref);
+  }
+}
+
+/**
  * 照捲動位置接上該畫的那一段。force：整段重接（換排序、換篩選、格寬變了）。
  * 一般捲動只在頭尾加減幾排：留下來的格子不動，不必整片重新算樣式。
  */
@@ -1404,7 +1422,7 @@ function layoutWindow(force = false) {
     const old = live;
     live = [];
     for (let i = s; i < e; i++) live.push(nodeAt(i, t0));
-    grid.replaceChildren(padTop, ...live, padBottom, ...(tail ? [tail] : []));
+    placeChildren(grid, [padTop, ...live, padBottom, ...(tail ? [tail] : [])]);
     for (const c of old) if (!c.isConnected) dropArt(c, false);
     // 換排序、換篩選、跳很遠：先前往下預抓、還沒到的也撤掉（index 已經不是那一份 list 的了）。
     for (const img of [...artBusy]) {

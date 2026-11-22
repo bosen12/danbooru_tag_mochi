@@ -424,7 +424,9 @@ function setSettings(patch) {
   // Heat selection has automatic weights; inherited weights belong to the old selection.
   settings = sanitizeSettings({ ...settings, ...(patch.heats ? { weights: undefined } : {}), ...patch }, data);
   saveFuseSettings(prev);
-  retrial();
+  // 跟放牌、換一批一樣：先抽選中的那張（預覽、版上的影子當場換），其他三張丟背景執行緒（retrialPicked）。
+  // 以前換分級、尺度、時代都在這一下把四張抽完：電腦按下去 240ms 才動（2026-11-22 量）。
+  retrialPicked();
   renderAll();
   renderCase();
 }
@@ -2131,6 +2133,7 @@ function renderPlate(events = []) {
   relFocus = null;
   renderPlateNotice();
   const plan = planPool(t, empty);
+  const used = new Set();
   const rows = REGISTERS.map((suit) => {
     const mine = bed.pins.filter((x) => regOf(x) === suit);
     // 空白的版不列引擎的影子：還沒有東西可以對照，只會讓人以為版上已經有牌。
@@ -2139,10 +2142,12 @@ function renderPlate(events = []) {
     const open = expanded.has(suit);
     const shown = open ? ghosts : ghosts.slice(0, cap);
     const info = CARD_SUIT_INFO[suit];
-    const cards = mine.map((tag) => plateCard(tag));
+    const cards = mine.map((tag) => platePiece(tag));
+    const ghostsNow = shown.map((tag) => ghostPiece(tag, t));
+    for (const n of [...cards, ...ghostsNow]) used.add(n);
     // 你的牌跟引擎補的中間隔一條細線：左邊是版上的，右邊是這一張試印的影子。
     if (mine.length && shown.length) cards.push(el("span", { class: "reg-split", "aria-hidden": "true" }));
-    cards.push(...shown.map((tag) => ghostCard(tag, t)));
+    cards.push(...ghostsNow);
     if (ghosts.length > cap) {
       cards.push(
         el(
@@ -2195,6 +2200,7 @@ function renderPlate(events = []) {
         : null
     );
   });
+  prunePlateCache(used);
   if (!empty) starterPick = null;
   // 整塊重畫時同一張牌從舊位置滑到新位置（拿下一張、放上一張時，同一列的其他牌讓位）；
   // 影子被收下變成正式的牌，從影子的位置滑進去。
@@ -2527,11 +2533,57 @@ function plateCard(tag) {
   return node;
 }
 
+/*
+ * 版上的牌、引擎的影子：同一張沿用原本的節點，狀態（飛來途中、份量、墨點、試印字母）每次重上。
+ * renderPlate 每次整塊重畫：以前每放一張牌、換一張試印，版上二十幾張牌全部新做，圖要重新解碼、白一下
+ * （電腦放一張牌重建 25 張圖、挑一張試印 17 張；2026-11-22 量）。不在版上的（正在飛、被拿走）不沿用。
+ */
+const plateCache = new Map();
+const ghostCache = new Map();
+const onPlate = (node) => !!node && $("registers").contains(node);
+
+function platePiece(tag) {
+  const card = cardOf(tag);
+  const src = bed.carried[tag] ? "附帶" : null;
+  let node = plateCache.get(tag);
+  if (onPlate(node) && node._card === card && node._src === src) {
+    node.style.visibility = inbound.has(tag) ? "hidden" : "";
+    paintInk(node, tag);
+    paintWeight(node, (bed.weights || {})[tag]);
+    return node;
+  }
+  node = plateCard(tag);
+  node._card = card;
+  node._src = src;
+  plateCache.set(tag, node);
+  return node;
+}
+
+function ghostPiece(tag, t) {
+  const card = cardOf(tag);
+  let node = ghostCache.get(tag);
+  if (onPlate(node) && node._card === card) {
+    node.setAttribute("aria-label", ghostLabel(card, t));
+    return node;
+  }
+  node = ghostCard(tag, t);
+  node._card = card;
+  ghostCache.set(tag, node);
+  return node;
+}
+
+/** 這次重畫沒用到的就放掉（快取只留版上現在的）。 */
+function prunePlateCache(used) {
+  for (const cache of [plateCache, ghostCache]) for (const [tag, node] of cache) if (!used.has(node)) cache.delete(tag);
+}
+
+const ghostLabel = (card, t) => `${card.zh}（${card.tag}）：引擎在試印 ${t.letter} 補的。Enter 看選項，可以收下`;
+
 function ghostCard(tag, t) {
   const card = cardOf(tag);
   const node = eagerArt(cardNode(card, assets, {}));
   node.classList.add("ghost-card");
-  node.setAttribute("aria-label", `${card.zh}（${card.tag}）：引擎在試印 ${t.letter} 補的。Enter 看選項，可以收下`);
+  node.setAttribute("aria-label", ghostLabel(card, t));
   node.addEventListener("click", () => openPop(node, tag, "ghost"));
   drag.attach(node, { tag, from: "ghost" });
   return node;
@@ -4001,6 +4053,9 @@ function renderCase() {
   caseList = list;
   caseShown = 0;
   const grid = $("case-grid");
+  // 畫面上原本就有的牌：拿原本那一張接回去（moreCase 的 caseReuse）。以前換分級、放牌重畫都整批重做，
+  // 留下來的牌圖要重新解碼（白一下），換分級時 24 張一模一樣的牌全部新做（2026-11-22 量）。
+  caseReuse = new Map([...grid.querySelectorAll(":scope > .card[data-tag]")].map((n) => [n.dataset.tag, n]));
   grid.replaceChildren();
   grid._reasons = reasons;
   $("case-count").textContent = `${list.length} 張`;
@@ -4032,6 +4087,7 @@ function renderCase() {
                 : "沒有符合的牌。"
         );
     grid.append(empty);
+    caseReuse = null;
     if (emptyKey !== caseEmptyShown) {
       caseEmptyShown = emptyKey;
       enter(empty);
@@ -4042,6 +4098,7 @@ function renderCase() {
   }
   caseEmptyShown = "";
   moreCase();
+  caseReuse = null;
   markEnterTarget();
   // 換花色、換小分類：捲回最上面，前二十張依序發進來（跟墨池的字盒一樣）。放牌、打字重畫不發。
   if (deal) {
@@ -4081,6 +4138,8 @@ function markEnterTarget() {
 
 let caseObserver = null;
 let caseEmptyShown = "";
+// renderCase 重畫的那一下：畫面上原本的牌（tag → 那一張），moreCase 拿來沿用。
+let caseReuse = null;
 
 function moreCase() {
   const grid = $("case-grid");
@@ -4091,17 +4150,30 @@ function moreCase() {
   const has = new Set(bed.pins);
   const hasCards = !!grid.querySelector(".card");
   const nodes = slice.map((card, i) => {
-    const node = cardNode(card, assets, { src: reasons ? reasons.get(card.tag) : null });
+    const src = reasons ? reasons.get(card.tag) : null;
+    // 同一張牌（牌物件、「為什麼列出來」都一樣）：沿用原本那一張，狀態照現在的重蓋。
+    const old = caseReuse?.get(card.tag);
+    let node;
+    if (old && old._card === card && old._src === src) {
+      caseReuse.delete(card.tag);
+      node = old;
+    } else {
+      node = cardNode(card, assets, { src });
+      node._card = card;
+      node._src = src;
+      node.addEventListener("click", () => {
+        if (hand?.editing) hand.toggle(card.tag, node.getBoundingClientRect());
+        else toggle(card.tag, node);
+      });
+      drag.attach(node, { tag: card.tag, from: "case" });
+    }
     node.tabIndex = hasCards || i ? -1 : 0;
     if (has.has(card.tag)) node.dataset.state = "pinned";
+    else if (node.dataset.state === "pinned") delete node.dataset.state;
     node.setAttribute("aria-pressed", has.has(card.tag) ? "true" : "false");
-    node.addEventListener("click", () => {
-      if (hand?.editing) hand.toggle(card.tag, node.getBoundingClientRect());
-      else toggle(card.tag, node);
-    });
     if (hand?.has(card.tag)) node.dataset.inHand = "true";
+    else delete node.dataset.inHand;
     if (card.suit === "chara") paintFavChar(node, card.tag);
-    drag.attach(node, { tag: card.tag, from: "case" });
     return node;
   });
   grid.append(...nodes);

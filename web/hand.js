@@ -243,9 +243,12 @@ export function createHand({
       write(SIZE_KEY, { w: size.w, fs: size.fs });
     } else if (!measured && !retry && tries < 40) {
       tries += 1;
+      // 再量一次就好，量到了才重擺：手機上字盒收在面板裡，開頁後十秒一直量不到，
+      // 以前每 250ms 整個托盤重擺一次、標籤整個重寫（40 次，2026-11-22 量）。
       retry = setTimeout(() => {
         retry = 0;
-        layout(false);
+        measure();
+        if (measured) layout(false);
       }, 250);
     }
     return size;
@@ -390,7 +393,12 @@ export function createHand({
   const pickText = `點${where}裡的牌加進來，再點一次拿掉`;
   function paintHead() {
     const placed = tags.length - shownTags().length;
-    tab.innerHTML = `${HAND_ICON}<span class="fav-title">偏好卡牌</span><b class="fav-count">${Number.isFinite(max) ? `${tags.length}/${max}` : tags.length}</b>${CHEVRON}`;
+    // 張數沒變就不重寫：每次重擺都整個換掉，圖示、字都是新的（英文版還要再翻一次）。
+    const tabHtml = `${HAND_ICON}<span class="fav-title">偏好卡牌</span><b class="fav-count">${Number.isFinite(max) ? `${tags.length}/${max}` : tags.length}</b>${CHEVRON}`;
+    if (tab._html !== tabHtml) {
+      tab._html = tabHtml;
+      tab.innerHTML = tabHtml;
+    }
     tab.setAttribute("aria-expanded", open ? "true" : "false");
     tab.title = open ? "收起偏好卡牌" : "打開偏好卡牌";
     pick.textContent = editing ? "完成" : "＋ 挑牌";
