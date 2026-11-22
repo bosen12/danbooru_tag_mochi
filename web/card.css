@@ -806,6 +806,12 @@ body[data-dragging="true"] .fav-hand[data-open="false"][data-over="true"] {
   overscroll-behavior-x: contain;
 }
 
+/* 補位的牌從原處滑過來（hand.js 的 FLIP）時會暫時超出整排的右邊：不讓它把捲動範圍撐大 ——
+   不然捲到最右邊出牌，捲動跟著滑動一格一格被夾回來，整排晃。直的不切（指到的那張要浮起來）。 */
+.fav-hand[data-scroll="true"] .fav-fan {
+  overflow-x: clip;
+}
+
 /* 牌的上面留一點空：指到的那張浮起來不會被切掉。 */
 .fav-body {
   padding-top: 14px;

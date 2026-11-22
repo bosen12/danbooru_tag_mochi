@@ -4614,6 +4614,9 @@ function buildHand() {
     onRemoved: (t, undo) => toast(`「${zh(t)}」拿出偏好卡牌`, { action: { label: "復原", run: undo } }),
     decorate: (node, t) => drag.attach(node, { tag: t, from: "hand" }),
   });
+  // 伺服器那份讀到了、別的分頁或裝置改了偏好卡牌：托盤照新的那份重擺（墨池、卡冊一直有接，這裡以前漏了：
+  // 新裝置第一次開疊印台托盤是空的，墨池那邊加的牌這邊也要重新整理才看得到）。
+  handStore.onChange(() => hand.reload());
   syncHand();
 }
 

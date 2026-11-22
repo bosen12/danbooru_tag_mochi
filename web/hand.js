@@ -171,6 +171,8 @@ export function createHand({
       return;
     }
     const r = el.getBoundingClientRect();
+    // 剛量過、排版是新的：順手對一下記著的捲動位置（托盤收起來再打開，捲動會歸零但不發捲動事件）。
+    if (fanW) scrolled = body.scrollLeft;
     const h = !r.height ? 0 : Math.ceil(innerHeight - r.top) + 12;
     const next = h + "px";
     if (cur === next || (h === 0 && !cur)) return;
@@ -273,8 +275,101 @@ export function createHand({
   function setScroll(m, w, room) {
     const flat = scrolls(m, w, room);
     if ((el.dataset.scroll === "true") !== flat) el.dataset.scroll = flat ? "true" : "false";
-    const want = flat ? `${Math.ceil(m * (w + GAP) - GAP + 24)}px` : "";
+    fanW = flat ? Math.ceil(m * (w + GAP) - GAP + 24) : 0;
+    const want = flat ? `${fanW}px` : "";
     if (fan.style.width !== want) fan.style.width = want;
+  }
+
+  // 捲動的托盤補位：牌從整排正中間往兩旁排（left:50%），整排一變長變短，中心就挪半張。以前直接改位置、
+  // 讓轉場滑過去：出一張牌，所有牌先跳半張、空格左邊那半再滑回原位（2026-11-22 逐格量：電腦 71px、
+  // 手機 43px），看起來抖一下；牌回來是反過來跳。現在牌直接擺到新位置，再從畫面上原本那個位置滑過去
+  // （FLIP，動的是 translate，跟 transform 疊在一起）：只有真的換了位置的牌在動，離空格近的先動、
+  // 遠的晚一點，像手裡的牌靠攏。改之前在哪用算的（上次擺的 x、整排多寬、捲到哪、還沒滑完的那段），
+  // 不量 —— 出牌那一下 DOM 剛改過，一量就逼整頁排版。
+  let fanW = 0; // 捲動時整排多寬（不捲是 0）
+  let scrolled = 0; // body.scrollLeft：捲動事件記下來，重擺時不讀
+  let flipFocus = null; // 空格在哪：{ v }＝畫面上的位置（離開的那張）；{ fan }＝整排裡的位置（新的那格、拖曳的空格）
+  let clampRaf = 0;
+  const snapped = new Set(); // 拖曳放下、直接到位的那張：捲動被夾回來也不補滑
+  const FLIP_HOLD = 40; // 出牌：牌先離開一下，空格才開始合
+  const FLIP_STAGGER = 26;
+  body.addEventListener("scroll", () => (scrolled = body.scrollLeft), { passive: true });
+
+  /** 這格還沒滑完的那一段（px，往右是正）。 */
+  function flipOffset(s) {
+    const a = s._flip;
+    if (!a || a.playState !== "running") return 0;
+    const p = a.effect.getComputedTiming().progress;
+    return p == null ? 0 : a._dx * (1 - p);
+  }
+  function stopFlip(s) {
+    s._flip?.cancel();
+    s._flip = null;
+  }
+
+  /**
+   * 開始滑：entries [{ k, dx, v1 }]（dx：畫面上原本的位置減新位置；v1：新位置）。
+   * 有空格（focusV）：離它近的先動、一格晚 FLIP_STAGGER；已經在滑的接著滑，不停下來等。
+   */
+  function startFlips(entries, focusV, hold) {
+    if (!entries.length) return;
+    const step = (size.shown || size.w) + GAP;
+    const ranks = focusV == null ? null : entries.map((e) => Math.round(Math.abs(e.v1 - focusV) / step));
+    const low = ranks ? Math.min(...ranks) : 0;
+    entries.forEach((e, i) => {
+      const old = e.k._flip;
+      const moving = !!old && old.playState === "running" && old.currentTime > old.effect.getTiming().delay;
+      stopFlip(e.k);
+      const delay = !ranks || moving ? 0 : hold + Math.min(6, ranks[i] - low) * FLIP_STAGGER;
+      const a = e.k.animate([{ translate: `${e.dx.toFixed(1)}px 0` }, { translate: "0 0" }], {
+        duration: DUR.medium,
+        delay,
+        easing: css(CURVE.out),
+        fill: "backwards",
+      });
+      a._dx = e.dx;
+      a.onfinish = () => {
+        if (e.k._flip === a) e.k._flip = null;
+      };
+      e.k._flip = a;
+    });
+  }
+
+  /**
+   * 整排變短、本來捲到靠右邊：瀏覽器把捲動夾回來，整排往右跳一段。擺的時候不知道會不會夾（要排版才知道），
+   * 下一格畫面開頭看一眼（那時本來就要排版），夾了就每張再多從原處滑過來那一段。
+   */
+  function checkClamp(assumed, focus, hold) {
+    cancelAnimationFrame(clampRaf);
+    clampRaf = requestAnimationFrame(() => {
+      clampRaf = 0;
+      const skip = new Set(snapped);
+      snapped.clear();
+      if (el.dataset.scroll !== "true") return;
+      const s1 = body.scrollLeft;
+      scrolled = s1;
+      const d = s1 - assumed;
+      if (Math.abs(d) < 0.5) return;
+      const entries = [];
+      for (const k of fan.querySelectorAll(".fav-slot:not(.is-out)")) {
+        if (k._x == null || skip.has(k)) continue;
+        const dx = flipOffset(k) + d;
+        if (Math.abs(dx) > 0.5) entries.push({ k, dx, v1: fanW / 2 + k._x - s1 });
+        else stopFlip(k);
+      }
+      startFlips(entries, focusAt(focus, s1), hold);
+    });
+  }
+  /** 空格在畫面上哪（s：捲到哪）。 */
+  const focusAt = (f, s) => (!f ? null : f.v ?? f.fan - s);
+
+  /** 一格離開托盤（出牌、拿掉）：記下空格在畫面上哪（離它近的先補）；下次回來直接到位，不從舊位置滑。 */
+  function leave(c) {
+    if (c._x != null && fanW && !flipFocus) flipFocus = { v: fanW / 2 + c._x + flipOffset(c) - scrolled };
+    stopFlip(c);
+    c._x = null;
+    c._placed = false;
+    c.remove();
   }
 
   /** 捲動的托盤：把這張捲到看得到（加進來、飛回來的那張）。 */
@@ -292,7 +387,7 @@ export function createHand({
     if (d) body.scrollBy({ left: d, behavior: smooth && !reduced() ? "smooth" : "auto" });
   }
 
-  function position(slot, i, n, w, room, animate, hot) {
+  function position(slot, i, n, w, room, animate, hot, flip = false) {
     let { x, y, r, step } = geometry(n, i, w, room);
     let lift = 0;
     if (hot >= 0 && hot < n) {
@@ -306,8 +401,11 @@ export function createHand({
       }
     }
     // 剛做好的牌第一次擺：直接到位，不要從中間滑出來。
-    slot.style.transition = animate && slot._placed && !reduced() ? "" : "none";
+    // 捲動的托盤換了位置：也直接擺過去，從原處滑過來交給 FLIP（轉場會跟著整排中心跳半張）。
+    const moved = flip && slot._x != null && Math.abs(slot._x - x) > 0.05;
+    slot.style.transition = animate && slot._placed && !moved && !reduced() ? "" : "none";
     slot._placed = true;
+    slot._x = x;
     slot.style.transform = `translate(calc(-50% + ${x.toFixed(1)}px), ${(y + lift).toFixed(1)}px) rotate(${r.toFixed(2)}deg)`;
     slot.style.zIndex = String(i === hot ? 50 : 10 + i);
     slot.classList.toggle("is-hot", i === hot);
@@ -422,9 +520,35 @@ export function createHand({
     const m = gap ? list.length + 1 : list.length;
     const room = roomFor(m);
     setWant(m);
+    // 捲動的托盤：先算好每張現在在畫面上哪、在整排裡哪（見 flipOffset 上面那段）。
+    const fw0 = fanW;
+    const s = scrolled;
+    const from = animate && fw0 && !reduced() ? list.map((k) => (k._x == null ? null : { at: fw0 / 2 + k._x, v: fw0 / 2 + k._x + flipOffset(k) - s })) : null;
+    if (!clampRaf) snapped.clear();
     setScroll(m, w, room);
+    const flip = !!from && !!fanW;
+    if (!flip) for (const k of kids) if (k._flip) stopFlip(k);
     for (const k of kids) k.classList.toggle("is-out", !!gap && k.dataset.tag === gap.skip);
-    list.forEach((k, j) => position(k, gap && j >= gap.at ? j + 1 : j, m, w, room, animate, gap ? -1 : hot));
+    list.forEach((k, j) => position(k, gap && j >= gap.at ? j + 1 : j, m, w, room, animate, gap ? -1 : hot, flip));
+    let focus = flipFocus;
+    flipFocus = null;
+    if (!flip) return;
+    // 只有在整排裡換了位置的才重新滑；位置沒變的（指到別張、捲動被夾回來另外算）照它原本的滑完。
+    const entries = [];
+    list.forEach((k, j) => {
+      const at = fanW / 2 + k._x;
+      if (!from[j]) {
+        // 新擺上來的那格（牌回到托盤）：離它近的先讓。
+        if (!focus) focus = { fan: at };
+        return;
+      }
+      if (Math.abs(at - from[j].at) > 0.05) entries.push({ k, dx: from[j].v - (at - s), v1: at - s });
+    });
+    if (gap && !focus) focus = { fan: fanW / 2 + geometry(m, gap.at, w, room).x };
+    const hold = focus?.v != null ? FLIP_HOLD : 0;
+    startFlips(entries, focusAt(focus, s), hold);
+    // 整排變短：可能被夾回來，下一格畫面看一眼。
+    if (fanW < fw0) checkClamp(s, focus, hold);
   }
 
   /** 托盤要多寬（照張數長，夾在視窗裡）；跟 CSS 的算法一樣，才不用等寬度轉場跑完才知道擺不擺得下。 */
@@ -519,7 +643,10 @@ export function createHand({
   /** 這張直接到位（不走轉場）：拖曳的影子要量它最後的位置落下去。 */
   function snap(tag) {
     const s = slots.get(tag);
-    if (s) s.style.transition = "none";
+    if (!s) return;
+    s.style.transition = "none";
+    stopFlip(s);
+    snapped.add(s);
   }
 
   /** 重擺托盤。animate：位置變化用轉場滑過去（加牌、出牌）。 */
@@ -537,7 +664,7 @@ export function createHand({
     el.style.setProperty("--fav-card-fs", fs + "px");
     const kids = show.map(slotFor);
     const keep = new Set(kids);
-    for (const c of [...fan.children]) if (!keep.has(c)) c.remove();
+    for (const c of [...fan.children]) if (!keep.has(c)) leave(c);
     kids.forEach((k, i) => {
       if (fan.children[i] !== k) fan.insertBefore(k, fan.children[i] || null);
     });
@@ -814,7 +941,7 @@ export function createHand({
     const finish = () => {
       if (done) return;
       done = true;
-      s?.remove();
+      if (s) leave(s);
       layout(true);
       onChange();
     };
