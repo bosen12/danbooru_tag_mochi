@@ -63,6 +63,11 @@ export function mountBookGroups({ lib, assets, onChange, toMochi, visible, data 
   let saving = Promise.resolve();
   let saveError = null;
   const pending = [];
+  // 「儲存中…」存超過 SLOW_SAVE_MS 才露出來：本機一筆十幾毫秒就存好，以前每點一張牌標頭就
+  // 「已儲存 → 儲存中… → 已儲存」跳一次（2026-11-22 專案主：上方還是會閃）。慢網路照樣看得到在存。
+  const SLOW_SAVE_MS = 400;
+  let slowSave = false;
+  let slowTimer = 0;
   let folded = desiredFold(0);
   // 加牌時浮在畫面底下的「完成」：手機上工具列不黏，捲到多下面都按得到。
   const float = el("button", { class: "btn btn-primary bsh-float pressable", type: "button", hidden: true, onclick: () => setEditing(false) });
@@ -105,6 +110,11 @@ export function mountBookGroups({ lib, assets, onChange, toMochi, visible, data 
   let shownSig = "";
   const groupSig = (g) => (g ? `${g.id}\0${editing ? 1 : 0}\0${g.tags.join("\0")}` : "");
   function changed({ grid = true, keepScroll = false } = {}) {
+    if (!pending.length) {
+      slowSave = false;
+      clearTimeout(slowTimer);
+      slowTimer = 0;
+    }
     renderShelf();
     renderHead();
     if (grid) {
@@ -129,6 +139,9 @@ export function mountBookGroups({ lib, assets, onChange, toMochi, visible, data 
     return el("span", { class: "bs-stack", "aria-hidden": "true" }, leaves);
   }
 
+  const leavesOf = (g) => g.tags.slice(0, 3).join("\n");
+  const tileTitle = (g) => g.tags.map(zhOf).join("、") || "空的群組";
+
   function tile(g) {
     const on = g.id === activeId;
     return el(
@@ -136,10 +149,11 @@ export function mountBookGroups({ lib, assets, onChange, toMochi, visible, data 
       {
         class: "bs-tile pressable",
         type: "button",
-        dataset: { suit: SECTION_SUIT[g.section], id: g.id },
+        // leaves：這一疊扇開的是哪三張（patchShelf 比對，變了才換縮圖）。
+        dataset: { suit: SECTION_SUIT[g.section], id: g.id, leaves: leavesOf(g) },
         "aria-pressed": on ? "true" : "false",
-        title: g.tags.map(zhOf).join("、") || "空的群組",
-        onclick: (e) => pick(on ? "" : g.id, e.currentTarget),
+        title: tileTitle(g),
+        onclick: (e) => pick(g.id === activeId ? "" : g.id, e.currentTarget),
       },
       stack(g),
       el("span", { class: "bs-name", dataset: { noI18n: "" } }, g.name),
@@ -147,11 +161,38 @@ export function mountBookGroups({ lib, assets, onChange, toMochi, visible, data 
     );
   }
 
+  /**
+   * 架子的樣子沒變（組數、組名、收合、選中的那組都一樣）：只換每一疊的張數和滑鼠提示，扇開的前三張變了才換那一疊的縮圖。
+   * 以前加牌每點一張，整個架子重做三次（點下去、伺服器回來、存好）：縮圖是新的 <img>，要重新解碼，
+   * 上方那排會白一下（2026-11-22 專案主：群組加牌上方還是會閃）。
+   */
+  let shelfSig = "";
+  function patchShelf(all) {
+    for (const g of all) {
+      const t = shelf.querySelector(`.bs-tile[data-id="${CSS.escape(g.id)}"]`);
+      if (!t) continue;
+      const title = tileTitle(g);
+      if (t.title !== title && t.title !== tr(title)) t.title = title;
+      const count = t.querySelector(".bs-count");
+      const n = `${g.tags.length} 張`;
+      // 英文版畫面上是翻過的字：比對要過 t()，不然每次都重寫一次。
+      if (count && count.textContent !== tr(n)) count.textContent = n;
+      const leaves = leavesOf(g);
+      if (t.dataset.leaves !== leaves) {
+        t.dataset.leaves = leaves;
+        t.querySelector(".bs-stack")?.replaceWith(stack(g));
+      }
+    }
+  }
+
   function renderShelf({ animate = false } = {}) {
     if (!shelf) return;
     const all = groups();
     // 人剛按的那一下用記憶裡的收合（存檔失敗也要在這一頁生效）。其餘重畫再跟存檔、群組數對一次。
     if (!animate) folded = desiredFold(all.length);
+    const sig = JSON.stringify([folded, activeId, english, all.map((g) => [g.id, g.section, g.name])]);
+    if (!animate && sig === shelfSig && !shelf.hidden && shelf.childElementCount) return patchShelf(all);
+    shelfSig = sig;
     // 只有人按了展開／收起才長高矮。讀清單、別的分頁改群組，不要每次都演。
     const grow = animate ? heightChange(shelf) : null;
     if (!all.length && folded) {
@@ -261,10 +302,12 @@ export function mountBookGroups({ lib, assets, onChange, toMochi, visible, data 
       ghost?.done();
       float.hidden = true;
       document.documentElement.removeAttribute("data-book-group");
+      head._key = "";
       return;
     }
     float.hidden = !editing;
-    float.textContent = `完成 · ${g.tags.length} 張`;
+    const floatText = `完成 · ${g.tags.length} 張`;
+    if (float.textContent !== tr(floatText)) float.textContent = floatText;
     document.documentElement.dataset.bookGroup = editing ? "edit" : "view";
     const name = el("input", {
       class: "bsh-name",
@@ -345,14 +388,61 @@ export function mountBookGroups({ lib, assets, onChange, toMochi, visible, data 
     const subRow = editing ? null : subChips(g);
     const hiddenNote = hidden && !editing ? el("p", { class: "bsh-hint bsh-hidden" }, `${hidden} 張被目前的分級、性別收起來了`) : null;
     // 存檔狀態只在加牌時、或還在存／存失敗時露出來：平常看一組不必一直掛著「已儲存」。
-    const status = !editing && !saveError && !pending.length ? null : el("button", {
+    // 「儲存中…」存超過 SLOW_SAVE_MS 才寫（slowSave），存得快就一直是「已儲存」。
+    const savingNow = pending.length > 0 && slowSave;
+    const status = !editing && !saveError && !savingNow ? null : el("button", {
       class: "bsh-save", type: "button", disabled: !saveError,
       "aria-live": "polite", title: saveError ? errorText(saveError) : "", onclick: retry,
-    }, saveError ? "存檔失敗 · 重試" : pending.length ? "儲存中…" : "已儲存");
-    head.replaceChildren(...[el("div", { class: "bsh-row", dataset: { suit: SECTION_SUIT[g.section] } }, name, count, status, el("span", { class: "bsh-acts" }, edit, use, del, close)), subRow, slotNote, hint, hiddenNote].filter(Boolean));
+    }, saveError ? "存檔失敗 · 重試" : savingNow ? "儲存中…" : "已儲存");
+    const row = el("div", { class: "bsh-row", dataset: { suit: SECTION_SUIT[g.section] } }, name, count, status, el("span", { class: "bsh-acts" }, edit, use, del, close));
+    const parts = [row, subRow, slotNote, hint, hiddenNote].filter(Boolean);
+    const key = JSON.stringify([g.id, g.name, editing, english]);
+    if (head._key === key && !head.hidden && patchHead(parts)) return;
+    head._key = key;
+    for (const p of parts) signPart(p);
+    head.replaceChildren(...parts);
     head.hidden = false;
     head.dataset.suit = SECTION_SUIT[g.section];
     swapIn(head, g.id + (editing ? ":e" : ""), { firstToo: true });
+  }
+
+  // 每一塊記下剛做出來（還沒翻譯）時的樣子：英文版畫面上是翻過的字，拿這個比才知道內容有沒有變。
+  // 第一排只記會變的張數、存檔字樣（名字欄、按鈕不換）；其他每一塊整塊記。
+  function signPart(node) {
+    const targets = node.classList.contains("bsh-row") ? node.querySelectorAll(".bsh-count, .bsh-save") : [node];
+    for (const n of targets) n.dataset.sig = n.outerHTML;
+  }
+
+  /**
+   * 標頭還是這一組、同一個模式（加牌／看）：只換內容真的變了的那幾塊（張數、存檔字樣、管的格子、提示）。
+   * 名字欄和按鈕留著。以前加牌每點一張，整個標頭重做三次，存檔字樣「已儲存 → 儲存中… → 已儲存」跟著跳。
+   * 有一塊出現或消失（例如被分級收起來的那行）就回 false，整個重做。
+   */
+  function patchHead(parts) {
+    const old = [...head.children];
+    if (old.length !== parts.length || parts.some((p, i) => p.className !== old[i].className)) return false;
+    const [row, ...rest] = parts;
+    const oldRow = old[0];
+    // a：畫面上那一塊（data-sig 是它剛做出來時的樣子）；b：剛做的新的一塊。一樣就留著舊的。
+    const swap = (a, b) => {
+      const sig = b.outerHTML;
+      if (a.dataset.sig === sig) return;
+      b.dataset.sig = sig;
+      a.replaceWith(b);
+    };
+    const count = row.querySelector(".bsh-count");
+    const oldCount = oldRow.querySelector(".bsh-count");
+    if (count && oldCount) swap(oldCount, count);
+    const status = row.querySelector(".bsh-save");
+    const oldStatus = oldRow.querySelector(".bsh-save");
+    if (status && oldStatus) swap(oldStatus, status);
+    else if (oldStatus) oldStatus.remove();
+    else if (status) {
+      status.dataset.sig = status.outerHTML;
+      oldRow.querySelector(".bsh-acts")?.before(status);
+    }
+    rest.forEach((p, i) => swap(old[i + 1], p));
+    return true;
   }
 
   /** 標頭裡的小分類籤：這一段所有的小分類，這組有的亮、沒有的劃掉。 */
@@ -435,6 +525,13 @@ export function mountBookGroups({ lib, assets, onChange, toMochi, visible, data 
   function write(id, change, done) {
     const entry = { id, change, done };
     pending.push(entry);
+    if (!slowTimer && !slowSave)
+      slowTimer = setTimeout(() => {
+        slowTimer = 0;
+        if (!pending.length) return;
+        slowSave = true;
+        renderHead();
+      }, SLOW_SAVE_MS);
     saving = saving.catch(() => {}).then(() => {
       if (saveError) throw saveError;
       return send(entry);
@@ -453,7 +550,12 @@ export function mountBookGroups({ lib, assets, onChange, toMochi, visible, data 
       const g = await saveGroup(entry.change(cur));
       pending.splice(pending.indexOf(entry), 1);
       if (entry.done) toast(entry.done);
-      changed({ keepScroll: true });
+      // 加牌模式裡存好這一組：牌格不用重畫 —— 顯示的是這一段所有的牌（跟組裡有誰無關），章在點下去那一下已經蓋好。
+      // 以前每存一筆就整格重畫、工具列那排小分類籤淡出再重做：手機（CPU÷4）每點一張卡 100ms，上方那排閃一下。
+      const quiet = editing && entry.id === activeId;
+      changed({ keepScroll: true, grid: !quiet });
+      // 牌格上的章就是這一組現在的樣子：記成已經畫過，之後讀清單（切回分頁）不會因為「沒畫過」再整格重畫。
+      if (quiet) shownSig = groupSig(active());
       return g;
     } catch (err) {
       saveError = err;

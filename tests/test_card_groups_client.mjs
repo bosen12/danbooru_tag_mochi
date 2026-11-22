@@ -40,29 +40,59 @@ for (const status of [404, 409]) {
 console.log("all ok: group selection, cache, write errors");
 
 // 書架以最小畫面替身測真正事件與延遲回應，不依賴瀏覽器。
+// 只認得「.class」和「.class[data-id="x"]」；夠書架、標頭用（patchShelf／patchHead 換掉其中幾塊）。
+const matches = (node, selector) => {
+  const [, name, id] = /^\.([\w-]+)(?:\[data-id="([^"]*)"\])?/.exec(selector.trim()) || [];
+  return !!name && !!node.class?.split(" ").includes(name) && (id === undefined || node.dataset.id === id);
+};
 class Node {
   constructor(tag, attrs = {}, children = []) {
     Object.assign(this, attrs);
     this.tag = tag;
     this.dataset ||= {};
-    this.children = children.flat(Infinity).filter(x => x != null);
+    this.replaceChildren(children);
   }
-  replaceChildren(...children) { this.children = children.flat(Infinity).filter(x => x != null); }
-  append(node) { this.children.push(node); }
+  replaceChildren(...children) {
+    this.children = children.flat(Infinity).filter(x => x != null);
+    for (const c of this.children) if (c instanceof Node) c.parent = this;
+  }
+  append(node) { this.children.push(node); if (node instanceof Node) node.parent = this; }
   addEventListener(type, fn) { this[`on${type}`] = fn; }
   setAttribute(key, value) { this[key] = value; }
   getAttribute(key) { return this[key]; }
   click() { return this.onclick?.({ currentTarget: this }); }
   removeAttribute(key) { delete this[key]; }
+  get className() { return this.class || ""; }
+  get classList() { return { contains: (c) => this.className.split(" ").includes(c) }; }
+  get childElementCount() { return this.children.filter(c => c instanceof Node).length; }
+  // 內容一樣就一樣（事件處理器不算）：標頭拿它判斷哪一塊要換。
+  get outerHTML() {
+    const attrs = Object.entries(this).filter(([k, v]) => !["children", "parent", "tag"].includes(k) && typeof v !== "function").map(([k, v]) => `${k}=${JSON.stringify(v)}`);
+    return `<${this.tag} ${attrs.join(" ")}>${this.children.map(c => c instanceof Node ? c.outerHTML : String(c)).join("")}</${this.tag}>`;
+  }
+  before(node) { const a = this.parent.children; a.splice(a.indexOf(this), 0, node); node.parent = this.parent; }
+  remove() { const a = this.parent?.children; if (a) a.splice(a.indexOf(this), 1); this.parent = null; }
+  replaceWith(node) { const a = this.parent.children; a[a.indexOf(this)] = node; node.parent = this.parent; this.parent = null; }
   querySelector(selector) {
-    const name = /^\.([\w-]+)/.exec(selector)?.[1];
     for (const node of this.children) {
       if (!(node instanceof Node)) continue;
-      if (node.class?.split(" ").includes(name)) return node;
+      if (selector.split(",").some(s => matches(node, s))) return node;
       const found = node.querySelector(selector);
       if (found) return found;
     }
     return null;
+  }
+  querySelectorAll(selector) {
+    const out = [];
+    const walk = (n) => {
+      for (const c of n.children) {
+        if (!(c instanceof Node)) continue;
+        if (selector.split(",").some(s => matches(c, s))) out.push(c);
+        walk(c);
+      }
+    };
+    walk(this);
+    return out;
   }
   focus() {}
   select() {}
@@ -86,24 +116,31 @@ const context = {
   deleteGroup: async () => {}, GROUP_SECTIONS: ["feature"],
   SECTION_ZH: { feature: "長相" }, SECTION_SUIT: { feature: "look" },
   english: false, tr: x => x, toast: x => messages.push(x), friendlyError: e => e.message,
-  reducedMotion: () => true, swapIn() {}, seat() {}, enter() {}, refuse() {},
+  reducedMotion: () => true, swapIn() {}, seat() {}, enter() {}, refuse() {}, setTimeout, clearTimeout,
   groupChips: () => [], groupSlotKey: () => "slot", history: { replaceState() {} }, location: {},
 };
 const source = readFileSync(new URL("../" + W + "/book-groups.js", import.meta.url), "utf8")
   .replace(/^import .*;\r?$/gm, "").replace("export function mountBookGroups", "function mountBookGroups");
 vm.runInNewContext(source + "\nglobalThis.mount = mountBookGroups;", context);
-const book = context.mount({ lib: { cards, byTag: new Map(cards.map(c => [c.tag, c])) }, assets: { art: () => null }, visible: () => true, onChange() {}, toMochi: () => navigations++ });
+let gridRenders = 0;
+const book = context.mount({ lib: { cards, byTag: new Map(cards.map(c => [c.tag, c])) }, assets: { art: () => null }, visible: () => true, onChange() { gridRenders++; }, toMochi: () => navigations++ });
 await book.openFromHash("#groups=g-a");
 await head.querySelector(".bsh-edit").onclick();
 const tick = async () => { for (let n = 0; n < 15; n++) await Promise.resolve(); };
+const gridBefore = gridRenders;
+const nameBefore = head.querySelector(".bsh-name");
 book.toggle(cards[0]); await tick();
 book.toggle(cards[1]); await tick();
 assert.equal(writes.length, 1);
 assert.equal(book.has("b"), true);
+assert.equal(head.querySelector(".bsh-save").children[0], "已儲存", "存得快：不跳「儲存中…」（存超過 400ms 才寫）");
 const done = head.querySelector(".bsh-edit").onclick();
 await tick(); assert.equal(book.editing(), true);
 writes[0].finish(); await tick();
 assert.equal(book.has("b"), true, "舊回應不能抹掉新蓋的章");
+assert.equal(gridRenders, gridBefore, "加牌模式裡存好：牌格不重畫（章已經蓋好）");
+assert.equal(head.querySelector(".bsh-name"), nameBefore, "標頭沒有整個重做（名字欄還是同一個）");
+assert.equal(head.querySelector(".bsh-count").children[0], "長相 · 2 張", "張數跟著換");
 assert.equal(writes.length, 2);
 writes[1].finish(); await done;
 assert.equal(book.editing(), false);
