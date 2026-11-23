@@ -3,7 +3,8 @@
  *
  * localStorage[key] 是這台的快取：開頁先用它畫（不用等網路），伺服器那份回來再換上。
  * 送的是改動、不是整份：加了誰、拿掉誰（ops），手機和電腦同時改，伺服器把兩邊的都套上。
- * order：名單有順序（偏好卡牌的托盤可以排）：排過就把這台的順序一起送，伺服器照它排、別台剛加的留在最前面。
+ * order：名單有順序（偏好卡牌的托盤可以排；偏好角色按錯再按回來要放回原位）：改過就把這台的順序一起送，
+ *   伺服器照它排、別台剛加的留在最前面。
  *
  * 規則（原本寫在 fav-chars.js，2026-11-18 搬出來共用）：
  *   - 還沒跟伺服器對過（syncedKey 沒記）：這台的名單併進伺服器那份（兩邊都不丟）。
@@ -132,7 +133,10 @@ export function createSyncedList({ key, syncedKey, opsKey, url, order: ordered =
           });
           const left = readOps();
           if (ordered && left.order) {
-            adopt([...tags.filter((t) => !left.remove.includes(t)), ...j.tags.filter((t) => !tags.includes(t) && !left.remove.includes(t))]);
+            // 別台剛加的（這台的順序裡沒有）：新加的在前的名單（偏好角色）放最前面，跟伺服器排的一樣。
+            const mine = tags.filter((t) => !left.remove.includes(t));
+            const others = j.tags.filter((t) => !tags.includes(t) && !left.remove.includes(t));
+            adopt(prepend ? [...others, ...mine] : [...mine, ...others]);
           } else {
             const added = left.add.filter((t) => !j.tags.includes(t));
             const rest = j.tags.filter((t) => !left.remove.includes(t));

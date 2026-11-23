@@ -8107,10 +8107,11 @@ html[data-setup] .tour-offer {
   display: grid;
   gap: var(--space-sm);
 }
+/* 頁籤、搜尋、人數排一行（手機上搜尋自己一行）：上面省一行，一頁多擺一排牌。 */
 .favc-head {
-  display: flex;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
-  justify-content: space-between;
   gap: var(--space-sm);
 }
 .favc-tabs {
@@ -8149,16 +8150,52 @@ html[data-setup] .tour-offer {
   color: var(--color-ink);
   font: inherit;
 }
+/* 子分類：字盒角色頁那一排（性別、系列），左右不另外留白、跟搜尋框對齊。
+   展開「動漫」幾十部作品時籤列封頂、裡面自己捲，牌不會被擠到剩一排。 */
+.favc-chips {
+  max-height: 8.5rem;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 0;
+}
+.favc-chips[hidden] {
+  display: none;
+}
+/* 欄寬跟 fav-chars.js 的 CELL 一致（照它算一頁幾張）。 */
 .favc-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
   gap: 10px;
   align-content: start;
   touch-action: pan-y;
 }
-/* 有好幾頁時，四排的高度先留好：換頁、搜尋時下面的翻頁鈕不會跟著上下跳。只有一頁就不留空白。 */
-.favc[data-paged="true"] .favc-grid {
-  min-height: calc(4 * (104px * 702 / 480 + 1.6em + 10px));
+/* 電腦上這個彈窗可以高一點（一頁多一排）；手機照舊整片。 */
+@media (min-width: 40.0625rem) {
+  .sheet.favc-sheet {
+    max-height: min(94dvh, 60rem);
+  }
+}
+/* 好幾頁：彈窗固定在最高、牌區填滿中間、翻頁鈕貼底。換頁、搜尋、展開系列時翻頁鈕不會上下跑，
+   一頁幾張照牌區擺得下幾排算（fav-chars.js 的 fit）。展開系列時籤列慢慢長高，最下面那排先被收進去，長完再重排。 */
+.sheet.favc-sheet[data-paged="true"] {
+  display: flex;
+  flex-direction: column;
+  height: min(94dvh, 60rem);
+}
+.sheet.favc-sheet[data-paged="true"] > .favc {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+}
+.sheet.favc-sheet[data-paged="true"] .favc-grid {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow: clip;
+  overflow-clip-margin: 6px;
+}
+.sheet.favc-sheet[data-paged="true"] .favc-pager {
+  margin-top: auto;
 }
 .favc-cell {
   position: relative;
@@ -8232,6 +8269,10 @@ html[data-setup] .tour-offer {
   margin: 0;
   color: var(--color-muted);
 }
+/* display: flex 會蓋過 hidden：以前搜不到再清掉，「找不到」那行一直留在牌底下（還多佔一排的高度）。 */
+.favc-empty[hidden] {
+  display: none;
+}
 .favc-pager {
   display: flex;
   align-items: center;
@@ -8252,11 +8293,24 @@ html[data-setup] .tour-offer {
   text-align: center;
 }
 @media (max-width: 40rem) {
-  .favc-grid {
-    grid-template-columns: repeat(auto-fill, minmax(92px, 1fr));
+  .favc-head {
+    grid-template-columns: minmax(0, 1fr) auto;
   }
-  .favc[data-paged="true"] .favc-grid {
-    min-height: calc(4 * (92px * 702 / 480 + 1.6em + 10px));
+  .favc-search {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+  .favc-grid {
+    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+  }
+  .sheet.favc-sheet[data-paged="true"] {
+    height: 100%;
+  }
+  /* 手機的關閉鈕是浮到右邊、往上拉回標題那一行（float）：彈窗排成直的一欄（flex）時 float 不作用，
+     改成靠右、上下的負邊距抵掉自己的高度（不佔一行）。 */
+  .sheet.favc-sheet[data-paged="true"] > .sheet-close {
+    align-self: flex-end;
+    margin-bottom: var(--space-md);
   }
 }
 

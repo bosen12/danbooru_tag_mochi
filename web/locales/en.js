@@ -864,6 +864,10 @@ Hires：放大並重畫細節|Hires · Upscale and refine
 還沒有偏好角色。|No favorite characters yet.
 去挑角色|Pick characters
 字盒裡沒有角色牌。|There are no character cards in the library.
+子分類|Subcategories
+到加角色找|Look in Add characters
+這一格還沒有偏好角色。|No favorites in this category yet.
+這一格沒有角色。|No characters in this category.
 先挑幾個偏好角色|Pick a few favorite characters first
 「抽角色」也一起打開了|Draw characters was turned on too
 抽角色時只從你的偏好角色裡抽；名單裡沒有那個性別的角色，那個人就照舊是一般人物|Draw characters only from your favorites. If the list has no character of that gender, that person stays an ordinary character
@@ -2395,6 +2399,9 @@ Hires 好了：{0}×{1}|Upscale ready · {0}×{1}
 「{0}」加進偏好角色|Added “{0!}” to favorite characters
 「{0}」拿出偏好角色|Removed “{0!}” from favorite characters
 「{0}」已經是偏好角色|“{0!}” is already a favorite character
+我的偏好裡沒有「{0}」。|“{0!}” isn't one of your favorites.
+「{0}」是禁用角色，不能加進偏好角色。|“{0!}” is a blocked character and can't be a favorite.
+「{0}」對到的 {1} 位都是禁用角色，不能加進偏好角色。|All {1} characters matching “{0!}” are blocked and can't be favorites.
 每排 {0} 張|{0} per row
 這張修過 {0} 層臉。|Faces fixed {0} times on this image.
 修過臉 ×{0}|Faces fixed ×{0}

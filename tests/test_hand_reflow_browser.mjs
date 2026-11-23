@@ -35,8 +35,18 @@ async function check(name,fn){
   try{await fn();console.log('ok',name);}catch(e){failed++;console.log('FAIL',name);console.log(e?.stack||e);}
 }
 
-async function open({width=1280,height=860,reduced=false,isMobile=false}={}){
-  const page=await browser.newPage({viewport:{width,height},isMobile,hasTouch:isMobile,reducedMotion:reduced?'reduce':'no-preference'});
+// Windows 的 WinNAT 偶爾一陣一陣擋本機連線（ERR_NETWORK_ACCESS_DENIED、載不到模組）：不是測試壞，開頁重試幾次。
+async function open(opts={}){
+  for(let i=0;;i++){
+    try{return await openOnce(opts);}
+    catch(e){if(i>=8||!/ERR_NETWORK_ACCESS_DENIED|Failed to fetch dynamically imported module/.test(String(e)))throw e;await new Promise((r)=>setTimeout(r,2500));}
+  }
+}
+async function openOnce(opts){
+  const page=await browser.newPage({viewport:{width:opts.width||1280,height:opts.height||860},isMobile:!!opts.isMobile,hasTouch:!!opts.isMobile,reducedMotion:opts.reduced?'reduce':'no-preference'});
+  try{return await load(page);}catch(e){await page.close();throw e;}
+}
+async function load(page){
   await page.route('https://**/*',r=>r.abort());
   await page.goto(origin+'/fixture');
   await page.evaluate(async(front)=>{

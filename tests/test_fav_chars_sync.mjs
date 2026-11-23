@@ -69,7 +69,13 @@ function world({ local, synced, file }) {
       const have = server.file || [];
       const gone = new Set(p.remove || []);
       const added = (p.add || []).filter((t) => !gone.has(t));
-      server.file = [...new Set([...added, ...have.filter((t) => !gone.has(t))])];
+      let tags = [...new Set([...added, ...have.filter((t) => !gone.has(t))])];
+      // order（偏好角色、偏好卡牌）：照它排，它裡面沒有的（別台剛加的）留在最前面。
+      if (Array.isArray(p.order)) {
+        const rank = new Map(p.order.map((t, i) => [t, i]));
+        tags = [...tags.filter((t) => !rank.has(t)), ...tags.filter((t) => rank.has(t)).sort((a, b) => rank.get(a) - rank.get(b))];
+      }
+      server.file = tags;
     } else server.file = [...new Set(p.tags)];
     return { ok: true, json: async () => ({ tags: server.file, saved: true, at: 2, ...(fresh ? { fresh: true } : {}) }) };
   };
@@ -124,6 +130,41 @@ test("normal sync still sends only the change and adopts the server list", async
   fav.add("tatsumaki");
   await settle();
   assert.deepEqual(w.server.file, ["tatsumaki", "yor briar", "frieren"]);
+});
+
+test("a favorite removed by mistake and put back returns to its place, on the server too", async () => {
+  // 2026-11-23：第 169 位按錯拿掉、再按回來，變成第 1 位（伺服器把它當新加的排最前面）。
+  const w = world({ local: ["yor briar", "tatsumaki", "mount lady", "frieren"], synced: true, file: ["yor briar", "tatsumaki", "mount lady", "frieren"] });
+  const fav = await load();
+  await settle();
+  assert.equal(fav.toggle("mount lady"), false);
+  assert.equal(fav.toggle("mount lady"), true);
+  assert.deepEqual(fav.list(), ["yor briar", "tatsumaki", "mount lady", "frieren"], "back in the same spot right away");
+  await settle();
+  assert.deepEqual(w.server.file, ["yor briar", "tatsumaki", "mount lady", "frieren"]);
+  assert.deepEqual(w.local(), w.server.file);
+  // 拿掉、等送出去、再加回來：一樣放回原位
+  fav.remove("tatsumaki");
+  await settle();
+  fav.add("tatsumaki");
+  await settle();
+  assert.deepEqual(w.server.file, ["yor briar", "tatsumaki", "mount lady", "frieren"]);
+});
+
+test("putting one back while another device added someone: theirs stays first, mine goes back in place", async () => {
+  const w = world({ local: ["yor briar", "tatsumaki", "frieren"], synced: true, file: ["yor briar", "tatsumaki", "frieren"] });
+  const fav = await load();
+  await settle();
+  w.server.file = ["android 18", "yor briar", "tatsumaki", "frieren"]; // 別台剛加的
+  fav.toggle("tatsumaki");
+  fav.toggle("tatsumaki");
+  await settle();
+  assert.deepEqual(w.server.file, ["android 18", "yor briar", "tatsumaki", "frieren"]);
+  assert.deepEqual(w.local(), w.server.file, "the browser shows the other device's addition first, like the server");
+  // 真的新加的照舊排最前面
+  fav.add("hado nejire");
+  await settle();
+  assert.equal(w.server.file[0], "hado nejire");
 });
 
 // ---------- 偏好卡牌（hand-store.js，2026-11-18 改成伺服器共用）：同一套同步，多一個順序 ----------
