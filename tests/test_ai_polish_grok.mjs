@@ -152,11 +152,14 @@ const server = createServer(async (req, res) => {
   let file = resolve(root, "web6", name);
   if (!existsSync(file)) file = resolve(root, "web", name);
   if (!file.startsWith(root + sep)) { res.writeHead(403).end(); return; }
+  // 先讀到檔才送 200（讀不到時才送得出 404，不然「headers already sent」整支掛掉）。
   try {
+    const body = await readFile(file);
     res.writeHead(200, { "Content-Type": TYPES[extname(file)] || "application/octet-stream" });
-    res.end(await readFile(file));
+    res.end(body);
   } catch {
-    res.writeHead(404).end();
+    if (res.headersSent) res.end();
+    else res.writeHead(404).end();
   }
 });
 

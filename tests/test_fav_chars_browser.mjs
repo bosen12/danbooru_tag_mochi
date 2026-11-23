@@ -187,6 +187,53 @@ try{
     await page.close();
   });
 
+  // 每一格畫完（rAF 之後）記彈窗的高度：一格就跳完＝沒有過渡。
+  const heights=`window.watchHeight=(sheet,ms)=>new Promise((done)=>{const h=[];let run=true;const read=()=>h.push(Math.round(sheet.getBoundingClientRect().height));
+    const tick=()=>requestAnimationFrame(()=>setTimeout(()=>{read();if(run)tick();},0));read();tick();setTimeout(()=>{run=false;done(h);},ms);});`;
+  const smooth=(h,label)=>{
+    const steps=[];for(let i=1;i<h.length;i++)if(h[i]!==h[i-1])steps.push(h[i]-h[i-1]);
+    const total=h.at(-1)-h[0];
+    assert.ok(Math.abs(total)>80,`${label}: the height must actually change (${h[0]} → ${h.at(-1)})`);
+    assert.ok(steps.length>=4,`${label}: changed in ${steps.length} frame(s), expected a gradual transition: ${h.join(',')}`);
+    assert.ok(Math.max(...steps.map(Math.abs))<Math.abs(total)*0.6,`${label}: most of the change happened in one frame: ${h.join(',')}`);
+  };
+
+  await check('switching to a short list shrinks the dialog over several frames, not in one jump',async()=>{
+    const page=await open();
+    const h=await page.evaluate(async(src)=>{
+      (0,eval)(src);const s=document.querySelector('.favc-sheet');
+      const p=watchHeight(s,1100);
+      const q=document.querySelector('.favc-search');q.value='hei 1';q.dispatchEvent(new Event('input',{bubbles:true}));
+      return p;
+    },heights);
+    smooth(h,'paged → one short page');
+    assert.ok(h.at(-1)<h[0],'the dialog ends smaller');
+    await page.close();
+  });
+
+  await check('any dialog (openSheet) eases to its new height when its content changes, without ResizeObserver errors',async()=>{
+    const page=await open();
+    const errors=[];page.on('pageerror',(e)=>errors.push(String(e)));
+    const r=await page.evaluate(async({front,src})=>{
+      (0,eval)(src);
+      const seen=[];addEventListener('error',(e)=>seen.push(e.message));
+      const {openSheet}=await import(`/${front}/ui.js`);
+      const body=document.createElement('div');body.innerHTML='<p>一行</p>';
+      const {sheet}=openSheet('測試',body);
+      await new Promise((r)=>setTimeout(r,700));
+      const grow=watchHeight(sheet,900);
+      for(let i=0;i<8;i++){const p=document.createElement('p');p.textContent='多一行 '+i;p.style.height='30px';body.append(p);}
+      const up=await grow;
+      const shrink=watchHeight(sheet,900);
+      body.replaceChildren(Object.assign(document.createElement('p'),{textContent:'剩一行'}));
+      return{up,down:await shrink,seen};
+    },{front,src:heights});
+    smooth(r.up,'content added');
+    smooth(r.down,'content removed');
+    assert.deepEqual([...r.seen,...errors].filter((m)=>/ResizeObserver/.test(m)),[],'no ResizeObserver loop errors');
+    await page.close();
+  });
+
   await check('reduced motion: paging and filtering swap instantly with no animation',async()=>{
     const page=await open({reduced:true});
     const r=await page.evaluate(async()=>{

@@ -24,7 +24,7 @@
 import { el, openSheet, toast } from "./ui.js";
 import { cardNode, cardMatches, searchCards, groupChips, genderChips, chipRun, seriesRun, sizeCards } from "./cards.js";
 import { cloneCard } from "./card-images.js";
-import { DUR, CURVE, css, reducedMotion, flight } from "./motion.js";
+import { DUR, CURVE, css, reducedMotion, flight, heightChange } from "./motion.js";
 import { createSyncedList } from "./synced-list.js";
 import { english } from "./i18n.js";
 
@@ -488,7 +488,18 @@ export function openFavChars({ cards, assets, tab: firstTab, onClose } = {}) {
     empty.replaceChildren(filtered ? "這一格沒有角色。" : "字盒裡沒有角色牌。");
   }
 
+  // 開窗那一次不演高度（彈窗自己有進場）；之後換頁籤、子分類、搜尋，彈窗從原本的高度慢慢變到新的高度。
+  // 以前從「好幾頁、固定高度」切到「一頁、照內容高」，整個彈窗一格就縮小（2026-11-23 專案主回報）。
+  let opened = false;
   function render() {
+    const grow = opened ? heightChange(sheet.sheet) : null;
+    // 上一段高度還在變：先停掉再量（量到的才是這次真正的版面）；heightChange 從剛才看到的高度接著變
+    // （_grow 先清掉：停掉的動畫 currentTime 是 null，留著的話它會從上一段的起點重來）。
+    const was = sheet.sheet._grow;
+    if (was) {
+      sheet.sheet._grow = null;
+      was.cancel();
+    }
     paintChips();
     const list = items();
     paintEmpty(list);
@@ -506,6 +517,7 @@ export function openFavChars({ cards, assets, tab: firstTab, onClose } = {}) {
     // 好幾頁：彈窗固定高度、翻頁鈕貼底（styles.css 的 .favc-sheet[data-paged]）。
     sheet.sheet.dataset.paged = pages > 1 ? "true" : "false";
     paintCount();
+    grow?.done();
   }
 
   /** 寬度、高度變了（轉手機、拉視窗、展開系列）：一頁的張數跟著變，留在差不多同一段；多出來的那排淡進來。 */
@@ -644,6 +656,7 @@ export function openFavChars({ cards, assets, tab: firstTab, onClose } = {}) {
   render();
   const f = fit();
   if (f.cols * f.rows !== per) render();
+  opened = true;
   enter(0);
   if (tab === "add") search.focus({ preventScroll: true });
   return sheet;

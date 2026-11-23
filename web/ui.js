@@ -138,6 +138,7 @@ export function openSheet(title, body, { wide = false, onClose, foot, translateT
   document.addEventListener("keydown", onKey, true);
   document.body.append(overlay);
   openOverlays.push(overlay);
+  autoHeight(sheet, overlay);
   // 背景的 inert 等進場動畫（sheet-in，DUR.long）播完再設：當下設要把整頁樣式重算一次（手機 40ms），
   // 正好卡在「按下去 → 視窗出來」那一格。這個視窗自己會把 Tab 留在裡面（onKey），背景被遮罩蓋著點不到。
   lockScroll(overlayId, { deferInert: DUR.long + 60 });
@@ -150,6 +151,58 @@ export function openSheet(title, body, { wide = false, onClose, foot, translateT
   };
   requestAnimationFrame(() => requestAnimationFrame(focusFirst));
   return { close, sheet };
+}
+
+/**
+ * 視窗的內容變了（換頁籤、篩選、搜尋、清單讀回來、圖載好）：視窗從原本的高度慢慢變到新的高度，不是一格就跳過去
+ * （2026-11-23 專案主：偏好角色從全部切到小分類，視窗一下就縮小）。
+ *   - ResizeObserver 一直記著畫面上的高度（只記，不在裡面改大小：在裡面改會「ResizeObserver loop」報錯）。
+ *   - MutationObserver 看到內容變了、或裡面的圖載好：下一格畫之前量新的高度，從記著的高度動過去。
+ *     一格裡改了好幾次只量一次。正在變到一半又變：從現在看到的高度接著變。
+ *   - 呼叫端自己用 heightChange 演的（sheet._grow，卡冊詳情、偏好角色）：不重演。
+ *   - 視窗大小變了（轉手機、拉視窗）、減少動態、正在關：直接換。開窗那一刻還沒記到高度，交給進場動畫。
+ */
+function autoHeight(sheet, overlay) {
+  if (typeof MutationObserver !== "function" || typeof ResizeObserver !== "function") return;
+  let shown = 0;
+  let anim = null;
+  let view = `${innerWidth}x${innerHeight}`;
+  let queued = false;
+  const ro = new ResizeObserver(() => {
+    shown = sheet.offsetHeight;
+  });
+  const settle = () => {
+    queued = false;
+    if (!sheet.isConnected || overlay.dataset.closing) return stop();
+    const own = sheet._grow && sheet._grow.playState === "running";
+    const running = anim && anim.playState === "running" ? anim : null;
+    const from = running ? sheet.offsetHeight : shown;
+    running?.cancel();
+    const to = sheet.offsetHeight;
+    const now = `${innerWidth}x${innerHeight}`;
+    const resized = now !== view;
+    view = now;
+    if (own || resized || !from || reducedMotion() || Math.abs(to - from) < 4) return;
+    anim = sheet.animate([{ height: `${from}px`, overflow: "hidden" }, { height: `${to}px`, overflow: "hidden" }], {
+      duration: DUR.medium,
+      easing: css(CURVE.out),
+    });
+  };
+  const later = () => {
+    if (queued) return;
+    queued = true;
+    requestAnimationFrame(settle);
+  };
+  const mo = new MutationObserver(later);
+  mo.observe(sheet, { childList: true, subtree: true, characterData: true, attributes: true });
+  sheet.addEventListener("load", later, true);
+  const stop = () => {
+    mo.disconnect();
+    ro.disconnect();
+    sheet.removeEventListener("load", later, true);
+  };
+  sheet.addEventListener("sheet-close", stop, { once: true });
+  ro.observe(sheet);
 }
 
 /**

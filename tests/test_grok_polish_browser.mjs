@@ -95,11 +95,15 @@ const server = createServer(async (req, res) => {
   let file = resolve(root, "web6", name);
   if (!existsSync(file)) file = resolve(root, "web", name);
   if (!file.startsWith(root + sep)) return res.writeHead(403).end();
+  // 先讀到檔才送 200：讀不到（開源版的 CI 沒有卡面圖）時才送得出 404。以前先送 200 再讀，讀不到再送 404 就
+  // 「Cannot write headers after they are sent」整支掛掉。
   try {
+    const body = await readFile(file);
     res.writeHead(200, { "Content-Type": type });
-    res.end(await readFile(file));
+    res.end(body);
   } catch {
-    res.writeHead(404).end();
+    if (res.headersSent) res.end();
+    else res.writeHead(404).end();
   }
 });
 
