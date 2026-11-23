@@ -38,9 +38,51 @@ def norm_path(path) -> str:
     return text.lower() if os.name == "nt" else text
 
 
+_real_dirs: dict = {}
+
+
+def _real_parts(path) -> str:
+    """真正的路徑（正斜線、保留大小寫）：捷徑、符號連結、Windows 短檔名（RUNNER~1）、macOS 的 /var → /private/var。
+    檔案只展開它所在的資料夾（同一個資料夾的幾千個 LoRA 只問檔案系統一次），檔名照原樣接上。"""
+    p = Path(str(path))
+    parent = str(p.parent)
+    hit = _real_dirs.get(parent)
+    if hit is None:
+        try:
+            hit = str(Path(parent).resolve()).replace("\\", "/").rstrip("/")
+        except (OSError, RuntimeError, ValueError):
+            hit = parent.replace("\\", "/").rstrip("/")
+        if len(_real_dirs) > 4096:
+            _real_dirs.clear()
+        _real_dirs[parent] = hit
+    return f"{hit}/{p.name}" if p.name else hit
+
+
+def rel_under(child, root):
+    """child 在 root 底下：回傳中間那幾層（照原本的大小寫，最後一個是 child 自己；空的＝就是 root）；不在底下回 None。
+    先照字面比；對不上再兩邊都換成真正的路徑比。偏好路徑存的是 resolve 過的，LoRA Manager 回的檔案路徑不是：
+    loras 是捷徑、符號連結，或像 CI 那樣暫存路徑有別名時，以前整份 LoRA 都被濾掉。"""
+    r = norm_path(root)
+    if not r:
+        return None
+    raw = str(child or "").strip().replace("\\", "/").rstrip("/")
+    try:
+        real_root = str(Path(str(root)).resolve()).replace("\\", "/").rstrip("/")
+    except (OSError, RuntimeError, ValueError):
+        real_root = str(root).replace("\\", "/").rstrip("/")
+    for text, base in ((raw, str(root).strip().replace("\\", "/").rstrip("/")), (_real_parts(raw) if raw else "", real_root)):
+        c, b = norm_path(text), norm_path(base)
+        if not c or not b:
+            continue
+        if c == b:
+            return []
+        if c.startswith(b + "/"):
+            return text[len(base) + 1:].split("/")
+    return None
+
+
 def is_under(child, root) -> bool:
-    c, r = norm_path(child), norm_path(root)
-    return bool(r) and (c == r or c.startswith(r + "/"))
+    return rel_under(child, root) is not None
 
 
 def preferred_path() -> Path | None:
@@ -113,6 +155,7 @@ _lock = threading.Lock()
 
 
 def reset_cache() -> None:
+    _real_dirs.clear()
     with _lock:
         _cache["data"] = None
         _cache["at"] = 0.0
@@ -270,9 +313,9 @@ def from_lora_manager(raw: list) -> dict:
         # 偏好路徑選在子資料夾時 folder 從 loras 根算、分類從偏好路徑算，以前直接拿分類名去切，切成「s/Character」。
         cat_folder = "" if category == ROOT_CATEGORY else category
         if pref is not None:
-            if not is_under(path, pref):
+            rest = rel_under(path, pref)
+            if rest is None:
                 continue
-            rest = path[len(str(pref).replace("\\", "/").rstrip("/")) + 1:].split("/")
             category = rest[0] if len(rest) > 1 else ROOT_CATEGORY
             inner = "/".join(rest[:-1])
             pref_rel = folder[: len(folder) - len(inner)].rstrip("/") if inner and folder.endswith(inner) else (folder if not inner else "")

@@ -31,6 +31,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
       - uses: actions/setup-node@v4
         with:
           node-version: 20
@@ -42,6 +45,9 @@ jobs:
         run: |
           node tests/test_i18n_browser.mjs
           node tests/test_setup_browser.mjs
+      # The core jobs skip checks that need a browser; they run here instead.
+      - name: Browser checks from the core list
+        run: python tests/run.py --playwright
   full-engine:
     if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest

@@ -1,8 +1,12 @@
-"""Portable release checks. Python standard library and Node 20+; no downloads or real ComfyUI."""
+"""Portable release checks. Python standard library and Node 20+; no downloads or real ComfyUI.
+
+Browser checks (they load Playwright) run when Playwright is installed and are skipped otherwise.
+--playwright runs only those (the CI job that installs Chromium); --browser adds the longer UI suite."""
 from __future__ import annotations
 
 import os
 from pathlib import Path
+import re
 import shutil
 import subprocess
 import sys
@@ -95,9 +99,48 @@ stage = Path(tempfile.mkdtemp(prefix="mochi-checks-"))
 env = {**os.environ, "PYTHONUTF8": "1", "APP_CONFIG": str(stage / "config.json"), "APP_SETTINGS": str(stage / "settings.json")}
 # 整支抽幾千張的引擎測試：詞庫 8179 字之後，GitHub 的 Windows 機器跑引擎 release 超過 600 秒。
 SLOW = {"test_engine_shards.mjs", "test_engine_release.mjs"}
+
+
+def needs_browser(file: Path) -> bool:
+    """要開真的瀏覽器的測試：程式裡載入 'playwright' 這個模組（只在註解提到的不算）。"""
+    try:
+        text = file.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return False
+    return bool(re.search(r"""['"]playwright['"]""", text))
+
+
+def has_playwright() -> bool:
+    if os.environ.get("PLAYWRIGHT_MODULE"):
+        return True
+    if (Path.home() / ".cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright").exists():
+        return True
+    try:
+        return subprocess.run([node, "-e", "require.resolve('playwright')"], cwd=ROOT, capture_output=True, timeout=60).returncode == 0
+    except (OSError, subprocess.TimeoutExpired):
+        return False
+
+
+# 畫面測試要 Playwright（npm install playwright、npx playwright install chromium）。沒裝就略過、照樣算過：
+# 只要 Python 和 Node 就能跑這套。GitHub CI 的一般關卡（Windows、macOS、Linux）沒裝，這些測試在裝了瀏覽器的
+# 那一關用 --playwright 跑（只跑要瀏覽器的）。以前沒裝也照跑，每次都「Install Playwright」失敗，CI 一直是紅的。
+only_browser = "--playwright" in sys.argv
+browser_ok = has_playwright()
+if only_browser and not browser_ok:
+    sys.exit("--playwright needs Playwright: npm install --no-save playwright, then npx playwright install chromium")
 failed = []
+skipped = []
+ran = 0
 for target, source in checks:
     file = ROOT / ("tests" if standalone else "scripts") / (target if standalone else source)
+    browser = needs_browser(file)
+    if only_browser and not browser:
+        continue
+    if browser and not browser_ok:
+        skipped.append(target)
+        print(f"SKIP {target} (needs Playwright)", flush=True)
+        continue
+    ran += 1
     command = [node if file.suffix == ".mjs" else sys.executable, str(file)]
     try:
         result = subprocess.run(command, cwd=ROOT, env=env, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=1800 if target in SLOW else 600)
@@ -108,5 +151,5 @@ for target, source in checks:
     except subprocess.TimeoutExpired:
         failed.append(target)
         print("FAIL " + target + " (timed out)", flush=True)
-print(f"{len(checks)-len(failed)}/{len(checks)} checks passed", flush=True)
+print(f"{ran-len(failed)}/{ran} checks passed" + (f", {len(skipped)} skipped (no Playwright)" if skipped else ""), flush=True)
 sys.exit(1 if failed else 0)

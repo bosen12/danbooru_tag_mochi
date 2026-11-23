@@ -2121,6 +2121,32 @@ try:
     _lrows = sorted((i["category"], i["folder"], i.get("catFolder")) for i in _lmd["items"])
     ok("preferred path: catFolder is the category's own folder (LoRA Manager)",
        _lrows == [("Character", "Illustrious/Character", "Illustrious/Character"), ("Character", "Illustrious/Character/Genshin", "Illustrious/Character")], str(_lrows))
+    # loras 是捷徑／符號連結（CI 的暫存路徑也有別名：macOS /var → /private/var、Windows RUNNER~1）：偏好路徑存的是
+    # 真正的路徑，LoRA Manager 回的是捷徑那邊的路徑。以前字面比對不上，整份 LoRA 都被濾掉（GitHub CI 上面那項一直紅）。
+    _real_loras = _pref_td / "real-loras"
+    (_real_loras / "Illustrious" / "Character").mkdir(parents=True)
+    (_real_loras / "Illustrious" / "Character" / "c.safetensors").write_bytes(b"")
+    _link_loras = _pref_td / "link-loras"
+    try:
+        if _os.name == "nt":
+            import _winapi
+            _winapi.CreateJunction(str(_real_loras), str(_link_loras))
+        else:
+            _os.symlink(_real_loras, _link_loras, target_is_directory=True)
+        _linked = True
+    except (OSError, AttributeError, ImportError):
+        _linked = False
+    if _linked:
+        _ls.comfy_model_dirs = lambda kind: [_link_loras] if kind == "loras" else []
+        server.set_model_path("lora", str(_link_loras / "Illustrious"))
+        _ls.reset_cache()
+        _alias = _ls.from_lora_manager([{"file_path": str(_link_loras / "Illustrious" / "Character" / "c.safetensors"), "folder": "Illustrious/Character"}])
+        ok("preferred path: a linked loras folder still lists LoRA Manager's LoRAs",
+           [(i["category"], i["folder"], i["catFolder"], i["file"]) for i in _alias["items"]] == [("Character", "Illustrious/Character", "Illustrious/Character", "c.safetensors")], str(_alias["items"]))
+        ok("preferred path: is_under sees through the link both ways",
+           _ls.is_under(_link_loras / "Illustrious" / "Character" / "c.safetensors", (_real_loras / "Illustrious").resolve())
+           and _ls.is_under((_real_loras / "Illustrious" / "Character" / "c.safetensors").resolve(), _link_loras / "Illustrious")
+           and not _ls.is_under(_link_loras / "Illustrious" / "Character" / "c.safetensors", _lroot))
     _ls.comfy_model_dirs = lambda kind: [_lroot] if kind == "loras" else []
     server.set_model_path("lora", str(_lroot / "A"))
     _ls.reset_cache()
