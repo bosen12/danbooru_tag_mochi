@@ -1845,6 +1845,10 @@ def norm(item: dict) -> dict | None:
         out["series"] = series
     if card_positive:
         out["cardPositive"] = card_positive
+    # 同一個角色的另一個寫法（characters.json 的 alt_of）：跟原卡同中文、並排，跟 alt_names 一樣標 altOf。
+    alt_of = str(item.get("altOf") or "").strip()
+    if alt_of:
+        out["altOf"] = alt_of
     # 細分類。assign_sub 只在拆開的小分類（角色）採用已登記的 id。
     hinted_sub = item.get("sub")
     if isinstance(hinted_sub, str) and hinted_sub:
@@ -6279,6 +6283,8 @@ def extra_character_tags() -> list[dict]:
             "era": ["any"],
             "series": series,
             "cardPositive": card_positive,
+            # 2026-11-25 專案主：模型角色清單裡的舊寫法也收，跟原角色同中文並排。
+            **({"altOf": c["alt_of"]} if c.get("alt_of") else {}),
         })
     return rows
 
