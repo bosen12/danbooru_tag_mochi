@@ -188,8 +188,10 @@ try{
   });
 
   // 每一格畫完（rAF 之後）記彈窗的高度：一格就跳完＝沒有過渡。
-  const heights=`window.watchHeight=(sheet,ms)=>new Promise((done)=>{const h=[];let run=true;const read=()=>h.push(Math.round(sheet.getBoundingClientRect().height));
-    const tick=()=>requestAnimationFrame(()=>setTimeout(()=>{read();if(run)tick();},0));read();tick();setTimeout(()=>{run=false;done(h);},ms);});`;
+  // 時間到就停、交出去的是複本：以前停了之後還有一格排好的量測，落在下一步（把內容刪掉）之後才量，
+  // 量到縮回去的高度又塞進這一組的尾巴，頭尾一減變成「沒長高」（2026-11-25 查到，約四次掉一次）。
+  const heights=`window.watchHeight=(sheet,ms)=>new Promise((done)=>{const h=[];let run=true;const read=()=>{if(run)h.push(Math.round(sheet.getBoundingClientRect().height));};
+    const tick=()=>requestAnimationFrame(()=>setTimeout(()=>{read();if(run)tick();},0));read();tick();setTimeout(()=>{run=false;done(h.slice());},ms);});`;
   const smooth=(h,label)=>{
     const steps=[];for(let i=1;i<h.length;i++)if(h[i]!==h[i-1])steps.push(h[i]-h[i-1]);
     const total=h.at(-1)-h[0];
