@@ -37,7 +37,7 @@ import { watchGone, sweepGone } from "./gone.js";
 import { relationsOf } from "./fuse-bed.js";
 import { drawWithSeed, effectiveHeats, withEffectiveHeats } from "./draw-with-seed.js";
 import { zoomFromThumb } from "./zoom.js";
-import { favChars, withFavChars, paintFavChar, paintFavChars, favCharsButton, openFavChars, favZone, dropToFav, flyToFav, heartIcon, favOnlyChip, paintFavOnlyChip } from "./fav-chars.js";
+import { favChars, withFavChars, paintFavChar, paintFavChars, favCharsButton, openFavChars, favZone, dropToFav, flyToFav, heartIcon, favOnlyChip, paintFavOnlyChip, favOnlyCount, favOnlyEmpty, favOnlyReason } from "./fav-chars.js";
 import { ratingBlocked, ratingOf, RATING_LABEL } from "./rules/rating.js";
 import { mountRatingFree, overreachLine } from "./rating-free.js";
 import { whenPrinter, settingsToWrite, onOtherTab } from "./tab-sync.js";
@@ -1128,13 +1128,8 @@ function libReasons() {
         toast("時代改成「混合」：不同時代的牌可以一起出現");
       },
     },
-    {
-      // 角色頁「愛心 偏好」開著，搜到的角色不在名單裡。
-      hides: (c) => ui.suit === "chara" && ui.favOnly && c.suit === "chara" && !favChars.has(c.tag),
-      text: (c) => `「${c.zh}」不在偏好角色裡`,
-      label: () => "看全部角色",
-      run: () => pickFav(),
-    },
+    // 角色頁「愛心 偏好」開著，搜到的角色不在名單裡。
+    favOnlyReason(() => ui.suit === "chara" && ui.favOnly, () => pickFav()),
   ];
 }
 
@@ -1298,7 +1293,7 @@ const genderOk = (c) => ui.suit !== "chara" || !ui.charGender || c.gate === ui.c
 
 /** 角色頁的「愛心 偏好 N」：只看偏好角色（跟卡冊同一顆，fav-chars.js 的 favOnlyChip）。也只是瀏覽篩選。 */
 const favOk = (c) => ui.suit !== "chara" || !ui.favOnly || favChars.has(c.tag);
-const favCount = () => lib.cards.reduce((n, c) => n + (c.suit === "chara" && visible(c) && favChars.has(c.tag) ? 1 : 0), 0);
+const favCount = () => favOnlyCount(lib.byTag, visible);
 
 function pickFav(from) {
   const focused = document.activeElement === from;
@@ -1312,12 +1307,13 @@ function pickFav(from) {
 
 /** 只看偏好、這一格卻沒有：一個都還沒挑，或這個性別／作品裡沒有挑過的。給一顆關掉的鈕。 */
 function favEmpty() {
-  const none = favCount() === 0;
+  const n = favCount();
+  const { title, detail } = favOnlyEmpty(n);
   return el(
     "div",
     { class: "lib-empty lib-hint" },
-    el("span", {}, none ? "還沒有偏好角色：挑幾個常用的，或把角色牌拖到右邊的愛心。" : "這裡沒有偏好角色：換個系列、性別，或關掉「偏好」。"),
-    none ? el("button", { class: "btn btn-small btn-primary", type: "button", onclick: (e) => manageFavChars(e.currentTarget, "add") }, "挑偏好角色") : null,
+    el("span", {}, el("b", {}, title), " ", detail),
+    !n ? el("button", { class: "btn btn-small btn-primary", type: "button", onclick: (e) => manageFavChars(e.currentTarget, "add") }, "挑偏好角色") : null,
     el("button", { class: "btn btn-small", type: "button", onclick: (e) => pickFav(e.currentTarget) }, "看全部角色")
   );
 }

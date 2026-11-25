@@ -2589,13 +2589,10 @@ LoRA 觸發詞|LoRA trigger
 只看偏好角色（{0} 個）|Show favorite characters only ({0})
 還沒有偏好角色|No favorite characters yet
 這裡沒有偏好角色|No favorite characters here
-關掉「偏好」看全部角色，點牌上的愛心加進來；墨池抽角色時可以只從偏好角色裡抽。|Turn off Favorites to see every character, then tap the heart on a card to add one. Ink Pool can draw characters from your favorites only.
 換個系列、性別，或關掉「偏好」看全部角色。|Try another series or gender, or turn off Favorites to see every character.
 看全部角色|Show all characters
-還沒有偏好角色：挑幾個常用的，或把角色牌拖到右邊的愛心。|No favorite characters yet. Pick a few you use often, or drag a character card onto the heart at the right edge.
-這裡沒有偏好角色：換個系列、性別，或關掉「偏好」。|No favorite characters here. Try another series or gender, or turn off Favorites.
+把角色牌拖到畫面右邊的愛心就加進來；關掉「偏好」看全部角色。|Drag a character card onto the heart at the right edge to add it. Turn off Favorites to see every character.
 挑偏好角色|Pick favorites
-還沒有偏好角色：把角色牌拖到右邊的愛心，或在墨池的規則裡挑。|No favorite characters yet. Drag a character card onto the heart at the right edge, or pick them in Ink Pool's rules.
 「{0}」不在偏好角色裡|“{0}” is not one of your favorite characters
 {0} / {1} 張|{0} / {1} cards
 字盒共 {0} 張，這裡顯示 {1} 張|Showing {1} of {0} library cards

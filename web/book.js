@@ -42,7 +42,7 @@ import { attachTilt } from "./card-tilt.js";
 import { loadCustom, addCustomToLib, withCustomArt, onCustomChange, setCharacterBan, customOf, deleteCustom, saveCustom, shareCode, readShareCode, startFromPrompt, takeCustomStart, fillText, RATING_NAME } from "./custom-cards.js";
 import { openCustomEditor } from "./custom-editor.js";
 import { createDrag } from "./drag.js";
-import { favChars, paintFavChar, favZone, dropToFav, flyToFav, heartIcon, favOnlyChip, paintFavOnlyChip } from "./fav-chars.js";
+import { favChars, paintFavChar, favZone, dropToFav, flyToFav, heartIcon, favOnlyChip, paintFavOnlyChip, favOnlyCount, favOnlyEmpty } from "./fav-chars.js";
 import * as S from "./store.js";
 import { USAGE_KEY, loadUsage, seedUsage, fetchUsage, tagsOfPositive } from "./usage.js";
 import { weightsOfPositive } from "./weights.js";
@@ -805,16 +805,7 @@ function pickFam(fam) {
   if (ui.group === g) return false;
   ui.group = g;
   saveUi();
-  const box = groupsBox();
-  for (const b of box.querySelectorAll(".group-chip[data-g]")) b.setAttribute("aria-pressed", b.dataset.g === g ? "true" : "false");
-  for (const b of box.querySelectorAll(".chip-fold[data-fam]")) {
-    const on = famKey(b.dataset.fam) === g;
-    b.setAttribute("aria-pressed", on ? "true" : "false");
-    const run = b.closest(".chip-run");
-    if (on) run.dataset.picked = "true";
-    else delete run.dataset.picked;
-  }
-  paintGroupNow();
+  paintPicked();
   backToTop();
   // 抽屜先開始動，牌下一格才換（同一格做的話，篩牌那一下會讓抽屜晚一兩格才起步）。連點只做最後一次。
   const id = ++famWork;
@@ -825,7 +816,7 @@ let famWork = 0;
 
 /** 只看偏好角色：跟性別一樣只是瀏覽篩選；看一個群組時不算。 */
 const favOk = (c) => ui.suit !== "chara" || !ui.favOnly || !!shelf?.active() || favChars.has(c.tag);
-const favCount = () => lib.cards.reduce((n, c) => n + (c.suit === "chara" && visibleCard(c) && favChars.has(c.tag) ? 1 : 0), 0);
+const favCount = () => favOnlyCount(lib.byTag, visibleCard);
 
 const favChip = () => favOnlyChip(ui.favOnly, favCount(), pickFav);
 
@@ -839,12 +830,32 @@ function pickFav(from) {
   render();
 }
 
+/**
+ * 換了篩的那一格：籤列不重畫，只把「選中」的標記換過來（籤、家族鈕、收著的那串的墨色框、工具列那顆 ✕）。
+ * 以前點一部作品就整排重做一百七十幾顆籤（手機 CPU÷4 點下去同步卡約 57ms）。
+ * 籤列上沒有這一格（換了花色還沒畫、群組加牌的另一排）：照舊整排重畫。
+ */
+function paintPicked() {
+  const box = groupsBox();
+  const chips = box.querySelectorAll(".group-chip[data-g]");
+  if (!chips.length || ![...chips].some((b) => b.dataset.g === ui.group) && !ui.group.startsWith("fam:")) return renderGroups();
+  for (const b of chips) b.setAttribute("aria-pressed", b.dataset.g === ui.group ? "true" : "false");
+  for (const run of box.querySelectorAll(".chip-run[data-fold]")) {
+    const fam = run.querySelector(":scope > .chip-fold[data-fam]");
+    const famOn = !!fam && famKey(fam.dataset.fam) === ui.group;
+    if (fam?.hasAttribute("aria-pressed")) fam.setAttribute("aria-pressed", famOn ? "true" : "false");
+    if (famOn || run.querySelector(':scope > .group-chip[aria-pressed="true"]')) run.dataset.picked = "true";
+    else delete run.dataset.picked;
+  }
+  if (box.id === "book-groups-flow") paintGroupNow();
+}
+
 function pickGroup(g, from) {
   if (ui.group === g) return;
   ui.group = g;
   saveUi();
-  renderGroups();
-  const selected = [...groupsBox().querySelectorAll(".group-chip:not([data-gender])")].find((b) => b.getAttribute("aria-pressed") === "true");
+  paintPicked();
+  const selected = [...groupsBox().querySelectorAll(".group-chip[data-g]")].find((b) => b.getAttribute("aria-pressed") === "true");
   if (from && document.activeElement === from) selected?.focus({ preventScroll: true });
   seat(selected);
   backToTop();
@@ -1963,12 +1974,12 @@ function emptyNote() {
   }
   // 只看偏好：一個都還沒挑、或這一類（性別、作品）裡沒有挑過的。
   if (ui.suit === "chara" && ui.favOnly && !shelf?.active() && !ui.query) {
-    const none = favCount() === 0;
+    const { title, detail } = favOnlyEmpty(favCount());
     return el(
       "div",
       { class: "book-empty" },
-      el("b", {}, none ? "還沒有偏好角色" : "這裡沒有偏好角色"),
-      el("span", {}, none ? "關掉「偏好」看全部角色，點牌上的愛心加進來；墨池抽角色時可以只從偏好角色裡抽。" : "換個系列、性別，或關掉「偏好」看全部角色。"),
+      el("b", {}, title),
+      el("span", {}, detail),
       el("div", { class: "book-empty-acts" }, el("button", { class: "btn btn-small", type: "button", onclick: (e) => pickFav(e.currentTarget) }, "看全部角色"))
     );
   }

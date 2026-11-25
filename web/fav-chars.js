@@ -139,6 +139,36 @@ export function favOnlyChip(on, count, pick) {
   );
 }
 
+/**
+ * 「只看偏好」三個房間（卡冊、墨池字盒、疊印台字盒）共用的幾件事；各房間只管自己的開關狀態和重畫。
+ *   favOnlyCount(byTag, visible)：這頁看得到的偏好角色有幾個（照名單數，不掃整盒八千多張）。
+ *   favOnlyEmpty(count)：只看偏好、這一格卻沒有牌時的一句話（標題、說明分開，畫面各自擺）。
+ *   favOnlyReason(isOn, turnOff)：搜到的角色不在名單裡時，搜尋說明那一條（lib-hint.js 的 reasons）。
+ */
+export function favOnlyCount(byTag, visible) {
+  let n = 0;
+  for (const t of favChars.list()) {
+    const c = byTag.get(t);
+    if (c && c.suit === "chara" && visible(c)) n += 1;
+  }
+  return n;
+}
+
+export function favOnlyEmpty(count) {
+  return count
+    ? { title: "這裡沒有偏好角色", detail: "換個系列、性別，或關掉「偏好」看全部角色。" }
+    : { title: "還沒有偏好角色", detail: "把角色牌拖到畫面右邊的愛心就加進來；關掉「偏好」看全部角色。" };
+}
+
+export function favOnlyReason(isOn, turnOff) {
+  return {
+    hides: (c) => isOn() && c.suit === "chara" && !favChars.has(c.tag),
+    text: (c) => `「${c.zh}」不在偏好角色裡`,
+    label: () => "看全部角色",
+    run: () => turnOff(),
+  };
+}
+
 export function paintFavOnlyChip(root, count) {
   const chip = root?.querySelector("[data-fav-chip]");
   if (!chip) return;

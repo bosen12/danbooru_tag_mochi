@@ -31,7 +31,7 @@ import {
   stepSkeleton,
 } from "./engine.js";
 import { drawWithSeed, effectiveHeats, withEffectiveHeats } from "./draw-with-seed.js";
-import { favChars, withFavChars, paintFavChar, paintFavChars, favZone, dropToFav, favOnlyChip, paintFavOnlyChip } from "./fav-chars.js";
+import { favChars, withFavChars, paintFavChar, paintFavChars, favZone, dropToFav, favOnlyChip, paintFavOnlyChip, favOnlyCount, favOnlyEmpty, favOnlyReason } from "./fav-chars.js";
 import { skeletonPicker } from "./skeleton-picker.js";
 import { compareThumb } from "./compare.js";
 import { ratingBlocked, ratingOf, RATING_LABEL } from "./rules/rating.js";
@@ -3945,24 +3945,18 @@ function caseReasons() {
       hides: (c) => bans.has(c.tag),
       text: (c) => `「${c.zh}」在廢字簍裡：從廢字簍拿出來就看得到`,
     },
-    {
-      // 角色頁「愛心 偏好」開著，搜到的角色不在名單裡。
-      hides: (c) => caseTab === "chara" && caseFav && c.suit === "chara" && !favChars.has(c.tag),
-      text: (c) => `「${c.zh}」不在偏好角色裡`,
-      label: () => "看全部角色",
-      run: () => $("case-groups").querySelector("[data-fav-chip]")?.click(),
-    },
+    // 角色頁「愛心 偏好」開著，搜到的角色不在名單裡。
+    favOnlyReason(() => caseTab === "chara" && caseFav, () => $("case-groups").querySelector("[data-fav-chip]")?.click()),
   ];
 }
 
 /** 這頁看得到的偏好角色有幾個（「愛心 偏好 N」的數字）。 */
-const caseFavCount = () => lib.cards.reduce((n, c) => n + (c.suit === "chara" && visibleCard(c) && favChars.has(c.tag) ? 1 : 0), 0);
+const caseFavCount = () => favOnlyCount(lib.byTag, visibleCard);
 
 /** 只看偏好、這一格卻沒有：一個都還沒挑，或這個性別／作品裡沒有挑過的。 */
 function caseFavEmpty() {
-  return caseFavCount() === 0
-    ? "還沒有偏好角色：把角色牌拖到右邊的愛心，或在墨池的規則裡挑。"
-    : "這裡沒有偏好角色：換個系列、性別，或關掉「偏好」。";
+  const { title, detail } = favOnlyEmpty(caseFavCount());
+  return el("span", {}, el("b", {}, title), " ", detail);
 }
 
 function affinities() {
