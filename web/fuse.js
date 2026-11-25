@@ -31,7 +31,7 @@ import {
   stepSkeleton,
 } from "./engine.js";
 import { drawWithSeed, effectiveHeats, withEffectiveHeats } from "./draw-with-seed.js";
-import { favChars, withFavChars, paintFavChar, paintFavChars, favZone, dropToFav } from "./fav-chars.js";
+import { favChars, withFavChars, paintFavChar, paintFavChars, favZone, dropToFav, favOnlyChip, paintFavOnlyChip } from "./fav-chars.js";
 import { skeletonPicker } from "./skeleton-picker.js";
 import { compareThumb } from "./compare.js";
 import { ratingBlocked, ratingOf, RATING_LABEL } from "./rules/rating.js";
@@ -136,6 +136,8 @@ let caseTab = "all";
 let caseGroup = "";
 // 角色頁的「性別：全部／女／男」（墨池字盒、卡冊也有同一排）。
 let caseGender = "";
+// 角色頁「愛心 偏好 N」：只看偏好角色（墨池字盒、卡冊同一顆，fav-chars.js 的 favOnlyChip）。跟性別一樣只是瀏覽篩選。
+let caseFav = false;
 // 籤列捲走後，找牌框下面那顆「航海王」清除鈕（cards.js 的 groupNow）。
 let caseNow = null;
 let caseQuery = "";
@@ -381,7 +383,11 @@ async function boot() {
   attachPeek($("case-grid"), ".card[data-tag]", peekInfo);
   attachTilt($("case-grid"));
   // 偏好角色的名單一變（墨池那邊加的、另一個分頁改的）：卡盒的愛心跟著換。
-  favChars.onChange(() => paintFavChars($("case-grid")));
+  // 名單變了：牌上的愛心重掛、「愛心 偏好 N」換數字（只看偏好時拿掉的那張留在原位，換篩選才真的不見）。
+  favChars.onChange(() => {
+    paintFavChars($("case-grid"));
+    if (lib) paintFavOnlyChip($("case-groups"), caseFavCount());
+  });
   sizeCards($("case-grid"));
   // 生圖種子一換，同一張試印對應的成品就不一樣了：成品、付印那條、試印上的小圖都要重畫。
   onSeedChange(() => {
@@ -3939,7 +3945,24 @@ function caseReasons() {
       hides: (c) => bans.has(c.tag),
       text: (c) => `「${c.zh}」在廢字簍裡：從廢字簍拿出來就看得到`,
     },
+    {
+      // 角色頁「愛心 偏好」開著，搜到的角色不在名單裡。
+      hides: (c) => caseTab === "chara" && caseFav && c.suit === "chara" && !favChars.has(c.tag),
+      text: (c) => `「${c.zh}」不在偏好角色裡`,
+      label: () => "看全部角色",
+      run: () => $("case-groups").querySelector("[data-fav-chip]")?.click(),
+    },
   ];
+}
+
+/** 這頁看得到的偏好角色有幾個（「愛心 偏好 N」的數字）。 */
+const caseFavCount = () => lib.cards.reduce((n, c) => n + (c.suit === "chara" && visibleCard(c) && favChars.has(c.tag) ? 1 : 0), 0);
+
+/** 只看偏好、這一格卻沒有：一個都還沒挑，或這個性別／作品裡沒有挑過的。 */
+function caseFavEmpty() {
+  return caseFavCount() === 0
+    ? "還沒有偏好角色：把角色牌拖到右邊的愛心，或在墨池的規則裡挑。"
+    : "這裡沒有偏好角色：換個系列、性別，或關掉「偏好」。";
 }
 
 function affinities() {
@@ -4007,6 +4030,14 @@ function renderCaseGroups(inSuit) {
     dealCase = true;
     renderCase();
   };
+  const pickFav = (from) => {
+    const focused = document.activeElement === from;
+    caseFav = !caseFav;
+    caseBackToTop();
+    dealCase = true;
+    renderCase();
+    if (focused) $("case-groups").querySelector("[data-fav-chip]")?.focus({ preventScroll: true });
+  };
   const all = [
     chip("", "全部", null),
     ...runs.map((r) =>
@@ -4015,7 +4046,7 @@ function renderCaseGroups(inSuit) {
         : chip(r.items[0].g, r.items[0].short, r.items[0].seal, r.items[0].zh)
     ),
   ];
-  box.replaceChildren(...(caseTab === "chara" ? [genderChips(caseGender, pickGender), seriesRun(all)] : all));
+  box.replaceChildren(...(caseTab === "chara" ? [genderChips(caseGender, pickGender), favOnlyChip(caseFav, caseFavCount(), pickFav), seriesRun(all)] : all));
   swapIn(box, caseTab);
   rowMove.done();
   // 籤列捲走後的「航海王」清除鈕：按下去跟點「全部」一樣，焦點落到「全部」上。
@@ -4075,6 +4106,7 @@ function renderCase() {
   list = list.filter(visibleCard);
   // 角色頁的性別篩選：先篩再算細分類籤，籤上只剩有這個性別的作品。
   if (caseTab === "chara" && caseGender) list = list.filter((c) => c.gate === caseGender);
+  if (caseTab === "chara" && caseFav) list = list.filter((c) => favChars.has(c.tag));
   renderCaseGroups(list);
   if (caseGroup) list = list.filter((c) => c.group === caseGroup);
   // 跟墨池字盒同一套（cards.js 的 searchCards：完全相符排第一、簡體和底線照樣找、空白分開每段都要有、
@@ -4090,7 +4122,7 @@ function renderCase() {
     list = found.list;
   }
   // 搜得到、但還有被性別、廢字簍收起來的：牌格上面一行說「另有 N 張」（跟墨池字盒一樣，分級不提）。
-  const scope = (c) => caseTab !== "match" && (caseTab === "all" || c.suit === caseTab) && (!caseGroup || c.group === caseGroup) && (caseTab !== "chara" || !caseGender || c.gate === caseGender) && rankOk(c);
+  const scope = (c) => caseTab !== "match" && (caseTab === "all" || c.suit === caseTab) && (!caseGroup || c.group === caseGroup) && (caseTab !== "chara" || !caseGender || c.gate === caseGender) && (caseTab !== "chara" || !caseFav || favChars.has(c.tag)) && rankOk(c);
   const also = q && list.length ? searchAlso({ cards: lib.cards.filter(scope), shown: list, q, reasons: caseReasons().slice(2) }) : null;
   searchNote($("case-grid"), found, caseQuery, also);
   caseList = list;
@@ -4127,7 +4159,9 @@ function renderCase() {
               ? "規則的「人物」沒開男生，男角色都收起來了。"
               : caseTab === "chara" && caseGender === "female" && !settings.girl
                 ? "規則的「人物」沒開女生，女角色都收起來了。"
-                : "沒有符合的牌。"
+                : caseTab === "chara" && caseFav
+                  ? caseFavEmpty()
+                  : "沒有符合的牌。"
         );
     grid.append(empty);
     caseReuse = null;
