@@ -358,7 +358,7 @@ def _cards() -> None:
             return
         # 先說缺什麼、缺幾張，再說要下載：使用者才知道為什麼要抓這麼多。
         why = cards_missing_text(_last_check[0])
-        _set("cards", "run", (why + "：" if why else "") + "從 GitHub 下載全年齡卡面：先抓縮圖（約 30 MB），再抓大圖（約 103 MB）")
+        _set("cards", "run", (why + "：" if why else "") + "從 GitHub 下載全年齡卡面：先抓縮圖（約 75 MB），再抓大圖（約 244 MB）")
         code = _run("cards", ["fetch_card_art.py"])
         if code == 0:
             _set("cards", "done", "下載好了：重新整理網頁就有圖", reload=True)
@@ -670,7 +670,8 @@ def _bake() -> None:
                 return
         else:
             _set("bake", "done", "")
-    code = _check("bake_card_art.py")
+    # 這一題只管敏感、色情（--adult）：全年齡沒下載好或還在問時，不能把那些也算進來、一起烘。
+    code = _check("bake_card_art.py", "--adult")
     if code == 10:
         _set("bake_adult", "ask", bake_ask_text(_last_check[0]), answers=["yes", "no"])
     elif code == 0:
@@ -712,7 +713,7 @@ def _bake_chars() -> None:
 
 
 def _bake_adult() -> None:
-    rc = _bake_run("bake_adult", ["bake_card_art.py"], "用你的 ComfyUI 烘敏感、色情卡面")
+    rc = _bake_run("bake_adult", ["bake_card_art.py", "--adult"], "用你的 ComfyUI 烘敏感、色情卡面")
     if "bake_adult" in _stopped:
         _set("bake_adult", "skip", "停了：已經烘好的留著，重新整理就看得到；下次啟動會再問", reload=True)
         return

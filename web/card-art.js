@@ -1175,7 +1175,6 @@ export const STILL_LIFE = new Set([
   "roundel",
   "radiation symbol",
   "wallpaper (object)",
-  "multitasking",
   "paper stack",
   "kinchaku",
   "st. gloriana's (emblem)",

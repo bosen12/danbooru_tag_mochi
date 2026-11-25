@@ -2151,6 +2151,7 @@ const clock = () => (score && score.playing ? Math.min(LENGTH, score.now()) : tP
 const fmt = (t) => `${Math.floor(t / 60)}:${String(Math.floor(t % 60)).padStart(2, "0")}`;
 
 let drawnAt = -1;
+let raf = 0;
 function frame() {
   const t = clock();
   // 暫停時同一格不用一直重畫（停在星河那幾秒，WebGL 每一幀重畫會一直吃 GPU）。
@@ -2166,7 +2167,31 @@ function frame() {
     tPaused = LENGTH;
     showGate(true);
   }
-  requestAnimationFrame(frame);
+  raf = requestAnimationFrame(frame);
+}
+
+/**
+ * 分頁切到背景：停掉畫面迴圈，正在播的先暫停（配樂也停，播放頭留著）；回到前景、原本在播就接著播。
+ * 以前迴圈每一格照排、配樂的計時器一直跑，切回來時直接滿速追上（2026-11-26 Grok 審查）。
+ */
+let resumeOnShow = false;
+function watchHidden() {
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) {
+      if (score?.playing) {
+        resumeOnShow = true;
+        pause();
+      }
+      cancelAnimationFrame(raf);
+      raf = 0;
+      return;
+    }
+    if (resumeOnShow) {
+      resumeOnShow = false;
+      play();
+    }
+    if (!raf) raf = requestAnimationFrame(frame);
+  });
 }
 
 function play(from = tPaused) {
@@ -2234,7 +2259,8 @@ async function main() {
   const cues = await boot();
   score = createScore(cues);
   render(tPaused);
-  requestAnimationFrame(frame);
+  raf = requestAnimationFrame(frame);
+  watchHidden();
   const btn = $("play");
   btn.disabled = false;
   btn.focus();

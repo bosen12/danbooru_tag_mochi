@@ -575,6 +575,7 @@ SUBS = {
             "suspended congress", "reverse suspended congress", "mounting",
             "guided penetration", "imminent penetration", "deep penetration", "stomach bulge",
             "clothed sex", "penetration through clothes", "happy sex", "rough sex",
+            "angry sex", "awkward sex", "acrobatic sex", "multitasking",
             "stealth sex", "implied sex", "invisible man", "public indecency", "underwater sex",
         ]),
         ("sex_oral", "性愛・口手足與磨擦", [

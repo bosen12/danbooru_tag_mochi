@@ -6912,7 +6912,11 @@ class Handler(BaseHTTPRequestHandler):
             "gz": gz,
             "mime": mime,
         }
-        _STATIC[key] = rec
+        # 圖、影片、音檔不留在記憶體：卡冊捲完一輪，六千多張縮圖（約 71 MB）加上滑過的原圖會一直留到重開
+        # （2026-11-26 Grok 審查發現 _STATIC 沒有上限）。每次從磁碟讀，作業系統的檔案快取照樣接得住；
+        # 程式碼、樣式、詞庫、卡面清單這些小而常用的照舊留著（還要算 gzip、?v= 指紋）。
+        if base.split("/")[0] not in ("image", "video", "audio"):
+            _STATIC[key] = rec
         return rec
 
     def _asset_version(self, rel: str) -> str | None:
@@ -8016,7 +8020,7 @@ def start_card_fetch() -> None:
         return
     if fetch_card_art.have_enough():
         return
-    print("cards    插畫還沒有：背景從 GitHub 下載全年齡那一包（約 100MB），好了重新整理網頁就有圖")
+    print(f"cards    插畫還沒有：背景從 GitHub 下載全年齡那一包（縮圖約 {round(fetch_card_art.THUMBS['size'] / 1e6)} MB、大圖約 {round(fetch_card_art.FULL['size'] / 1e6)} MB），好了重新整理網頁就有圖")
 
     def run() -> None:
         try:

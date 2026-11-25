@@ -280,7 +280,7 @@ def status(args, out_dir: Path, manifest: dict, jobs: list[dict]) -> int:
     輸出只用英文：cmd 的主控台字碼頁不是 UTF-8，中文會變亂碼。"""
     todo = pending(jobs, out_dir, manifest)
     what = "zipu extras" if args.extras else (
-        "character art" if args.kind == "character" else f"card art ({args.rating or 'all ratings'})")
+        "character art" if args.kind == "character" else f"card art ({args.rating or ('sensitive+explicit' if args.adult else 'all ratings')})")
     have = len(jobs) - len(todo)
     if not todo:
         print(f"{what}: {have}/{len(jobs)} ready")
@@ -301,6 +301,9 @@ def main() -> int:
     ap.add_argument("--force", action="store_true")
     ap.add_argument("--limit", type=int, default=0)
     ap.add_argument("--rating", choices=["general", "sensitive", "explicit"], default="")
+    # 準備面板「要不要烘敏感、色情卡面」那一題：只算、只烘這兩級。以前不帶等級，卡面下載失敗（全年齡缺兩千多張）時
+    # 那題的張數和按下去烘的都把全年齡算進去（2026-11-26 Grok 審查發現）。
+    ap.add_argument("--adult", action="store_true", help="只看敏感、色情（不含全年齡）")
     # 角色牌（版權角色）另外烘：不混進「全年齡缺的直接烘」，那一步會一次烘幾百張而不先問。
     ap.add_argument("--kind", choices=["card", "character"], default="card")
     ap.add_argument("--ckpt", default="", help="用哪個底模烤（ComfyUI 裡的名稱）；不給就用預設的，沒有就挑一個有的")
@@ -316,6 +319,8 @@ def main() -> int:
         jobs = [j for j in jobs if j.get("kind", "card") == args.kind]
     if args.rating:
         jobs = [j for j in jobs if j.get("rating", "general") == args.rating]
+    if args.adult:
+        jobs = [j for j in jobs if j.get("rating", "general") in ("sensitive", "explicit")]
     if args.only:
         want = {s.strip() for s in args.only.split(",") if s.strip()}
         jobs = [j for j in jobs if j["key"] in want]

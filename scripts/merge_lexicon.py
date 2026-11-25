@@ -1096,6 +1096,10 @@ NEEDS_MALE = {
     "rape",
     "after rape",
     "rough sex",
+    "angry sex",
+    "awkward sex",
+    "acrobatic sex",
+    "multitasking",
     "strangling",
     "neck grab",
     "headlock",
@@ -1217,6 +1221,10 @@ NEEDS_FEMALE = {
     "rape",
     "after rape",
     "rough sex",
+    "angry sex",
+    "awkward sex",
+    "acrobatic sex",
+    "multitasking",
     "strangling",
     "neck grab",
     "headlock",
@@ -1343,6 +1351,10 @@ NEEDS_PAIR = {
     "rape",
     "after rape",
     "rough sex",
+    "angry sex",
+    "awkward sex",
+    "acrobatic sex",
+    "multitasking",
     "strangling",
     "neck grab",
     "headlock",
@@ -3129,6 +3141,14 @@ def extra_expand_tags() -> list[dict]:
         # Danbooru 上 strangling 不暗示 asphyxiation，這裡也不補。
         pose("after rape", needs=["pair"], heat=sex, zh="強暴事後"),
         pose("rough sex", needs=["pair"], heat=sex, zh="粗暴性愛"),
+        # 2026-11-26 專案主加：跟 rough sex 一樣是「怎麼做」的情境，跟一個體位同時成立，不佔 sex_act。
+        # acrobatic sex 在 Danbooru 只有 18 篇，模型多半認不太得，照專案主要求收。
+        pose("angry sex", needs=["pair"], heat=sex, zh="生氣做愛"),
+        pose("awkward sex", needs=["pair"], heat=sex, zh="尷尬性愛"),
+        pose("acrobatic sex", needs=["pair"], heat=sex, zh="特技性愛"),
+        # 以前在環境（背景・物件主題，卡面是「沒有人的靜物」，引擎還當怪異母題不自己補）；
+        # Danbooru 的意思是一邊做愛一邊做別的事（看書、打電動、講電話），搬來這裡，跟 rough sex 同一套。
+        pose("multitasking", needs=["pair"], heat=sex, zh="一心多用"),
         pose("strangling", needs=["pair"], heat=sex, zh="勒頸"),
         pose("neck grab", needs=["pair"], heat=sex, zh="抓脖子"),
         pose("headlock", needs=["pair"], heat=sex, zh="鎖頭"),

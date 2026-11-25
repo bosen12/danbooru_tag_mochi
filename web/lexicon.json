@@ -32577,6 +32577,98 @@
       "zh": "粗暴性愛"
     },
     {
+      "tag": "angry sex",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "sex",
+      "sub": "sex_pos",
+      "needs": [
+        "pair",
+        "male",
+        "female"
+      ],
+      "zh": "生氣做愛"
+    },
+    {
+      "tag": "awkward sex",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "sex",
+      "sub": "sex_pos",
+      "needs": [
+        "pair",
+        "male",
+        "female"
+      ],
+      "zh": "尷尬性愛"
+    },
+    {
+      "tag": "acrobatic sex",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "sex",
+      "sub": "sex_pos",
+      "needs": [
+        "pair",
+        "male",
+        "female"
+      ],
+      "zh": "特技性愛"
+    },
+    {
+      "tag": "multitasking",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "sex",
+      "sub": "sex_pos",
+      "needs": [
+        "pair",
+        "male",
+        "female"
+      ],
+      "zh": "一心多用"
+    },
+    {
       "tag": "strangling",
       "section": "pose",
       "gate": "any",
@@ -173363,26 +173455,6 @@
       "group": "other",
       "sub": "obj_build",
       "zh": "壁紙"
-    },
-    {
-      "tag": "multitasking",
-      "section": "env",
-      "gate": "any",
-      "heat": [
-        "tease",
-        "flash",
-        "sex"
-      ],
-      "mutex": null,
-      "bind": [],
-      "implies": [],
-      "layer": "normal",
-      "era": [
-        "any"
-      ],
-      "group": "other",
-      "sub": "obj_theme",
-      "zh": "同時做多件事"
     },
     {
       "tag": "paper stack",

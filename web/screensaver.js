@@ -220,6 +220,8 @@ export async function startScreensaver() {
   }
   state.gl = gl;
   gl.start();
+  // 載入那一段 await 期間分頁可能已經切走：那時 active.gl 還是空的，visibilitychange 沒停到它，這裡補停。
+  if (document.hidden) gl.pause(true);
   canvas.classList.add("is-on");
   // 一律每秒最多 60 格。以前只有在印圖時才限，平常螢幕能跑多快就畫多快（165Hz 的螢幕每秒 165 格），
   // 螢幕保護常常一開就是一整晚，顯示卡白白多做將近三倍的工；60 格看起來一樣順。

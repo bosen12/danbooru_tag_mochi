@@ -203,7 +203,8 @@ export function startTour(room, from = 0) {
   function tick() {
     if (i < 0) return;
     const step = steps[i];
-    place();
+    // 分頁在背景：位置不用每 250ms 量、寫一次（看不到）；「做到了沒」照樣檢查，回到前景再對一次位置。
+    if (!document.hidden) place();
     if (step.wait && !doneAt && step.wait({ phone })) {
       doneAt = performance.now();
       card.dataset.done = "true";
@@ -214,6 +215,7 @@ export function startTour(room, from = 0) {
 
   function end(done) {
     clearInterval(timer);
+    document.removeEventListener("visibilitychange", onShow);
     removeEventListener("keydown", onKey, true);
     removeEventListener("resize", place);
     removeEventListener("scroll", onScroll, true);
@@ -235,6 +237,7 @@ export function startTour(room, from = 0) {
   }
 
   const onScroll = () => place();
+  const onShow = () => !document.hidden && place();
   const onKey = (e) => {
     if (anyOverlay() && !e.target?.closest?.("#tour")) return; // 彈窗開著：鍵盤讓給彈窗
     if (e.target?.closest?.("input, textarea, select, [contenteditable]")) return;
@@ -261,6 +264,7 @@ export function startTour(room, from = 0) {
   addEventListener("scroll", onScroll, true);
   // 用計時器（不靠 rAF）：分頁在背景、版面在動（抽屜滑出、牌飛進池子）時照樣跟得上。
   timer = setInterval(tick, 250);
+  document.addEventListener("visibilitychange", onShow);
   active = { end };
   go(from);
   // 開場：暗幕淡進來，小視窗往上浮出來。

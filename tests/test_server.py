@@ -96,6 +96,15 @@ ok("static allows rules/rating.js", Handler._static_dest(_Req("/rules/rating.js"
 ok("static allows trace.js", Handler._static_dest(_Req("/trace.js")) is not None)
 ok("static blocks ../web2", Handler._static_dest(_Req("/../web2/styles.css")) is None)
 ok("static blocks encoded ..", Handler._static_dest(_Req("/%2e%2e/web2/styles.css")) is None)
+# 靜態檔快取（_STATIC）沒有上限：圖、影片、音檔不留，卡冊捲完一輪才不會多佔七十幾 MB 到重開（2026-11-26）。
+import server as _srv  # noqa: E402
+_tmpd = Path(_env_tmp.mkdtemp())
+(_tmpd / "a.webp").write_bytes(b"RIFF0000WEBPVP8 " + b"x" * 2000)
+(_tmpd / "b.css").write_text("body{}" * 400, encoding="utf-8")
+_h = Handler.__new__(Handler)
+_img, _css = _h._cached_file(_tmpd / "a.webp"), _h._cached_file(_tmpd / "b.css")
+ok("static cache: 圖照樣回得出內容，但不留在記憶體", _img["raw"].startswith(b"RIFF") and str(_tmpd / "a.webp") not in _srv._STATIC, str(list(_srv._STATIC)[-3:]))
+ok("static cache: 樣式、程式照舊留著（還有 gzip）", str(_tmpd / "b.css") in _srv._STATIC and _css["gz"] is not None)
 
 ok("view query ok", comfy_view_query("ComfyUI_1.png") == "filename=ComfyUI_1.png&subfolder=&type=output")
 ok("view query keeps subfolder", comfy_view_query("a.png", "batch/out") == "filename=a.png&subfolder=batch%2Fout&type=output")

@@ -4391,7 +4391,6 @@ const ODD_MOTIF = new Set([
   "rising sun flag",
   "survey corps (emblem)",
   "onbashira",
-  "multitasking",
   "st. gloriana's (emblem)",
   "kotoyoro",
   "bunny day",

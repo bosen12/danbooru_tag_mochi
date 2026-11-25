@@ -6908,7 +6908,9 @@ function indoorOutdoorClash(have) {
   // 護欄 3a：奇葩模式本來就放生，不該被這條規則綁住。
   ok(
     "gear/place 奇葩：釘「living room」仍抽得到「tennis racket」",
-    hits("weird", ["living room"], "tennis racket") > 0
+    // 奇葩模式下這組本來就只有約 0.7%：200 張常常一張都沒有（2026-11-26 詞庫多三個字，600001～600200 剛好 0 張，
+    // 改之前是 2 張）。抽 1000 張才量得到「沒被規則綁住」，不是靠運氣。
+    hits("weird", ["living room"], "tennis racket", 1000, 700000) > 0
   );
 
   // 護欄 3b：使用者明講要的組合，任何模式都不准靜默刪掉。

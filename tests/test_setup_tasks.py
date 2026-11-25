@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import re
 import sys
 import tempfile
 import threading
@@ -63,15 +64,15 @@ def state(k):
 
 
 # 1. 第一次：卡面要下載，下載完接著烘全年齡、成人卡面先問。
-ran = reset({("fetch_card_art.py", "--check"): 3, ("bake_card_art.py", "--status", "--rating", "general"): 10, ("bake_card_art.py", "--status"): 10})
+ran = reset({("fetch_card_art.py", "--check"): 3, ("bake_card_art.py", "--status", "--rating", "general"): 10, ("bake_card_art.py", "--status", "--adult"): 10})
 st._cards()
 ok("卡面：缺就下載，好了提示重新整理", state("cards") == "done" and st._state["cards"].get("reload") and ("fetch_card_art.py",) in ran, str(st._state["cards"]))
 st._bake()
 ok("卡面下載完：全年齡缺的直接烘（同一次啟動）", ("bake_card_art.py", "--rating", "general") in ran and state("bake") == "done", str(ran))
-ok("成人卡面：先問，不自己烘", state("bake_adult") == "ask" and ("bake_card_art.py",) not in ran, str(st._state["bake_adult"]))
+ok("成人卡面：先問，不自己烘", state("bake_adult") == "ask" and ("bake_card_art.py", "--adult") not in ran, str(st._state["bake_adult"]))
 ok("回答「烘」才烘", st.answer("bake_adult", "yes")[0])
 threading.Event().wait(0.2)
-ok("烘成人卡面", ("bake_card_art.py",) in ran and state("bake_adult") == "done", str(ran))
+ok("烘成人卡面", ("bake_card_art.py", "--adult") in ran and state("bake_adult") == "done", str(ran))
 
 # 1b. 敏感和角色兩題都答「要」：後答的排隊，等前一批烘完才烘，不是碰到鎖就標完成（2026-10-12 專案主回報）。
 ran = reset({})
@@ -104,7 +105,7 @@ for _ in range(100):
     if state("bake_chars") == "done":
         break
     threading.Event().wait(0.02)
-ok("前一批烘完，角色接著烘", state("bake_adult") == "done" and state("bake_chars") == "done" and ran.index(("bake_card_art.py",)) < ran.index(("bake_card_art.py", "--kind", "character")), str(ran))
+ok("前一批烘完，角色接著烘", state("bake_adult") == "done" and state("bake_chars") == "done" and ran.index(("bake_card_art.py", "--adult")) < ran.index(("bake_card_art.py", "--kind", "character")), str(ran))
 ran = reset({("bake_card_art.py", "--kind", "character"): 12})
 st._state["bake_chars"] = {"state": "ask", "text": "", "answers": ["yes", "no", "never"]}
 st.answer("bake_chars", "yes")
@@ -196,15 +197,19 @@ st._lora()
 ok("ComfyUI 在別台：不裝", state("lora") == "skip" and ran == [], str(ran))
 
 # 1b. 卡面沒下載成功：不能自己用 ComfyUI 烘兩千多張（以前會直接開烘，好幾個鐘頭）。
-ran = reset({("fetch_card_art.py", "--check"): 3, ("fetch_card_art.py",): 1, ("bake_card_art.py", "--status", "--rating", "general"): 10, ("bake_card_art.py", "--status"): 10})
+ran = reset({("fetch_card_art.py", "--check"): 3, ("fetch_card_art.py",): 1, ("bake_card_art.py", "--status", "--rating", "general"): 10, ("bake_card_art.py", "--status", "--adult"): 10})
 st._cards()
 st._bake()
 ok("下載失敗：全年齡不自己烘，說下次接著抓", state("cards") == "error" and state("bake") == "skip" and ("bake_card_art.py", "--rating", "general") not in ran
    and "下載" in st._state["bake"]["text"], str((st._state["bake"], ran)))
 ok("下載失敗：敏感、色情照樣只是問", state("bake_adult") == "ask")
+ok("下載失敗：那一題的張數只數敏感、色情（--adult），不把沒下載到的全年齡算進去", ("bake_card_art.py", "--status", "--adult") in ran and ("bake_card_art.py", "--status") not in ran, str(ran))
+st.answer("bake_adult", "yes")
+threading.Event().wait(0.2)
+ok("下載失敗後答應烘敏感、色情：只烘那兩級", any(tuple(a) == ("bake_card_art.py", "--adult") for a in ran), str(ran))
 
 # 1c. 下載好了但全年齡缺很多（詞庫比公開包新很多）：先問，答「烘」才烘。
-ran = reset({("fetch_card_art.py", "--check"): 0, ("bake_card_art.py", "--status", "--rating", "general"): 10, ("bake_card_art.py", "--status"): 0})
+ran = reset({("fetch_card_art.py", "--check"): 0, ("bake_card_art.py", "--status", "--rating", "general"): 10, ("bake_card_art.py", "--status", "--adult"): 0})
 _real_fake = st._run
 
 
@@ -491,6 +496,15 @@ st._wait_loaded("pose", _late)
 st.time.sleep, st.WAIT_LOADED_SEC, st._set = _real_sleep, _real_wait, _real_set
 ok("等太久先改成略過（面板收得起來），之後載入了照樣標好", _seen[:1] == [("pose", "skip")] and _seen[-1] == ("pose", "done"), str(_seen))
 
+# 下載卡面那句話寫的大小要跟 fetch_card_art.py 真正抓的包一樣（2026-11-26：包換到 v13 是 75／244 MB，面板還寫 30／103 MB）。
+# 換新卡面包改了 THUMBS／FULL 的 size，這裡會紅：記得一起改 setup_tasks.py 的那句和 web6/locales/en.js。
+# 上游在 scripts/、開源版在 tests/：都從 repo 根目錄找。
+_fca = (Path(__file__).resolve().parent.parent / "scripts" / "fetch_card_art.py").read_text(encoding="utf-8")
+_sizes = [round(int(re.search(r'^' + k + r' = \{[^}]*"size": (\d+)', _fca, re.M).group(1)) / 1e6) for k in ("THUMBS", "FULL")]
+_setup_src = (Path(__file__).resolve().parent.parent / "setup_tasks.py").read_text(encoding="utf-8")
+ok("卡面下載那句話的大小跟真正的包一樣", f"先抓縮圖（約 {_sizes[0]} MB），再抓大圖（約 {_sizes[1]} MB）" in _setup_src, str(_sizes))
+
 print()
 print("ok" if not failed else f"{failed} failed")
+
 sys.exit(1 if failed else 0)

@@ -93,22 +93,28 @@ async function* sseEvents(res) {
  *   payload(shot) → /api/gen 的 body（positive 以外的：loras、ckpt、rating、workflowId、width、height）
  *   update(shot)  shot 的狀態變了
  *   idle()        佇列清空了（無限抽用它接下一輪）
+ *   soon()        最後一張已經進了 ComfyUI、後面沒有排著的：無限抽可以趁現在先排下一輪（排進來的會提早送）
  *   origin        "mochi"／"fuse"：哪一頁送的（頂欄的生圖進度用，見 gen-status.js）
  */
 export function createGenerator(hooks) {
   const queue = [];
-  let current = null;
+  // 手上的工作（runOne 的那一筆）：平常一張；連續生圖時上一張還在畫，下一張已經送進 ComfyUI 排在後面，是兩張。
+  const active = new Set();
   let running = false;
+  // pump 跑著、手上那張已經進了 ComfyUI 時，後來才排進來的（無限抽下一輪抽好了）也要能提早送：enqueue 叫它。
+  let kickAhead = null;
   // 按了停：等網路回來的那張也不等了（pump 的 waitOnline）。
   let halted = false;
 
-  async function runOne(shot) {
+  async function runOne(shot, run = {}) {
     // 每接一次一個新的 AbortController：看門狗、斷線砍掉的是那一條連線，接回去要用新的。
-    // 按停（cancelOne／stop）砍的是 current.ctrl，也就是當下那一條。
+    // 按停（cancelOne／stop）砍的是 run.ctrl，也就是當下那一條。
     let ctrl = new AbortController();
     // reserved：這次送印自己取的編號（同一張重送沿用，伺服器認得就接回同一個工作，不會畫兩次）。
     if (!shot.job && !shot._reserved) shot._reserved = newJobId();
-    current = { shot, ctrl, promptId: shot.promptId || null, job: shot.job || null, reserved: shot._reserved || null };
+    // 一張一筆：連續生圖時下一張會提早送（pump 的 launch），同時可能有兩張在手上，按停要找得到各自那一條。
+    Object.assign(run, { shot, ctrl, promptId: shot.promptId || null, job: shot.job || null, reserved: shot._reserved || null });
+    active.add(run);
     shot.status = "running";
     shot.progress = shot.progress || 0;
     shot.note = shot.job ? "接回剛才那張…" : "排隊中";
@@ -159,7 +165,7 @@ export function createGenerator(hooks) {
         const timer = setTimeout(giveUp, 20_000);
         let lost = false;
         try {
-          const q = `job=${encodeURIComponent(current.job || "")}&prompt_id=${encodeURIComponent(current.promptId || "")}`;
+          const q = `job=${encodeURIComponent(run.job || "")}&prompt_id=${encodeURIComponent(run.promptId || "")}`;
           r = await fetch(`/api/gen/recover?${q}`, { signal: ask.signal }).then((x) => (x.ok ? x.json() : null));
         } catch {
           r = null;
@@ -191,19 +197,19 @@ export function createGenerator(hooks) {
     // 重新整理之後接回來的從 0 開始，整段重播才拿得回進度和說明。
     let seen = 0;
     const open = () =>
-      current.job
-        ? fetch(`/api/gen/attach?job=${encodeURIComponent(current.job)}&since=${seen}`, { headers: { Accept: "text/event-stream" }, signal: ctrl.signal })
+      run.job
+        ? fetch(`/api/gen/attach?job=${encodeURIComponent(run.job)}&since=${seen}`, { headers: { Accept: "text/event-stream" }, signal: ctrl.signal })
         : fetch("/api/gen", {
             method: "POST",
             headers: { "Content-Type": "application/json", Accept: "text/event-stream", "X-Gen-Resume": "1" },
-            body: JSON.stringify({ ...hooks.payload(shot), origin: hooks.origin, positive: escapeForComfy(shot.positive), seed: shot.seed, job: current.reserved }),
+            body: JSON.stringify({ ...hooks.payload(shot), origin: hooks.origin, positive: escapeForComfy(shot.positive), seed: shot.seed, job: run.reserved }),
             signal: ctrl.signal,
           });
     try {
       for (let attempt = 0; ; attempt++) {
         if (ctrl.signal.aborted) {
           ctrl = new AbortController();
-          current.ctrl = ctrl;
+          run.ctrl = ctrl;
         }
         stalled = false;
         kick();
@@ -211,13 +217,13 @@ export function createGenerator(hooks) {
           const res = await open();
           if (!res.ok) {
             // 接回時伺服器說找不到：多半是伺服器重開過（工作只存在記憶體裡）。問一下這張後來怎麼了。
-            if (res.status === 404 && current.job) {
+            if (res.status === 404 && run.job) {
               const got = await recover();
               if (got) return true;
             }
             // 接回時碰到暫時的錯（503 忙線、502／504 中間的代理沒接上、429 太多請求）：伺服器那邊的那張還在，
             // 跟連線斷了一樣隔一下再接，不算印壞（2026-11-20 第六輪檢查：接回碰到一次 503，那張就直接變失敗）。
-            if (current.job && [408, 429, 502, 503, 504].includes(res.status)) {
+            if (run.job && [408, 429, 502, 503, 504].includes(res.status)) {
               const err = await errorOf(res);
               throw new Error(err.message);
             }
@@ -226,16 +232,21 @@ export function createGenerator(hooks) {
           const job = res.headers.get("X-Gen-Job");
           if (job && job !== shot.job) {
             shot.job = job;
-            current.job = job;
+            run.job = job;
             hooks.update(shot);
           }
           for await (const { event, data } of sseEvents(res)) {
             kick();
             if (event !== "preview") seen++;
             if (data && data.prompt_id && data.prompt_id !== shot.promptId) {
-              current.promptId = data.prompt_id;
+              run.promptId = data.prompt_id;
               // 存起來（store.js、fuse.js 的存檔）：伺服器重開之後還能拿它去問 ComfyUI 這張畫完了沒。
               shot.promptId = data.prompt_id;
+            }
+            // 進了 ComfyUI 的佇列（拿到 prompt_id）：pump 可以把下一張先送過去排在後面。
+            if (run.promptId && !run.inComfy) {
+              run.inComfy = true;
+              run.onComfy?.();
             }
             if (event === "queued") {
               shot.note = "排隊中";
@@ -273,7 +284,7 @@ export function createGenerator(hooks) {
         } catch (err) {
           // 連線斷了，或連線沒有回應（伺服器每 5 秒有心跳，收不到東西是這條連線卡住了，不是 Comfy 沒在畫）：
           // 伺服器那邊還留著這張，換一條連線接回去。畫好了的話，接回去就拿到成品。
-          if (err instanceof GenError || shot.status === "cancelled" || !current.job || attempt >= REATTACH_WAITS.length) throw err;
+          if (err instanceof GenError || shot.status === "cancelled" || !run.job || attempt >= REATTACH_WAITS.length) throw err;
           shot.note = stalled ? "連線沒有回應，重新接上…" : "連線斷了，重新接上…";
           hooks.update(shot);
           await wait(REATTACH_WAITS[attempt]);
@@ -297,7 +308,7 @@ export function createGenerator(hooks) {
       }
       // 伺服器說 ComfyUI 連不上（503、沒有別的代號）：這張還沒送出去，不算壞。排回去等 ComfyUI 開好（pump 的 "comfy"）。
       // 以前算一張失敗：ComfyUI 重開那 30～60 秒連續失敗三張，無限抽就停了。
-      if (err instanceof GenError && err.status === 503 && !err.code && !current.job) {
+      if (err instanceof GenError && err.status === 503 && !err.code && !run.job) {
         shot.status = "queued";
         shot.note = "ComfyUI 連不上，等它開好就接著印";
         hooks.update(shot);
@@ -306,7 +317,7 @@ export function createGenerator(hooks) {
       // 不是伺服器報錯：是連線的問題（斷了、卡住、連不到主機），重接也接不回。
       // 不送取消：伺服器那邊的那張可能好好的、甚至已經畫好；沒人接的工作伺服器過一陣子自己會收。
       shot.netFail = !(err instanceof GenError);
-      if (shot.netFail && !current.job) {
+      if (shot.netFail && !run.job) {
         // 還沒送到伺服器（連不到主機）：這張不算壞，排回去等網路回來（pump 的 "net"）。
         shot.status = "queued";
         shot.note = "連不到主機，網路回來就接著印";
@@ -323,8 +334,19 @@ export function createGenerator(hooks) {
       return false;
     } finally {
       clearTimeout(watchdog);
-      current = null;
+      active.delete(run);
     }
+  }
+
+  /**
+   * 送一張出去（runOne），回傳 { shot, run, done }。run.onComfy 在這張進了 ComfyUI 佇列時叫。
+   * 連續生圖：上一張一進 ComfyUI，就把下一張先送過去排在它後面（ahead）。以前要等上一張整個結束（SSE 收尾）
+   * 才開始組下一張、送出去，中間那段（伺服器組圖、問底模清單、送 /prompt）顯示卡是閒著的（2026-11-26 Grok 審查）。
+   * 只提早一張：排在 ComfyUI 裡的越多，按停要刪的越多、換設定也越晚生效。
+   */
+  function launch(shot) {
+    const run = {};
+    return { shot, run, done: runOne(shot, run) };
   }
 
   async function pump() {
@@ -333,10 +355,34 @@ export function createGenerator(hooks) {
     halted = false;
     let fails = 0;
     let quickNet = 0;
-    while (queue.length) {
-      const shot = queue.shift();
-      if (shot.status === "cancelled") continue;
-      const ok = await runOne(shot);
+    // 提早送出去的下一張（launch 的回傳）。
+    let ahead = null;
+    const sendAhead = () => {
+      if (ahead || halted) return;
+      while (queue.length && queue[0].status === "cancelled") queue.shift();
+      // 佇列空了：問一下要不要接下一輪（無限抽），有排進來就照樣提早送。
+      if (!queue.length) hooks.soon?.();
+      if (!queue.length || queue[0].job) return; // 要接回的那張（重新整理前畫到一半）不提早，照原本的順序接
+      ahead = launch(queue.shift());
+    };
+    let cur = null;
+    kickAhead = () => cur?.run.inComfy && sendAhead();
+    while (queue.length || ahead) {
+      if (ahead) {
+        cur = ahead;
+        ahead = null;
+      } else {
+        const next = queue.shift();
+        if (next.status === "cancelled") continue;
+        cur = launch(next);
+      }
+      const shot = cur.shot;
+      // 這張已經在 ComfyUI 裡（提早送的那張常常是）：下一張現在就送；不然等它進去再送。
+      if (cur.run.inComfy) sendAhead();
+      else cur.run.onComfy = sendAhead;
+      const ok = await cur.done;
+      cur.run.onComfy = null;
+      cur = null;
       if (ok === "net") {
         // 連不到主機：這張排回最前面，等網路回來再送（從 Mac 走 Tailscale 斷一下、伺服器重開）。
         // 以前只有「後面還排著」才等：一次 1 張、無限抽時佇列是空的，直接進下一輪，
@@ -370,12 +416,27 @@ export function createGenerator(hooks) {
           s.note = "連續失敗三張，停下來了";
           hooks.update(s);
         }
+        // 已經提早送出去的那張也收掉（ComfyUI 佇列裡的刪掉）。
+        if (ahead) {
+          cancelRun(ahead.run, "連續失敗三張，停下來了");
+          await ahead.done;
+          ahead = null;
+        }
         hooks.stopped && hooks.stopped("連續失敗三張，停下來了：" + (shot.note || ""));
         break;
       }
     }
     running = false;
+    kickAhead = null;
     hooks.idle && hooks.idle();
+  }
+
+  /** 收掉手上的一張：標成取消、伺服器那邊的工作一起收（排在 ComfyUI 佇列裡的會被刪掉）、這邊的連線砍掉。 */
+  function cancelRun(run, note = "取消了") {
+    run.shot.status = "cancelled";
+    run.shot.note = note;
+    cancelJob(run.job || run.reserved, run.promptId);
+    run.ctrl.abort();
   }
 
   function interrupt(promptId) {
@@ -423,6 +484,7 @@ export function createGenerator(hooks) {
       shot.note = "等前面的印完";
       queue.push(shot);
       hooks.update(shot);
+      if (running) kickAhead?.();
       pump();
     },
     /** 重新整理之前畫到一半的那張（shot.job 還在）：排到最前面，用 attach 接回去。 */
@@ -440,7 +502,7 @@ export function createGenerator(hooks) {
     },
     /** 這張在不在這邊的印表機裡："current"（正在送、正在畫）、"queued"（還沒送出去）、null（不在）。 */
     holds(shot) {
-      if (current && current.shot === shot) return "current";
+      for (const run of active) if (run.shot === shot) return "current";
       return queue.includes(shot) ? "queued" : null;
     },
     /** 只停這一張：還在排隊就拿出來，正在畫就砍（帶 prompt_id）。 */
@@ -449,10 +511,9 @@ export function createGenerator(hooks) {
       if (at >= 0) queue.splice(at, 1);
       shot.status = "cancelled";
       shot.note = "取消了";
-      if (current && current.shot === shot) {
-        cancelJob(current.job || current.reserved, current.promptId);
-        current.ctrl.abort();
-      } else hooks.update(shot);
+      const run = [...active].find((r) => r.shot === shot);
+      if (run) cancelRun(run);
+      else hooks.update(shot);
     },
     /** 停：正在畫的那張也一起砍（帶 prompt_id），排隊的全部取消。 */
     stop() {
@@ -462,18 +523,13 @@ export function createGenerator(hooks) {
         s.note = "取消了";
         hooks.update(s);
       }
-      if (current) {
-        current.shot.status = "cancelled";
-        current.shot.note = "取消了";
-        cancelJob(current.job || current.reserved, current.promptId);
-        current.ctrl.abort();
-      }
+      for (const run of active) cancelRun(run);
     },
     get busy() {
       return running || queue.length > 0;
     },
     get pending() {
-      return queue.length + (current ? 1 : 0);
+      return queue.length + active.size;
     },
   };
 }

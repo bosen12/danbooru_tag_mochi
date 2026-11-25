@@ -2896,7 +2896,16 @@ const generator = createGenerator({
     if (newJob || newPrompt || shot.status === "done" || shot.status === "failed" || shot.status === "cancelled") S.saveShots(shots);
     renderGoBar();
   },
+  // 無限抽：這一輪最後一張已經送進 ComfyUI（後面沒排著的）就先抽下一輪，抽好排進來會提早送（gen.js 的 launch），
+  // 兩輪之間顯示卡不用等（2026-11-26）。到了設定的張數、按了停、這一輪還在抽，都不先抽。
+  soon: () => {
+    if (!infinite || stopAsked || looping || drawingRounds > 0) return;
+    if (ui.loopMax && loopSent >= ui.loopMax) return;
+    drawBatch(true, { auto: true });
+  },
   idle: () => {
+    // soon 已經先抽了下一輪、還沒抽好（排進來會再開始印）：不要再多抽一輪。
+    if (drawingRounds > 0) return;
     // 無限抽印到設定的張數：這一輪印完就停，不接下一輪。
     if (infinite && !stopAsked && ui.loopMax && loopSent >= ui.loopMax) {
       infinite = false;
