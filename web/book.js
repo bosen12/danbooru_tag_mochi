@@ -1210,8 +1210,10 @@ function cellOf(card) {
   cell = el("div", { class: "book-cell", role: "listitem", dataset: { tag: card.tag } }, node, meta);
   cell._card = card;
   // 禁用角色沒有「＋」、也沒有愛心：不能帶去抽。電腦上等滑鼠移過去才做（wireGrid）。
+  // 偏好角色例外，一開始就做：它的愛心是實心、一直亮著的（看得出加了），等滑過去才做的話，
+  // 愛心要滑過一次才突然冒出來（2026-11-25 專案主回報）。
   if (!card.banned) {
-    if (HOVER.matches) cell._lazyButtons = true;
+    if (HOVER.matches && !(card.suit === "chara" && favChars.has(card.tag))) cell._lazyButtons = true;
     else addButtons(cell, card);
   }
   // 角色牌：左下角一顆愛心（點一下加進偏好角色），也可以直接拖到畫面右緣的愛心。
@@ -3060,7 +3062,8 @@ favChars.onChange(() => {
   for (const [tag, cell] of cells) {
     const card = lib.byTag.get(tag);
     if (card?.suit !== "chara" || card.banned) continue;
-    // 電腦上按鈕要滑鼠移過去才做：還沒做的照樣換牌上的愛心。
+    // 電腦上按鈕要滑鼠移過去才做；別處（墨池、另一個分頁）剛加進偏好的，現在就做，實心愛心才看得到。
+    if (cell._lazyButtons && favChars.has(tag)) addButtons(cell, card);
     const b = cell.querySelector(".fav-add");
     if (b) paintFavButton(b, card);
     paintFavChar(cell.querySelector(".card"), tag);
