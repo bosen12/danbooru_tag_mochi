@@ -211,6 +211,26 @@ function warmChips(chips) {
  *   - 按下去先量全部位置（38ms）、再空兩格才開始動。→ 只量會動的那幾串（三四個），起點就是畫面上現在的樣子。
  * 動到一半又按：從畫面上現在的高度、位置接著動（收到一半改展開，外框從現在的高度長回去）。
  */
+/**
+ * 抽屜長高、收矮時，下面整片牌格跟著往下、往上移；牌格不是獨立圖層的話，每一格都要把整片牌（帶圖）重畫一次。
+ * 動畫那零點幾秒把籤列後面的兄弟（牌格、卡冊的提示）升成獨立圖層，移動就只是搬圖層、不重畫。
+ * 2026-11-25 量（字盒，手機 CPU÷4）：展開一次的繪製 310～400ms → 約 65ms，收起 200～240ms → 約 45ms。
+ * 平常不升：一直升著多吃顯示記憶體，而且 will-change: transform 會改變裡面 position: fixed 的參照。
+ */
+function liftBelow(box) {
+  if (box._lifted) return;
+  box._lifted = [];
+  for (let n = box.nextElementSibling; n; n = n.nextElementSibling) {
+    if (n.hidden || n.style.willChange) continue;
+    n.style.willChange = "transform";
+    box._lifted.push(n);
+  }
+}
+function dropBelow(box) {
+  for (const n of box._lifted || []) n.style.willChange = "";
+  box._lifted = null;
+}
+
 const FOLD_MOVERS = ".chip-series > .chip-run[data-fold]:not([data-fold-self]), .chip-series > .group-chip";
 function foldMotion(run, chips, open) {
   const box = run.closest(".group-chips") || run.parentElement;
@@ -225,16 +245,25 @@ function foldMotion(run, chips, open) {
   for (const a of box._foldAnims || []) a.cancel();
   box._foldAnims = [];
   box.style.overflow = "";
-  if (reducedMotion() || !box.isConnected) return setFold(open);
+  if (reducedMotion() || !box.isConnected) {
+    dropBelow(box);
+    return setFold(open);
+  }
   // 抽屜：起步不衝（ease-out 第一格就跳四分之一的高度，看起來像頓一下才開），中段走、尾巴慢慢停。
   const ease = css(CURVE.travel);
   const dur = open ? DUR.long : DUR.medium;
-  const grow = (from, to, ms = dur) => {
+  // keep：收起的第一段，後面馬上接第二段，下面的牌格先不放下來（放下再升要重畫一次整片）。
+  const grow = (from, to, ms = dur, { keep = false } = {}) => {
     if (Math.abs(to - from) < 1) return null;
     box.style.overflow = "clip";
+    liftBelow(box);
     const a = box.animate([{ height: `${from}px` }, { height: `${to}px` }], { duration: ms, easing: ease });
     box._foldAnims.push(a);
-    a.finished.then(() => box._foldToken === token && (box.style.overflow = ""), () => {});
+    a.finished.then(() => {
+      if (box._foldToken !== token) return;
+      box.style.overflow = "";
+      if (!keep) dropBelow(box);
+    }, () => {});
     return a;
   };
   // 按的那顆「遊戲 72 ▸」換了位置（展開時這串自己佔幾行、收起時回到「動漫」旁邊）：只有這顆滑過去，
@@ -268,7 +297,8 @@ function foldMotion(run, chips, open) {
     run.dataset.foldSelf = "";
     ghost.done();
     delete run.dataset.foldSelf;
-    grow(h0, h1);
+    // 高度沒變（動到一半又按回來、剛好一樣高）：沒有動畫會把升起的牌格放下來，這裡放。
+    if (!grow(h0, h1)) dropBelow(box);
     slideHead(headAt);
     fadeIn(moved(), Math.round(dur * 0.45));
     return;
@@ -283,7 +313,7 @@ function foldMotion(run, chips, open) {
   const boxTop = box.getBoundingClientRect().top;
   const padBottom = parseFloat(getComputedStyle(box).paddingBottom) || 0;
   const hMid = Math.min(h0, headAt.bottom - boxTop + padBottom);
-  const first = grow(h0, hMid, Math.round(dur * 0.75));
+  const first = grow(h0, hMid, Math.round(dur * 0.75), { keep: true });
   for (const n of going) box._foldAnims.push(n.animate([{ opacity: 1 }, { opacity: 0 }], { duration: DUR.micro, easing: css(CURVE.exit), fill: "forwards" }));
   const second = () => {
     if (box._foldToken !== token) return;
@@ -294,7 +324,7 @@ function foldMotion(run, chips, open) {
     setFold(false);
     const h1 = box.getBoundingClientRect().height;
     const ms = DUR.short;
-    grow(hMid, h1, ms);
+    if (!grow(hMid, h1, ms)) dropBelow(box);
     slideHead(from, ms);
     for (const n of going) box._foldAnims.push(n.animate([{ opacity: 0 }, { opacity: 1 }], { duration: ms, delay: Math.round(ms * 0.4), easing: ease, fill: "backwards" }));
   };
