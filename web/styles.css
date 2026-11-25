@@ -1325,7 +1325,7 @@ body #wf-pick-btn.has {
   transition: transform var(--dur-short) var(--ease-out);
 }
 
-.chip-run[data-fold="open"] .chip-fold-mark {
+.chip-fold[aria-expanded="true"] .chip-fold-mark {
   transform: rotate(90deg);
 }
 
@@ -1333,7 +1333,16 @@ body #wf-pick-btn.has {
   display: none;
 }
 
-.chip-run[data-fold="shut"][data-picked] .chip-fold {
+/* 收著的籤趁空檔先排一次字（cards.js 的 warmChips）：一瞬間放進版面、看不見也不佔位置，排完就拿掉。 */
+.chip-run[data-fold="shut"] > .group-chip[data-warm] {
+  display: inline-flex;
+  position: absolute;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.chip-run[data-fold="shut"][data-picked] .chip-fold,
+.chip-fold[aria-pressed="true"] {
   color: var(--color-ink);
   border-color: var(--color-ink-2);
 }
@@ -1416,6 +1425,10 @@ body #wf-pick-btn.has {
   }
   /* 收著的串只有一顆「動漫 58 ▸」：跟「全部」排同一行，不要一串佔一行。 */
   .chip-run[data-fold="shut"] {
+    flex-basis: auto;
+  }
+  /* 「性別：全部 女 男」不佔整行：卡冊的「♥ 偏好」接在它後面同一行（底下「系列」本來就自己一行）。 */
+  .chip-run.chip-gender {
     flex-basis: auto;
   }
 }
@@ -8083,6 +8096,18 @@ html[data-setup] .tour-offer {
   font-size: 9px;
   line-height: 1;
   pointer-events: none;
+}
+
+/* 卡冊角色頁性別旁的「♥ 偏好 N」：只看偏好角色。愛心平常是籤的灰，選中時用強調色。 */
+.chip-fav {
+  gap: 0.35em;
+}
+.chip-fav .chip-fav-heart {
+  font-size: 0.95em;
+  transition: color var(--dur-micro) var(--ease-out);
+}
+.chip-fav[aria-pressed="true"] .chip-fav-heart {
+  color: var(--color-accent-text);
 }
 
 /* 規則上的「♥ 偏好角色 N」。 */

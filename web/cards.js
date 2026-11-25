@@ -126,12 +126,15 @@ export function genderChips(current, pick) {
  * 家族名改成按鈕「動漫 41 ▸」，預設收著，點了才展開；沒動過的串，選中的作品在裡面就開著。
  * 開合只在這裡切（不重畫整排），焦點留在按鈕上；記在 famOpen，同一頁重畫也不會彈回去。
  * 開合有過場（foldMotion）；切完發一個 chipfold 事件（groupNow 要重新看選中的籤還在不在）。
+ * famPick(fam)：家族名也能當篩選（卡冊：只看動漫／遊戲／其他）。按下去它回 true 表示這次換成篩這一類：
+ *   收著就順便打開（要從裡面挑一部作品）、開著就維持；已經在篩這一類時再按，才是開合。
+ *   famPicked：現在正在篩這一類（按鈕標成選中）。
  */
 const famOpen = new Map();
-export function chipRun(r, chips, { fold = false, picked = "" } = {}) {
+export function chipRun(r, chips, { fold = false, picked = "", famPick = null, famPicked = false } = {}) {
   const name = () => [r.seal ? el("b", { class: "chip-seal", "aria-hidden": "true" }, r.seal) : null, r.fam];
   if (!fold) return el("span", { class: "chip-run" }, el("span", { class: "chip-fam", "aria-hidden": "true" }, ...name()), ...chips);
-  const has = r.items.some((i) => i.g === picked);
+  const has = famPicked || r.items.some((i) => i.g === picked);
   let want = famOpen.has(r.fam) ? famOpen.get(r.fam) : has;
   const run = el("span", { class: "chip-run", dataset: { fold: want ? "open" : "shut", ...(has ? { picked: "true" } : {}) } });
   const btn = el(
@@ -139,9 +142,13 @@ export function chipRun(r, chips, { fold = false, picked = "" } = {}) {
     {
       class: "chip-fam chip-fold pressable",
       type: "button",
+      dataset: { fam: r.fam },
       "aria-expanded": want ? "true" : "false",
+      ...(famPick ? { "aria-pressed": famPicked ? "true" : "false" } : {}),
       onclick: () => {
-        want = !want;
+        const picking = !!famPick?.(r.fam, btn);
+        if (picking && want) return;
+        want = picking || !want;
         famOpen.set(r.fam, want);
         btn.setAttribute("aria-expanded", want ? "true" : "false");
         foldMotion(run, chips, want);
@@ -152,63 +159,146 @@ export function chipRun(r, chips, { fold = false, picked = "" } = {}) {
     el("span", { class: "chip-fold-mark", "aria-hidden": "true" }, "▸")
   );
   run.append(btn, ...chips);
+  if (!want) warmChips(chips);
   return run;
 }
 
 /**
- * 開合的過場。直接切 display 的話，幾十顆籤一下子冒出來或消失、底下的牌跟著跳，看起來像版面壞掉。
- *   展開：整排籤列的高度從舊的長到新的（多出來的先藏著，像抽屜拉開），後面的串從舊位置滑過去（FLIP），
- *         這串的籤依序淡進來（錯開的總長封頂，五十幾顆也不會拖太久）。
- *   收合：這串的籤先淡掉，再收高度、後面的串滑回來。
- * 動到一半又按：淡出中改回展開就停掉淡出；其他情況把正在跑的收尾，從現在的樣子接著動。
+ * 收著的作品籤趁空檔先排一次字（畫面外、看不見），第一次展開就不用當場排。
+ * 2026-11-25 量：沒預熱時點「動漫」同步卡 36ms（手機 CPU÷4 約 0.25 秒），預熱過只要 6ms（0.03 秒）。
+ * 字型的排字結果是共用的快取：同樣的字預熱過一次，之後重畫出來的新按鈕也不用再排，所以照籤上的字記。
+ * 一次只排幾顆（每顆手機上約 2ms），閒的時候做，不搶捲動和點擊。
  */
+const warmed = new Set();
+const warmQueue = [];
+let warmBusy = false;
+function warmChips(chips) {
+  for (const c of chips) if (!warmed.has(c.textContent)) warmQueue.push(c);
+  if (warmBusy || !warmQueue.length) return;
+  warmBusy = true;
+  const idle = window.requestIdleCallback || ((f) => setTimeout(() => f({ timeRemaining: () => 8 }), 60));
+  const step = (deadline) => {
+    while (warmQueue.length && deadline.timeRemaining() > 4) {
+      const batch = [];
+      while (batch.length < 6 && warmQueue.length) {
+        const c = warmQueue.shift();
+        if (!c.isConnected || warmed.has(c.textContent) || c.closest('.chip-run[data-fold="open"]')) continue;
+        warmed.add(c.textContent);
+        batch.push(c);
+      }
+      if (!batch.length) continue;
+      for (const c of batch) c.dataset.warm = "";
+      batch[0].offsetWidth;
+      for (const c of batch) delete c.dataset.warm;
+    }
+    if (warmQueue.length) idle(step, { timeout: 2000 });
+    else warmBusy = false;
+  };
+  idle(step, { timeout: 2000 });
+}
+
+/**
+ * 開合的過場。直接切 display 的話，幾十顆籤一下子冒出來或消失、底下的牌跟著跳，看起來像版面壞掉。
+ * 整個是「抽屜」：籤列的外框長高／收矮，裡面的籤一排一排被外框的下緣揭開／蓋回去（外框裁切），
+ * 底下的牌跟著外框走。所有東西用同一條曲線、同一段時間，看起來是一個動作。
+ *   展開：先切成打開的版面，外框從舊高度長到新高度。
+ *   收合：版面先維持打開，外框收到收起後的高度（籤從下往上被蓋回去），收完才真的切成收起。
+ * 2026-11-25 專案主：電腦上展開「動漫」看起來是斷的。逐格量到三件事，這版都改掉了：
+ *   - 後面那串（「遊戲」）用「先快後慢」斜飛到下一排，外框用「慢起慢停」長高：串先飛到外框還沒長到的地方被切掉，
+ *     等外框長下來才又冒出來。→ 換了一排的串不再飛：舊位置留殘影淡掉，新位置等外框長到一半再淡進來；
+ *     只是上下移的（例如按的這一串自己）用跟外框同一條曲線滑。
+ *   - 九十幾顆籤各自依序淡入，跟斜飛的串交錯成兩股方向不同的動作。→ 不再一顆一顆淡入，只靠外框下緣揭開。
+ *   - 按下去先量全部位置（38ms）、再空兩格才開始動。→ 只量會動的那幾串（三四個），起點就是畫面上現在的樣子。
+ * 動到一半又按：從畫面上現在的高度、位置接著動（收到一半改展開，外框從現在的高度長回去）。
+ */
+const FOLD_MOVERS = ".chip-series > .chip-run[data-fold]:not([data-fold-self]), .chip-series > .group-chip";
 function foldMotion(run, chips, open) {
   const box = run.closest(".group-chips") || run.parentElement;
-  const apply = () => {
-    run.dataset.fold = open ? "open" : "shut";
-    run.dispatchEvent(new Event("chipfold", { bubbles: true }));
+  const setFold = (o, tell = true) => {
+    if ((run.dataset.fold === "open") === o) return;
+    run.dataset.fold = o ? "open" : "shut";
+    if (tell) run.dispatchEvent(new Event("chipfold", { bubbles: true }));
   };
-  for (const a of run._fold || []) a.cancel();
-  run._fold = [];
-  if (reducedMotion()) return apply();
-  if (open && run.dataset.fold === "open") return; // 淡出到一半改回展開：取消淡出就回來了
-  // 收比開快：離開不拖（淡出 120ms＋收 220ms；展開連依序淡入要半秒多）。
-  const dur = open ? DUR.medium : DUR.short;
-  const reflow = () => {
-    // 會被擠動的是整串（連左邊那條線一起走，包括按的這一串自己）和「系列」裡單獨的籤；串裡的籤跟著串走，不另外算。
-    const movers = [...box.querySelectorAll(".chip-run[data-fold], .chip-series > .group-chip")].filter((n) => n.getClientRects().length);
-    const before = new Map(movers.map((n) => [n, n.getBoundingClientRect()]));
-    const h0 = box.getBoundingClientRect().height;
-    box._grow?.cancel(); // 上一次還在長：從現在的高度接著動
-    apply();
+  const token = (box._foldToken = {});
+  // 起點：畫面上現在的樣子（上一次動到一半也算）。量完才把上一次的動畫停掉。
+  const h0 = box.getBoundingClientRect().height;
+  for (const a of box._foldAnims || []) a.cancel();
+  box._foldAnims = [];
+  box.style.overflow = "";
+  if (reducedMotion() || !box.isConnected) return setFold(open);
+  // 抽屜：起步不衝（ease-out 第一格就跳四分之一的高度，看起來像頓一下才開），中段走、尾巴慢慢停。
+  const ease = css(CURVE.travel);
+  const dur = open ? DUR.long : DUR.medium;
+  const grow = (from, to, ms = dur) => {
+    if (Math.abs(to - from) < 1) return null;
+    box.style.overflow = "clip";
+    const a = box.animate([{ height: `${from}px` }, { height: `${to}px` }], { duration: ms, easing: ease });
+    box._foldAnims.push(a);
+    a.finished.then(() => box._foldToken === token && (box.style.overflow = ""), () => {});
+    return a;
+  };
+  // 按的那顆「遊戲 72 ▸」換了位置（展開時這串自己佔幾行、收起時回到「動漫」旁邊）：只有這顆滑過去，
+  // 用同一條曲線；裡面的作品籤不跟著斜著跑，留在原位讓外框揭開／蓋回去。
+  const head = run.querySelector(":scope > .chip-fold") || run;
+  const slideHead = (from, ms = dur) => {
+    const now = head.getBoundingClientRect();
+    const dx = from.left - now.left;
+    const dy = from.top - now.top;
+    if (Math.abs(dx) >= 1 || Math.abs(dy) >= 1) box._foldAnims.push(head.animate([{ transform: `translate(${dx}px, ${dy}px)` }, { transform: "none" }], { duration: ms, easing: ease }));
+  };
+  const headAt = head.getBoundingClientRect();
+  // 其他會被擠動的串（「其他 9 ▸」）：舊位置留殘影淡掉（ghostOut），新位置晚一點淡進來；沒動的不管。
+  run.dataset.foldSelf = "";
+  const before = new Map([...box.querySelectorAll(FOLD_MOVERS)].map((n) => [n, n.getBoundingClientRect()]));
+  const ghost = open ? ghostOut(box, FOLD_MOVERS, { key: (n) => n }) : null;
+  delete run.dataset.foldSelf;
+  const moved = () =>
+    [...before]
+      .filter(([n, a]) => {
+        const b = n.getBoundingClientRect();
+        return Math.abs(a.left - b.left) >= 1 || Math.abs(a.top - b.top) >= 1;
+      })
+      .map(([n]) => n);
+  const fadeIn = (nodes, delay = 0) => {
+    for (const n of nodes) box._foldAnims.push(n.animate([{ opacity: 0, transform: "translateY(-4px)" }, { opacity: 1, transform: "none" }], { duration: DUR.short, delay, easing: ease, fill: "backwards" }));
+  };
+  if (open) {
+    setFold(true);
     const h1 = box.getBoundingClientRect().height;
-    for (const [n, a] of before) {
-      const b = n.getBoundingClientRect();
-      const dx = a.left - b.left;
-      const dy = a.top - b.top;
-      if (Math.abs(dx) >= 1 || Math.abs(dy) >= 1) n.animate([{ transform: `translate(${dx}px, ${dy}px)` }, { transform: "none" }], { duration: dur, easing: css(CURVE.out) });
-    }
+    run.dataset.foldSelf = "";
+    ghost.done();
+    delete run.dataset.foldSelf;
+    grow(h0, h1);
+    slideHead(headAt);
+    fadeIn(moved(), Math.round(dur * 0.45));
+    return;
+  }
+  // 收合分兩段，按的那顆一直看得到：
+  //   1. 版面維持打開，外框收到剛好露出「遊戲 72 ▾」那一排（作品籤從下往上被蓋回去），後面的串先淡掉。
+  //   2. 切成收起，「遊戲」滑回「動漫」旁邊，外框收到最後的高度，後面的串在新位置淡進來。
+  // 先量收起來會多高、誰會換位置（切過去、量、切回來，同一格裡看不到）。
+  run.dataset.fold = "shut";
+  const going = moved();
+  run.dataset.fold = "open";
+  const boxTop = box.getBoundingClientRect().top;
+  const padBottom = parseFloat(getComputedStyle(box).paddingBottom) || 0;
+  const hMid = Math.min(h0, headAt.bottom - boxTop + padBottom);
+  const first = grow(h0, hMid, Math.round(dur * 0.75));
+  for (const n of going) box._foldAnims.push(n.animate([{ opacity: 1 }, { opacity: 0 }], { duration: DUR.micro, easing: css(CURVE.exit), fill: "forwards" }));
+  const second = () => {
+    if (box._foldToken !== token) return;
+    const from = head.getBoundingClientRect();
+    for (const a of box._foldAnims) a.cancel();
+    box._foldAnims = [];
     box.style.overflow = "";
-    if (Math.abs(h1 - h0) >= 1) {
-      box.style.overflow = "clip";
-      const grow = (box._grow = box.animate([{ height: `${h0}px` }, { height: `${h1}px` }], { duration: dur, easing: css(CURVE.inOut) }));
-      grow.onfinish = () => (box.style.overflow = "");
-    }
-    if (!open) return;
-    const step = Math.min(14, 260 / Math.max(1, chips.length));
-    run._fold = chips.map((c, i) =>
-      c.animate([{ opacity: 0, transform: "translateY(-3px) scale(0.96)" }, { opacity: 1, transform: "none" }], { duration: DUR.short, delay: 40 + i * step, easing: css(CURVE.out), fill: "backwards" })
-    );
+    setFold(false);
+    const h1 = box.getBoundingClientRect().height;
+    const ms = DUR.short;
+    grow(hMid, h1, ms);
+    slideHead(from, ms);
+    for (const n of going) box._foldAnims.push(n.animate([{ opacity: 0 }, { opacity: 1 }], { duration: ms, delay: Math.round(ms * 0.4), easing: ease, fill: "backwards" }));
   };
-  if (open) return reflow();
-  const fade = chips.map((c) => c.animate([{ opacity: 1 }, { opacity: 0, transform: "scale(0.96)" }], { duration: DUR.micro, easing: css(CURVE.exit), fill: "forwards" }));
-  run._fold = fade;
-  fade[0]
-    ? fade[0].finished.then(() => {
-        reflow();
-        for (const a of fade) a.cancel();
-      }, () => {})
-    : reflow();
+  first ? first.finished.then(second, () => {}) : second();
 }
 
 /**

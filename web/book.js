@@ -161,7 +161,7 @@ const cells = new Map();
 // 卡面用自訂提示詞的牌（/api/card-art/custom）：格子上標「自訂」。
 let customArt = new Set();
 let shelf = null;
-const ui = S.typedLike({ suit: "all", group: "", query: "", order: "desc", usedOnly: false, showBanned: false, charGender: "" }, readUi());
+const ui = S.typedLike({ suit: "all", group: "", query: "", order: "desc", usedOnly: false, showBanned: false, charGender: "", favOnly: false }, readUi());
 // 搜尋字跟著這個分頁走（store.js 的 saveTab／loadTab，跟合成池同一套）：去墨池放一張牌再回來，剛才找的字還在，
 // 「回到剛才看的地方」（spotSig 裡有搜尋字）也對得上。重新整理照舊是空的；離開太久（半小時）不帶回來。
 const QUERY_TAB = "mochi.book.query.v1";
@@ -185,7 +185,7 @@ function readUi() {
 }
 function saveUi() {
   try {
-    localStorage.setItem(UI_KEY, JSON.stringify({ suit: ui.suit, group: ui.group, order: ui.order, usedOnly: ui.usedOnly, showBanned: ui.showBanned, charGender: ui.charGender }));
+    localStorage.setItem(UI_KEY, JSON.stringify({ suit: ui.suit, group: ui.group, order: ui.order, usedOnly: ui.usedOnly, showBanned: ui.showBanned, charGender: ui.charGender, favOnly: ui.favOnly }));
   } catch {
     /* 存不了就算了 */
   }
@@ -737,42 +737,121 @@ function renderGroups() {
     swapIn(sticky, "custom", { firstToo: !("booting" in document.documentElement.dataset) });
     return finish();
   }
-  const runs = groupChips(lib.cards.filter((c) => (editing ? shelf.keep(c) : c.suit === ui.suit) && visibleCard(c) && genderOk(c)));
-  if (ui.group && !runs.some((r) => r.items.some((i) => i.g === ui.group))) ui.group = "";
+  const runs = groupChips(lib.cards.filter((c) => (editing ? shelf.keep(c) : c.suit === ui.suit) && visibleCard(c) && genderOk(c) && favOk(c)));
+  if (ui.group && !runs.some((r) => (r.fam && famKey(r.fam) === ui.group) || r.items.some((i) => i.g === ui.group))) ui.group = "";
+  groupRuns = runs;
   const count = runs.reduce((n, r) => n + r.items.length, 0);
   const many = !editing && !!flow && FLOW_GROUP_SUITS.has(ui.suit);
   const box = many ? flow : sticky;
   // 角色頁一律留著：性別籤在這一排，篩到沒牌時也要能切回來。
   box.hidden = (editing || ui.suit !== "chara") && count < 2;
-  // 籤跟著捲走了：黏住的工具列留一顆「現在篩的這一格 ✕」，捲到多下面都知道在看哪一格，點一下回到全部。
-  if (many && ui.group && now) {
-    const cur = runs.flatMap((r) => r.items).find((i) => i.g === ui.group);
-    if (cur) {
-      now.hidden = false;
-      now.replaceChildren(
-        el("button", { class: "group-chip pressable", type: "button", "aria-pressed": "true", "aria-label": `${cur.zh}：清掉篩選`, onclick: (e) => pickGroup("", e.currentTarget) }, cur.short, el("span", { "aria-hidden": "true" }, " ✕"))
-      );
-    }
-  }
+  if (many) paintGroupNow();
   const chip = (i, inRun) =>
     el(
       "button",
-      { class: "group-chip pressable", type: "button", "aria-pressed": ui.group === i.g ? "true" : "false", "aria-label": i.short === i.zh ? null : i.zh, onclick: (e) => pickGroup(i.g, e.currentTarget) },
+      { class: "group-chip pressable", type: "button", dataset: { g: i.g }, "aria-pressed": ui.group === i.g ? "true" : "false", "aria-label": i.short === i.zh ? null : i.zh, onclick: (e) => pickGroup(i.g, e.currentTarget) },
       i.seal && !inRun ? el("b", { class: "chip-seal", "aria-hidden": "true" }, i.seal) : null,
       i.short
     );
   const all = [
-    el("button", { class: "group-chip pressable", type: "button", "aria-pressed": ui.group === "" ? "true" : "false", onclick: (e) => pickGroup("", e.currentTarget) }, "全部"),
+    el("button", { class: "group-chip pressable", type: "button", dataset: { g: "" }, "aria-pressed": ui.group === "" ? "true" : "false", onclick: (e) => pickGroup("", e.currentTarget) }, "全部"),
     ...runs.map((r) =>
       r.fam
-        ? chipRun(r, r.items.map((i) => chip(i, true)), { fold: ui.suit === "chara", picked: ui.group })
+        ? chipRun(r, r.items.map((i) => chip(i, true)), {
+            fold: ui.suit === "chara",
+            picked: ui.group,
+            // 角色頁：「動漫」「遊戲」「其他」本身也能篩（只看這一類），按下去順便打開挑作品。
+            ...(ui.suit === "chara" && !editing ? { famPick: pickFam, famPicked: ui.group === famKey(r.fam) } : {}),
+          })
         : chip(r.items[0], false)
     ),
   ];
-  box.replaceChildren(...(ui.suit === "chara" && !editing ? [genderChips(ui.charGender, pickGender), seriesRun(all)] : all));
+  box.replaceChildren(...(ui.suit === "chara" && !editing ? [genderChips(ui.charGender, pickGender), favChip(), seriesRun(all)] : all));
   // 第一次換到有籤的花色也要淡進來（以前第一次沒有記號，swapIn 當成開頁不演）；開頁時照舊不演。
   swapIn(box, editing ? "group:" + shelf.active().id : ui.suit, { firstToo: !("booting" in document.documentElement.dataset) });
   finish();
+}
+
+/* ---------- 角色頁：整類（動漫／遊戲／其他）、只看偏好 ---------- */
+
+// 籤上的「動漫」「遊戲」「其他」：ui.group 存成 "fam:動漫"（一部作品存的是細分類 id，例如 char_one_piece）。
+const famKey = (fam) => "fam:" + fam;
+const famOfCard = (c) => {
+  const cut = c.groupZh.indexOf("・");
+  return cut > 0 ? c.groupZh.slice(0, cut) : null;
+};
+const groupOk = (c) => !ui.group || c.group === ui.group || (ui.group.startsWith("fam:") && famKey(famOfCard(c)) === ui.group);
+// 這次畫籤列用的 groupChips 結果（家族籤換篩選時不重畫整排，照它補上「現在篩的這一格」）。
+let groupRuns = [];
+
+/** 籤跟著捲走了：黏住的工具列留一顆「現在篩的這一格 ✕」，捲到多下面都知道在看哪一格，點一下回到全部。 */
+function paintGroupNow() {
+  const now = $("book-group-now");
+  if (!now) return;
+  const fam = ui.group.startsWith("fam:") ? groupRuns.find((r) => r.fam && famKey(r.fam) === ui.group) : null;
+  const cur = fam ? { zh: fam.fam, short: fam.fam } : ui.group ? groupRuns.flatMap((r) => r.items).find((i) => i.g === ui.group) : null;
+  now.hidden = !cur;
+  now.replaceChildren(
+    ...(cur ? [el("button", { class: "group-chip pressable", type: "button", "aria-pressed": "true", "aria-label": `${cur.zh}：清掉篩選`, onclick: (e) => pickGroup("", e.currentTarget) }, cur.short, el("span", { "aria-hidden": "true" }, " ✕"))] : [])
+  );
+}
+
+/**
+ * 按「動漫」：只看動漫的角色（chipRun 的 famPick）。籤列不重畫（重畫的話正在打開的抽屜會一下子跳開），
+ * 只把選中的標記換過來；回 true 告訴 chipRun 這次是換篩選（收著就順便打開）。已經在篩這一類就回 false（照舊開合）。
+ */
+function pickFam(fam) {
+  const g = famKey(fam);
+  if (ui.group === g) return false;
+  ui.group = g;
+  saveUi();
+  const box = groupsBox();
+  for (const b of box.querySelectorAll(".group-chip[data-g]")) b.setAttribute("aria-pressed", b.dataset.g === g ? "true" : "false");
+  for (const b of box.querySelectorAll(".chip-fold[data-fam]")) {
+    const on = famKey(b.dataset.fam) === g;
+    b.setAttribute("aria-pressed", on ? "true" : "false");
+    const run = b.closest(".chip-run");
+    if (on) run.dataset.picked = "true";
+    else delete run.dataset.picked;
+  }
+  paintGroupNow();
+  backToTop();
+  // 抽屜先開始動，牌下一格才換（同一格做的話，篩牌那一下會讓抽屜晚一兩格才起步）。連點只做最後一次。
+  const id = ++famWork;
+  afterPaint(() => id === famWork && render());
+  return true;
+}
+let famWork = 0;
+
+/** 只看偏好角色：跟性別一樣只是瀏覽篩選；看一個群組時不算。 */
+const favOk = (c) => ui.suit !== "chara" || !ui.favOnly || !!shelf?.active() || favChars.has(c.tag);
+const favCount = () => lib.cards.reduce((n, c) => n + (c.suit === "chara" && visibleCard(c) && favChars.has(c.tag) ? 1 : 0), 0);
+
+function favChip() {
+  return el(
+    "button",
+    {
+      class: "group-chip pressable chip-fav",
+      type: "button",
+      dataset: { favChip: "" },
+      "aria-pressed": ui.favOnly ? "true" : "false",
+      "aria-label": `只看偏好角色（${favCount()} 個）`,
+      onclick: (e) => pickFav(e.currentTarget),
+    },
+    heartIcon("chip-fav-heart"),
+    "偏好",
+    el("span", { class: "chip-fold-n" }, String(favCount()))
+  );
+}
+
+function pickFav(from) {
+  const focused = document.activeElement === from;
+  ui.favOnly = !ui.favOnly;
+  saveUi();
+  renderGroups();
+  if (focused) groupsBox().querySelector("[data-fav-chip]")?.focus({ preventScroll: true });
+  backToTop();
+  render();
 }
 
 function pickGroup(g, from) {
@@ -900,7 +979,7 @@ function wireSearch() {
 const MINI_MQ = "(max-width: 40rem)";
 
 function filtersOn() {
-  return ui.suit !== "all" || !!ui.group || !!ui.query || ui.usedOnly || ui.showBanned || !!ui.charGender;
+  return ui.suit !== "all" || !!ui.group || !!ui.query || ui.usedOnly || ui.showBanned || !!ui.charGender || ui.favOnly;
 }
 
 /** 搜尋字留著，其他篩選（花色、小分類、性別、只看用過的）拿掉：找的那張在別的花色時用。 */
@@ -909,6 +988,7 @@ function showAllKeepQuery() {
   ui.group = "";
   ui.usedOnly = false;
   ui.charGender = "";
+  ui.favOnly = false;
   saveUi();
   renderSuits();
   renderUsedToggle();
@@ -924,6 +1004,7 @@ function clearFilters() {
   ui.usedOnly = false;
   ui.showBanned = false;
   ui.charGender = "";
+  ui.favOnly = false;
   $("book-q").value = "";
   saveUi();
   renderSuits();
@@ -1093,10 +1174,11 @@ function listNow() {
     (c) =>
       visibleCard(c) &&
       genderOk(c) &&
+      favOk(c) &&
       // 看一個群組（或替它加牌）：照群組篩，不看花色和小分類。
       (shelf?.active()
         ? shelf.keep(c) && (shelf.editing() ? !ui.group || c.group === ui.group : !shelf.sub() || c.group === shelf.sub())
-        : (ui.suit === "all" || c.suit === ui.suit) && (!ui.group || c.group === ui.group)) &&
+        : (ui.suit === "all" || c.suit === ui.suit) && groupOk(c)) &&
       // 看一個群組時「只看用過的」不算：組員一律列出。
       (!ui.usedOnly || shelf?.active() || countOf(c.tag) > 0) &&
       (!isWar() || warOf(c.tag)[0] >= WAR_MIN)
@@ -1892,6 +1974,17 @@ function emptyNote() {
       el("div", { class: "book-empty-acts" }, el("button", { class: "btn btn-small btn-primary", type: "button", onclick: () => openEditor(null, null) }, "新增自製牌"), el("button", { class: "btn btn-small", type: "button", onclick: pasteShare }, "貼上分享碼"))
     );
   }
+  // 只看偏好：一個都還沒挑、或這一類（性別、作品）裡沒有挑過的。
+  if (ui.suit === "chara" && ui.favOnly && !shelf?.active() && !ui.query) {
+    const none = favCount() === 0;
+    return el(
+      "div",
+      { class: "book-empty" },
+      el("b", {}, none ? "還沒有偏好角色" : "這裡沒有偏好角色"),
+      el("span", {}, none ? "關掉「偏好」看全部角色，點牌上的愛心加進來；墨池抽角色時可以只從偏好角色裡抽。" : "換個系列、性別，或關掉「偏好」看全部角色。"),
+      el("div", { class: "book-empty-acts" }, el("button", { class: "btn btn-small", type: "button", onclick: (e) => pickFav(e.currentTarget) }, "看全部角色"))
+    );
+  }
   if (isWar()) {
     const total = war?.total || 0;
     return el(
@@ -1983,7 +2076,7 @@ function emptyNote() {
  * 一樣、半小時內，就把牌畫到那一張、捲回去。分頁自己一份（sessionStorage）。 */
 const SPOT_KEY = "mochi.book.spot.v1";
 const SPOT_TTL = 30 * 60 * 1000;
-const spotSig = () => JSON.stringify([ui.suit, ui.group, ui.order, ui.usedOnly, ui.showBanned, ui.query, seeRating()]);
+const spotSig = () => JSON.stringify([ui.suit, ui.group, ui.order, ui.usedOnly, ui.showBanned, ui.query, seeRating(), ui.favOnly]);
 
 function saveSpot() {
   // 手機的頂欄不黏，捲下去就離開畫面（底緣變負的）：最少從畫面頂端算。
@@ -2986,6 +3079,13 @@ favChars.onChange(() => {
     const b = cell.querySelector(".fav-add");
     if (b) paintFavButton(b, card);
     paintFavChar(cell.querySelector(".card"), tag);
+  }
+  // 「♥ 偏好 N」的數字跟著換。只看偏好時拿掉的那張不從牌格消失：留在原位、愛心變空，按回來就好（換篩選才真的不見）。
+  const chip = groupsBox()?.querySelector("[data-fav-chip]");
+  if (chip) {
+    const n = favCount();
+    chip.querySelector(".chip-fold-n").textContent = String(n);
+    chip.setAttribute("aria-label", `只看偏好角色（${n} 個）`);
   }
 });
 

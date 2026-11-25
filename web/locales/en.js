@@ -2585,6 +2585,13 @@ LoRA 觸發詞|LoRA trigger
 池裡 {0} 張|{0} pinned cards
 卡池 {0} 張|{0} pinned cards
 偏好卡牌 {0}|Favorites {0}
+偏好|Favorites
+只看偏好角色（{0} 個）|Show favorite characters only ({0})
+還沒有偏好角色|No favorite characters yet
+這裡沒有偏好角色|No favorite characters here
+關掉「偏好」看全部角色，點牌上的愛心加進來；墨池抽角色時可以只從偏好角色裡抽。|Turn off Favorites to see every character, then tap the heart on a card to add one. Ink Pool can draw characters from your favorites only.
+換個系列、性別，或關掉「偏好」看全部角色。|Try another series or gender, or turn off Favorites to see every character.
+看全部角色|Show all characters
 {0} / {1} 張|{0} / {1} cards
 字盒共 {0} 張，這裡顯示 {1} 張|Showing {1} of {0} library cards
 {0} 張被分級收起來|{0} cards hidden by rating
