@@ -42,7 +42,7 @@ import { attachTilt } from "./card-tilt.js";
 import { loadCustom, addCustomToLib, withCustomArt, onCustomChange, setCharacterBan, customOf, deleteCustom, saveCustom, shareCode, readShareCode, startFromPrompt, takeCustomStart, fillText, RATING_NAME } from "./custom-cards.js";
 import { openCustomEditor } from "./custom-editor.js";
 import { createDrag } from "./drag.js";
-import { favChars, paintFavChar, favZone, dropToFav, flyToFav, heartIcon } from "./fav-chars.js";
+import { favChars, paintFavChar, favZone, dropToFav, flyToFav, heartIcon, favOnlyChip, paintFavOnlyChip } from "./fav-chars.js";
 import * as S from "./store.js";
 import { USAGE_KEY, loadUsage, seedUsage, fetchUsage, tagsOfPositive } from "./usage.js";
 import { weightsOfPositive } from "./weights.js";
@@ -827,22 +827,7 @@ let famWork = 0;
 const favOk = (c) => ui.suit !== "chara" || !ui.favOnly || !!shelf?.active() || favChars.has(c.tag);
 const favCount = () => lib.cards.reduce((n, c) => n + (c.suit === "chara" && visibleCard(c) && favChars.has(c.tag) ? 1 : 0), 0);
 
-function favChip() {
-  return el(
-    "button",
-    {
-      class: "group-chip pressable chip-fav",
-      type: "button",
-      dataset: { favChip: "" },
-      "aria-pressed": ui.favOnly ? "true" : "false",
-      "aria-label": `只看偏好角色（${favCount()} 個）`,
-      onclick: (e) => pickFav(e.currentTarget),
-    },
-    heartIcon("chip-fav-heart"),
-    "偏好",
-    el("span", { class: "chip-fold-n" }, String(favCount()))
-  );
-}
+const favChip = () => favOnlyChip(ui.favOnly, favCount(), pickFav);
 
 function pickFav(from) {
   const focused = document.activeElement === from;
@@ -3081,12 +3066,7 @@ favChars.onChange(() => {
     paintFavChar(cell.querySelector(".card"), tag);
   }
   // 「♥ 偏好 N」的數字跟著換。只看偏好時拿掉的那張不從牌格消失：留在原位、愛心變空，按回來就好（換篩選才真的不見）。
-  const chip = groupsBox()?.querySelector("[data-fav-chip]");
-  if (chip) {
-    const n = favCount();
-    chip.querySelector(".chip-fold-n").textContent = String(n);
-    chip.setAttribute("aria-label", `只看偏好角色（${n} 個）`);
-  }
+  if (lib) paintFavOnlyChip(groupsBox(), favCount());
 });
 
 /** 牌格右下角的「＋」一律送去墨池；再按一次拿回。 */

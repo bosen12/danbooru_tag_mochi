@@ -118,6 +118,34 @@ export function paintFavChars(container) {
   for (const n of container.querySelectorAll('.card[data-suit="chara"]')) paintFavChar(n, n.dataset.tag);
 }
 
+/**
+ * 角色頁性別旁那顆「♥ 偏好 N」（卡冊、墨池字盒）：按了只看偏好角色。count 是這頁看得到的偏好角色數。
+ * 名單變了用 paintFavOnlyChip 換數字（不重畫整排，正在看的牌也不動：拿掉的那張留在原位）。
+ */
+export function favOnlyChip(on, count, pick) {
+  return el(
+    "button",
+    {
+      class: "group-chip pressable chip-fav",
+      type: "button",
+      dataset: { favChip: "" },
+      "aria-pressed": on ? "true" : "false",
+      "aria-label": `只看偏好角色（${count} 個）`,
+      onclick: (e) => pick(e.currentTarget),
+    },
+    heartIcon("chip-fav-heart"),
+    "偏好",
+    el("span", { class: "chip-fold-n" }, String(count))
+  );
+}
+
+export function paintFavOnlyChip(root, count) {
+  const chip = root?.querySelector("[data-fav-chip]");
+  if (!chip) return;
+  chip.querySelector(".chip-fold-n").textContent = String(count);
+  chip.setAttribute("aria-label", `只看偏好角色（${count} 個）`);
+}
+
 /** 規則上那顆「偏好角色 N」：數字變了彈一下。 */
 export function favCharsButton(onClick) {
   const count = el("span", { class: "favc-count" }, String(favChars.size));

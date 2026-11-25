@@ -37,7 +37,7 @@ import { watchGone, sweepGone } from "./gone.js";
 import { relationsOf } from "./fuse-bed.js";
 import { drawWithSeed, effectiveHeats, withEffectiveHeats } from "./draw-with-seed.js";
 import { zoomFromThumb } from "./zoom.js";
-import { favChars, withFavChars, paintFavChar, paintFavChars, favCharsButton, openFavChars, favZone, dropToFav, flyToFav, heartIcon } from "./fav-chars.js";
+import { favChars, withFavChars, paintFavChar, paintFavChars, favCharsButton, openFavChars, favZone, dropToFav, flyToFav, heartIcon, favOnlyChip, paintFavOnlyChip } from "./fav-chars.js";
 import { ratingBlocked, ratingOf, RATING_LABEL } from "./rules/rating.js";
 import { mountRatingFree, overreachLine } from "./rating-free.js";
 import { whenPrinter, settingsToWrite, onOtherTab } from "./tab-sync.js";
@@ -146,7 +146,7 @@ let looping = false;
 // 無限抽這一趟送出去幾張（打開開關、或開著時自己按「抽並生圖」從 0 算起）；到 ui.loopMax 就停（0＝不限）。
 let loopSent = 0;
 const LOOP_MAX_CHOICES = [0, 10, 20, 50, 100, 200];
-const ui = S.typedLike({ suit: "all", group: "", query: "", eraOnly: true, charGender: "", collapsed: matchMedia("(max-width: 63.99rem)").matches, wallCols: "auto", loopMax: 0, rulesOpen: false }, S.loadUi());
+const ui = S.typedLike({ suit: "all", group: "", query: "", eraOnly: true, charGender: "", favOnly: false, collapsed: matchMedia("(max-width: 63.99rem)").matches, wallCols: "auto", loopMax: 0, rulesOpen: false }, S.loadUi());
 if (!LOOP_MAX_CHOICES.includes(ui.loopMax)) ui.loopMax = 0;
 // 存檔裡的花色不是現在有的（改版、壞掉）：回到「全部」，不然字盒整盒是空的。
 // 「自製」不在共用的 CARD_SUITS 裡（只有 web6 有）：字盒自己多一格（有自製牌才出現）。
@@ -455,7 +455,7 @@ function setSettings(patch) {
 }
 
 function saveUi() {
-  S.saveUi({ suit: ui.suit, group: ui.group, eraOnly: ui.eraOnly, collapsed: ui.collapsed, charGender: ui.charGender, wallCols: ui.wallCols, loopMax: ui.loopMax, rulesOpen: ui.rulesOpen });
+  S.saveUi({ suit: ui.suit, group: ui.group, eraOnly: ui.eraOnly, collapsed: ui.collapsed, charGender: ui.charGender, favOnly: ui.favOnly, wallCols: ui.wallCols, loopMax: ui.loopMax, rulesOpen: ui.rulesOpen });
 }
 
 /* ================= 分級與 Comfy ================= */
@@ -975,7 +975,7 @@ function renderLibrary() {
       if (hadAt.size >= 40) break;
     }
   }
-  const inSuit = lib.cards.filter((c) => (ui.suit === "all" || c.suit === ui.suit) && visible(c) && genderOk(c));
+  const inSuit = lib.cards.filter((c) => (ui.suit === "all" || c.suit === ui.suit) && visible(c) && genderOk(c) && favOk(c));
   // 小分類晶片：只在選了某一種花色時出現。出現、收起時下面的牌滑過去，不是一格跳（rowChange）。
   const chips = $("group-chips");
   const rowMove = rowChange(chips, $("lib-grid"));
@@ -1005,7 +1005,7 @@ function renderLibrary() {
           : chip(r.items[0], false)
       ),
     ];
-    chips.replaceChildren(...(ui.suit === "chara" ? [genderChips(ui.charGender, pickGender), seriesRun(all)] : all));
+    chips.replaceChildren(...(ui.suit === "chara" ? [genderChips(ui.charGender, pickGender), favOnlyChip(ui.favOnly, favCount(), pickFav), seriesRun(all)] : all));
     swapIn(chips, ui.suit);
     libNow(ui.group ? runs.flatMap((r) => r.items).find((i) => i.g === ui.group) : null, (e) => pickGroup("", e.currentTarget));
   }
@@ -1018,7 +1018,7 @@ function renderLibrary() {
   const list = found.list;
   // 搜得到、但還有被性別、時代收起來的（現代搜「吊燈」，維多利亞的吊燈；沒開男生搜「胖」，肥胖）：
   // 牌格上面一行說「另有 N 張」。分級不提：那是刻意選的尺度，全年齡搜「胸」不該一直推色情的牌。
-  const scope = (c) => (ui.suit === "all" || c.suit === ui.suit) && (!ui.group || c.group === ui.group) && genderOk(c) && !ratingHides(c);
+  const scope = (c) => (ui.suit === "all" || c.suit === ui.suit) && (!ui.group || c.group === ui.group) && genderOk(c) && favOk(c) && !ratingHides(c);
   const also = q && list.length ? searchAlso({ cards: lib.cards.filter(scope), shown: list, q, reasons: libReasons().slice(2) }) : null;
   searchNote($("lib-grid"), found, ui.query, also);
   countLine(list.length);
@@ -1035,6 +1035,7 @@ function renderLibrary() {
     grid.replaceChildren(
       q ? libraryMiss(q)
         : offSide ? el("p", { class: "lib-empty" }, ui.charGender === "male" ? "規則的「人物」沒開男生，男角色都收起來了。" : "規則的「人物」沒開女生，女角色都收起來了。")
+        : ui.suit === "chara" && ui.favOnly ? favEmpty()
         : el("p", { class: "lib-empty" }, "這一格沒有字。")
     );
     ghost.done();
@@ -1126,6 +1127,13 @@ function libReasons() {
         renderLibrary();
         toast("時代改成「混合」：不同時代的牌可以一起出現");
       },
+    },
+    {
+      // 角色頁「愛心 偏好」開著，搜到的角色不在名單裡。
+      hides: (c) => ui.suit === "chara" && ui.favOnly && c.suit === "chara" && !favChars.has(c.tag),
+      text: (c) => `「${c.zh}」不在偏好角色裡`,
+      label: () => "看全部角色",
+      run: () => pickFav(),
     },
   ];
 }
@@ -1287,6 +1295,32 @@ function pickGroup(g, from) {
 
 /** 角色頁的「性別：全部／女／男」。只是瀏覽篩選；畫面裡要不要有男生、女生是規則的「人物」開關。 */
 const genderOk = (c) => ui.suit !== "chara" || !ui.charGender || c.gate === ui.charGender;
+
+/** 角色頁的「愛心 偏好 N」：只看偏好角色（跟卡冊同一顆，fav-chars.js 的 favOnlyChip）。也只是瀏覽篩選。 */
+const favOk = (c) => ui.suit !== "chara" || !ui.favOnly || favChars.has(c.tag);
+const favCount = () => lib.cards.reduce((n, c) => n + (c.suit === "chara" && visible(c) && favChars.has(c.tag) ? 1 : 0), 0);
+
+function pickFav(from) {
+  const focused = document.activeElement === from;
+  ui.favOnly = !ui.favOnly;
+  saveUi();
+  libBackToTop();
+  dealLibrary = true;
+  renderLibrary();
+  if (focused) $("group-chips").querySelector("[data-fav-chip]")?.focus({ preventScroll: true });
+}
+
+/** 只看偏好、這一格卻沒有：一個都還沒挑，或這個性別／作品裡沒有挑過的。給一顆關掉的鈕。 */
+function favEmpty() {
+  const none = favCount() === 0;
+  return el(
+    "div",
+    { class: "lib-empty lib-hint" },
+    el("span", {}, none ? "還沒有偏好角色：挑幾個常用的，或把角色牌拖到右邊的愛心。" : "這裡沒有偏好角色：換個系列、性別，或關掉「偏好」。"),
+    none ? el("button", { class: "btn btn-small btn-primary", type: "button", onclick: (e) => manageFavChars(e.currentTarget, "add") }, "挑偏好角色") : null,
+    el("button", { class: "btn btn-small", type: "button", onclick: (e) => pickFav(e.currentTarget) }, "看全部角色")
+  );
+}
 
 function pickGender(g, from) {
   if (ui.charGender === g) return;
@@ -2784,12 +2818,15 @@ function stepper(label, value, min, max, onChange) {
 
 /** 偏好角色的名單彈窗（fav-chars.js）。關掉時規則重畫：名單空了「只抽偏好角色」要跟著關。 */
 function manageFavChars(from, tab) {
-  openFavChars({ cards: lib.cards, assets, tab, onClose: () => renderRules() });
+  // 字盒正在只看偏好：關掉時重排一次，剛挑的角色才出現（拿掉的也才收起來）。
+  openFavChars({ cards: lib.cards, assets, tab, onClose: () => (renderRules(), ui.suit === "chara" && ui.favOnly && renderLibrary()) });
 }
 
 // 名單一變（這一頁、或另一個分頁）：字盒的愛心跟著換；名單清空了「只抽偏好角色」也沒意義，關掉。
 favChars.onChange((list) => {
   paintFavChars($("lib-grid"));
+  // 「愛心 偏好 N」換數字就好：只看偏好時拿掉的那張留在原位（愛心變空），換篩選才真的不見。
+  if (lib) paintFavOnlyChip($("group-chips"), favCount());
   if (!list.length && settings?.characterFavOnly) setSettings({ characterFavOnly: false });
 });
 
