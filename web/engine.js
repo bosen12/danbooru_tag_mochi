@@ -3123,6 +3123,9 @@ export function identityPins(lex, positive) {
     .map((s) => parseWeighted(s).tag)
     .filter(Boolean)) {
     if (!isIdentityItem(lex.byTag.get(t))) continue;
+    // 已經被前面的字帶出來釘好了（low twin braids 帶出 twin braids）：不再重釘一次。
+    // 重釘會把同一個互斥格的兄弟拿掉，連帶出它的子字一起掉（2026-11-26 種子位移後抓到）。
+    if (pinned.has(t)) continue;
     const next = applyPin(lex, pinned, banned, t);
     pinned = next.pinned;
     banned = next.userBanned;
@@ -4574,6 +4577,44 @@ const ODD_MOTIF = new Set([
   "keep out",
   "4others",
   "giant monster",
+  // 2026-11-26：專案主的模型認得清單和 alltags 剩下的一般字裡，各校／軍隊制服（屬於特定作品）、獵奇、排泄、會改寫整張圖的字。只在釘了才出現。
+  "soul gem", "right-over-left kimono", "2others", "multiple others", "homurahara academy school uniform",
+  "champion uniform", "galaxy expedition team survey corps uniform", "st. chronica academy school uniform",
+  "pravda military uniform", "chi-hatan military uniform", "tsab ground military uniform",
+  "kousaka kirino's school uniform", "saunders school uniform", "sainan high school uniform",
+  "shimokitazawa high school uniform", "motosu school uniform", "keizoku school uniform",
+  "amestris military uniform", "bc freedom school uniform", "starlight academy school uniform",
+  "azumanga daioh's school uniform", "stile uniform", "itan private high school uniform",
+  "kin-iro mosaic high school uniform", "hope's peak academy school uniform",
+  "selection university military uniform", "megurigaoka high school uniform", "kafuu chino's school uniform",
+  "kobeya uniform", "akatsuki uniform", "kibina high school uniform", "yuyushiki's school uniform",
+  "tsab air military uniform", "delmogeny uniform", "orange planet uniform", "national shin ooshima school uniform",
+  "kazamatsuri institute high school uniform", "hakuo school uniform", "achiga school uniform",
+  "himeya company uniform", "nudist beach uniform", "st. theresa's girls academy school uniform",
+  "lillian girls' academy school uniform", "kanba girls high school uniform",
+  "yokosuka girls marine high school uniform", "out-of-frame censoring", "futanari pov", "dark persona",
+  "alternate muscle size", "cameo", "corpse", "disembodied head", "flashback", "invisible", "severed head",
+  "severed limb", "team 9", "team skull", "yes", "test plugsuit", "pegasus knight uniform (fire emblem)",
+  "little red riding hood (grimm) (cosplay)", "metamoran vest", "normal suit", "kirisame marisa (cosplay)",
+  "black coat (kingdom hearts)", "kamina shades", "fortified suit", "original race uniform (umamusume)",
+  "morrigan aensland (cosplay)", "gerudo set (zelda)", "different reflection", "rainbow order", "keystone",
+  "card parody", "heart lock (kantai collection)", "variable fighter", "training corps (emblem)", "paralyzer",
+  "duel disk", "z-ring", "qingxin flower", "scouter", "stakes of purgatory", "dream soul", "grimoire of alice",
+  "materia", "ooarai (emblem)", "craft essence (fate)", "lance of longinus (evangelion)", "kanshou & bakuya (fate)",
+  "crescent rose", "keyblade", "saint quartz (fate)", "aegis sword (xenoblade)", "bc freedom (emblem)", "log pose",
+  "clarent (fate)", "gae dearg (fate)", "super mushroom", "hylian shield", "evoker", "madoka runes", "control rod",
+  "hoshi no tsue", "rina-chan board", "myrtenaster", "sakura empire (emblem)", "dragonslayer (sword)",
+  "pravda (emblem)", "impaled", "bullying", "torture", "decapitation", "drowning", "mtu virus", "buried",
+  "immobilization", "special feeling (meme)", "dying", "trapped", "voile", "hakurei shrine", "rei no pool",
+  "numbers (nanoha)", "super saiyan 4", "originium arts (arknights)", "black keys (type-moon)", "comiket",
+  "menacing (jojo)", "field of blades", "harvin", "yordle", "lalafell", "elezen", "sheikah", "gerudo", "zora",
+  "elvaan", "sukusuku hakutaku", "arrancar", "pokemon ears", "felyne", "saiyan", "nerv", "gigantamax", "netnavi",
+  "dragon ball (object)", "japan self-defense force", "hume", "zentradi", "headless", "extra faces",
+  "alternate pectoral size", "intestines", "heart (organ)", "brain", "sharingan", "hole on body", "hairstyle switch",
+  "byakugan", "poop", "ero guro", "wakamezake", "shoujo kitou-chuu", "smegma", "pee stain", "fine art parody",
+  "faux figurine", "alphes (style)", "title parody", "zun (style)", "logo parody", "araki hirohiko (style)",
+  "riyo (lyomsnpmp) (style)", "bkub (style)", "takeuchi takashi (style)", "toriyama akira (style)",
+  "ishikei (style)", "homu", "charisma break", "3others", "6+others",
 ]);
 // 只當父字用的動作：騎乘要有騎的東西（騎馬、騎車、騎掃帚帶出來）。自己被抽到時
 // 畫面沒有坐騎（以前 41 張裡 11 張）。釘它、必抽照收。
@@ -6394,6 +6435,11 @@ function drawOneImpl(lex, settings, pinned, userBanned, rand, seed, opts) {
         ![...acts].some((a) => (ACT_PROP[a] || []).includes(item.tag))
       ) return false;
     }
+    // 拿著平底鍋、拿著湯杓：帶出做菜的道具，跟手持格的道具一樣要有做菜才自己抽（2026-11-26 種子位移後抓到：
+    // holding frying pan 帶出 frying pan，卻沒有 cooking）。釘它照舊。
+    if (item.mutex !== "held_prop" && (item.implies || []).some((p) => p === "frying pan" || p === "ladle")) {
+      if (![...usedActs(used, lex)].some((a) => (ACT_PROP[a] || []).some((p) => p === "frying pan" || p === "ladle"))) return false;
+    }
     // 這兩個是 env prop，而且 mustDraw 跑在一般場景 fill 之前。只靠最後的
     // NEEDS_CONTEXT cleanup 不夠：mustDraw 會把抽中的字鎖住，錯場也不能刪。
     // 因此在已釘／已選的水域情境不存在時，候選階段就不讓它們進池。
@@ -6936,6 +6982,16 @@ function drawOneImpl(lex, settings, pinned, userBanned, rand, seed, opts) {
         if (indoorFix || outdoorWx) {
           if (!ACT_PLACE[item.tag]) return false;
           if (indoorFix && !actHasUsableSide(item.tag, era, lex, used, "in")) return false;
+          // 釘的室內物件有自己要的場合（床頭櫃要臥室、飯店房間）：活動的場地清單至少要有一個在裡面，
+          // 不然兩邊都排不進去，場地格空掉（2026-11-26 種子位移後抓到：釘床頭櫃抽到鋼管舞，舞台對不上臥室）。
+          if (indoorFix && ACT_PLACE[item.tag]) {
+            for (const t of used) {
+              const ctx = INDOOR_PROP.has(t) ? NEEDS_CONTEXT[t] : null;
+              if (!ctx || ctx.has(item.tag)) continue;
+              const ctxPlaces = [...ctx].filter((c) => { const it = lex.byTag.get(c); return it && (it.mutex === "place" || it.group === "place"); });
+              if (ctxPlaces.length && !ctxPlaces.some((c) => ACT_PLACE[item.tag].has(c))) return false;
+            }
+          }
           if (outdoorWx && !actHasUsableSide(item.tag, era, lex, used, "out")) return false;
         }
       }
@@ -8397,6 +8453,14 @@ function drawOneImpl(lex, settings, pinned, userBanned, rand, seed, opts) {
     if (sceneMode === "normal" && HAND_MOTIF.has(item.tag)) return false;
     if (people >= 2 && soloSex(item.tag)) return false;
     if ((heat === "sex" || hasSexAct) && item.mutex === "activity" && !SEX_OK_ACTIVITY.has(item.tag)) return false;
+    // 2026-11-26：做巧克力、烘焙、烤肉這類沒有 activity 互斥、但會帶出 cooking 的字，也照日常活動擋。
+    if (
+      (heat === "sex" || hasSexAct) &&
+      item.mutex !== "activity" &&
+      !SEX_OK_ACTIVITY.has(item.tag) &&
+      (item.implies || []).some((p) => lex.byTag.get(p)?.mutex === "activity" && !SEX_OK_ACTIVITY.has(p))
+    )
+      return false;
     return true;
   });
   if (heat === "sex" && people === 1 && !someUsed((it) => soloSex(it.tag))) {

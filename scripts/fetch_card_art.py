@@ -62,15 +62,17 @@ UPGRADE = CARDS / ".card-art-upgrade.json"
 #   2026-11-01 那批 260 個字）。v11 的卡沒有重畫。已經有 v11 的人：缺那 2979 張 → 抓一次補上。
 # v13（2026-11-02）：6581 張。重畫 v12 畫壞的 15 張（融合畫面、未戴單眼罩、未戴眼罩、繩子整張空白；群眾、觀眾、軍隊、
 #   4others、多人騎乘、偷看、躲藏…畫錯人數或主角）。第一包增量包：已經有 v12 的人只抓 0.8 MB 的 card-art-update.zip。
+# v14（2026-11-26）：8176 張。補上 2026-11-26 詞庫這一批（模型認得的新字、Danbooru 一般字、版面外框畫材）的全年齡牌 1596 張；
+#   已經有 v13 的人只抓 90 MB 的 card-art-update.zip。
 # CARD_ART_BASE 可以換來源（測試時指向本機的 file:// 資料夾）；大小、雜湊照樣要對。
-BASE = os.environ.get("CARD_ART_BASE") or "https://github.com/bosen12/danbooru_tag_mochi/releases/download/card-art-v13/"
-THUMBS = {"name": "card-art-thumbs.zip", "size": 75397118, "sha256": "541b13644434a44378ebb807326e7d6cc956a7999cc64119987ccc5470a950a7"}
-FULL = {"name": "card-art-full.zip", "size": 243578808, "sha256": "0a2d485631f51d3941a6eae8696c9ee7e29be30b66669baddf5db7ed0ddbcd15"}
-EXPECTED = 6581  # 這一版全年齡的張數
+BASE = os.environ.get("CARD_ART_BASE") or "https://github.com/bosen12/danbooru_tag_mochi/releases/download/card-art-v14/"
+THUMBS = {"name": "card-art-thumbs.zip", "size": 96333987, "sha256": "dd7ade0d549419d0722470f3722f244adc5f6cbbc1f761c0d3050f9aeafc57e0"}
+FULL = {"name": "card-art-full.zip", "size": 312730010, "sha256": "9bd724cac3a6ad194c19f5ddb7ea4055988b6555936051986a16449cd933fff0"}
+EXPECTED = 8176  # 這一版全年齡的張數
 # 增量包（v13 起，pack_card_art.py --previous 打的）：只放比上一版（from）新增或重畫的卡，縮圖、原圖、manifest 都在裡面。
 # 已經有上一版標記（.card-art-<from>）的人只抓這一包，不再整包重抓（v11 升 v12 要 318 MB，只抓新的是 131 MB）。
 # 沒有增量包的版本寫 None。
-UPDATE = {"name": "card-art-update.zip", "size": 818866, "sha256": "b5a451983b39baff1d99d7706fa2dc69fd3c9964ec3289d04d9339a265a00ff9", "from": "v12"}
+UPDATE = {"name": "card-art-update.zip", "size": 90120663, "sha256": "73c0e6f5630b6c16e8b0f66b203f55de68933db84d16b6291a765c6985a2e848", "from": "v13"}
 
 
 JOBS = ROOT / "scripts" / "card_jobs.json"

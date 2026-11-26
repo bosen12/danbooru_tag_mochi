@@ -358,7 +358,7 @@ def _cards() -> None:
             return
         # 先說缺什麼、缺幾張，再說要下載：使用者才知道為什麼要抓這麼多。
         why = cards_missing_text(_last_check[0])
-        _set("cards", "run", (why + "：" if why else "") + "從 GitHub 下載全年齡卡面：先抓縮圖（約 75 MB），再抓大圖（約 244 MB）")
+        _set("cards", "run", (why + "：" if why else "") + "從 GitHub 下載全年齡卡面：先抓縮圖（約 96 MB），再抓大圖（約 313 MB）")
         code = _run("cards", ["fetch_card_art.py"])
         if code == 0:
             _set("cards", "done", "下載好了：重新整理網頁就有圖", reload=True)

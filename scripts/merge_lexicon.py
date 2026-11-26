@@ -14,6 +14,8 @@ from env_tags import NARROW as ENV_NARROW, extra_env_tags
 from pose_tags import NARROW as POSE_NARROW, extra_pose_tags
 from quality_tags import NARROW as QUALITY_NARROW, extra_quality_tags
 from sync_20261101_tags import NARROW as SYNC_20261101_NARROW, extra_sync_20261101_tags
+from sync_20261126_tags import NARROW as SYNC_20261126_NARROW, extra_sync_20261126_tags
+from sync_20261126_tags import CLOTHING_STATE_EXTRA as SYNC_20261126_CLOTHING_STATE
 from sync_20261101_tags import CLOTHING_STATE_EXTRA as SYNC_20261101_CLOTHING_STATE
 from sync_20261101_tags import (
     NEEDS_MALE_EXTRA as SYNC_20261101_NEEDS_MALE,
@@ -96,6 +98,8 @@ CLOTHING_STATE = {
 }
 # 2026-11-01：腳鐐鐵球、乳頭鏈、無帶遮私、只穿前垂布。不列進來會被 widen 成三檔。
 CLOTHING_STATE.update(SYNC_20261101_CLOTHING_STATE)
+# 2026-11-26：專案主的模型認得清單裡不是全年齡的衣物（網狀內衣、透視內褲、只披某件衣服…）。
+CLOTHING_STATE.update(SYNC_20261126_CLOTHING_STATE)
 # Faces that *are* a heat. Everyday faces / sitting / looking are not.
 POSE_CLIMAX = {
     "ahegao",
@@ -1551,6 +1555,7 @@ NARROW_HEAT.update(ENV_NARROW)
 NARROW_HEAT.update(POSE_NARROW)
 NARROW_HEAT.update(QUALITY_NARROW)
 NARROW_HEAT.update(SYNC_20261101_NARROW)
+NARROW_HEAT.update(SYNC_20261126_NARROW)
 UMBRELLA.update(UMBRELLA_EXTRA)
 
 
@@ -7033,6 +7038,7 @@ def main() -> None:
     rows.extend(extra_pose_tags())
     rows.extend(extra_quality_tags())
     rows.extend(extra_sync_20261101_tags())
+    rows.extend(extra_sync_20261126_tags())
 
     old_zh: dict[str, str] = {}
     if OUT.exists():

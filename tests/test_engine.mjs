@@ -4561,12 +4561,13 @@ function indoorOutdoorClash(have) {
       };
       let pub = 0;
       let both = 0;
-      for (let i = 0; i < 80; i++) {
+      // 2026-11-26：公開場地只佔約 3%（現代場地有六十多種），80 抽會剛好 0；放到 240。
+      for (let i = 0; i < 240; i++) {
         const h = tagsOf(drawOne(lex, st, new Set(), new Set(), mulberry32(930160 + i), 930160 + i));
         if (["street", "city", "cityscape", "alley", "park", "beach", "ocean", "rooftop"].some((t) => h.has(t))) pub += 1;
         if (h.has("indoors") && h.has("outdoors")) both += 1;
       }
-      ok("unpinned modern sex can use a public place", pub > 0, `public=${pub}/80`);
+      ok("unpinned modern sex can use a public place", pub > 0, `public=${pub}/240`);
       eq("unpinned modern sex never stacks indoors and outdoors", both, 0);
     }
     // 職業場地若「有一個室內」就擋 outdoors，偵探／女警這種室內外都有的職業
@@ -5371,11 +5372,12 @@ function indoorOutdoorClash(have) {
   ok("pinned exercising can stand", exStand > 0, `stand=${exStand}/200`);
   const pinLift = applyPin(lex, new Set(), new Set(), "weightlifting").pinned;
   let liftStand = 0;
-  for (let i = 0; i < 40; i++) {
+  // 2026-11-26：詞庫加到一萬多字後 40 顆種子為 0；跟 exercising 一樣放到 200 顆。
+  for (let i = 0; i < 200; i++) {
     const h = tagsOf(drawOne(lex, s, pinLift, new Set(), mulberry32(441200 + i), 441200 + i));
     if (h.has("standing")) liftStand += 1;
   }
-  ok("pinned weightlifting can stand", liftStand > 0, `stand=${liftStand}/40`);
+  ok("pinned weightlifting can stand", liftStand > 0, `stand=${liftStand}/200`);
   const pinSport = applyPin(lex, new Set(), new Set(), "playing sports").pinned;
   let sportStand = 0;
   // 2026-10-26：衣服池變大後原來 40 顆種子站著是 0。200 顆裡站著還在，跟 exercising 同一種放大。
@@ -5761,7 +5763,8 @@ function indoorOutdoorClash(have) {
     // 2026-10-26 第六次：姿勢、特徵、主題 628 張進池（raimon 封鎖）。仍是 1girl solo，沒有男生或人類陰莖。
     // 2026-10-26 第七次：品質與 54.csv 共 110 張進池（9 個未成年保護字封鎖；noose、self-harm 不收）。仍是 1girl solo，沒有男生或人類陰莖。
     // 2026-11-01：260 個新字進池。澡堂、狼換成道場、畫架、波點洋裝。仍是 1girl solo，沒有男生或人類陰莖。
-    "1girl, solo, very short hair, yellow eyes, aqua hair, alternate hairstyle, small breasts, arm under breasts, nail polish, hair scrunchie, polka dot dress, dress, formal clothes, jacket partially removed, jacket, grey neckerchief, neckerchief, masturbation through clothes, seiza, straight-on, looking to the side, ;), stomach (organ), dojo, indoors, day, easel, coffin, nsfw, explicit, masterpiece, best quality, amazing quality");
+    // 2026-11-26：專案主的模型認得清單、alltags 一般字、版面外框畫材共 1703 字進池，這張跟 test_draw_baseline 的 seed 42 一起換；仍是 1girl solo、沒有男生。
+    "1girl, solo, very short hair, yellow eyes, pink hair, afro, small breasts, hot, wet face, very sweaty, sweat, tight dress, dress, strapless bra, bra, garter belt, jirai kei, female masturbation, fallen down, fisheye, looking back, sideways mouth, curled fingers, on motorcycle, outdoors, dawn, city lights, meteor shower, duct tape, tape, nsfw, explicit, masterpiece, best quality, amazing quality");
   ok("drawOne exposes shadow diagnostics", Array.isArray(shadowIntegrationDraw.shadowViolations));
 
   const eatProneShadow = validateSupportShadow({
@@ -7359,7 +7362,10 @@ function indoorOutdoorClash(have) {
   let over = 0;
   for (let i = 1; i <= 300; i++) {
     const got = tagsOf(drawOne(lex, s, new Set(), new Set(), mulberry32(i), i));
-    const n = [...got].filter((t) => by.get(t)?.section === "env" && isSpec(t, "medieval")).length;
+    // 被同一張圖裡另一個時代字帶出來的父字不重複算（棋盤帶出西洋棋、長柄斧帶出長柄武器是同一件東西）。
+    // 2026-11-26：新字讓亂數位移，這種成對的組合 300 張裡碰上 6 張，其實每張都只有兩、三件東西。
+    const spec = [...got].filter((t) => by.get(t)?.section === "env" && isSpec(t, "medieval"));
+    const n = spec.filter((t) => !spec.some((o) => o !== t && (by.get(o)?.implies || []).includes(t))).length;
     if (n > 3) over += 1;
   }
   ok("時代訊號：不會塞一整排時代字", over === 0, `${over}/300 超過 3 個`);

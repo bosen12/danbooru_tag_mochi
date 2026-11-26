@@ -178,6 +178,9 @@ const SYMBOL_FILE = {
   "<|> <|>": "sym_pose_11",
   "\\||/": "sym_pose_12",
   "\\o/": "sym_o",
+  // 2026-11-26：:c 跟現有的 c: 撞成 c.webp；;( 清掉符號變成空檔。
+  ":c": "sym_mouth_c",
+  ";(": "sym_wink_sad",
 };
 
 export function artFile(tag) {
@@ -268,6 +271,8 @@ const PERSON_FRAME = {
 
 // 單獨畫會怪的字，補一個道具。
 const ART_EXTRA = {
+  // 2026-11-26：暗房（沖洗照片的房間），只寫 dark room 會畫成一片黑；補紅色安全燈與晾著的照片。
+  "dark room": "red light, photograph, hanging, indoors, dim lighting",
   // 2026-11-02：v12 卡面包裡畫壞的（scripts/scan_card_art.py 抓到的）。人數不對的在 castOf 改卡司。
   "multiple riders": "riding, motorcycle, full body",
   "multiple crossover": "crossover, group picture, full body, standing",
@@ -518,6 +523,8 @@ const HETERO_PICTURE = new Set([
 // 牌面不要帶的 implies。抽牌邏輯仍保留；只影響插畫。
 const ART_SKIP_IMPLY = {
   "testicle sucking": new Set(["sex"]),
+  // 2026-11-26：帶著 dark 烤出整張黑卡（scan_card_art 抓到）。
+  "dark room": new Set(["dark"]),
 };
 
 const ART_NEG = {
@@ -1375,6 +1382,8 @@ function castOf(item) {
     if (tag === "yuri") return ["2girls", "yuri", "adult"];
     // 2026-11-02：4others 寫成 1girl, solo，畫出一個戴面具的女生（v12 卡面包）。others 是看不出性別的角色。
     if (/^\d\+?others$/.test(tag)) return [tag, "multiple others", "adult"];
+    // 2026-11-26：multiple others 照 2others 畫（詞庫裡它帶出 2others），不寫 solo。
+    if (tag === "multiple others") return ["2others", "multiple others", "adult"];
   }
   // 2026-11-02：v12 卡面包裡寫 solo、畫成一個人的多人牌。
   if (CROWD_ART.has(tag)) return ["1girl", "solo focus", "adult"];
