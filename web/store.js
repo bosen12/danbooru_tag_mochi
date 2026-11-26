@@ -90,6 +90,26 @@ export const tabId = (() => {
     return "";
   }
 })();
+/*
+ * 墨池頁開著的分頁拿著一把「mochi-owner-分頁編號」的鎖（Web Locks）：排著的成品記下是哪個分頁排的（owner），
+ * 別的分頁重新整理時看得出那個分頁還在不在。2026-11-27 專案主：開好幾個墨池分頁，重新整理的那頁
+ * 存檔裡排著的十幾張永遠「排隊中」—— 以前只有最早開的那個分頁會接著印（whenPrinter），它早就開好了不會再接；
+ * 卡住的又算「在跑」不能裁，牆滿 80 張時反而把剛印好的裁掉。
+ */
+export const ownerLock = (id) => `mochi-owner-${id}`;
+export function holdOwner() {
+  if (!tabId || !globalThis.navigator?.locks?.request) return;
+  navigator.locks.request(ownerLock(tabId), () => new Promise(() => {})).catch(() => {});
+}
+/** 現在拿著（或在等）鎖的名字；沒有 Web Locks 回 null（照舊只靠 whenPrinter）。 */
+export async function heldLocks() {
+  try {
+    const q = await navigator.locks.query();
+    return new Set([...(q.held || []), ...(q.pending || [])].map((l) => l.name));
+  } catch {
+    return null;
+  }
+}
 /** 這張便條是不是給這個分頁的（沒寫分頁的舊便條、拿不到編號時都算）。 */
 const forThisTab = (note) => !note || !note.tab || !tabId || note.tab === tabId;
 /*
@@ -355,6 +375,8 @@ function serShot(s) {
     waitedAt: isWaiting(s) ? Date.now() : 0,
     // 排著的那張自己取的工作編號（gen.js 的 enqueue）：接著印時沿用，兩個分頁都接也只畫一次。
     reserved: isWaiting(s) ? s._reserved || null : null,
+    // 哪個分頁排的（gen.js 的 enqueue）：那個分頁不在了，重新整理的分頁就接過來印。
+    owner: isWaiting(s) || (!!s.job && (s.status === "running" || s.status === "queued")) ? s.owner || null : null,
     status: s.status === "done" ? "done" : s.status === "drawn" ? "drawn" : s.status === "failed" ? "failed" : "stopped",
     note: s.status === "done" || s.status === "drawn" ? "" : s.note || "",
     at: s.at,

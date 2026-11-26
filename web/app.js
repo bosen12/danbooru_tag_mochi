@@ -380,6 +380,20 @@ async function boot() {
   // 接著印、接回 Hires：背後預先開好的頁（prerender.js）等點進去才做，沒點進去的頁會被丟掉，那時送出去就白印了。
   // 只有一個墨池分頁接（tab-sync.js 的 whenPrinter）：另一個分頁也開著的話，排著的那幾張由它印，這邊只看。
   // 它關掉才輪到這邊：那時存檔可能已經印掉了，重讀一次還在排的才接。
+  // 這頁排的（重新整理前）、或排它的那個分頁已經關掉、重新整理過的：不等「負責印」的分頁，這頁直接接著印。
+  // 排它的分頁還開著（它自己的佇列裡有）的不動。同一張兩個分頁都接也只畫一次（reserved 編號，伺服器只畫一次）。
+  whenActive(async () => {
+    S.holdOwner();
+    const held = await S.heldLocks();
+    if (!held) return;
+    // 沒記排它的分頁（這版之前存的）：認不出來，也當成沒人接（卡在牆上的就是這些）。
+    const orphan = (s) => (!s.owner || s.owner === S.tabId || !held.has(S.ownerLock(s.owner))) && !generator.holds(s) && s.status === "queued";
+    const back = resumable.filter(orphan);
+    const queued = waiting.filter(orphan);
+    for (const s of back) generator.resume(s);
+    for (const s of queued) generator.enqueue(s, { reserved: s.reserved });
+    if (queued.length) toast(`接著印剛才排著的 ${queued.length} 張`);
+  });
   whenActive(() => whenPrinter("mochi", (first) => {
     printerHere = true;
     let resumeNow = resumable;
@@ -395,6 +409,9 @@ async function boot() {
       waitNow = shots.filter((s) => S.stillWaiting(stored.get(s.id))).reverse();
       for (const s of waitNow) s.reserved = stored.get(s.id).reserved;
     }
+    // 上面已經接過來的（這頁自己排的、排它的分頁不在了）不再排一次。
+    resumeNow = resumeNow.filter((s) => !generator.holds(s));
+    waitNow = waitNow.filter((s) => !generator.holds(s));
     for (const s of resumeNow) generator.resume(s);
     for (const s of waitNow) generator.enqueue(s, { reserved: s.reserved });
     if (waitNow.length) toast(`接著印剛才排著的 ${waitNow.length} 張`);
@@ -2858,6 +2875,8 @@ let printerHere = false;
 
 const generator = createGenerator({
   origin: "mochi",
+  // 排著的成品記下是這個分頁排的（store.js 的 owner）：這個分頁關掉、重新整理，別的分頁才知道要接過去。
+  owner: S.tabId,
   payload: (shot) => ({
     width: shot.width,
     height: shot.height,

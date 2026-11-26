@@ -482,6 +482,7 @@ export function createGenerator(hooks) {
       Object.assign(shot, { job: null, live: false, _savedJob: null, _reserved: reserved || newJobId(), promptId: null, progress: 0, preview: null, result: null, netFail: false });
       shot.status = "queued";
       shot.note = "等前面的印完";
+      shot.owner = hooks.owner || null;
       queue.push(shot);
       hooks.update(shot);
       if (running) kickAhead?.();
@@ -492,6 +493,7 @@ export function createGenerator(hooks) {
       if (!shot.job) return;
       shot.status = "queued";
       shot.note = "接回剛才那張…";
+      shot.owner = hooks.owner || null;
       queue.unshift(shot);
       hooks.update(shot);
       pump();
