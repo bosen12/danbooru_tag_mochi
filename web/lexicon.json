@@ -9690,6 +9690,27 @@
       "zh": "割坐"
     },
     {
+      "tag": "w-sitting",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "body_pose",
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "body",
+      "sub": "body",
+      "zh": "割坐",
+      "altOf": "wariza"
+    },
+    {
       "tag": "seiza",
       "section": "pose",
       "gate": "any",
@@ -13060,6 +13081,31 @@
       "zh": "公開場合性交"
     },
     {
+      "tag": "public sex",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [
+        "sex"
+      ],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "sex",
+      "sub": "sex_pos",
+      "needs": [
+        "pair"
+      ],
+      "zh": "公開場合性交",
+      "altOf": "public indecency"
+    },
+    {
       "tag": "cum in pussy",
       "section": "pose",
       "gate": "female",
@@ -13174,6 +13220,30 @@
         "yuri"
       ],
       "zh": "磨鏡"
+    },
+    {
+      "tag": "scissoring",
+      "section": "pose",
+      "gate": "female",
+      "heat": [
+        "sex"
+      ],
+      "mutex": "sex_act",
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "sex",
+      "sub": "sex_oral",
+      "needs": [
+        "female",
+        "pair",
+        "yuri"
+      ],
+      "zh": "磨鏡",
+      "altOf": "tribadism"
     },
     {
       "tag": "masturbation",
@@ -210458,6 +210528,31 @@
       "zh": "抓對方陰莖"
     },
     {
+      "tag": "grabbing another's penis",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [
+        "penis"
+      ],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "sex",
+      "sub": "sex_touch",
+      "needs": [
+        "pair",
+        "male"
+      ],
+      "zh": "抓對方陰莖",
+      "altOf": "penis grab"
+    },
+    {
       "tag": "kissing penis",
       "section": "pose",
       "gate": "any",
@@ -241298,6 +241393,858 @@
       "group": "extra",
       "sub": "cast_mix",
       "zh": "哥哥×正太"
+    },
+    {
+      "tag": "wheelbarrow pose",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "sex"
+      ],
+      "mutex": "sex_act",
+      "bind": [],
+      "implies": [
+        "sex"
+      ],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "sex",
+      "sub": "sex_pos",
+      "needs": [
+        "pair",
+        "male"
+      ],
+      "zh": "推車體位"
+    },
+    {
+      "tag": "child on child",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "sex",
+      "sub": "sex_fetish",
+      "zh": "兒童間性行為"
+    },
+    {
+      "tag": "perversion of games",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "flash",
+      "sub": "pose_situ",
+      "zh": "遊戲變色情"
+    },
+    {
+      "tag": "hanging legs",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "tease",
+      "sub": "pose_stance",
+      "zh": "雙腿懸空"
+    },
+    {
+      "tag": "competition",
+      "section": "env",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "other",
+      "sub": "obj_theme",
+      "needs": [
+        "pair"
+      ],
+      "zh": "比賽"
+    },
+    {
+      "tag": "fighting over penis",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [
+        "penis"
+      ],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "sex",
+      "sub": "sex_group",
+      "needs": [
+        "pair",
+        "group",
+        "male"
+      ],
+      "zh": "爭搶陰莖"
+    },
+    {
+      "tag": "living fleshlight",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [
+        "objectification"
+      ],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "sex",
+      "sub": "sex_bdsm",
+      "needs": [
+        "pair",
+        "male"
+      ],
+      "zh": "活人飛機杯"
+    },
+    {
+      "tag": "twister (game)",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [
+        "playing games"
+      ],
+      "layer": "normal",
+      "era": [
+        "modern"
+      ],
+      "group": "activity",
+      "sub": "act_fun",
+      "needs": [
+        "pair"
+      ],
+      "zh": "扭扭樂"
+    },
+    {
+      "tag": "kissing another during penetration",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [
+        "group sex",
+        "sex",
+        "kiss"
+      ],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "sex",
+      "sub": "sex_group",
+      "needs": [
+        "pair",
+        "group"
+      ],
+      "zh": "插入時吻別人"
+    },
+    {
+      "tag": "kissing viewer",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "tease",
+      "sub": "pose_act",
+      "zh": "親向觀眾"
+    },
+    {
+      "tag": "reverse netorare",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [
+        "netorare"
+      ],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "tease",
+      "sub": "pose_situ",
+      "needs": [
+        "pair",
+        "female",
+        "male"
+      ],
+      "zh": "逆NTR"
+    },
+    {
+      "tag": "thigh straddling",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [
+        "straddling"
+      ],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "flash",
+      "sub": "flash_pose",
+      "needs": [
+        "pair"
+      ],
+      "zh": "跨坐大腿"
+    },
+    {
+      "tag": "hand wrapped around waist",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [
+        "size difference"
+      ],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "tease",
+      "sub": "pose_two",
+      "needs": [
+        "pair"
+      ],
+      "zh": "大手圈腰"
+    },
+    {
+      "tag": "unwanted creampie",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [
+        "cum"
+      ],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "sex",
+      "sub": "sex_cum",
+      "needs": [
+        "pair",
+        "male"
+      ],
+      "zh": "不願體內射精"
+    },
+    {
+      "tag": "forced kiss",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [
+        "kiss"
+      ],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "sex",
+      "sub": "sex_bdsm",
+      "needs": [
+        "pair"
+      ],
+      "zh": "強吻"
+    },
+    {
+      "tag": "hand between own legs",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "tease",
+      "sub": "pose_hand",
+      "zh": "手放自己腿間"
+    },
+    {
+      "tag": "holding own legs back",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "flash",
+      "sub": "flash_pose",
+      "zh": "自己把腿扳回"
+    },
+    {
+      "tag": "bound thighs",
+      "section": "clothing",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "accessory",
+      "era": [
+        "any"
+      ],
+      "group": "acc",
+      "sub": "acc_bind",
+      "zh": "綁住大腿"
+    },
+    {
+      "tag": "figure four sitting",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [
+        "sitting"
+      ],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "body",
+      "sub": "body",
+      "zh": "翹二郎腿"
+    },
+    {
+      "tag": "legs bound apart",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [
+        "bound",
+        "spread legs"
+      ],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "sex",
+      "sub": "sex_bdsm",
+      "zh": "雙腿綁開"
+    },
+    {
+      "tag": "reverse squatting cowgirl position",
+      "section": "pose",
+      "gate": "female",
+      "heat": [
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [
+        "reverse cowgirl position",
+        "squatting",
+        "sex"
+      ],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "sex",
+      "sub": "sex_pos",
+      "needs": [
+        "pair",
+        "male",
+        "female"
+      ],
+      "zh": "蹲姿反向騎乘"
+    },
+    {
+      "tag": "over the knee",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "sex",
+      "sub": "sex_bdsm",
+      "needs": [
+        "pair"
+      ],
+      "zh": "趴在膝上"
+    },
+    {
+      "tag": "footjob with footwear",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "sex",
+      "sub": "sex_oral",
+      "needs": [
+        "pair"
+      ],
+      "zh": "穿鞋足交"
+    },
+    {
+      "tag": "panties around thighs",
+      "section": "clothing",
+      "gate": "female",
+      "heat": [
+        "flash",
+        "sex"
+      ],
+      "mutex": "underwear_bottom",
+      "bind": [],
+      "implies": [
+        "panty pull"
+      ],
+      "layer": "garment",
+      "era": [
+        "modern"
+      ],
+      "group": "underwear",
+      "sub": "uw_bottom",
+      "zh": "內褲退至大腿"
+    },
+    {
+      "tag": "sitting split",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [
+        "split"
+      ],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "body",
+      "sub": "body",
+      "zh": "坐姿劈腿"
+    },
+    {
+      "tag": "v legs",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [
+        "spread legs"
+      ],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "flash",
+      "sub": "flash_pose",
+      "zh": "V字開腿"
+    },
+    {
+      "tag": "panties around ankles",
+      "section": "clothing",
+      "gate": "female",
+      "heat": [
+        "flash",
+        "sex"
+      ],
+      "mutex": "underwear_bottom",
+      "bind": [],
+      "implies": [
+        "panty pull"
+      ],
+      "layer": "garment",
+      "era": [
+        "modern"
+      ],
+      "group": "underwear",
+      "sub": "uw_bottom",
+      "zh": "內褲退至腳踝"
+    },
+    {
+      "tag": "frontal thigh sex",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [
+        "thigh sex"
+      ],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "sex",
+      "sub": "sex_oral",
+      "needs": [
+        "pair",
+        "male",
+        "female"
+      ],
+      "zh": "正面股交"
+    },
+    {
+      "tag": "legs behind head",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "flash",
+      "sub": "flash_pose",
+      "zh": "雙腿在頭後"
+    },
+    {
+      "tag": "holding party popper",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [
+        "party popper"
+      ],
+      "layer": "normal",
+      "era": [
+        "modern"
+      ],
+      "group": "tease",
+      "sub": "pose_hold",
+      "zh": "拿著拉炮"
+    },
+    {
+      "tag": "snowball fight",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "activity",
+      "bind": [],
+      "implies": [
+        "snowball"
+      ],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "activity",
+      "sub": "act_fun",
+      "needs": [
+        "pair"
+      ],
+      "zh": "打雪仗"
+    },
+    {
+      "tag": "birthday party",
+      "section": "env",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [
+        "birthday",
+        "party"
+      ],
+      "layer": "normal",
+      "era": [
+        "modern"
+      ],
+      "group": "other",
+      "sub": "obj_fest",
+      "needs": [
+        "pair"
+      ],
+      "zh": "生日派對"
+    },
+    {
+      "tag": "water fight",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "activity",
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "activity",
+      "sub": "act_fun",
+      "needs": [
+        "pair"
+      ],
+      "zh": "打水仗"
+    },
+    {
+      "tag": "pillow fight",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "activity",
+      "bind": [],
+      "implies": [
+        "pillow"
+      ],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "activity",
+      "sub": "act_fun",
+      "needs": [
+        "pair"
+      ],
+      "zh": "打枕頭仗"
+    },
+    {
+      "tag": "holding unworn clothes",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "tease",
+      "sub": "pose_hold",
+      "zh": "拿著沒穿的衣服"
+    },
+    {
+      "tag": "mind break",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "sex",
+      "sub": "sex_fetish",
+      "zh": "精神崩壞"
+    },
+    {
+      "tag": "anal only",
+      "section": "pose",
+      "gate": "female",
+      "heat": [
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "sex",
+      "sub": "sex_fetish",
+      "needs": [
+        "female"
+      ],
+      "zh": "只限肛交"
+    },
+    {
+      "tag": "condom left inside",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [
+        "condom"
+      ],
+      "layer": "normal",
+      "era": [
+        "modern"
+      ],
+      "group": "sex",
+      "sub": "sex_after",
+      "zh": "套留在體內"
     }
   ]
 }

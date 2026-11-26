@@ -22,6 +22,7 @@ export const HARD_BANNED = Object.freeze([
   "mesugaki",
   "onee-loli",
   "onii-shota",
+  "child on child",
   "baby",
   "kodomo doushi",
   "toddlercon",
