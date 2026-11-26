@@ -133,6 +133,15 @@ export function genderChips(current, pick) {
 const famOpen = new Map();
 export function chipRun(r, chips, { fold = false, picked = "", famPick = null, famPicked = false } = {}) {
   const name = () => [r.seal ? el("b", { class: "chip-seal", "aria-hidden": "true" }, r.seal) : null, r.fam];
+  if (!fold && famPick) {
+    // 不收合的串（卡冊角色以外的花色）：家族名本身是一顆篩選鈕，按了只看這一大類（2026-11-26 專案主）。
+    const pick = el(
+      "button",
+      { class: "chip-fam chip-fold chip-fam-pick pressable", type: "button", dataset: { fam: r.fam }, "aria-pressed": famPicked ? "true" : "false", onclick: () => famPick(r.fam, pick) },
+      ...name()
+    );
+    return el("span", { class: "chip-run", dataset: { pick: "" } }, pick, ...chips);
+  }
   if (!fold) return el("span", { class: "chip-run" }, el("span", { class: "chip-fam", "aria-hidden": "true" }, ...name()), ...chips);
   const has = famPicked || r.items.some((i) => i.g === picked);
   let want = famOpen.has(r.fam) ? famOpen.get(r.fam) : has;

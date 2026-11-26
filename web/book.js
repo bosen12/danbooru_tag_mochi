@@ -761,7 +761,8 @@ function renderGroups() {
             fold: ui.suit === "chara",
             picked: ui.group,
             // 角色頁：「動漫」「遊戲」「其他」本身也能篩（只看這一類），按下去順便打開挑作品。
-            ...(ui.suit === "chara" && !editing ? { famPick: pickFam, famPicked: ui.group === famKey(r.fam) } : {}),
+            // 其他花色的大分類（長相的「頭髮」、環境的「地點」…）也一樣能點，看那一大類全部（2026-11-26 專案主）。
+            ...(!editing ? { famPick: pickFam, famPicked: ui.group === famKey(r.fam) } : {}),
           })
         : chip(r.items[0], false)
     ),
@@ -840,7 +841,7 @@ function paintPicked() {
   const chips = box.querySelectorAll(".group-chip[data-g]");
   if (!chips.length || ![...chips].some((b) => b.dataset.g === ui.group) && !ui.group.startsWith("fam:")) return renderGroups();
   for (const b of chips) b.setAttribute("aria-pressed", b.dataset.g === ui.group ? "true" : "false");
-  for (const run of box.querySelectorAll(".chip-run[data-fold]")) {
+  for (const run of box.querySelectorAll(".chip-run[data-fold], .chip-run[data-pick]")) {
     const fam = run.querySelector(":scope > .chip-fold[data-fam]");
     const famOn = !!fam && famKey(fam.dataset.fam) === ui.group;
     if (fam?.hasAttribute("aria-pressed")) fam.setAttribute("aria-pressed", famOn ? "true" : "false");

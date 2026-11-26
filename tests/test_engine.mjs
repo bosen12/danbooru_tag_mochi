@@ -5764,7 +5764,7 @@ function indoorOutdoorClash(have) {
     // 2026-10-26 第七次：品質與 54.csv 共 110 張進池（9 個未成年保護字封鎖；noose、self-harm 不收）。仍是 1girl solo，沒有男生或人類陰莖。
     // 2026-11-01：260 個新字進池。澡堂、狼換成道場、畫架、波點洋裝。仍是 1girl solo，沒有男生或人類陰莖。
     // 2026-11-26：專案主的模型認得清單、alltags 一般字、版面外框畫材共 1703 字進池，這張跟 test_draw_baseline 的 seed 42 一起換；仍是 1girl solo、沒有男生。
-    "1girl, solo, very short hair, yellow eyes, pink hair, afro, small breasts, hot, wet face, very sweaty, sweat, tight dress, dress, strapless bra, bra, garter belt, jirai kei, female masturbation, fallen down, fisheye, looking back, sideways mouth, curled fingers, on motorcycle, outdoors, dawn, city lights, meteor shower, duct tape, tape, nsfw, explicit, masterpiece, best quality, amazing quality");
+    "1girl, solo, very short hair, yellow eyes, pink hair, afro, small breasts, braided bangs, groin tendon, green sweater, sweater, bra, bear print, missing headwear, no pants, masturbation through clothes, knees to chest, foot out of frame, looking back, :t, holding tray, colosseum, outdoors, dusk, sunlight, hamaya, fish, tray, nsfw, explicit, masterpiece, best quality, amazing quality");
   ok("drawOne exposes shadow diagnostics", Array.isArray(shadowIntegrationDraw.shadowViolations));
 
   const eatProneShadow = validateSupportShadow({

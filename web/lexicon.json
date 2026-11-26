@@ -239,17 +239,17 @@
     "char_boku_no_hero_academia": "動漫・我的英雄學院",
     "char_naruto_series": "動漫・火影忍者",
     "char_gundam": "動漫・鋼彈",
+    "char_jujutsu_kaisen": "動漫・咒術迴戰",
+    "char_axis_powers_hetalia": "動漫・黑塔利亞",
     "char_bleach": "動漫・死神",
     "char_fullmetal_alchemist": "動漫・鋼之鍊金術師",
+    "char_dungeon_meshi": "動漫・迷宮飯",
     "char_umineko_no_naku_koro_ni": "動漫・海貓鳴泣",
     "char_kimetsu_no_yaiba": "動漫・鬼滅之刃",
-    "char_jujutsu_kaisen": "動漫・咒術迴戰",
     "char_chainsaw_man": "動漫・鏈鋸人",
-    "char_dungeon_meshi": "動漫・迷宮飯",
     "char_golden_kamuy": "動漫・黃金神威",
     "char_shingeki_no_kyojin": "動漫・進擊的巨人",
     "char_gintama": "動漫・銀魂",
-    "char_axis_powers_hetalia": "動漫・黑塔利亞",
     "char_osomatsu_san": "動漫・阿松",
     "char_one_punch_man": "動漫・一拳超人",
     "char_girls_und_panzer": "動漫・少女與戰車",
@@ -286,8 +286,11 @@
     "char_little_witch_academia": "動漫・小魔女學園",
     "char_trigun": "動漫・槍神",
     "char_goblin_slayer": "動漫・哥布林殺",
+    "char_lyrical_nanoha": "動漫・魔法奈葉",
+    "char_tiger_bunny": "動漫・虎兔英雄",
     "char_heaven_official_s_blessing": "動漫・天官賜福",
     "char_senpai_ga_uzai_kouhai_no_hanashi": "動漫・前輩好煩",
+    "char_onna_ga_nigate_na_yankee_to_shoujo_no_hanashi": "動漫・處男混混和少女",
     "char_kanojo_okarishimasu": "動漫・出租女友",
     "char_meitantei_conan": "動漫・名偵探柯南",
     "char_mob_psycho_100": "動漫・路人超能100",
@@ -314,10 +317,11 @@
     "char_jigokuraku": "動漫・地獄樂",
     "char_spice_and_wolf": "動漫・狼與辛香",
     "char_ghost_in_the_shell": "動漫・攻殼機動隊",
-    "char_lyrical_nanoha": "動漫・魔法奈葉",
-    "char_tiger_bunny": "動漫・虎兔英雄",
     "char_new_game": "動漫・新遊戲",
+    "char_yu_gi_oh": "動漫・遊戲王",
     "char_ssss_dynazenon": "動漫・戴拿禪",
+    "char_houseki_no_kuni": "動漫・寶石之國",
+    "char_sayonara_zetsubou_sensei": "動漫・絕望先生",
     "char_mushishi": "動漫・蟲師",
     "char_darker_than_black": "動漫・黑之契約",
     "char_rurouni_kenshin": "動漫・神劍闖江湖",
@@ -325,6 +329,15 @@
     "char_yojouhan_shinwa_taikei": "動漫・四疊半",
     "char_kara_no_kyoukai": "動漫・空之境界",
     "char_omniscient_reader_s_viewpoint": "動漫・全知讀者",
+    "char_rwby": "動漫・四色戰記",
+    "char_the_legend_of_luo_xiaohei": "動漫・羅小黑",
+    "char_osomatsu_series": "動漫・阿松",
+    "char_tobaku_mokushiroku_kaiji": "動漫・賭博默示錄",
+    "char_dorohedoro": "動漫・異獸魔都",
+    "char_scott_pilgrim_series": "動漫・歪小子斯科特",
+    "char_seitenkango_shinyuu_to": "動漫・性轉看護",
+    "char_the_amazing_digital_circus": "動漫・神奇數位馬戲團",
+    "char_fate_zero": "動漫・命運／零",
     "char_fate_series": "遊戲・命運系列",
     "char_arknights": "遊戲・明日方舟",
     "char_azur_lane": "遊戲・碧藍航線",
@@ -336,76 +349,105 @@
     "char_honkai_star_rail": "遊戲・星穹鐵道",
     "char_pokemon": "遊戲・寶可夢",
     "char_goddess_of_victory_nikke": "遊戲・妮姬",
+    "char_touken_ranbu": "遊戲・刀劍亂舞",
     "char_overwatch": "遊戲・鬥陣特攻",
     "char_final_fantasy_vii": "遊戲・最終幻想7",
-    "char_touken_ranbu": "遊戲・刀劍亂舞",
-    "char_xenoblade_chronicles_2": "遊戲・異度神劍2",
     "char_persona": "遊戲・女神異聞錄",
-    "char_fire_emblem_three_houses": "遊戲・風花雪月",
     "char_ace_attorney": "遊戲・逆轉裁判",
     "char_blazblue": "遊戲・蒼翼默示",
+    "char_xenoblade_chronicles_2": "遊戲・異度神劍2",
+    "char_kemono_friends": "遊戲・獸娘動物園",
+    "char_final_fantasy": "遊戲・最終幻想",
+    "char_fire_emblem_three_houses": "遊戲・風花雪月",
+    "char_helltaker": "遊戲・地獄征服者",
+    "char_dragon_quest": "遊戲・勇者鬥惡龍",
     "char_umamusume": "遊戲・賽馬娘",
     "char_steins_gate": "遊戲・命運石之門",
+    "char_granblue_fantasy": "遊戲・碧藍幻想",
+    "char_apex_legends": "遊戲・Apex英雄",
+    "char_xenoblade_chronicles_series": "遊戲・異度神劍",
+    "char_va_11_hall_a": "遊戲・賽博酒保",
+    "char_fire_emblem": "遊戲・聖火降魔錄",
     "char_blue_archive": "遊戲・蔚藍檔案",
     "char_fire_emblem_fates": "遊戲・聖火if",
     "char_resident_evil": "遊戲・惡靈古堡",
     "char_elden_ring": "遊戲・艾爾登法環",
+    "char_the_king_of_fighters": "遊戲・拳皇",
+    "char_street_fighter": "遊戲・快打旋風",
     "char_saibou_shinkyoku": "遊戲・細胞神曲",
-    "char_xenoblade_chronicles_series": "遊戲・異度神劍",
-    "char_va_11_hall_a": "遊戲・賽博酒保",
+    "char_splatoon_series": "遊戲・漆彈作戰",
+    "char_ragnarok_online": "遊戲・仙境傳說",
+    "char_skullgirls": "遊戲・骷髏女孩",
     "char_tales_of_the_abyss": "遊戲・深淵傳奇",
     "char_princess_connect": "遊戲・公主連結",
     "char_danganronpa_series": "遊戲・槍彈辯駁",
     "char_zenless_zone_zero": "遊戲・絕區零",
-    "char_granblue_fantasy": "遊戲・碧藍幻想",
+    "char_fatal_fury": "遊戲・餓狼傳說",
     "char_guilty_gear": "遊戲・聖騎士之戰",
-    "char_apex_legends": "遊戲・Apex英雄",
     "char_honkai_impact_3rd": "遊戲・崩壞三",
     "char_eiyuu_densetsu": "遊戲・英雄傳說",
     "char_fire_emblem_engage": "遊戲・聖火結合",
+    "char_the_legend_of_zelda": "遊戲・薩爾達",
     "char_dragon_s_crown": "遊戲・龍之王冠",
-    "char_skullgirls": "遊戲・骷髏女孩",
     "char_final_fantasy_viii": "遊戲・太空戰士8",
     "char_final_fantasy_vi": "遊戲・太空戰士6",
     "char_sengoku_basara": "遊戲・戰國巴薩拉",
     "char_dungeon_and_fighter": "遊戲・地下城",
+    "char_project_moon": "遊戲・邊獄公司",
+    "char_punishing_gray_raven": "遊戲・戰雙帕彌什",
+    "char_tokyo_afterschool_summoners": "遊戲・放課召喚",
     "char_final_fantasy_xii": "遊戲・幻想十二",
+    "char_tales_of_series": "遊戲・傳奇系列",
     "char_darkstalkers": "遊戲・惡魔戰士",
-    "char_fatal_fury": "遊戲・餓狼傳說",
     "char_bayonetta_series": "遊戲・魔兵驚天錄",
     "char_devil_may_cry_series": "遊戲・惡魔獵人",
     "char_kid_icarus": "遊戲・光神話",
     "char_fire_emblem_awakening": "遊戲・聖火覺醒",
     "char_final_fantasy_xiv": "遊戲・最終幻想14",
     "char_xenosaga": "遊戲・異域傳說",
-    "char_the_king_of_fighters": "遊戲・拳皇",
-    "char_helltaker": "遊戲・地獄征服者",
+    "char_limbus_company": "遊戲・邊獄巴士",
     "char_shingeki_no_bahamut": "遊戲・巴哈姆特",
     "char_tsukihime": "遊戲・月姬",
     "char_xenoblade_chronicles_3": "遊戲・異度神劍3",
     "char_ensemble_stars": "遊戲・夢幻祭",
+    "char_animal_crossing": "遊戲・動物森友會",
     "char_last_origin": "遊戲・最後起源",
     "char_xenogears": "遊戲・異域神劍",
     "char_nier": "遊戲・尼爾",
-    "char_project_moon": "遊戲・邊獄公司",
     "char_tomb_raider": "遊戲・古墓奇兵",
     "char_valkyrie_profile_series": "遊戲・女神戰記",
     "char_miside": "遊戲・米塔",
     "char_under_night_in_birth": "遊戲・夜下降臨",
     "char_final_fantasy_iv": "遊戲・太空戰士4",
-    "char_punishing_gray_raven": "遊戲・戰雙帕彌什",
+    "char_mario_series": "遊戲・瑪利歐",
     "char_tales_of_berseria": "遊戲・緋紅傳奇",
+    "char_undertale": "遊戲・傳說之下",
+    "char_ib_kouri": "遊戲・恐怖館",
+    "char_reverse_1999": "遊戲・重返未來",
     "char_girls_frontline": "遊戲・少女前線",
     "char_metal_gear_series": "遊戲・潛龍諜影",
+    "char_bloodborne": "遊戲・血源詛咒",
+    "char_call_of_duty_modern_warfare_2": "遊戲・現代戰爭2",
+    "char_warcraft": "遊戲・魔獸",
+    "char_honkai_series": "遊戲・崩壞",
+    "char_gravity_daze": "遊戲・重力異想世界",
     "char_vocaloid": "其他・虛擬歌手",
     "char_original": "其他・原創",
     "char_star_wars": "其他・星際大戰",
     "char_frozen_disney": "其他・冰雪奇緣",
+    "char_cookie_touhou": "其他・餅乾☆",
     "char_nitroplus": "其他・尼特羅",
+    "char_marvel": "其他・漫威",
     "char_batman_series": "其他・蝙蝠俠",
     "char_who_framed_roger_rabbit": "其他・兔子羅傑",
+    "char_dc_comics": "其他・DC漫畫",
     "char_chuugoku_yome_nikki": "其他・中國嫁日記",
+    "char_wii_fit": "其他・健身教練",
     "char_tangled": "其他・魔髮奇緣",
+    "char_promare": "其他・普羅米亞",
+    "char_lord_of_the_mysteries": "其他・詭秘之主",
+    "char_kamen_rider": "其他・假面騎士",
+    "char_journey_to_the_west": "其他・西遊記",
     "hair_shape": "髮型・綁法造型",
     "hair_detail": "髮型・瀏海髮質",
     "wear_bits": "髮飾兜帽",
@@ -538,17 +580,17 @@
     "char_boku_no_hero_academia": "Anime · My Hero Academia",
     "char_naruto_series": "Anime · Naruto",
     "char_gundam": "Anime · Gundam",
+    "char_jujutsu_kaisen": "Anime · Jujutsu Kaisen",
+    "char_axis_powers_hetalia": "Anime · Hetalia",
     "char_bleach": "Anime · Bleach",
     "char_fullmetal_alchemist": "Anime · Fullmetal Alchemist",
+    "char_dungeon_meshi": "Anime · Delicious in Dungeon",
     "char_umineko_no_naku_koro_ni": "Anime · Umineko",
     "char_kimetsu_no_yaiba": "Anime · Demon Slayer",
-    "char_jujutsu_kaisen": "Anime · Jujutsu Kaisen",
     "char_chainsaw_man": "Anime · Chainsaw Man",
-    "char_dungeon_meshi": "Anime · Delicious in Dungeon",
     "char_golden_kamuy": "Anime · Golden Kamuy",
     "char_shingeki_no_kyojin": "Anime · Attack on Titan",
     "char_gintama": "Anime · Gintama",
-    "char_axis_powers_hetalia": "Anime · Hetalia",
     "char_osomatsu_san": "Anime · Osomatsu-san",
     "char_one_punch_man": "Anime · One-Punch Man",
     "char_girls_und_panzer": "Anime · Girls und Panzer",
@@ -585,8 +627,11 @@
     "char_little_witch_academia": "Anime · Little Witch Academia",
     "char_trigun": "Anime · Trigun",
     "char_goblin_slayer": "Anime · Goblin Slayer",
+    "char_lyrical_nanoha": "Anime · Lyrical Nanoha",
+    "char_tiger_bunny": "Anime · Tiger & Bunny",
     "char_heaven_official_s_blessing": "Anime · Heaven Official's Blessing",
     "char_senpai_ga_uzai_kouhai_no_hanashi": "Anime · My Senpai Is Annoying",
+    "char_onna_ga_nigate_na_yankee_to_shoujo_no_hanashi": "Anime · Yankee and the Girl",
     "char_kanojo_okarishimasu": "Anime · Rent-A-Girlfriend",
     "char_meitantei_conan": "Anime · Detective Conan",
     "char_mob_psycho_100": "Anime · Mob Psycho 100",
@@ -613,10 +658,11 @@
     "char_jigokuraku": "Anime · Hell's Paradise",
     "char_spice_and_wolf": "Anime · Spice and Wolf",
     "char_ghost_in_the_shell": "Anime · Ghost in the Shell",
-    "char_lyrical_nanoha": "Anime · Lyrical Nanoha",
-    "char_tiger_bunny": "Anime · Tiger & Bunny",
     "char_new_game": "Anime · New Game!",
+    "char_yu_gi_oh": "Anime · Yu-Gi-Oh!",
     "char_ssss_dynazenon": "Anime · SSSS.DYNAZENON",
+    "char_houseki_no_kuni": "Anime · Land of the Lustrous",
+    "char_sayonara_zetsubou_sensei": "Anime · Sayonara, Zetsubou-Sensei",
     "char_mushishi": "Anime · Mushishi",
     "char_darker_than_black": "Anime · Darker than Black",
     "char_rurouni_kenshin": "Anime · Rurouni Kenshin",
@@ -624,6 +670,15 @@
     "char_yojouhan_shinwa_taikei": "Anime · The Tatami Galaxy",
     "char_kara_no_kyoukai": "Anime · Kara no Kyoukai",
     "char_omniscient_reader_s_viewpoint": "Anime · Omniscient Reader's Viewpoint",
+    "char_rwby": "Anime · RWBY",
+    "char_the_legend_of_luo_xiaohei": "Anime · The Legend of Luo Xiaohei",
+    "char_osomatsu_series": "Anime · Mr. Osomatsu",
+    "char_tobaku_mokushiroku_kaiji": "Anime · Kaiji",
+    "char_dorohedoro": "Anime · Dorohedoro",
+    "char_scott_pilgrim_series": "Anime · Scott Pilgrim",
+    "char_seitenkango_shinyuu_to": "Anime · Seitenkango",
+    "char_the_amazing_digital_circus": "Anime · The Amazing Digital Circus",
+    "char_fate_zero": "Anime · Fate/Zero",
     "char_fate_series": "Games · Fate",
     "char_arknights": "Games · Arknights",
     "char_azur_lane": "Games · Azur Lane",
@@ -635,76 +690,105 @@
     "char_honkai_star_rail": "Games · Honkai: Star Rail",
     "char_pokemon": "Games · Pokemon",
     "char_goddess_of_victory_nikke": "Games · Goddess of Victory: Nikke",
+    "char_touken_ranbu": "Games · Touken Ranbu",
     "char_overwatch": "Games · Overwatch",
     "char_final_fantasy_vii": "Games · Final Fantasy VII",
-    "char_touken_ranbu": "Games · Touken Ranbu",
-    "char_xenoblade_chronicles_2": "Games · Xenoblade Chronicles 2",
     "char_persona": "Games · Persona",
-    "char_fire_emblem_three_houses": "Games · Three Houses",
     "char_ace_attorney": "Games · Ace Attorney",
     "char_blazblue": "Games · BlazBlue",
+    "char_xenoblade_chronicles_2": "Games · Xenoblade Chronicles 2",
+    "char_kemono_friends": "Games · Kemono Friends",
+    "char_final_fantasy": "Games · Final Fantasy",
+    "char_fire_emblem_three_houses": "Games · Three Houses",
+    "char_helltaker": "Games · Helltaker",
+    "char_dragon_quest": "Games · Dragon Quest",
     "char_umamusume": "Games · Umamusume",
     "char_steins_gate": "Games · Steins;Gate",
+    "char_granblue_fantasy": "Games · Granblue Fantasy",
+    "char_apex_legends": "Games · Apex Legends",
+    "char_xenoblade_chronicles_series": "Games · Xenoblade Chronicles",
+    "char_va_11_hall_a": "Games · VA-11 Hall-A",
+    "char_fire_emblem": "Games · Fire Emblem",
     "char_blue_archive": "Games · Blue Archive",
     "char_fire_emblem_fates": "Games · Fates",
     "char_resident_evil": "Games · Resident Evil",
     "char_elden_ring": "Games · Elden Ring",
+    "char_the_king_of_fighters": "Games · The King of Fighters",
+    "char_street_fighter": "Games · Street Fighter",
     "char_saibou_shinkyoku": "Games · Cell of Empireo",
-    "char_xenoblade_chronicles_series": "Games · Xenoblade Chronicles",
-    "char_va_11_hall_a": "Games · VA-11 Hall-A",
+    "char_splatoon_series": "Games · Splatoon",
+    "char_ragnarok_online": "Games · Ragnarok Online",
+    "char_skullgirls": "Games · Skullgirls",
     "char_tales_of_the_abyss": "Games · Tales of the Abyss",
     "char_princess_connect": "Games · Princess Connect!",
     "char_danganronpa_series": "Games · Danganronpa",
     "char_zenless_zone_zero": "Games · Zenless Zone Zero",
-    "char_granblue_fantasy": "Games · Granblue Fantasy",
+    "char_fatal_fury": "Games · Fatal Fury",
     "char_guilty_gear": "Games · Guilty Gear",
-    "char_apex_legends": "Games · Apex Legends",
     "char_honkai_impact_3rd": "Games · Honkai Impact 3rd",
     "char_eiyuu_densetsu": "Games · The Legend of Heroes",
     "char_fire_emblem_engage": "Games · Fire Emblem Engage",
+    "char_the_legend_of_zelda": "Games · The Legend of Zelda",
     "char_dragon_s_crown": "Games · Dragon's Crown",
-    "char_skullgirls": "Games · Skullgirls",
     "char_final_fantasy_viii": "Games · Final Fantasy VIII",
     "char_final_fantasy_vi": "Games · Final Fantasy VI",
     "char_sengoku_basara": "Games · Sengoku Basara",
     "char_dungeon_and_fighter": "Games · Dungeon Fighter",
+    "char_project_moon": "Games · Project Moon",
+    "char_punishing_gray_raven": "Games · Punishing: Gray Raven",
+    "char_tokyo_afterschool_summoners": "Games · Tokyo Afterschool Summoners",
     "char_final_fantasy_xii": "Games · Final Fantasy XII",
+    "char_tales_of_series": "Games · Tales of",
     "char_darkstalkers": "Games · Darkstalkers",
-    "char_fatal_fury": "Games · Fatal Fury",
     "char_bayonetta_series": "Games · Bayonetta",
     "char_devil_may_cry_series": "Games · Devil May Cry",
     "char_kid_icarus": "Games · Kid Icarus",
     "char_fire_emblem_awakening": "Games · Awakening",
     "char_final_fantasy_xiv": "Games · Final Fantasy XIV",
     "char_xenosaga": "Games · Xenosaga",
-    "char_the_king_of_fighters": "Games · The King of Fighters",
-    "char_helltaker": "Games · Helltaker",
+    "char_limbus_company": "Games · Limbus Company",
     "char_shingeki_no_bahamut": "Games · Rage of Bahamut",
     "char_tsukihime": "Games · Tsukihime",
     "char_xenoblade_chronicles_3": "Games · Xenoblade Chronicles 3",
     "char_ensemble_stars": "Games · Ensemble Stars!",
+    "char_animal_crossing": "Games · Animal Crossing",
     "char_last_origin": "Games · Last Origin",
     "char_xenogears": "Games · Xenogears",
     "char_nier": "Games · NieR",
-    "char_project_moon": "Games · Project Moon",
     "char_tomb_raider": "Games · Tomb Raider",
     "char_valkyrie_profile_series": "Games · Valkyrie Profile",
     "char_miside": "Games · MiSide",
     "char_under_night_in_birth": "Games · Under Night In-Birth",
     "char_final_fantasy_iv": "Games · Final Fantasy IV",
-    "char_punishing_gray_raven": "Games · Punishing: Gray Raven",
+    "char_mario_series": "Games · Super Mario",
     "char_tales_of_berseria": "Games · Tales of Berseria",
+    "char_undertale": "Games · Undertale",
+    "char_ib_kouri": "Games · Ib",
+    "char_reverse_1999": "Games · Reverse: 1999",
     "char_girls_frontline": "Games · Girls' Frontline",
     "char_metal_gear_series": "Games · Metal Gear",
+    "char_bloodborne": "Games · Bloodborne",
+    "char_call_of_duty_modern_warfare_2": "Games · Modern Warfare 2",
+    "char_warcraft": "Games · Warcraft",
+    "char_honkai_series": "Games · Honkai",
+    "char_gravity_daze": "Games · Gravity Rush",
     "char_vocaloid": "Other · Vocaloid",
     "char_original": "Other · Original",
     "char_star_wars": "Other · Star Wars",
     "char_frozen_disney": "Other · Frozen",
+    "char_cookie_touhou": "Other · Cookie",
     "char_nitroplus": "Other · Nitroplus",
+    "char_marvel": "Other · Marvel Comics",
     "char_batman_series": "Other · Batman",
     "char_who_framed_roger_rabbit": "Other · Who Framed Roger Rabbit",
+    "char_dc_comics": "Other · DC Comics",
     "char_chuugoku_yome_nikki": "Other · Chuugoku Yome Nikki",
-    "char_tangled": "Other · Tangled"
+    "char_wii_fit": "Other · Wii Fit",
+    "char_tangled": "Other · Tangled",
+    "char_promare": "Other · Promare",
+    "char_lord_of_the_mysteries": "Other · Lord of the Mysteries",
+    "char_kamen_rider": "Other · Kamen Rider",
+    "char_journey_to_the_west": "Other · Journey to the West"
   },
   "subOrder": {
     "quality": [
@@ -725,17 +809,17 @@
       "char_boku_no_hero_academia",
       "char_naruto_series",
       "char_gundam",
+      "char_jujutsu_kaisen",
+      "char_axis_powers_hetalia",
       "char_bleach",
       "char_fullmetal_alchemist",
+      "char_dungeon_meshi",
       "char_umineko_no_naku_koro_ni",
       "char_kimetsu_no_yaiba",
-      "char_jujutsu_kaisen",
       "char_chainsaw_man",
-      "char_dungeon_meshi",
       "char_golden_kamuy",
       "char_shingeki_no_kyojin",
       "char_gintama",
-      "char_axis_powers_hetalia",
       "char_osomatsu_san",
       "char_one_punch_man",
       "char_girls_und_panzer",
@@ -772,8 +856,11 @@
       "char_little_witch_academia",
       "char_trigun",
       "char_goblin_slayer",
+      "char_lyrical_nanoha",
+      "char_tiger_bunny",
       "char_heaven_official_s_blessing",
       "char_senpai_ga_uzai_kouhai_no_hanashi",
+      "char_onna_ga_nigate_na_yankee_to_shoujo_no_hanashi",
       "char_kanojo_okarishimasu",
       "char_meitantei_conan",
       "char_mob_psycho_100",
@@ -800,10 +887,11 @@
       "char_jigokuraku",
       "char_spice_and_wolf",
       "char_ghost_in_the_shell",
-      "char_lyrical_nanoha",
-      "char_tiger_bunny",
       "char_new_game",
+      "char_yu_gi_oh",
       "char_ssss_dynazenon",
+      "char_houseki_no_kuni",
+      "char_sayonara_zetsubou_sensei",
       "char_mushishi",
       "char_darker_than_black",
       "char_rurouni_kenshin",
@@ -811,6 +899,15 @@
       "char_yojouhan_shinwa_taikei",
       "char_kara_no_kyoukai",
       "char_omniscient_reader_s_viewpoint",
+      "char_rwby",
+      "char_the_legend_of_luo_xiaohei",
+      "char_osomatsu_series",
+      "char_tobaku_mokushiroku_kaiji",
+      "char_dorohedoro",
+      "char_scott_pilgrim_series",
+      "char_seitenkango_shinyuu_to",
+      "char_the_amazing_digital_circus",
+      "char_fate_zero",
       "char_fate_series",
       "char_arknights",
       "char_azur_lane",
@@ -822,76 +919,105 @@
       "char_honkai_star_rail",
       "char_pokemon",
       "char_goddess_of_victory_nikke",
+      "char_touken_ranbu",
       "char_overwatch",
       "char_final_fantasy_vii",
-      "char_touken_ranbu",
-      "char_xenoblade_chronicles_2",
       "char_persona",
-      "char_fire_emblem_three_houses",
       "char_ace_attorney",
       "char_blazblue",
+      "char_xenoblade_chronicles_2",
+      "char_kemono_friends",
+      "char_final_fantasy",
+      "char_fire_emblem_three_houses",
+      "char_helltaker",
+      "char_dragon_quest",
       "char_umamusume",
       "char_steins_gate",
+      "char_granblue_fantasy",
+      "char_apex_legends",
+      "char_xenoblade_chronicles_series",
+      "char_va_11_hall_a",
+      "char_fire_emblem",
       "char_blue_archive",
       "char_fire_emblem_fates",
       "char_resident_evil",
       "char_elden_ring",
+      "char_the_king_of_fighters",
+      "char_street_fighter",
       "char_saibou_shinkyoku",
-      "char_xenoblade_chronicles_series",
-      "char_va_11_hall_a",
+      "char_splatoon_series",
+      "char_ragnarok_online",
+      "char_skullgirls",
       "char_tales_of_the_abyss",
       "char_princess_connect",
       "char_danganronpa_series",
       "char_zenless_zone_zero",
-      "char_granblue_fantasy",
+      "char_fatal_fury",
       "char_guilty_gear",
-      "char_apex_legends",
       "char_honkai_impact_3rd",
       "char_eiyuu_densetsu",
       "char_fire_emblem_engage",
+      "char_the_legend_of_zelda",
       "char_dragon_s_crown",
-      "char_skullgirls",
       "char_final_fantasy_viii",
       "char_final_fantasy_vi",
       "char_sengoku_basara",
       "char_dungeon_and_fighter",
+      "char_project_moon",
+      "char_punishing_gray_raven",
+      "char_tokyo_afterschool_summoners",
       "char_final_fantasy_xii",
+      "char_tales_of_series",
       "char_darkstalkers",
-      "char_fatal_fury",
       "char_bayonetta_series",
       "char_devil_may_cry_series",
       "char_kid_icarus",
       "char_fire_emblem_awakening",
       "char_final_fantasy_xiv",
       "char_xenosaga",
-      "char_the_king_of_fighters",
-      "char_helltaker",
+      "char_limbus_company",
       "char_shingeki_no_bahamut",
       "char_tsukihime",
       "char_xenoblade_chronicles_3",
       "char_ensemble_stars",
+      "char_animal_crossing",
       "char_last_origin",
       "char_xenogears",
       "char_nier",
-      "char_project_moon",
       "char_tomb_raider",
       "char_valkyrie_profile_series",
       "char_miside",
       "char_under_night_in_birth",
       "char_final_fantasy_iv",
-      "char_punishing_gray_raven",
+      "char_mario_series",
       "char_tales_of_berseria",
+      "char_undertale",
+      "char_ib_kouri",
+      "char_reverse_1999",
       "char_girls_frontline",
       "char_metal_gear_series",
+      "char_bloodborne",
+      "char_call_of_duty_modern_warfare_2",
+      "char_warcraft",
+      "char_honkai_series",
+      "char_gravity_daze",
       "char_vocaloid",
       "char_original",
       "char_star_wars",
       "char_frozen_disney",
+      "char_cookie_touhou",
       "char_nitroplus",
+      "char_marvel",
       "char_batman_series",
       "char_who_framed_roger_rabbit",
+      "char_dc_comics",
       "char_chuugoku_yome_nikki",
-      "char_tangled"
+      "char_wii_fit",
+      "char_tangled",
+      "char_promare",
+      "char_lord_of_the_mysteries",
+      "char_kamen_rider",
+      "char_journey_to_the_west"
     ],
     "feature": [
       "hair_len",
@@ -1140,6 +1266,7 @@
     "agumon",
     "agumon (digimon)",
     "ahiru (princess tutu)",
+    "ai-chan (tawawa)",
     "aida kensuke",
     "aida mana",
     "aida rayhunton",
@@ -1152,6 +1279,7 @@
     "aile (mega man zx)",
     "aimaina",
     "aina (mao lian)",
+    "aino megumi",
     "aino minako",
     "aioi yuuko",
     "air groove (umamusume)",
@@ -1176,6 +1304,7 @@
     "akagi miria",
     "akagi-chan (azur lane)",
     "akai haato",
+    "akai haato (1st costume)",
     "akai haato (gothic lolita)",
     "akamatsu kaede",
     "akane (blue archive)",
@@ -1205,10 +1334,12 @@
     "akigumo kai ni (kancolle)",
     "akiha rumiho",
     "akikawa yayoi (umamusume)",
+    "akimoto komachi",
     "akira (blue archive)",
     "akishimo (kancolle)",
     "akita neru",
     "akitsu maru (kancolle)",
+    "akitsu maru kai (kancolle)",
     "akitsushima (kancolle)",
     "akiyama mio",
     "akiyama mizuki",
@@ -1227,6 +1358,7 @@
     "albacore (azur lane)",
     "albedo (genshin impact)",
     "alcina dimitrescu",
+    "alcremie",
     "alear (female) (fire emblem)",
     "alear (male) (fire emblem)",
     "aleksandra i. pokryshkin",
@@ -1252,6 +1384,7 @@
     "alisa southerncross",
     "allen avadonia",
     "allen walker",
+    "allister (pokemon)",
     "alluka zoldyck",
     "alolan vulpix",
     "alpaca suri (kemono friends)",
@@ -1290,6 +1423,7 @@
     "amillion (zenless zone zero)",
     "amity blight",
     "amiya (arknights)",
+    "ampharos",
     "amuro ray",
     "amy rose",
     "an-94 (girls' frontline)",
@@ -1327,8 +1461,11 @@
     "anisphia wynn palettia",
     "anjou naruko",
     "ankha (animal crossing)",
+    "anko (gochiusa)",
     "anna williams (tekken)",
+    "annette fantine dominic",
     "annie (league of legends)",
+    "annie leonhardt",
     "annie leonhart",
     "ansel (arknights)",
     "anthony (madoka magica)",
@@ -1344,6 +1481,8 @@
     "aoi (blue archive)",
     "aoki reika",
     "aomine daiki",
+    "aono miki",
+    "aoyagi touya",
     "aoyama sumika",
     "aozaki aoko",
     "aponia (honkai impact)",
@@ -1357,10 +1496,13 @@
     "araragi karen",
     "araragi koyomi",
     "araragi tsukihi",
+    "arare (kancolle)",
     "arashi (kancolle)",
     "arashi chisato",
     "arashio (kancolle)",
+    "arashio kai ni (kancolle)",
     "arbok (pokemon)",
+    "arcanine",
     "arcanine (pokemon)",
     "arch bishop (ragnarok online)",
     "archetto (arknights)",
@@ -1405,6 +1547,7 @@
     "asahina hiyori",
     "asahina mafuyu",
     "asahina mikuru",
+    "asahina mirai",
     "asaka karin",
     "asakaze (kancolle)",
     "asakura ryoko",
@@ -1511,6 +1654,7 @@
     "barbara (summertime sparkle) (genshin impact)",
     "barnaby brooks jr.",
     "baron bunny (genshin impact)",
+    "barry (pokemon)",
     "basil (faraway) (omori)",
     "basil (headspace) (omori)",
     "basil (omori)",
@@ -1523,6 +1667,7 @@
     "bb (fate)",
     "bb (fate/extra)",
     "bb (swimsuit mooncancer) (fate)",
+    "bb (swimsuit mooncancer) (second ascension) (fate)",
     "bb (swimsuit mooncancer) (third ascension) (fate)",
     "bea (pokemon)",
     "beanstalk (arknights)",
@@ -1540,10 +1685,12 @@
     "bellona (azur lane)",
     "ben tennyson (ben 10)",
     "beni-enma",
+    "benienma (fate)",
     "bennett (genshin impact)",
     "bernadetta von varley",
     "berserker (fate/zero)",
     "bertolt hoover",
+    "bianca (dq5)",
     "bianca (pokemon)",
     "bibi (tokoyami towa)",
     "big boss (metal gear solid)",
@@ -1564,7 +1711,9 @@
     "blaidd the half-wolf",
     "blake belladonna",
     "blanc (neptunia)",
+    "blastoise",
     "blaze the cat",
+    "blaziken",
     "blaziken (pokemon)",
     "bloop (gawr gura)",
     "blossom (ppg)",
@@ -1590,6 +1739,7 @@
     "brazilian miku",
     "brendan (pokemon)",
     "bridget (guilty gear)",
+    "brock (pokemon)",
     "bronya rand",
     "bronya zaychik",
     "bronya zaychik (herrscher of reason)",
@@ -1641,10 +1791,12 @@
     "cecilia (shiro seijo to kuro bokushi)",
     "cecilia alcott",
     "cecilia immergreen",
+    "celebi",
     "celestia ludenberg",
     "celica (fire emblem)",
     "celine (fire emblem)",
     "cell (dragon ball)",
+    "cellien (kemono friends)",
     "centorea shianus",
     "ceobe (arknights)",
     "cerberus (helltaker)",
@@ -1676,6 +1828,7 @@
     "charmeleon (pokemon)",
     "cheese-kun",
     "chen",
+    "chen (cat)",
     "chen hai (azur lane)",
     "cheren (pokemon)",
     "cheria barnes",
@@ -1706,6 +1859,7 @@
     "chise (blue archive)",
     "chise (swimsuit) (blue archive)",
     "chitanda eru",
+    "chito (shoujo shuumatsu ryokou)",
     "chitose (kancolle)",
     "chiyoda (kancolle)",
     "chiyoda momo",
@@ -1723,6 +1877,7 @@
     "chouno ami",
     "chouzetsusaikawa tenshi-chan",
     "chris (konosuba)",
+    "christa renz",
     "chrom (fire emblem)",
     "chrome dokuro",
     "chuatury panlunch",
@@ -1731,6 +1886,7 @@
     "churuya",
     "ciel (tsukihime)",
     "ciel phantomhive",
+    "cinderace",
     "cinnabar (houseki no kuni)",
     "cinnamiku",
     "cinnamoroll",
@@ -1746,7 +1902,9 @@
     "clefairy",
     "cleveland (azur lane)",
     "cliffheart (arknights)",
+    "clive rosfield",
     "closure (arknights)",
+    "cloud retainer (genshin impact)",
     "clownpiece",
     "clumsy nun (diva)",
     "colette brunel",
@@ -1767,10 +1925,12 @@
     "corin wickes",
     "corrin (female) (fire emblem)",
     "corrin (male) (fire emblem)",
+    "cosmog",
     "courtney (pokemon)",
     "coyote (kemono friends)",
     "crazy diamond",
     "cream the rabbit",
+    "creeper",
     "crewmate (among us)",
     "crimvael",
     "croissant (arknights)",
@@ -1811,6 +1971,7 @@
     "cure precious",
     "cure princess",
     "cure prism",
+    "cure rhythm",
     "cure rosetta",
     "cure sky",
     "cure sunny",
@@ -1864,6 +2025,7 @@
     "death (puss in boots)",
     "death the kid",
     "death-sensei (mori calliope)",
+    "dedenne",
     "deedlit",
     "dejiko",
     "dekomori sanae",
@@ -1881,6 +2043,7 @@
     "diana cavendish",
     "diane (nanatsu no taizai)",
     "dimitri alexandre blaiddyd",
+    "dinergate (girls' frontline)",
     "dio brando",
     "diona (genshin impact)",
     "dire wolf (kemono friends)",
@@ -1944,6 +2107,7 @@
     "eiko carol",
     "eila ilmatar juutilainen",
     "eimi (blue archive)",
+    "eimi (swimsuit) (blue archive)",
     "ein (blue archive)",
     "ein (cowboy bebop)",
     "einhard stratos",
@@ -1973,7 +2137,9 @@
     "eliza (tekken)",
     "elizabeth bathory (brave) (fate)",
     "elizabeth bathory (fate)",
+    "elizabeth bathory (fate/extra ccc)",
     "elizabeth bathory (fate/extra)",
+    "elizabeth bathory (first ascension) (fate)",
     "elizabeth liones",
     "elizabeth rose bloodflame",
     "elize lutus",
@@ -1999,11 +2165,15 @@
     "emma frost (marvel)",
     "emma verde",
     "emmet (pokemon)",
+    "emolga",
     "emperor penguin (kemono friends)",
     "endministrator (arknights endfield)",
+    "endou mamoru",
     "endou saya",
+    "ene (kagerou project)",
     "enemy aircraft (kancolle)",
     "enemy lifebuoy (kancolle)",
+    "enemy naval mine (kancolle)",
     "enma ai",
     "enna alouette",
     "enoshima junko",
@@ -2123,6 +2293,7 @@
     "fletcher (kancolle)",
     "fletcher mk ii (kancolle)",
     "flint (girls und panzer)",
+    "flonne",
     "flonne (fallen angel)",
     "flora (dq5)",
     "floragato",
@@ -2132,6 +2303,7 @@
     "flower (vocaloid4)",
     "floyd leech",
     "fluttershy",
+    "flygon",
     "foch (azur lane)",
     "foo fighters (jojo)",
     "fou (fate)",
@@ -2149,6 +2321,8 @@
     "friend (nanashi mumei)",
     "frieren",
     "frisk (undertale)",
+    "froggy nun (diva)",
+    "froslass",
     "frostleaf (arknights)",
     "frye (splatoon)",
     "fu hua",
@@ -2165,6 +2339,7 @@
     "fubuki (swimsuit) (blue archive)",
     "fubuki kai ni (kancolle)",
     "fudo yusei",
+    "fuecoco",
     "fuecoco (pokemon)",
     "fuiba fuyu",
     "fuji kiseki (umamusume)",
@@ -2195,6 +2370,7 @@
     "fukuda noriko",
     "fukuji mihoko",
     "fukumaru koito",
+    "fukuyama mai",
     "fukuzawa yumi",
     "fumizuki (kancolle)",
     "funada kiito",
@@ -2223,6 +2399,7 @@
     "fuuma kotarou (fate)",
     "fuuma saika (taimanin asagi)",
     "fuuma tokiko (taimanin asagi)",
+    "fuura kafuka",
     "fuwa kokone",
     "fuwa minato",
     "fuwawa abyssgard",
@@ -2238,6 +2415,7 @@
     "gabumon",
     "gaia (ff14)",
     "galarian ponyta",
+    "galko",
     "gallade",
     "galleon (granblue fantasy)",
     "gamagoori ira",
@@ -2254,6 +2432,7 @@
     "garrus vakarian (mass effect)",
     "gasai yuno",
     "gascogne (azur lane)",
+    "gastly",
     "gavis bettel",
     "gawr gura",
     "gawr gura (1st costume)",
@@ -2276,6 +2455,7 @@
     "gilles de rais (caster) (fate)",
     "gine (dragon ball)",
     "giorno giovanna",
+    "giratina",
     "girl holding a cat (kancolle)",
     "giselle gewelle (bleach)",
     "glaceon",
@@ -2303,6 +2483,7 @@
     "gon freecss",
     "gon-san",
     "goomba",
+    "goomy",
     "gore magala (monster hunter)",
     "gorgon (fate)",
     "gorou (darling in the franxx)",
@@ -2315,6 +2496,7 @@
     "gotou moyoko",
     "goutokuji mike",
     "grace howard",
+    "graf eisen",
     "gran (granblue fantasy)",
     "grani (arknights)",
     "grass wonder (umamusume)",
@@ -2325,6 +2507,7 @@
     "grecale (kancolle)",
     "green (pokemon)",
     "gregor (project moon)",
+    "greninja",
     "greninja (pokemon)",
     "grey wolf (kemono friends)",
     "greymon (digimon)",
@@ -2354,6 +2537,7 @@
     "gwen stacy",
     "gwen tennyson (ben 10)",
     "gwendolyn (odin sphere)",
+    "gyarados",
     "habetrot (fate)",
     "hachijou (kancolle)",
     "hachikuji mayoi",
@@ -2362,6 +2546,8 @@
     "hachune miku",
     "hacka doll 3",
     "hado nejire",
+    "hadou nejire",
+    "hagakure tooru",
     "hagakure toru",
     "hagakure yasuhiro",
     "hagikaze (kancolle)",
@@ -2383,6 +2569,7 @@
     "hakurei reimu",
     "hakurei reimu (pc-98)",
     "hakuryuu (azur lane)",
+    "hakuryuu (inazuma eleven)",
     "hamaguchi ayame",
     "hamakaze (kancolle)",
     "hamanami (kancolle)",
@@ -2457,9 +2644,12 @@
     "hatsushimo (kancolle)",
     "hatsuyuki (kancolle)",
     "hatsuzuki (kancolle)",
+    "hau (pokemon)",
+    "haunter",
     "hayami kanade",
     "hayanami (kancolle)",
     "hayasaka ai",
+    "hayasaka mirei",
     "hayashimo (kancolle)",
     "hayashio (kancolle)",
     "hayasui (kancolle)",
@@ -2499,6 +2689,7 @@
     "hibiki yuuta",
     "hibiscus (arknights)",
     "hida ema",
+    "hidaka ai",
     "hieda no akyuu",
     "hiei (yu yu hakusho)",
     "hierophant green",
@@ -2537,6 +2728,7 @@
     "himejima akeno",
     "himekaidou hatate",
     "himekawa yoshino",
+    "himemiya anthy",
     "himemiya chikane",
     "himemiya tori",
     "himemori luna",
@@ -2561,6 +2753,7 @@
     "hinata kaho",
     "hinata natsumi",
     "hinata shouyou",
+    "hinata yukari",
     "hinatsuki mikan",
     "hinatsuru ai",
     "hinazuki kayo",
@@ -2573,6 +2766,7 @@
     "hinoshita kaho",
     "hiodoshi ao",
     "hippopotamus (kemono friends)",
+    "hiradaira chisaki",
     "hiraga saito",
     "hirasawa ui",
     "hirasawa yui",
@@ -2600,6 +2794,7 @@
     "hiyou (kancolle)",
     "hk416 (black kitty's gift) (girls' frontline)",
     "hk416 (girls' frontline)",
+    "ho-oh",
     "ho-oh (pokemon)",
     "hod (project moon)",
     "hodaka natsumi",
@@ -2611,6 +2806,7 @@
     "homura (senran kagura)",
     "honda mio",
     "honebami toushirou",
+    "honekoneko (psg)",
     "hong lu (project moon)",
     "honma himawari",
     "honma meiko",
@@ -2632,6 +2828,7 @@
     "hoshii miki",
     "hoshikawa lily",
     "hoshikawa sara",
+    "hoshikawa sara (1st costume)",
     "hoshimachi suisei",
     "hoshimachi suisei (1st costume)",
     "hoshimachi suisei (casual)",
@@ -2660,6 +2857,7 @@
     "hoshizora miyuki",
     "hoshizora rin",
     "hosomi shizuko",
+    "hotarumaru",
     "hoto cocoa",
     "houjou hibiki",
     "houjou satoko",
@@ -2687,16 +2885,19 @@
     "huang baoling",
     "huang lingyin",
     "hubert von vestra",
+    "hugh (pokemon)",
     "hulk (marvel)",
     "hummy (suite precure)",
     "huohuo (honkai: star rail)",
     "hyakumantenbara salome",
     "hyakumantenbara salome (1st costume)",
+    "hypno",
     "hythlodaeus",
     "hyuuga hanabi (naruto)",
     "hyuuga hinata",
     "hyuuga neji",
     "hyuuga neji (naruto)",
+    "hyuuga saki",
     "i-168 (kancolle)",
     "i-19 (kancolle)",
     "i-203 (kancolle)",
@@ -2767,12 +2968,14 @@
     "illyasviel von einzbern (swimsuit archer)",
     "ilsa (granblue fantasy)",
     "ilulu (maidragon)",
+    "ima-no-tsurugi",
     "imai lisa",
     "imaizumi kagerou",
     "impa",
     "inaba meguru",
     "inaba mob (touhou)",
     "inaba tewi",
+    "inami mahiru",
     "inari one (umamusume)",
     "inazuma (kancolle)",
     "incineroar (pokemon)",
@@ -2789,6 +2992,7 @@
     "inkling girl",
     "inoue orihime",
     "inoue takina",
+    "inteleon",
     "intrepid (kancolle)",
     "inubashiri momiji",
     "inugami korone",
@@ -2844,6 +3048,7 @@
     "island fox (kemono friends)",
     "isobe noriko",
     "isokaze (kancolle)",
+    "isolated island oni",
     "isonami (kancolle)",
     "isshiki akane",
     "isshiki iroha",
@@ -2853,12 +3058,14 @@
     "isuzu kai ni (kancolle)",
     "itadori yuji",
     "itadori yuuji",
+    "itou chika",
     "itsuka kotori",
     "itsuki shu",
     "itsumi erika",
     "itsuwa",
     "ivan karelin",
     "ivy (fire emblem)",
+    "iwakura lain",
     "iwasaki minami",
     "iwasawa masami",
     "iws 2000 (girls' frontline)",
@@ -2878,6 +3085,7 @@
     "izutsumi",
     "jabami yumeko",
     "jack atlas",
+    "jack frost",
     "jack the ripper (fate/apocrypha)",
     "jack-o' valentine",
     "jacket girl (dipp)",
@@ -2905,6 +3113,7 @@
     "jessie rasberry (ff7)",
     "jewelry bonney",
     "jigglypuff",
+    "jiji (majo no takkyuubin)",
     "jill warrick",
     "jingburger",
     "jingei (kancolle)",
@@ -2923,12 +3132,14 @@
     "jonouchi katsuya",
     "josie rizal (tekken)",
     "josuiji shinri",
+    "jouga maya",
     "jougasaki mika",
     "jougasaki rika",
     "joutouguu mayumi",
     "joy (pokemon)",
     "judal",
     "judau ashta",
+    "jude mathis",
     "judith (tales)",
     "julia (fire emblem)",
     "julia chang (tekken)",
@@ -2972,6 +3183,7 @@
     "kagamine rin (append)",
     "kagari atsuko",
     "kagehira mika",
+    "kagemori michiru",
     "kagero (fire emblem)",
     "kagerou (kancolle)",
     "kageyama ritsu",
@@ -3000,7 +3212,9 @@
     "kakyoin noriaki",
     "kale (dragon ball)",
     "kalina (girls' frontline)",
+    "kallen stadtfeld",
     "kama (fate)",
+    "kama (first ascension) (fate)",
     "kama (swimsuit avenger) (fate)",
     "kamado nezuko",
     "kamado tanjirou",
@@ -3019,6 +3233,7 @@
     "kamiya nao",
     "kamoi (kancolle)",
     "kamukura izuru",
+    "kan'u unchou",
     "kana (fire emblem)",
     "kanade izuru",
     "kanae (nijisanji)",
@@ -3036,6 +3251,7 @@
     "kanna (swimsuit) (blue archive)",
     "kanna kamui",
     "kano shuuya",
+    "kanon (umineko)",
     "kanzaki ranko",
     "kanzuki karin",
     "kaonashi",
@@ -3044,6 +3260,7 @@
     "karin (bunny) (blue archive)",
     "karin (p&d)",
     "karin (school uniform) (blue archive)",
+    "karina lyle",
     "kariya masaki",
     "karyl (princess connect!)",
     "karyl (summer) (princess connect!)",
@@ -3056,6 +3273,8 @@
     "kasuga ayumu",
     "kasuga mirai",
     "kasugano sakura",
+    "kasugano sora",
+    "kasugano urara (yes! precure 5)",
     "kasukabe tsumugi",
     "kasumi (blue archive)",
     "kasumi (doa)",
@@ -3081,6 +3300,7 @@
     "katsushika hokusai (fate)",
     "katsushika hokusai (swimsuit saber) (fate)",
     "katyusha (girls und panzer)",
+    "kawakami mai",
     "kawakami princess (umamusume)",
     "kawakaze (azur lane)",
     "kawakaze (kancolle)",
@@ -3099,6 +3319,7 @@
     "kayoko (dress) (blue archive)",
     "kayoko (new year) (blue archive)",
     "kazagumo (kancolle)",
+    "kazama asuka",
     "kazama asuka (tekken)",
     "kazama iroha",
     "kazama iroha (1st costume)",
@@ -3106,6 +3327,7 @@
     "kazami mizuho",
     "kazanari tsubasa",
     "kazano hiori",
+    "kazemaru ichirouta",
     "kazuha's friend (genshin impact)",
     "kazuno leah",
     "kazuno sarah",
@@ -3120,6 +3342,7 @@
     "kenzaki makoto",
     "keqing (genshin impact)",
     "keqing (opulent splendor) (genshin impact)",
+    "kero",
     "kero (cardcaptor sakura)",
     "kfp employee (takanashi kiara)",
     "ki-sikil (yu-gi-oh!)",
@@ -3132,6 +3355,7 @@
     "kicchou yachie",
     "kida masaomi",
     "kido jo",
+    "kido tsubomi",
     "kieran (pokemon)",
     "kijin seija",
     "kiki (majo no takkyuubin)",
@@ -3144,6 +3368,7 @@
     "kimidori emiri",
     "kimura natsuki",
     "kin'iro ryotei (umamusume)",
+    "king dedede",
     "king halo (umamusume)",
     "king hassan (fate)",
     "king k. rool (donkey kong)",
@@ -3163,6 +3388,7 @@
     "kintoki (sakura miko)",
     "kintsuba (shiranui flare)",
     "kinugasa (kancolle)",
+    "kinugasa kai ni (kancolle)",
     "kinuhata saiai",
     "kira tsubasa",
     "kira yamato",
@@ -3185,6 +3411,7 @@
     "kirisame marisa",
     "kirisame marisa (pc-98)",
     "kirishima eijiro",
+    "kirishima eijirou",
     "kirishima romin",
     "kirishima touka",
     "kiritani haruka",
@@ -3208,9 +3435,11 @@
     "kise yayoi",
     "kishido temma",
     "kishin sagume",
+    "kishinami (kancolle)",
     "kishinami hakuno (female)",
     "kishinami hakuno (male)",
     "kiso (kancolle)",
+    "kiso kai ni (kancolle)",
     "kiss-shot acerola-orion heart-under-blade",
     "kisume",
     "kita ikuyo",
@@ -3224,6 +3453,7 @@
     "kitasan black (gilded shrine to glory) (umamusume)",
     "kitasan black (umamusume)",
     "kitashirakawa anko",
+    "kitashirakawa tamako",
     "kitazawa shiho",
     "kitkallos (yu-gi-oh!)",
     "kiyal bachika",
@@ -3240,7 +3470,9 @@
     "klee (blossoming starlight) (genshin impact)",
     "klee (genshin impact)",
     "kneesocks (psg)",
+    "knuckles the echidna",
     "koakuma",
+    "kobayakawa rinko",
     "kobayakawa sae",
     "kobayakawa yutaka",
     "kobo kanaeru",
@@ -3256,6 +3488,7 @@
     "koharu (swimsuit) (blue archive)",
     "koharu rikka",
     "kohibari kurumi",
+    "kohinata miho",
     "kohinata miku",
     "koito yuu",
     "koiwai yotsuba",
@@ -3291,12 +3524,14 @@
     "konngara (touhou)",
     "konoe kanata",
     "konoe konoka",
+    "konoha (kagerou project)",
     "konori mii",
     "konpaku youmu",
     "konpaku youmu (ghost)",
     "kooh",
     "koraidon (pokemon)",
     "koromaru (persona)",
+    "korra",
     "korwa",
     "kosaka honoka",
     "kosaka yukiho",
@@ -3341,10 +3576,12 @@
     "kroos (arknights)",
     "krul tepes",
     "krystal",
+    "kson",
     "kuchiki rukia",
     "kudamaki tsukasa",
     "kudelia aina bernstein",
     "kudou shin'ichi",
+    "kuga natsuki",
     "kugisaki nobara",
     "kuja",
     "kujikawa rise",
@@ -3374,6 +3611,7 @@
     "kurapika",
     "kuraue hinata",
     "kureiji ollie",
+    "kureiji ollie (1st costume)",
     "kuririn",
     "kuririn (dragon ball)",
     "kuriyama mirai",
@@ -3382,6 +3620,7 @@
     "kuroe shizuku",
     "kurokami fubuki",
     "kurokawa akane",
+    "kurokawa eren",
     "kuroki tomoko",
     "kuroko tetsuya",
     "kurokoma saki",
@@ -3422,6 +3661,7 @@
     "kyon",
     "kyon's sister",
     "kyonko",
+    "kyouka (princess connect!)",
     "kyouno madoka",
     "kyubey",
     "la pluma (arknights)",
@@ -3441,6 +3681,7 @@
     "laharl",
     "lain paterson",
     "lala satalin deviluke",
+    "lamb (league of legends)",
     "lambdadelta",
     "lana (pokemon)",
     "lana's mother (pokemon)",
@@ -3448,15 +3689,18 @@
     "land (sousou no frieren)",
     "lapis (fire emblem)",
     "lapis lazuli (houseki no kuni)",
+    "lapras",
     "larva tiamat (fate)",
     "last order (toaru majutsu no index)",
     "latias",
     "latifa fleuranza",
+    "latios",
     "laundry dragonmaid",
     "laura bodewig",
     "laura kinney (x-men)",
     "laura la mer",
     "lava (arknights)",
+    "lavinia whateley (fate)",
     "layla (genshin impact)",
     "layla (idolmaster)",
     "le malin (azur lane)",
@@ -3468,6 +3712,7 @@
     "lee (arknights)",
     "lee-enfield (girls' frontline)",
     "legoshi (beastars)",
+    "lei lei",
     "leia rolando",
     "lelouch vi britannia",
     "len (tsukihime)",
@@ -3477,6 +3722,7 @@
     "leo kliesen (tekken)",
     "leona kingscholar",
     "leonardo da vinci (fate)",
+    "leonardo da vinci (rider) (fate)",
     "leoparde (mahou shoujo ni akogarete)",
     "lethe (fire emblem)",
     "letty whiterock",
@@ -3514,6 +3760,7 @@
     "lisbeth (sao-alo)",
     "lisia (pokemon)",
     "lissa (fire emblem)",
+    "litten",
     "little bel (azur lane)",
     "little blue whale (kancolle)",
     "little boy admiral (kancolle)",
@@ -3554,6 +3801,7 @@
     "lucy (cyberpunk)",
     "lucy heartfilia",
     "lucy maria misora",
+    "lugia",
     "lugia (pokemon)",
     "luigi",
     "luigi di savoia duca degli abruzzi (kancolle)",
@@ -3574,8 +3822,11 @@
     "luo tianyi",
     "luo xiaohei",
     "luo xiaohei (cat)",
+    "luo xiaohei (human)",
+    "luvdisc",
     "luviagelita edelfelt",
     "luxray (pokemon)",
+    "lycanroc",
     "lycanroc (midnight)",
     "lyn (fire emblem)",
     "lynette (genshin impact)",
@@ -3592,6 +3843,7 @@
     "m4 sopmod ii (girls' frontline)",
     "m4a1 (girls' frontline)",
     "m950a (girls' frontline)",
+    "machamp",
     "machamp (pokemon)",
     "machoke (pokemon)",
     "mad hatter (alice in wonderland)",
@@ -3608,9 +3860,11 @@
     "magical mirai miku (2016)",
     "magical mirai miku (2018)",
     "magical ruby",
+    "magikarp",
     "magisa (granblue fantasy)",
     "magnemite",
     "mahira (granblue fantasy)",
+    "mai natsume",
     "maiden (nikke)",
     "maikaze (kancolle)",
     "maizono sayaka",
@@ -3665,6 +3919,7 @@
     "marie (persona 4)",
     "marie (splatoon)",
     "marie rose",
+    "marill",
     "marina (blue archive)",
     "marina (fear & hunger)",
     "marina (splatoon)",
@@ -3702,6 +3957,7 @@
     "master chief (halo)",
     "masurao (sekaiju)",
     "matara okina",
+    "matikane tannhauser (umamusume)",
     "matikanefukukitaru (umamusume)",
     "matikanetannhauser (umamusume)",
     "matoba risa",
@@ -3710,6 +3966,8 @@
     "matou sakura",
     "matsubara kanon",
     "matsuda arisa",
+    "matsukaze (kancolle)",
+    "matsukaze tenma",
     "matsumae ohana",
     "matsumi kuro",
     "matsumi yuu",
@@ -3718,6 +3976,7 @@
     "matsuoka miu",
     "matsuoka rin",
     "matsuura kanan",
+    "mawile",
     "maxie (pokemon)",
     "may (guilty gear)",
     "may (gundam build divers re:rise)",
@@ -3727,7 +3986,9 @@
     "mayday parker (marvel)",
     "mayu (vocaloid)",
     "mayuzumi fuyuko",
+    "mazaki anzu",
     "mdr (girls' frontline)",
+    "me-tan",
     "medicine melancholy",
     "medjed (fate)",
     "medusa (lancer) (fate)",
@@ -3764,6 +4025,7 @@
     "meltryllis (fate)",
     "meltryllis (swimsuit lancer) (fate)",
     "meltryllis (swimsuit lancer) (first ascension) (fate)",
+    "meltryllis (swimsuit lancer) (second ascension) (fate)",
     "melusine (fate)",
     "melusine (swimsuit ruler) (fate)",
     "meowfficer (azur lane)",
@@ -3777,9 +4039,11 @@
     "meta knight",
     "meteion",
     "metera (granblue fantasy)",
+    "metroid (creature)",
     "mew (pokemon)",
     "mew ichigo",
     "mew ichigo (tokyo mew mew)",
+    "mewtwo",
     "mewtwo (pokemon)",
     "meyrin hawke",
     "mia (fire emblem)",
@@ -3853,8 +4117,11 @@
     "minase nayuki",
     "minato aqua",
     "minato aqua (1st costume)",
+    "minato aqua (sailor)",
     "minato tomoka",
     "minato yukina",
+    "minazuki (kancolle)",
+    "minazuki karen",
     "minegishi ayano",
     "minegumo (kancolle)",
     "mineta minoru",
@@ -3886,6 +4153,7 @@
     "misogi (princess connect!)",
     "misono karin",
     "misora (princess connect!)",
+    "miss cloud",
     "miss monochrome",
     "mist (fire emblem)",
     "misty (pokemon)",
@@ -3905,12 +4173,14 @@
     "miyagawa takane",
     "miyagi ryouta",
     "miyako (blue archive)",
+    "miyako (hidamari sketch)",
     "miyako (princess connect!)",
     "miyako (swimsuit) (blue archive)",
     "miyako yoshika",
     "miyamizu mitsuha",
     "miyamori aoi",
     "miyamoto frederica",
+    "miyanaga saki",
     "miyano shiho",
     "miyashita ai",
     "miyauchi renge",
@@ -3964,6 +4234,7 @@
     "momomiya ichigo",
     "momose ginko",
     "momosuzu nene",
+    "momosuzu nene (1st costume)",
     "momota kaito",
     "momozono love",
     "mon3tr (arknights)",
@@ -3981,11 +4252,13 @@
     "montgomery gator (five nights at freddy's)",
     "moogle",
     "moona hoshinova",
+    "moona hoshinova (1st costume)",
     "moonlight flower",
     "moose (kemono friends)",
     "morag ladair (xenoblade)",
     "mordred (fate)",
     "mordred (fate/apocrypha)",
+    "mordred (memories at trifas) (fate)",
     "mordred (swimsuit rider) (fate)",
     "morgan (fire emblem)",
     "morgana (cat) (persona 5)",
@@ -4025,6 +4298,7 @@
     "mulberry (arknights)",
     "mumei (kabaneri)",
     "munakata atsumi",
+    "muppo",
     "murakami (girls und panzer)",
     "murakami tomoe",
     "murakumo (kancolle)",
@@ -4038,9 +4312,11 @@
     "murasame (kancolle)",
     "murasame (senren)",
     "murasame kai ni (kancolle)",
+    "murosaki miyo",
     "musharna",
     "musujime awaki",
     "muto yugi",
+    "mutou yuugi",
     "mutsu-no-kami yoshiyuki",
     "mutsuki (azur lane)",
     "mutsuki (blue archive)",
@@ -4058,6 +4334,7 @@
     "mysta rias",
     "mysterious heroine x (fate)",
     "mysterious heroine x alter (fate)",
+    "mysterious heroine x alter (first ascension) (fate)",
     "mysterious heroine xx (fate)",
     "mystia lorelei",
     "nachi (kancolle)",
@@ -4068,6 +4345,7 @@
     "naga the serpent",
     "nagae iku",
     "naganami (kancolle)",
+    "naganami kai ni (kancolle)",
     "naganohara mio",
     "nagant revolver (girls' frontline)",
     "nagao kagetora (fate)",
@@ -4087,6 +4365,7 @@
     "nahida (genshin impact)",
     "naihe (female) (touqi guaitan)",
     "naka (kancolle)",
+    "naka kai ni (kancolle)",
     "nakagawa nana",
     "nakagawa natsuki",
     "nakajima (girls und panzer)",
@@ -4100,6 +4379,7 @@
     "nakaseko kaori",
     "nakasu kasumi",
     "nakata sae",
+    "nakatani iku",
     "nakatsu shizuru",
     "nakayama festa (umamusume)",
     "nakiri alice",
@@ -4128,6 +4408,7 @@
     "nanashi mumei (emo)",
     "nanjo hikaru",
     "nao (mabinogi)",
+    "naoe riki",
     "naoi ayato",
     "naoki miki (gakkou gurashi!)",
     "naomi (girls und panzer)",
@@ -4143,12 +4424,14 @@
     "narusawa ryouka",
     "naruse shiroha",
     "nasus (league of legends)",
+    "natalia (idolmaster)",
     "nate (pokemon)",
     "natori sana",
     "natsu (blue archive)",
     "natsu dragneel",
     "natsu megumi",
     "natsuiro matsuri",
+    "natsuiro matsuri (1st costume)",
     "natsuiro matsuri (casual)",
     "natsuiro matsuri (matsuri's day off)",
     "natsuki (doki doki literature club)",
@@ -4159,9 +4442,11 @@
     "natsume rin",
     "natsuumi manatsu",
     "natu",
+    "navi",
     "nayuta (chainsaw man)",
     "nazrin",
     "ne-class heavy cruiser",
+    "neco-arc",
     "neeko (league of legends)",
     "neferpitou",
     "nefertari vivi",
@@ -4171,12 +4456,14 @@
     "neko (minato aqua)",
     "nekomata okayu",
     "nekomata okayu (1st costume)",
+    "nekomata okayu (3rd costume)",
     "nekomata okayu (casual)",
     "nekomata okayu (oversized shirt)",
     "nekomiya hinata",
     "nekomiya mana",
     "nekomura iroha",
     "nekomusume",
+    "nekomusume (gegege no kitarou 6)",
     "nekomusume (gegege no kitarou)",
     "nekonyaa (girls und panzer)",
     "nekota tsuna",
@@ -4224,9 +4511,11 @@
     "nijino yume",
     "nika nanaura",
     "nikaidou saki",
+    "nikka edvardine katajainen",
     "niko (blue archive)",
     "nilou (breeze of sabaa) (genshin impact)",
     "nilou (genshin impact)",
+    "nina (fire emblem)",
     "nina (girls und panzer)",
     "nina kosaka",
     "nina williams (tekken)",
@@ -4252,6 +4541,7 @@
     "nishizumi miho",
     "nisshin (kancolle)",
     "nitocris (fate)",
+    "nitocris (swimsuit assassin) (fate)",
     "nitta minami",
     "niwatari kutaka",
     "noa (blue archive)",
@@ -4298,6 +4588,7 @@
     "nyarlathotep (nyaruko-san)",
     "nyatasha nyanners",
     "nymph (sora no otoshimono)",
+    "nyon (cookie)",
     "nyotengu",
     "nyto (girls' frontline)",
     "oblivionis (bang dream!)",
@@ -4309,8 +4600,10 @@
     "oda nobunaga (koha-ace)",
     "oda nobunaga (maou avenger) (fate)",
     "oda nobunaga (swimsuit berserker) (fate)",
+    "oddish",
     "ogami sachi",
     "ogami sakura",
+    "ogasawara sachiko",
     "ogata chieri",
     "ogin (girls und panzer)",
     "ogino chihiro",
@@ -4326,6 +4619,7 @@
     "oka asahi",
     "okazaki tomoya",
     "okazaki ushio",
+    "okinami (kancolle)",
     "okita j. souji (fate)",
     "okita j. souji (first ascension) (fate)",
     "okita souji (fate)",
@@ -4335,11 +4629,13 @@
     "okita souji alter (first ascension) (fate)",
     "okita souji alter (second ascension) (fate)",
     "okkotsu yuta",
+    "okkotsu yuuta",
     "oktavia von seckendorff",
     "okumura haru",
     "okumura rin",
     "okumura yukio",
     "okunoda miyoi",
+    "okusawa misaki",
     "oleana (pokemon)",
     "olga marie animusphere",
     "olimar",
@@ -4347,6 +4643,7 @@
     "olivia (fire emblem)",
     "oma kokichi",
     "omaru polka",
+    "omaru polka (1st costume)",
     "omegamon",
     "omori (omori)",
     "one (cevio)",
@@ -4357,11 +4654,13 @@
     "onozuka komachi",
     "oogaki chiaki",
     "ooi (kancolle)",
+    "ooji mochizou",
     "ookami mio",
     "ookami mio (1st costume)",
     "ookami mio (casual)",
     "ookami mio (hololive summer 2019)",
     "ookuma satomi",
+    "oomori yuuko",
     "oomuro hanako",
     "oomuro sakurako",
     "oono aya",
@@ -4372,8 +4671,12 @@
     "ootori emu",
     "ooyodo (kancolle)",
     "oozora subaru",
+    "oozora subaru (1st costume)",
     "oozora subaru (casual)",
+    "oozora subaru (work)",
+    "ophelia (fire emblem)",
     "ophelia phamrsolone",
+    "optimus prime",
     "optimus prime (transformers)",
     "orange pekoe (girls und panzer)",
     "oreki houtarou",
@@ -4395,6 +4698,7 @@
     "oshino shinobu",
     "othinus",
     "otogi (blue archive)",
+    "otokura yuuki",
     "otomachi una",
     "otomachi una (talkex)",
     "otomune kozue",
@@ -4406,6 +4710,7 @@
     "ouro kronii",
     "ouro kronii (1st costume)",
     "ouro kronii (casual)",
+    "ousaka shizuku",
     "owada mondo",
     "owari akane",
     "oyama mahiro",
@@ -4416,6 +4721,7 @@
     "p-chan (ranma 1/2)",
     "p90 (girls' frontline)",
     "pa-15 (girls' frontline)",
+    "pachirisu",
     "paimon (genshin impact)",
     "paladin (final fantasy)",
     "palkia (pokemon)",
@@ -4448,6 +4754,7 @@
     "pekomon (usada pekora)",
     "pekoyama peko",
     "penelo (final fantasy xii)",
+    "peni parker",
     "penny (pokemon)",
     "penny polendina",
     "penpen",
@@ -4477,6 +4784,7 @@
     "pinkie pie",
     "pipimi",
     "piplup",
+    "piranha plant",
     "pit (kid icarus)",
     "piyotan (girls und panzer)",
     "plain doll",
@@ -4500,6 +4808,7 @@
     "poppi (xenoblade)",
     "popplio",
     "popuko",
+    "poring",
     "portland (azur lane)",
     "ppk (girls' frontline)",
     "pramanix (arknights)",
@@ -4507,6 +4816,7 @@
     "priestess (goblin slayer!)",
     "primal groudon (pokemon)",
     "primal kyogre (pokemon)",
+    "primarina",
     "princess bonnibel bubblegum",
     "princess daisy",
     "princess king boo",
@@ -4515,6 +4825,7 @@
     "princess peach",
     "princess serenity",
     "princess zelda",
+    "prinny",
     "prinz adalbert (azur lane)",
     "prinz eugen (kancolle)",
     "prinz heinrich (azur lane)",
@@ -4530,6 +4841,7 @@
     "provence (arknights)",
     "prushka",
     "psychic miku (project voltage)",
+    "psyduck",
     "psylocke",
     "puck (re:zero)",
     "puni (miku plus)",
@@ -4538,6 +4850,7 @@
     "purple heart (neptunia)",
     "purple sister",
     "puru two",
+    "puru-see (hoshizuki (seigetsu))",
     "pururut",
     "puyo (puyopuyo)",
     "pyonta",
@@ -4548,6 +4861,7 @@
     "qingyi (zenless zone zero)",
     "qiqi (genshin impact)",
     "quaquaval (pokemon)",
+    "quaxly",
     "quaxly (pokemon)",
     "quaxwell (pokemon)",
     "queen (persona 5)",
@@ -4588,6 +4902,7 @@
     "ray (yakusoku no neverland)",
     "raymond (animal crossing)",
     "raynare",
+    "rayquaza",
     "rayquaza (pokemon)",
     "razor (genshin impact)",
     "re-class battleship",
@@ -4602,6 +4917,8 @@
     "red xiii (ff7)",
     "reg (made in abyss)",
     "regensburg (azur lane)",
+    "regina (dokidoki! precure)",
+    "regu (made in abyss)",
     "reijo (blue archive)",
     "reimu endou",
     "reina (tekken)",
@@ -4614,6 +4931,7 @@
     "reisen (touhou bougetsushou)",
     "reisen udongein inaba",
     "reiuji utsuho",
+    "reiuji utsuho (bird)",
     "reizei mako",
     "rem (re:zero)",
     "remilia scarlet",
@@ -4663,6 +4981,7 @@
     "ringo (touhou)",
     "rinoa heartilly",
     "rio (blue archive)",
+    "riolu",
     "riolu (pokemon)",
     "rita mordio",
     "rita rossweisse",
@@ -4679,14 +4998,17 @@
     "robin (female) (seaside tactician) (fire emblem)",
     "robin (fire emblem)",
     "robin (male) (fire emblem)",
+    "roboco-san",
     "rock lee",
     "rodion (project moon)",
     "rodney (azur lane)",
+    "roger (guilty gear)",
     "rogue (x-men)",
     "rogue titan",
     "rokudou mukuro",
     "roland (project moon)",
     "roll (mega man)",
+    "roll caskett (mega man)",
     "rolo lamperouge",
     "roma (kancolle)",
     "romani archaman",
@@ -4707,6 +5029,7 @@
     "rouge the bat",
     "rover (wuthering waves)",
     "rowlet",
+    "roxas",
     "roxas (kingdom hearts)",
     "roxy migurdia",
     "roy (fire emblem)",
@@ -4727,6 +5050,7 @@
     "rune knight (ragnarok online)",
     "rupee (nikke)",
     "ruru amour",
+    "rx-78-2",
     "rx-78-2 gundam",
     "ryne waters",
     "ryoma (fire emblem)",
@@ -4778,6 +5102,7 @@
     "sailor venus",
     "saionji hiyoko",
     "saionji mary",
+    "sairenji haruna",
     "saito nicole",
     "saitou ena",
     "sajo yukimi",
@@ -4828,9 +5153,11 @@
     "salome (one piece)",
     "sam (honkai: star rail)",
     "samidare (kancolle)",
+    "samson (skullgirls)",
     "samuel b. roberts (kancolle)",
     "samui (naruto)",
     "samus aran",
+    "san (mononoke hime)",
     "san diego (azur lane)",
     "sanada akihiko",
     "sanageyama uzu",
@@ -4846,6 +5173,7 @@
     "saori (blue archive)",
     "saori (dress) (blue archive)",
     "saori (swimsuit) (blue archive)",
+    "saotome alto",
     "saotome ranma",
     "saotome ranma (female)",
     "saotome ranma (male)",
@@ -4863,6 +5191,7 @@
     "sasaki saku (1st costume)",
     "sasasegawa sasami",
     "sasha blouse",
+    "sasha braus",
     "satake minako",
     "satanichia kurumizawa mcdowell",
     "saten ruiko",
@@ -4875,6 +5204,7 @@
     "satou lilly",
     "satsuki (blue archive)",
     "satsuki (kancolle)",
+    "satsuki kai ni (kancolle)",
     "sawa azusa",
     "sawachika eri",
     "sawada tsunayoshi",
@@ -4906,10 +5236,12 @@
     "sceptile (pokemon)",
     "schezo wegey",
     "scholar (final fantasy)",
+    "schwertkreuz",
     "scirocco (kancolle)",
     "scorbunny",
     "sebastian piyodore",
     "secelia dote",
+    "seele (alter ego)",
     "seele (honkai: star rail)",
     "seele vollerei",
     "seele vollerei (herrscher of rebirth)",
@@ -4931,6 +5263,7 @@
     "selen tatsuki",
     "selene (pokemon)",
     "selim bradley (fullmetal alchemist)",
+    "seliph (fire emblem)",
     "selkie (fire emblem)",
     "selphie tilmitt",
     "selvaria bles",
@@ -4960,6 +5293,7 @@
     "servant (danganronpa)",
     "sessyoin kiara (lily)",
     "seta kaoru",
+    "seto kousuke",
     "setsuna f. seiei",
     "severa (fire emblem)",
     "sf-a2 miki",
@@ -4973,6 +5307,7 @@
     "shampoo (ranma 1/2)",
     "shana",
     "shanghai doll",
+    "shannon (umineko)",
     "shantae",
     "sharena (fire emblem)",
     "sharkboo (zenless zone zero)",
@@ -4986,6 +5321,7 @@
     "sherlock shellingford",
     "sheryl nome",
     "shiba miyuki",
+    "shibuki ran",
     "shibuya kanon",
     "shibuya rin",
     "shidare hotaru",
@@ -5019,13 +5355,16 @@
     "shimada arisu",
     "shimakaze (azur lane)",
     "shimakaze (kancolle)",
+    "shimakaze-kun",
     "shimamura hougetsu",
     "shimamura uzuki",
+    "shimazu yoshino",
     "shimizu kiyoko",
     "shimura shinpachi",
     "shimura shinpachi (gin tama)",
     "shimushu (kancolle)",
     "shin'you (kancolle)",
+    "shindou takuto",
     "shinguji korekiyo",
     "shinguuji sakura",
     "shinigami (rain code)",
@@ -5048,6 +5387,7 @@
     "shiori novella",
     "shiori novella (1st costume)",
     "shiota nagisa",
+    "shirabe ako",
     "shirahoshi",
     "shirai kuroko",
     "shirai yuyu",
@@ -5071,7 +5411,10 @@
     "shirasaka koume",
     "shirase sakuya",
     "shiratsuyu (kancolle)",
+    "shiratsuyu kai ni (kancolle)",
     "shirayuki (kancolle)",
+    "shirayuki chiyo",
+    "shirayuki hime",
     "shirayuki hime (hasky)",
     "shirayuki mizore",
     "shirayuki ren",
@@ -5117,7 +5460,9 @@
     "shun (small) (blue archive)",
     "shuro (blue archive)",
     "shuten douji (fate)",
+    "shuten douji (first ascension) (fate)",
     "shuten douji (halloween caster) (fate)",
+    "shuu (inazuma eleven)",
     "shylily",
     "siberian chipmunk (kemono friends)",
     "sideroca (arknights)",
@@ -5140,9 +5485,12 @@
     "sinon",
     "sinon (sao-alo)",
     "sion eltnam (type-moon)",
+    "sion eltnam atlasia",
     "sirin",
     "sirius symboli (umamusume)",
+    "siro (dennou shoujo youtuber siro)",
     "sister claire",
+    "sister claire (1st costume)",
     "sitonai (fate)",
     "sky striker ace - raye",
     "skyfire (arknights)",
@@ -5151,7 +5499,9 @@
     "slime (genshin impact)",
     "small-clawed otter (kemono friends)",
     "smart falcon (umamusume)",
+    "smol ame",
     "snivy",
+    "snorlax",
     "snorlax (pokemon)",
     "sobble",
     "societte (granblue fantasy)",
@@ -5204,6 +5554,7 @@
     "spas-12 (girls' frontline)",
     "special week (special dreamer) (umamusume)",
     "special week (umamusume)",
+    "spicy nun (diva)",
     "spider-gwen",
     "spider-man",
     "spider-man (miles morales ver)",
@@ -5370,6 +5721,7 @@
     "takara miyuki",
     "takarada rikka",
     "takasaki yu",
+    "takasaki yuu",
     "takasu ryuuji",
     "takatsuki yayoi",
     "takayama haruka",
@@ -5402,6 +5754,7 @@
     "tamamura gunzo",
     "tamura hiyori",
     "tamura manami",
+    "tamura yuri",
     "tamura yuri (watashi ga motenai no wa dou kangaetemo omaera ga warui!)",
     "tana (fire emblem)",
     "tanaka asuka",
@@ -5409,6 +5762,7 @@
     "tanaka kotoha",
     "tanaka mako",
     "tanaka mamimi",
+    "tanamachi kaoru",
     "tanba akari",
     "tanemura koyori",
     "taneshima popura",
@@ -5416,6 +5770,8 @@
     "tanikaze (kancolle)",
     "tanino gimlet (umamusume)",
     "tanned cirno",
+    "tanya degurechaff",
+    "taokaka",
     "tar-21 (girls' frontline)",
     "tarnished (elden ring)",
     "tashkent (kancolle)",
@@ -5427,6 +5783,7 @@
     "tatsuta kai ni (kancolle)",
     "tayuya (naruto)",
     "teana lanster",
+    "tear grants",
     "tear grants (tales of abyss)",
     "tedeza rize",
     "teireida mai",
@@ -5445,6 +5802,7 @@
     "tenma tsukasa",
     "tennoji rina",
     "tennouboshi uzume",
+    "tennouji rina",
     "tennouji rina (love live!)",
     "tenryuu (kancolle)",
     "tenryuu (swimsuit) (kancolle)",
@@ -5497,7 +5855,9 @@
     "togashi yuuta",
     "togata mirio",
     "togawa sakiko",
+    "togepi",
     "tohno akiha",
+    "tohno shiki",
     "tohsaka rin",
     "tohsaka tokiomi",
     "tojo kirumi",
@@ -5512,6 +5872,7 @@
     "tokiha mai",
     "tokiko (touhou)",
     "tokino sora",
+    "tokino sora (1st costume)",
     "tokisaki kurumi",
     "tokisaki kurumi (spirit)",
     "tokisaki mio (niliu chahui)",
@@ -5535,6 +5896,7 @@
     "tomoe mami (magical girl)",
     "tomori nao",
     "tone (kancolle)",
+    "tone kai ni (kancolle)",
     "tony tony chopper",
     "toon link",
     "toon zelda",
@@ -5548,10 +5910,12 @@
     "tosa (azur lane)",
     "tosen jordan (umamusume)",
     "toshinou kyouko",
+    "totodile",
     "totoki airi",
     "totooria helmold",
     "totoro",
     "totsuka saika",
+    "toudou shimako",
     "tougou mimori",
     "touhoku itako",
     "touhoku kiritan",
@@ -5568,10 +5932,12 @@
     "toyosatomimi no miko",
     "trailblazer (honkai: star rail)",
     "transcend (umamusume)",
+    "treecko",
     "trieste (azur lane)",
     "trish (devil may cry)",
     "trish una",
     "trisha elric (fullmetal alchemist)",
+    "tron bonne (mega man)",
     "trotter (honkai: star rail)",
     "trucy wright",
     "trunks (dragon ball)",
@@ -5583,6 +5949,7 @@
     "tsuji renta",
     "tsujino akari",
     "tsukikage yuri",
+    "tsukimiya ayu",
     "tsukimiya ayu (kanon)",
     "tsukimura suzuka",
     "tsukimura temari",
@@ -5594,6 +5961,7 @@
     "tsukishiro yanagi",
     "tsukumo benben",
     "tsukumo sana",
+    "tsukumo sana (1st costume)",
     "tsukumo yatsuhashi",
     "tsukuyo (blue archive)",
     "tsukuyomi ai",
@@ -5605,6 +5973,7 @@
     "tsumura tokiko",
     "tsunetsuki matoi",
     "tsunomaki watame",
+    "tsunomaki watame (1st costume)",
     "tsurugi (blue archive)",
     "tsurumaki kokoro",
     "tsurumaki maki",
@@ -5618,6 +5987,7 @@
     "tsuyuri kumin",
     "tsuyuzaki mahiru",
     "turn a gundam (mobile suit)",
+    "turtwig",
     "tweyen (granblue fantasy)",
     "twilight sparkle",
     "twin turbo (blast mode! turbo engine) (umamusume)",
@@ -5662,6 +6032,7 @@
     "unicorn gundam",
     "unzan",
     "urakaze (kancolle)",
+    "uranami (kancolle)",
     "uraraka ochaco",
     "uraraka ochako",
     "urbosa",
@@ -5673,6 +6044,7 @@
     "uruha rushia (school uniform)",
     "urushibara luka",
     "urushibara ruka (steins gate)",
+    "usa-chan (idolmaster)",
     "usada hikaru",
     "usada pekora",
     "usada pekora (1st costume)",
@@ -5709,6 +6081,7 @@
     "vampire (azur lane)",
     "vampy",
     "van arkride",
+    "van gogh (fate)",
     "vanilla (nekopara)",
     "vaporeon",
     "vector (girls' frontline)",
@@ -5719,16 +6092,17 @@
     "venti (archon) (genshin impact)",
     "venti (genshin impact)",
     "ventus (kingdom hearts)",
+    "venusaur",
     "vera (pgr)",
     "vergil (devil may cry)",
     "vermeil (arknights)",
     "verniy (kancolle)",
     "veronica (fire emblem)",
     "vert (neptunia)",
-    "vertin (reverse 1999)",
     "verxina (umamusume)",
     "vestia zeta",
     "veyle (fire emblem)",
+    "vf-1",
     "victor (pokemon)",
     "victorica de blois",
     "victorious (azur lane)",
@@ -5755,7 +6129,9 @@
     "vox akuma",
     "vsk-94 (girls' frontline)",
     "vulpix",
+    "vyrn (granblue fantasy)",
     "wa2000 (girls' frontline)",
+    "waddle dee",
     "wakaba (kancolle)",
     "wakaba mutsumi",
     "wakamo (blue archive)",
@@ -5785,12 +6161,14 @@
     "weiss schnee",
     "welrod mkii (girls' frontline)",
     "wendy marvell",
+    "whimsicott",
     "whip (kof)",
     "whisperain (arknights)",
     "white heart (neptunia)",
     "white len (tsukihime)",
     "white lion (kemono friends)",
     "white mage",
+    "white rabbit (alice in wonderland)",
     "white rhinoceros (kemono friends)",
     "whitesmith (ragnarok online)",
     "wicke (pokemon)",
@@ -5801,6 +6179,7 @@
     "willard h. wright",
     "win variation (umamusume)",
     "winged lion (dungeon meshi)",
+    "wingull",
     "winning ticket (umamusume)",
     "winry rockbell",
     "wishiwashi (solo)",
@@ -5815,6 +6194,8 @@
     "wolverine (x-men)",
     "wonder acute (umamusume)",
     "wonder woman",
+    "wooloo",
+    "wooper",
     "wriggle nightbug",
     "wu zetian (fate)",
     "x (mega man)",
@@ -5842,6 +6223,7 @@
     "yagami light",
     "yagami makino",
     "yagami taichi",
+    "yagen toushirou",
     "yagyu (senran kagura)",
     "yahagi (kancolle)",
     "yahagi kai ni (kancolle)",
@@ -5874,7 +6256,10 @@
     "yamato takeru (fate)",
     "yamato-no-kami yasusada",
     "yamcha",
+    "yami yuugi",
+    "yamper",
     "yan vismok",
+    "yana (chihuri)",
     "yanfei (genshin impact)",
     "yang xiao long",
     "yangyang (wuthering waves)",
@@ -5887,9 +6272,11 @@
     "yashajin ai",
     "yatadera narumi",
     "yatogami tohka",
+    "yatogami tooka",
     "yayoi (kancolle)",
     "yazawa nico",
     "yellow (pokemon)",
+    "yellow pikmin",
     "yesod (project moon)",
     "yi sang (project moon)",
     "yin (darker than black)",
@@ -6011,14 +6398,17 @@
     "yuuki (sao)",
     "yuuki aoi",
     "yuuki haru",
+    "yuuki juudai",
     "yuuki makoto (persona 3)",
     "yuuki mikan",
     "yuuki setsuna (love live!)",
     "yuuki yuuna",
+    "yuuno scrya",
     "yuuri (shoujo shuumatsu ryokou)",
     "yuzu (blue archive)",
     "yuzuhara konomi",
     "yuzuki choco",
+    "yuzuki choco (1st costume)",
     "yuzuki roa",
     "yuzuki yukari",
     "yuzuki yukari (shizuku)",
@@ -6060,9 +6450,11 @@
     "zima (arknights)",
     "zinogre (monster hunter)",
     "zooey (granblue fantasy)",
+    "zorua",
     "zuifeng tenkai",
     "zuihou (kancolle)",
     "zuikaku (kancolle)",
+    "zuikaku kai ni (kancolle)",
     "zundamon"
   ],
   "renamed": {
@@ -129167,6 +129559,31 @@
       "zh": "動畫老師"
     },
     {
+      "tag": "vertin (reverse 1999)",
+      "section": "subject",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_reverse_1999",
+      "series": "reverse:1999",
+      "cardPositive": "1girl, vertin (reverse 1999), reverse:1999, masterpiece, best quality, amazing quality",
+      "needs": [
+        "female"
+      ],
+      "zh": "維爾汀"
+    },
+    {
       "tag": "baltimore (after-school ace) (azur lane)",
       "section": "subject",
       "gate": "female",
@@ -130066,6 +130483,4435 @@
         "female"
       ],
       "zh": "幽香98"
+    },
+    {
+      "tag": "matsuno ichimatsu",
+      "section": "subject",
+      "gate": "male",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_osomatsu_series",
+      "series": "osomatsu (series)",
+      "cardPositive": "1boy, matsuno ichimatsu, osomatsu (series), masterpiece, best quality, amazing quality",
+      "needs": [
+        "male"
+      ],
+      "zh": "松野一松"
+    },
+    {
+      "tag": "okamisty",
+      "section": "subject",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_touhou",
+      "series": "touhou",
+      "cardPositive": "1girl, okamisty, touhou, masterpiece, best quality, amazing quality",
+      "needs": [
+        "female"
+      ],
+      "zh": "米斯蒂婭·蘿蕾萊"
+    },
+    {
+      "tag": "su-san",
+      "section": "subject",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_touhou",
+      "series": "touhou",
+      "cardPositive": "1girl, su-san, touhou, masterpiece, best quality, amazing quality",
+      "needs": [
+        "female"
+      ],
+      "zh": "鈴蘭人偶"
+    },
+    {
+      "tag": "minamoto no raikou (swimsuit lancer) (fate)",
+      "section": "subject",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_fate_series",
+      "series": "fate (series)",
+      "cardPositive": "1girl, minamoto no raikou (swimsuit lancer) (fate), fate (series), masterpiece, best quality, amazing quality",
+      "needs": [
+        "female"
+      ],
+      "zh": "源賴光"
+    },
+    {
+      "tag": "saniwa (touken ranbu)",
+      "section": "subject",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_touken_ranbu",
+      "series": "touken ranbu",
+      "cardPositive": "1girl, saniwa (touken ranbu), touken ranbu, masterpiece, best quality, amazing quality",
+      "needs": [
+        "female"
+      ],
+      "zh": "審神者"
+    },
+    {
+      "tag": "horikawa kunihiro",
+      "section": "subject",
+      "gate": "male",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_touken_ranbu",
+      "series": "touken ranbu",
+      "cardPositive": "1boy, horikawa kunihiro, touken ranbu, masterpiece, best quality, amazing quality",
+      "needs": [
+        "male"
+      ],
+      "zh": "堀川國廣"
+    },
+    {
+      "tag": "japan (hetalia)",
+      "section": "subject",
+      "gate": "male",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_axis_powers_hetalia",
+      "series": "axis powers hetalia",
+      "cardPositive": "1boy, japan (hetalia), axis powers hetalia, masterpiece, best quality, amazing quality",
+      "needs": [
+        "male"
+      ],
+      "zh": "日本（義呆利）"
+    },
+    {
+      "tag": "cu chulainn alter (fate)",
+      "section": "subject",
+      "gate": "male",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_fate_series",
+      "series": "fate (series)",
+      "cardPositive": "1boy, cu chulainn alter (fate), fate (series), masterpiece, best quality, amazing quality",
+      "needs": [
+        "male"
+      ],
+      "zh": "庫丘林〔Alter〕"
+    },
+    {
+      "tag": "employee (project moon)",
+      "section": "subject",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_project_moon",
+      "series": "project moon",
+      "cardPositive": "1girl, employee (project moon), project moon, masterpiece, best quality, amazing quality",
+      "needs": [
+        "female"
+      ],
+      "zh": "職員"
+    },
+    {
+      "tag": "zabaniyya (housamo)",
+      "section": "subject",
+      "gate": "male",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_tokyo_afterschool_summoners",
+      "series": "tokyo afterschool summoners",
+      "cardPositive": "1boy, zabaniyya (housamo), tokyo afterschool summoners, masterpiece, best quality, amazing quality",
+      "needs": [
+        "male"
+      ],
+      "zh": "扎巴尼亞"
+    },
+    {
+      "tag": "priest (ragnarok online)",
+      "section": "subject",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_ragnarok_online",
+      "series": "ragnarok online",
+      "cardPositive": "1girl, priest (ragnarok online), ragnarok online, masterpiece, best quality, amazing quality",
+      "needs": [
+        "female"
+      ],
+      "zh": "祭司（RO）"
+    },
+    {
+      "tag": "caitlyn (league of legends)",
+      "section": "subject",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_league_of_legends",
+      "series": "league of legends",
+      "cardPositive": "1girl, caitlyn (league of legends), league of legends, masterpiece, best quality, amazing quality",
+      "altOf": "caitlyn (league)",
+      "needs": [
+        "female"
+      ],
+      "zh": "凱特琳"
+    },
+    {
+      "tag": "kinu (kancolle)",
+      "section": "subject",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_kantai_collection",
+      "series": "kantai collection",
+      "cardPositive": "1girl, kinu (kancolle), kantai collection, masterpiece, best quality, amazing quality",
+      "needs": [
+        "female"
+      ],
+      "zh": "鬼怒"
+    },
+    {
+      "tag": "sado (kancolle)",
+      "section": "subject",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_kantai_collection",
+      "series": "kantai collection",
+      "cardPositive": "1girl, sado (kancolle), kantai collection, masterpiece, best quality, amazing quality",
+      "needs": [
+        "female"
+      ],
+      "zh": "佐渡"
+    },
+    {
+      "tag": "vane (granblue fantasy)",
+      "section": "subject",
+      "gate": "male",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_granblue_fantasy",
+      "series": "granblue fantasy",
+      "cardPositive": "1boy, vane (granblue fantasy), granblue fantasy, masterpiece, best quality, amazing quality",
+      "needs": [
+        "male"
+      ],
+      "zh": "范恩"
+    },
+    {
+      "tag": "wakan tanka",
+      "section": "subject",
+      "gate": "male",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_tokyo_afterschool_summoners",
+      "series": "tokyo afterschool summoners",
+      "cardPositive": "1boy, wakan tanka, tokyo afterschool summoners, masterpiece, best quality, amazing quality",
+      "needs": [
+        "male"
+      ],
+      "zh": "瓦坎·坦卡"
+    },
+    {
+      "tag": "galo thymos",
+      "section": "subject",
+      "gate": "male",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_promare",
+      "series": "promare",
+      "cardPositive": "1boy, galo thymos, promare, masterpiece, best quality, amazing quality",
+      "needs": [
+        "male"
+      ],
+      "zh": "加洛·提莫斯"
+    },
+    {
+      "tag": "vi (league of legends)",
+      "section": "subject",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_league_of_legends",
+      "series": "league of legends",
+      "cardPositive": "1girl, vi (league of legends), league of legends, masterpiece, best quality, amazing quality",
+      "altOf": "vi (league)",
+      "needs": [
+        "female"
+      ],
+      "zh": "菲艾"
+    },
+    {
+      "tag": "keith goodman",
+      "section": "subject",
+      "gate": "male",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_tiger_bunny",
+      "series": "tiger & bunny",
+      "cardPositive": "1boy, keith goodman, tiger & bunny, masterpiece, best quality, amazing quality",
+      "needs": [
+        "male"
+      ],
+      "zh": "基斯·古德曼"
+    },
+    {
+      "tag": "matsuwa (kancolle)",
+      "section": "subject",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_kantai_collection",
+      "series": "kantai collection",
+      "cardPositive": "1girl, matsuwa (kancolle), kantai collection, masterpiece, best quality, amazing quality",
+      "needs": [
+        "female"
+      ],
+      "zh": "松輪"
+    },
+    {
+      "tag": "himemushi momoyo",
+      "section": "subject",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_touhou",
+      "series": "touhou",
+      "cardPositive": "1girl, himemushi momoyo, touhou, masterpiece, best quality, amazing quality",
+      "needs": [
+        "female"
+      ],
+      "zh": "姬蟲百百世"
+    },
+    {
+      "tag": "lord el-melloi ii",
+      "section": "subject",
+      "gate": "male",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_fate_series",
+      "series": "fate (series)",
+      "cardPositive": "1boy, lord el-melloi ii, fate (series), masterpiece, best quality, amazing quality",
+      "needs": [
+        "male"
+      ],
+      "zh": "埃爾梅羅二世"
+    },
+    {
+      "tag": "hunter (bloodborne)",
+      "section": "subject",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_bloodborne",
+      "series": "bloodborne",
+      "cardPositive": "1girl, hunter (bloodborne), bloodborne, masterpiece, best quality, amazing quality",
+      "needs": [
+        "female"
+      ],
+      "zh": "獵人"
+    },
+    {
+      "tag": "jill stingray",
+      "section": "subject",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_va_11_hall_a",
+      "series": "va-11 hall-a",
+      "cardPositive": "1girl, jill stingray, va-11 hall-a, masterpiece, best quality, amazing quality",
+      "needs": [
+        "female"
+      ],
+      "zh": "吉爾·斯汀雷"
+    },
+    {
+      "tag": "cu chulainn (caster) (fate)",
+      "section": "subject",
+      "gate": "male",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_fate_series",
+      "series": "fate (series)",
+      "cardPositive": "1boy, cu chulainn (caster) (fate), fate (series), masterpiece, best quality, amazing quality",
+      "needs": [
+        "male"
+      ],
+      "zh": "庫丘林（術士）"
+    },
+    {
+      "tag": "sans",
+      "section": "subject",
+      "gate": "male",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_undertale",
+      "series": "undertale",
+      "cardPositive": "1boy, sans, undertale, masterpiece, best quality, amazing quality",
+      "needs": [
+        "male"
+      ],
+      "zh": "Sans"
+    },
+    {
+      "tag": "neo politan",
+      "section": "subject",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_rwby",
+      "series": "rwby",
+      "cardPositive": "1girl, neo politan, rwby, masterpiece, best quality, amazing quality",
+      "needs": [
+        "female"
+      ],
+      "zh": "尼歐波麗坦"
+    },
+    {
+      "tag": "rainbow mika",
+      "section": "subject",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_street_fighter",
+      "series": "street fighter",
+      "cardPositive": "1girl, rainbow mika, street fighter, masterpiece, best quality, amazing quality",
+      "needs": [
+        "female"
+      ],
+      "zh": "彩虹米卡"
+    },
+    {
+      "tag": "yang guifei (second ascension) (fate)",
+      "section": "subject",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_fate_series",
+      "series": "fate (series)",
+      "cardPositive": "1girl, yang guifei (second ascension) (fate), fate (series), masterpiece, best quality, amazing quality",
+      "needs": [
+        "female"
+      ],
+      "zh": "楊貴妃（第二再臨）"
+    },
+    {
+      "tag": "fighter (granblue fantasy)",
+      "section": "subject",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_granblue_fantasy",
+      "series": "granblue fantasy",
+      "cardPositive": "1girl, fighter (granblue fantasy), granblue fantasy, masterpiece, best quality, amazing quality",
+      "needs": [
+        "female"
+      ],
+      "zh": "格鬥家"
+    },
+    {
+      "tag": "guzma (pokemon)",
+      "section": "subject",
+      "gate": "male",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_pokemon",
+      "series": "pokemon",
+      "cardPositive": "1boy, guzma (pokemon), pokemon, masterpiece, best quality, amazing quality",
+      "needs": [
+        "male"
+      ],
+      "zh": "古茲馬"
+    },
+    {
+      "tag": "soap (modern warfare 2)",
+      "section": "subject",
+      "gate": "male",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_call_of_duty_modern_warfare_2",
+      "series": "call of duty: modern warfare 2",
+      "cardPositive": "1boy, soap (modern warfare 2), call of duty: modern warfare 2, masterpiece, best quality, amazing quality",
+      "needs": [
+        "male"
+      ],
+      "zh": "肥皂·麥克塔維什"
+    },
+    {
+      "tag": "senji muramasa (fate)",
+      "section": "subject",
+      "gate": "male",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_fate_series",
+      "series": "fate (series)",
+      "cardPositive": "1boy, senji muramasa (fate), fate (series), masterpiece, best quality, amazing quality",
+      "needs": [
+        "male"
+      ],
+      "zh": "千子村正"
+    },
+    {
+      "tag": "tsuchinoko (kemono friends)",
+      "section": "subject",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_kemono_friends",
+      "series": "kemono friends",
+      "cardPositive": "1girl, tsuchinoko (kemono friends), kemono friends, masterpiece, best quality, amazing quality",
+      "needs": [
+        "female"
+      ],
+      "zh": "小錘蛇"
+    },
+    {
+      "tag": "achilles (fate)",
+      "section": "subject",
+      "gate": "male",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_fate_series",
+      "series": "fate (series)",
+      "cardPositive": "1boy, achilles (fate), fate (series), masterpiece, best quality, amazing quality",
+      "needs": [
+        "male"
+      ],
+      "zh": "阿基里斯"
+    },
+    {
+      "tag": "lightning farron",
+      "section": "subject",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_final_fantasy",
+      "series": "final fantasy",
+      "cardPositive": "1girl, lightning farron, final fantasy, masterpiece, best quality, amazing quality",
+      "needs": [
+        "female"
+      ],
+      "zh": "雷光"
+    },
+    {
+      "tag": "avatar (wow)",
+      "section": "subject",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_warcraft",
+      "series": "warcraft",
+      "cardPositive": "1girl, avatar (wow), warcraft, masterpiece, best quality, amazing quality",
+      "needs": [
+        "female"
+      ],
+      "zh": "玩家角色"
+    },
+    {
+      "tag": "jin kisaragi",
+      "section": "subject",
+      "gate": "male",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_blazblue",
+      "series": "blazblue",
+      "cardPositive": "1boy, jin kisaragi, blazblue, masterpiece, best quality, amazing quality",
+      "needs": [
+        "male"
+      ],
+      "zh": "神·奇沙基"
+    },
+    {
+      "tag": "garry (ib)",
+      "section": "subject",
+      "gate": "male",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_ib_kouri",
+      "series": "ib (kouri)",
+      "cardPositive": "1boy, garry (ib), ib (kouri), masterpiece, best quality, amazing quality",
+      "needs": [
+        "male"
+      ],
+      "zh": "加里"
+    },
+    {
+      "tag": "ken masters",
+      "section": "subject",
+      "gate": "male",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_street_fighter",
+      "series": "street fighter",
+      "cardPositive": "1boy, ken masters, street fighter, masterpiece, best quality, amazing quality",
+      "needs": [
+        "male"
+      ],
+      "zh": "肯·馬斯達斯"
+    },
+    {
+      "tag": "edmond dantes (fate)",
+      "section": "subject",
+      "gate": "male",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_fate_series",
+      "series": "fate (series)",
+      "cardPositive": "1boy, edmond dantes (fate), fate (series), masterpiece, best quality, amazing quality",
+      "needs": [
+        "male"
+      ],
+      "zh": "愛德蒙·唐泰斯"
+    },
+    {
+      "tag": "gawain (fate)",
+      "section": "subject",
+      "gate": "male",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_fate_series",
+      "series": "fate (series)",
+      "cardPositive": "1boy, gawain (fate), fate (series), masterpiece, best quality, amazing quality",
+      "needs": [
+        "male"
+      ],
+      "zh": "高文"
+    },
+    {
+      "tag": "jeanne d'arc alter (avenger) (third ascension) (fate)",
+      "section": "subject",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_fate_series",
+      "series": "fate (series)",
+      "cardPositive": "1girl, jeanne d'arc alter (avenger) (third ascension) (fate), fate (series), masterpiece, best quality, amazing quality",
+      "needs": [
+        "female"
+      ],
+      "zh": "貞德〔Alter〕"
+    },
+    {
+      "tag": "saber alter (ver. shinjuku 1999) (fate)",
+      "section": "subject",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_fate_series",
+      "series": "fate (series)",
+      "cardPositive": "1girl, saber alter (ver. shinjuku 1999) (fate), fate (series), masterpiece, best quality, amazing quality",
+      "needs": [
+        "female"
+      ],
+      "zh": "阿爾托莉雅〔Alter〕"
+    },
+    {
+      "tag": "brynhildr (fate)",
+      "section": "subject",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_fate_series",
+      "series": "fate (series)",
+      "cardPositive": "1girl, brynhildr (fate), fate (series), masterpiece, best quality, amazing quality",
+      "needs": [
+        "female"
+      ],
+      "zh": "布倫希爾德"
+    },
+    {
+      "tag": "lance (pokemon)",
+      "section": "subject",
+      "gate": "male",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_pokemon",
+      "series": "pokemon",
+      "cardPositive": "1boy, lance (pokemon), pokemon, masterpiece, best quality, amazing quality",
+      "needs": [
+        "male"
+      ],
+      "zh": "阿渡"
+    },
+    {
+      "tag": "klein moretti",
+      "section": "subject",
+      "gate": "male",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_lord_of_the_mysteries",
+      "series": "lord of the mysteries",
+      "cardPositive": "1boy, klein moretti, lord of the mysteries, masterpiece, best quality, amazing quality",
+      "needs": [
+        "male"
+      ],
+      "zh": "克萊恩·莫雷蒂"
+    },
+    {
+      "tag": "ichigo hitofuri",
+      "section": "subject",
+      "gate": "male",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_touken_ranbu",
+      "series": "touken ranbu",
+      "cardPositive": "1boy, ichigo hitofuri, touken ranbu, masterpiece, best quality, amazing quality",
+      "needs": [
+        "male"
+      ],
+      "zh": "一期一振"
+    },
+    {
+      "tag": "i-13 (kancolle)",
+      "section": "subject",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_kantai_collection",
+      "series": "kantai collection",
+      "cardPositive": "1girl, i-13 (kancolle), kantai collection, masterpiece, best quality, amazing quality",
+      "needs": [
+        "female"
+      ],
+      "zh": "伊13"
+    },
+    {
+      "tag": "bazett fraga mcremitz",
+      "section": "subject",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_fate_series",
+      "series": "fate (series)",
+      "cardPositive": "1girl, bazett fraga mcremitz, fate (series), masterpiece, best quality, amazing quality",
+      "needs": [
+        "female"
+      ],
+      "zh": "巴婕特·弗拉加·馬克雷密斯"
+    },
+    {
+      "tag": "ri-class heavy cruiser",
+      "section": "subject",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_kantai_collection",
+      "series": "kantai collection",
+      "cardPositive": "1girl, ri-class heavy cruiser, kantai collection, masterpiece, best quality, amazing quality",
+      "needs": [
+        "female"
+      ],
+      "zh": "利級重巡"
+    },
+    {
+      "tag": "natori (kancolle)",
+      "section": "subject",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_kantai_collection",
+      "series": "kantai collection",
+      "cardPositive": "1girl, natori (kancolle), kantai collection, masterpiece, best quality, amazing quality",
+      "needs": [
+        "female"
+      ],
+      "zh": "名取"
+    },
+    {
+      "tag": "yuri sakazaki",
+      "section": "subject",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_the_king_of_fighters",
+      "series": "the king of fighters",
+      "cardPositive": "1girl, yuri sakazaki, the king of fighters, masterpiece, best quality, amazing quality",
+      "needs": [
+        "female"
+      ],
+      "zh": "坂崎百合"
+    },
+    {
+      "tag": "phosphophyllite (ll)",
+      "section": "subject",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_houseki_no_kuni",
+      "series": "houseki no kuni",
+      "cardPositive": "1girl, phosphophyllite (ll), houseki no kuni, masterpiece, best quality, amazing quality",
+      "needs": [
+        "female"
+      ],
+      "zh": "磷葉石"
+    },
+    {
+      "tag": "bianka durandal ataegina",
+      "section": "subject",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_honkai_series",
+      "series": "honkai (series)",
+      "cardPositive": "1girl, bianka durandal ataegina, honkai (series), masterpiece, best quality, amazing quality",
+      "needs": [
+        "female"
+      ],
+      "zh": "比安卡·阿塔吉娜"
+    },
+    {
+      "tag": "crypto (apex legends)",
+      "section": "subject",
+      "gate": "male",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_apex_legends",
+      "series": "apex legends",
+      "cardPositive": "1boy, crypto (apex legends), apex legends, masterpiece, best quality, amazing quality",
+      "needs": [
+        "male"
+      ],
+      "zh": "密客"
+    },
+    {
+      "tag": "rei (pokemon)",
+      "section": "subject",
+      "gate": "male",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_pokemon",
+      "series": "pokemon",
+      "cardPositive": "1boy, rei (pokemon), pokemon, masterpiece, best quality, amazing quality",
+      "needs": [
+        "male"
+      ],
+      "zh": "特爾"
+    },
+    {
+      "tag": "heracles (fate)",
+      "section": "subject",
+      "gate": "male",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_fate_series",
+      "series": "fate (series)",
+      "cardPositive": "1boy, heracles (fate), fate (series), masterpiece, best quality, amazing quality",
+      "needs": [
+        "male"
+      ],
+      "zh": "海格力斯"
+    },
+    {
+      "tag": "roxie (pokemon)",
+      "section": "subject",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_pokemon",
+      "series": "pokemon",
+      "cardPositive": "1girl, roxie (pokemon), pokemon, masterpiece, best quality, amazing quality",
+      "needs": [
+        "female"
+      ],
+      "zh": "霍米加"
+    },
+    {
+      "tag": "jeanne d'arc (swimsuit archer) (first ascension) (fate)",
+      "section": "subject",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_fate_series",
+      "series": "fate (series)",
+      "cardPositive": "1girl, jeanne d'arc (swimsuit archer) (first ascension) (fate), fate (series), masterpiece, best quality, amazing quality",
+      "needs": [
+        "female"
+      ],
+      "zh": "貞德（泳裝弓兵・第一再臨）"
+    },
+    {
+      "tag": "sand cat (kemono friends)",
+      "section": "subject",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_kemono_friends",
+      "series": "kemono friends",
+      "cardPositive": "1girl, sand cat (kemono friends), kemono friends, masterpiece, best quality, amazing quality",
+      "needs": [
+        "female"
+      ],
+      "zh": "沙貓"
+    },
+    {
+      "tag": "bartz klauser",
+      "section": "subject",
+      "gate": "male",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_final_fantasy",
+      "series": "final fantasy",
+      "cardPositive": "1boy, bartz klauser, final fantasy, masterpiece, best quality, amazing quality",
+      "needs": [
+        "male"
+      ],
+      "zh": "巴茲·克勞澤"
+    },
+    {
+      "tag": "evelynn (league of legends)",
+      "section": "subject",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_league_of_legends",
+      "series": "league of legends",
+      "cardPositive": "1girl, evelynn (league of legends), league of legends, masterpiece, best quality, amazing quality",
+      "needs": [
+        "female"
+      ],
+      "zh": "伊芙琳（英雄聯盟）"
+    },
+    {
+      "tag": "shokudaikiri mitsutada",
+      "section": "subject",
+      "gate": "male",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_touken_ranbu",
+      "series": "touken ranbu",
+      "cardPositive": "1boy, shokudaikiri mitsutada, touken ranbu, masterpiece, best quality, amazing quality",
+      "needs": [
+        "male"
+      ],
+      "zh": "燭臺切光忠"
+    },
+    {
+      "tag": "fudou yuusei",
+      "section": "subject",
+      "gate": "male",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_yu_gi_oh",
+      "series": "yu-gi-oh!",
+      "cardPositive": "1boy, fudou yuusei, yu-gi-oh!, masterpiece, best quality, amazing quality",
+      "needs": [
+        "male"
+      ],
+      "zh": "不動遊星"
+    },
+    {
+      "tag": "itou kaiji",
+      "section": "subject",
+      "gate": "male",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_tobaku_mokushiroku_kaiji",
+      "series": "tobaku mokushiroku kaiji",
+      "cardPositive": "1boy, itou kaiji, tobaku mokushiroku kaiji, masterpiece, best quality, amazing quality",
+      "needs": [
+        "male"
+      ],
+      "zh": "伊藤開司"
+    },
+    {
+      "tag": "himekawa yuki",
+      "section": "subject",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_idolmaster",
+      "series": "idolmaster",
+      "cardPositive": "1girl, himekawa yuki, idolmaster, masterpiece, best quality, amazing quality",
+      "needs": [
+        "female"
+      ],
+      "zh": "姬川友紀"
+    },
+    {
+      "tag": "kogitsunemaru",
+      "section": "subject",
+      "gate": "male",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_touken_ranbu",
+      "series": "touken ranbu",
+      "cardPositive": "1boy, kogitsunemaru, touken ranbu, masterpiece, best quality, amazing quality",
+      "needs": [
+        "male"
+      ],
+      "zh": "小狐丸"
+    },
+    {
+      "tag": "sage (dq3)",
+      "section": "subject",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_dragon_quest",
+      "series": "dragon quest",
+      "cardPositive": "1girl, sage (dq3), dragon quest, masterpiece, best quality, amazing quality",
+      "needs": [
+        "female"
+      ],
+      "zh": "賢者"
+    },
+    {
+      "tag": "kasuga maru (kancolle)",
+      "section": "subject",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_kantai_collection",
+      "series": "kantai collection",
+      "cardPositive": "1girl, kasuga maru (kancolle), kantai collection, masterpiece, best quality, amazing quality",
+      "needs": [
+        "female"
+      ],
+      "zh": "春日丸"
+    },
+    {
+      "tag": "katagiri sanae",
+      "section": "subject",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_idolmaster",
+      "series": "idolmaster",
+      "cardPositive": "1girl, katagiri sanae, idolmaster, masterpiece, best quality, amazing quality",
+      "needs": [
+        "female"
+      ],
+      "zh": "片桐早苗"
+    },
+    {
+      "tag": "sakata kintoki (fate)",
+      "section": "subject",
+      "gate": "male",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_fate_series",
+      "series": "fate (series)",
+      "cardPositive": "1boy, sakata kintoki (fate), fate (series), masterpiece, best quality, amazing quality",
+      "needs": [
+        "male"
+      ],
+      "zh": "坂田金時"
+    },
+    {
+      "tag": "alena (dq4)",
+      "section": "subject",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_dragon_quest",
+      "series": "dragon quest",
+      "cardPositive": "1girl, alena (dq4), dragon quest, masterpiece, best quality, amazing quality",
+      "needs": [
+        "female"
+      ],
+      "zh": "安莉娜"
+    },
+    {
+      "tag": "scheherazade (fate)",
+      "section": "subject",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_fate_series",
+      "series": "fate (series)",
+      "cardPositive": "1girl, scheherazade (fate), fate (series), masterpiece, best quality, amazing quality",
+      "needs": [
+        "female"
+      ],
+      "zh": "雪赫拉莎德"
+    },
+    {
+      "tag": "error musume",
+      "section": "subject",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_kantai_collection",
+      "series": "kantai collection",
+      "cardPositive": "1girl, error musume, kantai collection, masterpiece, best quality, amazing quality",
+      "needs": [
+        "female"
+      ],
+      "zh": "錯誤娘"
+    },
+    {
+      "tag": "fujimura taiga",
+      "section": "subject",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_fate_series",
+      "series": "fate (series)",
+      "cardPositive": "1girl, fujimura taiga, fate (series), masterpiece, best quality, amazing quality",
+      "needs": [
+        "female"
+      ],
+      "zh": "藤村大河"
+    },
+    {
+      "tag": "villager (animal crossing)",
+      "section": "subject",
+      "gate": "male",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_animal_crossing",
+      "series": "animal crossing",
+      "cardPositive": "1boy, villager (animal crossing), animal crossing, masterpiece, best quality, amazing quality",
+      "needs": [
+        "male"
+      ],
+      "zh": "村民"
+    },
+    {
+      "tag": "adventurer (ff14)",
+      "section": "subject",
+      "gate": "male",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_final_fantasy",
+      "series": "final fantasy",
+      "cardPositive": "1boy, adventurer (ff14), final fantasy, masterpiece, best quality, amazing quality",
+      "needs": [
+        "male"
+      ],
+      "zh": "光之戰士"
+    },
+    {
+      "tag": "asbel lhant",
+      "section": "subject",
+      "gate": "male",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_tales_of_series",
+      "series": "tales of (series)",
+      "cardPositive": "1boy, asbel lhant, tales of (series), masterpiece, best quality, amazing quality",
+      "needs": [
+        "male"
+      ],
+      "zh": "亞斯貝爾·蘭特"
+    },
+    {
+      "tag": "arezu (pokemon)",
+      "section": "subject",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_pokemon",
+      "series": "pokemon",
+      "cardPositive": "1girl, arezu (pokemon), pokemon, masterpiece, best quality, amazing quality",
+      "needs": [
+        "female"
+      ],
+      "zh": "火夏"
+    },
+    {
+      "tag": "soldier (dq3)",
+      "section": "subject",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_dragon_quest",
+      "series": "dragon quest",
+      "cardPositive": "1girl, soldier (dq3), dragon quest, masterpiece, best quality, amazing quality",
+      "needs": [
+        "female"
+      ],
+      "zh": "戰士（DQ3）"
+    },
+    {
+      "tag": "sheik",
+      "section": "subject",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_the_legend_of_zelda",
+      "series": "the legend of zelda",
+      "cardPositive": "1girl, sheik, the legend of zelda, masterpiece, best quality, amazing quality",
+      "needs": [
+        "female"
+      ],
+      "zh": "希克"
+    },
+    {
+      "tag": "kamen rider revice",
+      "section": "subject",
+      "gate": "male",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_kamen_rider",
+      "series": "kamen rider",
+      "cardPositive": "1boy, kamen rider revice, kamen rider, masterpiece, best quality, amazing quality",
+      "needs": [
+        "male"
+      ],
+      "zh": "假面騎士Revice"
+    },
+    {
+      "tag": "judgement (helltaker)",
+      "section": "subject",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_helltaker",
+      "series": "helltaker",
+      "cardPositive": "1girl, judgement (helltaker), helltaker, masterpiece, best quality, amazing quality",
+      "needs": [
+        "female"
+      ],
+      "zh": "審判"
+    },
+    {
+      "tag": "oda nobukatsu (fate)",
+      "section": "subject",
+      "gate": "male",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_fate_series",
+      "series": "fate (series)",
+      "cardPositive": "1boy, oda nobukatsu (fate), fate (series), masterpiece, best quality, amazing quality",
+      "needs": [
+        "male"
+      ],
+      "zh": "織田信勝"
+    },
+    {
+      "tag": "i-14 (kancolle)",
+      "section": "subject",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_kantai_collection",
+      "series": "kantai collection",
+      "cardPositive": "1girl, i-14 (kancolle), kantai collection, masterpiece, best quality, amazing quality",
+      "needs": [
+        "female"
+      ],
+      "zh": "伊14"
+    },
+    {
+      "tag": "kitashirakawa chiyuri",
+      "section": "subject",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_touhou",
+      "series": "touhou",
+      "cardPositive": "1girl, kitashirakawa chiyuri, touhou, masterpiece, best quality, amazing quality",
+      "needs": [
+        "female"
+      ],
+      "zh": "北白河千百合"
+    },
+    {
+      "tag": "noctis lucis caelum",
+      "section": "subject",
+      "gate": "male",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_final_fantasy",
+      "series": "final fantasy",
+      "cardPositive": "1boy, noctis lucis caelum, final fantasy, masterpiece, best quality, amazing quality",
+      "needs": [
+        "male"
+      ],
+      "zh": "諾克提斯·路西斯·切拉姆"
+    },
+    {
+      "tag": "russia (hetalia)",
+      "section": "subject",
+      "gate": "male",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_axis_powers_hetalia",
+      "series": "axis powers hetalia",
+      "cardPositive": "1boy, russia (hetalia), axis powers hetalia, masterpiece, best quality, amazing quality",
+      "needs": [
+        "male"
+      ],
+      "zh": "俄羅斯（義呆利）"
+    },
+    {
+      "tag": "adaman (pokemon)",
+      "section": "subject",
+      "gate": "male",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_pokemon",
+      "series": "pokemon",
+      "cardPositive": "1boy, adaman (pokemon), pokemon, masterpiece, best quality, amazing quality",
+      "needs": [
+        "male"
+      ],
+      "zh": "剛石"
+    },
+    {
+      "tag": "malina (helltaker)",
+      "section": "subject",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_helltaker",
+      "series": "helltaker",
+      "cardPositive": "1girl, malina (helltaker), helltaker, masterpiece, best quality, amazing quality",
+      "needs": [
+        "female"
+      ],
+      "zh": "瑪琳娜"
+    },
+    {
+      "tag": "aiba yumi",
+      "section": "subject",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_idolmaster",
+      "series": "idolmaster",
+      "cardPositive": "1girl, aiba yumi, idolmaster, masterpiece, best quality, amazing quality",
+      "needs": [
+        "female"
+      ],
+      "zh": "相葉夕美"
+    },
+    {
+      "tag": "priest (dq3)",
+      "section": "subject",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_dragon_quest",
+      "series": "dragon quest",
+      "cardPositive": "1girl, priest (dq3), dragon quest, masterpiece, best quality, amazing quality",
+      "needs": [
+        "female"
+      ],
+      "zh": "僧侶（DQ3）"
+    },
+    {
+      "tag": "lily black",
+      "section": "subject",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_touhou",
+      "series": "touhou",
+      "cardPositive": "1girl, lily black, touhou, masterpiece, best quality, amazing quality",
+      "needs": [
+        "female"
+      ],
+      "zh": "莉莉黑"
+    },
+    {
+      "tag": "apollo justice",
+      "section": "subject",
+      "gate": "male",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_ace_attorney",
+      "series": "ace attorney",
+      "cardPositive": "1boy, apollo justice, ace attorney, masterpiece, best quality, amazing quality",
+      "needs": [
+        "male"
+      ],
+      "zh": "王泥喜法介"
+    },
+    {
+      "tag": "high wizard (ragnarok online)",
+      "section": "subject",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_ragnarok_online",
+      "series": "ragnarok online",
+      "cardPositive": "1girl, high wizard (ragnarok online), ragnarok online, masterpiece, best quality, amazing quality",
+      "needs": [
+        "female"
+      ],
+      "zh": "超魔導士"
+    },
+    {
+      "tag": "jeanne d'arc (swimsuit archer) (second ascension) (fate)",
+      "section": "subject",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_fate_series",
+      "series": "fate (series)",
+      "cardPositive": "1girl, jeanne d'arc (swimsuit archer) (second ascension) (fate), fate (series), masterpiece, best quality, amazing quality",
+      "needs": [
+        "female"
+      ],
+      "zh": "貞德（泳裝 Archer 第二再臨）"
+    },
+    {
+      "tag": "wuxian (the legend of luoxiaohei)",
+      "section": "subject",
+      "gate": "male",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_the_legend_of_luo_xiaohei",
+      "series": "the legend of luo xiaohei",
+      "cardPositive": "1boy, wuxian (the legend of luoxiaohei), the legend of luo xiaohei, masterpiece, best quality, amazing quality",
+      "needs": [
+        "male"
+      ],
+      "zh": "無限"
+    },
+    {
+      "tag": "kamio reiji (yua)",
+      "section": "subject",
+      "gate": "male",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_kantai_collection",
+      "series": "kantai collection",
+      "cardPositive": "1boy, kamio reiji (yua), kantai collection, masterpiece, best quality, amazing quality",
+      "needs": [
+        "male"
+      ],
+      "zh": "神尾禮司"
+    },
+    {
+      "tag": "lucia (punishing: gray raven)",
+      "section": "subject",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_punishing_gray_raven",
+      "series": "punishing: gray raven",
+      "cardPositive": "1girl, lucia (punishing: gray raven), punishing: gray raven, masterpiece, best quality, amazing quality",
+      "needs": [
+        "female"
+      ],
+      "zh": "露西亞"
+    },
+    {
+      "tag": "prosciutto",
+      "section": "subject",
+      "gate": "male",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_jojo_no_kimyou_na_bouken",
+      "series": "jojo no kimyou na bouken",
+      "cardPositive": "1boy, prosciutto, jojo no kimyou na bouken, masterpiece, best quality, amazing quality",
+      "altOf": "prosciutto (jojo)",
+      "needs": [
+        "male"
+      ],
+      "zh": "普羅修特"
+    },
+    {
+      "tag": "mythra (massive melee) (xenoblade)",
+      "section": "subject",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_xenoblade_chronicles_series",
+      "series": "xenoblade chronicles (series)",
+      "cardPositive": "1girl, mythra (massive melee) (xenoblade), xenoblade chronicles (series), masterpiece, best quality, amazing quality",
+      "needs": [
+        "female"
+      ],
+      "zh": "光（多人戰鬥用服裝）"
+    },
+    {
+      "tag": "falin thorden",
+      "section": "subject",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_dungeon_meshi",
+      "series": "dungeon meshi",
+      "cardPositive": "1girl, falin thorden, dungeon meshi, masterpiece, best quality, amazing quality",
+      "needs": [
+        "female"
+      ],
+      "zh": "法琳·托登"
+    },
+    {
+      "tag": "azazel (helltaker)",
+      "section": "subject",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_helltaker",
+      "series": "helltaker",
+      "cardPositive": "1girl, azazel (helltaker), helltaker, masterpiece, best quality, amazing quality",
+      "needs": [
+        "female"
+      ],
+      "zh": "阿撒茲勒"
+    },
+    {
+      "tag": "james moriarty (archer) (fate)",
+      "section": "subject",
+      "gate": "male",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_fate_series",
+      "series": "fate (series)",
+      "cardPositive": "1boy, james moriarty (archer) (fate), fate (series), masterpiece, best quality, amazing quality",
+      "needs": [
+        "male"
+      ],
+      "zh": "詹姆斯·莫里亞蒂（Archer）"
+    },
+    {
+      "tag": "raven (tales)",
+      "section": "subject",
+      "gate": "male",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_tales_of_series",
+      "series": "tales of (series)",
+      "cardPositive": "1boy, raven (tales), tales of (series), masterpiece, best quality, amazing quality",
+      "needs": [
+        "male"
+      ],
+      "zh": "瑞文"
+    },
+    {
+      "tag": "royal penguin (kemono friends)",
+      "section": "subject",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_kemono_friends",
+      "series": "kemono friends",
+      "cardPositive": "1girl, royal penguin (kemono friends), kemono friends, masterpiece, best quality, amazing quality",
+      "needs": [
+        "female"
+      ],
+      "zh": "國王企鵝"
+    },
+    {
+      "tag": "roto (dq3)",
+      "section": "subject",
+      "gate": "male",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_dragon_quest",
+      "series": "dragon quest",
+      "cardPositive": "1boy, roto (dq3), dragon quest, masterpiece, best quality, amazing quality",
+      "needs": [
+        "male"
+      ],
+      "zh": "羅德"
+    },
+    {
+      "tag": "kitten (gravity daze)",
+      "section": "subject",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_gravity_daze",
+      "series": "gravity daze",
+      "cardPositive": "1girl, kitten (gravity daze), gravity daze, masterpiece, best quality, amazing quality",
+      "needs": [
+        "female"
+      ],
+      "zh": "凱特"
+    },
+    {
+      "tag": "shez (fire emblem)",
+      "section": "subject",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_fire_emblem",
+      "series": "fire emblem",
+      "cardPositive": "1girl, shez (fire emblem), fire emblem, masterpiece, best quality, amazing quality",
+      "needs": [
+        "female"
+      ],
+      "zh": "謝茲"
+    },
+    {
+      "tag": "sun wukong",
+      "section": "subject",
+      "gate": "male",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_journey_to_the_west",
+      "series": "journey to the west",
+      "cardPositive": "1boy, sun wukong, journey to the west, masterpiece, best quality, amazing quality",
+      "needs": [
+        "male"
+      ],
+      "zh": "孫悟空"
+    },
+    {
+      "tag": "leo (fire emblem)",
+      "section": "subject",
+      "gate": "male",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_fire_emblem",
+      "series": "fire emblem",
+      "cardPositive": "1boy, leo (fire emblem), fire emblem, masterpiece, best quality, amazing quality",
+      "needs": [
+        "male"
+      ],
+      "zh": "雷歐（聖火降魔錄）"
+    },
+    {
+      "tag": "noi (dorohedoro)",
+      "section": "subject",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_dorohedoro",
+      "series": "dorohedoro",
+      "cardPositive": "1girl, noi (dorohedoro), dorohedoro, masterpiece, best quality, amazing quality",
+      "needs": [
+        "female"
+      ],
+      "zh": "能井"
+    },
+    {
+      "tag": "tokisaki mio",
+      "section": "subject",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_original",
+      "series": "original",
+      "cardPositive": "1girl, tokisaki mio, original, masterpiece, best quality, amazing quality",
+      "needs": [
+        "female"
+      ],
+      "zh": "時崎澪"
+    },
+    {
+      "tag": "uzuki sayaka",
+      "section": "subject",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_onna_ga_nigate_na_yankee_to_shoujo_no_hanashi",
+      "series": "onna ga nigate na yankee to shoujo no hanashi",
+      "cardPositive": "1girl, uzuki sayaka, onna ga nigate na yankee to shoujo no hanashi, masterpiece, best quality, amazing quality",
+      "needs": [
+        "female"
+      ],
+      "zh": "卯月沙耶香"
+    },
+    {
+      "tag": "batman",
+      "section": "subject",
+      "gate": "male",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_dc_comics",
+      "series": "dc comics",
+      "cardPositive": "1boy, batman, dc comics, masterpiece, best quality, amazing quality",
+      "needs": [
+        "male"
+      ],
+      "zh": "蝙蝠俠"
+    },
+    {
+      "tag": "ozymandias (fate)",
+      "section": "subject",
+      "gate": "male",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_fate_series",
+      "series": "fate (series)",
+      "cardPositive": "1boy, ozymandias (fate), fate (series), masterpiece, best quality, amazing quality",
+      "needs": [
+        "male"
+      ],
+      "zh": "奧茲曼狄斯"
+    },
+    {
+      "tag": "kumada masaru",
+      "section": "subject",
+      "gate": "male",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_onna_ga_nigate_na_yankee_to_shoujo_no_hanashi",
+      "series": "onna ga nigate na yankee to shoujo no hanashi",
+      "cardPositive": "1boy, kumada masaru, onna ga nigate na yankee to shoujo no hanashi, masterpiece, best quality, amazing quality",
+      "needs": [
+        "male"
+      ],
+      "zh": "熊田勝"
+    },
+    {
+      "tag": "sessyoin kiara (swimsuit mooncancer)",
+      "section": "subject",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_fate_series",
+      "series": "fate (series)",
+      "cardPositive": "1girl, sessyoin kiara (swimsuit mooncancer), fate (series), masterpiece, best quality, amazing quality",
+      "needs": [
+        "female"
+      ],
+      "zh": "殺生院祈荒（泳裝 Mooncancer）"
+    },
+    {
+      "tag": "itoshiki nozomu",
+      "section": "subject",
+      "gate": "male",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_sayonara_zetsubou_sensei",
+      "series": "sayonara zetsubou sensei",
+      "cardPositive": "1boy, itoshiki nozomu, sayonara zetsubou sensei, masterpiece, best quality, amazing quality",
+      "needs": [
+        "male"
+      ],
+      "zh": "糸色望"
+    },
+    {
+      "tag": "kindred (league of legends)",
+      "section": "subject",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_league_of_legends",
+      "series": "league of legends",
+      "cardPositive": "1girl, kindred (league of legends), league of legends, masterpiece, best quality, amazing quality",
+      "needs": [
+        "female"
+      ],
+      "zh": "千珏"
+    },
+    {
+      "tag": "sombra (overwatch)",
+      "section": "subject",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_overwatch",
+      "series": "overwatch",
+      "cardPositive": "1girl, sombra (overwatch), overwatch, masterpiece, best quality, amazing quality",
+      "needs": [
+        "female"
+      ],
+      "zh": "駭影"
+    },
+    {
+      "tag": "miles edgeworth",
+      "section": "subject",
+      "gate": "male",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_ace_attorney",
+      "series": "ace attorney",
+      "cardPositive": "1boy, miles edgeworth, ace attorney, masterpiece, best quality, amazing quality",
+      "needs": [
+        "male"
+      ],
+      "zh": "御劍怜侍"
+    },
+    {
+      "tag": "octoling boy",
+      "section": "subject",
+      "gate": "male",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_splatoon_series",
+      "series": "splatoon (series)",
+      "cardPositive": "1boy, octoling boy, splatoon (series), masterpiece, best quality, amazing quality",
+      "needs": [
+        "male"
+      ],
+      "zh": "男生章魚"
+    },
+    {
+      "tag": "vincent valentine",
+      "section": "subject",
+      "gate": "male",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_final_fantasy",
+      "series": "final fantasy",
+      "cardPositive": "1boy, vincent valentine, final fantasy, masterpiece, best quality, amazing quality",
+      "needs": [
+        "male"
+      ],
+      "zh": "文森特·瓦倫丁"
+    },
+    {
+      "tag": "miyamoto musashi (third ascension) (fate)",
+      "section": "subject",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_fate_series",
+      "series": "fate (series)",
+      "cardPositive": "1girl, miyamoto musashi (third ascension) (fate), fate (series), masterpiece, best quality, amazing quality",
+      "needs": [
+        "female"
+      ],
+      "zh": "宮本武藏（第三再臨）"
+    },
+    {
+      "tag": "octane (apex legends)",
+      "section": "subject",
+      "gate": "male",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_apex_legends",
+      "series": "apex legends",
+      "cardPositive": "1boy, octane (apex legends), apex legends, masterpiece, best quality, amazing quality",
+      "needs": [
+        "male"
+      ],
+      "zh": "動力小子"
+    },
+    {
+      "tag": "adachi tooru",
+      "section": "subject",
+      "gate": "male",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_persona",
+      "series": "persona",
+      "cardPositive": "1boy, adachi tooru, persona, masterpiece, best quality, amazing quality",
+      "altOf": "adachi tohru",
+      "needs": [
+        "male"
+      ],
+      "zh": "足立透"
+    },
+    {
+      "tag": "wii fit trainer (female)",
+      "section": "subject",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_wii_fit",
+      "series": "wii fit",
+      "cardPositive": "1girl, wii fit trainer (female), wii fit, masterpiece, best quality, amazing quality",
+      "needs": [
+        "female"
+      ],
+      "zh": "健身教練（女性）"
+    },
+    {
+      "tag": "sin sack",
+      "section": "subject",
+      "gate": "male",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_touhou",
+      "series": "touhou",
+      "cardPositive": "1boy, sin sack, touhou, masterpiece, best quality, amazing quality",
+      "needs": [
+        "male"
+      ],
+      "zh": "罪袋"
+    },
+    {
+      "tag": "kadoc zemlupus",
+      "section": "subject",
+      "gate": "male",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_fate_series",
+      "series": "fate (series)",
+      "cardPositive": "1boy, kadoc zemlupus, fate (series), masterpiece, best quality, amazing quality",
+      "needs": [
+        "male"
+      ],
+      "zh": "卡多克·澤姆盧普斯"
+    },
+    {
+      "tag": "ginga nakajima",
+      "section": "subject",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_lyrical_nanoha",
+      "series": "lyrical nanoha",
+      "cardPositive": "1girl, ginga nakajima, lyrical nanoha, masterpiece, best quality, amazing quality",
+      "needs": [
+        "female"
+      ],
+      "zh": "仲島銀河"
+    },
+    {
+      "tag": "toudou aoi (jujutsu kaisen)",
+      "section": "subject",
+      "gate": "male",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_jujutsu_kaisen",
+      "series": "jujutsu kaisen",
+      "cardPositive": "1boy, toudou aoi (jujutsu kaisen), jujutsu kaisen, masterpiece, best quality, amazing quality",
+      "needs": [
+        "male"
+      ],
+      "zh": "東堂葵"
+    },
+    {
+      "tag": "benikurage (cookie)",
+      "section": "subject",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_cookie_touhou",
+      "series": "cookie (touhou)",
+      "cardPositive": "1girl, benikurage (cookie), cookie (touhou), masterpiece, best quality, amazing quality",
+      "needs": [
+        "female"
+      ],
+      "zh": "紅海月"
+    },
+    {
+      "tag": "tezcatlipoca (fate)",
+      "section": "subject",
+      "gate": "male",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_fate_series",
+      "series": "fate (series)",
+      "cardPositive": "1boy, tezcatlipoca (fate), fate (series), masterpiece, best quality, amazing quality",
+      "needs": [
+        "male"
+      ],
+      "zh": "特斯卡特利波卡"
+    },
+    {
+      "tag": "robin hood (fate)",
+      "section": "subject",
+      "gate": "male",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_fate_series",
+      "series": "fate (series)",
+      "cardPositive": "1boy, robin hood (fate), fate (series), masterpiece, best quality, amazing quality",
+      "needs": [
+        "male"
+      ],
+      "zh": "羅賓漢"
+    },
+    {
+      "tag": "hiburi (kancolle)",
+      "section": "subject",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_kantai_collection",
+      "series": "kantai collection",
+      "cardPositive": "1girl, hiburi (kancolle), kantai collection, masterpiece, best quality, amazing quality",
+      "needs": [
+        "female"
+      ],
+      "zh": "日振"
+    },
+    {
+      "tag": "terry bogard",
+      "section": "subject",
+      "gate": "male",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_fatal_fury",
+      "series": "fatal fury",
+      "cardPositive": "1boy, terry bogard, fatal fury, masterpiece, best quality, amazing quality",
+      "needs": [
+        "male"
+      ],
+      "zh": "泰瑞·柏格"
+    },
+    {
+      "tag": "squigly (skullgirls)",
+      "section": "subject",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_skullgirls",
+      "series": "skullgirls",
+      "cardPositive": "1girl, squigly (skullgirls), skullgirls, masterpiece, best quality, amazing quality",
+      "needs": [
+        "female"
+      ],
+      "zh": "史奎格莉"
+    },
+    {
+      "tag": "fushiguro touji",
+      "section": "subject",
+      "gate": "male",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_jujutsu_kaisen",
+      "series": "jujutsu kaisen",
+      "cardPositive": "1boy, fushiguro touji, jujutsu kaisen, masterpiece, best quality, amazing quality",
+      "needs": [
+        "male"
+      ],
+      "zh": "伏黑甚爾"
+    },
+    {
+      "tag": "shermie (kof)",
+      "section": "subject",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_the_king_of_fighters",
+      "series": "the king of fighters",
+      "cardPositive": "1girl, shermie (kof), the king of fighters, masterpiece, best quality, amazing quality",
+      "needs": [
+        "female"
+      ],
+      "zh": "夏爾美"
+    },
+    {
+      "tag": "buront",
+      "section": "subject",
+      "gate": "male",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_touhou",
+      "series": "touhou",
+      "cardPositive": "1boy, buront, touhou, masterpiece, best quality, amazing quality",
+      "needs": [
+        "male"
+      ],
+      "zh": "布洛特"
+    },
+    {
+      "tag": "mipha",
+      "section": "subject",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_the_legend_of_zelda",
+      "series": "the legend of zelda",
+      "cardPositive": "1girl, mipha, the legend of zelda, masterpiece, best quality, amazing quality",
+      "needs": [
+        "female"
+      ],
+      "zh": "米法"
+    },
+    {
+      "tag": "lucas lee",
+      "section": "subject",
+      "gate": "male",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_scott_pilgrim_series",
+      "series": "scott pilgrim (series)",
+      "cardPositive": "1boy, lucas lee, scott pilgrim (series), masterpiece, best quality, amazing quality",
+      "needs": [
+        "male"
+      ],
+      "zh": "盧卡斯·李"
+    },
+    {
+      "tag": "agent 8 (splatoon)",
+      "section": "subject",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_splatoon_series",
+      "series": "splatoon (series)",
+      "cardPositive": "1girl, agent 8 (splatoon), splatoon (series), masterpiece, best quality, amazing quality",
+      "needs": [
+        "female"
+      ],
+      "zh": "8號特務"
+    },
+    {
+      "tag": "prussia (hetalia)",
+      "section": "subject",
+      "gate": "male",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_axis_powers_hetalia",
+      "series": "axis powers hetalia",
+      "cardPositive": "1boy, prussia (hetalia), axis powers hetalia, masterpiece, best quality, amazing quality",
+      "needs": [
+        "male"
+      ],
+      "zh": "普魯士"
+    },
+    {
+      "tag": "larcei (fire emblem)",
+      "section": "subject",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_fire_emblem",
+      "series": "fire emblem",
+      "cardPositive": "1girl, larcei (fire emblem), fire emblem, masterpiece, best quality, amazing quality",
+      "needs": [
+        "female"
+      ],
+      "zh": "拉克切"
+    },
+    {
+      "tag": "dante (limbus company)",
+      "section": "subject",
+      "gate": "male",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_limbus_company",
+      "series": "limbus company",
+      "cardPositive": "1boy, dante (limbus company), limbus company, masterpiece, best quality, amazing quality",
+      "needs": [
+        "male"
+      ],
+      "zh": "但丁（邊獄公司）"
+    },
+    {
+      "tag": "tiffy (nottytiffy)",
+      "section": "subject",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_original",
+      "series": "original",
+      "cardPositive": "1girl, tiffy (nottytiffy), original, masterpiece, best quality, amazing quality",
+      "needs": [
+        "female"
+      ],
+      "zh": "蒂菲"
+    },
+    {
+      "tag": "oryou (fate)",
+      "section": "subject",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_fate_series",
+      "series": "fate (series)",
+      "cardPositive": "1girl, oryou (fate), fate (series), masterpiece, best quality, amazing quality",
+      "needs": [
+        "female"
+      ],
+      "zh": "阿龍"
+    },
+    {
+      "tag": "kuromiya raika",
+      "section": "subject",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_original",
+      "series": "original",
+      "cardPositive": "1girl, kuromiya raika, original, masterpiece, best quality, amazing quality",
+      "needs": [
+        "female"
+      ],
+      "zh": "黑宮雷華"
+    },
+    {
+      "tag": "baba konomi",
+      "section": "subject",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_idolmaster",
+      "series": "idolmaster",
+      "cardPositive": "1girl, baba konomi, idolmaster, masterpiece, best quality, amazing quality",
+      "needs": [
+        "female"
+      ],
+      "zh": "馬場木實"
+    },
+    {
+      "tag": "gengetsu (touhou)",
+      "section": "subject",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_touhou",
+      "series": "touhou",
+      "cardPositive": "1girl, gengetsu (touhou), touhou, masterpiece, best quality, amazing quality",
+      "needs": [
+        "female"
+      ],
+      "zh": "幻月"
+    },
+    {
+      "tag": "sorcerer (ragnarok online)",
+      "section": "subject",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_ragnarok_online",
+      "series": "ragnarok online",
+      "cardPositive": "1girl, sorcerer (ragnarok online), ragnarok online, masterpiece, best quality, amazing quality",
+      "needs": [
+        "female"
+      ],
+      "zh": "妖術師"
+    },
+    {
+      "tag": "sakamoto ryouma (fate)",
+      "section": "subject",
+      "gate": "male",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_fate_series",
+      "series": "fate (series)",
+      "cardPositive": "1boy, sakamoto ryouma (fate), fate (series), masterpiece, best quality, amazing quality",
+      "needs": [
+        "male"
+      ],
+      "zh": "坂本龍馬"
+    },
+    {
+      "tag": "hasumi souji (eroe)",
+      "section": "subject",
+      "gate": "male",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_seitenkango_shinyuu_to",
+      "series": "seitenkango. shinyuu to",
+      "cardPositive": "1boy, hasumi souji (eroe), seitenkango. shinyuu to, masterpiece, best quality, amazing quality",
+      "needs": [
+        "male"
+      ],
+      "zh": "蓮見壯司"
+    },
+    {
+      "tag": "lambda-11",
+      "section": "subject",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_blazblue",
+      "series": "blazblue",
+      "cardPositive": "1girl, lambda-11, blazblue, masterpiece, best quality, amazing quality",
+      "needs": [
+        "female"
+      ],
+      "zh": "拉姆達-11"
+    },
+    {
+      "tag": "tamamo no mae (swimsuit lancer) (second ascension) (fate)",
+      "section": "subject",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_fate_series",
+      "series": "fate (series)",
+      "cardPositive": "1girl, tamamo no mae (swimsuit lancer) (second ascension) (fate), fate (series), masterpiece, best quality, amazing quality",
+      "needs": [
+        "female"
+      ],
+      "zh": "玉藻前（泳裝 Lancer 第二再臨）"
+    },
+    {
+      "tag": "abyssal admiral (kancolle)",
+      "section": "subject",
+      "gate": "male",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_kantai_collection",
+      "series": "kantai collection",
+      "cardPositive": "1boy, abyssal admiral (kancolle), kantai collection, masterpiece, best quality, amazing quality",
+      "needs": [
+        "male"
+      ],
+      "zh": "深海提督"
+    },
+    {
+      "tag": "siegfried (fate)",
+      "section": "subject",
+      "gate": "male",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_fate_series",
+      "series": "fate (series)",
+      "cardPositive": "1boy, siegfried (fate), fate (series), masterpiece, best quality, amazing quality",
+      "needs": [
+        "male"
+      ],
+      "zh": "齊格飛"
+    },
+    {
+      "tag": "rei (cookie)",
+      "section": "subject",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_cookie_touhou",
+      "series": "cookie (touhou)",
+      "cardPositive": "1girl, rei (cookie), cookie (touhou), masterpiece, best quality, amazing quality",
+      "needs": [
+        "female"
+      ],
+      "zh": "Rei"
+    },
+    {
+      "tag": "mudrock (silent night) (arknights)",
+      "section": "subject",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_arknights",
+      "series": "arknights",
+      "cardPositive": "1girl, mudrock (silent night) (arknights), arknights, masterpiece, best quality, amazing quality",
+      "needs": [
+        "female"
+      ],
+      "zh": "泥岩（Silent Night）"
+    },
+    {
+      "tag": "hijikata toshizou (fate)",
+      "section": "subject",
+      "gate": "male",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_fate_series",
+      "series": "fate (series)",
+      "cardPositive": "1boy, hijikata toshizou (fate), fate (series), masterpiece, best quality, amazing quality",
+      "needs": [
+        "male"
+      ],
+      "zh": "土方歲三"
+    },
+    {
+      "tag": "pomni (the amazing digital circus)",
+      "section": "subject",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_the_amazing_digital_circus",
+      "series": "the amazing digital circus",
+      "cardPositive": "1girl, pomni (the amazing digital circus), the amazing digital circus, masterpiece, best quality, amazing quality",
+      "needs": [
+        "female"
+      ],
+      "zh": "龐妮"
+    },
+    {
+      "tag": "iron man",
+      "section": "subject",
+      "gate": "male",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_marvel",
+      "series": "marvel",
+      "cardPositive": "1boy, iron man, marvel, masterpiece, best quality, amazing quality",
+      "needs": [
+        "male"
+      ],
+      "zh": "鋼鐵人"
+    },
+    {
+      "tag": "xander (fire emblem)",
+      "section": "subject",
+      "gate": "male",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_fire_emblem",
+      "series": "fire emblem",
+      "cardPositive": "1boy, xander (fire emblem), fire emblem, masterpiece, best quality, amazing quality",
+      "needs": [
+        "male"
+      ],
+      "zh": "馬克斯"
+    },
+    {
+      "tag": "black mage",
+      "section": "subject",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_final_fantasy",
+      "series": "final fantasy",
+      "cardPositive": "1girl, black mage, final fantasy, masterpiece, best quality, amazing quality",
+      "needs": [
+        "female"
+      ],
+      "zh": "黑魔道師"
+    },
+    {
+      "tag": "zdrada (helltaker)",
+      "section": "subject",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_helltaker",
+      "series": "helltaker",
+      "cardPositive": "1girl, zdrada (helltaker), helltaker, masterpiece, best quality, amazing quality",
+      "needs": [
+        "female"
+      ],
+      "zh": "茲德拉達"
+    },
+    {
+      "tag": "american beaver (kemono friends)",
+      "section": "subject",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_kemono_friends",
+      "series": "kemono friends",
+      "cardPositive": "1girl, american beaver (kemono friends), kemono friends, masterpiece, best quality, amazing quality",
+      "needs": [
+        "female"
+      ],
+      "zh": "美洲河狸"
+    },
+    {
+      "tag": "brown long-eared bat (kemono friends)",
+      "section": "subject",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_kemono_friends",
+      "series": "kemono friends",
+      "cardPositive": "1girl, brown long-eared bat (kemono friends), kemono friends, masterpiece, best quality, amazing quality",
+      "needs": [
+        "female"
+      ],
+      "zh": "褐長耳蝠"
+    },
+    {
+      "tag": "zangief",
+      "section": "subject",
+      "gate": "male",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_street_fighter",
+      "series": "street fighter",
+      "cardPositive": "1boy, zangief, street fighter, masterpiece, best quality, amazing quality",
+      "needs": [
+        "male"
+      ],
+      "zh": "桑吉爾夫"
+    },
+    {
+      "tag": "wario",
+      "section": "subject",
+      "gate": "male",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_mario_series",
+      "series": "mario (series)",
+      "cardPositive": "1boy, wario, mario (series), masterpiece, best quality, amazing quality",
+      "needs": [
+        "male"
+      ],
+      "zh": "瓦利歐"
+    },
+    {
+      "tag": "female assassin (fate/zero)",
+      "section": "subject",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_fate_zero",
+      "series": "fate/zero",
+      "cardPositive": "1girl, female assassin (fate/zero), fate/zero, masterpiece, best quality, amazing quality",
+      "needs": [
+        "female"
+      ],
+      "zh": "百貌哈桑（女性個體）"
+    },
+    {
+      "tag": "agent 3 (splatoon)",
+      "section": "subject",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_splatoon_series",
+      "series": "splatoon (series)",
+      "cardPositive": "1girl, agent 3 (splatoon), splatoon (series), masterpiece, best quality, amazing quality",
+      "needs": [
+        "female"
+      ],
+      "zh": "3號特務"
+    },
+    {
+      "tag": "death (entity)",
+      "section": "subject",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_original",
+      "series": "original",
+      "cardPositive": "1girl, death (entity), original, masterpiece, best quality, amazing quality",
+      "needs": [
+        "female"
+      ],
+      "zh": "死神"
+    },
+    {
+      "tag": "rockhopper penguin (kemono friends)",
+      "section": "subject",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_kemono_friends",
+      "series": "kemono friends",
+      "cardPositive": "1girl, rockhopper penguin (kemono friends), kemono friends, masterpiece, best quality, amazing quality",
+      "needs": [
+        "female"
+      ],
+      "zh": "跳岩企鵝"
+    },
+    {
+      "tag": "doudanuki masakuni",
+      "section": "subject",
+      "gate": "male",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "character",
+      "sub": "char_touken_ranbu",
+      "series": "touken ranbu",
+      "cardPositive": "1boy, doudanuki masakuni, touken ranbu, masterpiece, best quality, amazing quality",
+      "needs": [
+        "male"
+      ],
+      "zh": "同田貫正國"
     },
     {
       "tag": "headgear",
@@ -236212,6 +241058,246 @@
       "group": "style",
       "sub": "style_tech",
       "zh": "教學圖"
+    },
+    {
+      "tag": "noose",
+      "section": "clothing",
+      "gate": "any",
+      "heat": [
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "accessory",
+      "era": [
+        "any"
+      ],
+      "group": "acc",
+      "sub": "acc_bind",
+      "zh": "絞索"
+    },
+    {
+      "tag": "self-harm",
+      "section": "feature",
+      "gate": "any",
+      "heat": [
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "skin",
+      "sub": "skin_mark",
+      "zh": "自殘"
+    },
+    {
+      "tag": "seishou elementary school uniform",
+      "section": "clothing",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "onepiece",
+      "bind": [],
+      "implies": [
+        "school uniform"
+      ],
+      "layer": "garment",
+      "era": [
+        "modern"
+      ],
+      "group": "onepiece",
+      "sub": "op_uniform",
+      "zh": "聖祥小學制服"
+    },
+    {
+      "tag": "nami junior high school uniform",
+      "section": "clothing",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": "onepiece",
+      "bind": [],
+      "implies": [
+        "school uniform"
+      ],
+      "layer": "garment",
+      "era": [
+        "modern"
+      ],
+      "group": "onepiece",
+      "sub": "op_uniform",
+      "zh": "奈美國中制服"
+    },
+    {
+      "tag": "kindergarten",
+      "section": "env",
+      "gate": "any",
+      "heat": [
+        "tease"
+      ],
+      "mutex": "place",
+      "bind": [],
+      "implies": [
+        "indoors"
+      ],
+      "layer": "normal",
+      "era": [
+        "modern"
+      ],
+      "group": "place",
+      "sub": "pl_school",
+      "zh": "幼稚園"
+    },
+    {
+      "tag": "if they mated",
+      "section": "subject",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "extra",
+      "sub": "cast_mix",
+      "zh": "假如他們生了孩子"
+    },
+    {
+      "tag": "kono lolicon domome",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "face",
+      "sub": "face_mood",
+      "zh": "你這蘿莉控"
+    },
+    {
+      "tag": "age regression",
+      "section": "feature",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "body_f",
+      "sub": "bf_shape",
+      "zh": "返老還童"
+    },
+    {
+      "tag": "lolidom",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "sex",
+      "sub": "sex_fetish",
+      "zh": "蘿莉調教"
+    },
+    {
+      "tag": "mesugaki",
+      "section": "feature",
+      "gate": "female",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "body_f",
+      "sub": "bf_shape",
+      "zh": "雌小鬼"
+    },
+    {
+      "tag": "onee-loli",
+      "section": "subject",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "extra",
+      "sub": "cast_mix",
+      "zh": "姊姊×蘿莉"
+    },
+    {
+      "tag": "onii-shota",
+      "section": "subject",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "extra",
+      "sub": "cast_mix",
+      "zh": "哥哥×正太"
     }
   ]
 }
