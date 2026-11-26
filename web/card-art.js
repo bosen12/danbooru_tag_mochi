@@ -1364,9 +1364,28 @@ function grownUps(cast) {
   return out;
 }
 
-/** 畫這張牌要幾個人、誰。依詞庫的 needs／gate 判斷。 */
+// 個別卡面不要卡司裡的某些字：key 是牌的 tag，value 是要拿掉的字。
+// 卡司＝castOf 決定的人數、性別（1girl、2boys…），加上 grownUps 補的 mature female／adult male／mature male。
+// 寫法：
+//   const ART_SKIP_CAST = {
+//     "red hair": new Set(["mature female"]),
+//     "group picture": new Set(["mature female", "mature male"]),
+//   };
+// 拿掉 mature female／mature male／adult male 之後，卡司裡沒有 adult 就自動補一個 adult，
+// 多人卡面才不會畫出小孩（負面的擋法見 artNegative，不受影響）。
+// 改完要重烤那幾張：node scripts/card_art.mjs --write，再 bake_card_art.py。
+const ART_SKIP_CAST = {};
+
+const ADULT_CAST = new Set(["mature female", "mature male", "adult male"]);
+
+/** 畫這張牌要幾個人、誰。依詞庫的 needs／gate 判斷；ART_SKIP_CAST 可以個別拿掉字。 */
 function castFor(item) {
-  return grownUps(castOf(item));
+  const cast = grownUps(castOf(item));
+  const skip = ART_SKIP_CAST[item.tag];
+  if (!skip) return cast;
+  const out = cast.filter((term) => !skip.has(term));
+  if (cast.some((t) => skip.has(t) && ADULT_CAST.has(t)) && !out.includes("adult")) out.push("adult");
+  return out;
 }
 
 function castOf(item) {
