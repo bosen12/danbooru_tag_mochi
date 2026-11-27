@@ -55,7 +55,11 @@ Mochi is the card interface of [danbooru_tag_random](https://github.com/bosen12/
 
 **Custom cards.** Bundle cards you use together, with weights, plus words the lexicon doesn't have, into one card of your own: **Custom** (last suit in the Card Book) → **New custom card**, or **Make custom card** on an Ink Pool / Fuse Bed image or a Gallery work, or **Save as custom card** in the Decks panel. Pick cards from a full card case (the same suits, sub-categories, search and hover preview as the Ink Pool, filtered by the card's rating; Enter adds the first match, and a word the lexicon lacks can be added with one click), or **Paste prompt** and Mochi splits it into lexicon cards and words *not in lexicon* (weights like `(tag:1.2)` are kept; near spellings get a “did you mean…”). The rating can't be lower than the cards inside. **Fill** is what gets generated; **Card art** is only for baking the card's picture (built automatically, editable). **Bake art preview** uses your seed or a random one, and the preview only replaces the art when you save. In the Ink Pool and the Fuse Bed the engine treats a custom card as the cards inside — other sections still fill and conflicts still apply — and words outside the lexicon are added after the cast. It never gets drawn at random. **Copy share code** gives one `mochi-card:` line to post on Discord; **Paste share code** in the Card Book imports it. Words about minors and banned characters are refused when pasted, saved or baked.
 
-**Characters.** 679 adult anime and game characters (Yor, Makima, Raiden Shogun, Levi…) are cards in their own suit, grouped by series under Anime and Games (One Piece, Demon Slayer…; Arknights, Genshin Impact…). Pin one or several, or turn on **Draw characters** in the Ink Pool rules to give people of the selected gender named characters (up to three, any series). Pinned characters remain even when their gender is switched off. **Same series only** keeps every drawn character in the pinned character's series, or picks one series that fits the cast when none is pinned. **Add series name** puts the series tag after each character. While a character is in the image the engine stops drawing hair color, hairstyle, eye color, body type and similar traits that would change who it is. Characters who are underage, school students, child-looking, real people or VTubers, non-human, or of unknown age are banned: they are not cards, pasted prompts drop them, and the server refuses any prompt that contains them.
+**Characters.** 1,241 adult anime and game characters (Yor, Makima, Raiden Shogun, Levi…) are cards in their own suit, grouped by series under Anime and Games (One Piece, Demon Slayer…; Arknights, Genshin Impact…). Pin one or several, or turn on **Draw characters** in the Ink Pool rules to give people of the selected gender named characters (up to three, any series). Pinned characters remain even when their gender is switched off. **Same series only** keeps every drawn character in the pinned character's series, or picks one series that fits the cast when none is pinned. **Add series name** puts the series tag after each character. While a character is in the image the engine stops drawing hair color, hairstyle, eye color, body type and similar traits that would change who it is. Characters who are underage, school students, child-looking, real people or VTubers, non-human, or of unknown age are banned: they are not cards, pasted prompts drop them, and the server refuses any prompt that contains them.
+
+**Card details.** Right-click a card in the library or the Card Book to open its details: the card's Danbooru wiki text (the first paragraph, in English; for deprecated tags, the tags to use instead) and **Related cards**, the cards most often tagged together with it on Danbooru. Three dots show how closely related a card is (hover a card to see the exact value, 0–1). Click a related card to switch the same window to it; a breadcrumb at the top (← school uniform › serafuku › pleated skirt) takes you back, and one close shuts it all. ＋ puts a related card into the pool without leaving. Relatedness is computed from the full Danbooru tag set (about 11.7 million posts), not sampled.
+
+**Related fill.** In the Ink Pool rules, *More rules → Related fill* adds related cards of the cards in your pool to each image: choose the minimum relatedness (●○○, ●●○ or ●●●) and how many cards at most. The most related go first; any the rules reject (same slot, era, content level, never-drawn words) are skipped and the next one is tried. Added cards are marked *Related* on the result. Right-click a card in the pool for a small panel that previews its related cards and brings them into the pool, never replacing a card you placed. Off by default; with it off, draws are unchanged.
 
 The **Intro film** (`/intro.html`, 3 min) and the **Tutorial** (`/tutorial.html`, 4.5 min) are rendered live in the page with the real engine and cards. **Tour** in the top bar walks you through each room step by step. **How it works** (`/arch.html`) explains the engine, rules and architecture with live examples, and **About** (`/about.html`) is a one-page introduction with the Discord and GitHub links. **Community** in the top bar opens the Discord invite; the first visit asks once whether you want to join.
 
@@ -94,7 +98,7 @@ Keep the server window open. After updating, reload the page with **Ctrl+F5**.
 | What | Size | How | Skip |
 |---|---|---|---|
 | Card art, all ages (8176 cards) | ~96 MB + ~313 MB | Downloaded from this repo's [release](https://github.com/bosen12/danbooru_tag_mochi/releases/tag/card-art-v14) in two parts: thumbnails first (the card library shows pictures after a couple of minutes, reload when the panel says so), then full-size images in the background. Checked with SHA-256, unpacked into `web/cards/`. Resumes if interrupted; never overwrites cards you baked yourself | `NO_CARD_FETCH=1` |
-| Character card art (679 anime and game characters) | — | Not published (copyrighted characters). Every start checks it: up to 20 missing are baked straight away, more than that (about 70 minutes the first time) and the page asks first (Bake / Not now / Never ask) | `.no-character-bake` file or answer *Never ask* |
+| Character card art (1,241 anime and game characters) | — | Not published (copyrighted characters). Every start checks it: up to 20 missing are baked straight away, more than that (about two hours the first time) and the page asks first (Bake / Not now / Never ask) | `.no-character-bake` file or answer *Never ask* |
 | Sensitive / explicit card art | — | Not published. Once the download is in, the page asks whether to bake them with your checkpoint (`scripts/bake_card_art.py`). Missing or outdated all-ages cards are baked without asking | `NO_CARD_BAKE=1` or a `.no-card-bake` file |
 | [Pillow](https://python-pillow.org/) | ~7 MB | Installed into the Python that runs `server.py` (or your user folder) so LoRA and checkpoint previews are shrunk to small WebP files: the checkpoint panel opens with about 1 MB instead of 20 MB. Without it everything still works and previews load at full size | `NO_PILLOW_INSTALL=1` |
 | Hires upscale model `RealESRGAN_x4plus_anime_6B` | ~18 MB | Saved to ComfyUI's `models/upscale_models` | `NO_UPSCALE_FETCH=1` |
@@ -165,7 +169,10 @@ web/                 front end (no build step; the browser loads ES modules dire
   index.html …       the five rooms
   i18n.js, locales/  the English edition
   cards/             card art (downloaded or baked; not in git)
+  related_tags.json  related cards for the card details and related fill (generated, see below)
+  tag_wiki.json      Danbooru wiki text for the card details (generated, see below)
 mcp/                 MCP server for AIs (Claude, Codex, Grok Build)
+card_tool/           merge-cards.bat: copy card art baked by an older install into a newer one
 scripts/             card art download and baking, upscale model, pose reference, face fix nodes,
                      and the lexicon build (merge_lexicon.py, characters.json …)
 tests/               node tests/test_i18n.mjs
@@ -182,6 +189,15 @@ node scripts/card_art.mjs --write # card art prompts (scripts/card_jobs.json)
 python scripts/bake_card_art.py   # bake only the cards that are missing
 ```
 
+The related cards and wiki text are rebuilt separately; both keep every tag, including blocked ones, and only the hard ban lists hide them on screen:
+
+```bash
+python scripts/related_from_dataset.py --download  # full Danbooru tag set from Hugging Face (613 MB)
+python scripts/related_from_dataset.py --aliases   # Danbooru tag aliases (old → new names)
+python scripts/related_from_dataset.py             # writes web/related_tags.json
+python scripts/fetch_tag_wiki.py --fetch           # all Danbooru wiki pages, writes web/tag_wiki.json
+```
+
 Check new tags against Danbooru first with `node scripts/verify_danbooru_tags.mjs <tags…>`. `tests/test_lexicon_rebuild.py` rebuilds the lexicon from these sources in a temporary folder and fails if it no longer matches `web/lexicon.json`. `python scripts/export_lexicon_xlsx.py` (needs `pip install openpyxl`) writes a lookup sheet, `danbooru_lexicon.xlsx`.
 
 ## Troubleshooting
@@ -194,6 +210,7 @@ Check new tags against Danbooru first with `node scripts/verify_danbooru_tags.mj
 - **The LoRA panel has no previews or trigger words.** Allow the ComfyUI LoRA Manager install in the setup panel, then restart ComfyUI once.
 - **"Could not load the card library".** Open Mochi through `start.bat`, `start.sh` or `server.py`, not by opening the HTML file.
 - **Generation stops half-way.** Raise `client.streamIdleMs` for slow GPUs.
+- **A new install is missing cards an older one had baked.** Run `card_tool/merge-cards.bat` (or `python card_tool/merge_cards.py OLD NEW`) and paste the two folders (the `web/cards` folder or the whole install). Cards the new install lacks are copied over with their thumbnails and manifest entries; cards it already has are left alone, never-drawn words and banned characters are skipped, and `manifest.json` is backed up first.
 - **No live preview while an image is drawing (ComfyUI Desktop).** Mochi asks ComfyUI for a latent2rgb preview on each image when ComfyUI was not started with its own `--preview-method`. That needs a recent ComfyUI; on an older one, update ComfyUI Desktop or set its preview method in ComfyUI's own server settings. Set `comfy.previewMethod` in `config.json` (`auto`, `latent2rgb`, `taesd`, `none`) to choose yourself.
 
 ## Tests
@@ -264,7 +281,11 @@ Mochi code is distributed under **GNU GPLv3 only (`GPL-3.0-only`)**, see [LICENS
 
 **自製牌**：把常用的幾張牌（可以調權重）加上詞庫沒有的字，包成一張自己的牌。卡冊花色最後一格「自製」→「新增自製牌」，或從墨池、疊印台成品、作品冊的「做成自製牌」，牌組面板的「存成自製牌」帶著內容過來。「挑牌」就是完整的字盒（花色、細分類、搜尋、滑鼠停著的放大卡都跟墨池一樣，照這張的分級收牌，Enter 加第一張，字盒沒有的字一鍵加進來），也可以「貼提示詞」：詞庫有的自動變成牌、對不到的放進「詞庫外」（`(tag:1.2)` 的權重會讀進來，拼法很像的會問「是不是…」）。分級不能低於裡面的牌。「填入」是真的送去生圖的，「卡面」只拿來烤這張牌的插畫（自動產生、可以改）。「烤卡面預覽」照你填的種子（或隨機）烤一張，按存檔才換上。墨池、疊印台裡，引擎把它當成裡面那幾張牌（照樣補其他段、照樣檢查互斥），詞庫外的字接在人數後面；引擎隨機抽牌不會抽到它。「複製分享碼」是一行 `mochi-card:` 開頭的文字，貼到 Discord；卡冊的「貼上分享碼」就能匯入。未成年相關的字、禁用角色在貼上、存檔、烤卡面時都會擋。
 
-**角色**：679 個成年的動漫、遊戲角色（約兒、瑪奇瑪、雷電將軍、里維…）自己一個花色，分動漫、遊戲兩串，再照作品分格（航海王、鬼滅之刃…；明日方舟、原神…）。可以釘一個或好幾個，或在墨池的規則打開「抽角色」，只替「人物」選中的性別抽角色（最多三個，作品不挑）；手動釘的角色照留。「只抽同系列」打開時，抽的角色都跟釘的角色同一部作品；沒釘就先挑一部人數、性別湊得齊的。「加入系列名」會在角色後面接作品名。畫面裡有角色時，引擎不再抽髮色、髮型、瞳色、體型這些會改掉角色是誰的特徵。未成年、學生、外觀像兒童、真人或 VTuber、非人形、年齡查不到的角色一律禁用：不是牌、貼上提示詞會被拿掉、送去生圖伺服器也會擋。
+**角色**：1,241 個成年的動漫、遊戲角色（約兒、瑪奇瑪、雷電將軍、里維…）自己一個花色，分動漫、遊戲兩串，再照作品分格（航海王、鬼滅之刃…；明日方舟、原神…）。可以釘一個或好幾個，或在墨池的規則打開「抽角色」，只替「人物」選中的性別抽角色（最多三個，作品不挑）；手動釘的角色照留。「只抽同系列」打開時，抽的角色都跟釘的角色同一部作品；沒釘就先挑一部人數、性別湊得齊的。「加入系列名」會在角色後面接作品名。畫面裡有角色時，引擎不再抽髮色、髮型、瞳色、體型這些會改掉角色是誰的特徵。未成年、學生、外觀像兒童、真人或 VTuber、非人形、年齡查不到的角色一律禁用：不是牌、貼上提示詞會被拿掉、送去生圖伺服器也會擋。
+
+**卡片詳情**：字盒、卡冊的牌按右鍵打開詳情，有這張牌在 Danbooru wiki 的說明（第一段英文原文；已經廢棄的字會列出改用哪些）和「**相關的牌**」：Danbooru 上最常跟它一起出現的牌。三個點代表有多相關（滑鼠移到牌上看數值，0～1）。點相關的牌，同一個視窗就換成那張；最上面一排「← 制服 › 水手服 › 百褶裙」可以點回去，按一次關閉就全關。牌角的 ＋ 放進合成池、不關詳情。相關度是用 Danbooru 全站的標籤資料（約一千一百七十萬張圖）算的，不是抽樣。
+
+**補相關牌**：墨池的「更多規則 → 補相關牌」會把合成池那幾張牌的相關牌補進每張圖：選幾個點以上（●○○、●●○、●●●）和最多幾張。最相關的先補；過不了規則的（同一格、時代、尺度、永遠不抽的字）跳過、換下一張。補進來的牌在成品上標「補相關」。合成池的牌按右鍵會跳出小面板，先列出它的相關牌，按了就帶進合成池，不會擠掉你放的牌。預設關著；關著時抽牌跟原本一模一樣。
 
 另外有兩支在頁面裡即時產生的影片：**介紹影片**（`/intro.html`，3 分鐘）和**使用教學**（`/tutorial.html`，4 分半）。頂欄的「導覽」會一步一步帶你操作。**原理**（`/arch.html`）用真的引擎示範抽牌、規則和整個架構；**介紹頁**（`/about.html`）是一頁看完的介紹，附 Discord 和 GitHub 連結。頂欄的「社群」打開 Discord 邀請；第一次來會問一次要不要加入。
 
@@ -294,7 +315,7 @@ cd danbooru_tag_mochi
 | 東西 | 大小 | 怎麼來 | 不想要 |
 |---|---|---|---|
 | 卡牌插畫（全年齡 8176 張） | 約 96 MB＋313 MB | 從本 repo 的 [Release](https://github.com/bosen12/danbooru_tag_mochi/releases/tag/card-art-v14) 分兩包下載：先抓縮圖（兩分鐘左右字盒就有圖，面板說可以就重新整理），大圖背景接著抓。驗 SHA-256、解到 `web/cards/`。斷了會接著抓；自己烘的圖不覆蓋 | `NO_CARD_FETCH=1` |
-| 角色卡面（679 個動漫、遊戲角色） | — | 不公開（版權角色）。每次啟動都檢查：缺 20 張以內直接烘；更多（第一次約 70 分鐘）網頁上先問（烘／這次不要／不要再問） | `.no-character-bake` 檔或回答「不要再問」 |
+| 角色卡面（1,241 個動漫、遊戲角色） | — | 不公開（版權角色）。每次啟動都檢查：缺 20 張以內直接烘；更多（第一次約兩小時）網頁上先問（烘／這次不要／不要再問） | `.no-character-bake` 檔或回答「不要再問」 |
 | 敏感／色情分級的卡面 | — | 不公開。卡面下載好之後，網頁上問你要不要用你的底模烘；全年齡卡缺的、過時的直接烘，不問 | `NO_CARD_BAKE=1` 或 `.no-card-bake` 檔 |
 | [Pillow](https://python-pillow.org/) | 約 7 MB | 裝進跑 `server.py` 的 Python（裝不進去就裝到使用者資料夾），LoRA、底模的預覽圖會縮成小的 WebP：底模面板一打開從約 20 MB 變成約 1 MB。沒裝也照樣能用，只是預覽圖給原圖 | `NO_PILLOW_INSTALL=1` |
 | Hires 放大模型 | 約 18 MB | 放進 ComfyUI 的 `models/upscale_models` | `NO_UPSCALE_FETCH=1` |
@@ -335,6 +356,7 @@ LoRA 面板的「詳情」在 ComfyUI 的 LoRA Manager 直接打開那一個 LoR
 - **LoRA 面板沒有預覽圖和觸發詞**：在準備面板允許安裝 ComfyUI LoRA Manager，裝好重開 ComfyUI 一次。
 - **「讀不到詞庫」**：用 `start.bat`／`start.sh`／`server.py` 開，不要直接點 HTML。
 - **生圖到一半停掉**：把 `client.streamIdleMs` 調大。
+- **新版少了舊版烤過的卡面**：執行 `card_tool/merge-cards.bat`（或 `python card_tool/merge_cards.py 舊版 新版`），貼上兩邊的資料夾（`web/cards` 或整個墨池資料夾）。新版沒有的卡面連縮圖和 manifest 那一筆一起搬過去；新版有的不動，永遠不抽的字、禁用角色不搬，動手前會先備份 `manifest.json`。
 - **生圖中看不到預覽（ComfyUI Desktop）**：ComfyUI 啟動時沒自己設 `--preview-method` 的話，墨池每一張會請它用 latent2rgb 預覽。這要較新的 ComfyUI；舊版請更新 ComfyUI Desktop，或在 ComfyUI 自己的伺服器設定裡開預覽。想自己決定就設 `config.json` 的 `comfy.previewMethod`（`auto`、`latent2rgb`、`taesd`、`none`）。
 
 ## 改詞庫
@@ -346,6 +368,15 @@ python scripts/merge_lexicon.py
 python scripts/add_zh.py          # merge 完一定要跑：補上中文名
 node scripts/card_art.mjs --write # 卡面提示詞（scripts/card_jobs.json）
 python scripts/bake_card_art.py   # 只烘缺的卡面
+```
+
+相關的牌和 wiki 說明另外重做；兩份都保留每個字（包括被擋的），只在畫面上用硬封鎖名單擋：
+
+```bash
+python scripts/related_from_dataset.py --download  # 從 Hugging Face 下載 Danbooru 全站標籤資料（613 MB）
+python scripts/related_from_dataset.py --aliases   # Danbooru 的改名對照（舊名 → 新名）
+python scripts/related_from_dataset.py             # 寫 web/related_tags.json
+python scripts/fetch_tag_wiki.py --fetch           # 抓全部 wiki，寫 web/tag_wiki.json
 ```
 
 新字先用 `node scripts/verify_danbooru_tags.mjs <tag…>` 到 Danbooru 驗過。`tests/test_lexicon_rebuild.py` 會在暫存資料夾從這些原料重做一次，跟 `web/lexicon.json` 對不上就失敗。`python scripts/export_lexicon_xlsx.py`（要先 `pip install openpyxl`）會產出一張查找用的 `danbooru_lexicon.xlsx`。
