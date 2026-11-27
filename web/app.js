@@ -291,6 +291,8 @@ async function boot() {
   // 還排著沒送出去的：接在後面照原本的順序印（牆上新的在前面，所以倒過來）。
   const waiting = shots.filter((s) => S.stillWaiting(s)).reverse();
   for (const s of waiting) s.status = "queued";
+  // 讀進來的跟這頁自己會存的樣子對齊：別的墨池分頁排著、印好了，這頁才換得過來（不然永遠「排隊中」）。
+  S.settleShots(shots);
   // 寫回存檔等點進去才做：背後預開的墨池（prerender.js）沒被點開的話，不能把印壞的從存檔刪掉 ——
   // 另一個開著的墨池分頁會跟著把它們從牆上拿掉，人卻沒重新整理過。
   if (shots.length !== saved.length) whenActive(() => S.saveShots(shots));

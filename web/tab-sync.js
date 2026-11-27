@@ -60,6 +60,14 @@ export function makeShelf({ read, write, max, when, gone = () => {} }) {
       remember(list);
       return list;
     },
+    /**
+     * 開頁讀進來、整理過（排著的標成 queued…）之後，這邊自己會寫出來的樣子（mine：序列化好的）當成「上次看到的」。
+     * 讀進來的那份跟自己序列化的不一定一字不差（少了某個只在記憶體裡的欄位）：以前就當成「這邊改過」，
+     * 別的分頁印好、Hires 做完都不肯換，牆上永遠停在「排隊中」（2026-11-27 同時開好幾個墨池頁）。
+     */
+    settle(mine) {
+      for (const s of mine) if (here.has(s.id)) seen.set(s.id, fpOf(s));
+    },
     /** 存檔：mine 是這個分頁序列化好的那份。回傳改留存檔那份的幾筆（別的分頁改過、這邊沒動過），呼叫的人拿去更新畫面。 */
     save(mine) {
       const stored = read();

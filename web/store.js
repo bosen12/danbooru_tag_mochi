@@ -374,7 +374,9 @@ function serShot(s) {
     waiting: isWaiting(s),
     waitedAt: isWaiting(s) ? Date.now() : 0,
     // 排著的那張自己取的工作編號（gen.js 的 enqueue）：接著印時沿用，兩個分頁都接也只畫一次。
-    reserved: isWaiting(s) ? s._reserved || null : null,
+    // 別的墨池分頁排的、這頁只是從存檔讀進來顯示：記憶體裡只有存檔的 reserved（沒有 _reserved）。以前這裡寫成 null，
+    // 跟存檔對不上，tab-sync 當成「這頁改過」不肯換成那邊印好的，牆上就永遠「等前面的印完」（2026-11-27 同時開好幾個墨池頁）。
+    reserved: isWaiting(s) ? s._reserved || s.reserved || null : null,
     // 哪個分頁排的（gen.js 的 enqueue）：那個分頁不在了，重新整理的分頁就接過來印。
     owner: isWaiting(s) || (!!s.job && (s.status === "running" || s.status === "queued")) ? s.owner || null : null,
     status: s.status === "done" ? "done" : s.status === "drawn" ? "drawn" : s.status === "failed" ? "failed" : "stopped",
@@ -397,6 +399,9 @@ export function applyStored(s, t) {
   // Hires 的工作編號也照存檔：別的分頁做完或「還原原圖」了，這邊記憶體裡舊的編號要清掉，
   // 不然輪到這邊接手時拿舊編號接回去，把已還原的原圖又蓋成 Hires 圖（2026-11-20 第五輪檢查）。
   s.hiresJob = t.hiresJob || null;
+  // 排著的編號、排它的分頁也照存檔：不然套完再序列化跟存檔對不上，下一次那邊印好又不肯換（永遠「排隊中」）。
+  s.reserved = t.reserved || null;
+  if (t.owner) s.owner = t.owner;
   return s;
 }
 
@@ -424,6 +429,11 @@ export function syncShots({ list, adopt, gone }) {
 export function saveShots(shots) {
   const adopted = shotShelf.save(shots.filter(keeps).slice(0, SHOT_MAX).map(serShot));
   if (adopted.length) adoptShots?.(adopted);
+}
+
+/** 開頁整理完（app.js 把排著的標成 queued 之後）叫一次：比對的基準換成這頁自己序列化的樣子（tab-sync.js 的 settle）。 */
+export function settleShots(shots) {
+  shotShelf.settle(shots.filter(keeps).map(serShot));
 }
 
 export function loadShots() {
