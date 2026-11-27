@@ -499,7 +499,8 @@ try {
       const card = [...document.querySelectorAll(".model-card")].find((n) => n.querySelector(".model-name")?.textContent === "預設");
       card?.click();
     });
-    await page.waitForTimeout(250);
+    // 跟上面同一個原因：篩選先跳回全部、日誌列晚一拍才重畫。固定等 250ms 在較慢的 CI 上會讀到空清單（2026-11-26、27 兩次）。
+    await page.locator('.log-row[data-id="e-empty"]').waitFor({ timeout: 5000 }).catch(() => {});
     const again = await page.evaluate(() => ({
       filter: document.querySelector("#log-filters [aria-pressed=true]")?.dataset.v || "",
       q: document.querySelector("#album-q")?.value || "",

@@ -1,5 +1,57 @@
 # Release notes
 
+## v1.9 — 2026-11-27
+
+Changes since [v1.8](https://github.com/bosen12/danbooru_tag_mochi/releases/tag/v1.8).
+
+- **A much bigger lexicon: 10,849 cards (8,472 in v1.8).** About 1,700 new tags the model recognises, general Danbooru tags, layouts, borders and art media, plus 87 alias cards, and a few new sex positions. **3,165 characters from the model's own character list** were added; 1,241 character cards are now usable. Character tags are kept exactly as the model knows them, and older spellings sit beside the original card. Every character that is not clearly an adult (minors, students, childlike, real people and VTubers, non-human, unsure) is blocked.
+- **Card art pack [card-art-v14](https://github.com/bosen12/danbooru_tag_mochi/releases/tag/card-art-v14)**: 8,176 all-ages cards, 1,596 more than v13. If you already have v13, only the small update pack (about 90 MB) is downloaded.
+- **Continuous drawing no longer slows down over time.** Drawing hundreds of images in a row used to make the page stutter until it froze, with CPU near 100%. Finished card animations now let go of the elements they were attached to, and the frosted glass on the Results wall is gone: on a full wall it accounted for 425 of about 700 compositing layers. In a 9-minute stress run of 578 images, main-thread load stays flat instead of climbing from 9 s to 14.5 s per 20 s, and Chrome uses 1.49 GB instead of 1.95 GB.
+- **Images no longer stay "Queued" forever.** With several Ink Pool tabs open, queued images in a reloaded tab had nobody to print them, and a full wall then trimmed fresh results instead. Each queued image now remembers its tab; if that tab is gone, the current one picks it up.
+- **Favorite characters**: filter by series and gender, a pager that always stays on screen, mis-taps go back to their place, and opening is about twice as fast. A **♥ Favorites** filter on the character page of the Ink Pool library, the Card Book and the Fuse Bed card case shows favourites only.
+- **Card Book character page**: the series drawer opens smoothly, and Anime / Games / Other filter the whole family.
+- **Smoother everywhere**: lists cross-fade instead of blanking, dialogs ease to their new height, the pool and rules slide open instead of jumping, the favourites tray no longer jolts when a card is played, and identical cards are no longer rebuilt (rating changes, placing cards, the Card Book grid).
+- **Fuse Bed**: the reroll responds at once, all four proofs draw in the background (first card placement on a throttled phone: 936 ms → 360 ms), and five new sizes with notes on what each suits.
+- **ComfyUI off**: images wait quietly and reload when it comes back; the status light says "Server ✕" when Mochi itself is unreachable and recovers after a server restart. Back-to-back images are queued in ComfyUI right away, so the GPU doesn't wait between them.
+- **Fixes from a five-part review**:
+  - The pool's "N pinned cards" no longer counts cards the current rating can't use, and says how many are off.
+  - Gallery history titles and "Similar works" keep character cards; works with the same character come first.
+  - Gallery and history search work like the library: Simplified Chinese, underscores and separate words all match, and series names find their characters.
+  - The Results wall trims saved works last and says so the first time it trims.
+  - After **Stop**, **Resume** puts the cleared images back and prints them.
+  - Image details opened mid-print switch to the finished image.
+  - Saving a group and saving a deck are now explained differently.
+  - English: four card stamps that stayed Chinese, long Fuse Bed rule labels, and the room tabs at 320 px.
+  - Bigger touch targets for the × on pool and favourite cards.
+- **Round 6 review (24 items)**: safer album storage (per-work image copies, deletes go to a trash folder, a damaged work is set aside), retries after 502/503/504/429 instead of failing the image, and synced favourites merge across devices instead of overwriting.
+- The Ink Pool assistant (beta) can add cards to an existing group, swaps words missing from the lexicon for the closest card, and continues the last action on short replies like "more".
+
+### 繁體中文
+
+與 [v1.8](https://github.com/bosen12/danbooru_tag_mochi/releases/tag/v1.8) 相比：
+
+- **詞庫大幅擴充：10,849 張（v1.8 是 8,472 張）**。新增約 1,700 個模型認得的字、Danbooru 一般字、版面外框畫材，以及 87 張別名卡和幾個新體位。**角色從模型自己的角色清單收了 3,165 個**，可用的角色牌現在有 1,241 張。角色 tag 照模型認得的寫法，舊拼法放在原本那張牌旁邊。凡是不能確定是成年人的角色（未成年、學生、幼態、真人與 VTuber、非人類、不確定），一律封鎖。
+- **卡面包 [card-art-v14](https://github.com/bosen12/danbooru_tag_mochi/releases/tag/card-art-v14)**：全年齡卡面 8,176 張，比 v13 多 1,596 張。已經有 v13 的人只會抓約 90 MB 的增量包。
+- **無限抽不再越印越卡**：以前連印幾百張，網頁會越來越頓到卡死，CPU 接近 100%。現在牌的動畫演完會連同動畫一起拿掉；成品牆也拿掉了毛玻璃，滿牆時約 700 個合成圖層裡有 425 個來自它。連跑 9 分鐘、印 578 張的壓力測試：主執行緒每 20 秒的忙碌時間穩在 9 秒左右，以前會一路爬到 14.5 秒；Chrome 記憶體從 1.95 GB 降到 1.49 GB。
+- **成品不再永遠「排隊中」**：以前開好幾個墨池分頁時，重新整理的那頁排著的圖沒人接手印，牆滿時反而裁掉剛印好的。現在每張排著的圖記得是哪個分頁排的，那個分頁不在了，就由現在的分頁接著印。
+- **偏好角色**：可以依系列、性別篩選，換頁鈕固定在畫面上，點錯拿掉再點會放回原位，打開快約一倍。墨池字盒、卡冊、疊印台卡盒的角色頁多一顆「♥ 偏好」，只看偏好的角色。
+- **卡冊角色頁**：系列抽屜開關變順，動漫／遊戲／其他可以篩整類。
+- **全站更順**：清單換內容改成交疊淡入淡出，不再閃一格空白；對話框高度會滑到新的高度；合成池和規則區滑開，不再整排跳；偏好卡牌托盤出牌時其他牌不再抖；相同的牌不再整批重做（換分級、放牌、卡冊牌格）。
+- **疊印台**：「換一批」一按就動；四組試印都在背景算，降速手機上第一次放牌從 936 ms 縮到 360 ms；多了五種尺寸，滑鼠移上去會說明各適合什麼。
+- **ComfyUI 沒開時**：圖安靜等著，ComfyUI 回來就自己重新載入；墨池伺服器本身連不上時寫「伺服器 ✕」，伺服器重開後會自己恢復。連續生圖時下一張馬上排進 ComfyUI，顯示卡不再兩張之間空等。
+- **五份審查後的修正**：
+  - 合成池的「N 張會一定進圖」不再把這一級分級用不到的牌算進去，另外寫出幾張不會用。
+  - 作品冊日誌的標題和「相似的作品」保留角色牌，同一個角色的排在前面。
+  - 作品冊、日誌的搜尋跟字盒同一套：簡體、底線、空白分開的詞都找得到，打作品名會列出它的角色。
+  - 成品牆裁圖時收藏過的最後才裁，第一次裁到會提示。
+  - 按「停」之後提示上的「接著印」，會把收掉的放回原位並接著印。
+  - 印到一半打開的成品詳情，畫好時自動換成成品。
+  - 存群組、存牌組的說明分開寫。
+  - 英文版：四枚留著中文的小章、疊印台規則表的長標籤、320px 寬的房間導覽都修好了。
+  - 合成池和偏好卡牌的 × 加大觸控範圍。
+- **第六輪檢查（24 項）**：作品冊存檔更穩（每件作品各自留一份圖、刪除先移到回收資料夾、壞掉的作品另外放著不影響其他）；遇到 502、503、504、429 會重試，不會直接印壞；兩台裝置同步偏好卡牌改成合併，不再互相蓋掉。
+- 墨池助手（實驗功能）可以把牌加進既有群組；詞庫沒有的字會換成同類最接近的牌；回「再來」這類短句會接著做上一件事。
+
 ## v1.8 — 2026-11-20
 
 Changes since [v1.7](https://github.com/bosen12/danbooru_tag_mochi/releases/tag/v1.7).
