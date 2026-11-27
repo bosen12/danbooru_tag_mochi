@@ -2,67 +2,14 @@
  * 卡牌的共用部分：花色、分級、插畫 prompt、檔名。墨池（web6）、字鋪（zipu）、
  * 排字匣的卡牌模式（web/tag-cards.js）、烘焙腳本共用。
  *
- * 零 import：分級判斷（ratingBlocked）和情境表（ACT_PLACE）由呼叫端傳進來，
- * 所以 node（烘焙腳本、測試）跟瀏覽器用的是同一份。
+ * 只 import 永遠不抽的字（rules/hardban.js，沒有別的依賴）：分級判斷（ratingBlocked）和情境表（ACT_PLACE）
+ * 由呼叫端傳進來，所以 node（烘焙腳本、測試）跟瀏覽器用的是同一份。
  */
+import { HARD_BAN } from "./rules/hardban.js";
 
-/** 永遠不做成卡、不畫插畫、抽牌時一律封鎖的字。不是設定，是底線。
- *  children 不在詞庫（merge 的 BANNED 會丟掉），貼上與送出仍靠這張表擋。child 在詞庫（listed_block）。 */
-export const HARD_BANNED = Object.freeze([
-  "loli",
-  "shota",
-  "aged down",
-  "onee-shota",
-  "oppai loli",
-  // 2026-11-26：alltags 跟未成年有關的字，專案主說照 loli、onee-shota 處理。
-  "if they mated",
-  "kono lolicon domome",
-  "age regression",
-  "lolidom",
-  "mesugaki",
-  "onee-loli",
-  "onii-shota",
-  "child on child",
-  "baby",
-  "kodomo doushi",
-  "toddlercon",
-  "toddlersex",
-  "mother and child",
-  "father and child",
-  "carrying baby",
-  "kindergarten uniform",
-  "tomoeda elementary school uniform",
-  "tokyo-3 middle school uniform",
-  "mitakihara school uniform",
-  "tokiwadai school uniform",
-  "nanamori school uniform",
-  "sakugawa school uniform",
-  "nanairogaoka middle school uniform",
-  // 2026-11-26：alltags 的小學、國中制服，照上面幾件一樣收進詞庫但不抽、不烤。
-  "seishou elementary school uniform",
-  "nami junior high school uniform",
-  "raimon",
-  "pacifier",
-  "diaper",
-  "bib",
-  "onesie",
-  "training bra",
-  "age progression",
-  "age comparison",
-  "parent and child",
-  "father and son",
-  "children",
-  "child carry",
-  "child",
-  // 2026-11-27 tagcomplete 那批：國中、小學、幼兒相關和抱著嬰兒（跟 engine.js 的 NEVER_DRAW 同一份）。
-  "tokiwadai school gym uniform",
-  "kamihama university affiliated school uniform",
-  "raimon soccer uniform",
-  "blueberry academy school uniform",
-  "randoseru",
-  "problem solver 68 (blue archive)",
-  "holding baby",
-]);
+/** 永遠不做成卡、不畫插畫、抽牌時一律封鎖的字（看起來未成年）。不是設定，是底線。
+ *  名單唯一的一份在 rules/hardban.js（2026-11-28 合併）：要禁止或開放一個字只改那裡。 */
+export const HARD_BANNED = HARD_BAN;
 const HARD = new Set(HARD_BANNED);
 
 /**

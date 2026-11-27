@@ -73,6 +73,7 @@ if sys.platform == "win32":
     socket.create_connection = _dodge_blocked_port
 
 import assistant
+import hardban
 import card_usage
 import card_decks
 import card_groups
@@ -3204,51 +3205,10 @@ def prepare_face(payload: dict, spec: dict, raw: bytes, width: int, height: int,
     return wf, meta
 
 
-# 不能用的字：未成年相關（web/card-art.js 的 HARD_BANNED），加上詞庫的 characterBan（未成年、學生、
+# 不能用的字：未成年相關（web/rules/hardban.js，唯一的一份；讀不到就不啟動），加上詞庫的 characterBan（未成年、學生、
 # 童顏、真人、非人形的角色）。畫面上已經擋了；這裡是最後一道：自己組請求、貼進工作流的也一樣不收。
-_HARD_BANNED = {
-    "loli",
-    "shota",
-    "aged down",
-    "onee-shota",
-    "oppai loli",
-    "baby",
-    "kodomo doushi",
-    "toddlercon",
-    "toddlersex",
-    "mother and child",
-    "father and child",
-    "carrying baby",
-    "kindergarten uniform",
-    "tomoeda elementary school uniform",
-    "tokyo-3 middle school uniform",
-    "mitakihara school uniform",
-    "tokiwadai school uniform",
-    "nanamori school uniform",
-    "sakugawa school uniform",
-    "nanairogaoka middle school uniform",
-    "raimon",
-    "pacifier",
-    "diaper",
-    "bib",
-    "onesie",
-    "training bra",
-    "age progression",
-    "age comparison",
-    "parent and child",
-    "father and son",
-    "children",
-    "child carry",
-    "child",
-    # 2026-11-27 tagcomplete 那批：國中、小學、幼兒相關和抱著嬰兒（web/card-art.js 的 HARD_BANNED）。
-    "tokiwadai school gym uniform",
-    "kamihama university affiliated school uniform",
-    "raimon soccer uniform",
-    "blueberry academy school uniform",
-    "randoseru",
-    "problem solver 68 (blue archive)",
-    "holding baby",
-}
+# 2026-11-28 合併：以前這裡抄了一份，少了 10 個字（mesugaki、child on child…）。
+_HARD_BANNED = hardban.load_hard_ban()
 _CHAR_BAN: dict = {"path": None, "mtime": None, "tags": frozenset(), "characters": frozenset()}
 
 

@@ -5,7 +5,7 @@
 
 規則：
 - 新版有的一律用新版（不覆蓋）。新版 manifest 有記、但原圖檔不見的，當成缺。
-- hardban 的字一律不搬：以新版的 HARD_BANNED（web/card-art.js）＋禁用角色（web/lexicon.json 的 characterBan）為準。
+- hardban 的字一律不搬：以新版的永遠不抽的字（web/rules/hardban.js）＋禁用角色（web/lexicon.json 的 characterBan）為準。
   舊版可能烤過後來才禁止的牌。
 - 新版詞庫已經沒有的牌不搬（只列出來）。
 - 先列出要搬幾張、問過才動手；動手前把新版的 manifest.json 備份成 manifest.json.bak-日期時間。
@@ -59,19 +59,30 @@ def load_manifest(cards: Path) -> dict:
 
 
 def hardban(new_cards: Path) -> tuple[set[str], set[str], set[str] | None]:
-    """新版的 HARD_BANNED、characterBan、詞庫的牌。找不到 HARD_BANNED 就停：寧可不搬。"""
+    """新版的永遠不抽的字、characterBan、詞庫的牌。找不到永遠不抽的字就停：寧可不搬。
+    名單在 web/rules/hardban.js（2026-11-28 起）；更早的版本在 web/card-art.js 的 HARD_BANNED，兩種都認。"""
     web = new_cards.parent
-    candidates = [web / "card-art.js", HERE.parent / "web" / "card-art.js"]
-    src = next((c for c in candidates if c.is_file()), None)
-    if not src:
-        raise SystemExit("找不到新版的 web/card-art.js（HARD_BANNED 名單）：未成年保護對不上，不合併。")
-    m = re.search(r"export const HARD_BANNED = Object\.freeze\(\[(.*?)\]\);", src.read_text(encoding="utf-8"), re.S)
+    candidates = [
+        (web / "rules" / "hardban.js", r"export const HARD_BAN = Object\.freeze\(\[(.*?)\]\);"),
+        (web / "card-art.js", r"export const HARD_BANNED = Object\.freeze\(\[(.*?)\]\);"),
+        (HERE.parent / "web" / "rules" / "hardban.js", r"export const HARD_BAN = Object\.freeze\(\[(.*?)\]\);"),
+    ]
+    m = None
+    src = None
+    for path, pattern in candidates:
+        if not path.is_file():
+            continue
+        m = re.search(pattern, path.read_text(encoding="utf-8"), re.S)
+        if m:
+            src = path
+            break
     if not m:
-        raise SystemExit(f"{src} 裡讀不到 HARD_BANNED：不合併。")
+        raise SystemExit("找不到新版的永遠不抽的字（web/rules/hardban.js）：未成年保護對不上，不合併。")
     body = re.sub(r"//[^\n]*", "", m.group(1))
     banned = {w.lower() for w in re.findall(r'"([^"\\]*)"', body)}
-    if len(banned) < 10:
-        raise SystemExit(f"HARD_BANNED 只讀到 {len(banned)} 個字，跟預期不合：不合併。")
+    # 名單長短不管；但除了雙引號字串還有別的寫法（單引號…）就是讀不懂，不合併（以免讀成 0 個字、什麼都沒擋）。
+    if re.sub(r'"[^"\\]*"', "", body).replace(",", "").strip():
+        raise SystemExit(f"{src} 的名單有讀不懂的寫法：不合併。")
     chars: set[str] = set()
     lex_tags = None
     for lex_path in (web / "lexicon.json", HERE.parent / "web" / "lexicon.json"):

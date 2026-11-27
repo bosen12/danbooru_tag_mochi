@@ -26,6 +26,7 @@ import {
   heatPresetOf,
   weightsForHeats,
 } from "./heats.js";
+import { HARD_BAN } from "./rules/hardban.js";
 import {
   createTracer,
   summarizeTrace,
@@ -5159,63 +5160,9 @@ function drawNoHumans(lex, settings, pinned, userBanned, rand, seed, opts) {
   };
 }
 
-// 看起來未成年的字：任何路徑都不輸出（隨機、釘選、預設組都一樣）。
-// 與 web/card-art.js 的 HARD_BANNED 同一份。children 不在詞庫，釘了字面也不給。
-const NEVER_DRAW = new Set([
-  "loli",
-  "shota",
-  "aged down",
-  "onee-shota",
-  "oppai loli",
-  // 2026-11-26：alltags 跟未成年有關的字，專案主說照 loli、onee-shota 處理。
-  "if they mated",
-  "kono lolicon domome",
-  "age regression",
-  "lolidom",
-  "mesugaki",
-  "onee-loli",
-  "onii-shota",
-  "child on child",
-  "baby",
-  "kodomo doushi",
-  "toddlercon",
-  "toddlersex",
-  "mother and child",
-  "father and child",
-  "carrying baby",
-  "kindergarten uniform",
-  "tomoeda elementary school uniform",
-  "tokyo-3 middle school uniform",
-  "mitakihara school uniform",
-  "tokiwadai school uniform",
-  "nanamori school uniform",
-  "sakugawa school uniform",
-  "nanairogaoka middle school uniform",
-  // 2026-11-26：alltags 的小學、國中制服，照上面幾件一樣收進詞庫但不抽、不烤。
-  "seishou elementary school uniform",
-  "nami junior high school uniform",
-  "raimon",
-  "pacifier",
-  "diaper",
-  "bib",
-  "onesie",
-  "training bra",
-  "age progression",
-  "age comparison",
-  "parent and child",
-  "father and son",
-  "children",
-  "child carry",
-  "child",
-  // 2026-11-27 tagcomplete 那批：國中、小學、幼兒相關和專案主要禁的抱著嬰兒，收進詞庫但不抽、不烤（sync_20261127_tags.py 的 NEVER）。
-  "tokiwadai school gym uniform",
-  "kamihama university affiliated school uniform",
-  "raimon soccer uniform",
-  "blueberry academy school uniform",
-  "randoseru",
-  "problem solver 68 (blue archive)",
-  "holding baby",
-]);
+// 看起來未成年的字：任何路徑都不輸出（隨機、釘選、預設組都一樣）。children 不在詞庫，釘了字面也不給。
+// 名單唯一的一份在 rules/hardban.js（2026-11-28 合併；以前在這裡、card-art.js、server.py 各抄一份）。
+const NEVER_DRAW = new Set(HARD_BAN);
 /** 這個字是不是永遠不抽（看起來未成年）：卡片詳情的 Danbooru「看圖」連結也不給（danbooru-link.js）。 */
 export const neverDraw = (tag) => NEVER_DRAW.has(tag);
 

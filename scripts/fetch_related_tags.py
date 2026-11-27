@@ -49,6 +49,8 @@ import urllib.request
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))  # hardban.py
 LEXICON = ROOT / "web" / "lexicon.json"
 CARD_ART = ROOT / "web" / "card-art.js"
 DEFAULT_CACHE = ROOT / "scripts" / ".cache_related_tags"
@@ -109,17 +111,11 @@ def to_danbooru(tag: str) -> str:
     return re.sub(r"\s+", "_", tag.strip())
 
 
-def hard_banned(path: Path = CARD_ART) -> set[str]:
-    """從 web/card-art.js 讀 HARD_BANNED（跟 engine.js 的 NEVER_DRAW 同一份）。讀不到就整個停：寧可不產檔。"""
-    src = path.read_text(encoding="utf-8")
-    m = re.search(r"export const HARD_BANNED = Object\.freeze\(\[(.*?)\]\);", src, re.S)
-    if not m:
-        raise SystemExit(f"讀不到 {path} 的 HARD_BANNED：未成年保護的名單對不上，不產關聯檔。")
-    body = re.sub(r"//[^\n]*", "", m.group(1))
-    words = set(re.findall(r'"([^"\\]*)"', body))
-    if len(words) < 10:
-        raise SystemExit(f"HARD_BANNED 只讀到 {len(words)} 個字，跟預期不合，不產關聯檔。")
-    return words
+def hard_banned() -> set[str]:
+    """永遠不抽的字（web/rules/hardban.js，唯一的一份；根目錄 hardban.py 讀）。讀不到就整個停：寧可不產檔。"""
+    import hardban
+
+    return set(hardban.load_hard_ban())
 
 
 # ---------------------------------------------------------------- 快取
