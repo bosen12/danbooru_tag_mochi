@@ -125,7 +125,7 @@ export function openDecks({ where, current, has, zh, apply, paste, weightsNow = 
     ? el(
         "form",
         { class: "deck-save" },
-        el("p", { class: "deck-save-lead" }, `把${where}裡的 ${now.filter(canSave).length} 張存成一組：`),
+        el("p", { class: "deck-save-lead" }, `把${where}裡的 ${now.filter(canSave).length} 張存成牌組（整組的快照，套用時換成這組）：`),
         validation,
         el("div", { class: "deck-save-row" }, name, saveBtn),
         conflictBox,

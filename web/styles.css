@@ -1815,6 +1815,16 @@ body #wf-pick-btn.has {
   padding: 0;
 }
 
+/* 手指點的範圍擴到約 44px 高（看起來還是那顆小圈）：以前點歪就打開牌的詳情。
+ * 往上、往左（自己的牌角）擴；右邊只多一點，不要蓋到隔壁那張牌的左上角。 */
+@media (pointer: coarse) {
+  .pool-x::after {
+    content: "";
+    position: absolute;
+    inset: -10px -4px -10px -10px;
+  }
+}
+
 @media (hover: hover) and (pointer: fine) {
   .pool-x:hover {
     background: var(--color-accent-2);

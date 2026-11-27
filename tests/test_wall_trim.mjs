@@ -47,6 +47,12 @@ const many = (n, status, p) => Array.from({ length: n }, (_, i) => mk(status, `$
 {
   check("沒超過不裁", pickTrim(many(10, "done", "x"), 80).length === 0, null);
 }
+{
+  // 收藏過的最後才裁：最舊的兩張收藏了，裁的是比它們新、沒收藏的那兩張。
+  const shots = wall(many(80, "done", "n"), [mk("done", "a1", { albumId: "w1" }), mk("done", "a0", { albumId: "w0" })]);
+  const drop = pickTrim(shots, 80);
+  check("收藏過的最後才裁", drop.length === 2 && drop.every((s) => !s.albumId) && drop[0].id === "n79", drop.map((s) => s.id));
+}
 
 if (failed) {
   console.log(`${failed} failed`);

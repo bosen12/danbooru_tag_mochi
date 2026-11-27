@@ -1,7 +1,7 @@
 // 詞庫換過名的字：存著的舊名先換成新名（一定要第一個 import，見 tag-renames.js）。
 import "./tag-renames.js";
 import { guardPrerender, prerenderNeighbors, whenActive } from "./prerender.js";
-import { dateLocale, english } from "./i18n.js";
+import { dateLocale, english, t } from "./i18n.js";
 /**
  * 作品冊：收藏的成品（album-save.js 從墨池、疊印台收進來；存在伺服器 recipes.py，圖另存一份）。
  *   - 大圖牆：照每張的長寬比排（album.css 的 columns），新的在前；超出頂端分級的先收起來。
@@ -19,6 +19,7 @@ import { dateLocale, english } from "./i18n.js";
 import { RATING_LABEL, ratingBlocked } from "./rules/rating.js";
 import { mountRatingFree } from "./rating-free.js";
 import { buildLibrary, createAssets, ERA_ZH } from "./cards.js";
+import { hasTerms, searchKey } from "./card-search.js";
 import { artFallback, bindArt } from "./card-images.js";
 import { el, openSheet, toast, syncChoices, bootFailed, friendlyError, isNetError } from "./ui.js";
 import { copyText } from "./copy-text.js";
@@ -97,8 +98,9 @@ const cardsOf = (w) => tagsOfPositive(w.positive || "").filter((t) => lib.byTag.
 const mineOf = (w) => (Array.isArray(w.pinned) ? w.pinned : []).filter((t) => lib.byTag.has(t));
 // 沒有圖、但提示詞裡有詞庫牌：畫框改攤牌。有圖（含讀取失敗）不走這裡。
 const needsRecipeFan = (w) => !fileUrl(w.thumbnail) && !fileUrl(w.image) && cardsOf(w).length > 0;
-// 找相似用：去掉每張都有的人數牌（1個女性、單人），留下看得出差別的。
-const tellingOf = (w) => (w._telling ??= cardsOf(w).filter((t) => lib.byTag.get(t)?.item?.section !== "subject"));
+// 找相似用：去掉每張都有的人數牌（1個女性、單人），留下看得出差別的。角色牌也在人物那一段，但它最看得出差別：留著。
+const isCharTag = (t) => lib.byTag.get(t)?.item?.group === "character";
+const tellingOf = (w) => (w._telling ??= cardsOf(w).filter((t) => lib.byTag.get(t)?.item?.section !== "subject" || isCharTag(t)));
 
 // 格式器建一次重複用：每格各呼叫一次 toLocaleDateString，作品冊 150 件時換分頁光它就佔 80ms。
 let dateFmt = null;
@@ -337,6 +339,8 @@ async function load() {
     for (const w of works) {
       const cards = cardsOf(w);
       w._text = [w.name, w.positive, ...cards.map(zh)].join(" ").toLowerCase();
+      // 跟卡冊同一套比對（簡體、底線、空白分開每段都要有）；角色牌另外對作品名（打「間諜家家酒」找得到約兒）。
+      w._key = searchKey([w._text, ...cards.flatMap((t) => { const c = lib.byTag.get(t); return c?.suit === "chara" ? [c.groupZh, c.item?.series] : []; })].join(" "));
     }
     loadFailed = false;
     // 格子快取只留還在的作品（別的分頁刪掉的不要一直佔著）。
@@ -647,7 +651,8 @@ function paintLogSum(r) {
 /** 作品、模型分頁的摘要（「5 件作品・3 件在全年齡看不到」）：字換了就淡進來，不是一格換掉。 */
 function setSum(text) {
   const sum = $("album-sum");
-  if (sum.textContent === text && !sum.querySelector("[data-log-n]")) return;
+  // 英文版畫面上已經是英文：比對要用 t(text)，不然每次都當成換字、量高度又彈一下。
+  if (sum.textContent === t(text) && !sum.querySelector("[data-log-n]")) return;
   const g = heightChange(sum);
   sum.textContent = text;
   if (text) swapIn(sum, "sum:" + text, { firstToo: true });
@@ -684,7 +689,7 @@ function render({ deal = false } = {}) {
     log.render(logBox, { query, filter: logFilter, rating: seeRating(), emptyCkpt: logEmptyCkpt }, { deal });
     return;
   }
-  const shown = works.filter((w) => visible(w) && (!query || w._text.includes(query)));
+  const shown = works.filter((w) => visible(w) && (!query || w._text.includes(query) || hasTerms(w._key, query)));
   const hidden = works.filter((w) => !visible(w)).length;
   $("album-hint").hidden = works.length > 0 || loadFailed;
   setSum(works.length ? `${shown.length} 件作品${hidden ? `・${hidden} 件在${RATING_LABEL[rating]}看不到` : ""}` : "");
@@ -959,7 +964,7 @@ async function reprintWork(all, w, btn) {
 
 /** 詳情底下「相似的作品」：用到的牌重疊多的幾件（這一級分級看得到的），點一下換過去看。 */
 function similarBox(w, sheetOf) {
-  const list = similarWorks(w, works.filter(visible), tellingOf);
+  const list = similarWorks(w, works.filter(visible), tellingOf, 6, isCharTag);
   if (!list.length) return null;
   return el(
     "section",
@@ -1072,7 +1077,7 @@ function refreshSimilar() {
   if (!body?.isConnected) return;
   const w = works.find((x) => x.id === detail.id);
   if (!w || !visible(w)) return;
-  const ids = similarWorks(w, works.filter(visible), tellingOf).map(({ work: x }) => x.id).join("\0");
+  const ids = similarWorks(w, works.filter(visible), tellingOf, 6, isCharTag).map(({ work: x }) => x.id).join("\0");
   // 相似列在 .album-info 裡，不是詳情根節點的直接子。用 :scope > 找不到，分級調低後舊列還留著、點得開。
   const old = body.querySelector(".album-similar");
   if ((old?.dataset.ids || "") === ids) return;

@@ -2317,6 +2317,8 @@ const parameterized = String.raw`
 無限抽印完 {0} 張，到了設定的張數，停下了|Continuous generation stopped after {0} images, as set
 略過 {0} 張：跟印過的一模一樣（固定種子）|Skipped {0}: identical to images already printed with this fixed seed
 收掉了 {0} 張取消的|Cleared {0} cancelled images
+接著印|Resume
+成品牆最多 {0} 張：最舊的先拿下，作品冊的日誌裡都還在|Results hold up to {0} images. The oldest were taken down; they are all still in the Gallery history.
 修臉 {0}|Face fix {0}
 {0}（預設）|{0!} (default)
 {0} 的底模都用這一套；換成別家的底模會換成那一家的。改過的會描一道底線。|All {0!} models share these settings; other model families have their own. Changed values are underlined.
@@ -2578,6 +2580,8 @@ LoRA 觸發詞|LoRA trigger
 種子固定 {0}|Seed fixed {0}
 尺寸 {0}×{1} 墨池沒有，照現在的 {2}|Mochi has no {0}×{1} size; using {2}
 {0} 張會一定進圖|{0} pinned cards
+{0} 張會一定進圖・{1} 張這一級不會用|{0} pinned cards · {1} off at this rating
+{0} 張這一級不會用|{0} cards off at this rating
 合成池 {0} 張|{0} pinned cards
 點牌＝加進偏好卡牌 {0}/{1}|Tap a card = add to Favorite cards {0}/{1}
 點牌＝加進偏好卡牌 {0}|Tap a card = add to Favorite cards {0}
@@ -2702,6 +2706,7 @@ LoRA 觸發詞|LoRA trigger
 卡盒清空了（{0} 張）|Cleared {0} cards from the box
 剛剛又記了 {0} 張牌的使用次數|Usage updated for {0} cards
 把{0}裡的 {1} 張存成一組：|Save {1} cards from {0} as a deck:
+把{0}裡的 {1} 張存成牌組（整組的快照，套用時換成這組）：|Save {1} cards from {0} as a deck (a snapshot; applying it replaces what is there):
 {0}是空的：先放幾張牌，就能存成一組。|{0} is empty. Add cards before saving a deck.
 刪掉牌組「{0}」|Delete deck “{0!}”
 刪掉了牌組「{0}」|Deleted deck “{0!}”
@@ -3019,6 +3024,7 @@ ComfyUI 不收：{0}|ComfyUI rejected it: {0!}
 勾了的群組：{0}只從這幾組裡抽。群組沒放到的格子照常抽。|Checked groups: {0} is drawn only from them. Slots a group doesn't cover draw as usual.
 還沒有{0}群組。到卡冊挑牌建立，或把合成池裡的牌存成一組。|No {0} groups yet. Build one in the Card Book, or save the pool's cards as a group.
 把合成池裡的 {0} 張{1}牌存成一組：|Save the {0} {1} cards in the pool as a group:
+把合成池裡的 {0} 張{1}牌存成群組（以後這一格從勾的群組裡抽，合成池不會被換掉）：|Save the {0} {1} cards in the pool as a group (this slot will draw from checked groups; the pool stays as it is):
 {0} 張在現在的設定下抽不到（分級、性別、時代）|{0} cards can't be drawn with the current settings (rating, gender, era)
 存好了，已勾上「{0!}」|Saved and checked “{0!}”
 {0} · {1} 張|{0} · {1} cards

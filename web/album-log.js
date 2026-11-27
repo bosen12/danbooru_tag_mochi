@@ -14,6 +14,7 @@ import { zoomFromThumb } from "./zoom.js";
 import { refuse, enter, leave, reducedMotion, DUR, CURVE, css, swapIn, heightChange, ghostOut } from "./motion.js";
 import { viewSrc } from "./gen.js";
 import { tagsOfPositive } from "./usage.js";
+import { hasTerms, searchKey } from "./card-search.js";
 import { favButton } from "./album-save.js";
 import { weightsOfPositive } from "./weights.js";
 import { RATING_LABEL } from "./rules/rating.js";
@@ -130,6 +131,9 @@ export function createLog(ctx) {
   let openEntrySheet = null;
 
   const cards =(e) => tagsOfPositive(e.positive).filter(ctx.isCard);
+  // 搜尋用的第二份字：跟卡冊同一套（簡體、底線、空白分開每段都要有），角色牌另外對作品名。第一次搜才算、算過留著。
+  const keyOf = (e) =>
+    (e._key ??= searchKey([e._text || "", ...cards(e).flatMap((t) => { const c = ctx.lib.byTag.get(t); return c?.suit === "chara" ? [c.groupZh, c.item?.series] : []; })].join(" ")));
 
   function index() {
     // 記著原圖檔的作品只認那個檔：同種子重印、只換 LoRA 的第二張不會被當成已收藏（以前日誌上補收藏不了）。
@@ -375,11 +379,13 @@ export function createLog(ctx) {
     return box;
   }
 
-  // 列表上的名字：跳過每張都有的人數牌（1個女性、單人），先寫看得出差別的。
+  // 列表上的名字：跳過每張都有的人數牌（1個女性、單人），先寫看得出差別的；畫的是哪個角色寫在最前面。
   function title(e) {
     const c = cards(e);
     if (!c.length) return `seed ${e.seed ?? "—"}`;
-    const telling = c.filter((t) => ctx.lib.byTag.get(t)?.item?.section !== "subject");
+    const item = (t) => ctx.lib.byTag.get(t)?.item;
+    const chars = c.filter((t) => item(t)?.group === "character");
+    const telling = [...chars, ...c.filter((t) => item(t)?.section !== "subject")];
     const pick = (telling.length ? telling : c).slice(0, 4);
     return pick.map(ctx.zh).join("・") + (c.length > pick.length ? `…（共 ${c.length} 張牌）` : "");
   }
@@ -426,7 +432,7 @@ export function createLog(ctx) {
       inRating += 1;
       // 成績單的空底模：名字是「預設」，日誌這欄是空的，不能拿「預設」去比對文字。
       if (view.emptyCkpt && shortName(e.ckpt)) continue;
-      if (pass(e, filter) && (!query || (e._text || "").includes(query))) shownList.push(e);
+      if (pass(e, filter) && (!query || (e._text || "").includes(query) || hasTerms(keyOf(e), query))) shownList.push(e);
     }
     return { shownList, shown: shownList.length, hidden: items.length - inRating, total: items.length };
   }

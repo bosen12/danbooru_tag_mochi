@@ -210,7 +210,7 @@ export function mountGroupPicks({ settings, setSettings, cardOf, poolTags, block
       const form = el(
         "form",
         { class: "gp-save-form" },
-        el("p", { class: "gp-save-lead" }, `把合成池裡的 ${mine.length} 張${zh}牌存成一組：`),
+        el("p", { class: "gp-save-lead" }, `把合成池裡的 ${mine.length} 張${zh}牌存成群組（以後這一格從勾的群組裡抽，合成池不會被換掉）：`),
         el("div", { class: "gp-save-row" }, name, go)
       );
       form.addEventListener("submit", async (e) => {

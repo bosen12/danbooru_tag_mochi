@@ -896,6 +896,15 @@ body[data-dragging="true"] .fav-hand[data-open="false"][data-over="true"] {
   }
 }
 
+/* 手指點的範圍擴到約 44px 高：以前點歪就把這張牌打進合成池。右邊只多一點，不蓋到隔壁那張。 */
+@media (pointer: coarse) {
+  .fav-x::after {
+    content: "";
+    position: absolute;
+    inset: -11px -4px -11px -12px;
+  }
+}
+
 .fav-emptytext {
   display: grid;
   place-items: center;

@@ -2354,7 +2354,11 @@ function renderPool(fresh) {
   // 「N 張會一定進圖」出現、收起時同一行的按鈕被推開：從原位滑過去，不是整排一格跳（2026-11-21 逐格量到 81px）。
   const countRow = $("pool-count").parentElement;
   const rowWas = reducedMotion() ? [] : [...countRow.children].map((n) => [n, n.getBoundingClientRect()]);
-  settleText($("pool-count"), allTags.length ? `${allTags.length} 張會一定進圖` : "");
+  // 這一級分級用不到的牌不算「一定進圖」（抽的時候會被拿掉）：另外說有幾張這一級不會用，跟牌上的「分級擋掉」對得上。
+  const r = ratingOf(settings);
+  const off = allTags.filter((t) => ratingBlocked(lib.byTag.get(t).item, r)).length;
+  const on = allTags.length - off;
+  settleText($("pool-count"), on && off ? `${on} 張會一定進圖・${off} 張這一級不會用` : on ? `${on} 張會一定進圖` : off ? `${off} 張這一級不會用` : "");
   shownInPlace($("pool-clear"), tags.length);
   shownInPlace($("pool-to-fuse"), tags.length);
   for (const [n, r] of rowWas) {
@@ -4144,7 +4148,13 @@ function trimWall() {
   for (const s of drop) hiresRun.cancel(s);
   for (const s of drop) document.querySelector(`.shot[data-id="${s.id}"]`)?.remove();
   generator.drop(new Set(drop.map((s) => s.id)));
+  // 印好的被拿下：以前悄悄不見。這一頁第一次說一聲（無限抽每張都說會洗版），圖在作品冊的日誌裡都還在。
+  if (!trimToldOnce && drop.some((s) => s.status === "done")) {
+    trimToldOnce = true;
+    toast(`成品牆最多 ${S.SHOT_MAX} 張：最舊的先拿下，作品冊的日誌裡都還在`, { later: true });
+  }
 }
+let trimToldOnce = false;
 
 /* ================= 成品牆 ================= */
 
@@ -4897,7 +4907,10 @@ function printInPlace(shot) {
 function updateShot(shot) {
   const node = document.querySelector(`.shot[data-id="${shot.id}"]`);
   if (node) paintShot(node, shot);
+  if (liveShotView?.id() === shot.id) liveShotView.update(shot);
 }
+// 開著的成品詳情（showShot）：那張印好、印壞、換了圖（Hires、修臉）時跟著換，不必關掉重開。
+let liveShotView = null;
 
 /* ---------- 印好了，可是那張不在畫面上（手機捲回去挑牌、電腦捲去看字盒）：底部浮出一顆膠囊 ----------
  * 那張的縮圖＋「印好了・看看」（連著印好幾張就是「印好 N 張」，縮圖換成最新那張）。點了捲過去，那張亮一圈。
@@ -5139,10 +5152,11 @@ function sweepCancelled() {
   renderGoFloat();
   toast(gone.length > 1 ? `收掉了 ${gone.length} 張取消的` : "收掉了一張取消的", {
     action: {
-      label: "復原",
+      // 按停多半是按早了（Esc）：放回原位並接著印，不要放回來還是一排「取消了」、要一張張按「再印這張」。
+      label: "接著印",
       key: "Z",
       // 照原本的位置由前往後放回去，每一張的位置才對得上。
-      run: () => gone.forEach(([s, i]) => restoreShot(s, i)),
+      run: () => gone.forEach(([s, i]) => restoreShot(s, i, true)),
     },
   });
 }
@@ -5340,9 +5354,24 @@ function showShot(shot, { focus } = {}) {
     onClose: () => {
       document.removeEventListener("keydown", onKey, true);
       hidePeek();
+      if (liveShotView === live) liveShotView = null;
     },
   });
   sheet.sheet.classList.add("sheet-shot");
+  // 印到一半點開的：印好（或印壞、Hires 換了圖）就在原地淡換成新的樣子。進度每一格不重畫，只看狀態和圖換了沒。
+  const viewKey = (s) => `${s.status}|${s.image || ""}`;
+  let seenKey = viewKey(shot);
+  const live = {
+    id: () => current.id,
+    update: (s) => {
+      const k = viewKey(s);
+      if (k === seenKey || !sheet.sheet.isConnected) return;
+      seenKey = k;
+      swapTo(s, 0, 0);
+      syncNav();
+    },
+  };
+  liveShotView = live;
   // 視窗裡的牌滑鼠停上去也有放大卡（跟字盒、合成池同一個）。掛在整個視窗上：← → 換張時牌重畫也接得到。
   attachPeek(sheet.sheet, ".card[data-tag]", peekInfo);
   attachTilt(sheet.sheet);
@@ -5374,6 +5403,7 @@ function showShot(shot, { focus } = {}) {
     if (!next) return refuse(dir < 0 ? prevBtn : nextBtn);
     const token = ++navToken;
     current = next;
+    seenKey = viewKey(next);
     syncNav();
     const btn = dir < 0 ? prevBtn : nextBtn;
     if (!reducedMotion() && !dragged) btn.animate([{ transform: "none" }, { transform: `translateX(${dir * 5}px)` }, { transform: "none" }], { duration: DUR.short, easing: css(CURVE.out) });

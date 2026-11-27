@@ -100,6 +100,8 @@ html[lang="en"] :is(.btn, .quiet-btn, .segmented button) { letter-spacing: 0; }
 html[lang="en"] :is(.panel-head, .plate-head, .trials-head, .wall-head) { flex-wrap: wrap; row-gap: 8px; }
 html[lang="en"] :is(.rule-row, .rule-steppers, .go-bar, .go-options, .plate-acts, .book-order) { flex-wrap: wrap; }
 html[lang="en"] .rule-label { min-width: 7rem; }
+/* 疊印台的規則表標籤欄只有 6rem：英文長的（Cards per category、Pose reference）換行，不要壓到右邊的控制項。 */
+html[lang="en"] .rules-sheet .rule-label { min-width: 0; white-space: normal; line-height: 1.25; }
 html[lang="en"] .group-chip { min-height: 30px; white-space: normal; line-height: 1.25; text-align: left; }
 html[lang="en"] .chip-fam { letter-spacing: 0; }
 /* 給中文排的寬字距，英文字母會一個一個散開（「S t a r t  y o u r」）。 */
@@ -299,3 +301,13 @@ html[lang="en"] :is(.k-flash, .w.chip, .w.rel-label) small { display: none; }
 /* 再擠不下：地球旁邊縮成沒有框的小圖示。 */
 .theme-picker.is-compact { min-width: 24px; border-color: transparent; background: none; }
 .theme-picker.is-compact + .language-picker { margin-left: 0; }
+
+/* 寫在 CSS content 裡的章，翻譯程式換不到（它只走文字節點和屬性）：英文版在這裡換。字要短，章很小。 */
+html[lang="en"] body[data-dragging="true"] .fav-hand[data-open="false"][data-droppable="true"] .fav-head::after { content: "Drop to add"; }
+html[lang="en"] .card[data-in-hand="true"]::before { content: "★"; }
+html[lang="en"] .case-grid .card[data-state="pinned"]::after { content: "In"; }
+html[lang="en"][data-book-group="edit"] .book-cell[data-ingroup="true"]::after { content: "✓"; }
+/* 320px 寬：五間的英文名剛好擠不下（Parse Pool 被切掉幾 px）。字小一號、內距再收。 */
+@media (max-width: 22.5rem) {
+  html[lang="en"] .page-switch a { padding-inline: 2px; font-size: 11px; letter-spacing: -0.01em; }
+}

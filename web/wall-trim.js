@@ -3,7 +3,7 @@
  *
  * - 只抽牌的（status "drawn"，不存檔）和印過的各算各的 max 張：以前一起算，一口氣只抽幾十張，
  *   就把前面印好的圖擠出牆、也擠出存檔。
- * - 印過的那一堆先裁沒印出來的（失敗、取消、停掉的），還超過才裁印好的；都從最舊的開始。
+ * - 印過的那一堆先裁沒印出來的（失敗、取消、停掉的），還超過才裁印好的；收藏過的（albumId）最後才裁。都從最舊的開始。
  * - 還在跑的（排著、在印、Hires／修臉排著或在做）一張都不裁：裁掉的話後端照畫，畫好卻沒地方放。
  *   全都在跑的時候就暫時超過上限。
  */
@@ -21,6 +21,6 @@ export function pickTrim(shots, max) {
     drop.push(...order.slice(0, over));
   };
   cut(shots.filter((s) => s.status === "drawn"), () => 0);
-  cut(shots.filter((s) => s.status !== "drawn"), (s) => (shotWaste(s) ? 0 : 1));
+  cut(shots.filter((s) => s.status !== "drawn"), (s) => (shotWaste(s) ? 0 : s.albumId ? 2 : 1));
   return drop;
 }

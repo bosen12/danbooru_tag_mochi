@@ -134,7 +134,7 @@ function warArrived() {
   renderSummary();
   for (const dd of document.querySelectorAll("dd.book-war[data-war-of]")) {
     const text = warText(dd.dataset.warOf);
-    if (dd.textContent !== text) {
+    if (dd.textContent !== t(text)) {
       dd.textContent = text;
       swapIn(dd, `war:${text}`, { firstToo: true });
     }

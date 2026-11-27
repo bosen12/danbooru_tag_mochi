@@ -10,6 +10,12 @@ import { SEARCH_WORDS } from "./search-words.js";
 
 export const searchKey = (s) => toSimplified(String(s ?? "").toLowerCase().replace(/_/g, " ")).replace(/\s+/g, " ").trim();
 
+/** 一段已經 searchKey 過的長字（作品冊、日誌的名字＋提示詞＋牌名）裡，q 的每一段都有（空白分開；簡體、底線照樣對）。 */
+export function hasTerms(key, q) {
+  const terms = searchKey(q).split(" ").filter(Boolean);
+  return terms.length > 0 && terms.every((t) => key.includes(t));
+}
+
 const keyCache = new WeakMap();
 function keysOf(c) {
   let k = keyCache.get(c);

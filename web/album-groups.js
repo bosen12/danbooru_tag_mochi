@@ -53,8 +53,9 @@ export function groupWorks(works, mode, ctx) {
   return out;
 }
 
-/** 跟 w 最像的幾件：用到的牌重疊多的在前（至少要有兩成重疊）。telling(w)：w 用到、去掉人數牌的牌。 */
-export function similarWorks(w, works, telling, n = 6) {
+/** 跟 w 最像的幾件：用到的牌重疊多的在前（至少要有兩成重疊）。telling(w)：w 用到、去掉人數牌的牌。
+ *  isKey(t)：角色這種「同一張就算像」的牌：有同一張的不管重疊幾成都列進來，排在前面。 */
+export function similarWorks(w, works, telling, n = 6, isKey = () => false) {
   const mine = new Set(telling(w));
   if (!mine.size) return [];
   const out = [];
@@ -65,7 +66,8 @@ export function similarWorks(w, works, telling, n = 6) {
     let both = 0;
     for (const t of other) if (mine.has(t)) both += 1;
     const score = both / (mine.size + other.length - both);
-    if (score >= 0.2) out.push({ work: x, score, both });
+    const key = other.some((t) => mine.has(t) && isKey(t));
+    if (score >= 0.2 || key) out.push({ work: x, score, both, key });
   }
-  return out.sort((a, b) => b.score - a.score || b.both - a.both).slice(0, n);
+  return out.sort((a, b) => b.key - a.key || b.score - a.score || b.both - a.both).slice(0, n);
 }
