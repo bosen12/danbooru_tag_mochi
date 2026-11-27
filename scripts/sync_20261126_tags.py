@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""2026-11-26 專案主給的模型認得清單（mochi-missing-tags.md，716 個）與 alltags.txt 剩下的一般字（941 個），加上專案主說要收的版面、外框、畫材 43 個與審過放行的絞索、自殘、兩件制服、幼稚園，與八個照 loli 處理的未成年字、推車體位（tags-1126c），和專案主指定、親自測過的 39 個（tags-1126d），共 1753 個。
+"""2026-11-26 專案主給的模型認得清單（mochi-missing-tags.md，716 個）與 alltags.txt 剩下的一般字（941 個），加上專案主說要收的版面、外框、畫材 43 個與審過放行的絞索、自殘、兩件制服、幼稚園，與八個照 loli 處理的未成年字、推車體位（tags-1126c），和專案主指定、親自測過的 39 個（tags-1126d），共 1753 個；2026-11-27 專案主指定 imminent netorare、before netorare，共 1755 個。
 
 Grok 4.7（high）六批＋七批填，Opus 驗收（.planning/tags-1126/、tags-1126b/）。tag 照專案主的清單原樣收：
 Danbooru 已經淘汰（black footwear、french braid、plaid）或改名的照收，模型是用舊資料學的。
@@ -1767,6 +1767,8 @@ holding unworn clothes|拿著沒穿的衣服|pose|tease|pose_hold|all|-|-|-|any|
 mind break|精神崩壞|pose|sex|sex_fetish|sex|-|-|-|any|-|normal
 anal only|只限肛交|pose|sex|sex_fetish|sex|-|female|-|female|-|normal
 condom left inside|套留在體內|pose|sex|sex_after|sex|-|-|condom|any|modern|normal
+imminent netorare|NTR前夕|pose|tease|pose_situ|all|-|female|-|any|-|normal
+before netorare|NTR前的日常|pose|tease|pose_situ|all|-|pair|-|any|-|normal
 """.strip().splitlines()
 
 _HEAT = {
@@ -1824,8 +1826,8 @@ def extra_sync_20261126_tags():
 
 def _check() -> None:
     tags = [row["tag"] for row in ROWS]
-    if len(tags) != 1753:
-        raise SystemExit(f"應為 1753 個字，實際 {len(tags)}")
+    if len(tags) != 1755:
+        raise SystemExit(f"應為 1755 個字，實際 {len(tags)}")
     if len(tags) != len(set(tags)):
         raise SystemExit("這批有重複的 tag")
     zhs: dict[str, list[str]] = {}

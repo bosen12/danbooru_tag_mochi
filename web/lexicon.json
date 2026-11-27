@@ -242245,6 +242245,52 @@
       "group": "sex",
       "sub": "sex_after",
       "zh": "套留在體內"
+    },
+    {
+      "tag": "imminent netorare",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "tease",
+      "sub": "pose_situ",
+      "needs": [
+        "female"
+      ],
+      "zh": "NTR前夕"
+    },
+    {
+      "tag": "before netorare",
+      "section": "pose",
+      "gate": "any",
+      "heat": [
+        "tease",
+        "flash",
+        "sex"
+      ],
+      "mutex": null,
+      "bind": [],
+      "implies": [],
+      "layer": "normal",
+      "era": [
+        "any"
+      ],
+      "group": "tease",
+      "sub": "pose_situ",
+      "needs": [
+        "pair"
+      ],
+      "zh": "NTR前的日常"
     }
   ]
 }

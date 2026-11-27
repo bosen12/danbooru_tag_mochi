@@ -4623,6 +4623,8 @@ const ODD_MOTIF = new Set([
   "unwanted creampie",
   "forced kiss",
   "mind break",
+  // 2026-11-27 專案主指定：NTR 之前的日常（Danbooru 只有 23 帖、幾乎都是漫畫分格）。隨機抽到模型多半不認得、還會畫成漫畫，只在釘了才出現。
+  "before netorare",
 ]);
 // 只當父字用的動作：騎乘要有騎的東西（騎馬、騎車、騎掃帚帶出來）。自己被抽到時
 // 畫面沒有坐騎（以前 41 張裡 11 張）。釘它、必抽照收。
