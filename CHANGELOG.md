@@ -23,6 +23,7 @@ Changes since [v1.8](https://github.com/bosen12/danbooru_tag_mochi/releases/tag/
   - Saving a group and saving a deck are now explained differently.
   - English: four card stamps that stayed Chinese, long Fuse Bed rule labels, and the room tabs at 320 px.
   - Bigger touch targets for the × on pool and favourite cards.
+  - Hovering a result no longer makes its button labels jump 1 px as they fade in.
 - **Round 6 review (24 items)**: safer album storage (per-work image copies, deletes go to a trash folder, a damaged work is set aside), retries after 502/503/504/429 instead of failing the image, and synced favourites merge across devices instead of overwriting.
 - The Ink Pool assistant (beta) can add cards to an existing group, swaps words missing from the lexicon for the closest card, and continues the last action on short replies like "more".
 
@@ -49,6 +50,7 @@ Changes since [v1.8](https://github.com/bosen12/danbooru_tag_mochi/releases/tag/
   - 存群組、存牌組的說明分開寫。
   - 英文版：四枚留著中文的小章、疊印台規則表的長標籤、320px 寬的房間導覽都修好了。
   - 合成池和偏好卡牌的 × 加大觸控範圍。
+  - 滑鼠移上成品時，按鈕列的字不再在淡入結束時跳 1px。
 - **第六輪檢查（24 項）**：作品冊存檔更穩（每件作品各自留一份圖、刪除先移到回收資料夾、壞掉的作品另外放著不影響其他）；遇到 502、503、504、429 會重試，不會直接印壞；兩台裝置同步偏好卡牌改成合併，不再互相蓋掉。
 - 墨池助手（實驗功能）可以把牌加進既有群組；詞庫沒有的字會換成同類最接近的牌；回「再來」這類短句會接著做上一件事。
 
