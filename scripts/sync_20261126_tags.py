@@ -1766,7 +1766,7 @@ pillow fight|打枕頭仗|pose|activity|act_fun|all|activity|pair|pillow|any|-|n
 holding unworn clothes|拿著沒穿的衣服|pose|tease|pose_hold|all|-|-|-|any|-|normal
 mind break|精神崩壞|pose|sex|sex_fetish|sex|-|-|-|any|-|normal
 anal only|只限肛交|pose|sex|sex_fetish|sex|-|female|-|female|-|normal
-condom left inside|套留在體內|pose|sex|sex_after|sex|-|-|condom|any|modern|normal
+condom left inside|套留在體內|pose|sex|sex_after|sex|-|pair,female,male|condom|any|modern|normal
 imminent netorare|NTR前夕|pose|tease|pose_situ|all|-|female|-|any|-|normal
 before netorare|NTR前的日常|pose|tease|pose_situ|all|-|pair|-|any|-|normal
 """.strip().splitlines()

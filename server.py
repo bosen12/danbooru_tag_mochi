@@ -3240,26 +3240,241 @@ _HARD_BANNED = {
     "children",
     "child carry",
     "child",
+    # 2026-11-27 tagcomplete 那批：國中、小學、幼兒相關和抱著嬰兒（web/card-art.js 的 HARD_BANNED）。
+    "tokiwadai school gym uniform",
+    "kamihama university affiliated school uniform",
+    "raimon soccer uniform",
+    "blueberry academy school uniform",
+    "randoseru",
+    "problem solver 68 (blue archive)",
+    "holding baby",
 }
-_CHAR_BAN: dict = {"mtime": None, "tags": frozenset()}
+_CHAR_BAN: dict = {"path": None, "mtime": None, "tags": frozenset(), "characters": frozenset()}
+
+
+def norm_tag(raw) -> str:
+    """底線當空白、空白收成一格、小寫。跟畫面比對禁用字、guard 用同一種寫法。"""
+    return " ".join(str(raw or "").replace("_", " ").split()).lower()
+
+
+def _lexicon_file() -> Path | None:
+    """詞庫：先看現在這個網站目錄（測試會把假詞庫放在 WEB）。web6 沒有自己的一份，再看共用的 web/。"""
+    web = WEB / "lexicon.json"
+    try:
+        if web.is_file():
+            return web
+    except OSError:
+        pass
+    shared = SHARED / "lexicon.json"
+    try:
+        if shared.is_file():
+            return shared
+    except OSError:
+        pass
+    return None
+
+
+def _load_lexicon() -> None:
+    path = _lexicon_file()
+    if path is None:
+        return
+    try:
+        mtime = path.stat().st_mtime
+    except OSError:
+        return
+    if _CHAR_BAN.get("path") == str(path) and _CHAR_BAN.get("mtime") == mtime:
+        return
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+        tags = data.get("characterBan") if isinstance(data, dict) else None
+        _CHAR_BAN["tags"] = frozenset(str(t).lower() for t in (tags or []))
+        names = []
+        raw_tags = data.get("tags") if isinstance(data, dict) else None
+        if isinstance(raw_tags, list):
+            for item in raw_tags:
+                if isinstance(item, dict) and item.get("group") == "character":
+                    name = norm_tag(item.get("tag"))
+                    if name:
+                        names.append(name)
+        _CHAR_BAN["characters"] = frozenset(names)
+    except (OSError, ValueError, TypeError):
+        _CHAR_BAN["tags"] = frozenset()
+        _CHAR_BAN["characters"] = frozenset()
+    _CHAR_BAN["path"] = str(path)
+    _CHAR_BAN["mtime"] = mtime
 
 
 def character_ban() -> frozenset:
     """詞庫的 characterBan（小寫、空格格式）。詞庫改了自動重讀；讀不到就空的（HARD_BANNED 照擋）。"""
-    path = WEB / "lexicon.json"
+    _load_lexicon()
+    return _CHAR_BAN["tags"]
+
+
+def character_names() -> frozenset:
+    """詞庫裡 group 是 character 的 tag（小寫、空格）。guard 裡的角色仍可看自己的相關牌。"""
+    _load_lexicon()
+    return _CHAR_BAN["characters"]
+
+
+# 關聯檔（web/related_tags.json，爬蟲 --build 的產物）。不進版控；沒有檔就當沒有相關的牌。
+# 測試把 _RELATED_OVERRIDE 指到暫存檔，不碰開發用的那一份。
+_RELATED_OVERRIDE: Path | None = None
+_REL: dict = {"path": None, "mtime": None, "data": None}
+_RELATED_LIMIT = 20
+
+
+def related_file_path() -> Path:
+    if _RELATED_OVERRIDE is not None:
+        return Path(_RELATED_OVERRIDE)
+    return SHARED / "related_tags.json"
+
+
+def _related_doc() -> dict:
+    """照 mtime 快取。檔案不在、JSON 壞掉：空的，不丟例外。"""
+    path = related_file_path()
+    key = str(path)
     try:
         mtime = path.stat().st_mtime
     except OSError:
-        return _CHAR_BAN["tags"]
-    if _CHAR_BAN["mtime"] != mtime:
+        mtime = None
+    if _REL.get("path") == key and _REL.get("mtime") == mtime and isinstance(_REL.get("data"), dict):
+        return _REL["data"]
+    data: dict = {}
+    if mtime is not None:
         try:
-            data = json.loads(path.read_text(encoding="utf-8"))
-            tags = data.get("characterBan") if isinstance(data, dict) else None
-            _CHAR_BAN["tags"] = frozenset(str(t).lower() for t in (tags or []))
+            loaded = json.loads(path.read_text(encoding="utf-8"))
+            if isinstance(loaded, dict):
+                data = loaded
         except (OSError, ValueError):
-            _CHAR_BAN["tags"] = frozenset()
-        _CHAR_BAN["mtime"] = mtime
-    return _CHAR_BAN["tags"]
+            data = {}
+    _REL["path"] = key
+    _REL["mtime"] = mtime
+    _REL["data"] = data
+    return data
+
+
+# 卡片詳情的 Danbooru wiki 說明（web/tag_wiki.json，scripts/fetch_tag_wiki.py 產）。跟關聯檔同一個請求回：
+# 詳情本來就會問 /api/related。資料照存未成年的字，回傳前一樣只靠 hardban 擋（_HARD_BANNED、characterBan）。
+_WIKI_OVERRIDE: Path | None = None
+_WIKI: dict = {"path": None, "mtime": None, "data": None}
+
+
+def wiki_file_path() -> Path:
+    if _WIKI_OVERRIDE is not None:
+        return Path(_WIKI_OVERRIDE)
+    return SHARED / "tag_wiki.json"
+
+
+def _wiki_index() -> dict:
+    """{正規化的名字: 說明}。照 mtime 快取；檔案不在、壞掉：空的。"""
+    path = wiki_file_path()
+    key = str(path)
+    try:
+        mtime = path.stat().st_mtime
+    except OSError:
+        mtime = None
+    if _WIKI.get("path") == key and _WIKI.get("mtime") == mtime and isinstance(_WIKI.get("data"), dict):
+        return _WIKI["data"]
+    index: dict = {}
+    if mtime is not None:
+        try:
+            loaded = json.loads(path.read_text(encoding="utf-8"))
+            wiki = loaded.get("wiki") if isinstance(loaded, dict) else None
+            if isinstance(wiki, dict):
+                for name, text in wiki.items():
+                    k = norm_tag(name)
+                    if k and isinstance(text, str) and text.strip() and k not in index:
+                        index[k] = text.strip()
+        except (OSError, ValueError):
+            index = {}
+    _WIKI["path"] = key
+    _WIKI["mtime"] = mtime
+    _WIKI["data"] = index
+    return index
+
+
+def related_query_tags(qs: str) -> list[str]:
+    """?tags=a,b 優先（最多 20 個）；沒有這個參數才看 ?tag=。大小寫、底線收成同一種。"""
+    q = urllib.parse.parse_qs(qs or "", keep_blank_values=False)
+    raw = ",".join(q["tags"]) if "tags" in q else ",".join(q.get("tag") or [])
+    out = []
+    seen = set()
+    for part in raw.split(","):
+        name = norm_tag(part)
+        if not name or name in seen:
+            continue
+        seen.add(name)
+        out.append(name)
+        if len(out) >= _RELATED_LIMIT:
+            break
+    return out
+
+
+def _related_pairs(flat, self_key: str, hard: set, ban: set, guard: set) -> list:
+    if not isinstance(flat, list):
+        return []
+    out = []
+    seen = set()
+    i = 0
+    while i + 1 < len(flat):
+        name, milli = flat[i], flat[i + 1]
+        i += 2
+        if not isinstance(name, str):
+            continue
+        try:
+            milli = int(milli)
+        except (TypeError, ValueError):
+            continue
+        key = norm_tag(name)
+        if not key or key == self_key or key in seen:
+            continue
+        if key in hard or key in ban or key in guard:
+            continue
+        seen.add(key)
+        out.append([name, milli])
+    return out
+
+
+def related_payload(tags) -> dict:
+    """只讀。回傳前再擋一次：HARD_BANNED、characterBan、guard。
+    問的那張若在 guard 裡、而且不是角色：不給清單。guard 裡的角色仍給自己的清單（值照樣擋）。
+    檔案不在或壞掉：{ok:true, items:{}, guard:[]}，不要 500。"""
+    doc = _related_doc()
+    related = doc.get("related") if isinstance(doc.get("related"), dict) else {}
+    guard_raw = doc.get("guard") if isinstance(doc.get("guard"), list) else []
+    guard_list = [g for g in guard_raw if isinstance(g, str) and g.strip()]
+    guard = {norm_tag(g) for g in guard_list}
+    index = {}
+    for key, value in related.items():
+        name = norm_tag(key)
+        if name and name not in index:
+            index[name] = (key, value)
+    hard = set(_HARD_BANNED)
+    ban = {norm_tag(t) for t in character_ban()}
+    names = character_names()
+    wiki_index = _wiki_index()
+    items = {}
+    wiki = {}
+    seen = set()
+    for raw in tags or []:
+        key = norm_tag(raw)
+        if not key or key in seen:
+            continue
+        seen.add(key)
+        if key in hard or key in ban:
+            continue
+        if wiki_index.get(key):
+            wiki[key] = wiki_index[key]
+        if key in guard and key not in names:
+            continue
+        found = index.get(key)
+        if not found:
+            continue
+        canon, flat = found
+        pairs = _related_pairs(flat, key, hard, ban, guard)
+        if pairs:
+            items[canon] = pairs
+    return {"ok": True, "items": items, "wiki": wiki, "guard": guard_list}
 
 
 def banned_in_prompt(positive: str) -> list[str]:
@@ -7202,6 +7417,11 @@ class Handler(BaseHTTPRequestHandler):
         path = urllib.parse.urlparse(self.path).path
         if path == "/api/ping":
             self._json(200, ping())
+            return
+        # 卡片詳情的「相關的牌」。只讀關聯檔；沒有檔、檔壞了都回空的，不要 500。
+        if path == "/api/related":
+            qs = urllib.parse.urlparse(self.path).query
+            self._json(200, related_payload(related_query_tags(qs)))
             return
         # 卡冊：每張牌用過幾次（所有裝置共用一份，見 card_usage.py）。
         if path == "/api/usage":

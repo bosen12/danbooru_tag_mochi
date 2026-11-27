@@ -5309,11 +5309,12 @@ function indoorOutdoorClash(have) {
   ok("pinned cleaning can stand", cleanStand > 0, `stand=${cleanStand}/80`);
   const pinCarry = applyPin(lex, new Set(), new Set(), "carrying").pinned;
   let carryStand = 0;
-  for (let i = 0; i < 40; i++) {
+  // 2026-11-27：跟打掃同一個理由，40 張剛好是 0（一千多張新字進池、衣服修補改了抽牌池），放大到 80 張。
+  for (let i = 0; i < 80; i++) {
     const h = tagsOf(drawOne(lex, s, pinCarry, new Set(), mulberry32(440800 + i), 440800 + i));
     if (h.has("standing")) carryStand += 1;
   }
-  ok("pinned carrying can stand", carryStand > 0, `stand=${carryStand}/40`);
+  ok("pinned carrying can stand", carryStand > 0, `stand=${carryStand}/80`);
   const sJob = { ...s, drawJob: true };
   const pinKit = applyPin(lex, new Set(), new Set(), "kitchen").pinned;
   let kitMaid = 0;
@@ -5472,11 +5473,13 @@ function indoorOutdoorClash(have) {
   ok("beach without swimming can draw sneakers/sandals", beachShoes > 0, `shoes=${beachShoes}/40`);
   const pinHike = applyPin(lex, new Set(), new Set(), "hiking").pinned;
   let hikeStand = 0;
-  for (let i = 0; i < 40; i++) {
+  // 2026-11-27：tac-1127 多了 9 個身體姿勢（faceplant、slouching…），健行時 standing 只剩約 8%，
+  // 40 張全沒站的機率約 4%（seed 441880 起剛好 0/40）：取樣放大到 80。
+  for (let i = 0; i < 80; i++) {
     const h = tagsOf(drawOne(lex, s, pinHike, new Set(), mulberry32(441880 + i), 441880 + i));
     if (h.has("standing")) hikeStand += 1;
   }
-  ok("pinned hiking can stand", hikeStand > 0, `stand=${hikeStand}/40`);
+  ok("pinned hiking can stand", hikeStand > 0, `stand=${hikeStand}/80`);
   const pinSkiStand = applyPin(lex, new Set(), new Set(), "skiing").pinned;
   let skiStand = 0;
   for (let i = 0; i < 40; i++) {
@@ -5548,11 +5551,12 @@ function indoorOutdoorClash(have) {
   const pinBedroom = applyPin(lex, new Set(), new Set(), "bedroom").pinned;
   const sDivBed = { ...s, sceneMode: "diverse", lockScene: true };
   let bedKept = 0;
-  for (let i = 0; i < 80; i++) {
+  // 2026-11-27：tagcomplete 那批進了一千多張，坐臥面多了幾張，80 張剛好一張都沒抽到床。放大到 200 張。
+  for (let i = 0; i < 200; i++) {
     const h = tagsOf(drawOne(lex, sDivBed, pinBedroom, new Set(), mulberry32(442520 + i), 442520 + i));
     if (h.has("on bed") || h.has("bed sheet")) bedKept += 1;
   }
-  ok("diverse bedroom leftover can keep on bed/bed sheet", bedKept > 0, `bed=${bedKept}/80`);
+  ok("diverse bedroom leftover can keep on bed/bed sheet", bedKept > 0, `bed=${bedKept}/200`);
   const sWeird2 = { ...s, sceneMode: "weird", lockScene: false };
   const pinWade2 = applyPin(lex, new Set(), new Set(), "wading").pinned;
   let wadeLie = 0;
@@ -5766,7 +5770,8 @@ function indoorOutdoorClash(have) {
     // 2026-11-01：260 個新字進池。澡堂、狼換成道場、畫架、波點洋裝。仍是 1girl solo，沒有男生或人類陰莖。
     // 2026-11-26：專案主的模型認得清單、alltags 一般字、版面外框畫材共 1703 字進池，這張跟 test_draw_baseline 的 seed 42 一起換；仍是 1girl solo、沒有男生。
     // 2026-11-27：專案主指定 imminent netorare、before netorare 進池（誘惑・情境那一格多兩張），同一格抽到的手勢 heart in heart hands → kissing hand；其他一字不差，仍是 1girl solo、沒有男生。
-    "1girl, solo, very short hair, yellow eyes, pink hair, afro, small breasts, hot, wet face, very sweaty, sweat, tight dress, dress, strapless bra, bra, garter belt, jirai kei, female masturbation, tripping, fisheye, looking back, sideways mouth, kissing hand, on motorcycle, outdoors, dawn, city lights, meteor shower, duct tape, tape, nsfw, explicit, masterpiece, best quality, amazing quality");
+    // 2026-11-27 第二次：tagcomplete 那批 1065 張進池（.planning/tac-1127），整張換；仍是 1girl solo、沒有男生。
+    "1girl, solo, very short hair, yellow eyes, pink hair, snake hair, medium breasts, hair flower, fake mustache, webbed hands, dolphin shorts, shorts, halter shirt, shirt, strawberry print panties, print panties, panties, waist apron, female masturbation, on back, profile, looking at mirror, :x, vibrator under panties, window, indoors, twilight, city lights, gatling gun, sitting on desk, nsfw, explicit, masterpiece, best quality, amazing quality");
   ok("drawOne exposes shadow diagnostics", Array.isArray(shadowIntegrationDraw.shadowViolations));
 
   const eatProneShadow = validateSupportShadow({
@@ -6672,7 +6677,8 @@ function indoorOutdoorClash(have) {
   };
 
   // 先證明這些字在這個設定下本來就抽得到，否則下面的斷言會空過。
-  ok("twilight control: starry sky 抽得到", seenWith("night", "starry sky") > 0);
+  // 2026-11-27：tagcomplete 那批進了一千多張（天空、天體多了隕石、軌道、土星…），300 張搜不到星空，對照組搜到 600。
+  ok("twilight control: starry sky 抽得到", seenWith("night", "starry sky", "weird", 600) > 0);
   // 2026-10-12：道具池多了六十幾個食物、花、節慶字，市集攤每 1500 張只剩約 5 張。對照組也搜到 600。
   ok("twilight control: market stall 抽得到", seenWith("night", "market stall", "weird", 600) > 0);
   ok("twilight control: dusk 抽得到", seenWith("outdoors", "dusk") > 0);
@@ -7702,7 +7708,8 @@ function indoorOutdoorClash(have) {
     for (const heat of HEATS) {
       s.eras = [era];
       s.heats = [heat];
-      for (let i = 1; i <= 200; i++) {
+      // 2026-11-27：tac-1127 加了一千多張牌，游泳被稀釋到 200 張只剩 93 次（門檻 100）：取樣放大到 250。
+      for (let i = 1; i <= 250; i++) {
         const h = tagsOf(drawOne(lex, s, new Set(), new Set(), mulberry32(i), i));
         if (!SWIM.some((t) => h.has(t))) continue;
         swimSeen += 1;
@@ -8517,7 +8524,7 @@ function indoorOutdoorClash(have) {
   let total = 0;
   for (const era of ERAS) {
     s.eras = [era];
-    for (let i = 1; i <= 200; i++) {
+    for (let i = 1; i <= 250; i++) { // 2026-11-27：一千多張新字進池，浴場 1200 張只剩 29，放大到 1500
       const h = tagsOf(drawOne(lex, s, new Set(), new Set(), mulberry32(i), i));
       total += 1;
       if ([...h].some((t) => lex.byTag.get(t)?.layer === "skin")) skin += 1;

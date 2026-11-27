@@ -11,6 +11,7 @@ from pose_tags import ZH_POSE
 from quality_tags import ZH_QUALITY
 from sync_20261101_tags import ZH_SYNC
 from sync_20261126_tags import ZH_SYNC as ZH_SYNC_20261126
+from sync_20261127_tags import ZH_SYNC as ZH_SYNC_20261127
 
 ROOT = Path(__file__).resolve().parents[1]
 LEX = ROOT / "web" / "lexicon.json"
@@ -1366,6 +1367,7 @@ ZH.update(ZH_POSE)
 ZH.update(ZH_QUALITY)
 ZH.update(ZH_SYNC)
 ZH.update(ZH_SYNC_20261126)
+ZH.update(ZH_SYNC_20261127)
 
 
 def auto_zh(tag: str) -> str | None:

@@ -8,6 +8,7 @@ from pose_tags import GROUP_OF as POSE_GROUPS
 from quality_tags import GROUP_OF as QUALITY_GROUPS
 from sync_20261101_tags import GROUP_OF as SYNC_20261101_GROUPS
 from sync_20261126_tags import GROUP_OF as SYNC_20261126_GROUPS
+from sync_20261127_tags import GROUP_OF as SYNC_20261127_GROUPS
 
 GROUP_ORDER = {
     "quality": ["fixed", "style", "boost"],
@@ -932,6 +933,8 @@ def assign_group(item: dict) -> str:
         return SYNC_20261101_GROUPS[item["tag"]]
     if item.get("tag") in SYNC_20261126_GROUPS:
         return SYNC_20261126_GROUPS[item["tag"]]
+    if item.get("tag") in SYNC_20261127_GROUPS:
+        return SYNC_20261127_GROUPS[item["tag"]]
     # 2026-10-26 衣服一批。名字裡的「armor」「kimono」會被時代規則改組，這裡以分類結果為準。
     if item.get("tag") in CLOTHING_GROUPS:
         return CLOTHING_GROUPS[item["tag"]]

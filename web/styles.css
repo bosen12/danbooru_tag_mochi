@@ -4245,6 +4245,545 @@ body[data-dragging="true"] .library[data-over="true"] {
   }
 }
 
+/* 卡片詳情：相關的牌。說明下面、整寬；卡冊放在「用它做過的圖」上面。
+ * 電腦 4×2，手機一排橫捲。點在紙上（不是牌面上），深淺模式都用字色。 */
+.detail .related-back,
+.detail .detail-trail,
+.detail .tag-wiki,
+.detail .related-cards {
+  grid-column: 1 / -1;
+  min-width: 0;
+}
+
+.related-back {
+  justify-self: start;
+  min-height: 44px;
+  margin: 0;
+  padding: 0 var(--space-xs);
+  border: 0;
+  background: transparent;
+  color: var(--color-accent-text);
+  font: inherit;
+  font-size: var(--text-sm);
+  cursor: pointer;
+}
+
+/* 同一個視窗裡從相關的牌一路點下去：「← 制服 › 水手服 › 這張」。一行放不下就橫捲，不換行（不把詳情往下推）。 */
+.detail-trail {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2xs);
+  min-width: 0;
+  margin: calc(var(--space-xs) * -1) 0 0;
+}
+
+.detail-trail .related-back {
+  flex: none;
+  min-width: 44px;
+  font-size: var(--text-md);
+}
+
+.detail-trail-path {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2xs);
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+  white-space: nowrap;
+  font-size: var(--text-sm);
+}
+
+.detail-trail-path::-webkit-scrollbar {
+  display: none;
+}
+
+.detail-trail-step {
+  flex: none;
+  min-height: 44px;
+  padding: 0 var(--space-2xs);
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-accent-text);
+  font: inherit;
+  cursor: pointer;
+}
+
+.detail-trail-step:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.detail-trail-step:focus {
+  outline: none;
+}
+
+.detail-trail-step:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.detail-trail-sep {
+  flex: none;
+  color: var(--color-muted);
+}
+
+.detail-trail-now {
+  flex: none;
+  color: var(--color-ink);
+  font-weight: 700;
+}
+
+@media (pointer: fine) {
+  .detail-trail-step,
+  .detail-trail .related-back {
+    min-height: 32px;
+  }
+
+  .detail-trail .related-back {
+    min-width: 32px;
+  }
+}
+
+.related-back:focus {
+  outline: none;
+}
+
+.related-back:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.related-cards {
+  display: grid;
+  gap: var(--space-2xs);
+  padding-top: var(--space-sm);
+  border-top: 1px solid var(--color-rule-2);
+  /* 自成一層：牌角＋的 z-index 只在這一區裡算。以前詳情捲動時，下面那排的＋浮在底部按鈕列上面（2026-11-27 截圖）。 */
+  position: relative;
+  z-index: 0;
+  isolation: isolate;
+}
+
+/* Danbooru wiki 說明：相關的牌上面一小段英文原文。字小、行距鬆，不搶詳情的主角。 */
+.tag-wiki {
+  display: grid;
+  gap: var(--space-2xs);
+  padding-top: var(--space-sm);
+  border-top: 1px solid var(--color-rule-2);
+}
+
+.tag-wiki h3 {
+  margin: 0;
+  font-size: var(--text-sm);
+  font-weight: 700;
+}
+
+.tag-wiki-text {
+  margin: 0;
+  color: var(--color-muted);
+  font-size: var(--text-xs);
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+
+.related-cards h3 {
+  margin: 0;
+  font-size: var(--text-sm);
+  font-weight: 700;
+}
+
+.related-sub {
+  margin: 0 0 var(--space-xs);
+  color: var(--color-muted);
+  font-size: var(--text-xs);
+}
+
+.related-row {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-sm);
+  min-width: 0;
+}
+
+.related-slot {
+  min-width: 0;
+}
+
+.related-face {
+  position: relative;
+}
+
+.related-slot .card {
+  --card-w: 100%;
+  width: 100%;
+}
+
+.related-slot .card:focus {
+  outline: none;
+}
+
+.related-slot .card:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+/* 牌角的＋：跟卡冊的送出鈕同一種兩條線，這裡一直看得到（詳情裡沒有別的地方按）。觸控至少 44px。 */
+.related-add {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  z-index: 3;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 1px solid var(--color-rule);
+  border-radius: 50%;
+  background: color-mix(in oklch, var(--color-paper) 88%, transparent);
+  color: var(--color-ink);
+  box-shadow: 0 6px 14px -6px var(--color-shade);
+  cursor: pointer;
+  touch-action: manipulation;
+  transition:
+    background-color var(--dur-micro) var(--ease-out),
+    color var(--dur-micro) var(--ease-out);
+}
+
+.related-add::before,
+.related-add::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 14px;
+  height: 2px;
+  margin: -1px 0 0 -7px;
+  border-radius: 1px;
+  background: currentColor;
+  transition:
+    transform var(--dur-short) var(--ease-settle),
+    width var(--dur-short) var(--ease-settle),
+    margin var(--dur-short) var(--ease-settle);
+}
+
+.related-add::after {
+  transform: rotate(90deg);
+}
+
+.related-add[aria-pressed="true"]::before {
+  width: 6px;
+  margin-left: -3px;
+  transform: translate(-3.6px, 2px) rotate(45deg);
+}
+
+.related-add[aria-pressed="true"]::after {
+  width: 10px;
+  margin-left: -5px;
+  transform: translate(1.2px, 0.3px) rotate(-50deg);
+}
+
+.related-add:hover {
+  background: var(--color-paper);
+}
+
+/* 滑鼠：＋小一點，不蓋住牌面（觸控照舊 44px）。 */
+@media (hover: hover) and (pointer: fine) {
+  .related-add {
+    top: 4px;
+    right: 4px;
+    width: 30px;
+    height: 30px;
+  }
+  .related-add::before,
+  .related-add::after {
+    width: 12px;
+    margin: -1px 0 0 -6px;
+  }
+}
+
+.related-add:focus {
+  outline: none;
+}
+
+.related-add:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.related-dots {
+  display: flex;
+  justify-content: center;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+.related-dots i {
+  width: 7px;
+  height: 7px;
+  box-sizing: border-box;
+  border: 1.5px solid var(--color-muted);
+  border-radius: 50%;
+  background: transparent;
+}
+
+.related-dots i.is-on {
+  background: var(--color-accent-text);
+  border-color: var(--color-accent-text);
+}
+
+/* 相關值：滑鼠移到這一格（或鍵盤停在裡面）才淡入，點跟著往左讓一點位置；手機沒有滑過這件事，一直顯示。 */
+.related-dots {
+  align-items: center;
+}
+
+.related-val {
+  max-width: 0;
+  overflow: hidden;
+  opacity: 0;
+  color: var(--color-muted);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  transition: max-width var(--dur-short) var(--ease-out), opacity var(--dur-short) var(--ease-out), margin var(--dur-short) var(--ease-out);
+}
+
+.related-slot:hover .related-val,
+.related-slot:focus-within .related-val {
+  max-width: 3em;
+  margin-left: 2px;
+  opacity: 1;
+}
+
+@media (hover: none) {
+  .related-val {
+    max-width: 3em;
+    margin-left: 2px;
+    opacity: 1;
+  }
+}
+
+/* 帶入相關牌：合成池的牌按右鍵浮出的小面板（related-fill.js）。一張小紙片：上面選相關度、最多幾張，
+ * 中間當場列出會帶入哪幾張，下面一顆帶入。浮在彈窗（.overlay z-index 60）上面，詳情裡也叫得出來。 */
+.rf-pop {
+  position: fixed;
+  z-index: 90;
+  width: min(19rem, calc(100vw - 16px));
+  display: grid;
+  gap: var(--space-xs);
+  padding: var(--space-sm) var(--space-md) var(--space-md);
+  border: 1px solid var(--color-rule);
+  border-radius: var(--radius-md);
+  background: var(--color-paper-2);
+  box-shadow: var(--shadow-lift), 0 24px 60px var(--color-shade);
+  transform-origin: top left;
+}
+
+.rf-head {
+  display: grid;
+  gap: 2px;
+}
+
+.rf-head b {
+  font-size: var(--text-sm);
+}
+
+.rf-sub {
+  color: var(--color-muted);
+  font-size: var(--text-xs);
+}
+
+.rf-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.rf-label {
+  min-width: 3.5em;
+  color: var(--color-muted);
+  font-size: var(--text-xs);
+}
+
+.rf-segs {
+  display: flex;
+  gap: 4px;
+}
+
+.rf-seg {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 32px;
+  padding: 0 var(--space-xs);
+  border: 1px solid var(--color-rule);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-ink);
+  font: inherit;
+  font-size: var(--text-xs);
+  cursor: pointer;
+  transition: background-color var(--dur-short) var(--ease-out), border-color var(--dur-short) var(--ease-out);
+}
+
+.rf-seg[aria-pressed="true"] {
+  border-color: var(--color-accent-text);
+  background: color-mix(in oklch, var(--color-accent) 16%, transparent);
+}
+
+.rf-seg-plus {
+  color: var(--color-muted);
+}
+
+.rf-dots {
+  display: inline-flex;
+  gap: 3px;
+}
+
+.rf-dots i {
+  width: 7px;
+  height: 7px;
+  box-sizing: border-box;
+  border: 1.5px solid var(--color-muted);
+  border-radius: 50%;
+}
+
+.rf-dots i.is-on {
+  background: var(--color-accent-text);
+  border-color: var(--color-accent-text);
+}
+
+.rf-stepper {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--color-rule);
+  border-radius: var(--radius-sm);
+}
+
+.rf-step {
+  width: 32px;
+  height: 32px;
+  border: 0;
+  background: transparent;
+  color: var(--color-ink);
+  font: inherit;
+  cursor: pointer;
+}
+
+.rf-step:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.rf-n {
+  min-width: 1.6em;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+}
+
+.rf-unit {
+  color: var(--color-muted);
+  font-size: var(--text-xs);
+}
+
+.rf-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-height: 30px;
+  padding-top: var(--space-2xs);
+  border-top: 1px solid var(--color-rule-2);
+}
+
+.rf-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 28px;
+  padding: 0 var(--space-xs);
+  border-radius: 999px;
+  background: var(--color-paper-3);
+  font-size: var(--text-xs);
+}
+
+.rf-chip-ghost {
+  width: 4.5rem;
+  background: linear-gradient(90deg, var(--color-paper-3), var(--color-rule-2), var(--color-paper-3));
+  background-size: 200% 100%;
+  animation: rf-shimmer var(--dur-breath) linear infinite;
+}
+
+@keyframes rf-shimmer {
+  to {
+    background-position: -200% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rf-chip-ghost {
+    animation: none;
+  }
+}
+
+.rf-pop[data-loading] .rf-list {
+  opacity: 0.5;
+}
+
+.rf-note {
+  margin: 0;
+  color: var(--color-muted);
+  font-size: var(--text-xs);
+}
+
+.rf-foot {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.rf-go:disabled {
+  opacity: 0.5;
+}
+
+@media (pointer: coarse) {
+  .rf-seg,
+  .rf-step {
+    min-height: 44px;
+  }
+
+  .rf-step {
+    width: 44px;
+    height: 44px;
+  }
+}
+
+@media (max-width: 40rem) {
+  .related-row {
+    display: flex;
+    gap: var(--space-sm);
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    overscroll-behavior-x: contain;
+    padding-bottom: var(--space-2xs);
+  }
+
+  .related-slot {
+    flex: 0 0 7.5rem;
+    scroll-snap-align: start;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .related-add,
+  .related-add::before,
+  .related-add::after {
+    transition: none;
+  }
+}
+
 .tag-en {
   font-family: var(--font-mono);
   font-size: var(--text-xs);

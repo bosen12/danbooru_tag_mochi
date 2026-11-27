@@ -1,6 +1,6 @@
 /** 墨池的畫面零件：建元素、遮罩、提示、滑鼠停留說明。只產生 DOM，不管流程。 */
 import { lockScroll, unlockScroll } from "./scroll-lock.js";
-import { DUR, CURVE, css, reducedMotion } from "./motion.js";
+import { DUR, CURVE, css, reducedMotion, dropAnimated } from "./motion.js";
 import { translateTree, t } from "./i18n.js";
 
 export function el(tag, props = {}, ...children) {
@@ -88,6 +88,8 @@ export function openSheet(title, body, { wide = false, onClose, foot, translateT
   // 捲動鎖在 html 上、背景設成 inert —— 跟排字匣、導影台同一把鎖（web/scroll-lock.js），
   // 開彈窗時背景不會跳，鍵盤也 Tab 不到被蓋住的東西。
   const overlayId = "overlay-" + titleId;
+  // swapSheet 換內容時要找回內文那一塊。
+  sheet._body = body;
   const overlay = el("div", { class: "overlay", id: overlayId }, sheet);
   const close = () => {
     if (!overlay.isConnected || overlay.dataset.closing) return;
@@ -151,6 +153,70 @@ export function openSheet(title, body, { wide = false, onClose, foot, translateT
   };
   requestAnimationFrame(() => requestAnimationFrame(focusFirst));
   return { close, sheet };
+}
+
+/**
+ * 同一個視窗換成另一份內容（卡片詳情點相關的牌）：標題、內文、底部按鈕列都換新的、捲回最上面，
+ * 視窗不關不開 —— 以前每點一張就疊一個新視窗，疊多了吃記憶體，也要按很多次 Esc 才關得完（2026-11-28 專案主）。
+ * 高度交給 autoHeight 從原本的慢慢變過去；新內文淡入。焦點移到新的主要按鈕（被點的那張小牌已經不在了）。
+ */
+export function swapSheet(handle, title, body, foot) {
+  const sheet = handle?.sheet;
+  if (!sheet || !sheet.isConnected) return handle;
+  // 換之前量高度、換完當下就開始變（autoHeight 要等下一格才動，那一格已經畫成新的高度 —— 實測一格跳 145px）。
+  const finish = resizeSheet(sheet);
+  const h2 = sheet.querySelector(":scope > h2");
+  if (h2) h2.textContent = title;
+  const old = sheet._body;
+  if (old && old.parentNode === sheet) {
+    old.before(body);
+    dropAnimated(old);
+  } else {
+    sheet.append(body);
+  }
+  sheet._body = body;
+  const oldFoot = sheet.querySelector(":scope > .sheet-foot");
+  const nextFoot = foot && foot.filter(Boolean).length ? el("div", { class: "sheet-foot" }, foot) : null;
+  if (oldFoot) {
+    if (nextFoot) oldFoot.before(nextFoot);
+    dropAnimated(oldFoot);
+  } else if (nextFoot) {
+    sheet.append(nextFoot);
+  }
+  sheet.scrollTop = 0;
+  finish();
+  if (!reducedMotion()) {
+    body.animate([{ opacity: 0, transform: "translateY(6px)" }, { opacity: 1, transform: "none" }], { duration: DUR.short, easing: css(CURVE.out) });
+  }
+  (nextFoot?.querySelector(".btn-primary") || sheet).focus({ preventScroll: true });
+  return handle;
+}
+
+/**
+ * 視窗要變高、變矮（換成另一張牌、晚到的說明和相關的牌塞進來）：先 const done = resizeSheet(視窗) 量好現在的高度，
+ * 改完內容馬上 done()，從舊的高度平順地變到新的（視窗是置中的，上緣跟著一格一格移）。
+ *   - 新高度已經被最大高度（88dvh）夾過：不會長到一半突然頓住。
+ *   - 曲線慢起步、慢收尾（CURVE.travel，DUR.long）：CURVE.out 第一格就走掉三成，實測一格跳 73px，看起來還是跳。
+ *   - 上一段還沒播完又變：offsetHeight 讀得到動畫中的高度，從那裡接著變。
+ *   - 記在 sheet._grow：autoHeight 看到就不重演。
+ */
+export function resizeSheet(sheet) {
+  if (!sheet || reducedMotion()) return () => {};
+  const from = sheet.offsetHeight;
+  return () => {
+    if (!sheet.isConnected) return;
+    sheet._grow?.cancel();
+    const to = sheet.offsetHeight;
+    if (Math.abs(to - from) < 2) return;
+    const a = sheet.animate([{ height: `${from}px`, overflow: "hidden" }, { height: `${to}px`, overflow: "hidden" }], {
+      duration: DUR.long,
+      easing: css(CURVE.travel),
+    });
+    sheet._grow = a;
+    a.onfinish = a.oncancel = () => {
+      if (sheet._grow === a) sheet._grow = null;
+    };
+  };
 }
 
 /**

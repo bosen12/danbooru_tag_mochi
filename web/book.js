@@ -21,7 +21,7 @@ import { applyPin, indexLexicon, sanitizeSettings } from "./engine.js";
 import { ratingBlocked, RATING_LABEL } from "./rules/rating.js";
 import { mountRatingFree } from "./rating-free.js";
 import { buildLibrary, sizeCards, groupChips, genderChips, chipRun, seriesRun, createAssets, cardNode, quietArt, spineFace, cardFacts, setCardFlag, cardMatches, searchCards, searchNote, matchRank, CARD_SUIT_INFO, CARD_SUITS } from "./cards.js";
-import { el, openSheet, toast, syncChoices, bootFailed, friendlyError, isNetError } from "./ui.js";
+import { el, openSheet, swapSheet, toast, syncChoices, bootFailed, friendlyError, isNetError } from "./ui.js";
 import { copyText } from "./copy-text.js";
 import { zoomFromThumb } from "./zoom.js";
 import { mountKeysHelp } from "./keys-help.js";
@@ -32,7 +32,8 @@ import { createHand, HAND_ICON } from "./hand.js";
 import { handStore } from "./hand-store.js";
 import { handTools } from "./hand-tools.js";
 import { measure, evaluate, announce, openWall } from "./achievements.js";
-import { initMotion, settleMotion, seat, refuse, flight, reducedMotion, swapIn, rowChange, heightChange, ghostOut, holdWidth, CURVE, DUR, css, cropFlipStart, cropFlipEnd } from "./motion.js";
+import { initMotion, settleMotion, seat, refuse, flight, reducedMotion, swapIn, rowChange, heightChange, ghostOut, holdWidth, CURVE, DUR, css, cropFlipStart, cropFlipEnd, dropAnimated, detailFlight } from "./motion.js";
+import { mountRelated, refreshRelated, relatedTrail, trailTo } from "./related.js";
 import { waitImage, unwaitImage, retrySrc } from "./img-wait.js";
 import { holdArt, resumeArt } from "./card-images.js";
 import { viewSrc } from "./gen.js";
@@ -309,6 +310,7 @@ async function boot() {
     set: (on) => {
       free = on;
       S.saveSettings({ ...(S.loadSettings() || {}), ratingFree: on });
+      refreshRelated();
       renderSuits();
       render();
       renderSummary();
@@ -457,6 +459,7 @@ function renderRating() {
             rating = r;
             // 跟墨池同一個尺度：這裡換了，回墨池也是這一檔。
             S.saveSettings({ ...(S.loadSettings() || {}), rating: r });
+            refreshRelated();
             renderRating();
             const selected = box.querySelector('[aria-checked="true"]');
             if (focused) selected?.focus({ preventScroll: true });
@@ -2335,8 +2338,17 @@ function ago(ms) {
   return new Date(ms).toLocaleDateString(dateLocale);
 }
 
-function openCard(card, srcNode) {
+// into：同一個詳情視窗換成這張（從相關的牌點進來、或麵包屑回去）；trail：這個視窗之前看過的牌（舊→新）。
+function openCard(card, srcNode, { into = null, trail = [] } = {}) {
   if (card.custom) return openCustomCard(card, srcNode);
+  // 牌飛進詳情：先趁來源還在畫面上量好（同一個視窗換牌時，被點的小牌會跟著舊內容拿掉）。
+  const flight = detailFlight(srcNode);
+  const show = into ? (title, body, opts) => swapSheet(into, title, body, opts.foot) : openSheet;
+  const nameOf = (t) => (english ? String(t).replace(/_/g, " ") : lib.byTag.get(t)?.zh || t);
+  const goTo = (next, nextTrail, node) => {
+    const item = lib.byTag.get(next);
+    if (item) openCard(item, node, { into: sheet, trail: trailTo(next, nextTrail) });
+  };
   // 翻開一張牌：跟墨池開詳情同一個聲音。
   sfx.tap?.();
   const c = countOf(card.tag);
@@ -2367,11 +2379,14 @@ function openCard(card, srcNode) {
     el("dd", { class: "book-war", dataset: { warOf: card.tag } }, warText(card.tag))
   );
   const share = c && sumShown.total ? Math.min(1, c / Math.max(...pool.map((x) => countOf(x.tag)), 1)) : 0;
-  const sheet = openSheet(
+  const works = worksOf(card);
+  const sheet = show(
     card.zh,
     el(
       "div",
       { class: "detail book-detail" },
+      // 從相關的牌一路點下來：「← 制服 › 水手服 › 這張」，點哪張回哪張，全在同一個視窗裡。
+      relatedTrail(trail, card.tag, { nameOf, go: (i) => goTo(trail[i], trail.slice(0, i)) }),
       detailImg ? el("div", { class: "detail-art" }, detailImg) : cardNode(card, assets, { tagName: "div" }),
       el(
         "div",
@@ -2392,7 +2407,7 @@ function openCard(card, srcNode) {
         el("dl", {}, cardFacts(card, lexNow(), data).map(([k, v]) => [el("dt", {}, k), el("dd", {}, v)])),
         card.banned ? el("p", { class: "book-ban-note" }, "這張是禁用角色，不能帶去墨池，也不能加進偏好卡牌。") : null
       ),
-      worksOf(card)
+      works
     ),
     {
       foot: card.banned ? [] : [
@@ -2424,7 +2439,26 @@ function openCard(card, srcNode) {
       ],
     }
   );
-  flyToDetail(srcNode, sheet.sheet || document.querySelector(".overlay:last-of-type .sheet"));
+  // 相關的牌在說明下面、「用它做過的圖」上面。沒有資料就整區不出現。＋照卡冊自己的送去墨池。
+  mountRelated(sheet.sheet.querySelector(".detail"), {
+    tag: card.tag,
+    before: works,
+    assets,
+    context: () => ({
+      card: (name) => lib.byTag.get(name),
+      hardBanned: HARD_BANNED,
+      characterBan: data?.characterBan || [],
+      trash: () => S.loadBans(),
+      ratingBlocked: (item) => blocked(item, seeRating()),
+      custom: (item) => !!(item.custom || item.suit === "custom"),
+    }),
+    flag: (item) => (inSend(item.tag) ? { kind: "send", text: "送墨池" } : null),
+    pressed: (item) => inSend(item.tag),
+    addLabel: (item) => (inSend(item.tag) ? `不送了，拿回來：${item.zh}` : `送去墨池合成池：${item.zh}`),
+    onAdd: (item, node) => toggleSend(item, node),
+    onOpen: (item, node) => goTo(item.tag, [...trail, card.tag], node),
+  });
+  if (sheet.sheet) flight?.(sheet.sheet);
   if (c) countUp(big, c);
 }
 
@@ -2955,30 +2989,8 @@ function countUp(node, to) {
 
 /** 牌從格子飛進詳情的大圖（跟墨池的詳情同一個手法：落點放複製品，FLIP 縮放過去）。 */
 function flyToDetail(src, sheetEl) {
-  if (!src || !sheetEl || reducedMotion()) return;
-  const dst = sheetEl.querySelector(".detail-art, .detail > .card");
-  const from = (src.querySelector(".card-art") || src).getBoundingClientRect();
-  if (!dst || !from.width || from.bottom < 0 || from.top > innerHeight) return;
-  const anims = sheetEl.getAnimations();
-  for (const a of anims) a.currentTime = a.effect.getComputedTiming().endTime;
-  const to = dst.getBoundingClientRect();
-  for (const a of anims) a.currentTime = 0;
-  if (!to.width) return;
-  const f = cloneCard(src.querySelector(".card-art") || src);
-  Object.assign(f.style, { position: "fixed", left: to.left + "px", top: to.top + "px", width: to.width + "px", height: to.height + "px", margin: "0", zIndex: "200", pointerEvents: "none", overflow: "hidden", borderRadius: "6px", transformOrigin: "0 0", willChange: "transform" });
-  document.body.append(f);
-  dst.style.visibility = "hidden";
-  // 等比縮放＋裁切框打開（motion.js cropFlipStart）：長寬各縮各的會把多人的圖擠扁再彈開。
-  const anim = f.animate(
-    [cropFlipStart(from, to, src.querySelector(".card-art img")), cropFlipEnd],
-    { duration: DUR.long, easing: css(CURVE.out), fill: "forwards" }
-  );
-  const land = () => {
-    f.remove();
-    dst.style.visibility = "";
-  };
-  anim.onfinish = land;
-  setTimeout(land, 700);
+  // 跟字盒共用 motion.js 的 detailFlight（先量來源、再飛進詳情的大圖）。
+  if (sheetEl) detailFlight(src)?.(sheetEl);
 }
 
 /* ================= 偏好卡牌、送去墨池 =================
@@ -3146,6 +3158,7 @@ function updateSend(card, node, rect, adding) {
   }
   const cell = cells.get(card.tag);
   if (cell) paintMark(cell, card.tag);
+  refreshRelated();
   if (adding) {
     sfx.tap?.();
     flyToMochi(node, rect);

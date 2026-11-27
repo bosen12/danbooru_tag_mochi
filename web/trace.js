@@ -6,6 +6,8 @@ export const SOURCES = Object.freeze({
   pin: "pin",
   preset: "preset",
   must_draw: "must_draw",
+  // 補相關牌（更多規則）：合成池的牌在 Danbooru 上常一起出現的牌。
+  related: "related",
   random: "random",
   group: "group",
   implies: "implies",
@@ -41,6 +43,7 @@ export const STAGES = Object.freeze({
   fill: "fill",
   scene_guard: "scene_guard",
   must_draw: "must_draw",
+  related: "related",
   repair: "repair",
   reconcile: "reconcile",
   tail: "tail",

@@ -54,6 +54,14 @@ export const HARD_BANNED = Object.freeze([
   "children",
   "child carry",
   "child",
+  // 2026-11-27 tagcomplete 那批：國中、小學、幼兒相關和抱著嬰兒（跟 engine.js 的 NEVER_DRAW 同一份）。
+  "tokiwadai school gym uniform",
+  "kamihama university affiliated school uniform",
+  "raimon soccer uniform",
+  "blueberry academy school uniform",
+  "randoseru",
+  "problem solver 68 (blue archive)",
+  "holding baby",
 ]);
 const HARD = new Set(HARD_BANNED);
 

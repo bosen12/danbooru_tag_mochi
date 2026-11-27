@@ -1213,4 +1213,44 @@ export function cropFlipStart(from, to, img = null) {
     clipPath: `inset(${t.toFixed(1)}px ${(ex - l).toFixed(1)}px ${(ey - t).toFixed(1)}px ${l.toFixed(1)}px round ${(6 / s).toFixed(1)}px)`,
   };
 }
+/**
+ * 打開（或同一個視窗換成）某張牌的詳情：圖從點的那張牌飛進詳情的大圖。
+ * 分兩步：detailFlight(來源牌) 趁牌還在畫面上量位置、做好複製品；回傳的函式在詳情畫好後叫，
+ * 量落點、飛過去。同一個視窗換牌時，被點的小牌會跟著舊內容拿掉，所以一定要先量。
+ * 落點量的是視窗動畫（進場、長高）播完的位置。字盒（app.js）、卡冊（book.js）共用。
+ */
+export function detailFlight(src) {
+  if (!src || reducedMotion()) return null;
+  const art = src.querySelector?.(".card-art") || src;
+  const from = art.getBoundingClientRect();
+  if (!from.width || from.bottom < 0 || from.top > innerHeight) return null;
+  const img = src.querySelector?.(".card-art img") || null;
+  const f = cloneCard(art);
+  // 牌上的小標（右下角的份量、池中／封鎖章）是貼在牌面上的，不是圖：複製品不要帶，不然跟著圖一起放大、
+  // 落地才消失（2026-11-28 專案主：從合成池點開，右下角的份量跟著放大然後不見）。
+  for (const n of f.querySelectorAll(".card-w, .card-flag")) n.remove();
+  return (sheetEl) => {
+    const dst = sheetEl?.querySelector(".detail-art, .detail > .card");
+    if (!dst) return;
+    const anims = sheetEl.getAnimations();
+    for (const a of anims) a.currentTime = a.effect.getComputedTiming().endTime;
+    const to = dst.getBoundingClientRect();
+    for (const a of anims) a.currentTime = 0;
+    if (!to.width) return;
+    // 複製品直接放在落點、用落點的大小，從起點「縮放＋位移」過去（FLIP）：transform 交給合成器，
+    // 主執行緒忙也不掉格；用大的尺寸往小的縮，圖不會在放大途中糊掉。
+    Object.assign(f.style, { position: "fixed", left: to.left + "px", top: to.top + "px", width: to.width + "px", height: to.height + "px", margin: "0", zIndex: "200", pointerEvents: "none", overflow: "hidden", borderRadius: "6px", transformOrigin: "0 0", willChange: "transform" });
+    document.body.append(f);
+    dst.style.visibility = "hidden";
+    // 等比縮放＋裁切框打開（cropFlipStart）：長寬各縮各的會把多人的圖擠扁再彈開。
+    const anim = f.animate([cropFlipStart(from, to, img), cropFlipEnd], { duration: DUR.long, easing: css(CURVE.out), fill: "forwards" });
+    const land = () => {
+      dropAnimated(f);
+      dst.style.visibility = "";
+    };
+    anim.onfinish = land;
+    setTimeout(land, 700);
+  };
+}
+
 export const cropFlipEnd = { transform: "none", clipPath: "inset(0px 0px 0px 0px round 6px)" };

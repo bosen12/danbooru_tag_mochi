@@ -1433,6 +1433,28 @@ def _attach_sync_20261126() -> None:
 
 _attach_sync_20261126()
 
+
+def _attach_sync_20261127() -> None:
+    """2026-11-27 tagcomplete 那批（sync_20261127_tags.py）。細分類都用既有的格子。"""
+    from sync_20261127_tags import ROWS
+
+    buckets: dict[str, dict[str, list[str]]] = {}
+    for row in ROWS:
+        buckets.setdefault(row["section"], {}).setdefault(row["sub"], []).append(row["tag"])
+    for sec, by_sid in buckets.items():
+        known = {sid: tags for sid, _zh, tags in SUBS[sec]}
+        missing = [sid for sid in by_sid if sid not in known]
+        if missing:
+            raise SystemExit(sec + " 細分類沒有這一格：" + ", ".join(sorted(missing)))
+        for sid, tags in by_sid.items():
+            dest = known[sid]
+            if dest is None:
+                continue
+            dest.extend(sorted(tags))
+
+
+_attach_sync_20261127()
+
 SUB_ORDER = {sec: [sid for sid, _, _ in rows] for sec, rows in SUBS.items()}
 SUB_ZH = {sid: zh for rows in SUBS.values() for sid, zh, _ in rows}
 

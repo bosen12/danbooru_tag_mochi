@@ -16,6 +16,8 @@ from quality_tags import NARROW as QUALITY_NARROW, extra_quality_tags
 from sync_20261101_tags import NARROW as SYNC_20261101_NARROW, extra_sync_20261101_tags
 from sync_20261126_tags import NARROW as SYNC_20261126_NARROW, extra_sync_20261126_tags
 from sync_20261126_tags import CLOTHING_STATE_EXTRA as SYNC_20261126_CLOTHING_STATE
+from sync_20261127_tags import NARROW as SYNC_20261127_NARROW, extra_sync_20261127_tags
+from sync_20261127_tags import CLOTHING_STATE_EXTRA as SYNC_20261127_CLOTHING_STATE
 from sync_20261101_tags import CLOTHING_STATE_EXTRA as SYNC_20261101_CLOTHING_STATE
 from sync_20261101_tags import (
     NEEDS_MALE_EXTRA as SYNC_20261101_NEEDS_MALE,
@@ -100,6 +102,7 @@ CLOTHING_STATE = {
 CLOTHING_STATE.update(SYNC_20261101_CLOTHING_STATE)
 # 2026-11-26：專案主的模型認得清單裡不是全年齡的衣物（網狀內衣、透視內褲、只披某件衣服…）。
 CLOTHING_STATE.update(SYNC_20261126_CLOTHING_STATE)
+CLOTHING_STATE.update(SYNC_20261127_CLOTHING_STATE)
 # Faces that *are* a heat. Everyday faces / sitting / looking are not.
 POSE_CLIMAX = {
     "ahegao",
@@ -704,6 +707,9 @@ RECLASS = {
     "leotard aside": {"section": "pose", "mutex": "clothes_action", "layer": "normal", "heat": ["flash", "sex"], "era": ["modern"]},
     "one-piece swimsuit pull": {"section": "pose", "mutex": "clothes_action", "layer": "normal", "heat": ["flash", "sex"], "era": ["modern"]},
     "hetero": {"needs": ["pair", "female", "male"]},
+    # 2026-11-28 專案主：人物選「女」、合成池放陰道塞物，每張都冒出 1boy。收集時標成一男一女（pair、male、female），
+    # 但它是陰道裡塞了東西，一個女生就成立；釘的牌要男生時引擎會照釘的補男生，人物設定擋不住。
+    "vaginal object insertion": {"needs": ["female"]},
     "penis on ass": {"needs": ["pair", "female", "male"], "gate": "any"},
     "looking at another": {"needs": ["pair"]},
     "clothed male nude female": {"needs": ["pair", "female", "male"]},
@@ -969,6 +975,8 @@ SEX_ACT = {
 
 SOLO_SEX_ACT = {
     "object insertion",
+    # 陰道裡塞東西：一個人就成立（跟 object insertion、large insertion 一樣）。
+    "vaginal object insertion",
     # 觸手不是第二個人。佔住 sex_act，但不要求 pair，也不把男生拉進來。
     "tentacle sex",
     # 機器、道具、自己的身體。不把第二個人拉進來。
@@ -1556,6 +1564,7 @@ NARROW_HEAT.update(POSE_NARROW)
 NARROW_HEAT.update(QUALITY_NARROW)
 NARROW_HEAT.update(SYNC_20261101_NARROW)
 NARROW_HEAT.update(SYNC_20261126_NARROW)
+NARROW_HEAT.update(SYNC_20261127_NARROW)
 UMBRELLA.update(UMBRELLA_EXTRA)
 
 
@@ -7039,6 +7048,7 @@ def main() -> None:
     rows.extend(extra_quality_tags())
     rows.extend(extra_sync_20261101_tags())
     rows.extend(extra_sync_20261126_tags())
+    rows.extend(extra_sync_20261127_tags())
 
     old_zh: dict[str, str] = {}
     if OUT.exists():
