@@ -94,6 +94,7 @@ import { recordUses } from "./usage.js";
 import { getSfx } from "./sfx.js";
 import { mountDiscord, openRouteFromShot } from "./discord-link.js";
 import { english, t, takeLanguageState } from "./i18n.js";
+import { danbooruLinks } from "./danbooru-link.js";
 import { pickStarters, refreshStarters } from "./starters.js";
 
 // 背後預先開好的這一頁（prerender.js）：點進去之前這個房間讀的存檔被別頁改過，就重新整理。
@@ -5567,8 +5568,8 @@ function showCard(tag, from, { shot = null } = {}) {
       el(
         "div",
         {},
-        // 英文版的標題就是 tag：不再印一次。
-        english ? null : el("p", { class: "tag-en" }, card.tag),
+        // 英文版的標題就是 tag：不再印一次。旁邊兩顆 Danbooru（看圖照現在的分級篩）。
+        el("div", { class: "tag-line" }, english ? null : el("p", { class: "tag-en" }, card.tag), danbooruLinks(card.tag, { rating: ratingOf(settings) })),
         el("dl", {}, facts.map(([k, v]) => [el("dt", {}, k), el("dd", {}, v)]))
       )
     ),

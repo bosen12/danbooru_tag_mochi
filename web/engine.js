@@ -5123,6 +5123,8 @@ const NEVER_DRAW = new Set([
   "child carry",
   "child",
 ]);
+/** 這個字是不是永遠不抽（看起來未成年）：卡片詳情的 Danbooru「看圖」連結也不給（danbooru-link.js）。 */
+export const neverDraw = (tag) => NEVER_DRAW.has(tag);
 
 /**
  * 抽一張。時代「混合」（settings.eraMix）時，這一張抽的期間 eraOk 一律放行（不同時代的字可以一起出現），

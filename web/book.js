@@ -2,6 +2,7 @@
 import "./tag-renames.js";
 import { guardPrerender, prerenderNeighbors, whenActive } from "./prerender.js";
 import { dateLocale, english, t } from "./i18n.js";
+import { danbooruLinks } from "./danbooru-link.js";
 import { cloneCard } from "./card-images.js";
 /**
  * 卡冊：每張牌進過幾張圖。
@@ -2375,8 +2376,8 @@ function openCard(card, srcNode) {
       el(
         "div",
         {},
-        // 英文版的標題就是 tag：不再印一次。
-        english ? null : el("p", { class: "tag-en" }, card.tag),
+        // 英文版的標題就是 tag：不再印一次。旁邊兩顆 Danbooru：看圖照現在的分級篩，禁用的牌只看全年齡。
+        el("div", { class: "tag-line" }, english ? null : el("p", { class: "tag-en" }, card.tag), card.suit === "custom" ? null : danbooruLinks(card.tag, { rating: seeRating(), safe: !!card.banned })),
         el(
           "div",
           { class: "book-big", style: `--share: ${share}` },

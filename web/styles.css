@@ -4251,6 +4251,85 @@ body[data-dragging="true"] .library[data-over="true"] {
   color: var(--color-muted);
 }
 
+/* 卡片詳情：英文 tag 一行，旁邊兩顆 Danbooru 連結（danbooru-link.js）。窄的時候連結換到下一行。 */
+.tag-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px var(--space-sm);
+  margin-bottom: var(--space-xs);
+}
+.tag-line > .tag-en {
+  margin: 0;
+}
+.db-links {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px 2px 2px 8px;
+  border: 1px solid var(--color-rule);
+  border-radius: 999px;
+  background: color-mix(in oklch, var(--color-paper-2) 70%, transparent);
+  font-size: var(--text-xs);
+  line-height: 1;
+}
+.db-mark {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-right: 4px;
+  color: var(--color-muted);
+  font-family: var(--font-mono);
+  letter-spacing: 0.02em;
+}
+.db-mark svg {
+  color: var(--color-accent-text);
+}
+.db-link {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  min-height: 24px;
+  padding: 0 9px;
+  border-radius: 999px;
+  color: var(--color-ink);
+  text-decoration: none;
+  transition: background-color var(--dur-micro) var(--ease-out), color var(--dur-micro) var(--ease-out);
+}
+.db-out {
+  font-size: 0.85em;
+  color: var(--color-muted);
+  transition: translate var(--dur-micro) var(--ease-out), color var(--dur-micro) var(--ease-out);
+}
+@media (hover: hover) and (pointer: fine) {
+  .db-link:hover {
+    background: var(--color-paper-4);
+  }
+  .db-link:hover .db-out {
+    translate: 1px -1px;
+    color: var(--color-accent-text);
+  }
+}
+.db-link:focus-visible {
+  outline: 2px solid var(--color-focus, var(--color-accent));
+  outline-offset: 1px;
+}
+/* 手指點的範圍：看起來一樣大，點擊區上下擴到約 44px。 */
+@media (pointer: coarse) {
+  .db-link::after {
+    content: "";
+    position: absolute;
+    inset: -10px -2px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .db-link,
+  .db-out {
+    transition: none;
+  }
+}
+
 .ban-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));

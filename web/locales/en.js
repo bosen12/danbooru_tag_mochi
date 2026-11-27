@@ -2318,6 +2318,12 @@ const parameterized = String.raw`
 略過 {0} 張：跟印過的一模一樣（固定種子）|Skipped {0}: identical to images already printed with this fixed seed
 收掉了 {0} 張取消的|Cleared {0} cancelled images
 接著印|Resume
+看圖|Images
+說明|Wiki
+在 Danbooru 查這個 tag|Look up this tag on Danbooru
+在 Danbooru 看用這個 tag 的圖（照現在的分級篩選）|Images with this tag on Danbooru (filtered by your current rating)
+在 Danbooru 看用這個 tag 的圖（這張牌只看全年齡）|Images with this tag on Danbooru (all-ages only for this card)
+在 Danbooru 看這個 tag 的說明|This tag's wiki page on Danbooru
 成品牆最多 {0} 張：最舊的先拿下，作品冊的日誌裡都還在|Results hold up to {0} images. The oldest were taken down; they are all still in the Gallery history.
 修臉 {0}|Face fix {0}
 {0}（預設）|{0!} (default)
