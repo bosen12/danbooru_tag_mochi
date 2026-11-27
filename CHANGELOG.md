@@ -1,5 +1,17 @@
 # Release notes
 
+## v1.9.1 — 2026-11-27
+
+Changes since [v1.9](https://github.com/bosen12/danbooru_tag_mochi/releases/tag/v1.9).
+
+- **Finished images no longer turn back into "Queued" when several Ink Pool tabs are open.** A tab you opened later, even one left in the background and never clicked, read the images another tab had queued but didn't take that tab's later "done". When it saved anything afterwards (removing or saving an image), it wrote its old "queued" copy back, and the tab that sent the images showed finished images as "Queued", "Drawing 8/25" or "Waiting for the previous one" forever (the server had finished them). Every tab now follows the others' results. Reloading the page fixes images already stuck this way; the images themselves were never lost.
+
+### 繁體中文
+
+與 [v1.9](https://github.com/bosen12/danbooru_tag_mochi/releases/tag/v1.9) 相比：
+
+- **同時開好幾個墨池頁，印好的圖不再被改回「排隊中」**：後開的墨池頁（就算在背景、從沒點進去）會把別頁排著的圖讀進來，之後卻不認那頁印好的結果。它只要存一次檔（撤下、收藏一張之類），就會用手上舊的「排隊中」蓋回去，送圖那一頁明明印好的圖就永遠停在「排隊中」、「繪製 8/25」或「等前面的印完」（伺服器其實早就畫好了）。現在每一頁都會跟著別頁的結果更新。已經卡住的重新整理就好，圖本身沒有不見。
+
 ## v1.9 — 2026-11-27
 
 Changes since [v1.8](https://github.com/bosen12/danbooru_tag_mochi/releases/tag/v1.8).
