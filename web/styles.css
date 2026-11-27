@@ -3472,9 +3472,9 @@ html[data-go-float] .wall-busy {
     transition: none;
   }
 }
-/* 疊在暗底上：淺色字、半透明的底。 */
+/* 疊在暗底上：淺色字、深一點的半透明底（不用毛玻璃，見下面「毛玻璃」那段）。 */
 .shot-actions .btn-ghost {
-  --btn-bg: rgba(12, 14, 18, 0.45);
+  --btn-bg: rgba(12, 14, 18, 0.62);
   --btn-ink: #f1ead9;
   --btn-edge: rgba(241, 234, 217, 0.28);
 }
@@ -3595,21 +3595,11 @@ html[data-go-float] .wall-busy {
   color: #f1ead9;
 }
 
-/* 毛玻璃只給看得到的那幾張。2026-11-27 量：成品牆滿 80 張，每張的按鈕列、牌·N 都帶 backdrop-filter（看不到時也算），
- * 整頁 700 個合成圖層、其中 425 個是毛玻璃；無限抽時每一格畫面都要把它們送一次，主執行緒滿載、跟 ComfyUI 搶顯示卡。
- * 沒有懸停的裝置不開（牌·N 一直顯示，改用深一點的底）。 */
-@media (hover: hover) and (pointer: fine) {
-  .shot:is(:hover, :has(:focus-visible)) > .shot-actions .btn-ghost,
-  .shot:has(> .shot-actions [aria-expanded="true"]) > .shot-actions .btn-ghost {
-    backdrop-filter: blur(4px);
-  }
-  .shot:not([data-status="drawn"]) > .shot-meta .shot-toggle {
-    background: rgba(12, 14, 18, 0.5);
-  }
-  .shot:not([data-status="drawn"]):is(:hover, :has(:focus-visible), [data-status="queued"], [data-status="running"], [data-status="failed"], [data-status="stopped"]) > .shot-meta .shot-toggle {
-    backdrop-filter: blur(4px);
-  }
-}
+/* 成品牆上不用毛玻璃（backdrop-filter）。
+ * 2026-11-27 量：成品牆滿 80 張，每張的按鈕列、牌·N 都帶毛玻璃（看不到時也算），整頁 700 個合成圖層、其中 425 個是毛玻璃，
+ * 無限抽時主執行緒滿載、跟 ComfyUI 搶顯示卡。改成只有滑鼠底下那張開，又被專案主看到按鈕「閃一下、從黑變灰」：
+ * 按鈕列淡入時（opacity < 1）它自成一層，毛玻璃只糊得到這一層自己的漸暗、糊不到底下的圖，按鈕近乎全黑；
+ * 淡入到 1 的那一格才糊到圖、整顆變灰（改之前一直開也一樣會閃）。所以整個拿掉，按鈕、牌·N 用深一點的半透明底，淡入前後同一個顏色。 */
 
 /* 沒有懸停（手機、平板）：按鈕列不放牆上（在成品詳情裡）；下緣那一行薄一點，只墊在字底下。 */
 @media not ((hover: hover) and (pointer: fine)) {
