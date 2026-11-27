@@ -3477,7 +3477,6 @@ html[data-go-float] .wall-busy {
   --btn-bg: rgba(12, 14, 18, 0.45);
   --btn-ink: #f1ead9;
   --btn-edge: rgba(241, 234, 217, 0.28);
-  backdrop-filter: blur(4px);
 }
 .shot-actions .shot-remove {
   color: rgba(241, 234, 217, 0.75);
@@ -3592,9 +3591,24 @@ html[data-go-float] .wall-busy {
   padding: 0 var(--space-xs);
   gap: 6px;
   border-color: rgba(241, 234, 217, 0.3);
-  background: rgba(12, 14, 18, 0.5);
+  background: rgba(12, 14, 18, 0.62);
   color: #f1ead9;
-  backdrop-filter: blur(4px);
+}
+
+/* 毛玻璃只給看得到的那幾張。2026-11-27 量：成品牆滿 80 張，每張的按鈕列、牌·N 都帶 backdrop-filter（看不到時也算），
+ * 整頁 700 個合成圖層、其中 425 個是毛玻璃；無限抽時每一格畫面都要把它們送一次，主執行緒滿載、跟 ComfyUI 搶顯示卡。
+ * 沒有懸停的裝置不開（牌·N 一直顯示，改用深一點的底）。 */
+@media (hover: hover) and (pointer: fine) {
+  .shot:is(:hover, :has(:focus-visible)) > .shot-actions .btn-ghost,
+  .shot:has(> .shot-actions [aria-expanded="true"]) > .shot-actions .btn-ghost {
+    backdrop-filter: blur(4px);
+  }
+  .shot:not([data-status="drawn"]) > .shot-meta .shot-toggle {
+    background: rgba(12, 14, 18, 0.5);
+  }
+  .shot:not([data-status="drawn"]):is(:hover, :has(:focus-visible), [data-status="queued"], [data-status="running"], [data-status="failed"], [data-status="stopped"]) > .shot-meta .shot-toggle {
+    backdrop-filter: blur(4px);
+  }
 }
 
 /* 沒有懸停（手機、平板）：按鈕列不放牆上（在成品詳情裡）；下緣那一行薄一點，只墊在字底下。 */

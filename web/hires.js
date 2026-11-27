@@ -20,7 +20,7 @@ import { el } from "./ui.js";
 import { t as translate } from "./i18n.js";
 import { createGenerator } from "./gen.js";
 import { currentHiresSampling } from "./workflow.js";
-import { seat, refuse, reducedMotion, DUR, CURVE, css } from "./motion.js";
+import { seat, refuse, reducedMotion, DUR, CURVE, css, dropAnimated } from "./motion.js";
 import { insertTriggerAfterCast } from "./engine.js";
 
 /*
@@ -398,7 +398,7 @@ export function closeHiresPicker({ focus = false } = {}) {
       { opacity: 0, transform: `translateY(${p.below ? -4 : 4}px)` },
     ],
     { duration: DUR.micro, easing: css(CURVE.exit), fill: "forwards" }
-  ).onfinish = () => node.remove();
+  ).onfinish = () => dropAnimated(node);
 }
 
 /**
@@ -685,7 +685,7 @@ export function paintHiresVeil(frame, t, { onCancel, onDismiss }) {
       const v = veil;
       if (reducedMotion()) v.remove();
       else
-        v.animate([{ opacity: 1 }, { opacity: 0 }], { duration: DUR.short, easing: css(CURVE.exit), fill: "forwards" }).onfinish = () => v.remove();
+        v.animate([{ opacity: 1 }, { opacity: 0 }], { duration: DUR.short, easing: css(CURVE.exit), fill: "forwards" }).onfinish = () => dropAnimated(v);
     }
     return;
   }

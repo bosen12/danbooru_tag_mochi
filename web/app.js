@@ -72,7 +72,7 @@ import { openPaste, listenPaste, parsePrompt } from "./paste-prompt.js";
 import { paintWeight, wireWeightInput, weightRow, weightPositive } from "./weights.js";
 import { favButton } from "./album-save.js";
 import { createDrag, inkRing } from "./drag.js";
-import { initMotion, settleMotion, replayDeal, flip, flipBy, leave, enter, confirmButton, gatherHome, flight, seat, refuse, reducedMotion, swapIn, rowChange, ghostOut, heightChange, CURVE, DUR, css, cropFlipStart, cropFlipEnd } from "./motion.js";
+import { initMotion, settleMotion, replayDeal, flip, flipBy, leave, enter, confirmButton, gatherHome, flight, seat, refuse, reducedMotion, swapIn, rowChange, ghostOut, heightChange, CURVE, DUR, css, cropFlipStart, cropFlipEnd, dropAnimated } from "./motion.js";
 import { cloneCard } from "./card-images.js";
 import { createHand } from "./hand.js";
 import { handStore } from "./hand-store.js";
@@ -643,7 +643,7 @@ function floatersAway() {
     Object.assign(c.style, { position: "fixed", left: r.left + "px", top: r.top + "px", width: r.width + "px", height: r.height + "px", margin: "0", right: "auto", bottom: "auto", zIndex: "60", pointerEvents: "none", transition: "none", animation: "none", transform: "none", translate: "none", scale: "none", rotate: "none" });
     document.documentElement.append(c);
     const a = c.animate([{ opacity: 1, transform: "none" }, { opacity: 0, transform: "translateY(10px) scale(0.97)" }], { duration: DUR.short, easing: css(CURVE.exit), fill: "forwards" });
-    const drop = () => c.remove();
+    const drop = () => dropAnimated(c);
     a.onfinish = drop;
     a.oncancel = drop;
     setTimeout(drop, DUR.short + 150);
@@ -1508,7 +1508,7 @@ function tuckAway(tag, from, dir) {
     ],
     { duration: DUR.long, easing: css(CURVE.in), fill: "forwards" }
   );
-  setTimeout(() => f.remove(), 460);
+  setTimeout(() => dropAnimated(f), 460);
   toast(`「${card.zh}」放進合成池`, {
     action: { label: "看合成池", run: () => $("pool-well").scrollIntoView({ behavior: "smooth", block: "center" }) },
   });
@@ -1971,7 +1971,7 @@ function liftOut({ node, rect }, delay = 0) {
     ],
     { duration: DUR.long, easing: css(CURVE.in), fill: "forwards" }
   );
-  setTimeout(() => ghost.remove(), DUR.long + 20);
+  setTimeout(() => dropAnimated(ghost), DUR.long + 20);
 }
 
 /**
@@ -2087,7 +2087,7 @@ function flyToTrash({ node, rect }) {
     ],
     { duration: DUR.xl, easing: css(CURVE.travel), fill: "forwards" }
   );
-  setTimeout(() => ghost.remove(), DUR.xl + 20);
+  setTimeout(() => dropAnimated(ghost), DUR.xl + 20);
 }
 
 function unban(tag) {
@@ -2337,7 +2337,7 @@ function fadeOutPoolEmpty(well) {
     Object.assign(old.style, { position: "absolute", left: at.left + "px", top: at.top + "px", width: at.width + "px", margin: "0", pointerEvents: "none", animation: "none" });
     well.append(old);
     const a = old.animate([{ opacity: 1 }, { opacity: 0, transform: "translateY(-4px)" }], { duration: DUR.short, easing: css(CURVE.exit), fill: "forwards" });
-    const drop = () => old.remove();
+    const drop = () => dropAnimated(old);
     a.onfinish = drop;
     a.oncancel = drop;
     setTimeout(drop, DUR.short + 150);
@@ -4716,7 +4716,7 @@ function mergeHand(frame, hand) {
   });
   // 畫框像被蓋了一下印：輕輕一沉再回來。
   frame.animate([{ transform: "none" }, { transform: "scale(0.985)", offset: 0.35 }, { transform: "none" }], { duration: DUR.long, delay: burst - 20, easing: css(CURVE.settle) });
-  setTimeout(() => layer.remove(), burst + 1000);
+  setTimeout(() => dropAnimated(layer), burst + 1000);
 }
 
 /** 沒有圖的畫框：只抽牌、還在排隊的攤一手牌，印壞的給一顆再印。在成品詳情視窗裡按了，視窗收起來、回牆上看它印。 */
@@ -5413,7 +5413,7 @@ function showShot(shot, { focus } = {}) {
           ],
           { duration: DUR.long, easing: css(CURVE.exit), fill: "forwards" }
         )
-        .finished.then(() => ghost.remove(), () => ghost.remove());
+        .finished.then(() => dropAnimated(ghost), () => dropAnimated(ghost));
     }
     for (const n of [...box.children].filter((c) => !c.classList.contains("sd-nav") && c !== ghost)) {
       n.animate(
@@ -5614,7 +5614,7 @@ function flyToDetail(src, sheetEl) {
     { duration: DUR.long, easing: css(CURVE.out), fill: "forwards" }
   );
   const land = () => {
-    f.remove();
+    dropAnimated(f);
     dst.style.visibility = "";
   };
   anim.onfinish = land;

@@ -167,7 +167,7 @@ export function flight(ghost, from, target, opts = {}) {
       cancelAnimationFrame(flightRaf);
       flightRaf = 0;
     }
-    ghost.remove();
+    dropAnimated(ghost);
     if (onLand) onLand();
   };
   const paint = (p, dt = 16, raw = resolve() || first) => {
@@ -840,9 +840,26 @@ export function gatherHome(snaps, pile, home, { cls = "", duration = DUR.xl, sta
     // 聚攏那段各自出發（最多差 80ms），之後同一時間一起走。
     const delay = start + Math.min(80, i * 14);
     g.animate(frames, { duration: duration - (delay - start), delay, easing: "linear", fill: "both" });
-    setTimeout(() => g.remove(), start + duration + 40);
+    setTimeout(() => dropAnimated(g), start + duration + 40);
   });
   return start + duration;
+}
+
+/**
+ * 拿掉一個演完動畫的節點（連同裡面的）：先拿掉、再把上面的動畫取消。
+ * fill: "forwards" 的動畫演完會一直掛在元素上；元素拿掉了、還沒被回收之前，瀏覽器每一格畫面都還要照顧它。
+ * 2026-11-27 量：無限抽印 22 張，已經拿掉的元素上還掛著 526 個動畫（合牌的星火、牌、光），
+ * 越印越多，主執行緒每 20 秒忙的時間從 9 秒爬到 14.5 秒，等瀏覽器回收一次才掉回來。
+ * 先收集再拿掉（拿掉之後 getAnimations 找不到），拿掉之後才取消（不會閃回動畫前的樣子）。
+ */
+export function dropAnimated(node) {
+  if (!node) return;
+  let anims = [];
+  try {
+    anims = node.getAnimations({ subtree: true });
+  } catch {}
+  node.remove();
+  for (const a of anims) a.cancel();
 }
 
 /** 一個東西離場：縮一點、淡掉，結束後才真的拿掉（done 裡做 DOM 移除，通常配 flip）。 */
@@ -863,6 +880,8 @@ export function leave(node, done, { duration = DUR.short } = {}) {
     if (finished) return;
     finished = true;
     done();
+    // 演完就拿掉的（大多數）：動畫也一起放掉，不要掛在拿掉的節點上（見 dropAnimated）。
+    if (!node.isConnected) a.cancel();
   };
   a.onfinish = end;
   a.oncancel = end;
@@ -1091,7 +1110,7 @@ export function ghostOut(container, selector, { key = null, onlyGone = false, ma
       const end = () => {
         if (gone) return;
         gone = true;
-        shell.remove();
+        dropAnimated(shell);
       };
       Promise.all(anims.map((a) => a.finished.catch(() => {}))).then(end);
       setTimeout(end, GHOST_MS + 8 * 6 + 200);

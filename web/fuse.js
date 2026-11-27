@@ -58,7 +58,7 @@ import { openDecks, loadDecks, cachedDecks } from "./decks.js";
 import { openPaste, listenPaste } from "./paste-prompt.js";
 import { paintWeight, wireWeightInput, weightRow, weightPositive } from "./weights.js";
 import { favButton } from "./album-save.js";
-import { initMotion, settleMotion, flip, flipBy, leave, gatherHome, flight, enter, seat, refuse, swapIn, rowChange, heightChange, ghostOut, CURVE, DUR, css } from "./motion.js";
+import { initMotion, settleMotion, flip, flipBy, leave, gatherHome, flight, enter, seat, refuse, swapIn, rowChange, heightChange, ghostOut, CURVE, DUR, css, dropAnimated } from "./motion.js";
 import { cloneCard, fixedSizes } from "./card-images.js";
 import { createHand } from "./hand.js";
 import { handStore, mergeLegacyHand } from "./hand-store.js";
@@ -1715,7 +1715,7 @@ function renderPreview({ develop = false } = {}) {
       img.dataset.fading = "1";
       const fade = img.animate([{ opacity: 1 }, { opacity: 0 }], { duration: DUR.short, easing: css(CURVE.out), fill: "forwards" });
       fade.onfinish = () => {
-        if (img.dataset.fading === "1") img.remove();
+        if (img.dataset.fading === "1") dropAnimated(img);
       };
     }
   }
@@ -2326,7 +2326,7 @@ function morphPlate(box, sheet) {
       // 要在新的列浮上來之前走掉大半，兩層字才不會疊在一起讀不清楚。
       // 用 out（一開始就走得快）不用 exit：exit 前段幾乎不動，舊的那張會整張停在原地、跟浮上來的新列疊在一起。
       { duration: DUR.short, easing: css(CURVE.out), fill: "forwards" }
-    ).onfinish = () => g.remove();
+    ).onfinish = () => dropAnimated(g);
   }
   const step = DUR.micro / 4;
   [...box.children].forEach((part, i) => {
@@ -3208,7 +3208,7 @@ function liftAway(snap, dir) {
     ],
     { duration: DUR.medium, easing: css(CURVE.in), fill: "forwards" }
   );
-  setTimeout(() => clone.remove(), DUR.medium + 20);
+  setTimeout(() => dropAnimated(clone), DUR.medium + 20);
 }
 
 /* ================= 付印那一條 ================= */
