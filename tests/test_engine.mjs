@@ -5771,7 +5771,8 @@ function indoorOutdoorClash(have) {
     // 2026-11-26：專案主的模型認得清單、alltags 一般字、版面外框畫材共 1703 字進池，這張跟 test_draw_baseline 的 seed 42 一起換；仍是 1girl solo、沒有男生。
     // 2026-11-27：專案主指定 imminent netorare、before netorare 進池（誘惑・情境那一格多兩張），同一格抽到的手勢 heart in heart hands → kissing hand；其他一字不差，仍是 1girl solo、沒有男生。
     // 2026-11-27 第二次：tagcomplete 那批 1065 張進池（.planning/tac-1127），整張換；仍是 1girl solo、沒有男生。
-    "1girl, solo, very short hair, yellow eyes, pink hair, snake hair, medium breasts, hair flower, fake mustache, webbed hands, dolphin shorts, shorts, halter shirt, shirt, strawberry print panties, print panties, panties, waist apron, female masturbation, on back, profile, looking at mirror, :x, vibrator under panties, window, indoors, twilight, city lights, gatling gun, sitting on desk, nsfw, explicit, masterpiece, best quality, amazing quality");
+    // 2026-11-28：黑洞、博麗神社、綾波泳池、紅魔館書庫補上場地互斥，眼睛被遮住、魔物娘、怪物男、非人生物、獸化人補上視線／種族互斥，候選池位移，跟 test_draw_baseline 的 seed 42 一起換；仍是 1girl solo、沒有男生。
+    "1girl, solo, very short hair, yellow eyes, pink hair, snake hair, medium breasts, hair flower, fake mustache, webbed hands, dolphin shorts, shorts, halter shirt, shirt, strawberry print panties, print panties, panties, waist apron, female masturbation, on back, profile, looking at mirror, :x, interspecies, window, indoors, twilight, city lights, happy new year, new year, chimera, nsfw, explicit, masterpiece, best quality, amazing quality");
   ok("drawOne exposes shadow diagnostics", Array.isArray(shadowIntegrationDraw.shadowViolations));
 
   const eatProneShadow = validateSupportShadow({
@@ -6678,7 +6679,8 @@ function indoorOutdoorClash(have) {
 
   // 先證明這些字在這個設定下本來就抽得到，否則下面的斷言會空過。
   // 2026-11-27：tagcomplete 那批進了一千多張（天空、天體多了隕石、軌道、土星…），300 張搜不到星空，對照組搜到 600。
-  ok("twilight control: starry sky 抽得到", seenWith("night", "starry sky", "weird", 600) > 0);
+  // 2026-11-28：場地／視線／種族補互斥後候選池位移，seed 1～1500 剛好沒有星空（1501～6000 有 26 張，0.58%，比以前的 0.47% 還多），對照組搜到 2000。
+  ok("twilight control: starry sky 抽得到", seenWith("night", "starry sky", "weird", 2000) > 0);
   // 2026-10-12：道具池多了六十幾個食物、花、節慶字，市集攤每 1500 張只剩約 5 張。對照組也搜到 600。
   ok("twilight control: market stall 抽得到", seenWith("night", "market stall", "weird", 600) > 0);
   ok("twilight control: dusk 抽得到", seenWith("outdoors", "dusk") > 0);

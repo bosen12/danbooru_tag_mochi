@@ -735,7 +735,7 @@ aqua flower|水藍花|env|other|obj_plant|all|-|-|flower|any|-|normal
 poppy (flower)|罌粟花|env|other|obj_plant|all|-|-|flower|any|-|normal
 black bird|黑鳥|env|other|obj_plant|all|-|-|bird|any|-|normal
 blue bird|藍鳥|env|other|obj_plant|all|-|-|bird|any|-|normal
-black hole|黑洞|env|place|pl_landmark|all|-|-|-|any|-|normal
+black hole|黑洞|env|place|pl_landmark|all|place|-|-|any|-|normal
 cerise bouquet|櫻桃紅花束|env|other|obj_plant|all|-|-|-|any|-|normal
 red butterfly|紅蝶|env|other|obj_plant|all|-|-|butterfly|any|-|normal
 on tank|在戰車上|env|place|pl_ride|all|place|-|-|any|modern|normal

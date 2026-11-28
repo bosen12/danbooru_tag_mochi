@@ -410,12 +410,12 @@ fish tail|魚尾|feature|other|nonhuman|all|-|-|fins,tail|any|-|normal
 cow horns|牛角|feature|other|nonhuman|all|-|-|horns|any|-|normal
 goat horns|山羊角|feature|other|nonhuman|all|-|-|horns|any|-|normal
 sheep horns|綿羊角|feature|other|nonhuman|all|-|-|horns|any|-|normal
-furry|獸化人|feature|race|race_kemono|all|-|-|-|any|-|normal
+furry|獸化人|feature|race|race_kemono|all|race|-|-|any|-|normal
 raccoon girl|浣熊少女|feature|race|race_kemono|all|race|female|animal ears|female|-|normal
 mouse girl|鼠娘|feature|race|race_kemono|all|race|female|animal ears|female|-|normal
 mouse|小鼠|env|other|obj_plant|all|-|-|-|any|-|normal
 arthropod girl|節肢動物娘|feature|race|race_fantasy|all|race|female|-|female|-|normal
-creature|非人生物|feature|race|race_fantasy|all|-|-|-|any|-|normal
+creature|非人生物|feature|race|race_fantasy|all|race|-|-|any|-|normal
 doll joints|人偶關節|feature|other|nonhuman|all|-|-|joints|any|-|normal
 butterfly wings|蝴蝶翅膀|feature|other|nonhuman|all|-|-|insect wings|any|-|normal
 winged arms|翅膀手臂|feature|other|nonhuman|all|-|-|wings|any|-|normal
@@ -1398,14 +1398,14 @@ dust cloud|揚起塵土|env|effect|fx_fall|all|-|-|dust|any|-|normal
 brick floor|磚地板|env|other|obj_build|all|-|-|-|any|-|normal
 galaxy|一片星系|env|sky|sky|all|-|-|-|any|-|normal
 storefront|店鋪門口|env|place|pl_shop|all|place|-|outdoors|any|modern|normal
-voile|紅魔館書庫|env|place|pl_school|all|-|-|library|any|-|normal
+voile|紅魔館書庫|env|place|pl_school|all|place|-|library|any|-|normal
 united states|美國場景|env|other|obj_theme|all|-|-|-|any|modern|normal
 frozen|凍在冰裡|env|effect|fx_fall|all|-|-|-|any|-|normal
-hakurei shrine|博麗神社|env|place|pl_history|all|-|-|shrine|any|edo,modern|normal
+hakurei shrine|博麗神社|env|place|pl_history|all|place|-|shrine|any|edo,modern|normal
 soviet|蘇聯|env|other|obj_theme|all|-|-|-|any|modern|normal
 japan|日本|env|other|obj_theme|all|-|-|-|any|edo,modern|normal
 hanami|賞櫻|env|other|obj_fest|all|-|-|cherry blossoms|any|edo,modern|normal
-rei no pool|綾波泳池|env|place|pl_bath|all|-|-|pool|any|modern|normal
+rei no pool|綾波泳池|env|place|pl_bath|all|place|-|pool|any|modern|normal
 digital dissolve|數位溶解|env|effect|fx_comic|all|effect|-|-|any|modern|normal
 spoken food|對話食物|env|effect|fx_comic|all|effect|-|-|any|-|normal
 storm|暴風雨|env|weather|weather|all|weather|-|-|any|-|normal

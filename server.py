@@ -3326,7 +3326,8 @@ def wiki_file_path() -> Path:
 
 
 def _wiki_index() -> dict:
-    """{正規化的名字: 說明}。照 mtime 快取；檔案不在、壞掉：空的。"""
+    """{正規化的名字: (英文說明, 中文說明)}。照 mtime 快取；檔案不在、壞掉：空的。
+    中文在 wikiZh（.planning/wiki-zh 翻的）；沒翻的那筆中文是空字串，網頁退回英文。"""
     path = wiki_file_path()
     key = str(path)
     try:
@@ -3340,11 +3341,14 @@ def _wiki_index() -> dict:
         try:
             loaded = json.loads(path.read_text(encoding="utf-8"))
             wiki = loaded.get("wiki") if isinstance(loaded, dict) else None
+            zh = loaded.get("wikiZh") if isinstance(loaded, dict) else None
+            zh = zh if isinstance(zh, dict) else {}
+            zh_index = {norm_tag(n): t.strip() for n, t in zh.items() if isinstance(t, str) and t.strip()}
             if isinstance(wiki, dict):
                 for name, text in wiki.items():
                     k = norm_tag(name)
                     if k and isinstance(text, str) and text.strip() and k not in index:
-                        index[k] = text.strip()
+                        index[k] = (text.strip(), zh_index.get(k, ""))
         except (OSError, ValueError):
             index = {}
     _WIKI["path"] = key
@@ -3415,6 +3419,7 @@ def related_payload(tags) -> dict:
     wiki_index = _wiki_index()
     items = {}
     wiki = {}
+    wiki_zh = {}
     seen = set()
     for raw in tags or []:
         key = norm_tag(raw)
@@ -3424,7 +3429,9 @@ def related_payload(tags) -> dict:
         if key in hard or key in ban:
             continue
         if wiki_index.get(key):
-            wiki[key] = wiki_index[key]
+            wiki[key], zh_text = wiki_index[key]
+            if zh_text:
+                wiki_zh[key] = zh_text
         if key in guard and key not in names:
             continue
         found = index.get(key)
@@ -3434,7 +3441,7 @@ def related_payload(tags) -> dict:
         pairs = _related_pairs(flat, key, hard, ban, guard)
         if pairs:
             items[canon] = pairs
-    return {"ok": True, "items": items, "wiki": wiki, "guard": guard_list}
+    return {"ok": True, "items": items, "wiki": wiki, "wikiZh": wiki_zh, "guard": guard_list}
 
 
 def banned_in_prompt(positive: str) -> list[str]:

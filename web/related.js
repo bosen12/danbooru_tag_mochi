@@ -11,7 +11,7 @@
 import { cardNode, setCardFlag } from "./cards.js";
 import { el, resizeSheet } from "./ui.js";
 import { enter, dropAnimated, reducedMotion } from "./motion.js";
-import { t } from "./i18n.js";
+import { t, english } from "./i18n.js";
 
 const LIMIT = 8;
 const DOTS = ["", "相關度：一格", "相關度：兩格", "相關度：三格"];
@@ -131,13 +131,21 @@ export function wikiAllowed(tag, ctx = {}) {
   return !named(nameSet(ctx.hardBanned), key) && !named(nameSet(ctx.characterBan), key);
 }
 
-function wikiSectionOf(text) {
+/**
+ * 說明：中文介面有翻好的中文就顯示中文（滑鼠移上去看英文原文）；沒翻的、英文介面顯示 Danbooru 的英文原文。
+ * 兩種都標 lang 和 data-no-i18n：介面翻譯（i18n.js）不碰、讀屏照語言念。
+ */
+function wikiSectionOf(en, zh) {
+  const useZh = !english && !!zh;
   return el(
     "section",
     { class: "tag-wiki" },
     el("h3", {}, "Danbooru 說明"),
-    // 說明是 Danbooru 的英文原文：標 lang，翻譯（i18n.js）不碰、讀屏用英文念。
-    el("p", { class: "tag-wiki-text", lang: "en", translate: "no" }, text)
+    el(
+      "p",
+      { class: "tag-wiki-text", lang: useZh ? "zh-Hant" : "en", translate: "no", dataset: { noI18n: "" }, title: useZh ? en : undefined },
+      useZh ? zh : en
+    )
   );
 }
 
@@ -159,7 +167,7 @@ export function loadRelated(tag, fetchImpl = globalThis.fetch) {
       if (started !== era) return null;
       if (!data || data.ok === false) return null;
       const guard = new Set((Array.isArray(data.guard) ? data.guard : []).map(normTag).filter(Boolean));
-      const packed = { items: pairsOf(data.items, key), wiki: wikiOf(data.wiki, key), guard };
+      const packed = { items: pairsOf(data.items, key), wiki: wikiOf(data.wiki, key), wikiZh: wikiOf(data.wikiZh, key), guard };
       if (started === era) cache.set(key, packed);
       return packed;
     } catch {
@@ -401,7 +409,7 @@ function placeRelated(parent, opts, pack, late) {
     else parent.append(node);
   };
   if (wiki) {
-    const box = wikiSectionOf(wiki);
+    const box = wikiSectionOf(wiki, pack.wikiZh);
     place(box);
     if (motion) enter(box);
   }

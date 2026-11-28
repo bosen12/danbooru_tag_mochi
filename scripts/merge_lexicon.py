@@ -181,8 +181,8 @@ UMBRELLA = {
     "sex",
     "oral",
     "threesome",
-    "monster boy",
-    "monster girl",
+    # 怪物男、魔物娘 2026-11-28 拿出來，留著種族互斥（專案主）：跟服裝的傘一樣，
+    # 父項自己被釘的時候要佔住種族那一格，不然選格補種族會再補一個精靈。子項 implies 它有 parentChild 保護。
     "fat",
     "otaku",
 }
@@ -2661,7 +2661,7 @@ def extra_race_tags() -> list[dict]:
             "section": "feature",
             "gate": "male",
             "heat": list(HEATS),
-            "mutex": None,
+            "mutex": "race",
             "bind": [],
             "implies": [],
             "layer": "normal",
@@ -3502,8 +3502,9 @@ def extra_kink_tags() -> list[dict]:
         row("crying with eyes open", "pose", "睜眼流淚", mutex="expression", implies=["crying"]),
 
         # ---- 種族。正常模式不自動抽，跟怪物男同一條；多元模式女角也擲得到。
-        # 魔物娘是傘，mutex 清空，由具體種族 implies 進來。乳牛娘是獸耳，不掛這把傘。
-        row("monster girl", "feature", "魔物娘", gate="female", needs=["female"]),
+        # 魔物娘是傘，由具體種族 implies 進來。乳牛娘是獸耳，不掛這把傘。
+        # 2026-11-28 起它自己也佔種族格（專案主）：釘了魔物娘，選格補種族不再補一個精靈。
+        row("monster girl", "feature", "魔物娘", mutex="race", gate="female", needs=["female"]),
         row("demon girl", "feature", "惡魔娘", mutex="race", gate="female",
             implies=["monster girl"], needs=["female"]),
         row("slime girl", "feature", "史萊姆娘", mutex="race", gate="female",
@@ -6543,7 +6544,7 @@ def extra_suggestion_1500() -> list[dict]:
         row('dot mouth', '點狀嘴', 'pose', 'face', 'face_mouth', mutex='expression'),
         row('blank stare', '呆滯眼神', 'pose', 'gaze', 'gaze', mutex='gaze'),
         row('rubbing eyes', '揉眼睛', 'pose', 'tease', 'pose_act'),
-        row('covered eyes', '眼睛被遮住', 'pose', 'gaze', 'gaze'),
+        row('covered eyes', '眼睛被遮住', 'pose', 'gaze', 'gaze', mutex='gaze'),
         row('pulling own clothes', '拉自己的衣服', 'pose', 'tease', 'pose_hand'),
         row('convenient leg', '腿部遮擋（方便腿）', 'pose', 'tease', 'pose_situ'),
         row('convenient arm', '手臂遮擋（方便手）', 'pose', 'tease', 'pose_situ'),

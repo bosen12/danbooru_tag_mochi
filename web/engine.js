@@ -4712,7 +4712,9 @@ const ODD_MOTIF = new Set([
 ]);
 // 只當父字用的動作：騎乘要有騎的東西（騎馬、騎車、騎掃帚帶出來）。自己被抽到時
 // 畫面沒有坐騎（以前 41 張裡 11 張）。釘它、必抽照收。
-const PARENT_ONLY = new Set(["riding"]);
+// 眼睛被遮住要有東西遮（頭盔遮雙眼帶出來）。2026-11-28 補上視線互斥後它進了視線格，
+// 自己被抽到時 900 張有 29 張平白遮著眼睛：只當父字用，釘它照收（專案主：釘了不再補「看著觀眾」）。
+const PARENT_ONLY = new Set(["riding", "covered eyes"]);
 const FEATURE_SHARE_HEAT = { flash: { intimate: 8, touch: 5 }, sex: { intimate: 9, touch: 6 } };
 const FEATURE_LOUD = new Set([
   "pregnant", "quadruple amputee", "giantess", "minigirl", "old woman", "old man", "obese", "fat man",
@@ -5236,6 +5238,12 @@ function drawOneImpl(lex, settings, pinned, userBanned, rand, seed, opts) {
   const banned = new Set([...userBanned, ...autoBan]);
   const used = new Set();
   watchUsed(used);
+  // 池裡的牌：釘的牌，加上它順著 implies／bind 帶進來的整條（forcePin 放進來的）。
+  // 選格模式下，池裡沒有互斥的牌不佔格（性交只說有在做、沒說怎麼做；雀斑不是膚色），
+  // 那一格照樣補一張；有互斥的（傳教士式、黑髮、海灘）照舊佔住。引擎自己補的照舊佔格，
+  // 不然沒互斥的格子會一直補下去。全開模式照張數算，不看這個（2026-11-28 專案主）。
+  const poolTags = new Set();
+  const occupies = (it) => !poolTags.has(it.tag) || extraMutex(it).length > 0;
   const mutexTaken = new Map();
   // M-class pool prefilter (整桶跳過). Does not replace item._mx inside allow / S path.
   const mIdx = lex._mIdx || (lex._mIdx = buildMutexIndexFromLex(lex));
@@ -5294,10 +5302,19 @@ function drawOneImpl(lex, settings, pinned, userBanned, rand, seed, opts) {
     if (state === "failed") return false;
     return members.some((m) => used.has(m.tag) || (!banned.has(m.tag) && !mutexBusy(lex, mutexTaken, m.tag) && allow(m)));
   };
+  // 有角色時，引擎自己隨機抽的牌不能帶進角色自帶的長相（長相段的補牌本來就擋，這裡補其他段用 implies 偷渡的）。
+  // 只管長相以外的段：長相段自己的牌照原本的規則（補牌擋角色那幾格、卡片群組的體型胸部照抽）。
+  // 角色本身不算（角色可以帶出自己的髮色、瞳色）；釘的、必抽的不經這裡。
+  const characterLookBlocked = (it) => {
+    if (commitMeta.source !== SOURCES.random || !it || it.section === "feature" || it.section === "subject" || isCharacter(it) || !bringsCharacterLook(lex, it)) return false;
+    for (const t of used) if (isCharacter(lex.byTag.get(t))) return true;
+    return false;
+  };
   const innerCommit = zeroSections.size || selectedSlots.size || groupGate
     ? (tag) => {
         if (ENGINE_FILL.has(commitMeta.source)) {
           const it = lex.byTag.get(tag);
+          if (characterLookBlocked(it)) return false;
           if (zeroSections.has(it?.section)) return false;
           const selected = selectedSlots.get(it?.section);
           if (selected) {
@@ -5307,7 +5324,7 @@ function drawOneImpl(lex, settings, pinned, userBanned, rand, seed, opts) {
             // 一次帶入，不經這道隨機根牌的限制。
             if (!keys.some(key => ![...used].some(t => {
               const existing = lex.byTag.get(t);
-              return existing?.section === it.section && offKeysOf(existing).includes(key);
+              return existing?.section === it.section && occupies(existing) && offKeysOf(existing).includes(key);
             }))) return false;
           }
           // 安全修補（分級要的最低限度衣服、遮住內衣、浴場救援）不受群組限制。
@@ -5315,7 +5332,7 @@ function drawOneImpl(lex, settings, pinned, userBanned, rand, seed, opts) {
         }
         return rawCommit(tag);
       }
-    : rawCommit;
+    : (tag) => (characterLookBlocked(lex.byTag.get(tag)) ? false : rawCommit(tag));
   // 出處：引擎補的牌剛好是群組裡的，記成「群組」（畫面上標「來自群組 …」）。
   const sourceOf = (t) => {
     if (commitMeta.source !== SOURCES.random || !groupGate) return commitMeta.source;
@@ -5430,6 +5447,7 @@ function drawOneImpl(lex, settings, pinned, userBanned, rand, seed, opts) {
       }
     }
     used.add(tag);
+    poolTags.add(tag);
     if (tracer.enabled) {
       let source = SOURCES.pin;
       if (parent) {
@@ -7313,7 +7331,7 @@ function drawOneImpl(lex, settings, pinned, userBanned, rand, seed, opts) {
       const filled = new Set();
       for (const t of used) {
         const it = lex.byTag.get(t);
-        if (it?.section === section) for (const k of offKeysOf(it)) if (selected.has(k)) filled.add(k);
+        if (it?.section === section && occupies(it)) for (const k of offKeysOf(it)) if (selected.has(k)) filled.add(k);
       }
       return filled.size;
     }
@@ -7366,7 +7384,7 @@ function drawOneImpl(lex, settings, pinned, userBanned, rand, seed, opts) {
     }
     const fillAllowed = selected ? (item) => {
       if (!offKeysOf(item).some((key) => selected.has(key) && !someUsed(
-        (it) => it.section === section && offKeysOf(it).includes(key)
+        (it) => it.section === section && occupies(it) && offKeysOf(it).includes(key)
       ))) return false;
       return allow(item);
     } : allow;
@@ -7742,7 +7760,7 @@ function drawOneImpl(lex, settings, pinned, userBanned, rand, seed, opts) {
       if (selected) {
         for (const lk of lit) {
           if (room() <= 0) break;
-          if (someUsed((it) => it.section === section && offKeysOf(it).includes(lk))) continue;
+          if (someUsed((it) => it.section === section && occupies(it) && offKeysOf(it).includes(lk))) continue;
           const members = g.items.filter((m) => offKeysOf(m).includes(lk) && !charaOwns(m));
           if (!members.length) continue;
           const pool = mPool(members).filter((item) => allow(item));
@@ -9364,6 +9382,24 @@ const CHARACTER_LOOK_GROUPS = new Set(["hair_len", "hair_color", "hair_style", "
 // 同理，會改掉角色是誰的細節：獸耳翅膀尾巴、中性長相、體型身高、膚色、刺青。
 // 妝、眼淚、濕髮這種當下的樣子照抽。
 const CHARACTER_LOOK_SUBS = new Set(["nonhuman", "persona", "bm_build", "bf_shape", "bf_breast", "skin_tone", "tattoo"]);
+const isCharacterLook = (it) => !!it && it.section === "feature" &&
+  (CHARACTER_LOOK_GROUPS.has(it.group) || CHARACTER_LOOK_SUBS.has(it.sub) || it.mutex === "breast_size");
+// 這張牌自己、或順著 implies／bind 帶出來的字裡，有沒有角色自帶的長相。算過記在牌上。
+// 有角色時，引擎自己抽的姿勢牌也不能偷帶長相進來：尾巴纏握帶出可抓握尾巴、平胸抓胸帶出平胸（2026-11-28）。
+function bringsCharacterLook(lex, item) {
+  if (item._bcl !== undefined) return item._bcl;
+  const seen = new Set();
+  const walk = (t) => {
+    if (seen.has(t)) return false;
+    seen.add(t);
+    const it = lex.byTag.get(t);
+    if (!it) return false;
+    if (isCharacterLook(it)) return true;
+    return [...(it.implies || []), ...(it.bind || [])].some(walk);
+  };
+  item._bcl = walk(item.tag);
+  return item._bcl;
+}
 
 export const SKELETON = {
   feature: [
@@ -9445,6 +9481,8 @@ export function clothingKindKeys(item) {
 }
 
 /** UI and engine counting share these logical kinds without changing canonical tags. */
+// 「性交」照舊算性愛那一格。池裡放了它、姿勢只勾性愛還是會補具體的行為：
+// 靠的是 drawOneImpl 的 occupies()（池裡沒有互斥的牌不佔格），不是把它踢出格子（2026-11-28 專案主）。
 export function supplementKindKeys(item) {
   if (!item) return [];
   if (item.section === "clothing") {
